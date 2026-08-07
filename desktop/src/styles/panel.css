@@ -1,4 +1,4 @@
-﻿:root[data-theme="dark"] {
+:root[data-theme="dark"] {
     /* Pure Dark Theme (No Purple Glow) */
     --bg-color: #09090b;
     --surface: #18181b;
@@ -3932,147 +3932,234 @@ input:focus, select:focus {
 
 
 /* ===== I Ching Module ===== */
+/* Wang Ye Fenghou Qimen palette: deep blue-black plate + cyan electric glyphs */
 
-:root[data-theme="dark"] .iching-ring-svg {
+:root[data-theme="dark"] .iching-ring-svg,
+:root[data-theme="dark"] .iching-detail-layout,
+:root[data-theme="dark"] .iching-info-panel,
+:root[data-theme="dark"] .iching-dock,
+:root[data-theme="dark"] .iching-main {
   --iching-yao: #7dd3fc;
-  --iching-glow: #22d3ee;
-  --iching-glow-soft: rgba(34, 211, 238, 0.25);
-  --iching-glow-strong: rgba(34, 211, 238, 0.5);
+  --iching-glow: #67e8f9;
+  --iching-glow-soft: rgba(103, 232, 249, 0.42);
+  --iching-glow-strong: rgba(125, 211, 252, 0.7);
   --iching-divider: rgba(125, 211, 252, 0.08);
-  --iching-ring-bg: rgba(125, 211, 252, 0.02);
-  --iching-ring-border: rgba(125, 211, 252, 0.12);
-  --iching-disc-center: #0a1628;
-  --iching-disc-edge: #050a14;
-  --iching-taiji-stroke: rgba(125, 211, 252, 0.4);
-  --iching-accent: #22d3ee;
+  --iching-ring-bg: rgba(8, 28, 58, 0.55);
+  --iching-ring-border: rgba(125, 211, 252, 0.22);
+  --iching-disc-center: #0b1d3a;
+  --iching-disc-mid: #061228;
+  --iching-disc-edge: #020814;
+  --iching-sheen: #67e8f9;
+  --iching-rim: rgba(103, 232, 249, 0.35);
+  --iching-hub: #04101f;
+  --iching-taiji-stroke: rgba(186, 240, 255, 0.9);
+  --iching-hot-fill: rgba(34, 211, 238, 0.12);
+  --iching-accent: #67e8f9;
+  --iching-label: rgba(186, 240, 255, 0.78);
+  --iching-label-hot: #e0f2fe;
   --iching-serif: "Songti SC", "STSong", "SimSun", "Noto Serif SC", serif;
 }
 
-:root[data-theme="light"] .iching-ring-svg {
-  --iching-yao: #0e7490;
-  --iching-glow: #0891b2;
-  --iching-glow-soft: rgba(8, 145, 178, 0.15);
-  --iching-glow-strong: rgba(8, 145, 178, 0.3);
-  --iching-divider: rgba(14, 116, 144, 0.1);
-  --iching-ring-bg: rgba(14, 116, 144, 0.015);
-  --iching-ring-border: rgba(14, 116, 144, 0.15);
-  --iching-disc-center: #f0f9ff;
-  --iching-disc-edge: #e0f2fe;
-  --iching-taiji-stroke: rgba(14, 116, 144, 0.5);
-  --iching-accent: #0891b2;
+:root[data-theme="light"] .iching-ring-svg,
+:root[data-theme="light"] .iching-detail-layout,
+:root[data-theme="light"] .iching-info-panel,
+:root[data-theme="light"] .iching-dock,
+:root[data-theme="light"] .iching-main {
+  --iching-yao: #0369a1;
+  --iching-glow: #0284c7;
+  --iching-glow-soft: rgba(2, 132, 199, 0.22);
+  --iching-glow-strong: rgba(3, 105, 161, 0.4);
+  --iching-divider: rgba(3, 105, 161, 0.1);
+  --iching-ring-bg: rgba(224, 242, 254, 0.72);
+  --iching-ring-border: rgba(3, 105, 161, 0.2);
+  --iching-disc-center: #e0f2fe;
+  --iching-disc-mid: #cfe8fb;
+  --iching-disc-edge: #b6d8f3;
+  --iching-sheen: #7dd3fc;
+  --iching-rim: rgba(3, 105, 161, 0.28);
+  --iching-hub: #dbeafe;
+  --iching-taiji-stroke: rgba(3, 105, 161, 0.75);
+  --iching-hot-fill: rgba(14, 165, 233, 0.12);
+  --iching-accent: #0284c7;
+  --iching-label: rgba(3, 105, 161, 0.78);
+  --iching-label-hot: #0c4a6e;
   --iching-serif: "Songti SC", "STSong", "SimSun", "Noto Serif SC", serif;
 }
 
 .iching-main {
-  display: grid;
-  grid-template-columns: minmax(400px, 1fr) minmax(260px, 0.6fr);
-  gap: 32px;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: stretch;
 }
-@media (max-width: 900px) {
-  .iching-main { grid-template-columns: 1fr; }
+
+.iching-stage {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  /* Allow wheel-zoom to grow beyond the resting frame. */
+  overflow: visible;
 }
 
 .iching-ring-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 20px;
+  width: min(100%, 860px);
+  padding: 18px 8px 8px;
+  border-radius: calc(var(--radius-lg) + 4px);
+  /* Must stay visible: CSS scale() on the SVG would otherwise be clipped. */
+  overflow: visible;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(34, 211, 238, 0.08), transparent 58%),
+    radial-gradient(circle at 50% 50%, rgba(2, 8, 20, 0.55), transparent 72%);
 }
 
 .iching-ring-svg {
   width: 100%;
-  max-width: 640px;
+  max-width: 820px;
   height: auto;
   cursor: grab;
   touch-action: none;
-  filter: drop-shadow(0 8px 40px rgba(0, 0, 0, 0.5));
+  user-select: none;
+  transform-origin: center center;
+  will-change: transform;
+  transition: none;
+  filter: drop-shadow(0 0 28px rgba(34, 211, 238, 0.12)) drop-shadow(0 18px 40px rgba(0, 0, 0, 0.45));
 }
 .iching-ring-svg:active { cursor: grabbing; }
 
 .iching-ring {
+  /* IMPORTANT: do NOT set transform-box/origin here.
+     Modern browsers map SVG transform attributes to CSS transforms.
+     fill-box + origin would make the plate spin around its bounding-box
+     corner instead of the Taiji center (SVG 0,0). */
   transition: none;
-  transform-box: fill-box;
 }
 
 .iching-label {
-  font-size: 9px;
-  fill: var(--iching-yao);
+  font-size: 13px;
+  fill: var(--iching-label);
   font-family: var(--iching-serif);
-  font-weight: 500;
+  font-weight: 700;
+  letter-spacing: 0;
   paint-order: stroke;
   stroke: var(--iching-disc-edge);
-  stroke-width: 2;
+  stroke-width: 3.2;
   stroke-linejoin: round;
-  opacity: 0.85;
+  opacity: 0.9;
+}
+.iching-label.is-hot {
+  font-size: 24px;
+  fill: var(--iching-label-hot);
+  stroke-width: 4.4;
+  opacity: 1;
+  filter: drop-shadow(0 0 8px var(--iching-glow-soft));
+}
+.iching-label-group {
+  pointer-events: none;
 }
 
-.iching-pointer {
-  animation: iching-breathe 3s ease-in-out infinite;
+.iching-slot.is-hot {
+  filter: drop-shadow(0 0 8px var(--iching-glow-soft));
+}
+
+.iching-fixed-chrome {
+  animation: iching-breathe 3.2s ease-in-out infinite;
 }
 @keyframes iching-breathe {
-  0%, 100% { opacity: 0.7; }
+  0%, 100% { opacity: 0.78; }
   50% { opacity: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .iching-pointer { animation: none; }
+  .iching-fixed-chrome { animation: none; }
 }
 
-.iching-info-panel {
+.iching-dock {
   display: flex;
-  flex-direction: column;
-  gap: 24px;
-  padding: 8px 0;
-}
-
-.iching-current-display {
-  text-align: center;
-  padding: 24px 16px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: min(100%, 860px);
+  margin: 0 auto;
+  padding: 14px 16px;
   border: 1px solid var(--iching-ring-border);
   border-radius: var(--radius-lg);
-  background: var(--surface);
+  background:
+    radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--iching-glow) 14%, transparent), transparent 55%),
+    var(--surface);
+  box-shadow:
+    inset 0 0 0 1px rgba(103, 232, 249, 0.04),
+    0 0 24px rgba(34, 211, 238, 0.05);
 }
+
+.iching-dock-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .iching-current-symbol {
-  font-size: 36px;
-  font-weight: 600;
+  font-size: 26px;
+  font-weight: 700;
   color: var(--iching-accent);
   font-family: var(--iching-serif);
-  margin-bottom: 6px;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
+  text-shadow: 0 0 16px var(--iching-glow-soft);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .iching-current-sub {
   font-size: 13px;
   color: var(--text-secondary);
   font-family: var(--iching-serif);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .iching-actions {
   display: flex;
   gap: 10px;
+  flex-shrink: 0;
 }
 .iching-actions .btn {
-  flex: 1;
+  min-width: 108px;
   justify-content: center;
 }
 
-.iching-hint {
-  font-size: 12px;
-  color: var(--text-secondary);
-  line-height: 1.8;
-  text-align: center;
-  padding: 12px 0;
+@media (max-width: 720px) {
+  .iching-dock {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+  .iching-actions {
+    width: 100%;
+  }
+  .iching-actions .btn {
+    flex: 1;
+  }
 }
+
+/* legacy class kept harmless if any old markup remains */
+.iching-info-panel { display: none; }
+.iching-hint { display: none; }
 
 /* Detail page */
 .iching-detail-layout {
-  max-width: 680px;
+  max-width: 720px;
   margin: 0 auto;
 }
 
 .iching-detail-header {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 28px;
   margin-bottom: 32px;
   padding-bottom: 24px;
   border-bottom: 1px solid var(--border-color);
@@ -4080,17 +4167,15 @@ input:focus, select:focus {
 
 .iching-detail-symbol {
   flex-shrink: 0;
-}
-.iching-detail-symbol line {
-  filter: drop-shadow(0 0 4px var(--iching-glow-soft));
+  filter: drop-shadow(0 0 10px var(--iching-glow-soft));
 }
 
 .iching-detail-title h2 {
-  font-size: 28px;
-  font-weight: 600;
+  font-size: 30px;
+  font-weight: 700;
   color: var(--text-primary);
   font-family: var(--iching-serif);
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
   margin-bottom: 6px;
 }
 .iching-detail-meta {
@@ -4104,7 +4189,7 @@ input:focus, select:focus {
 }
 .iching-detail-section h3 {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--iching-accent);
   margin-bottom: 10px;
   font-family: var(--iching-serif);
@@ -4113,9 +4198,9 @@ input:focus, select:focus {
 .iching-classic-text {
   font-family: var(--iching-serif);
   font-size: 16px;
-  line-height: 1.9;
+  line-height: 1.95;
   color: var(--text-primary);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
 }
 
 .iching-lines {
@@ -4136,7 +4221,7 @@ input:focus, select:focus {
   width: 48px;
   font-family: var(--iching-serif);
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--iching-accent);
   padding-top: 2px;
 }
@@ -4151,5 +4236,5 @@ input:focus, select:focus {
   font-size: 14px;
   color: var(--text-secondary);
   font-style: italic;
-  opacity: 0.85;
+  opacity: 0.88;
 }
