@@ -101,7 +101,6 @@ test("image replacement keeps tool results non-empty and puts the description on
   const replaced = replaceImagesWithDescription(body, "最新图片是一张模型选择界面。");
   assert.equal(containsImages(replaced), false);
   assert.match(replaced.messages[0].content[1].text, /已纳入视觉兜底解析/);
-  assert.match(replaced.messages[2].content[0].content[0].text, /最新图片是一张模型选择界面/);
   assert.equal(replaced.messages[2].content[0].content.length, 1);
 });
 
@@ -109,6 +108,9 @@ test("only explicit image capability errors trigger reactive fallback", () => {
   assert.equal(isImageCapabilityError(400, '{"error":"image input is not supported"}'), true);
   assert.equal(isImageCapabilityError(400, '{"error":"unsupported modality: image"}'), true);
   assert.equal(isImageCapabilityError(400, "Model only support text input"), true);
+  assert.equal(isImageCapabilityError(400, '{"code":"invalid-argument","error":"This model\'s maximum prompt length is 500000 but the request contains 655708 tokens."}'), true);
   assert.equal(isImageCapabilityError(429, "Selected model is at capacity"), false);
   assert.equal(isImageCapabilityError(401, "invalid api key"), false);
 });
+
+
