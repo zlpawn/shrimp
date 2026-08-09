@@ -322,7 +322,8 @@ function getUsedClaudeDesktopMappingSources() {
 }
 // Allocate a globally-unique claude public id for a Desktop mapping.
 // Mirrors lib/config allocateClaudePublicId: first unused built-in id, then
-// incrementing version numbers so it never collides with existing keys.
+// -max variants of the built-in pool (a real format Claude Desktop accepts),
+// only falling back to versioned guesses as a last resort.
 function nextClaudeVersionGuess(modelId, used) {
     const parsed = String(modelId || '').match(/^claude-([a-z0-9]+)-(\d+)(?:-(\d{1,2}))?/i);
     const family = parsed?.[1]?.toLowerCase() || 'opus';
@@ -349,6 +350,12 @@ function allocateDesktopClaudeId() {
     const used = getUsedClaudeDesktopMappingSources();
     for (const candidate of BUILTIN_CLAUDE_OFFICIAL_MODELS) {
         if (!used.has(candidate)) return candidate;
+    }
+    // -max variants of the built-in pool: a real format Claude Desktop accepts,
+    // unlike fabricated version increments such as claude-opus-4-9.
+    for (const candidate of BUILTIN_CLAUDE_OFFICIAL_MODELS) {
+        const maxVariant = `${candidate}-max`;
+        if (!used.has(maxVariant)) return maxVariant;
     }
     const seed = BUILTIN_CLAUDE_OFFICIAL_MODELS[BUILTIN_CLAUDE_OFFICIAL_MODELS.length - 1];
     return nextClaudeVersionGuess(seed, used);

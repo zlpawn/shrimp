@@ -651,7 +651,7 @@ test("allocateClaudePublicId picks first unused built-in id", () => {
   );
 });
 
-test("allocateClaudePublicId falls back to a versioned name when pool exhausted", () => {
+test("allocateClaudePublicId returns a -max variant before fabricating versions", () => {
   const used = [
     "claude-opus-4-8",
     "claude-opus-4-7",
@@ -661,7 +661,28 @@ test("allocateClaudePublicId falls back to a versioned name when pool exhausted"
     "claude-haiku-4-0",
   ];
   const allocated = allocateClaudePublicId(used);
-  assert.ok(/^claude-[a-z0-9]+-\d+(-\d+)*$/.test(allocated), `got ${allocated}`);
+  // First fallback is the -max variant of the first built-in id.
+  assert.equal(allocated, "claude-opus-4-8-max");
+  assert.ok(!used.includes(allocated), `allocated ${allocated} should not be already used`);
+});
+
+test("allocateClaudePublicId falls back to versioned name only after pool and -max exhausted", () => {
+  const used = [
+    "claude-opus-4-8",
+    "claude-opus-4-7",
+    "claude-opus-4-6",
+    "claude-sonnet-4-5",
+    "claude-haiku-4-5",
+    "claude-haiku-4-0",
+    "claude-opus-4-8-max",
+    "claude-opus-4-7-max",
+    "claude-opus-4-6-max",
+    "claude-sonnet-4-5-max",
+    "claude-haiku-4-5-max",
+    "claude-haiku-4-0-max",
+  ];
+  const allocated = allocateClaudePublicId(used);
+  assert.ok(/^claude-[a-z0-9]+-\d+(-\d+)*(-max)?$/.test(allocated), `got ${allocated}`);
   assert.ok(!used.includes(allocated), `allocated ${allocated} should not be already used`);
 });
 

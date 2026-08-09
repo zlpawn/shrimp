@@ -13,7 +13,7 @@ agentplan 也在 codingplan），用户被迫编不同的 claude 名来规避全
 1. 展示名（label）-- 在 Claude Desktop UI 里看到的，如 `glm-5.2-loe`
 2. 上游模型（upstream）-- 真实路由目标，如 `glm-5.2`
 
-claude 官方 id 由系统从内置池自动轮询分配，全局唯一。
+claude 官方 id 由系统从内置池自动分配，全局唯一。
 
 ### 数据结构（挂在 endpoint 上）
 
@@ -27,12 +27,24 @@ model_labels:  { "claude-opus-4-7": "glm-5.2-loe" }  // id -> 展示名，新增
 `labelOverride` 的来源从 `model_mapping[key]`（上游名）改成
 `model_labels[key]`（展示名，缺失则退回上游名）。
 
+### auto-id 分配策略 (allocateClaudePublicId)
+
+按优先级分配，保证生成的 id 都是 Claude Desktop 认可的真实格式：
+
+1. 内置池（6 个真实官方 id）：opus-4-8 / opus-4-7 / opus-4-6 /
+   sonnet-4-5 / haiku-4-5 / haiku-4-0
+2. 内置池各 id 的 -max 变体（6 个）：claude-opus-4-8-max 等。
+   -max 是 Claude Desktop 认可的真实后缀，附加在真实版本号上。
+   **不用编造版本号**（如 claude-opus-4-9），Desktop 不认。
+3. 最后兜底：版本号递增（nextClaudeVersionSuggestion）。
+   实际几乎不会触达，池子 + -max 变体已覆盖 12 个 id。
+
 ### 数据流
 
 ```
 用户配:  展示名=glm-5.2-loe   上游=glm-5.2
                     |
-      系统自动分配 claude id (内置池轮询, 全局唯一查重)
+      系统自动分配 claude id (内置池 -> -max 变体 -> 版本递增)
                     |
                     v
 存储:  model_mapping[claude-opus-4-7] = glm-5.2       // 路由
@@ -57,17 +69,14 @@ model_labels:  { "claude-opus-4-7": "glm-5.2-loe" }  // id -> 展示名，新增
 - 其余逻辑（isClaudePublicModelName 校验、supports1m、去重）不变。
 
 #### 1b. auto-id 分配函数（新增 export）
-- allocateClaudePublicId(usedIds)：从 BUILTIN_CLAUDE_OFFICIAL_MODELS
-  顺序取第一个未用的；池子用完则用现有 nextClaudeVersionSuggestion
-  递增版本号。
-- BUILTIN 池需提到模块顶层或一并 export（目前定义在前端 app.ts，
-  后端 lib 里没有）。在 lib 里新增一份 BUILTIN_CLAUDE_OFFICIAL_MODELS 常量。
+- allocateClaudePublicId(usedIds)：内置池 -> -max 变体 -> 版本递增兜底。
+- BUILTIN_CLAUDE_OFFICIAL_MODELS 常量在 lib 里新增一份。
 
 #### 1c. 校验逻辑
 - desktop 的 model_mapping key 仍必须是 claude 官方名（路由依赖），
   isClaudePublicModelName 校验保留。
-- model_labels 的 key 必须是已存在于 model_mapping 的 claude id；
-  多余的 label key 报 warning（不阻塞保存，清理即可）。
+- model_labels 的 key 不在 model_mapping 时报 stale_model_label 告警
+  （不阻塞保存）。
 - 重复 public id 校验（duplicate_public_model）逻辑不变。
 
 ### 2. desktop/src/app.ts（前端）
@@ -81,25 +90,23 @@ model_labels:  { "claude-opus-4-7": "glm-5.2-loe" }  // id -> 展示名，新增
   label = 左栏值，upstream = 右栏值，
   前端分配 claude id，写入 model_mapping[id]=upstream 和
   model_labels[id]=label。
-- 已有映射的 tag 展示：desktop 显示 `label -> upstream`，
+- 已有映射的 tag 展示：desktop 显示 `label -> upstream (id: claude-xxx)`，
   非 desktop 保持 `key -> value`。
 - removeMapping：desktop 同时删 model_mapping 和 model_labels 对应项。
 
 #### 2b. claude id 分配
-- 新增前端函数 allocateDesktopClaudeId()：收集所有 desktop chat 节点
-  已用的 model_mapping key，纯前端实现分配（BUILTIN 池 + 递增），不新增端点。
+- 新增前端函数 allocateDesktopClaudeId()：与 lib 同策略
+  （内置池 -> -max 变体 -> 版本递增兜底），不新增端点。
 
 #### 2c. 旧映射建议弹层
 - renderMappingSourceSuggestions / availableClaudeDesktopMappingSources
-  对 desktop 不再触发（左栏改展示名，无候选弹层）。函数保留供非 desktop 用。
-- BUILTIN_CLAUDE_OFFICIAL_MODELS / mergeClaudeOfficialModelsLocal
-  / getClaudeModelCatalogConfig 保留（claude-model-catalog 工具页仍用）。
+  对 desktop 不再触发。函数保留供非 desktop 用。
 
 ### 3. 迁移与兼容
 
 - 旧配置 {model_mapping: {claude-opus-4-7: glm-5.2}} 无 model_labels：
-  buildClaudeInferenceModels 退回用上游名当 labelOverride，视觉零变化
-  （仍显示 glm-5.2）。用户可后续手动补展示名。无需强制迁移脚本。
+  buildClaudeInferenceModels 退回用上游名当 labelOverride，视觉零变化。
+  用户可后续手动补展示名。无需强制迁移脚本。
 - 新增 desktop 节点的 model_mapping / model_labels 初始为 {}。
 
 ## 测试
@@ -107,13 +114,11 @@ model_labels:  { "claude-opus-4-7": "glm-5.2-loe" }  // id -> 展示名，新增
 ### 单元测试（tests/unit/gateway-config-store.test.mjs）
 - buildClaudeInferenceModels 读 model_labels：有 label 用 label，
   无 label 退回上游名。
-- allocateClaudePublicId：池内优先、池满递增、全局唯一。
-- 校验：model_labels key 不在 model_mapping 时不阻塞但告警。
+- allocateClaudePublicId：池内优先、池满返回 -max 变体、池+max 满
+  才版本递增、永不重复。
 
 ### 手动验证（8788 端口）
 - 用独立配置文件 + 独立 3P configLibrary 启动，避免污染主环境。
-- 配一个 desktop 节点：展示名 glm-5.2-loe / 上游 glm-5.2，
-  保存后查 3P config 文件确认 labelOverride=glm-5.2-loe、name=claude-xxx。
 - 配两个节点同上游不同展示名，确认分到不同 claude id、都路由到 glm-5.2。
 - 旧配置（无 model_labels）保存后确认 labelOverride 退回上游名。
 
