@@ -9,6 +9,7 @@ import {
   isCapabilityEndpoint,
   buildClaudeCodeModelRoutes,
   buildClaudeInferenceModels,
+  allocateClaudePublicId,
   getEndpointApiKey,
   loadGatewayState,
   copyClientEndpoints,
@@ -609,6 +610,93 @@ test("buildClaudeInferenceModels defaults supports1m to true when context_window
   ]);
   const model = models.find((m) => m.name === "claude-opus-4-8");
   assert.equal(model.supports1m, true);
+});
+
+test("buildClaudeInferenceModels uses model_labels for labelOverride", () => {
+  const models = buildClaudeInferenceModels([
+    {
+      model_mapping: {
+        "claude-opus-4-7": "glm-5.2",
+        "claude-opus-4-8": "grok-4.5",
+      },
+      model_labels: {
+        "claude-opus-4-7": "glm-5.2-loe",
+      },
+    },
+  ]);
+  const labelled = models.find((m) => m.name === "claude-opus-4-7");
+  const unlabelled = models.find((m) => m.name === "claude-opus-4-8");
+  assert.equal(labelled.labelOverride, "glm-5.2-loe");
+  // missing model_labels entry falls back to upstream model id
+  assert.equal(unlabelled.labelOverride, "grok-4.5");
+});
+
+test("buildClaudeInferenceModels falls back to upstream when model_labels absent", () => {
+  const models = buildClaudeInferenceModels([
+    {
+      model_mapping: {
+        "claude-opus-4-7": "glm-5.2",
+      },
+    },
+  ]);
+  const model = models.find((m) => m.name === "claude-opus-4-7");
+  assert.equal(model.labelOverride, "glm-5.2");
+});
+
+test("allocateClaudePublicId picks first unused built-in id", () => {
+  assert.equal(allocateClaudePublicId([]), "claude-opus-4-8");
+  assert.equal(
+    allocateClaudePublicId(["claude-opus-4-8", "claude-opus-4-7"]),
+    "claude-opus-4-6",
+  );
+});
+
+test("allocateClaudePublicId falls back to a versioned name when pool exhausted", () => {
+  const used = [
+    "claude-opus-4-8",
+    "claude-opus-4-7",
+    "claude-opus-4-6",
+    "claude-sonnet-4-5",
+    "claude-haiku-4-5",
+    "claude-haiku-4-0",
+  ];
+  const allocated = allocateClaudePublicId(used);
+  assert.ok(/^claude-[a-z0-9]+-\d+(-\d+)*$/.test(allocated), `got ${allocated}`);
+  assert.ok(!used.includes(allocated), `allocated ${allocated} should not be already used`);
+});
+
+test("allocateClaudePublicId never returns an already-used id", () => {
+  const used = ["claude-opus-4-8", "claude-opus-4-7", "claude-opus-4-6"];
+  for (let i = 0; i < 8; i += 1) {
+    const allocated = allocateClaudePublicId(used);
+    assert.ok(!used.includes(allocated), `allocated ${allocated} collided with used set`);
+    used.push(allocated);
+  }
+});
+
+test("validateGatewayConfig warns about stale model_labels keys on desktop", () => {
+  const issues = validateGatewayConfig({
+    clients: {
+      desktop: {
+        endpoints: [{
+          id: "ep_desktop",
+          name: "Third Party",
+          model_mapping: {
+            "claude-opus-4-7": "glm-5.2",
+          },
+          model_labels: {
+            "claude-opus-4-7": "glm-5.2-loe",
+            "claude-opus-4-0": "orphan-label",
+          },
+        }],
+      },
+    },
+  });
+  const stale = issues.filter((issue) => issue.code === "stale_model_label");
+  assert.deepEqual(stale.map((issue) => issue.model_id), ["claude-opus-4-0"]);
+  // stale_model_label is a warning, must NOT throw
+  const invalid = issues.filter((issue) => issue.code === "invalid_claude_model_name");
+  assert.deepEqual(invalid, []);
 });
 
 test("validateGatewayConfig rejects invalid context_window values", () => {

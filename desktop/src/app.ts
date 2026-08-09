@@ -320,6 +320,40 @@ function getUsedClaudeDesktopMappingSources() {
     }
     return used;
 }
+// Allocate a globally-unique claude public id for a Desktop mapping.
+// Mirrors lib/config allocateClaudePublicId: first unused built-in id, then
+// incrementing version numbers so it never collides with existing keys.
+function nextClaudeVersionGuess(modelId, used) {
+    const parsed = String(modelId || '').match(/^claude-([a-z0-9]+)-(\d+)(?:-(\d{1,2}))?/i);
+    const family = parsed?.[1]?.toLowerCase() || 'opus';
+    let major = Number(parsed?.[2] || 4);
+    let minor = parsed?.[3] == null ? null : Number(parsed[3]);
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+        const candidate = minor == null
+            ? `claude-${family}-${major}`
+            : `claude-${family}-${major}-${minor}`;
+        if (!used.has(candidate)) return candidate;
+        if (minor == null) {
+            major = Math.max(1, major - 1);
+        } else if (minor > 0) {
+            minor -= 1;
+        } else {
+            major = Math.max(1, major - 1);
+            minor = 9;
+        }
+    }
+    return `claude-${family}-${major}-${minor ?? 1}`;
+}
+
+function allocateDesktopClaudeId() {
+    const used = getUsedClaudeDesktopMappingSources();
+    for (const candidate of BUILTIN_CLAUDE_OFFICIAL_MODELS) {
+        if (!used.has(candidate)) return candidate;
+    }
+    const seed = BUILTIN_CLAUDE_OFFICIAL_MODELS[BUILTIN_CLAUDE_OFFICIAL_MODELS.length - 1];
+    return nextClaudeVersionGuess(seed, used);
+}
+
 
 function availableClaudeDesktopMappingSources(query = '') {
     const q = String(query || '').trim().toLowerCase();
@@ -3287,20 +3321,24 @@ return `<button type="button" class="ctx-window-option${_active ? ' is-active' :
                         ${!isCapabilityNode ? `<div class="model-suggest-meta" id="model-discovery-meta-${client}-${ep.id || ''}"></div>` : ''}
                     </div>
                     <div class="form-group full">
-                        <label>模型映射关系 (输入 原模型 → 映射模型，按回车添加)</label>
+                        <label>${client === 'desktop' ? '模型映射关系 (输入 展示名 -> 上游模型，按回车添加；Claude 官方 ID 自动分配)' : '模型映射关系 (输入 原模型 -> 映射模型，按回车添加)'}</label>
                         ${Object.keys(ep.model_mapping || {}).length > 0 ? `
                         <div class="tags-list">
-                            ${Object.entries(ep.model_mapping).map(([k, v]) => `
-                                <span class="tag">${escapeHtml(k)} <span style="color: var(--text-secondary); margin: 0 4px;">→</span> ${escapeHtml(v)} <button type="button" onclick='removeMapping(${JSON.stringify(client)}, ${index}, ${JSON.stringify(k)})' title="移除映射">×</button></span>
-                            `).join('')}
+                            ${Object.entries(ep.model_mapping).map(([k, v]) => {
+                                const display = client === 'desktop' ? (ep.model_labels?.[k] || v) : k;
+                                const titleAttr = client === 'desktop' ? `${display} -> ${v} (id: ${k})` : `${k} -> ${v}`;
+                                return `
+                                <span class="tag" title="${escapeHtml(titleAttr)}">${escapeHtml(display)} <span style="color: var(--text-secondary); margin: 0 4px;">-></span> ${escapeHtml(v)}${client === 'desktop' ? ` <span style="color: var(--text-tertiary); font-size: 10px;">${escapeHtml(k)}</span>` : ''} <button type="button" onclick='removeMapping(${JSON.stringify(client)}, ${index}, ${JSON.stringify(k)})' title="移除映射">×</button></span>
+                                `;
+                            }).join('')}
                         </div>
                         ` : ''}
                         <div class="add-mapping-row">
                             <div class="model-suggest-wrap" id="model-suggest-map-source-${client}-${ep.id || index}" style="flex:1">
-                              <input type="text" id="input-mapping-req-${client}-${index}" class="mono" placeholder="${client === 'desktop' ? '原模型 (Claude 官方名)' : '原模型 (如 claude-opus)'}" onkeydown="handleMappingInput(event, '${client}', ${index}, true)" onfocus="${client === 'desktop' ? `openModelSuggest('${client}', '${ep.id || ''}', 'map-source')` : ''}" oninput="${client === 'desktop' ? `renderMappingSourceSuggestions('${client}', '${ep.id || ''}')` : ''}">
-                              ${client === 'desktop' ? `<div class="model-suggest-popover" id="map-source-list-${client}-${ep.id || ''}"></div>` : ''}
+                              <input type="text" id="input-mapping-req-${client}-${index}" class="mono" placeholder="${client === 'desktop' ? '展示名 (如 glm-5.2-loe)' : '原模型 (如 claude-opus)'}" onkeydown="handleMappingInput(event, '${client}', ${index}, true)" onfocus="${client === 'desktop' ? '' : `openModelSuggest('${client}', '${ep.id || ''}', 'map-source')`}" oninput="${client === 'desktop' ? '' : `renderMappingSourceSuggestions('${client}', '${ep.id || ''}')`}">
+                              ${client === 'desktop' ? '' : `<div class="model-suggest-popover" id="map-source-list-${client}-${ep.id || ''}"></div>`}
                             </div>
-                            <span class="mapping-arrow">→</span>
+                            <span class="mapping-arrow">-></span>
                             <div class="model-suggest-wrap" id="model-suggest-map-target-${client}-${ep.id || index}" style="flex:1">
                               <input type="text" id="input-mapping-up-${client}-${index}" class="mono" placeholder="映射模型 (如 glm-5.2) + 回车" onkeydown="handleMappingInput(event, '${client}', ${index}, false)" onfocus="openModelSuggest('${client}', '${ep.id || ''}', 'map-target')" oninput="renderMappingTargetSuggestions('${client}', '${ep.id || ''}')">
                               <div class="model-suggest-popover" id="map-target-list-${client}-${ep.id || ''}"></div>
@@ -6397,17 +6435,28 @@ window.handleMappingInput = function(e, client, index, isReq) {
         const upInput = document.getElementById(`input-mapping-up-${client}-${index}`);
         if (!reqInput || !upInput) return;
 
-        const k = reqInput.value.trim();
+        const leftVal = reqInput.value.trim();
         const v = upInput.value.trim();
 
-        if (isReq && k && !v) {
+        // For desktop the left field is the display name (label); the claude
+        // public id is allocated automatically. For other clients the left
+        // field remains the raw mapping key (e.g. a claude-xxx name).
+        if (isReq && leftVal && !v) {
             upInput.focus();
             return;
         }
 
-        if (k && v) {
-            config.clients[client].endpoints[index].model_mapping = config.clients[client].endpoints[index].model_mapping || {};
-            config.clients[client].endpoints[index].model_mapping[k] = v;
+        if (leftVal && v) {
+            const ep = config.clients[client].endpoints[index];
+            ep.model_mapping = ep.model_mapping || {};
+            if (client === 'desktop') {
+                const claudeId = allocateDesktopClaudeId();
+                ep.model_mapping[claudeId] = v;
+                ep.model_labels = ep.model_labels || {};
+                ep.model_labels[claudeId] = leftVal;
+            } else {
+                ep.model_mapping[leftVal] = v;
+            }
             render();
             setTimeout(() => {
                 const input = document.getElementById(`input-mapping-req-${client}-${index}`);
@@ -6463,10 +6512,16 @@ window.togglePasswordVisibility = async function(client, index, inputId) {
 };
 
 window.removeMapping = function(client, index, key) {
-    if (config.clients[client].endpoints[index].model_mapping) {
-        delete config.clients[client].endpoints[index].model_mapping[key];
-        render();
+    const ep = config.clients[client].endpoints[index];
+    if (ep.model_mapping) {
+        delete ep.model_mapping[key];
     }
+    // Desktop keeps a parallel model_labels map keyed by the same claude id;
+    // remove the matching display-name entry so no stale label remains.
+    if (client === 'desktop' && ep.model_labels) {
+        delete ep.model_labels[key];
+    }
+    render();
 };
 
        window.saveNode = async function(client, index) {
