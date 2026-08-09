@@ -66,3 +66,40 @@ test("unknown model returns source: unknown", () => {
   assert.equal(price.prompt, 0);
   assert.equal(price.completion, 0);
 });
+
+test("variant suffix max maps to base model price", () => {
+  // e.g. claude-opus-4-7-max should share pricing with claude-opus-4-7
+  // when only the packaging suffix differs.
+  const base = engine.resolvePrice("claude-3-5-sonnet");
+  const variant = engine.resolvePrice("claude-3-5-sonnet-max");
+  assert.equal(variant.source, base.source);
+  assert.equal(variant.currency, base.currency);
+  assert.equal(variant.prompt, base.prompt);
+  assert.equal(variant.completion, base.completion);
+});
+
+test("variant suffix ag maps to base model price", () => {
+  const base = engine.resolvePrice("glm-5.2");
+  const variant = engine.resolvePrice("glm-5.2-ag");
+  assert.equal(variant.source, base.source);
+  assert.equal(variant.currency, base.currency);
+  assert.equal(variant.prompt, base.prompt);
+  assert.equal(variant.completion, base.completion);
+});
+
+test("date + variant suffixes both collapse to base model", () => {
+  const base = engine.resolvePrice("claude-3-5-sonnet");
+  const variant = engine.resolvePrice("claude-3-5-sonnet-max-20241022");
+  assert.equal(variant.source, base.source);
+  assert.equal(variant.prompt, base.prompt);
+  assert.equal(variant.completion, base.completion);
+});
+
+test("identity segments like mini/pro remain distinct models", () => {
+  // gpt-4o-mini must NOT collapse to gpt-4o
+  const mini = engine.resolvePrice("gpt-4o-mini");
+  const full = engine.resolvePrice("gpt-4o");
+  assert.notEqual(mini.prompt, full.prompt);
+  assert.equal(mini.source, "default");
+});
+
