@@ -26,6 +26,13 @@ function findHexagram(upper: string, lower: string): IchingHexagram | undefined 
   return HEXAGRAMS.find((h) => h.upperTrigram === upper && h.lowerTrigram === lower);
 }
 
+function prefersReducedMotion(): boolean {
+  return typeof window !== "undefined"
+    && typeof window.matchMedia === "function"
+    && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+
 
 const TRIGRAM_GLYPH: Record<string, string> = {
   "\u4E7E": "\u2630", // 乾 ☰
@@ -259,25 +266,27 @@ function currentHexagram(): IchingHexagram | undefined {
  */
 function yaoLine(bit: number, x: number, width: number, y: number, sw: number, hot: boolean): string {
   const stroke = hot ? "var(--iching-glow)" : "var(--iching-yao)";
-  const mainOp = hot ? 1 : 0.88;
+  const mainOp = hot ? 1 : (visualSkin === "cyber" ? 0.78 : 0.88);
+  const glowW = visualSkin === "cyber" ? sw + 2.2 : sw + 4;
+  const glowOp = visualSkin === "cyber" ? (hot ? 0.55 : 0.18) : (hot ? 0.45 : 0);
 
   if (bit === 1) {
     // Yang / 九: solid bar. No round caps (they fake continuity across sectors).
     return (
-      (hot
-        ? `<line x1="${x}" y1="${y}" x2="${x + width}" y2="${y}" stroke="var(--iching-glow-soft)" stroke-width="${sw + 4}" stroke-linecap="butt" opacity="0.45"/>`
+      (glowOp > 0
+        ? `<line x1="${x}" y1="${y}" x2="${x + width}" y2="${y}" stroke="var(--iching-glow-soft)" stroke-width="${glowW}" stroke-linecap="butt" opacity="${glowOp}"/>`
         : "") +
       `<line x1="${x}" y1="${y}" x2="${x + width}" y2="${y}" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="butt" opacity="${mainOp}"/>`
     );
   }
 
   // Yin / 六: two short bars with a large center gap that must stay visible.
-  const gap = width * 0.4;
+  const gap = width * (visualSkin === "cyber" ? 0.36 : 0.4);
   const seg = (width - gap) / 2;
   return (
-    (hot
-      ? `<line x1="${x}" y1="${y}" x2="${x + seg}" y2="${y}" stroke="var(--iching-glow-soft)" stroke-width="${sw + 4}" stroke-linecap="butt" opacity="0.45"/>` +
-        `<line x1="${x + seg + gap}" y1="${y}" x2="${x + width}" y2="${y}" stroke="var(--iching-glow-soft)" stroke-width="${sw + 4}" stroke-linecap="butt" opacity="0.45"/>`
+    (glowOp > 0
+      ? `<line x1="${x}" y1="${y}" x2="${x + seg}" y2="${y}" stroke="var(--iching-glow-soft)" stroke-width="${glowW}" stroke-linecap="butt" opacity="${glowOp}"/>` +
+        `<line x1="${x + seg + gap}" y1="${y}" x2="${x + width}" y2="${y}" stroke="var(--iching-glow-soft)" stroke-width="${glowW}" stroke-linecap="butt" opacity="${glowOp}"/>`
       : "") +
     `<line x1="${x}" y1="${y}" x2="${x + seg}" y2="${y}" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="butt" opacity="${mainOp}"/>` +
     `<line x1="${x + seg + gap}" y1="${y}" x2="${x + width}" y2="${y}" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="butt" opacity="${mainOp}"/>`
@@ -288,10 +297,12 @@ function trigramStamp(trigram: string, maxWidth: number, hot: boolean): string {
   const bits = TRIGRAM_BITS[trigram];
   if (!bits) return "";
   // Hard-cap width by sector chord so neighboring yao never fuse into rings.
-  const w = Math.min(maxWidth * (hot ? 0.72 : 0.58), hot ? 24 : 18);
+  // Cyber skin: thinner instrument-like yao, closer to the reference disk.
+  const cyber = visualSkin === "cyber";
+  const w = Math.min(maxWidth * (hot ? (cyber ? 0.66 : 0.72) : (cyber ? 0.5 : 0.58)), hot ? (cyber ? 20 : 24) : (cyber ? 15 : 18));
   const x = -w / 2;
-  const gap = hot ? 9.2 : 7.8;
-  const sw = hot ? 4.4 : 3.4;
+  const gap = cyber ? (hot ? 7.4 : 6.4) : (hot ? 9.2 : 7.8);
+  const sw = cyber ? (hot ? 2.6 : 1.7) : (hot ? 4.4 : 3.4);
   // Center the 3-line stack on the sector midpoint.
   const startY = -gap;
   return bits.map((b, i) => yaoLine(b, x, w, startY + i * gap, sw, hot)).join("");
@@ -301,7 +312,8 @@ function trigramStamp(trigram: string, maxWidth: number, hot: boolean): string {
 function verticalLabel(name: string, x: number, y: number, angle: number, hot: boolean): string {
   const cls = hot ? "iching-label is-hot" : "iching-label";
   const chars = Array.from(name);
-  const step = hot ? 20 : 12;
+  const cyber = visualSkin === "cyber";
+  const step = hot ? (cyber ? 16 : 20) : (cyber ? 10 : 12);
   const start = -((chars.length - 1) * step) / 2;
   let texts = "";
   for (let i = 0; i < chars.length; i++) {
@@ -314,6 +326,84 @@ function verticalLabel(name: string, x: number, y: number, angle: number, hot: b
 // --- Disk construction ---
 
 function buildBackground(): string {
+  if (visualSkin === "cyber") {
+    // Night-sky instrument: material glow + dense layers. No binary crumb noise.
+    return `
+  <defs>
+    <radialGradient id="iching-disc-bg" cx="50%" cy="45%" r="80%">
+      <stop offset="0%" stop-color="#1a4d86"/>
+      <stop offset="14%" stop-color="#0d2f58"/>
+      <stop offset="34%" stop-color="#071c36"/>
+      <stop offset="58%" stop-color="#04101f"/>
+      <stop offset="82%" stop-color="#020914"/>
+      <stop offset="100%" stop-color="#01040a"/>
+    </radialGradient>
+    <radialGradient id="iching-core-bloom" cx="50%" cy="50%" r="52%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>
+      <stop offset="8%" stop-color="#e9feff" stop-opacity="0.95"/>
+      <stop offset="18%" stop-color="#7af7ff" stop-opacity="0.72"/>
+      <stop offset="34%" stop-color="#00e5ff" stop-opacity="0.42"/>
+      <stop offset="58%" stop-color="#0088ff" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#003a66" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="iching-material-sheen" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#9af9ff" stop-opacity="0.2"/>
+      <stop offset="35%" stop-color="#00f0ff" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#00f0ff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="iching-rim-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="62%" stop-color="#00f0ff" stop-opacity="0"/>
+      <stop offset="82%" stop-color="#00f0ff" stop-opacity="0.18"/>
+      <stop offset="94%" stop-color="#9af9ff" stop-opacity="0.42"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.2"/>
+    </radialGradient>
+    <filter id="iching-soft-glow" x="-70%" y="-70%" width="240%" height="240%">
+      <feGaussianBlur stdDeviation="2.1" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="iching-arc-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2.8" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="iching-core-soft" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="3.2" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- deep night body -->
+  <circle cx="0" cy="0" r="${R_OUTER + 86}" fill="url(#iching-disc-bg)"/>
+  <circle cx="0" cy="0" r="${R_OUTER + 86}" fill="url(#iching-rim-glow)"/>
+  <circle cx="0" cy="0" r="${R_OUTER + 70}" fill="url(#iching-material-sheen)"/>
+  ${buildStarDust()}
+
+  <!-- multi luminous rims: glow first, then hard edge -->
+  <circle cx="0" cy="0" r="${R_OUTER + 74}" fill="none" stroke="rgba(154,249,255,0.22)" stroke-width="10" filter="url(#iching-soft-glow)"/>
+  <circle cx="0" cy="0" r="${R_OUTER + 70}" fill="none" stroke="rgba(180,250,255,0.7)" stroke-width="2.4" filter="url(#iching-soft-glow)"/>
+  <circle cx="0" cy="0" r="${R_OUTER + 63}" fill="none" stroke="rgba(0,240,255,0.35)" stroke-width="1.2"/>
+  <circle cx="0" cy="0" r="${R_OUTER + 56}" fill="none" stroke="rgba(186,240,255,0.16)" stroke-width="0.7" stroke-dasharray="1.5 5"/>
+  <circle cx="0" cy="0" r="${R_OUTER + 48}" fill="none" stroke="rgba(0,220,255,0.28)" stroke-width="0.9"/>
+  <circle cx="0" cy="0" r="${R_OUTER + 40}" fill="none" stroke="rgba(120,220,255,0.12)" stroke-width="0.6"/>
+
+  ${buildEnergyArcs()}
+  ${buildMicroTickRing()}
+
+  <!-- strong energy core under taiji -->
+  <circle cx="0" cy="0" r="${HUB_R + 70}" fill="url(#iching-core-bloom)" filter="url(#iching-core-soft)"/>
+  <circle cx="0" cy="0" r="${HUB_R + 42}" fill="none" stroke="rgba(255,255,255,0.28)" stroke-width="2" filter="url(#iching-soft-glow)"/>
+  <circle cx="0" cy="0" r="${HUB_R + 28}" fill="none" stroke="rgba(0,240,255,0.35)" stroke-width="1.2"/>
+`;
+  }
+
   return `
   <defs>
     <radialGradient id="iching-disc-bg" cx="50%" cy="46%" r="68%">
@@ -339,11 +429,84 @@ function buildBackground(): string {
   <circle cx="0" cy="0" r="${R_OUTER + 48}" fill="none" stroke="var(--iching-ring-border)" stroke-width="1"/>`;
 }
 
-/**
- * Build one self-rotating plate.
- * Marks are painted in plate-local space; the whole <g> rotates around (0,0).
- * That is the self-rotation: center fixed, plate spins in place.
- */
+function buildStarDust(): string {
+  // Stars only on the disk face. Nebula belongs to the outer stage background, not over yao.
+  let dots = "";
+  for (let i = 0; i < 180; i++) {
+    const a = (i * 137.508) % 360;
+    const rad = ((a - 90) * Math.PI) / 180;
+    // Keep most stars near outer rim / gaps; avoid dense clouding over readable yao bands.
+    const rr = 95 + ((i * 59) % 360);
+    const x = rr * Math.cos(rad);
+    const y = rr * Math.sin(rad);
+    const s = 0.22 + (i % 6) * 0.22;
+    const op = 0.07 + (i % 7) * 0.045;
+    dots += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${s.toFixed(2)}" fill="rgba(220,245,255,${op.toFixed(2)})"/>`;
+    if (i % 18 === 0) {
+      dots += `<circle cx="${(x * 0.96).toFixed(1)}" cy="${(y * 0.96).toFixed(1)}" r="${(s + 0.4).toFixed(2)}" fill="rgba(255,255,255,${Math.min(0.8, op + 0.22).toFixed(2)})"/>`;
+    }
+  }
+  return `<g class="iching-stardust">${dots}</g>`;
+}
+
+function buildEnergyArcs(): string {
+  const arcs = [
+    { a0: -36, a1: 22, r: R_OUTER + 64, w: 2.2, op: 0.5 },
+    { a0: 40, a1: 88, r: R_OUTER + 58, w: 1.8, op: 0.42 },
+    { a0: 110, a1: 158, r: R_OUTER + 66, w: 2.0, op: 0.46 },
+    { a0: 175, a1: 228, r: R_OUTER + 54, w: 1.7, op: 0.38 },
+    { a0: 245, a1: 292, r: R_OUTER + 62, w: 1.9, op: 0.44 },
+    { a0: 310, a1: 350, r: R_OUTER + 50, w: 1.5, op: 0.34 },
+    { a0: 8, a1: 46, r: (R_OUTER + R_OUTER_INNER) / 2 + 4, w: 1.3, op: 0.28 },
+    { a0: 130, a1: 172, r: (R_OUTER + R_OUTER_INNER) / 2 - 6, w: 1.2, op: 0.24 },
+    { a0: 210, a1: 255, r: (R_INNER + R_INNER_INNER) / 2 + 18, w: 1.1, op: 0.24 },
+  ];
+  let out = "";
+  for (const arc of arcs) {
+    const a0 = ((arc.a0 - 90) * Math.PI) / 180;
+    const a1 = ((arc.a1 - 90) * Math.PI) / 180;
+    const x0 = arc.r * Math.cos(a0);
+    const y0 = arc.r * Math.sin(a0);
+    const x1 = arc.r * Math.cos(a1);
+    const y1 = arc.r * Math.sin(a1);
+    const am = (((arc.a0 + arc.a1) / 2 - 90) * Math.PI) / 180;
+    const rm = arc.r + 12;
+    const mx = rm * Math.cos(am);
+    const my = rm * Math.sin(am);
+    // soft bloom under hard filament = material/energy light
+    out += `<path d="M ${x0.toFixed(1)} ${y0.toFixed(1)} Q ${mx.toFixed(1)} ${my.toFixed(1)} ${x1.toFixed(1)} ${y1.toFixed(1)}" fill="none" stroke="rgba(120,230,255,${arc.op * 0.55})" stroke-width="${arc.w + 3}" stroke-linecap="round" filter="url(#iching-arc-glow)" class="iching-energy-arc"/>`;
+    out += `<path d="M ${x0.toFixed(1)} ${y0.toFixed(1)} Q ${mx.toFixed(1)} ${my.toFixed(1)} ${x1.toFixed(1)} ${y1.toFixed(1)}" fill="none" stroke="rgba(230,255,255,${Math.min(0.9, arc.op + 0.15)})" stroke-width="${Math.max(0.7, arc.w - 0.5)}" stroke-linecap="round" class="iching-energy-arc"/>`;
+  }
+  return `<g class="iching-energy-arcs" pointer-events="none">${out}</g>`;
+}
+
+function buildMicroTickRing(): string {
+  // Dense instrument rings only — no binary crumb text (those read as noisy red-box junk).
+  const rings = [
+    { r1: HUB_R + 18, r2: HUB_R + 26, n: 180, majorEvery: 5 },
+    { r1: HUB_R + 30, r2: HUB_R + 40, n: 160, majorEvery: 4 },
+    { r1: HUB_R + 44, r2: HUB_R + 54, n: 144, majorEvery: 4 },
+    { r1: HUB_R + 58, r2: HUB_R + 68, n: 128, majorEvery: 4 },
+    { r1: HUB_R + 72, r2: HUB_R + 80, n: 96, majorEvery: 3 },
+  ];
+  let ticks = "";
+  for (const ring of rings) {
+    // soft band fill for material density
+    ticks += `<circle cx="0" cy="0" r="${(ring.r1 + ring.r2) / 2}" fill="none" stroke="rgba(0,180,255,0.06)" stroke-width="${ring.r2 - ring.r1}"/>`;
+    ticks += `<circle cx="0" cy="0" r="${ring.r1}" fill="none" stroke="rgba(120,220,255,0.14)" stroke-width="0.45"/>`;
+    ticks += `<circle cx="0" cy="0" r="${ring.r2}" fill="none" stroke="rgba(0,240,255,0.12)" stroke-width="0.45"/>`;
+    for (let i = 0; i < ring.n; i++) {
+      const a = ((i * 360) / ring.n - 90) * Math.PI / 180;
+      const major = i % ring.majorEvery === 0;
+      const inner = major ? ring.r1 : ring.r1 + 2;
+      const outer = major ? ring.r2 : ring.r2 - 1.8;
+      ticks += `<line x1="${(inner * Math.cos(a)).toFixed(2)}" y1="${(inner * Math.sin(a)).toFixed(2)}" x2="${(outer * Math.cos(a)).toFixed(2)}" y2="${(outer * Math.sin(a)).toFixed(2)}" stroke="${major ? "rgba(180,245,255,0.38)" : "rgba(0,220,255,0.12)"}" stroke-width="${major ? 0.55 : 0.25}"/>`;
+    }
+  }
+  return `<g class="iching-micro-ring">${ticks}</g>`;
+}
+
+
 function buildPlate(isUpper: boolean): string {
   const rOuter = isUpper ? R_OUTER : R_INNER;
   const rInner = isUpper ? R_OUTER_INNER : R_INNER_INNER;
@@ -354,10 +517,23 @@ function buildPlate(isUpper: boolean): string {
   const maxYaoW = 2 * midR * Math.sin((Math.PI / 180) * (SLOT / 2));
 
   // Plate body (rotates with content — solid disk face).
-  let body =
-    `<circle cx="0" cy="0" r="${midR}" fill="none" stroke="var(--iching-ring-bg)" stroke-width="${rOuter - rInner}"/>` +
-    `<circle cx="0" cy="0" r="${rOuter}" fill="none" stroke="var(--iching-ring-border)" stroke-width="1.4"/>` +
-    `<circle cx="0" cy="0" r="${rInner}" fill="none" stroke="var(--iching-ring-border)" stroke-width="1.4"/>`;
+  let body = "";
+  if (visualSkin === "cyber") {
+    // Material energy band: soft fill + bloom rim + thin hard edge.
+    body =
+      `<circle cx="0" cy="0" r="${midR}" fill="none" stroke="rgba(0,180,255,0.07)" stroke-width="${rOuter - rInner}"/>` +
+      `<circle cx="0" cy="0" r="${rOuter}" fill="none" stroke="rgba(120,230,255,0.28)" stroke-width="4.5" filter="url(#iching-soft-glow)"/>` +
+      `<circle cx="0" cy="0" r="${rOuter}" fill="none" stroke="rgba(220,255,255,0.75)" stroke-width="1.15"/>` +
+      `<circle cx="0" cy="0" r="${rOuter - 4}" fill="none" stroke="rgba(0,240,255,0.18)" stroke-width="0.55"/>` +
+      `<circle cx="0" cy="0" r="${rInner}" fill="none" stroke="rgba(120,230,255,0.22)" stroke-width="3.2" filter="url(#iching-soft-glow)"/>` +
+      `<circle cx="0" cy="0" r="${rInner}" fill="none" stroke="rgba(200,250,255,0.55)" stroke-width="0.9"/>` +
+      `<circle cx="0" cy="0" r="${rInner + 4}" fill="none" stroke="rgba(186,240,255,0.12)" stroke-width="0.5"/>`;
+  } else {
+    body =
+      `<circle cx="0" cy="0" r="${midR}" fill="none" stroke="var(--iching-ring-bg)" stroke-width="${rOuter - rInner}"/>` +
+      `<circle cx="0" cy="0" r="${rOuter}" fill="none" stroke="var(--iching-ring-border)" stroke-width="1.4"/>` +
+      `<circle cx="0" cy="0" r="${rInner}" fill="none" stroke="var(--iching-ring-border)" stroke-width="1.4"/>`;
+  }
 
   // Quiet sector ticks.
   let ticks = "";
@@ -367,7 +543,9 @@ function buildPlate(isUpper: boolean): string {
     const y1 = rInner * Math.sin(a);
     const x2 = rOuter * Math.cos(a);
     const y2 = rOuter * Math.sin(a);
-    ticks += `<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="var(--iching-divider)" stroke-width="0.6"/>`;
+    const tickStroke = visualSkin === "cyber" ? "rgba(0,240,255,0.12)" : "var(--iching-divider)";
+    const tickW = visualSkin === "cyber" ? 0.45 : 0.6;
+    ticks += `<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="${tickStroke}" stroke-width="${tickW}"/>`;
   }
 
   let marks = "";
@@ -386,7 +564,12 @@ function buildPlate(isUpper: boolean): string {
     if (hot) {
       const bw = Math.min(maxYaoW * 0.9, 28);
       const bh = 32;
-      marks += `<rect x="${(-bw / 2).toFixed(1)}" y="${(-bh / 2).toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="4" fill="var(--iching-hot-fill)" stroke="var(--iching-glow)" stroke-width="1.3"/>`;
+      if (visualSkin === "cyber") {
+        // Slim neon frame instead of heavy card fill.
+        marks += `<rect x="${(-bw / 2).toFixed(1)}" y="${(-bh / 2).toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="3" fill="rgba(0,240,255,0.05)" stroke="rgba(0,240,255,0.75)" stroke-width="0.9"/>`;
+      } else {
+        marks += `<rect x="${(-bw / 2).toFixed(1)}" y="${(-bh / 2).toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="4" fill="var(--iching-hot-fill)" stroke="var(--iching-glow)" stroke-width="1.3"/>`;
+      }
     }
     marks += trigramStamp(trigram, maxYaoW, hot);
     marks += `</g>`;
@@ -408,29 +591,69 @@ function buildPlate(isUpper: boolean): string {
 }
 
 function buildHub(): string {
-  const r = HUB_R;
+  const r = visualSkin === "cyber" ? HUB_R + 6 : HUB_R + 26;
+  const half = r / 2;
+  // Eye radius ~10% of disk radius.
+  const eye = Math.max(4.5, r * 0.1);
+
+  // Standard, unambiguous taiji construction (vertical):
+  // 1) black base disk
+  // 2) white right half
+  // 3) white upper head circle + black lower head circle
+  // 4) black eye in white head, white eye in black head
+  //
+  // Hardcode #000/#fff so eyes never vanish if CSS vars fail.
+  // Spin with SVG animateTransform around (0,0) only.
+  const spin = prefersReducedMotion()
+    ? ""
+    : `<animateTransform attributeName="transform" type="rotate" from="0 0 0" to="360 0 0" dur="28s" repeatCount="indefinite"/>`;
+
+  const cyberAura = visualSkin === "cyber"
+    ? `<circle cx="0" cy="0" r="${r + 40}" fill="rgba(0,220,255,0.08)" filter="url(#iching-core-soft)"/>
+       <circle cx="0" cy="0" r="${r + 28}" fill="none" stroke="rgba(0,240,255,0.25)" stroke-width="18" opacity="0.75" filter="url(#iching-soft-glow)"/>
+       <circle cx="0" cy="0" r="${r + 18}" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="3.2" filter="url(#iching-soft-glow)"/>
+       <circle cx="0" cy="0" r="${r + 10}" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.2"/>`
+    : "";
+
   return `
   <g class="iching-taiji">
-    <circle cx="0" cy="0" r="${r + 10}" fill="var(--iching-hub)" stroke="var(--iching-ring-border)" stroke-width="1.2"/>
-    <circle cx="0" cy="0" r="${r}" fill="none" stroke="var(--iching-taiji-stroke)" stroke-width="2.2" filter="url(#iching-soft-glow)"/>
-    <path d="M 0 ${-r} A ${r} ${r} 0 0 1 0 ${r} A ${r / 2} ${r / 2} 0 0 1 0 0 A ${r / 2} ${r / 2} 0 0 0 0 ${-r} Z"
-      fill="none" stroke="var(--iching-taiji-stroke)" stroke-width="2.2" filter="url(#iching-soft-glow)"/>
-    <circle cx="0" cy="${-r / 2}" r="4.5" fill="var(--iching-taiji-stroke)"/>
-    <circle cx="0" cy="${r / 2}" r="4.5" fill="var(--iching-taiji-stroke)"/>
+    <circle cx="0" cy="0" r="${r + 11}" fill="var(--iching-hub)" stroke="var(--iching-ring-border)" stroke-width="1.2"/>
+    ${cyberAura}
+    <g class="iching-taiji-spin" transform="rotate(0 0 0)">
+      ${spin}
+      <!-- 1. yin base -->
+      <circle class="iching-taiji-disk" cx="0" cy="0" r="${r}" fill="#000000"/>
+      <!-- 2. yang half (right) -->
+      <path class="iching-taiji-yang-half" d="M 0 ${-r} A ${r} ${r} 0 0 1 0 ${r} Z" fill="#ffffff"/>
+      <!-- 3. heads -->
+      <circle class="iching-taiji-head-yang" cx="0" cy="${-half}" r="${half}" fill="#ffffff"/>
+      <circle class="iching-taiji-head-yin" cx="0" cy="${half}" r="${half}" fill="#000000"/>
+      <!-- 4. eyes -->
+      <circle class="iching-taiji-eye-yin" cx="0" cy="${-half}" r="${eye}" fill="#000000"/>
+      <circle class="iching-taiji-eye-yang" cx="0" cy="${half}" r="${eye}" fill="#ffffff"/>
+      <!-- outer rim -->
+      <circle cx="0" cy="0" r="${r}" fill="none" stroke="${visualSkin === "cyber" ? "rgba(223,252,255,0.55)" : "rgba(255,255,255,0.35)"}" stroke-width="1.4"/>
+    </g>
   </g>`;
 }
 
 function renderRingSVG(): string {
-  // Order: bg (fixed) -> plates (self-spin around Taiji center) -> hub (fixed).
-  // No external arrow: top reading is indicated by the hot-slot highlight.
+  const topMarker = visualSkin === "cyber"
+    ? `<g class="iching-top-marker" pointer-events="none">
+        <path d="M -34 ${-R_OUTER - 10} A ${R_OUTER + 16} ${R_OUTER + 16} 0 0 1 34 ${-R_OUTER - 10}" fill="none" stroke="rgba(0,240,255,0.28)" stroke-width="14" stroke-linecap="round"/>
+        <path d="M -20 ${-R_OUTER - 6} A ${R_OUTER + 10} ${R_OUTER + 10} 0 0 1 20 ${-R_OUTER - 6}" fill="none" stroke="#9af9ff" stroke-width="2" filter="url(#iching-soft-glow)"/>
+        <circle cx="0" cy="${-R_OUTER - 2}" r="3" fill="#ffffff"/>
+      </g>`
+    : "";
   const content =
     buildBackground() +
     buildPlate(true) +
     buildPlate(false) +
-    buildHub();
+    buildHub() +
+    topMarker;
   const vb = -(R_OUTER + VIEW_PAD);
   const size = (R_OUTER + VIEW_PAD) * 2;
-  return `<svg class="iching-ring-svg" viewBox="${vb} ${vb} ${size} ${size}" preserveAspectRatio="xMidYMid meet">${content}</svg>`;
+  return `<svg class="iching-ring-svg" data-skin="${visualSkin}" viewBox="${vb} ${vb} ${size} ${size}" preserveAspectRatio="xMidYMid meet">${content}</svg>`;
 }
 
 // --- Interaction: true in-place self-rotation ---
@@ -462,12 +685,15 @@ function paintPlates(svg: SVGSVGElement) {
   const upper = svg.querySelector<SVGGElement>('.iching-ring[data-ring="upper"]');
   const lower = svg.querySelector<SVGGElement>('.iching-ring[data-ring="lower"]');
   // Replace whole plates to refresh hot stamps. Keep hub/pointer untouched.
+  // Important: do NOT paint full 6-yao hexagram glyphs here — outer/inner plates are 3-yao only.
   const tmp = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   tmp.innerHTML = buildPlate(true) + buildPlate(false);
   const newUpper = tmp.querySelector<SVGGElement>('.iching-ring[data-ring="upper"]');
   const newLower = tmp.querySelector<SVGGElement>('.iching-ring[data-ring="lower"]');
   if (upper && newUpper) upper.replaceWith(newUpper);
   if (lower && newLower) lower.replaceWith(newLower);
+  // Cleanup any leftover decorative glyph belt from previous builds.
+  svg.querySelectorAll(".iching-glyph-ring").forEach((el) => el.remove());
 }
 
 function updateTransformsOnly() {
@@ -477,16 +703,71 @@ function updateTransformsOnly() {
   if (l) l.setAttribute("transform", plateTransform(lowerState.rotation));
 }
 
-function updateDisplay() {
+let lastPaintSlotU = -1;
+let lastPaintSlotL = -1;
+let lastDisplayKey = "";
+let wasResting = true;
+/** Visual comparison skin: classic | cyber */
+let visualSkin: "classic" | "cyber" = "classic";
+
+function currentDisplayKey(h: IchingHexagram | undefined): string {
+  return h ? `${h.number}:${h.name}:${h.upperTrigram}:${h.lowerTrigram}` : "";
+}
+
+function pulseClass(el: Element | null, className: string, ms = 520): void {
+  if (!el) return;
+  // Even with reduced motion, apply a single-frame class so feedback still exists.
+  el.classList.remove(className);
+  void (el as HTMLElement).offsetWidth;
+  el.classList.add(className);
+  window.setTimeout(() => el.classList.remove(className), prefersReducedMotion() ? 180 : ms);
+}
+
+function triggerSettlePulse(reason: "settle" | "reset" | "enter" = "settle"): void {
+  // Premium/quiet: only a soft breath on the active slot + taiji.
+  // No full-disk flash, no dock neon burst.
+  const hotSlots = document.querySelectorAll(".iching-slot.is-hot");
+  const hotLabels = document.querySelectorAll(".iching-label.is-hot");
+  const hub = document.querySelector(".iching-taiji");
+
+  pulseClass(hub, "is-hub-pulse", 900);
+  hotSlots.forEach((el) => pulseClass(el, "is-hit-pulse", 720));
+  hotLabels.forEach((el) => pulseClass(el, "is-hit-pulse", 720));
+
+  if (reason === "reset" || reason === "enter") {
+    pulseClass(document.getElementById("iching-current-name"), "is-text-swap", 380);
+    pulseClass(document.getElementById("iching-current-sub"), "is-text-swap", 380);
+  }
+}
+
+function updateDisplay(options?: { animate?: boolean }): void {
   const current = currentHexagram();
   const name = document.getElementById("iching-current-name");
   const sub = document.getElementById("iching-current-sub");
+  const key = currentDisplayKey(current);
+  const changed = key !== lastDisplayKey;
+
   if (name) name.textContent = current ? formatDockTitle(current) : "\u7EC4\u5408\u65E0\u6548";
   if (sub) sub.textContent = current ? formatDockSub(current) : "";
+
+  if (changed) {
+    lastDisplayKey = key;
+    if (options?.animate !== false) {
+      pulseClass(name, "is-text-swap", 420);
+      pulseClass(sub, "is-text-swap", 420);
+      pulseClass(document.querySelector(".iching-dock-info"), "is-text-swap", 420);
+    }
+  }
 }
 
-let lastPaintSlotU = -1;
-let lastPaintSlotL = -1;
+function platesAreResting(): boolean {
+  return !upperState.dragging && !lowerState.dragging
+    && !upperState.animating && !lowerState.animating
+    && Math.abs(upperState.velocity) <= 0.07
+    && Math.abs(lowerState.velocity) <= 0.07
+    && Math.abs(upperState.rotation - nearestSlotRotation(upperState.rotation)) < 0.08
+    && Math.abs(lowerState.rotation - nearestSlotRotation(lowerState.rotation)) < 0.08;
+}
 
 function refreshVisual(forcePaint = false) {
   const slotU = slotAtPointer(upperState.rotation);
@@ -500,7 +781,18 @@ function refreshVisual(forcePaint = false) {
   } else {
     updateTransformsOnly();
   }
+
   updateDisplay();
+
+  // Edge-trigger: every time plates go from moving -> resting, fire FX.
+  // Important: outer-ring linked motion often keeps the same hexagram, so we
+  // must NOT require the hexagram identity to change.
+  const resting = platesAreResting();
+  if (resting && !wasResting) {
+    // Wait one frame so freshly painted hot slots exist in the DOM.
+    requestAnimationFrame(() => triggerSettlePulse("settle"));
+  }
+  wasResting = resting;
 }
 
 function applyInertia() {
@@ -665,7 +957,10 @@ function animateReset() {
   upperState.velocity = 0;
   lowerState.velocity = 0;
 
-  const dur = 720;
+  const hub = document.querySelector(".iching-taiji");
+  pulseClass(hub, "is-hub-pulse", 1000);
+
+  const dur = prefersReducedMotion() ? 1 : 860;
   const t0 = performance.now();
 
   function step(now: number) {
@@ -678,6 +973,7 @@ function animateReset() {
       lowerState.rotation = 0;
       upperState.animating = false;
       lowerState.animating = false;
+      wasResting = false;
       refreshVisual(true);
       return;
     }
@@ -768,6 +1064,8 @@ export function renderIchingDetail(): void {
   targetScale = 1;
   lastPaintSlotU = -1;
   lastPaintSlotL = -1;
+  lastDisplayKey = "";
+  wasResting = true;
 
   const current = currentHexagram();
 
@@ -777,7 +1075,7 @@ export function renderIchingDetail(): void {
       \u8FD4\u56DE\u5DE5\u5177\u5217\u8868
     </button>
 
-    <div class="iching-main">
+    <div class="iching-main" data-skin="${visualSkin}">
       <div class="iching-stage">
         <div class="iching-ring-container" id="iching-ring-container">
           ${renderRingSVG()}
@@ -804,9 +1102,12 @@ export function renderIchingDetail(): void {
   `;
 
   setupDrag(detail);
+  bindIchingSkinHotkey();
   applyViewScale(true);
   // Ensure hot slot paint matches initial state.
   refreshVisual(true);
+  // Entrance pulse so FX are obvious even before the first drag.
+  requestAnimationFrame(() => triggerSettlePulse("enter"));
 }
 
 // --- Global handlers ---
@@ -815,16 +1116,102 @@ export function renderIchingDetail(): void {
   animateReset();
 };
 
+let skinHotkeyBound = false;
+
+function applyIchingSkin(next?: "classic" | "cyber"): void {
+  // Keep ring angles/zoom; only swap the visual language.
+  if (next) visualSkin = next;
+  else visualSkin = visualSkin === "classic" ? "cyber" : "classic";
+
+  const detail = document.getElementById("tools-detail");
+  if (!detail) return;
+  // Only operate while the I Ching tool is mounted.
+  const main = detail.querySelector(".iching-main") as HTMLElement | null;
+  const container = detail.querySelector("#iching-ring-container") as HTMLElement | null;
+  if (!main || !container) return;
+
+  main.setAttribute("data-skin", visualSkin);
+  container.innerHTML = renderRingSVG();
+  lastPaintSlotU = -1;
+  lastPaintSlotL = -1;
+  setupDrag(detail);
+  applyViewScale(true);
+  refreshVisual(true);
+}
+
+function bindIchingSkinHotkey(): void {
+  if (skinHotkeyBound) return;
+  skinHotkeyBound = true;
+  window.addEventListener("keydown", (evt) => {
+    // Secret toggle: Ctrl+Shift+Q
+    // Hidden from normal UI so strangers don't casually switch skins.
+    if (!evt.ctrlKey || !evt.shiftKey || evt.altKey || evt.metaKey) return;
+    // Use both key and code for layout robustness.
+    const isQ = evt.key.toLowerCase() === "q" || evt.code === "KeyQ";
+    if (!isQ) return;
+    if (evt.repeat) return;
+
+    const detail = document.getElementById("tools-detail");
+    if (!detail?.querySelector(".iching-main")) return; // only on I Ching page
+
+    evt.preventDefault();
+    evt.stopPropagation();
+    applyIchingSkin();
+  }, true);
+}
+
+(window as any).ichingToggleSkin = function (): void {
+  applyIchingSkin();
+};
+
+function playPageTransition(detail: HTMLElement, html: string, enterClass: string, done?: () => void): void {
+  if (prefersReducedMotion()) {
+    detail.innerHTML = html;
+    done?.();
+    return;
+  }
+  detail.classList.remove("iching-page-enter", "iching-page-enter-detail", "iching-page-enter-ring");
+  detail.classList.add("iching-page-leave");
+  window.setTimeout(() => {
+    detail.innerHTML = html;
+    detail.classList.remove("iching-page-leave");
+    detail.classList.add("iching-page-enter", enterClass);
+    done?.();
+    window.setTimeout(() => {
+      detail.classList.remove("iching-page-enter", enterClass);
+    }, 520);
+  }, 160);
+}
+
 (window as any).ichingViewDetail = function (): void {
   const current = currentHexagram();
   if (!current) return;
   const detail = document.getElementById("tools-detail");
   if (!detail) return;
   stopInertia();
-  detail.innerHTML = renderDetail(current);
-  document.querySelector(".content-area")?.scrollTo({ top: 0, behavior: "smooth" });
+  playPageTransition(detail, renderDetail(current), "iching-page-enter-detail", () => {
+    document.querySelector(".content-area")?.scrollTo({ top: 0, behavior: prefersReducedMotion() ? "auto" : "smooth" });
+    pulseClass(document.querySelector(".iching-detail-symbol"), "is-flip-in", 700);
+    pulseClass(document.querySelector(".iching-detail-layout"), "is-detail-reveal", 700);
+  });
 };
 
 (window as any).ichingBackToRing = function (): void {
-  renderIchingDetail();
+  const detail = document.getElementById("tools-detail");
+  if (!detail || prefersReducedMotion()) {
+    renderIchingDetail();
+    return;
+  }
+  detail.classList.add("iching-page-leave");
+  window.setTimeout(() => {
+    renderIchingDetail();
+    const d = document.getElementById("tools-detail");
+    if (!d) return;
+    d.classList.add("iching-page-enter", "iching-page-enter-ring");
+    pulseClass(document.querySelector(".iching-ring-svg"), "is-settle-pulse", 650);
+    pulseClass(document.querySelector(".iching-dock"), "is-settle-pulse", 650);
+    window.setTimeout(() => {
+      d.classList.remove("iching-page-enter", "iching-page-enter-ring");
+    }, 520);
+  }, 160);
 };

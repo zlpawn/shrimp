@@ -3952,7 +3952,9 @@ input:focus, select:focus {
   --iching-sheen: #67e8f9;
   --iching-rim: rgba(103, 232, 249, 0.35);
   --iching-hub: #04101f;
-  --iching-taiji-stroke: rgba(186, 240, 255, 0.9);
+  --iching-taiji-stroke: rgba(186, 240, 255, 0.55);
+  --iching-yang: #ffffff;
+  --iching-yin: #000000;
   --iching-hot-fill: rgba(34, 211, 238, 0.12);
   --iching-accent: #67e8f9;
   --iching-label: rgba(186, 240, 255, 0.78);
@@ -3978,7 +3980,9 @@ input:focus, select:focus {
   --iching-sheen: #7dd3fc;
   --iching-rim: rgba(3, 105, 161, 0.28);
   --iching-hub: #dbeafe;
-  --iching-taiji-stroke: rgba(3, 105, 161, 0.75);
+  --iching-taiji-stroke: rgba(3, 105, 161, 0.45);
+  --iching-yang: #ffffff;
+  --iching-yin: #000000;
   --iching-hot-fill: rgba(14, 165, 233, 0.12);
   --iching-accent: #0284c7;
   --iching-label: rgba(3, 105, 161, 0.78);
@@ -4064,17 +4068,6 @@ input:focus, select:focus {
   filter: drop-shadow(0 0 8px var(--iching-glow-soft));
 }
 
-.iching-fixed-chrome {
-  animation: iching-breathe 3.2s ease-in-out infinite;
-}
-@keyframes iching-breathe {
-  0%, 100% { opacity: 0.78; }
-  50% { opacity: 1; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .iching-fixed-chrome { animation: none; }
-}
-
 .iching-dock {
   display: flex;
   align-items: center;
@@ -4150,8 +4143,411 @@ input:focus, select:focus {
 .iching-info-panel { display: none; }
 .iching-hint { display: none; }
 
+
+/* ===== I Ching Cyber / Fenghou visual skin (comparison) ===== */
+.iching-main[data-skin="cyber"] {
+  --iching-yao: #c9fdff;
+  --iching-glow: #00f0ff;
+  --iching-glow-soft: rgba(0, 240, 255, 0.55);
+  --iching-glow-strong: rgba(180, 250, 255, 0.9);
+  --iching-divider: rgba(0, 240, 255, 0.1);
+  --iching-ring-bg: rgba(0, 180, 255, 0.06);
+  --iching-ring-border: rgba(0, 240, 255, 0.42);
+  --iching-disc-center: #1a4d86;
+  --iching-disc-mid: #071c36;
+  --iching-disc-edge: #01040a;
+  --iching-sheen: #00f0ff;
+  --iching-rim: rgba(180, 250, 255, 0.62);
+  --iching-hub: #01040a;
+  --iching-hot-fill: rgba(0, 240, 255, 0.05);
+  --iching-accent: #00f0ff;
+  --iching-label: rgba(230, 252, 255, 0.9);
+  --iching-label-hot: #ffffff;
+}
+
+/* Stage becomes a deep starfield, not a solid panel fill */
+/* Deep space + nebula stage */
+.iching-main[data-skin="cyber"] .iching-stage {
+  background:
+    radial-gradient(circle at 11% 19%, rgba(220,245,255,0.18) 0 0.7px, transparent 1.6px),
+    radial-gradient(circle at 52% 86%, rgba(220,245,255,0.26) 0 1.0px, transparent 1.9px),
+    radial-gradient(circle at 93% 53%, rgba(220,245,255,0.34) 0 1.4px, transparent 2.3px),
+    radial-gradient(circle at 34% 20%, rgba(220,245,255,0.42) 0 1.7px, transparent 2.6px),
+    radial-gradient(circle at 75% 87%, rgba(220,245,255,0.50) 0 0.7px, transparent 1.6px),
+    radial-gradient(circle at 16% 54%, rgba(220,245,255,0.58) 0 1.0px, transparent 1.9px),
+    radial-gradient(circle at 57% 21%, rgba(220,245,255,0.18) 0 1.4px, transparent 2.3px),
+    radial-gradient(circle at 98% 88%, rgba(220,245,255,0.26) 0 1.7px, transparent 2.6px),
+    radial-gradient(circle at 39% 55%, rgba(220,245,255,0.34) 0 0.7px, transparent 1.6px),
+    radial-gradient(circle at 80% 22%, rgba(220,245,255,0.42) 0 1.0px, transparent 1.9px),
+    radial-gradient(circle at 21% 89%, rgba(220,245,255,0.50) 0 1.4px, transparent 2.3px),
+    radial-gradient(circle at 62% 56%, rgba(220,245,255,0.58) 0 1.7px, transparent 2.6px),
+    radial-gradient(circle at 3% 23%, rgba(220,245,255,0.18) 0 0.7px, transparent 1.6px),
+    radial-gradient(circle at 44% 90%, rgba(220,245,255,0.26) 0 1.0px, transparent 1.9px),
+    radial-gradient(circle at 85% 57%, rgba(220,245,255,0.34) 0 1.4px, transparent 2.3px),
+    radial-gradient(circle at 26% 24%, rgba(220,245,255,0.42) 0 1.7px, transparent 2.6px),
+    radial-gradient(circle at 67% 91%, rgba(220,245,255,0.50) 0 0.7px, transparent 1.6px),
+    radial-gradient(circle at 8% 58%, rgba(220,245,255,0.58) 0 1.0px, transparent 1.9px),
+    radial-gradient(circle at 49% 25%, rgba(220,245,255,0.18) 0 1.4px, transparent 2.3px),
+    radial-gradient(circle at 90% 92%, rgba(220,245,255,0.26) 0 1.7px, transparent 2.6px),
+    radial-gradient(circle at 31% 59%, rgba(220,245,255,0.34) 0 0.7px, transparent 1.6px),
+    radial-gradient(circle at 72% 26%, rgba(220,245,255,0.42) 0 1.0px, transparent 1.9px),
+    radial-gradient(circle at 13% 93%, rgba(220,245,255,0.50) 0 1.4px, transparent 2.3px),
+    radial-gradient(circle at 54% 60%, rgba(220,245,255,0.58) 0 1.7px, transparent 2.6px),
+    radial-gradient(circle at 95% 27%, rgba(220,245,255,0.18) 0 0.7px, transparent 1.6px),
+    radial-gradient(circle at 36% 94%, rgba(220,245,255,0.26) 0 1.0px, transparent 1.9px),
+    radial-gradient(circle at 77% 61%, rgba(220,245,255,0.34) 0 1.4px, transparent 2.3px),
+    radial-gradient(circle at 18% 28%, rgba(220,245,255,0.42) 0 1.7px, transparent 2.6px),
+    radial-gradient(circle at 59% 95%, rgba(220,245,255,0.50) 0 0.7px, transparent 1.6px),
+    radial-gradient(circle at 0% 62%, rgba(220,245,255,0.58) 0 1.0px, transparent 1.9px),
+    radial-gradient(circle at 41% 29%, rgba(220,245,255,0.18) 0 1.4px, transparent 2.3px),
+    radial-gradient(circle at 82% 96%, rgba(220,245,255,0.26) 0 1.7px, transparent 2.6px),
+    radial-gradient(circle at 23% 63%, rgba(220,245,255,0.34) 0 0.7px, transparent 1.6px),
+    radial-gradient(circle at 64% 30%, rgba(220,245,255,0.42) 0 1.0px, transparent 1.9px),
+    radial-gradient(circle at 5% 97%, rgba(220,245,255,0.50) 0 1.4px, transparent 2.3px),
+    radial-gradient(circle at 46% 64%, rgba(220,245,255,0.58) 0 1.7px, transparent 2.6px),
+    radial-gradient(circle at 87% 31%, rgba(220,245,255,0.18) 0 0.7px, transparent 1.6px),
+    radial-gradient(circle at 28% 98%, rgba(220,245,255,0.26) 0 1.0px, transparent 1.9px),
+    radial-gradient(circle at 69% 65%, rgba(220,245,255,0.34) 0 1.4px, transparent 2.3px),
+    radial-gradient(circle at 10% 32%, rgba(220,245,255,0.42) 0 1.7px, transparent 2.6px),
+    radial-gradient(circle at 51% 99%, rgba(220,245,255,0.50) 0 0.7px, transparent 1.6px),
+    radial-gradient(circle at 92% 66%, rgba(220,245,255,0.58) 0 1.0px, transparent 1.9px),
+    radial-gradient(circle at 33% 33%, rgba(220,245,255,0.18) 0 1.4px, transparent 2.3px),
+    radial-gradient(circle at 74% 0%, rgba(220,245,255,0.26) 0 1.7px, transparent 2.6px),
+    radial-gradient(circle at 15% 67%, rgba(220,245,255,0.34) 0 0.7px, transparent 1.6px),
+    radial-gradient(circle at 56% 34%, rgba(220,245,255,0.42) 0 1.0px, transparent 1.9px),
+    radial-gradient(circle at 97% 1%, rgba(220,245,255,0.50) 0 1.4px, transparent 2.3px),
+    radial-gradient(circle at 38% 68%, rgba(220,245,255,0.58) 0 1.7px, transparent 2.6px),
+    radial-gradient(circle at 79% 35%, rgba(220,245,255,0.18) 0 0.7px, transparent 1.6px),
+    radial-gradient(circle at 20% 2%, rgba(220,245,255,0.26) 0 1.0px, transparent 1.9px),
+    radial-gradient(circle at 61% 69%, rgba(220,245,255,0.34) 0 1.4px, transparent 2.3px),
+    radial-gradient(circle at 2% 36%, rgba(220,245,255,0.42) 0 1.7px, transparent 2.6px),
+    radial-gradient(circle at 43% 3%, rgba(220,245,255,0.50) 0 0.7px, transparent 1.6px),
+    radial-gradient(circle at 84% 70%, rgba(220,245,255,0.58) 0 1.0px, transparent 1.9px),
+    radial-gradient(circle at 25% 37%, rgba(220,245,255,0.18) 0 1.4px, transparent 2.3px),
+    radial-gradient(circle at 66% 4%, rgba(220,245,255,0.26) 0 1.7px, transparent 2.6px),
+    radial-gradient(circle at 7% 71%, rgba(220,245,255,0.34) 0 0.7px, transparent 1.6px),
+    radial-gradient(circle at 48% 38%, rgba(220,245,255,0.42) 0 1.0px, transparent 1.9px),
+    radial-gradient(circle at 89% 5%, rgba(220,245,255,0.50) 0 1.4px, transparent 2.3px),
+    radial-gradient(circle at 30% 72%, rgba(220,245,255,0.58) 0 1.7px, transparent 2.6px),
+    radial-gradient(circle at 71% 39%, rgba(220,245,255,0.18) 0 0.7px, transparent 1.6px),
+    radial-gradient(circle at 12% 6%, rgba(220,245,255,0.26) 0 1.0px, transparent 1.9px),
+    radial-gradient(circle at 53% 73%, rgba(220,245,255,0.34) 0 1.4px, transparent 2.3px),
+    radial-gradient(circle at 94% 40%, rgba(220,245,255,0.42) 0 1.7px, transparent 2.6px),
+    radial-gradient(circle at 35% 7%, rgba(220,245,255,0.50) 0 0.7px, transparent 1.6px),
+    radial-gradient(circle at 76% 74%, rgba(220,245,255,0.58) 0 1.0px, transparent 1.9px),
+    radial-gradient(circle at 17% 41%, rgba(220,245,255,0.18) 0 1.4px, transparent 2.3px),
+    radial-gradient(circle at 58% 8%, rgba(220,245,255,0.26) 0 1.7px, transparent 2.6px),
+    radial-gradient(circle at 99% 75%, rgba(220,245,255,0.34) 0 0.7px, transparent 1.6px),
+    radial-gradient(circle at 40% 42%, rgba(220,245,255,0.42) 0 1.0px, transparent 1.9px),
+    radial-gradient(circle at 81% 9%, rgba(220,245,255,0.50) 0 1.4px, transparent 2.3px),
+    radial-gradient(circle at 22% 76%, rgba(220,245,255,0.58) 0 1.7px, transparent 2.6px),
+    radial-gradient(circle at 63% 43%, rgba(220,245,255,0.18) 0 0.7px, transparent 1.6px),
+    radial-gradient(circle at 4% 10%, rgba(220,245,255,0.26) 0 1.0px, transparent 1.9px),
+    radial-gradient(circle at 45% 77%, rgba(220,245,255,0.34) 0 1.4px, transparent 2.3px),
+    radial-gradient(circle at 86% 44%, rgba(220,245,255,0.42) 0 1.7px, transparent 2.6px),
+    radial-gradient(circle at 27% 11%, rgba(220,245,255,0.50) 0 0.7px, transparent 1.6px),
+    radial-gradient(circle at 68% 78%, rgba(220,245,255,0.58) 0 1.0px, transparent 1.9px),
+    radial-gradient(circle at 9% 45%, rgba(220,245,255,0.18) 0 1.4px, transparent 2.3px),
+    radial-gradient(circle at 50% 12%, rgba(220,245,255,0.26) 0 1.7px, transparent 2.6px),
+    radial-gradient(circle at 91% 79%, rgba(220,245,255,0.34) 0 0.7px, transparent 1.6px),
+    radial-gradient(circle at 32% 46%, rgba(220,245,255,0.42) 0 1.0px, transparent 1.9px),
+    radial-gradient(circle at 73% 13%, rgba(220,245,255,0.50) 0 1.4px, transparent 2.3px),
+    radial-gradient(circle at 14% 80%, rgba(220,245,255,0.58) 0 1.7px, transparent 2.6px),
+    radial-gradient(circle at 55% 47%, rgba(220,245,255,0.18) 0 0.7px, transparent 1.6px),
+    radial-gradient(circle at 96% 14%, rgba(220,245,255,0.26) 0 1.0px, transparent 1.9px),
+    radial-gradient(circle at 37% 81%, rgba(220,245,255,0.34) 0 1.4px, transparent 2.3px),
+    radial-gradient(circle at 78% 48%, rgba(220,245,255,0.42) 0 1.7px, transparent 2.6px),
+    radial-gradient(circle at 19% 15%, rgba(220,245,255,0.50) 0 0.7px, transparent 1.6px),
+    radial-gradient(circle at 60% 82%, rgba(220,245,255,0.58) 0 1.0px, transparent 1.9px),
+    radial-gradient(circle at 5% 47%, rgba(255,255,255,0.62) 0 1.1px, transparent 2.2px),
+    radial-gradient(circle at 78% 76%, rgba(255,255,255,0.62) 0 1.6px, transparent 2.7px),
+    radial-gradient(circle at 51% 5%, rgba(255,255,255,0.62) 0 2.0px, transparent 3.1px),
+    radial-gradient(circle at 24% 34%, rgba(255,255,255,0.62) 0 1.1px, transparent 2.2px),
+    radial-gradient(circle at 97% 63%, rgba(255,255,255,0.62) 0 1.6px, transparent 2.7px),
+    radial-gradient(circle at 70% 92%, rgba(255,255,255,0.62) 0 2.0px, transparent 3.1px),
+    radial-gradient(circle at 43% 21%, rgba(255,255,255,0.62) 0 1.1px, transparent 2.2px),
+    radial-gradient(circle at 16% 50%, rgba(255,255,255,0.62) 0 1.6px, transparent 2.7px),
+    radial-gradient(circle at 89% 79%, rgba(255,255,255,0.62) 0 2.0px, transparent 3.1px),
+    radial-gradient(circle at 62% 8%, rgba(255,255,255,0.62) 0 1.1px, transparent 2.2px),
+    radial-gradient(circle at 35% 37%, rgba(255,255,255,0.62) 0 1.6px, transparent 2.7px),
+    radial-gradient(circle at 8% 66%, rgba(255,255,255,0.62) 0 2.0px, transparent 3.1px),
+    radial-gradient(circle at 81% 95%, rgba(255,255,255,0.62) 0 1.1px, transparent 2.2px),
+    radial-gradient(circle at 54% 24%, rgba(255,255,255,0.62) 0 1.6px, transparent 2.7px),
+    radial-gradient(circle at 27% 53%, rgba(255,255,255,0.62) 0 2.0px, transparent 3.1px),
+    radial-gradient(circle at 0% 82%, rgba(255,255,255,0.62) 0 1.1px, transparent 2.2px),
+    radial-gradient(circle at 73% 11%, rgba(255,255,255,0.62) 0 1.6px, transparent 2.7px),
+    radial-gradient(circle at 46% 40%, rgba(255,255,255,0.62) 0 2.0px, transparent 3.1px),
+    radial-gradient(circle at 19% 69%, rgba(255,255,255,0.62) 0 1.1px, transparent 2.2px),
+    radial-gradient(circle at 92% 98%, rgba(255,255,255,0.62) 0 1.6px, transparent 2.7px),
+    radial-gradient(circle at 65% 27%, rgba(255,255,255,0.62) 0 2.0px, transparent 3.1px),
+    radial-gradient(circle at 38% 56%, rgba(255,255,255,0.62) 0 1.1px, transparent 2.2px),
+    radial-gradient(circle at 11% 85%, rgba(255,255,255,0.62) 0 1.6px, transparent 2.7px),
+    radial-gradient(circle at 84% 14%, rgba(255,255,255,0.62) 0 2.0px, transparent 3.1px),
+    radial-gradient(circle at 57% 43%, rgba(255,255,255,0.62) 0 1.1px, transparent 2.2px),
+    radial-gradient(circle at 30% 72%, rgba(255,255,255,0.62) 0 1.6px, transparent 2.7px),
+    radial-gradient(circle at 3% 1%, rgba(255,255,255,0.62) 0 2.0px, transparent 3.1px),
+    radial-gradient(circle at 76% 30%, rgba(255,255,255,0.62) 0 1.1px, transparent 2.2px),
+    /* nebula clouds */
+    radial-gradient(ellipse 70% 45% at 28% 34%, rgba(70, 120, 255, 0.22), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 74% 28%, rgba(0, 220, 255, 0.16), transparent 72%),
+    radial-gradient(ellipse 80% 50% at 58% 72%, rgba(40, 80, 180, 0.2), transparent 75%),
+    radial-gradient(ellipse 50% 35% at 18% 78%, rgba(120, 80, 220, 0.1), transparent 70%),
+    /* core space falloff */
+    radial-gradient(circle at 50% 46%, rgba(255, 255, 255, 0.1), transparent 12%),
+    radial-gradient(circle at 50% 50%, rgba(0, 180, 255, 0.14), transparent 30%),
+    radial-gradient(circle at 50% 58%, rgba(6, 24, 52, 0.75), transparent 62%),
+    radial-gradient(circle at 50% 100%, rgba(0, 0, 0, 0.92), transparent 50%),
+    #01040c;
+  border-radius: calc(var(--radius-lg) + 12px);
+  padding: 14px 0 10px;
+  box-shadow:
+    inset 0 0 110px rgba(0, 20, 50, 0.55),
+    0 0 50px rgba(0, 140, 255, 0.08);
+}
+
+.iching-main[data-skin="cyber"] .iching-ring-container {
+  /* transparent so outer stage nebula stays outside the readable yao area */
+  background: transparent;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 240, 255, 0.08),
+    0 0 90px rgba(0, 200, 255, 0.14),
+    0 30px 70px rgba(0, 0, 0, 0.55);
+}
+
+.iching-main[data-skin="cyber"] .iching-ring-svg {
+  filter:
+    drop-shadow(0 0 22px rgba(0, 240, 255, 0.32))
+    drop-shadow(0 0 60px rgba(0, 150, 255, 0.2))
+    drop-shadow(0 18px 42px rgba(0, 0, 0, 0.58));
+}
+
+.iching-main[data-skin="cyber"] .iching-label {
+  font-size: 11px;
+  font-weight: 300;
+  letter-spacing: 0.16em;
+  stroke-width: 1.3;
+  stroke: rgba(1, 4, 10, 0.92);
+  opacity: 0.92;
+  filter: drop-shadow(0 0 5px rgba(0, 240, 255, 0.6));
+}
+
+.iching-main[data-skin="cyber"] .iching-label.is-hot {
+  font-size: 20px;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  opacity: 1;
+  fill: #ffffff;
+  filter: drop-shadow(0 0 14px rgba(0, 240, 255, 1));
+}
+
+.iching-main[data-skin="cyber"] .iching-glyph-symbol {
+  font-size: 12px;
+  fill: rgba(170, 235, 255, 0.5);
+  font-family: "Segoe UI Symbol", "Noto Sans Symbols", serif;
+  filter: drop-shadow(0 0 3px rgba(0, 240, 255, 0.35));
+  pointer-events: none;
+}
+.iching-main[data-skin="cyber"] .iching-glyph-symbol.is-inner {
+  font-size: 10px;
+  fill: rgba(140, 220, 255, 0.34);
+}
+.iching-main[data-skin="cyber"] .iching-glyph-symbol.is-hot {
+  fill: rgba(255, 255, 255, 0.95);
+  font-size: 13px;
+  filter: drop-shadow(0 0 8px rgba(0, 240, 255, 0.9));
+}
+
+/* keep class harmless if old markup remains */
+.iching-main[data-skin="cyber"] .iching-micro-bit {
+  display: none;
+}
+
+.iching-main[data-skin="cyber"] .iching-energy-arc {
+  mix-blend-mode: screen;
+}
+
+.iching-main[data-skin="cyber"] .iching-top-marker {
+  filter: drop-shadow(0 0 12px rgba(0, 240, 255, 0.95));
+}
+
+.iching-main[data-skin="cyber"] .iching-taiji {
+  filter: drop-shadow(0 0 34px rgba(0, 240, 255, 0.62));
+}
+
+.iching-main[data-skin="cyber"] .iching-dock {
+  border-color: rgba(0, 240, 255, 0.34);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(0, 240, 255, 0.16), transparent 55%),
+    rgba(2, 10, 20, 0.96);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 240, 255, 0.08),
+    0 0 30px rgba(0, 240, 255, 0.12);
+}
+
+.iching-main[data-skin="cyber"] .iching-current-symbol {
+  color: #00f0ff;
+  text-shadow: 0 0 18px rgba(0, 240, 255, 0.45);
+}
+
+.iching-main[data-skin="cyber"] .iching-skin-btn {
+  min-width: 88px;
+  border-color: rgba(0, 240, 255, 0.42);
+  color: #9ef9ff;
+}
+
+.iching-skin-btn {
+  min-width: 88px;
+  justify-content: center;
+}
+
+/* ===== I Ching FX: pack A + B ===== */
+/* ===== I Ching FX: pack A + B ===== */
+/* ===== I Ching FX: pack A + B ===== */
+/* ===== I Ching FX: pack A + B ===== */
+
+
+.iching-slot.is-hot {
+  filter: drop-shadow(0 0 7px var(--iching-glow-soft));
+  animation: iching-yao-breathe 4s ease-in-out infinite;
+}
+
+.iching-label.is-hot {
+  animation: iching-label-breathe 4s ease-in-out infinite;
+}
+
+/* Slow continuous taiji rotation around disk center. */
+.iching-taiji-spin {
+  /* Rotation is SVG animateTransform around (0,0). Do not CSS-transform this node. */
+}
+
+.iching-taiji-eye-yin,
+.iching-taiji-eye-yang {
+  /* Keep eyes crisp and opaque so yin/yang dots never disappear. */
+  opacity: 1;
+}
+
+.iching-taiji.is-hub-pulse .iching-taiji-spin {
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.18));
+}
+
+.iching-dock,
+.iching-ring-svg,
+.iching-detail-symbol,
+.iching-detail-layout,
+.iching-dock-info,
+#iching-current-name,
+#iching-current-sub {
+  will-change: opacity, filter;
+}
+
+/* Quiet settle: only active glyph breathes a little brighter */
+.iching-slot.is-hit-pulse,
+.iching-label.is-hit-pulse {
+  animation: iching-hit-soft 720ms ease-out;
+}
+
+.iching-dock-info.is-text-swap,
+#iching-current-name.is-text-swap,
+#iching-current-sub.is-text-swap {
+  animation: iching-text-swap 380ms ease;
+}
+
+/* B: page transitions */
+#tools-detail.iching-page-leave {
+  animation: iching-page-leave 160ms ease forwards;
+}
+#tools-detail.iching-page-enter {
+  animation: iching-page-enter 480ms ease;
+}
+#tools-detail.iching-page-enter-detail .iching-detail-layout {
+  transform-origin: 50% 10%;
+}
+#tools-detail.iching-page-enter-ring .iching-main {
+  transform-origin: 50% 40%;
+}
+.iching-detail-symbol.is-flip-in {
+  animation: iching-flip-in 700ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.iching-detail-layout.is-detail-reveal {
+  animation: iching-detail-reveal 700ms ease;
+}
+
+@keyframes iching-yao-breathe {
+  0%, 100% {
+    filter: drop-shadow(0 0 6px var(--iching-glow-soft));
+    opacity: 0.9;
+  }
+  50% {
+    filter: drop-shadow(0 0 12px var(--iching-glow-soft));
+    opacity: 1;
+  }
+}
+
+@keyframes iching-label-breathe {
+  0%, 100% { opacity: 0.9; }
+  50% { opacity: 1; }
+}
+
+@keyframes iching-hit-soft {
+  0% {
+    filter: drop-shadow(0 0 6px var(--iching-glow-soft));
+    opacity: 0.9;
+  }
+  40% {
+    filter: drop-shadow(0 0 14px var(--iching-glow-soft));
+    opacity: 1;
+  }
+  100% {
+    filter: drop-shadow(0 0 8px var(--iching-glow-soft));
+    opacity: 0.96;
+  }
+}
+
+@keyframes iching-text-swap {
+  0% { opacity: 0.45; transform: translateY(4px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes iching-page-leave {
+  from { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+  to { opacity: 0; transform: translateY(8px) scale(0.985); filter: blur(1px); }
+}
+
+@keyframes iching-page-enter {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); filter: blur(1.5px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+@keyframes iching-flip-in {
+  0% { opacity: 0; transform: rotateX(55deg) translateY(18px) scale(0.88); filter: drop-shadow(0 0 0 rgba(103, 232, 249, 0)); }
+  55% { opacity: 1; transform: rotateX(-6deg) translateY(0) scale(1.04); filter: drop-shadow(0 0 16px rgba(103, 232, 249, 0.45)); }
+  100% { opacity: 1; transform: rotateX(0) translateY(0) scale(1); filter: drop-shadow(0 0 8px rgba(103, 232, 249, 0.2)); }
+}
+
+@keyframes iching-detail-reveal {
+  0% { opacity: 0; transform: translateY(16px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .iching-slot.is-hot,
+  .iching-label.is-hot,
+  .iching-slot.is-hit-pulse,
+  .iching-label.is-hit-pulse,
+  .iching-dock-info.is-text-swap,
+  #iching-current-name.is-text-swap,
+  #iching-current-sub.is-text-swap,
+  #tools-detail.iching-page-leave,
+  #tools-detail.iching-page-enter,
+  .iching-detail-symbol.is-flip-in,
+  .iching-detail-layout.is-detail-reveal {
+    animation: none !important;
+  }
+}
+
 /* Detail page */
 .iching-detail-layout {
+
   max-width: 720px;
   margin: 0 auto;
 }
@@ -4163,6 +4559,7 @@ input:focus, select:focus {
   margin-bottom: 32px;
   padding-bottom: 24px;
   border-bottom: 1px solid var(--border-color);
+  perspective: 800px;
 }
 
 .iching-detail-symbol {
