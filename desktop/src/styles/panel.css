@@ -1271,6 +1271,25 @@ input:focus, select:focus {
     font-size: 14px;
     font-weight: 500;
 }
+.mapping-tag {
+    gap: 4px;
+}
+.mapping-id-badge {
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: var(--radius-sm);
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+.mapping-label {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+.mapping-tag .mapping-arrow {
+    margin: 0 2px;
+}
 
 /* Usage Guide */
 .usage-guide {

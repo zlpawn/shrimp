@@ -3332,10 +3332,16 @@ return `<button type="button" class="ctx-window-option${_active ? ' is-active' :
                         ${Object.keys(ep.model_mapping || {}).length > 0 ? `
                         <div class="tags-list">
                             ${Object.entries(ep.model_mapping).map(([k, v]) => {
-                                const display = client === 'desktop' ? (ep.model_labels?.[k] || v) : k;
-                                const titleAttr = client === 'desktop' ? `${display} -> ${v} (id: ${k})` : `${k} -> ${v}`;
+                                if (client === 'desktop') {
+                                    const label = ep.model_labels?.[k] || '';
+                                    const hasCustomLabel = label && label !== v;
+                                    const titleAttr = hasCustomLabel ? `${k} / ${label} -> ${v}` : `${k} -> ${v}`;
+                                    return `
+                                <span class="tag mapping-tag" title="${escapeHtml(titleAttr)}"><span class="mapping-id-badge" title="Claude 官方 ID（自动分配，路由用）">${escapeHtml(k)}</span>${hasCustomLabel ? ` <span class="mapping-label">${escapeHtml(label)}</span>` : ''} <span class="mapping-arrow">-></span> ${escapeHtml(v)} <button type="button" onclick='removeMapping(${JSON.stringify(client)}, ${index}, ${JSON.stringify(k)})' title="移除映射">×</button></span>
+                                `;
+                                }
                                 return `
-                                <span class="tag" title="${escapeHtml(titleAttr)}">${escapeHtml(display)} <span style="color: var(--text-secondary); margin: 0 4px;">-></span> ${escapeHtml(v)}${client === 'desktop' ? ` <span style="color: var(--text-tertiary); font-size: 10px;">${escapeHtml(k)}</span>` : ''} <button type="button" onclick='removeMapping(${JSON.stringify(client)}, ${index}, ${JSON.stringify(k)})' title="移除映射">×</button></span>
+                                <span class="tag" title="${escapeHtml(`${k} -> ${v}`)}">${escapeHtml(k)} <span style="color: var(--text-secondary); margin: 0 4px;">-></span> ${escapeHtml(v)} <button type="button" onclick='removeMapping(${JSON.stringify(client)}, ${index}, ${JSON.stringify(k)})' title="移除映射">×</button></span>
                                 `;
                             }).join('')}
                         </div>
