@@ -319,3 +319,144 @@ Four UI states are designed:
 All components use existing CSS variables for theming, existing button/form
 classes, and follow the established visual language (zinc neutrals, no accent
 color, 6px/8px radius scale, 13px base font).
+
+## Backward compatibility safeguards
+
+The guiding principle: **single-key endpoints follow the exact same code path
+as before. Multi-key is purely additive logic.** No existing function signature
+is changed. No existing code path is branched based on the new fields.
+
+### Safeguard 1: getEndpointApiKey signature unchanged
+
+The existing `getEndpointApiKey(endpoint, secrets, env, allEndpoints)` is not
+modified. A new independent function is introduced:
+
+```js
+function getEndpointApiKeyByStrategy(endpoint, secrets, env, allEndpoints, strategyContext) {
+  // Only called from the retry loop when endpoint.api_keys is non-empty.
+  // Delegates to getEndpointApiKey for the single-key fallback.
+}
+```
+
+All 6 existing call sites in `server.js` are untouched. The retry loop checks
+`endpoint.api_keys?.length > 0` before deciding whether to call
+`getEndpointApiKeyByStrategy` or the original `getEndpointApiKey`.
+
+### Safeguard 2: Validation does not reject legacy configs
+
+`validateGatewayConfig` new checks are format-only:
+
+- `api_keys[].id` is non-empty and unique within the endpoint (only when
+  `api_keys` is present).
+- `key_strategy` is one of the allowed values (only when present).
+
+The validator does NOT check secrets-to-config consistency. A config with
+`api_keys` but mismatched secrets format is not a validation error. It is
+silently repaired by `saveGatewayState` (see Safeguard 3). This ensures that
+manually edited configs, partial migrations, or edge cases never block gateway
+startup.
+
+### Safeguard 3: Migration write order is config-first, secrets-second
+
+The single-to-multi-key migration in `saveGatewayState`:
+
+1. Write `gateway.config.json` (with the new `api_keys` array) first.
+2. Then migrate and write `gateway.secrets.json`.
+
+If step 1 succeeds but step 2 fails (crash, disk full):
+
+- The config has `api_keys` but secrets still has the old `ep_abc123` key.
+- `getEndpointApiKey` falls back to the `base_url` lookup
+  (`gateway-config-store.mjs:213`), so the key is still found.
+- On next `saveGatewayState`, the migration retry completes.
+
+Secrets writing itself is atomic (temp file + rename, mode 0o600), and a
+`.bak` copy of the secrets file is created before the first migration.
+
+### Safeguard 4: Frontend renders undefined api_keys as single-key
+
+All frontend rendering uses `endpoint.api_keys?.length > 0` to decide which
+view to show. Undefined, null, empty array, and missing field all fall through
+to the existing single-key rendering path. The single-key path code is not
+modified, only wrapped in an `if/else`.
+
+## Extensibility and open-closed principle
+
+The design is structured so future evolution toward a group model (multiple
+endpoints sharing a routing group) can be added without rewriting the multi-key
+layer.
+
+### Strategy pattern for key selection
+
+Key selection is behind a strategy interface, not hardcoded conditionals:
+
+```js
+// lib/config/key-strategy.mjs (new file)
+export const KEY_STRATEGIES = {
+  failover: { select: selectFailover, retry: true },
+  'round-robin': { select: selectRoundRobin, retry: false },
+  random: { select: selectRandom, retry: false },
+};
+
+export function selectKey(endpoint, secrets, env, allEndpoints, context) {
+  const strategy = KEY_STRATEGIES[endpoint.key_strategy] || KEY_STRATEGIES.failover;
+  return strategy.select(endpoint, secrets, env, allEndpoints, context);
+}
+```
+
+Adding a new strategy (e.g. `weighted-round-robin`, `least-latency`) means
+adding one entry to `KEY_STRATEGIES` and one function. No existing strategy
+code is modified. This is open for extension, closed for modification.
+
+### Credential abstraction is reusable for groups
+
+The `Credential` type (`{id, label?}`) and the `endpoint_id::cred_id` secrets
+naming convention are designed to generalize:
+
+- Today: one endpoint, multiple credentials.
+- Future group model: one group, multiple endpoints, each with credentials.
+
+The `cred_id` namespace (`endpoint_id::cred_id`) already separates credential
+identity from endpoint identity. If groups are introduced, a group's
+credentials can use `group_id::cred_id` with the same lookup pattern, or
+endpoints within a group can retain their own `endpoint_id::cred_id` entries.
+Either path is additive, not a rewrite.
+
+### Strategy context is forward-compatible
+
+The `strategyContext` parameter passed to the key selection function carries
+`strategy`, `attempt`, and `lastCredentialId`. This context can be extended
+with group-level routing information (e.g. `groupId`, `endpointIndex`) without
+changing the function signature, because it is an object that callers populate
+progressively.
+
+### Module boundaries
+
+- `lib/config/key-strategy.mjs`: key selection strategies (new, isolated).
+- `lib/config/credential-store.mjs`: credential CRUD, migration, secrets
+  format helpers (new, isolated).
+- `lib/config/gateway-config-store.mjs`: existing config store, only adds
+  calls to the above modules when `api_keys` is present.
+- `desktop/src/modules/multi-key-editor.ts`: frontend multi-key UI (new).
+- `desktop/src/modules/copy-node.ts`: frontend copy-node modal (new).
+
+Each module has a single responsibility. The existing config store and app.ts
+are not aware of strategy internals or credential migration details. They
+delegate to the new modules. Future group logic can be added as a new module
+(e.g. `lib/config/endpoint-group.mjs`) that sits alongside, not inside, the
+existing code.
+
+### What this means for future group evolution
+
+If the project later moves to group-based routing (multiple endpoints in a
+group, with cross-endpoint failover):
+
+1. Add `lib/config/endpoint-group.mjs` with group resolution logic.
+2. Extend `strategyContext` with group fields.
+3. The existing `key-strategy.mjs` and `credential-store.mjs` continue to work
+   as-is, because they operate on credential selection within a single
+   endpoint, which is a sub-problem of group selection.
+4. The retry loop gains a "try next endpoint in group" branch, but the
+   "try next credential within endpoint" branch is unchanged.
+
+No rewrite of the multi-key layer is needed. The group layer is built on top.
