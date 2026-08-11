@@ -281,22 +281,18 @@ export function openCopyNodeModal(
     }
 
     sourceList.innerHTML = endpoints.map((endpoint, index) => {
-      const multiKeyDisabled = Boolean(endpoint.api_keys?.length);
-      const detail = multiKeyDisabled
-        ? "多密钥节点将在多密钥支持启用后可复制"
-        : `${endpointTypeLabel(endpoint.type)} · ${endpointPurpose(endpoint)}`;
+      const detail = `${endpointTypeLabel(endpoint.type)} · ${endpointPurpose(endpoint)}`;
       return `
         <button
           type="button"
           class="copy-node-source-item"
           data-endpoint-index="${index}"
-          ${multiKeyDisabled ? "disabled" : ""}
           aria-pressed="false">
           <span class="copy-node-source-main">
             <span class="copy-node-source-name">${escapeHtml(endpoint.name || `节点 ${index + 1}`)}</span>
             <span class="copy-node-source-url">${escapeHtml(endpoint.base_url || "未配置 Base URL")}</span>
           </span>
-          <span class="copy-node-source-meta ${multiKeyDisabled ? "is-disabled" : ""}">
+          <span class="copy-node-source-meta">
             ${escapeHtml(detail)}
           </span>
         </button>

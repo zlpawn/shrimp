@@ -50,5 +50,5 @@ test("copy UI is preview-first and never auto-saves", async () => {
   );
   assert.doesNotMatch(module, /\/v1\/config\/save/);
   assert.match(module, /credential_id/);
-  assert.match(module, /多密钥节点将在多密钥支持启用后可复制/);
+  assert.doesNotMatch(module, /multiKeyDisabled/);
 });

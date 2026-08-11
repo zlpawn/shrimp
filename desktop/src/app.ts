@@ -7,6 +7,15 @@ import {
     getCopyProtocolHint,
     openCopyNodeModal,
 } from "./modules/copy-node";
+import {
+    addCredential,
+    clearCredentialPreviews,
+    loadCredentialPreviews,
+    removeCredential,
+    renderEndpointKeyEditor,
+    setCredentialValue,
+    setKeyStrategy,
+} from "./modules/multi-key-editor";
 
 let config = {
     server: { host: "127.0.0.1", port: 8787 },
@@ -1430,7 +1439,8 @@ function mergeFetchedClients(data) {
 }
 
 // Reload the public config from the gateway and re-render.
-async function loadConfig() {
+async function loadConfig(preserveEndpointId = '') {
+    const preserveClient = selectedEndpoint?.client || '';
     try {
         const res = await fetch('/v1/config');
         if (res.ok) {
@@ -1450,6 +1460,13 @@ async function loadConfig() {
         }
     } catch (e) {
         console.warn('加载配置失败。');
+    }
+    if (preserveEndpointId && preserveClient) {
+        const index = (config.clients?.[preserveClient]?.endpoints || [])
+            .findIndex(endpoint => endpoint.id === preserveEndpointId);
+        selectedEndpoint = index >= 0
+            ? { client: preserveClient, index }
+            : null;
     }
     render();
 }
@@ -3159,20 +3176,9 @@ function createEndpointDetailHTML(client, index, ep) {
                     </div>
                     `}
                     `}
-                    ${(isWebSearch || (isMedia ? !isMediaSubscription : (ep.type !== 'antigravity' && ep.type !== 'codex-subscription'))) ? `
-                    <div class="form-group full">
-                        <label>${isWebSearch ? 'Tavily API Key' : '密钥 (API Key)'} <span class="key-status ${ep.has_api_key ? 'key-status-set' : 'key-status-unset'}">${ep.has_api_key ? '已配置' : '未配置'}</span></label>
-                        <div class="password-input-wrapper">
-                            <input class="mono" type="password" id="api-key-${client}-${index}" value="" placeholder="${ep.has_api_key ? '留空表示保留现有密钥' : (isWebSearch ? 'tvly-... 或 env:TAVILY_API_KEY' : '输入密钥或 env:变量名')}" onchange="updateEndpoint('${client}', ${index}, 'api_key', this.value)">
-                            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('${client}', ${index}, 'api-key-${client}-${index}')" title="${ep.has_api_key ? '查看已保存密钥' : '显示/隐藏密钥'}">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                    <circle cx="12" cy="12" r="3"></circle>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                    ` : ''}
+                    ${(isWebSearch || (isMedia ? !isMediaSubscription : (ep.type !== 'antigravity' && ep.type !== 'codex-subscription')))
+                        ? renderEndpointKeyEditor(client, index, ep)
+                        : ''}
                     ${(client === 'codex' || client === 'deeptutor') && !isCapabilityNode ? `
                     <div class="form-group full">
                         <label>Codex 能力</label>
@@ -3494,6 +3500,19 @@ function render() {
     if (activeClient === 'custom-clients' || isCustomClient(activeClient) || (selectedEndpoint && isCustomClient(selectedEndpoint.client))) {
         renderCustomClientSections();
     }
+    void refreshSelectedCredentialPreviews();
+}
+
+async function refreshSelectedCredentialPreviews() {
+    if (!selectedEndpoint) return;
+    const endpoint = config.clients?.[selectedEndpoint.client]?.endpoints?.[selectedEndpoint.index];
+    if (!endpoint?.api_keys?.length) return;
+    const selectionId = endpoint.id;
+    const changed = await loadCredentialPreviews(endpoint);
+    const current = selectedEndpoint
+        ? config.clients?.[selectedEndpoint.client]?.endpoints?.[selectedEndpoint.index]
+        : null;
+    if (changed && current?.id === selectionId) render();
 }
 
 window.openCopyNodeModalForClient = function(targetClient) {
@@ -6345,6 +6364,79 @@ window.updateEndpoint = function(client, index, field, value) {
     }
 }
 
+window.addApiKey = function(client, index) {
+    const endpoint = config.clients?.[client]?.endpoints?.[index];
+    if (!endpoint) return;
+    if (!endpoint.api_keys?.length) {
+        const input = document.getElementById(`api-key-${client}-${index}`);
+        const value = String(input?.value || '');
+        if (value) endpoint.api_key = value;
+    }
+    addCredential(endpoint);
+    clearCredentialPreviews(endpoint.id);
+    render();
+}
+
+window.removeApiKey = function(client, index, credentialId) {
+    const endpoint = config.clients?.[client]?.endpoints?.[index];
+    if (!endpoint) return;
+    if (!removeCredential(endpoint, credentialId)) return;
+    clearCredentialPreviews(endpoint.id);
+    render();
+}
+
+window.updateApiKey = function(client, index, credentialId, value) {
+    const endpoint = config.clients?.[client]?.endpoints?.[index];
+    if (!endpoint) return;
+    setCredentialValue(endpoint, credentialId, value);
+}
+
+window.setEndpointKeyStrategy = function(client, index, strategy) {
+    const endpoint = config.clients?.[client]?.endpoints?.[index];
+    if (!endpoint) return;
+    setKeyStrategy(endpoint, strategy);
+    render();
+}
+
+window.toggleMultiKeyVisibility = async function(client, index, credentialId, inputId) {
+    const endpoint = config.clients?.[client]?.endpoints?.[index];
+    const input = document.getElementById(inputId);
+    if (!endpoint || !input) return;
+    const btn = input.nextElementSibling;
+    if (input.type === 'password') {
+        if (!input.value && endpoint.id) {
+            btn.disabled = true;
+            try {
+                const params = new URLSearchParams({
+                    id: endpoint.id,
+                    credential_id: credentialId,
+                });
+                const response = await fetch(`/v1/config/secret?${params}`, {
+                    headers: { 'X-Gateway-Secret-Intent': 'reveal' },
+                    cache: 'no-store',
+                });
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    throw new Error(payload.error?.message || '读取密钥失败');
+                }
+                input.value = payload.api_key || '';
+            } catch (error) {
+                showToast(error.message || '读取密钥失败', 'error');
+                return;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+        input.type = 'text';
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+        btn.title = '隐藏密钥';
+    } else {
+        input.type = 'password';
+        btn.title = input.value ? '显示密钥' : '查看已保存密钥';
+    }
+}
+
 window.updateCodexCapability = function(client, index, capability, enabled) {
     const endpoint = config.clients[client].endpoints[index];
     endpoint.capabilities ||= {
@@ -6670,19 +6762,29 @@ window.saveConfig = async function(options = {}) {
 
         if (res.ok) {
             const payload = await res.json().catch(() => ({}));
+            const savedEndpointId = options.scope === 'node' && selectedEndpoint
+                ? config.clients?.[selectedEndpoint.client]?.endpoints?.[selectedEndpoint.index]?.id || ''
+                : '';
             for (const client of Object.values(config.clients || {})) {
                 for (const endpoint of client.endpoints || []) {
                     if (endpoint.api_key) endpoint.has_api_key = true;
+                    if (endpoint.api_key_values) endpoint.has_api_key = true;
                     delete endpoint.api_key;
                     delete endpoint.api_key_env;
+                    delete endpoint.api_key_values;
                 }
             }
+            clearCredentialPreviews();
             if (payload.codex_model_catalog?.path_posix) {
                 codexModelCatalogPath = payload.codex_model_catalog.path_posix;
             } else if (payload.codex_model_catalog?.path) {
                 codexModelCatalogPath = String(payload.codex_model_catalog.path).replaceAll('\\', '/');
             }
-            render();
+            if (savedEndpointId) {
+                await loadConfig(savedEndpointId);
+            } else {
+                render();
+            }
             if (options.scope === 'exposure') {
                 showToast(
                     options.client === 'desktop' && payload.claude3pSync?.updated
