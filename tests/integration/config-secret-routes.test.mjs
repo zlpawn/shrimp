@@ -78,8 +78,8 @@ async function startSecretFixture(t) {
   await writeFile(secretsPath, JSON.stringify({
     api_keys: {
       ep_single: "sk-single",
-      "ep_multi::cred_a": "sk-a",
-      "ep_multi::cred_b": "sk-b",
+      "ep_multi::cred_a": "sk-a-example-AAA",
+      "ep_multi::cred_b": "sk-b-example-BBB",
     },
   }));
 
@@ -122,7 +122,16 @@ async function startSecretFixture(t) {
       },
     });
   };
-  return { base, reveal };
+  const preview = (endpointId) => {
+    const query = new URLSearchParams({ id: endpointId });
+    return fetch(`${base}/v1/config/secret-preview?${query}`, {
+      headers: {
+        "sec-fetch-site": "same-origin",
+        "x-gateway-secret-intent": "reveal",
+      },
+    });
+  };
+  return { base, reveal, preview };
 }
 
 test("secret reveal keeps legacy endpoint behavior", async (t) => {
@@ -140,7 +149,7 @@ test("secret reveal returns only the requested credential", async (t) => {
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), {
     credential_id: "cred_b",
-    api_key: "sk-b",
+    api_key: "sk-b-example-BBB",
   });
 });
 
@@ -156,4 +165,32 @@ test("secret reveal still requires explicit reveal intent", async (t) => {
   const response = await fetch(`${base}/v1/config/secret?id=ep_single`);
 
   assert.equal(response.status, 403);
+});
+
+test("secret preview masks every declared credential without returning values", async (t) => {
+  const { preview } = await startSecretFixture(t);
+  const response = await preview("ep_multi");
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    credentials: [
+      { id: "cred_a", configured: true, preview: "sk-a...AAA" },
+      { id: "cred_b", configured: true, preview: "sk-b...BBB" },
+    ],
+  });
+});
+
+test("public config reports multi-key status but contains no secret values", async (t) => {
+  const { base } = await startSecretFixture(t);
+  const response = await fetch(`${base}/v1/config`, {
+    headers: { "sec-fetch-site": "same-origin" },
+  });
+  const payload = await response.json();
+  const endpoint = payload.clients.desktop.endpoints.find(
+    (item) => item.id === "ep_multi",
+  );
+
+  assert.equal(endpoint.has_api_key, true);
+  assert.deepEqual(endpoint.api_keys, [{ id: "cred_a" }, { id: "cred_b" }]);
+  assert.equal(JSON.stringify(payload).includes("sk-a-example-AAA"), false);
 });

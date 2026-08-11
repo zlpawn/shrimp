@@ -334,6 +334,59 @@ test("legacy save behavior remains unchanged when api_keys is absent", () => {
   }
 });
 
+test("validation accepts legacy endpoints without api_keys", () => {
+  const issues = validateGatewayConfig({
+    clients: { desktop: { endpoints: [{ id: "ep_legacy", name: "Legacy" }] } },
+  });
+  assert.equal(
+    issues.some((item) => item.code.startsWith("credential_")),
+    false,
+  );
+});
+
+test("validation rejects empty and duplicate credential ids", () => {
+  const issues = validateGatewayConfig({
+    clients: {
+      desktop: {
+        endpoints: [{
+          id: "ep_multi",
+          name: "Multi",
+          api_keys: [{ id: "cred_a" }, { id: "" }, { id: "cred_a" }],
+        }],
+      },
+    },
+  });
+  assert.ok(issues.some((item) => item.code === "empty_credential_id"));
+  assert.ok(issues.some((item) => item.code === "duplicate_credential_id"));
+});
+
+test("validation rejects an explicitly empty api_keys array", () => {
+  const issues = validateGatewayConfig({
+    clients: {
+      desktop: {
+        endpoints: [{ id: "ep_multi", name: "Multi", api_keys: [] }],
+      },
+    },
+  });
+  assert.ok(issues.some((item) => item.code === "empty_api_keys"));
+});
+
+test("validation rejects unsupported key strategies only when present", () => {
+  const issues = validateGatewayConfig({
+    clients: {
+      desktop: {
+        endpoints: [{
+          id: "ep_multi",
+          name: "Multi",
+          api_keys: [{ id: "cred_a" }],
+          key_strategy: "weighted",
+        }],
+      },
+    },
+  });
+  assert.ok(issues.some((item) => item.code === "invalid_key_strategy"));
+});
+
 test("failed scoped-secret write preserves partial-migration fallback", () => {
   const root = mkdtempSync(path.join(os.tmpdir(), "gateway-multi-recovery-"));
   const configPath = path.join(root, "gateway.config.json");

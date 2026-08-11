@@ -68,6 +68,11 @@ import {
   isCapabilityEndpoint,
   copyClientEndpoints,
 } from "./lib/config/gateway-config-store.mjs";
+import {
+  hasStoredEndpointCredential,
+  maskApiKey,
+  resolveStoredSecret,
+} from "./lib/config/credential-store.mjs";
 import { syncClaudeCodeSettings } from "./lib/config/claude-code-settings.mjs";
 import { createModelDiscoveryService } from "./lib/models/discovery-service.mjs";
 import { createTokenTracker } from "./lib/analytics/token-tracker.mjs";
@@ -2130,6 +2135,47 @@ sendJson(res, 200, result);
         },
       });
     }
+    return;
+  }
+
+if (reqPath === "/v1/config/secret-preview" && req.method === "GET") {
+    if (!checkLocalAuth(req, res)) return;
+    if (req.headers["x-gateway-secret-intent"] !== "reveal") {
+      sendPrivateJson(res, 403, {
+        error: {
+          type: "secret_reveal_confirmation_required",
+          message: "Explicit secret reveal confirmation is required.",
+        },
+      });
+      return;
+    }
+
+    const endpointId = String(url.searchParams.get("id") || "").trim();
+    const endpoint = allGatewayEndpoints().find((item) => item.id === endpointId);
+    if (!endpointId || !endpoint) {
+      sendPrivateJson(res, 404, {
+        error: {
+          type: "endpoint_not_found",
+          message: "Endpoint not found.",
+        },
+      });
+      return;
+    }
+
+    const values = GATEWAY_SECRETS?.api_keys || {};
+    const credentials = (endpoint.api_keys || []).map((credential, index) => {
+      const stored = String(
+        values[`${endpointId}::${credential.id}`]
+        || (index === 0 ? values[endpointId] : "")
+        || "",
+      );
+      return {
+        id: credential.id,
+        configured: Boolean(stored),
+        preview: maskApiKey(resolveStoredSecret(stored)),
+      };
+    });
+    sendPrivateJson(res, 200, { credentials });
     return;
   }
 
@@ -7136,9 +7182,17 @@ function publicGatewayConfig() {
   const clients = structuredClone(GATEWAY_CONFIG.clients || {});
   for (const client of Object.values(clients)) {
     for (const endpoint of client.endpoints || []) {
-      endpoint.has_api_key = Boolean(GATEWAY_SECRETS?.api_keys?.[endpoint.id]);
+      endpoint.has_api_key = endpoint.api_keys?.length
+        ? hasStoredEndpointCredential(endpoint, GATEWAY_SECRETS)
+        : Boolean(GATEWAY_SECRETS?.api_keys?.[endpoint.id]);
+      if (endpoint.api_keys) {
+        endpoint.api_keys = endpoint.api_keys.map((credential) => ({
+          id: credential.id,
+        }));
+      }
       delete endpoint.api_key;
       delete endpoint.api_key_env;
+      delete endpoint.api_key_values;
     }
   }
   return {
