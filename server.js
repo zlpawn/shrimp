@@ -140,8 +140,10 @@ import {
   selectMediaEndpointForRequest,
 } from "./lib/media/index.mjs";
 import { normalizeMediaReferenceImages } from "./lib/media/request-normalizer.mjs";
-
-const PROJECT_ROOT = path.dirname(fileURLToPath(import.meta.url));
+import {
+  PROJECT_ROOT,
+  resolveProjectPath,
+} from "./lib/config/project-paths.mjs";
 
 loadDotEnv();
 enableNodeEnvProxy();
@@ -9580,11 +9582,6 @@ function parseList(value) {
     .filter(Boolean);
 }
 
-function resolveProjectPath(targetPath) {
-  if (!targetPath) return "";
-  return path.isAbsolute(targetPath) ? targetPath : path.join(PROJECT_ROOT, targetPath);
-}
-
 function resolveUserPath(targetPath) {
   if (!targetPath) return "";
   const expanded = targetPath === "~" || targetPath.startsWith("~/") || targetPath.startsWith("~\\")
@@ -11049,4 +11046,3 @@ async function readText(req) {
     req.on("error", reject);
   });
 }
-
