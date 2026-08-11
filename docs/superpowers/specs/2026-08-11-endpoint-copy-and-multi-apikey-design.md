@@ -263,3 +263,59 @@ The single-to-multi-key migration happens in `saveGatewayState`:
 - **label field**: defined in interface, not stored. Reserved for future.
 - **Copy interaction**: "copy node" button on target client page, opens modal
   to pick source client + source endpoint, then lands on preview editor.
+
+### TypeScript integration
+
+The desktop frontend is written in TypeScript with native DOM manipulation
+(no framework). The multi-key and copy-node features integrate as follows:
+
+- `desktop/src/core/types.ts` adds `Credential` interface and `api_keys` /
+  `key_strategy` fields to `Endpoint`.
+- `desktop/src/app.ts` adds `window.openCopyNodeModal`,
+  `window.confirmCopyNode`, `window.addApiKey`, `window.removeApiKey`,
+  `window.setKeyStrategy` functions following the existing `window.*` pattern.
+- Multi-key editor rendering is extracted into a dedicated module
+  `desktop/src/modules/multi-key-editor.ts` (following the existing
+  `modules/iching.ts`, `modules/video-kb.ts` pattern), keeping `app.ts` from
+  growing further.
+- Copy-node modal rendering is extracted into
+  `desktop/src/modules/copy-node.ts`.
+- All CSS classes from the prototype are added to `panel.css`, using existing
+  CSS variables for automatic dark/light theme support.
+- No new dependencies are introduced. The existing esbuild config builds the
+  new modules automatically.
+
+### UI components (visual reference)
+
+Prototype: `visualizations/2026/08/11/endpoint-ui-prototype.html`
+
+Four UI states are designed:
+
+1. **Copy node button + modal**: A "copy node" button (copy icon) sits next to
+   the existing "add node" button in each client section header. Clicking
+   opens a modal (reusing the `.skill-modal` overlay pattern) with a source
+   client select and a source endpoint list (reusing the `.add-node-option`
+   grid layout: icon + name/url + type badge). A hint tells the user the
+   protocol will be auto-inferred.
+
+2. **Preview editor after copy**: The existing endpoint detail editor
+   (`.form-grid` layout) opens pre-filled with the source endpoint data. A
+   `.protocol-hint` banner at the top informs the user of the protocol
+   conversion. A `.detail-badge` shows the source client. All fields are
+   editable; api_key shows "configured" status.
+
+3. **Multi-key editor**: When an endpoint has `api_keys`, the detail editor
+   shows a strategy selector (3-column card grid, reusing
+   `.client-create-mode-option` pattern) and a key list. Each key row has a
+   masked preview (`ark-...AAA`), a password input with reveal toggle (reusing
+   `.password-input-wrapper`), and a delete button. An "add key" button
+   (dashed border, reusing `.nav-create-client` pattern) adds new entries.
+
+4. **Single-key to multi-key transition**: A single-key endpoint shows the
+   existing api_key input unchanged, with an "add another key" button below.
+   Clicking it triggers the secrets migration and switches to the multi-key
+   editor view.
+
+All components use existing CSS variables for theming, existing button/form
+classes, and follow the established visual language (zinc neutrals, no accent
+color, 6px/8px radius scale, 13px base font).
