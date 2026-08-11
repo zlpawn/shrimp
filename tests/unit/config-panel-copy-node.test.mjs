@@ -33,3 +33,22 @@ test("endpoint type reserves credential metadata without requiring label", async
   assert.match(source, /key_strategy\?:\s*KeyStrategy/);
   assert.match(source, /api_key_values\?:\s*Record<string,\s*string>/);
 });
+
+test("copy UI is preview-first and never auto-saves", async () => {
+  const [app, index, module] = await Promise.all([
+    readFile(path.join(ROOT, "desktop/src/app.ts"), "utf8"),
+    readFile(path.join(ROOT, "desktop/index.html"), "utf8"),
+    readFile(path.join(ROOT, "desktop/src/modules/copy-node.ts"), "utf8"),
+  ]);
+
+  assert.match(app + index, /复制节点/);
+  assert.match(module, /export function openCopyNodeModal/);
+  assert.match(module, /export async function revealEndpointSecrets/);
+  assert.match(
+    app,
+    /selectedEndpoint\s*=\s*\{\s*client:\s*targetClient,\s*index:\s*0\s*\}/,
+  );
+  assert.doesNotMatch(module, /\/v1\/config\/save/);
+  assert.match(module, /credential_id/);
+  assert.match(module, /多密钥节点将在多密钥支持启用后可复制/);
+});

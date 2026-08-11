@@ -3,6 +3,10 @@ import { renderVideoKbDetail } from "./modules/video-kb";
 import { renderIchingDetail } from "./modules/iching";
 import { showToast } from "./core/ui";
 import { getConfig, loadSyncStatus, fetchJson } from "./core/api";
+import {
+    getCopyProtocolHint,
+    openCopyNodeModal,
+} from "./modules/copy-node";
 
 let config = {
     server: { host: "127.0.0.1", port: 8787 },
@@ -790,7 +794,15 @@ function renderCustomClientSections() {
                         <option value="anthropic" ${protocol !== 'openai' ? 'selected' : ''}>Anthropic</option>
                         <option value="openai" ${protocol === 'openai' ? 'selected' : ''}>OpenAI 兼容</option>
                     </select>
-                    <div class="add-node-dropdown" id="add-node-dropdown-${escapeHtml(client)}">
+                    <button
+                        type="button"
+                        class="btn copy-node-trigger"
+                        style="${detailForThis ? 'display:none' : ''}"
+                        onclick="openCopyNodeModalForClient('${escapeHtml(client)}')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        复制节点
+                    </button>
+                    <div class="add-node-dropdown" id="add-node-dropdown-${escapeHtml(client)}" style="${detailForThis ? 'display:none' : ''}">
                         <button type="button" class="btn add-node-trigger" aria-expanded="false" aria-haspopup="menu" onclick="toggleAddNodeMenu('${escapeHtml(client)}', event)">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                             添加节点
@@ -3026,6 +3038,7 @@ function createEndpointDetailHTML(client, index, ep) {
     ).join('');
 
     const title = escapeHtml(ep.name || `节点 ${index + 1}`);
+    const copyProtocolHint = getCopyProtocolHint(ep.id);
 
     return `
         <div class="detail-view">
@@ -3065,6 +3078,12 @@ function createEndpointDetailHTML(client, index, ep) {
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>删除</button>
                 </div>
             </div>
+            ${copyProtocolHint ? `
+            <div class="protocol-hint" role="status">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                <span>${escapeHtml(copyProtocolHint)}</span>
+            </div>
+            ` : ''}
             <div class="card" id="ep-${client}-${index}">
                 <div class="form-grid">
                     <div class="form-group full">
@@ -3370,8 +3389,10 @@ function setSectionChrome(client, detailMode) {
     if (!section) return;
     const guide = section.querySelector('.usage-guide');
     const addMenu = section.querySelector('.section-header .add-node-dropdown');
+    const copyTrigger = section.querySelector('.section-header .copy-node-trigger');
     if (guide) guide.style.display = detailMode ? 'none' : '';
     if (addMenu) addMenu.style.display = detailMode ? 'none' : '';
+    if (copyTrigger) copyTrigger.style.display = detailMode ? 'none' : '';
 }
 
 function createEndpointGroupsHTML(client, endpoints) {
@@ -3474,6 +3495,19 @@ function render() {
         renderCustomClientSections();
     }
 }
+
+window.openCopyNodeModalForClient = function(targetClient) {
+    if (!config.clients?.[targetClient]) return;
+    openCopyNodeModal(targetClient, config, async (draft) => {
+        config.clients[targetClient].endpoints ||= [];
+        config.clients[targetClient].endpoints.unshift(draft);
+        selectedEndpoint = { client: targetClient, index: 0 };
+        render();
+        setTimeout(() => {
+            document.getElementById(`input-name-${targetClient}-0`)?.focus();
+        }, 0);
+    });
+};
 
 function getClaudeCodeDefaultEndpoint() {
     const endpoints = (config.clients?.code?.endpoints || [])

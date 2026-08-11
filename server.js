@@ -2146,10 +2146,9 @@ if (reqPath === "/v1/config/secret" && req.method === "GET") {
     }
 
     const endpointId = String(url.searchParams.get("id") || "").trim();
-    const endpointExists = Object.values(GATEWAY_CONFIG.clients || {}).some((client) =>
-      (client.endpoints || []).some((endpoint) => endpoint.id === endpointId),
-    );
-    if (!endpointId || !endpointExists) {
+    const credentialId = String(url.searchParams.get("credential_id") || "").trim();
+    const endpoint = allGatewayEndpoints().find((item) => item.id === endpointId);
+    if (!endpointId || !endpoint) {
       sendPrivateJson(res, 404, {
         error: {
           type: "endpoint_not_found",
@@ -2159,7 +2158,30 @@ if (reqPath === "/v1/config/secret" && req.method === "GET") {
       return;
     }
 
-    const storedSecret = String(GATEWAY_SECRETS?.api_keys?.[endpointId] || "");
+    let storedSecret = "";
+    if (credentialId) {
+      const credentialIndex = endpoint.api_keys?.findIndex(
+        (item) => item?.id === credentialId,
+      ) ?? -1;
+      if (credentialIndex < 0) {
+        sendPrivateJson(res, 404, {
+          error: {
+            type: "credential_not_found",
+            message: "Credential not found.",
+          },
+        });
+        return;
+      }
+      storedSecret = String(
+        GATEWAY_SECRETS?.api_keys?.[`${endpointId}::${credentialId}`]
+        || (credentialIndex === 0
+          ? GATEWAY_SECRETS?.api_keys?.[endpointId]
+          : "")
+        || "",
+      );
+    } else {
+      storedSecret = String(GATEWAY_SECRETS?.api_keys?.[endpointId] || "");
+    }
     if (!storedSecret) {
       sendPrivateJson(res, 404, {
         error: {
@@ -2170,7 +2192,13 @@ if (reqPath === "/v1/config/secret" && req.method === "GET") {
       return;
     }
 
-    sendPrivateJson(res, 200, { api_key: storedSecret });
+    sendPrivateJson(
+      res,
+      200,
+      credentialId
+        ? { credential_id: credentialId, api_key: storedSecret }
+        : { api_key: storedSecret },
+    );
     return;
   }
 
@@ -11049,4 +11077,3 @@ async function readText(req) {
     req.on("error", reject);
   });
 }
-
