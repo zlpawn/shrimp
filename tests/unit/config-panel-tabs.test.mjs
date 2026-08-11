@@ -35,9 +35,8 @@ test("config panel contains 用量统计 and 网络代理 navigation items and t
 });
 
 test("endpoint editor renders one upstream-model heading per node", () => {
-  const html = SOURCES;
-  const editorBlock = html.match(
-    /\$\{isWebSearch \? '' : `<div class="form-group full">[\s\S]*?<div class="form-group full">\s*<label>模型映射关系/,
+  const editorBlock = _app.match(
+    /function createEndpointDetailHTML[\s\S]*?(?=\nfunction setSectionChrome)/,
   )?.[0] || "";
 
   assert.ok(editorBlock, "expected to find the endpoint upstream-model editor");

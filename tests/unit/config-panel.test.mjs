@@ -373,7 +373,7 @@ test("image generation mini-tool sends media request and renders local history",
   assert.match(firstDocument, /'image-gen':/);
   assert.match(firstDocument, /toolCardHTML/);
   assert.match(firstDocument, /toolId === 'image-gen'/);
-  assert.match(firstDocument, /const imageGenState\s*=\s*\{/);
+  assert.match(firstDocument, /window\.imageGenState\s*=\s*\{/);
   assert.match(firstDocument, /function getMediaEndpoints\(client, purpose\)/);
   assert.match(firstDocument, /window\.renderImageGenDetail\s*=\s*function/);
   assert.match(firstDocument, /window\.runImageGeneration\s*=\s*async function/);
@@ -392,7 +392,7 @@ test("web search mini-tool sends search request and renders local history", asyn
   const firstDocument = html;
   assert.match(firstDocument, /'web-search':/);
   assert.match(firstDocument, /toolId === 'web-search'/);
-  assert.match(firstDocument, /const webSearchState\s*=\s*\{/);
+  assert.match(firstDocument, /window\.webSearchState\s*=\s*\{/);
   assert.match(firstDocument, /window\.renderWebSearchDetail\s*=\s*function/);
   assert.match(firstDocument, /window\.runWebSearch\s*=\s*async function/);
   assert.match(firstDocument, /\/v1\/web-search/);
