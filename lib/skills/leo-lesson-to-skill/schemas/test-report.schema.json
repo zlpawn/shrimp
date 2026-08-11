@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "test-report.schema.json",
+  "title": "Generated Skill Test Report",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "skill_name",
+    "skill_spec_hash",
+    "frozen_suite",
+    "frozen_suite_hash",
+    "test_rounds",
+    "final_status",
+    "evaluation_mode",
+    "consistency_metrics"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "skill_name": {"type": "string", "pattern": "^leo-[a-z0-9]+(?:-[a-z0-9]+)*$"},
+    "skill_spec_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "frozen_suite": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": ["scenario_id", "required", "description", "user_input", "check_ids"],
+        "properties": {
+          "scenario_id": {"type": "string", "minLength": 1},
+          "required": {"type": "boolean"},
+          "description": {"type": "string", "minLength": 1},
+          "user_input": {"type": "string", "minLength": 1},
+          "check_ids": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {"type": "string", "minLength": 1}
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "frozen_suite_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "test_rounds": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["round", "scenarios", "failed_items", "fix_applied"],
+        "properties": {
+          "round": {"type": "integer", "minimum": 1, "maximum": 3},
+          "scenarios": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "type": "object",
+              "required": ["scenario_id", "required", "checks"],
+              "properties": {
+                "scenario_id": {"type": "string", "minLength": 1},
+                "required": {"type": "boolean"},
+                "checks": {"type": "object", "minProperties": 1, "additionalProperties": {"type": "boolean"}}
+              },
+              "additionalProperties": true
+            }
+          },
+          "failed_items": {"type": "array", "items": {"type": "string"}},
+          "fix_applied": {"type": ["string", "null"]}
+        },
+        "additionalProperties": true
+      }
+    },
+    "final_status": {"enum": ["passed", "failed_after_3_rounds"]},
+    "evaluation_mode": {
+      "enum": ["deterministic", "self_eval", "independent_eval"]
+    },
+    "consistency_metrics": {
+      "type": "object",
+      "required": [
+        "methodology_coverage",
+        "step_order_match",
+        "required_elements_coverage",
+        "anti_patterns_coverage",
+        "unsupported_claims",
+        "open_conflicts_reported",
+        "required_test_pass_rate",
+        "spec_hash_match"
+      ],
+      "properties": {
+        "methodology_coverage": {"type": "number", "minimum": 0, "maximum": 1},
+        "step_order_match": {"type": "boolean"},
+        "required_elements_coverage": {"type": "number", "minimum": 0, "maximum": 1},
+        "anti_patterns_coverage": {"type": "number", "minimum": 0, "maximum": 1},
+        "unsupported_claims": {"type": "integer", "minimum": 0},
+        "open_conflicts_reported": {"type": "boolean"},
+        "required_test_pass_rate": {"type": "number", "minimum": 0, "maximum": 1},
+        "spec_hash_match": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": true
+}

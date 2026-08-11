@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "skill-spec.schema.json",
+  "title": "Cross-Model Generated Skill Behavior Specification",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "skill_name",
+    "target_scenario",
+    "skill_type",
+    "methodology_refs",
+    "workflow",
+    "required_elements",
+    "anti_patterns",
+    "freedom_policy",
+    "acceptance_thresholds"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "skill_name": {
+      "type": "string",
+      "pattern": "^leo-[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "target_scenario": {"type": "string", "minLength": 1},
+    "skill_type": {"enum": ["execution", "guidance"]},
+    "methodology_refs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "workflow": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "order",
+          "name",
+          "methodology_refs",
+          "inputs",
+          "actions",
+          "outputs",
+          "checkpoints"
+        ],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "order": {"type": "integer", "minimum": 1},
+          "name": {"type": "string", "minLength": 1},
+          "methodology_refs": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {"type": "string", "minLength": 1}
+          },
+          "inputs": {"$ref": "#/$defs/nonEmptyStrings"},
+          "actions": {"$ref": "#/$defs/nonEmptyStrings"},
+          "outputs": {"$ref": "#/$defs/nonEmptyStrings"},
+          "checkpoints": {"$ref": "#/$defs/nonEmptyStrings"}
+        },
+        "additionalProperties": true
+      }
+    },
+    "required_elements": {"$ref": "#/$defs/nonEmptyStrings"},
+    "anti_patterns": {"$ref": "#/$defs/nonEmptyStrings"},
+    "freedom_policy": {
+      "type": "object",
+      "required": ["locked", "free"],
+      "properties": {
+        "locked": {"$ref": "#/$defs/nonEmptyStrings"},
+        "free": {"$ref": "#/$defs/nonEmptyStrings"}
+      },
+      "additionalProperties": false
+    },
+    "acceptance_thresholds": {
+      "type": "object",
+      "required": [
+        "methodology_coverage",
+        "required_elements_coverage",
+        "anti_patterns_coverage",
+        "required_test_pass_rate",
+        "unsupported_claims_max",
+        "require_exact_step_order",
+        "require_spec_hash_match",
+        "require_open_conflicts_reported"
+      ],
+      "properties": {
+        "methodology_coverage": {"const": 1.0},
+        "required_elements_coverage": {"const": 1.0},
+        "anti_patterns_coverage": {"const": 1.0},
+        "required_test_pass_rate": {"const": 1.0},
+        "unsupported_claims_max": {"const": 0},
+        "require_exact_step_order": {"const": true},
+        "require_spec_hash_match": {"const": true},
+        "require_open_conflicts_reported": {"const": true}
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "nonEmptyStrings": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    }
+  },
+  "additionalProperties": true
+}

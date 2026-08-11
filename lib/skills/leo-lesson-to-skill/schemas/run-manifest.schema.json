@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "run-manifest.schema.json",
+  "title": "Leo Lesson to Skill Run Manifest",
+  "type": "object",
+  "required": ["schema_version", "run_id", "status", "created_at", "platform", "source_inputs", "temp_root", "permanent_assets", "temporary_files"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "run_id": {"type": "string", "minLength": 1},
+    "status": {
+      "enum": [
+        "initialized",
+        "acquired",
+        "acquired_failed",
+        "transcribed",
+        "transcribed_failed",
+        "evidence_extracted",
+        "evidence_extracted_failed",
+        "methodology_extracted",
+        "methodology_extracted_failed",
+        "skill_specified",
+        "skill_specified_failed",
+        "skill_generated",
+        "skill_generated_failed",
+        "testing",
+        "testing_failed",
+        "passed",
+        "published",
+        "publish_failed",
+        "cleanup_pending",
+        "cleaned",
+        "completed_cleanup_skipped",
+        "cleanup_failed"
+      ]
+    },
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"},
+    "platform": {"enum": ["windows", "macos", "linux"]},
+    "target_scenario": {"type": ["string", "null"]},
+    "source_inputs": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+    "temp_root": {"type": "string", "minLength": 1},
+    "last_error": {"type": ["string", "null"]},
+    "environment": {"type": "object"},
+    "permanent_assets": {"type": "array", "items": {"type": "string"}},
+    "temporary_files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "created_by_run", "size_bytes", "status"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "created_by_run": {"type": "boolean"},
+          "size_bytes": {"type": "integer", "minimum": 0},
+          "status": {"enum": ["pending", "deleted", "retained", "failed"]},
+          "deleted_at": {"type": ["string", "null"], "format": "date-time"},
+          "error": {"type": ["string", "null"]}
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "intermediate-representation.schema.json",
+  "title": "Course Video Intermediate Representation",
+  "type": "object",
+  "required": ["schema_version", "source", "transcript", "visual_evidence", "uncertain_items"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "source": {
+      "type": "object",
+      "required": ["type", "uris", "metadata"],
+      "properties": {
+        "type": {"const": "video"},
+        "uris": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "metadata": {
+          "type": "object",
+          "required": ["video_count", "duration_seconds", "asr_status", "visual_audit_status"],
+          "properties": {
+            "video_count": {"type": "integer", "minimum": 1},
+            "duration_seconds": {"type": "array", "minItems": 1, "items": {"type": "number", "exclusiveMinimum": 0}},
+            "asr_status": {"enum": ["complete", "failed"]},
+            "visual_audit_status": {"enum": ["complete", "blocked", "not_applicable", "failed"]}
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "transcript": {
+      "type": "object",
+      "required": ["segments"],
+      "properties": {
+        "segments": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "start", "end", "text"],
+            "properties": {
+              "id": {"type": "string", "minLength": 1},
+              "start": {"type": "number", "minimum": 0},
+              "end": {"type": "number", "exclusiveMinimum": 0},
+              "text": {"type": "string", "minLength": 1}
+            },
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "visual_evidence": {
+      "type": "object",
+      "required": ["frames"],
+      "properties": {
+        "frames": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "timestamp", "visual_status", "multimodal", "ocr"],
+            "properties": {
+              "id": {"type": "string", "minLength": 1},
+              "timestamp": {"type": "number", "minimum": 0},
+              "visual_status": {
+                "enum": [
+                  "multimodal_and_ocr",
+                  "multimodal_only",
+                  "ocr_only",
+                  "not_audited"
+                ]
+              },
+              "multimodal": {
+                "type": "object",
+                "required": ["status", "description"],
+                "properties": {
+                  "status": {
+                    "enum": ["complete", "blocked", "failed", "not_run"]
+                  },
+                  "description": {"type": "string"},
+                  "visible_text": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                  },
+                  "relationships": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                  }
+                },
+                "additionalProperties": true
+              },
+              "ocr": {
+                "type": "object",
+                "required": ["status", "text"],
+                "properties": {
+                  "status": {
+                    "enum": ["complete", "blocked", "failed", "not_run"]
+                  },
+                  "text": {"type": "string"}
+                },
+                "additionalProperties": true
+              },
+              "slide_hash": {"type": ["string", "null"]}
+            },
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "uncertain_items": {"type": "array", "items": {"type": "object"}}
+  },
+  "additionalProperties": true
+}
