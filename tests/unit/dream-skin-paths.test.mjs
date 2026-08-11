@@ -1,4 +1,4 @@
-import assert from "node:assert/strict";
+﻿import assert from "node:assert/strict";
 import path from "node:path";
 import test from "node:test";
 
@@ -7,6 +7,9 @@ import {
   resolveProjectPath,
 } from "../../lib/config/project-paths.mjs";
 import { resolveDreamSkinPaths } from "../../lib/dream-skin/paths.mjs";
+
+// Normalize path separators for cross-platform test assertions.
+const P = (p) => p.replace(/\//g, path.sep);
 
 test("resolveProjectPath keeps absolute paths and resolves relative paths under the project", () => {
   assert.equal(resolveProjectPath("gateway.config.json"), path.join(PROJECT_ROOT, "gateway.config.json"));
@@ -21,12 +24,16 @@ test("dream-skin data follows the resolved gateway config directory", () => {
   });
 
   assert.deepEqual(paths, {
-    configPath: "/workspace/shrimp/config/gateway.config.json",
-    configDir: "/workspace/shrimp/config",
-    rootDir: "/workspace/shrimp/config/dream-skin",
-    themesDir: "/workspace/shrimp/config/dream-skin/themes",
-    cacheDir: "/workspace/shrimp/config/dream-skin/cache",
-    statePath: "/workspace/shrimp/config/dream-skin/state.json",
+    configPath: P("/workspace/shrimp/config/gateway.config.json"),
+    configDir: P("/workspace/shrimp/config"),
+    rootDir: P("/workspace/shrimp/config/dream-skin"),
+    themesDir: P("/workspace/shrimp/config/dream-skin/themes"),
+    marketDir: P("/workspace/shrimp/config/dream-skin/market"),
+    previewsDir: P("/workspace/shrimp/config/dream-skin/market/previews"),
+    stagingDir: P("/workspace/shrimp/config/dream-skin/.staging"),
+    statePath: P("/workspace/shrimp/config/dream-skin/state.json"),
+    marketIndexPath: P("/workspace/shrimp/config/dream-skin/market/index.json"),
+    installedPath: P("/workspace/shrimp/config/dream-skin/market/installed.json"),
   });
 });
 
@@ -36,6 +43,6 @@ test("an npm data-dir config keeps dream-skin data beside that config", () => {
     projectRoot: "/unused/project",
   });
 
-  assert.equal(paths.rootDir, "/Users/example/.shrimp/dream-skin");
-  assert.equal(paths.themesDir, "/Users/example/.shrimp/dream-skin/themes");
+  assert.equal(paths.rootDir, P("/Users/example/.shrimp/dream-skin"));
+  assert.equal(paths.themesDir, P("/Users/example/.shrimp/dream-skin/themes"));
 });
