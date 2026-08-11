@@ -155,33 +155,55 @@ With one key, all strategies behave identically (use that key).
 ### Retry limits (hardcoded)
 | Limit | Value | Purpose |
 |-------|-------|---------|
-| Single-key request timeout | 15s | Abort and mark key as failed |
+| Per-credential attempt timeout | 15s | Abort and mark the credential as failed |
 | Max key attempts | `min(keys.length, 3)` | Do not try every key |
 | Total elapsed timeout | 30s | Hard ceiling, return error to caller |
-These are constants in `lib/config/gateway-config-store.mjs`, not configurable.
+These are constants in `lib/upstream-retry.mjs`, not configurable.
 They can be promoted to a `server.upstream_retry` config block later if needed.
 ### Key selection function
-`getEndpointApiKey` is extended to accept a strategy context and return the
-selected key (and credential id for tracking):
+The existing
+`getEndpointApiKey(endpoint, secrets, env, allEndpoints)` function keeps its
+four-argument signature and legacy behavior. Multi-key routing uses a new
+additive wrapper that returns the selected key and credential id:
 ```js
-function getEndpointApiKey(endpoint, secrets, env, allEndpoints, strategyContext) {
-  // If endpoint has api_keys array, select via strategy.
-  // Otherwise fall back to existing single-key lookup.
+function getEndpointApiKeyByStrategy(
+  endpoint,
+  secrets,
+  env,
+  allEndpoints,
+  strategyContext,
+) {
+  // Selects from endpoint.api_keys when present.
+  // Delegates to getEndpointApiKey for the legacy single-key fallback.
 }
 ```
 The strategy context carries:
-- `strategy`: the endpoint's `key_strategy` (default `failover`).
 - `attempt`: current attempt number (0-indexed), set by the retry loop.
 - `lastCredentialId`: the credential id that failed, for failover.
 For `round-robin`, a process-level in-memory counter per endpoint id tracks
 the last-used index. It is not persisted; on restart it resets to 0.
 ### Retry integration
-The existing retry logic in `lib/upstream-retry.mjs` handles 429/503/529 with
-same-key retries. Multi-key failover extends this: when
-`shouldRetryUpstreamResponse` returns true and the endpoint has multiple keys,
-the retry loop increments `attempt`, calls `getEndpointApiKey` with the new
-context, and retries with the next key. The max-attempts and total-timeout
-constants bound the loop.
+The runtime uses **Inline Execution** at the two existing configured-upstream
+entry points: `fetchConfiguredAnthropic` and `fetchConfiguredOpenAI`.
+
+- Endpoints without a non-empty `api_keys` array execute the existing function
+  bodies unchanged, including configured-key preference, caller-key fallback,
+  401/403 fallback, request timeout, and same-key overload retries.
+- `failover` resolves the ordered credential list once and runs
+  `runCredentialFailover`. It moves to the next credential after 429, any 5xx,
+  network errors, or per-credential timeouts. The runner enforces 15 seconds
+  per credential, at most `min(keyCount, 3)` credential attempts, and 30
+  seconds total.
+- `round-robin` and `random` select one credential once per request through
+  `getEndpointApiKeyByStrategy`, then preserve the existing
+  `UPSTREAM_RETRY_COUNT` and `shouldRetryUpstreamResponse` same-key loop.
+- Runtime logs contain endpoint and credential IDs only. API key values are
+  never logged.
+
+This keeps endpoint selection unchanged and makes credential execution an
+internal concern of the selected endpoint. Future group routing can therefore
+remain above this layer and delegate the chosen endpoint to the same
+credential executor.
 ### UI changes
 #### Multi-key editor
 In the endpoint detail editor, when an endpoint has a single key (or none),

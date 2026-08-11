@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 
 import {
   isDeterministicQuotaError,
+  runCredentialFailover,
+  shouldFailoverCredential,
   shouldRetryUpstreamResponse,
 } from "../../lib/upstream-retry.mjs";
 
@@ -33,4 +35,79 @@ test("recognizes common deterministic quota error text", () => {
   assert.equal(isDeterministicQuotaError("AccountQuotaExceeded"), true);
   assert.equal(isDeterministicQuotaError("weekly usage quota will reset tomorrow"), true);
   assert.equal(isDeterministicQuotaError("requests per minute exceeded"), false);
+});
+
+test("credential failover retries 429 and every 5xx", async () => {
+  assert.equal(
+    await shouldFailoverCredential(new Response("", { status: 500 })),
+    true,
+  );
+  assert.equal(
+    await shouldFailoverCredential(new Response("", { status: 529 })),
+    true,
+  );
+  assert.equal(
+    await shouldFailoverCredential(new Response("", { status: 400 })),
+    false,
+  );
+  assert.equal(
+    await shouldFailoverCredential(new Response(JSON.stringify({
+      error: { code: "AccountQuotaExceeded" },
+    }), { status: 429 })),
+    true,
+  );
+});
+
+test("credential failover stops after min(key count, 3)", async () => {
+  const seen = [];
+  const response = await runCredentialFailover({
+    credentials: [
+      { credentialId: "a", apiKey: "key-a" },
+      { credentialId: "b", apiKey: "key-b" },
+      { credentialId: "c", apiKey: "key-c" },
+      { credentialId: "d", apiKey: "key-d" },
+    ],
+    request: async ({ credential }) => {
+      seen.push(credential.credentialId);
+      return new Response("", { status: 503 });
+    },
+    limits: { perAttemptMs: 50, maxAttempts: 3, totalMs: 200 },
+  });
+  assert.equal(response.status, 503);
+  assert.deepEqual(seen, ["a", "b", "c"]);
+});
+
+test("credential failover moves on after network errors", async () => {
+  const seen = [];
+  const response = await runCredentialFailover({
+    credentials: [
+      { credentialId: "a", apiKey: "key-a" },
+      { credentialId: "b", apiKey: "key-b" },
+    ],
+    request: async ({ credential }) => {
+      seen.push(credential.credentialId);
+      if (credential.credentialId === "a") throw new Error("socket closed");
+      return new Response("ok", { status: 200 });
+    },
+    limits: { perAttemptMs: 50, maxAttempts: 3, totalMs: 200 },
+  });
+  assert.equal(response.status, 200);
+  assert.deepEqual(seen, ["a", "b"]);
+});
+
+test("credential failover enforces per-attempt and total deadlines", async () => {
+  const started = Date.now();
+  await assert.rejects(() => runCredentialFailover({
+    credentials: [
+      { credentialId: "a", apiKey: "key-a" },
+      { credentialId: "b", apiKey: "key-b" },
+    ],
+    request: ({ signal }) => new Promise((resolve, reject) => {
+      signal.addEventListener("abort", () => reject(
+        Object.assign(new Error("aborted"), { name: "AbortError" }),
+      ));
+    }),
+    limits: { perAttemptMs: 20, maxAttempts: 3, totalMs: 35 },
+  }));
+  assert.ok(Date.now() - started < 150);
 });
