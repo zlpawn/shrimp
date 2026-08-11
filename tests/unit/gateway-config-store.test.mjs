@@ -6,6 +6,7 @@ import test from "node:test";
 
 import {
   GatewayConfigError,
+  defaultGatewayStorage,
   isCapabilityEndpoint,
   buildClaudeCodeModelRoutes,
   buildClaudeInferenceModels,
@@ -21,6 +22,7 @@ import {
   selectDefaultMediaEndpoint,
   validateGatewayConfig,
 } from "../../lib/config/gateway-config-store.mjs";
+import { listEndpointCredentials } from "../../lib/config/credential-store.mjs";
 
 test("vision fallback endpoints are excluded from exposed model selection", () => {
   const endpoints = [
@@ -195,6 +197,191 @@ test("credential lookup resolves literal and environment-backed endpoint secrets
     "ark-secret",
   );
   assert.equal(getEndpointApiKey({ id: "ep_missing" }, secrets, {}), "");
+});
+
+test("save migrates a legacy key and extracts transient multi-key values", () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), "gateway-multi-key-"));
+  const configPath = path.join(root, "gateway.config.json");
+  const secretsPath = path.join(root, "gateway.secrets.json");
+  try {
+    writeFileSync(secretsPath, JSON.stringify({
+      api_keys: { ep_multi: "sk-old" },
+    }));
+    const result = saveGatewayState({
+      configPath,
+      secretsPath,
+      config: {
+        clients: {
+          desktop: {
+            endpoints: [{
+              id: "ep_multi",
+              name: "Multi",
+              api_keys: [{ id: "cred_a" }, { id: "cred_b" }],
+              key_strategy: "failover",
+              api_key_values: { cred_b: "sk-new" },
+              has_api_key: true,
+            }],
+          },
+        },
+      },
+    });
+    const endpoint = result.config.clients.desktop.endpoints[0];
+    assert.deepEqual(endpoint.api_keys, [{ id: "cred_a" }, { id: "cred_b" }]);
+    assert.equal(endpoint.key_strategy, "failover");
+    assert.equal("api_key_values" in endpoint, false);
+    assert.equal("has_api_key" in endpoint, false);
+    assert.ok(result.secretsBackupPath);
+    assert.equal(statSync(result.secretsBackupPath).isFile(), true);
+    assert.deepEqual(result.secrets.api_keys, {
+      "ep_multi::cred_a": "sk-old",
+      "ep_multi::cred_b": "sk-new",
+    });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("save prunes removed credentials without pruning active scoped credentials", () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), "gateway-prune-credentials-"));
+  const configPath = path.join(root, "gateway.config.json");
+  const secretsPath = path.join(root, "gateway.secrets.json");
+  try {
+    writeFileSync(secretsPath, JSON.stringify({
+      api_keys: {
+        "ep_multi::cred_a": "sk-a",
+        "ep_multi::cred_b": "sk-b",
+        ep_single: "sk-single",
+      },
+    }));
+    const result = saveGatewayState({
+      configPath,
+      secretsPath,
+      config: {
+        clients: {
+          desktop: {
+            endpoints: [
+              { id: "ep_multi", name: "Multi", api_keys: [{ id: "cred_b" }] },
+              { id: "ep_single", name: "Single" },
+            ],
+          },
+        },
+      },
+    });
+    assert.deepEqual(result.secrets.api_keys, {
+      "ep_multi::cred_b": "sk-b",
+      ep_single: "sk-single",
+    });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("multi-key migration is idempotent", () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), "gateway-multi-idempotent-"));
+  const configPath = path.join(root, "gateway.config.json");
+  const secretsPath = path.join(root, "gateway.secrets.json");
+  try {
+    const config = {
+      clients: {
+        desktop: {
+          endpoints: [{
+            id: "ep_multi",
+            name: "Multi",
+            api_keys: [{ id: "cred_a" }],
+            key_strategy: "failover",
+            api_key_values: { cred_a: "sk-a" },
+          }],
+        },
+      },
+    };
+    const first = saveGatewayState({ configPath, secretsPath, config });
+    const second = saveGatewayState({
+      configPath,
+      secretsPath,
+      config: first.config,
+    });
+    assert.equal(second.configChanged, false);
+    assert.equal(second.secretsChanged, false);
+    assert.deepEqual(second.secrets, first.secrets);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("legacy save behavior remains unchanged when api_keys is absent", () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), "gateway-legacy-key-"));
+  const configPath = path.join(root, "gateway.config.json");
+  const secretsPath = path.join(root, "gateway.secrets.json");
+  try {
+    const result = saveGatewayState({
+      configPath,
+      secretsPath,
+      config: {
+        clients: {
+          desktop: {
+            endpoints: [{
+              id: "ep_legacy",
+              name: "Legacy",
+              api_key: "sk-legacy",
+            }],
+          },
+        },
+      },
+    });
+    assert.deepEqual(result.secrets.api_keys, { ep_legacy: "sk-legacy" });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("failed scoped-secret write preserves partial-migration fallback", () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), "gateway-multi-recovery-"));
+  const configPath = path.join(root, "gateway.config.json");
+  const secretsPath = path.join(root, "gateway.secrets.json");
+  try {
+    writeFileSync(secretsPath, JSON.stringify({
+      api_keys: { ep_multi: "sk-old" },
+    }));
+    const config = {
+      clients: {
+        desktop: {
+          endpoints: [{
+            id: "ep_multi",
+            name: "Multi",
+            api_keys: [{ id: "cred_a" }, { id: "cred_b" }],
+            api_key_values: { cred_b: "sk-new" },
+          }],
+        },
+      },
+    };
+
+    assert.throws(() => saveGatewayState({
+      configPath,
+      secretsPath,
+      config,
+      storage: {
+        ...defaultGatewayStorage,
+        writeJson(filePath, value, mode) {
+          if (filePath === secretsPath) {
+            throw new Error("injected secrets write failure");
+          }
+          return defaultGatewayStorage.writeJson(filePath, value, mode);
+        },
+      },
+    }), /injected secrets write failure/);
+
+    const persistedConfig = JSON.parse(readFileSync(configPath, "utf8"));
+    const persistedSecrets = JSON.parse(readFileSync(secretsPath, "utf8"));
+    const endpoint = persistedConfig.clients.desktop.endpoints[0];
+    assert.ok(endpoint.api_keys);
+    assert.equal(persistedSecrets.api_keys.ep_multi, "sk-old");
+    assert.equal(
+      listEndpointCredentials(endpoint, persistedSecrets, {})[0].apiKey,
+      "sk-old",
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("exposure selection uses explicit nodes, or all nodes when none are selected", () => {
