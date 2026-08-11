@@ -101,7 +101,6 @@ export function buildEndpointCopyDraft(
 
 export function listCopySources(config: AppConfig, targetClient: string) {
   return Object.entries(config.clients || {})
-    .filter(([client]) => client !== targetClient)
     .map(([client, value]) => ({
       client,
       endpoints: value.endpoints || [],

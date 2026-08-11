@@ -1,4 +1,5 @@
 import { escapeHtml } from "../core/dom";
+import { renderUiSelectHtml } from "../components/ui-select";
 import type { Endpoint, KeyStrategy } from "../core/types";
 
 interface CredentialPreview {
@@ -50,6 +51,10 @@ export function addCredential(endpoint: Endpoint): string {
   endpoint.api_keys.push({ id: credentialId });
   endpoint.api_key_values ||= {};
   return credentialId;
+}
+
+export function clearLegacyCredentialMark(endpoint: Endpoint): void {
+  pendingLegacyCredentialIds.delete(endpoint);
 }
 
 export function removeCredential(
@@ -195,8 +200,9 @@ function credentialPreview(
   endpoint: Endpoint,
   credentialId: string,
 ): CredentialPreview {
+  const isLegacy = pendingLegacyCredentialIds.get(endpoint) === credentialId;
   const transient = endpoint.api_key_values?.[credentialId];
-  if (transient) {
+  if (transient && !isLegacy) {
     return { id: credentialId, configured: true, preview: "待保存" };
   }
   const cached = previewCache.get(endpoint.id || "")?.credentials.find(
@@ -213,19 +219,23 @@ function credentialPreview(
   };
 }
 
-function strategyOption(
+const STRATEGY_OPTIONS = [
+  { value: "failover", label: "故障转移", description: "主 key 失败后自动切换备用 key" },
+  { value: "round-robin", label: "轮询", description: "依次轮流使用每个 key" },
+  { value: "random", label: "随机", description: "每次随机选择一个 key" },
+];
+
+function strategySelectHtml(
   client: string,
   index: number,
   selected: KeyStrategy,
-  value: KeyStrategy,
-  label: string,
 ): string {
-  return `
-    <label class="strategy-option ${selected === value ? "is-selected" : ""}">
-      <input type="radio" name="key-strategy-${escapeHtml(client)}-${index}" value="${value}" ${selected === value ? "checked" : ""} onchange="setEndpointKeyStrategy('${escapeHtml(client)}', ${index}, '${value}')">
-      <span>${label}</span>
-    </label>
-  `;
+  return renderUiSelectHtml({
+    id: `key-strategy-${client}-${index}`,
+    value: selected,
+    options: STRATEGY_OPTIONS,
+    onChange: (value: string) => setEndpointKeyStrategy(client, index, value as KeyStrategy),
+  });
 }
 
 export function renderEndpointKeyEditor(
@@ -251,10 +261,9 @@ export function renderEndpointKeyEditor(
           添加密钥
         </button>
       </div>
-      <div class="strategy-selector" role="radiogroup" aria-label="密钥使用策略">
-        ${strategyOption(client, index, strategy, "failover", "故障转移")}
-        ${strategyOption(client, index, strategy, "round-robin", "轮询")}
-        ${strategyOption(client, index, strategy, "random", "随机")}
+      <div class="strategy-field">
+        <label class="strategy-field-label">密钥策略</label>
+        ${strategySelectHtml(client, index, strategy)}
       </div>
       <div class="multi-key-list">
         ${endpoint.api_keys.map((credential) => {

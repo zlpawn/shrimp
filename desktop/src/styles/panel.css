@@ -1148,54 +1148,29 @@ body {
     white-space: nowrap;
 }
 
-.strategy-selector {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
-    padding: 4px;
-    background: var(--input-bg);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-}
-
-.strategy-option {
-    position: relative;
+.strategy-field {
     display: flex;
     align-items: center;
-    justify-content: center;
-    min-height: 32px;
-    padding: 6px 10px;
+    gap: 10px;
+    margin-bottom: 4px;
+}
+
+.strategy-field-label {
+    flex: 0 0 auto;
     color: var(--text-secondary);
-    border: 1px solid transparent;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
     font-size: 12px;
     font-weight: 600;
-    letter-spacing: 0;
-    text-transform: none;
+    white-space: nowrap;
 }
 
-.strategy-option:hover {
-    color: var(--text-primary);
+.strategy-field .ui-select-dropdown {
+    width: auto;
+    max-width: 200px;
+    flex: 0 1 200px;
 }
 
-.strategy-option.is-selected {
-    color: var(--text-primary);
-    background: var(--surface);
-    border-color: var(--border-color);
-}
-
-.strategy-option input {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    opacity: 0;
-    pointer-events: none;
-}
-
-.strategy-option:focus-within {
-    outline: 2px solid var(--text-primary);
-    outline-offset: 1px;
+.strategy-field .ui-select-trigger {
+    min-height: 36px;
 }
 
 .multi-key-list {
@@ -1290,10 +1265,6 @@ body {
     .key-editor-heading {
         align-items: flex-start;
         flex-direction: column;
-    }
-
-    .strategy-selector {
-        grid-template-columns: 1fr;
     }
 
     .multi-key-row {

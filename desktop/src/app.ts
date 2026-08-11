@@ -14,6 +14,7 @@ import {
 import {
     addCredential,
     clearCredentialPreviews,
+    clearLegacyCredentialMark,
     loadCredentialPreviews,
     removeCredential,
     renderEndpointKeyEditor,
@@ -6818,6 +6819,11 @@ window.saveConfig = async function(options = {}) {
                 options,
             );
             clearCredentialPreviews();
+            if (options.scope === 'node' && options.client) {
+                const savedEndpoint = config.clients?.[options.client]?.endpoints
+                    ?.find(ep => ep.id === (options.endpoint?.id || ''));
+                if (savedEndpoint) clearLegacyCredentialMark(savedEndpoint);
+            }
             if (payload.codex_model_catalog?.path_posix) {
                 codexModelCatalogPath = payload.codex_model_catalog.path_posix;
             } else if (payload.codex_model_catalog?.path) {
