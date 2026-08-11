@@ -1,0 +1,18 @@
+{
+  "id": "shrimp-default",
+  "name": "Shrimp 默认",
+  "colors": {
+    "background": "#1a1b2e",
+    "panel": "#252640",
+    "panelAlt": "#2d2e4a",
+    "accent": "#7c6ef0",
+    "accentAlt": "#9d8ff5",
+    "secondary": "#5a4d9e",
+    "highlight": "#a78bfa",
+    "text": "#e8e6f0",
+    "muted": "#9b98ad",
+    "line": "rgba(124, 110, 240, 0.18)"
+  },
+  "backgroundImage": "",
+  "backgroundOpacity": 0.85
+}
