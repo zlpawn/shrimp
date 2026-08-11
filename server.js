@@ -2168,6 +2168,16 @@ if (reqPath === "/v1/config/secret-preview" && req.method === "GET") {
     }
 
     const values = GATEWAY_SECRETS?.api_keys || {};
+    if (!endpoint.api_keys?.length) {
+      const stored = String(values[endpointId] || "");
+      sendPrivateJson(res, 200, {
+        single: {
+          configured: Boolean(stored),
+          preview: maskApiKey(resolveStoredSecret(stored)),
+        },
+      });
+      return;
+    }
     const credentials = (endpoint.api_keys || []).map((credential, index) => {
       const stored = String(
         values[`${endpointId}::${credential.id}`]

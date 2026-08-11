@@ -180,6 +180,19 @@ test("secret preview masks every declared credential without returning values", 
   });
 });
 
+test("secret preview masks a legacy single endpoint key", async (t) => {
+  const { preview } = await startSecretFixture(t);
+  const response = await preview("ep_single");
+  assert.equal(response.status, 200);
+  const payload = await response.json();
+
+  assert.deepEqual(payload.single, {
+    configured: true,
+    preview: "sk-s...gle",
+  });
+  assert.doesNotMatch(JSON.stringify(payload), /sk-single/);
+});
+
 test("public config reports multi-key status but contains no secret values", async (t) => {
   const { base } = await startSecretFixture(t);
   const response = await fetch(`${base}/v1/config`, {

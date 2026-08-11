@@ -31,3 +31,19 @@ test("unsupported capability runtimes do not advertise multi-key routing", async
   assert.match(source, /supportsMultiKeyRuntime/);
   assert.match(source, /purpose/);
 });
+
+test("single and multi-key editors share masked previews and replacement copy", async () => {
+  const source = await readFile(
+    path.join(ROOT, "desktop/src/modules/multi-key-editor.ts"),
+    "utf8",
+  );
+
+  assert.match(source, /single\?:\s*CredentialPreview/);
+  assert.match(source, /single-key-preview/);
+  assert.match(source, /KEEP_EXISTING_KEY_PLACEHOLDER/);
+  assert.equal(
+    (source.match(/输入新密钥，留空保留现有密钥/g) || []).length,
+    1,
+  );
+  assert.doesNotMatch(source, /留空表示保留现有密钥/);
+});

@@ -52,3 +52,20 @@ test("copy UI is preview-first and never auto-saves", async () => {
   assert.match(module, /credential_id/);
   assert.doesNotMatch(module, /multiKeyDisabled/);
 });
+
+test("copy source client uses the shared mini-tool select UI", async () => {
+  const [copyModule, selectModule] = await Promise.all([
+    readFile(path.join(ROOT, "desktop/src/modules/copy-node.ts"), "utf8"),
+    readFile(path.join(ROOT, "desktop/src/components/ui-select.ts"), "utf8")
+      .catch(() => ""),
+  ]);
+
+  assert.match(copyModule, /renderUiSelectHtml/);
+  assert.match(copyModule, /个可复制节点/);
+  assert.doesNotMatch(
+    copyModule,
+    /<select id="copy-node-source-client"/,
+  );
+  assert.match(selectModule, /export function renderUiSelectHtml/);
+  assert.match(selectModule, /ui-select-option-description/);
+});

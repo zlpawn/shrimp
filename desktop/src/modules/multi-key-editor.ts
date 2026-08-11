@@ -9,6 +9,7 @@ interface CredentialPreview {
 
 interface PreviewCacheEntry {
   signature: string;
+  single?: CredentialPreview;
   credentials: CredentialPreview[];
 }
 
@@ -17,6 +18,7 @@ const SUPPORTED_TYPES = new Set([
   "openai-chat",
   "openai-responses",
 ]);
+const KEEP_EXISTING_KEY_PLACEHOLDER = "输入新密钥，留空保留现有密钥";
 const pendingLegacyCredentialIds = new WeakMap<Endpoint, string>();
 const previewCache = new Map<string, PreviewCacheEntry>();
 const previewRequests = new Map<string, Promise<boolean>>();
@@ -94,8 +96,12 @@ export function clearCredentialPreviews(endpointId?: string): void {
 export async function loadCredentialPreviews(
   endpoint: Endpoint,
 ): Promise<boolean> {
-  if (!endpoint.id || !endpoint.api_keys?.length) return false;
-  const signature = endpoint.api_keys.map((item) => item.id).join("|");
+  if (!endpoint.id || (!endpoint.has_api_key && !endpoint.api_keys?.length)) {
+    return false;
+  }
+  const signature = endpoint.api_keys?.length
+    ? endpoint.api_keys.map((item) => item.id).join("|")
+    : "single";
   if (previewCache.get(endpoint.id)?.signature === signature) return false;
   const activeRequest = previewRequests.get(endpoint.id);
   if (activeRequest) return activeRequest;
@@ -114,6 +120,7 @@ export async function loadCredentialPreviews(
     const payload = await response.json();
     previewCache.set(endpoint.id || "", {
       signature,
+      single: payload.single,
       credentials: Array.isArray(payload.credentials)
         ? payload.credentials
         : [],
@@ -134,8 +141,9 @@ function singleKeyEditor(
 ): string {
   const isWebSearch = endpoint.purpose === "web_search";
   const label = isWebSearch ? "Tavily API Key" : "密钥 (API Key)";
-  const placeholder = endpoint.has_api_key
-    ? "留空表示保留现有密钥"
+  const preview = singleCredentialPreview(endpoint);
+  const placeholder = preview.configured
+    ? KEEP_EXISTING_KEY_PLACEHOLDER
     : isWebSearch
       ? "tvly-... 或 env:TAVILY_API_KEY"
       : "输入密钥或 env:变量名";
@@ -151,26 +159,46 @@ function singleKeyEditor(
   return `
     <div class="form-group full">
       <div class="key-editor-heading">
-        <label>${label} <span class="key-status ${endpoint.has_api_key ? "key-status-set" : "key-status-unset"}">${endpoint.has_api_key ? "已配置" : "未配置"}</span></label>
+        <label>${label} <span class="key-status ${preview.configured ? "key-status-set" : "key-status-unset"}">${preview.configured ? "已配置" : "未配置"}</span></label>
         ${addButton}
       </div>
-      <div class="password-input-wrapper">
-        <input class="mono" type="password" id="api-key-${escapeHtml(client)}-${index}" value="" placeholder="${escapeHtml(placeholder)}" onchange="updateEndpoint('${escapeHtml(client)}', ${index}, 'api_key', this.value)">
-        <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('${escapeHtml(client)}', ${index}, 'api-key-${escapeHtml(client)}-${index}')" title="${endpoint.has_api_key ? "查看已保存密钥" : "显示/隐藏密钥"}">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-            <circle cx="12" cy="12" r="3"></circle>
-          </svg>
-        </button>
+      <div class="single-key-row">
+        <span class="multi-key-preview single-key-preview ${preview.configured ? "is-configured" : ""}">${escapeHtml(preview.preview || "****")}</span>
+        <div class="password-input-wrapper">
+          <input class="mono" type="password" id="api-key-${escapeHtml(client)}-${index}" value="${escapeHtml(String(endpoint.api_key || ""))}" placeholder="${escapeHtml(placeholder)}" onchange="updateEndpoint('${escapeHtml(client)}', ${index}, 'api_key', this.value)">
+          <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('${escapeHtml(client)}', ${index}, 'api-key-${escapeHtml(client)}-${index}')" title="${preview.configured ? "查看已保存密钥" : "显示/隐藏密钥"}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   `;
+}
+
+function singleCredentialPreview(endpoint: Endpoint): CredentialPreview {
+  if (endpoint.api_key) {
+    return { id: endpoint.id || "", configured: true, preview: "待保存" };
+  }
+  const cached = previewCache.get(endpoint.id || "")?.single;
+  if (cached) return cached;
+  return {
+    id: endpoint.id || "",
+    configured: Boolean(endpoint.has_api_key),
+    preview: "****",
+  };
 }
 
 function credentialPreview(
   endpoint: Endpoint,
   credentialId: string,
 ): CredentialPreview {
+  const transient = endpoint.api_key_values?.[credentialId];
+  if (transient) {
+    return { id: credentialId, configured: true, preview: "待保存" };
+  }
   const cached = previewCache.get(endpoint.id || "")?.credentials.find(
     (item) => item.id === credentialId,
   );
@@ -178,11 +206,10 @@ function credentialPreview(
   if (pendingLegacyCredentialIds.get(endpoint) === credentialId) {
     return { id: credentialId, configured: true, preview: "已保存密钥" };
   }
-  const transient = endpoint.api_key_values?.[credentialId];
   return {
     id: credentialId,
-    configured: Boolean(transient),
-    preview: transient ? "待保存" : "****",
+    configured: false,
+    preview: "****",
   };
 }
 
@@ -245,7 +272,7 @@ export function renderEndpointKeyEditor(
           return `
             <div class="multi-key-row">
               <span class="multi-key-preview ${preview.configured ? "is-configured" : ""}" title="${escapeHtml(credential.id)}">${escapeHtml(preview.preview || "****")}</span>
-              <input class="mono multi-key-input" type="password" id="${escapeHtml(inputId)}" value="${escapeHtml(endpoint.api_key_values?.[credential.id] || "")}" placeholder="${preview.configured ? "留空表示保留现有密钥" : "输入 API Key"}" onchange="updateApiKey('${escapeHtml(client)}', ${index}, '${escapeHtml(credential.id)}', this.value)">
+              <input class="mono multi-key-input" type="password" id="${escapeHtml(inputId)}" value="${escapeHtml(endpoint.api_key_values?.[credential.id] || "")}" placeholder="${preview.configured ? KEEP_EXISTING_KEY_PLACEHOLDER : "输入 API Key"}" onchange="updateApiKey('${escapeHtml(client)}', ${index}, '${escapeHtml(credential.id)}', this.value)">
               <button type="button" class="multi-key-action" onclick="toggleMultiKeyVisibility('${escapeHtml(client)}', ${index}, '${escapeHtml(credential.id)}', '${escapeHtml(inputId)}')" title="${preview.configured ? "查看已保存密钥" : "显示/隐藏密钥"}" aria-label="${preview.configured ? "查看已保存密钥" : "显示或隐藏密钥"}">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
               </button>

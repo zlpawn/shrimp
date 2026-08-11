@@ -1,5 +1,6 @@
 import type { AppConfig, Endpoint } from "../core/types";
 import { escapeHtml } from "../core/dom";
+import { renderUiSelectHtml } from "../components/ui-select";
 
 export interface CopyTarget {
   client: string;
@@ -222,12 +223,22 @@ export function openCopyNodeModal(
       </div>
       <div class="copy-node-body">
         <div class="copy-node-field">
-          <label for="copy-node-source-client">来源客户端</label>
-          <select id="copy-node-source-client" ${sources.length ? "" : "disabled"}>
-            ${sources.map((source) => `
-              <option value="${escapeHtml(source.client)}">${escapeHtml(clientName(source.client))}</option>
-            `).join("")}
-          </select>
+          <label>来源客户端</label>
+          ${renderUiSelectHtml({
+            id: "copy-node-source-client",
+            value: state.sourceClient,
+            disabled: !sources.length,
+            placeholder: "暂无可复制客户端",
+            options: sources.map((source) => ({
+              value: source.client,
+              label: clientName(source.client),
+              description: `${source.endpoints.length} 个可复制节点`,
+            })),
+            onChange: (value) => {
+              state.sourceClient = value;
+              renderEndpoints();
+            },
+          })}
         </div>
         <div class="copy-node-list-header">
           <span>配置节点</span>
@@ -243,9 +254,6 @@ export function openCopyNodeModal(
     </div>
   `;
 
-  const sourceSelect = overlay.querySelector<HTMLSelectElement>(
-    "#copy-node-source-client",
-  );
   const sourceList = overlay.querySelector<HTMLElement>(
     "#copy-node-source-list",
   );
@@ -299,11 +307,6 @@ export function openCopyNodeModal(
       `;
     }).join("");
   };
-
-  sourceSelect?.addEventListener("change", () => {
-    state.sourceClient = sourceSelect.value;
-    renderEndpoints();
-  });
 
   sourceList?.addEventListener("click", (event) => {
     const button = (event.target as HTMLElement).closest<HTMLButtonElement>(
@@ -380,5 +383,7 @@ export function openCopyNodeModal(
   document.addEventListener("keydown", modalKeydownHandler, true);
   document.body.appendChild(overlay);
   renderEndpoints();
-  sourceSelect?.focus();
+  overlay.querySelector<HTMLElement>(
+    "#ui-select-copy-node-source-client .ui-select-trigger",
+  )?.focus();
 }

@@ -197,7 +197,10 @@ test("Claude Code default chat endpoint excludes every capability purpose", asyn
   )?.[0] || "";
 
   assert.match(html, /function isCapabilityEndpointPurpose\(purpose\)/);
-  assert.match(source, /\.filter\(endpoint => !isCapabilityEndpointPurpose\(endpoint\.purpose\)\)/);
+  const updatedSource = html.match(
+    /function getClaudeCodeDefaultEndpoint\([^)]*\) \{[\s\S]*?\n\}/,
+  )?.[0] || "";
+  assert.match(updatedSource, /\.filter\(endpoint => !isCapabilityEndpointPurpose\(endpoint\.purpose\)\)/);
 });
 
 test("Claude Code and Desktop guides describe automatic sync and restart only", async () => {
@@ -566,18 +569,23 @@ test("config panel includes TTS mini-tool card and detail", async () => {
 });
 
 test("media mini-tools use shared custom select popovers instead of native selects", async () => {
-  const html = await readSources();
-  const firstDocument = html;
-  assert.match(firstDocument, /function renderUiSelectHtml\(/);
-  assert.match(firstDocument, /window\.toggleUiSelect\s*=\s*function/);
-  assert.match(firstDocument, /window\.chooseUiSelectOption\s*=\s*function/);
-  assert.match(firstDocument, /\.ui-select-dropdown/);
-  assert.match(firstDocument, /id: 'image-gen-endpoint'/);
-  assert.match(firstDocument, /id: 'video-gen-endpoint'/);
-  assert.match(firstDocument, /id: 'tts-gen-voice'/);
-  assert.doesNotMatch(firstDocument, /onImageGenClientChange\(this\.value\)/);
-  assert.doesNotMatch(firstDocument, /onVideoGenClientChange\(this\.value\)/);
-  assert.doesNotMatch(firstDocument, /onTtsGenClientChange\(this\.value\)/);
+  const [html, selectModule] = await Promise.all([
+    readSources(),
+    readFile(
+      path.join(ROOT, "desktop", "src", "components", "ui-select.ts"),
+      "utf8",
+    ),
+  ]);
+  assert.match(selectModule, /export function renderUiSelectHtml/);
+  assert.match(selectModule, /\(window as any\)\.toggleUiSelect/);
+  assert.match(selectModule, /\(window as any\)\.chooseUiSelectOption/);
+  assert.match(html, /\.ui-select-dropdown/);
+  assert.match(html, /id: 'image-gen-endpoint'/);
+  assert.match(html, /id: 'video-gen-endpoint'/);
+  assert.match(html, /id: 'tts-gen-voice'/);
+  assert.doesNotMatch(html, /onImageGenClientChange\(this\.value\)/);
+  assert.doesNotMatch(html, /onVideoGenClientChange\(this\.value\)/);
+  assert.doesNotMatch(html, /onTtsGenClientChange\(this\.value\)/);
 });
 
 test("media mini-tools show full built-in client display names", async () => {
