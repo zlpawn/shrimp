@@ -4,6 +4,7 @@ gateway.secrets.json
 models.json
 cli-sources.json
 cli-install-history.json
+install-history.json
 .codex/
 restore-codex-config.ps1
 restore-codex-custom-provider.ps1
