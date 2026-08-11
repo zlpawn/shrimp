@@ -60,6 +60,7 @@ import {
   buildClaudeCodeModelRoutes,
   buildClaudeInferenceModels,
   getEndpointApiKey,
+  getEndpointApiKeyByStrategy,
   loadGatewayState,
   saveGatewayState,
   selectExposedEndpoints,
@@ -68,6 +69,12 @@ import {
   isCapabilityEndpoint,
   copyClientEndpoints,
 } from "./lib/config/gateway-config-store.mjs";
+import {
+  hasStoredEndpointCredential,
+  listEndpointCredentials,
+  maskApiKey,
+  resolveStoredSecret,
+} from "./lib/config/credential-store.mjs";
 import { syncClaudeCodeSettings } from "./lib/config/claude-code-settings.mjs";
 import { createModelDiscoveryService } from "./lib/models/discovery-service.mjs";
 import { createTokenTracker } from "./lib/analytics/token-tracker.mjs";
@@ -127,7 +134,10 @@ import {
   selectWebSearchEndpoint,
   getWebSearchProvider,
 } from "./lib/web-search/index.mjs";
-import { shouldRetryUpstreamResponse } from "./lib/upstream-retry.mjs";
+import {
+  runCredentialFailover,
+  shouldRetryUpstreamResponse,
+} from "./lib/upstream-retry.mjs";
 import {
   addHistoryEntry,
   deleteHistoryEntry,
@@ -2133,6 +2143,57 @@ sendJson(res, 200, result);
     return;
   }
 
+if (reqPath === "/v1/config/secret-preview" && req.method === "GET") {
+    if (!checkLocalAuth(req, res)) return;
+    if (req.headers["x-gateway-secret-intent"] !== "reveal") {
+      sendPrivateJson(res, 403, {
+        error: {
+          type: "secret_reveal_confirmation_required",
+          message: "Explicit secret reveal confirmation is required.",
+        },
+      });
+      return;
+    }
+
+    const endpointId = String(url.searchParams.get("id") || "").trim();
+    const endpoint = allGatewayEndpoints().find((item) => item.id === endpointId);
+    if (!endpointId || !endpoint) {
+      sendPrivateJson(res, 404, {
+        error: {
+          type: "endpoint_not_found",
+          message: "Endpoint not found.",
+        },
+      });
+      return;
+    }
+
+    const values = GATEWAY_SECRETS?.api_keys || {};
+    if (!endpoint.api_keys?.length) {
+      const stored = String(values[endpointId] || "");
+      sendPrivateJson(res, 200, {
+        single: {
+          configured: Boolean(stored),
+          preview: maskApiKey(resolveStoredSecret(stored)),
+        },
+      });
+      return;
+    }
+    const credentials = (endpoint.api_keys || []).map((credential, index) => {
+      const stored = String(
+        values[`${endpointId}::${credential.id}`]
+        || (index === 0 ? values[endpointId] : "")
+        || "",
+      );
+      return {
+        id: credential.id,
+        configured: Boolean(stored),
+        preview: maskApiKey(resolveStoredSecret(stored)),
+      };
+    });
+    sendPrivateJson(res, 200, { credentials });
+    return;
+  }
+
 if (reqPath === "/v1/config/secret" && req.method === "GET") {
     if (!checkLocalAuth(req, res)) return;
     if (req.headers["x-gateway-secret-intent"] !== "reveal") {
@@ -2146,10 +2207,9 @@ if (reqPath === "/v1/config/secret" && req.method === "GET") {
     }
 
     const endpointId = String(url.searchParams.get("id") || "").trim();
-    const endpointExists = Object.values(GATEWAY_CONFIG.clients || {}).some((client) =>
-      (client.endpoints || []).some((endpoint) => endpoint.id === endpointId),
-    );
-    if (!endpointId || !endpointExists) {
+    const credentialId = String(url.searchParams.get("credential_id") || "").trim();
+    const endpoint = allGatewayEndpoints().find((item) => item.id === endpointId);
+    if (!endpointId || !endpoint) {
       sendPrivateJson(res, 404, {
         error: {
           type: "endpoint_not_found",
@@ -2159,7 +2219,30 @@ if (reqPath === "/v1/config/secret" && req.method === "GET") {
       return;
     }
 
-    const storedSecret = String(GATEWAY_SECRETS?.api_keys?.[endpointId] || "");
+    let storedSecret = "";
+    if (credentialId) {
+      const credentialIndex = endpoint.api_keys?.findIndex(
+        (item) => item?.id === credentialId,
+      ) ?? -1;
+      if (credentialIndex < 0) {
+        sendPrivateJson(res, 404, {
+          error: {
+            type: "credential_not_found",
+            message: "Credential not found.",
+          },
+        });
+        return;
+      }
+      storedSecret = String(
+        GATEWAY_SECRETS?.api_keys?.[`${endpointId}::${credentialId}`]
+        || (credentialIndex === 0
+          ? GATEWAY_SECRETS?.api_keys?.[endpointId]
+          : "")
+        || "",
+      );
+    } else {
+      storedSecret = String(GATEWAY_SECRETS?.api_keys?.[endpointId] || "");
+    }
     if (!storedSecret) {
       sendPrivateJson(res, 404, {
         error: {
@@ -2170,7 +2253,13 @@ if (reqPath === "/v1/config/secret" && req.method === "GET") {
       return;
     }
 
-    sendPrivateJson(res, 200, { api_key: storedSecret });
+    sendPrivateJson(
+      res,
+      200,
+      credentialId
+        ? { credential_id: credentialId, api_key: storedSecret }
+        : { api_key: storedSecret },
+    );
     return;
   }
 
@@ -5884,9 +5973,13 @@ function resolveUrl(baseUrl, defaultPath) {
   return `${trimmed}${cleanPath}`;
 }
 
-async function fetchConfiguredAnthropic(provider, body, clientReq) {
+async function fetchConfiguredAnthropic(provider, body, clientReq, signal) {
   if (!provider?.base_url) {
     throw httpError(500, `Provider ${provider?.id || "unknown"} is missing base_url`);
+  }
+
+  if (provider.api_keys?.length) {
+    return fetchConfiguredAnthropicWithCredentials(provider, body, clientReq, signal);
   }
 
   const upstreamApiKey = providerApiKey(provider, clientReq);
@@ -6006,6 +6099,15 @@ async function fetchConfiguredOpenAI(
     throw httpError(500, `Provider ${provider?.id || "unknown"} is missing base_url`);
   }
 
+  if (provider.api_keys?.length) {
+    return fetchConfiguredOpenAIWithCredentials(
+      provider,
+      endpointPath,
+      body,
+      signal,
+    );
+  }
+
   const upstreamApiKey = providerApiKey(provider, clientReq);
   if (!upstreamApiKey) {
     throw httpError(
@@ -6061,6 +6163,130 @@ async function fetchConfiguredOpenAI(
   } finally {
     clearTimeout(timeout);
   }
+}
+
+async function runConfiguredCredentialRequest({
+  provider,
+  signal,
+  request,
+}) {
+  const strategy = provider.key_strategy || "failover";
+  const credentials = listEndpointCredentials(
+    provider,
+    GATEWAY_SECRETS,
+    process.env,
+  );
+  if (!credentials.length) {
+    throw httpError(401, `API key is not set for provider ${provider.id}.`);
+  }
+
+  try {
+    if (strategy === "failover") {
+      return await runCredentialFailover({
+        credentials,
+        parentSignal: signal,
+        request: async ({ credential, attempt, signal: attemptSignal }) => {
+          logInfo("upstream_credential_attempt", {
+            provider: provider.id,
+            strategy,
+            credential_id: credential.credentialId,
+            attempt: attempt + 1,
+          });
+          return request(credential.apiKey, attemptSignal);
+        },
+      });
+    }
+
+    const credential = getEndpointApiKeyByStrategy(
+      provider,
+      GATEWAY_SECRETS,
+      process.env,
+    );
+    if (!credential.apiKey) {
+      throw httpError(401, `API key is not set for provider ${provider.id}.`);
+    }
+
+    logInfo("upstream_credential_selected", {
+      provider: provider.id,
+      strategy,
+      credential_id: credential.credentialId,
+    });
+    const upstreamAbort = createUpstreamAbort(signal);
+    try {
+      let response = await request(credential.apiKey, upstreamAbort.signal);
+      for (
+        let attempt = 0;
+        attempt < UPSTREAM_RETRY_COUNT
+          && await shouldRetryUpstreamResponse(response);
+        attempt += 1
+      ) {
+        logInfo("upstream_retry", {
+          provider: provider.id,
+          status: response.status,
+          attempt: attempt + 1,
+          credential_id: credential.credentialId,
+        });
+        await sleep(UPSTREAM_RETRY_BACKOFF_MS * (attempt + 1));
+        response = await request(credential.apiKey, upstreamAbort.signal);
+      }
+      return response;
+    } finally {
+      upstreamAbort.dispose();
+    }
+  } catch (error) {
+    if (error?.statusCode) throw error;
+    const message =
+      error?.name === "AbortError"
+        ? `Timed out calling provider ${provider.id}`
+        : `Failed to call provider ${provider.id}: ${error.message || error}`;
+    throw httpError(502, message);
+  }
+}
+
+async function fetchConfiguredAnthropicWithCredentials(
+  provider,
+  body,
+  clientReq,
+  signal,
+) {
+  const url = resolveUrl(provider.base_url, "/v1/messages");
+  const baseHeaders = {
+    "anthropic-version": clientReq.headers["anthropic-version"] || "2023-06-01",
+    ...(clientReq.headers["anthropic-beta"]
+      ? { "anthropic-beta": clientReq.headers["anthropic-beta"] }
+      : {}),
+  };
+  const bodyStr = JSON.stringify(body);
+  return runConfiguredCredentialRequest({
+    provider,
+    signal,
+    request: (apiKey, requestSignal) => fetchConfiguredUrl(url, {
+      method: "POST",
+      headers: providerHeaders(provider, apiKey, baseHeaders),
+      body: bodyStr,
+      signal: requestSignal,
+    }, provider),
+  });
+}
+
+async function fetchConfiguredOpenAIWithCredentials(
+  provider,
+  endpointPath,
+  body,
+  signal,
+) {
+  const url = resolveUrl(provider.base_url, endpointPath);
+  const bodyStr = JSON.stringify(body);
+  return runConfiguredCredentialRequest({
+    provider,
+    signal,
+    request: (apiKey, requestSignal) => fetchConfiguredUrl(url, {
+      method: "POST",
+      headers: providerHeaders(provider, apiKey),
+      body: bodyStr,
+      signal: requestSignal,
+    }, provider),
+  });
 }
 
 function createUpstreamAbort(parentSignal) {
@@ -6930,6 +7156,9 @@ function getOfficialAnthropicAuth(req) {
 
 function getConfiguredProviderApiKey(provider) {
   if (!provider) return "";
+  if (provider.api_keys?.length) {
+    return listEndpointCredentials(provider, GATEWAY_SECRETS, process.env)[0]?.apiKey || "";
+  }
   if (provider.id && GATEWAY_SECRETS?.api_keys?.[provider.id]) {
     return getEndpointApiKey(provider, GATEWAY_SECRETS);
   }
@@ -7108,9 +7337,17 @@ function publicGatewayConfig() {
   const clients = structuredClone(GATEWAY_CONFIG.clients || {});
   for (const client of Object.values(clients)) {
     for (const endpoint of client.endpoints || []) {
-      endpoint.has_api_key = Boolean(GATEWAY_SECRETS?.api_keys?.[endpoint.id]);
+      endpoint.has_api_key = endpoint.api_keys?.length
+        ? hasStoredEndpointCredential(endpoint, GATEWAY_SECRETS)
+        : Boolean(GATEWAY_SECRETS?.api_keys?.[endpoint.id]);
+      if (endpoint.api_keys) {
+        endpoint.api_keys = endpoint.api_keys.map((credential) => ({
+          id: credential.id,
+        }));
+      }
       delete endpoint.api_key;
       delete endpoint.api_key_env;
+      delete endpoint.api_key_values;
     }
   }
   return {
@@ -8309,6 +8546,9 @@ function hasConfiguredApiKey(ep) {
   if (ep.type === "grok") return grokHasCredentials(ep);
   if (ep.type === "antigravity") return true; // OAuth-based, no API key needed
   if (isCodexSubscriptionProvider(ep)) return Boolean(resolveCodexSubscriptionAuthPresence(ep));
+  if (ep.api_keys?.length) {
+    return listEndpointCredentials(ep, GATEWAY_SECRETS, process.env).length > 0;
+  }
   if (getEndpointApiKey(ep, GATEWAY_SECRETS)) return true;
   if (!ep.api_key) return false;
   if (ep.api_key.startsWith("env:")) {
@@ -8718,6 +8958,8 @@ function endpointProvider(endpoint) {
     max_concurrency: endpoint.max_concurrency,
     client_version: endpoint.client_version,
     agent_id_path: endpoint.agent_id_path,
+    api_keys: endpoint.api_keys,
+    key_strategy: endpoint.key_strategy,
   };
 }
 
@@ -11049,4 +11291,3 @@ async function readText(req) {
     req.on("error", reject);
   });
 }
-

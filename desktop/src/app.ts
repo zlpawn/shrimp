@@ -3,11 +3,38 @@ import { renderVideoKbDetail } from "./modules/video-kb";
 import { renderIchingDetail } from "./modules/iching";
 import { showToast } from "./core/ui";
 import { getConfig, loadSyncStatus, fetchJson } from "./core/api";
+import {
+    closeUiSelects,
+    renderUiSelectHtml,
+} from "./components/ui-select";
+import {
+    getCopyProtocolHint,
+    openCopyNodeModal,
+} from "./modules/copy-node";
+import {
+    addCredential,
+    clearCredentialPreviews,
+    clearLegacyCredentialMark,
+    loadCredentialPreviews,
+    removeCredential,
+    renderEndpointKeyEditor,
+    setCredentialValue,
+    setKeyStrategy,
+} from "./modules/multi-key-editor";
+import {
+    applyEndpointDrafts,
+    buildScopedSaveConfig,
+    collectEndpointDrafts,
+    discardEndpointDraft as discardEndpointDraftState,
+    isEndpointDraft,
+    reconcileWorkingConfigAfterSave,
+} from "./modules/node-drafts.mjs";
 
 let config = {
     server: { host: "127.0.0.1", port: 8787 },
     clients: { code: { endpoints: [], model_slots: {} }, desktop: { endpoints: [] }, codex: { endpoints: [] }, deeptutor: { endpoints: [] } }
 };
+let persistedConfig = structuredClone(config);
 let codexModelCatalogPath = "~/.codex/gateway-model-catalog.json";
 
 // Craft-style navigation: null = card list, {client,index} = detail editor
@@ -590,7 +617,7 @@ window.setCustomClientProtocol = async function(client, protocol) {
     const previous = config.clients[client]?.protocol || 'anthropic';
     if (config.clients[client]) config.clients[client].protocol = protocol;
     render();
-    const saved = await saveConfig({ client, scope: 'node' });
+    const saved = await saveConfig({ client, scope: 'client' });
     if (!saved && config.clients[client]) config.clients[client].protocol = previous;
     render();
 };
@@ -790,7 +817,15 @@ function renderCustomClientSections() {
                         <option value="anthropic" ${protocol !== 'openai' ? 'selected' : ''}>Anthropic</option>
                         <option value="openai" ${protocol === 'openai' ? 'selected' : ''}>OpenAI 兼容</option>
                     </select>
-                    <div class="add-node-dropdown" id="add-node-dropdown-${escapeHtml(client)}">
+                    <button
+                        type="button"
+                        class="btn copy-node-trigger"
+                        style="${detailForThis ? 'display:none' : ''}"
+                        onclick="openCopyNodeModalForClient('${escapeHtml(client)}')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        复制节点
+                    </button>
+                    <div class="add-node-dropdown" id="add-node-dropdown-${escapeHtml(client)}" style="${detailForThis ? 'display:none' : ''}">
                         <button type="button" class="btn add-node-trigger" aria-expanded="false" aria-haspopup="menu" onclick="toggleAddNodeMenu('${escapeHtml(client)}', event)">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                             添加节点
@@ -1067,7 +1102,12 @@ window.setEndpointProxyMode = async function(btn, mode) {
             delete ep.proxy_mode;
             delete ep.proxy_url;
         }
-        const saved = await saveConfig({ button: btn, client, scope: 'node' });
+        const saved = await saveConfig({
+            button: btn,
+            client,
+            scope: 'proxy',
+            endpoint: endpointSelection(client, index),
+        });
         if (!saved) {
             btn.textContent = original;
             btn.disabled = false;
@@ -1418,17 +1458,21 @@ function mergeFetchedClients(data) {
 }
 
 // Reload the public config from the gateway and re-render.
-async function loadConfig() {
+async function loadConfig(preserveEndpointId = '') {
+    const preserveClient = selectedEndpoint?.client || '';
+    const drafts = collectEndpointDrafts(persistedConfig, config);
     try {
         const res = await fetch('/v1/config');
         if (res.ok) {
             const data = await res.json();
             if (data && data.clients) {
-                config = {
-                    ...config,
+                const fetchedConfig = {
+                    ...persistedConfig,
                     ...data,
                     clients: mergeFetchedClients(data),
                 };
+                persistedConfig = structuredClone(fetchedConfig);
+                config = applyEndpointDrafts(fetchedConfig, drafts);
                 if (data?.codex_model_catalog?.path_posix) {
                     codexModelCatalogPath = data.codex_model_catalog.path_posix;
                 } else if (data?.codex_model_catalog?.path) {
@@ -1438,6 +1482,13 @@ async function loadConfig() {
         }
     } catch (e) {
         console.warn('加载配置失败。');
+    }
+    if (preserveEndpointId && preserveClient) {
+        const index = (config.clients?.[preserveClient]?.endpoints || [])
+            .findIndex(endpoint => endpoint.id === preserveEndpointId);
+        selectedEndpoint = index >= 0
+            ? { client: preserveClient, index }
+            : null;
     }
     render();
 }
@@ -1453,6 +1504,7 @@ async function init() {
                     ...data,
                     clients: mergeFetchedClients(data),
                 };
+                persistedConfig = structuredClone(config);
             }
             if (data?.codex_model_catalog?.path_posix) {
                 codexModelCatalogPath = data.codex_model_catalog.path_posix;
@@ -2895,6 +2947,38 @@ function shortUrl(url) {
     }
 }
 
+function endpointSelection(client, index) {
+    const endpoint = config.clients?.[client]?.endpoints?.[index];
+    return { id: endpoint?.id || '', index };
+}
+
+function hasEndpointDraft(client, index) {
+    return isEndpointDraft(
+        persistedConfig,
+        config,
+        client,
+        endpointSelection(client, index),
+    );
+}
+
+function persistedEndpointIndex(client, endpointId) {
+    if (!endpointId) return -1;
+    return (persistedConfig.clients?.[client]?.endpoints || [])
+        .findIndex(endpoint => endpoint.id === endpointId);
+}
+
+function updateSelectedDraftIndicators() {
+    if (!selectedEndpoint) return;
+    const hasDraft = hasEndpointDraft(
+        selectedEndpoint.client,
+        selectedEndpoint.index,
+    );
+    const badge = document.getElementById('selected-endpoint-draft-badge');
+    const discard = document.getElementById('discard-endpoint-draft');
+    if (badge) badge.hidden = !hasDraft;
+    if (discard) discard.hidden = !hasDraft;
+}
+
 function createEndpointSummaryHTML(client, index, ep) {
     const isVisionFallback = ep.purpose === 'vision_fallback';
     const isWebSearch = ep.purpose === 'web_search';
@@ -2918,13 +3002,17 @@ function createEndpointSummaryHTML(client, index, ep) {
         : '';
     const defaultTitle = ep.is_default ? '当前默认节点' : '设为默认节点';
     const defaultClass = ep.is_default ? 'node-card-action is-default' : 'node-card-action';
+    const hasDraft = hasEndpointDraft(client, index);
 
     return `
-        <div class="node-card ${isDisabled ? 'is-disabled' : ''}" id="ep-${client}-${index}" role="button" tabindex="0"
+        <div class="node-card ${isDisabled ? 'is-disabled' : ''} ${hasDraft ? 'has-draft' : ''}" id="ep-${client}-${index}" role="button" tabindex="0"
              onclick="openEndpoint('${client}', ${index})"
              onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openEndpoint('${client}', ${index});}">
             <div class="node-card-top">
-                <div class="node-card-title">${name}</div>
+                <div class="node-card-title-row">
+                    <div class="node-card-title">${name}</div>
+                    ${hasDraft ? '<span class="draft-badge">未保存</span>' : ''}
+                </div>
                 <div class="node-card-actions" onclick="event.stopPropagation()">
                     ${isCapabilityNode ? `<label class="node-card-switch" title="${(!isDisabled) ? '禁用此节点' : '启用此节点'}">
                         <input type="checkbox" ${!isDisabled ? 'checked' : ''}
@@ -3026,21 +3114,33 @@ function createEndpointDetailHTML(client, index, ep) {
     ).join('');
 
     const title = escapeHtml(ep.name || `节点 ${index + 1}`);
+    const copyProtocolHint = getCopyProtocolHint(ep.id);
+    const hasDraft = hasEndpointDraft(client, index);
 
     return `
         <div class="detail-view">
             <div class="detail-toolbar">
                 <div class="detail-toolbar-left">
-                    <button class="btn btn-sm" onclick="closeEndpointDetail()" title="返回节点列表">
+                    <button class="btn btn-sm" onclick="closeEndpointDetail()" title="返回节点列表，保留未保存修改">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
                         返回
                     </button>
                     <div>
                         <div class="detail-title">${title}</div>
-                        <div class="detail-subtitle">节点 ${index + 1} · 完整配置</div>
+                        <div class="detail-subtitle">
+                            节点 ${index + 1} · 完整配置
+                            <span id="selected-endpoint-draft-badge" class="draft-badge" ${hasDraft ? '' : 'hidden'}>未保存</span>
+                        </div>
                     </div>
                 </div>
                 <div class="detail-actions">
+                    <button
+                        id="discard-endpoint-draft"
+                        class="btn btn-sm"
+                        ${hasDraft ? '' : 'hidden'}
+                        onclick="discardEndpointDraft('${client}', ${index})">
+                        放弃修改
+                    </button>
                     <button
                         class="btn btn-sm btn-primary"
                         id="save-node-${client}-${index}"
@@ -3065,6 +3165,12 @@ function createEndpointDetailHTML(client, index, ep) {
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>删除</button>
                 </div>
             </div>
+            ${copyProtocolHint ? `
+            <div class="protocol-hint" role="status">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                <span>${escapeHtml(copyProtocolHint)}</span>
+            </div>
+            ` : ''}
             <div class="card" id="ep-${client}-${index}">
                 <div class="form-grid">
                     <div class="form-group full">
@@ -3140,20 +3246,9 @@ function createEndpointDetailHTML(client, index, ep) {
                     </div>
                     `}
                     `}
-                    ${(isWebSearch || (isMedia ? !isMediaSubscription : (ep.type !== 'antigravity' && ep.type !== 'codex-subscription'))) ? `
-                    <div class="form-group full">
-                        <label>${isWebSearch ? 'Tavily API Key' : '密钥 (API Key)'} <span class="key-status ${ep.has_api_key ? 'key-status-set' : 'key-status-unset'}">${ep.has_api_key ? '已配置' : '未配置'}</span></label>
-                        <div class="password-input-wrapper">
-                            <input class="mono" type="password" id="api-key-${client}-${index}" value="" placeholder="${ep.has_api_key ? '留空表示保留现有密钥' : (isWebSearch ? 'tvly-... 或 env:TAVILY_API_KEY' : '输入密钥或 env:变量名')}" onchange="updateEndpoint('${client}', ${index}, 'api_key', this.value)">
-                            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('${client}', ${index}, 'api-key-${client}-${index}')" title="${ep.has_api_key ? '查看已保存密钥' : '显示/隐藏密钥'}">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                    <circle cx="12" cy="12" r="3"></circle>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                    ` : ''}
+                    ${(isWebSearch || (isMedia ? !isMediaSubscription : (ep.type !== 'antigravity' && ep.type !== 'codex-subscription')))
+                        ? renderEndpointKeyEditor(client, index, ep)
+                        : ''}
                     ${(client === 'codex' || client === 'deeptutor') && !isCapabilityNode ? `
                     <div class="form-group full">
                         <label>Codex 能力</label>
@@ -3370,8 +3465,10 @@ function setSectionChrome(client, detailMode) {
     if (!section) return;
     const guide = section.querySelector('.usage-guide');
     const addMenu = section.querySelector('.section-header .add-node-dropdown');
+    const copyTrigger = section.querySelector('.section-header .copy-node-trigger');
     if (guide) guide.style.display = detailMode ? 'none' : '';
     if (addMenu) addMenu.style.display = detailMode ? 'none' : '';
+    if (copyTrigger) copyTrigger.style.display = detailMode ? 'none' : '';
 }
 
 function createEndpointGroupsHTML(client, endpoints) {
@@ -3473,10 +3570,36 @@ function render() {
     if (activeClient === 'custom-clients' || isCustomClient(activeClient) || (selectedEndpoint && isCustomClient(selectedEndpoint.client))) {
         renderCustomClientSections();
     }
+    void refreshSelectedCredentialPreviews();
 }
 
-function getClaudeCodeDefaultEndpoint() {
-    const endpoints = (config.clients?.code?.endpoints || [])
+async function refreshSelectedCredentialPreviews() {
+    if (!selectedEndpoint) return;
+    const endpoint = config.clients?.[selectedEndpoint.client]?.endpoints?.[selectedEndpoint.index];
+    if (!endpoint || (!endpoint.has_api_key && !endpoint.api_keys?.length)) return;
+    const selectionId = endpoint.id;
+    const changed = await loadCredentialPreviews(endpoint);
+    const current = selectedEndpoint
+        ? config.clients?.[selectedEndpoint.client]?.endpoints?.[selectedEndpoint.index]
+        : null;
+    if (changed && current?.id === selectionId) render();
+}
+
+window.openCopyNodeModalForClient = function(targetClient) {
+    if (!config.clients?.[targetClient]) return;
+    openCopyNodeModal(targetClient, config, async (draft) => {
+        config.clients[targetClient].endpoints ||= [];
+        config.clients[targetClient].endpoints.unshift(draft);
+        selectedEndpoint = { client: targetClient, index: 0 };
+        render();
+        setTimeout(() => {
+            document.getElementById(`input-name-${targetClient}-0`)?.focus();
+        }, 0);
+    });
+};
+
+function getClaudeCodeDefaultEndpoint(sourceConfig = config) {
+    const endpoints = (sourceConfig.clients?.code?.endpoints || [])
         .filter(endpoint => !isCapabilityEndpointPurpose(endpoint.purpose));
     return endpoints.find(endpoint => endpoint.is_default === true)
         || (endpoints.length === 1 ? endpoints[0] : null);
@@ -3522,10 +3645,10 @@ window.updateClaudeCodeModelSlot = function(slot, model) {
     }
 };
 
-function pruneClaudeCodeModelSlots() {
-    const endpoint = getClaudeCodeDefaultEndpoint();
+function pruneClaudeCodeModelSlots(sourceConfig = config) {
+    const endpoint = getClaudeCodeDefaultEndpoint(sourceConfig);
     const available = new Set(getEndpointPublicModels(endpoint));
-    const slots = config.clients?.code?.model_slots || {};
+    const slots = sourceConfig.clients?.code?.model_slots || {};
     for (const slot of ['opus', 'sonnet', 'haiku', 'fable']) {
         if (slots[slot] && !available.has(slots[slot])) delete slots[slot];
     }
@@ -3540,6 +3663,23 @@ window.openEndpoint = function(client, index) {
 window.closeEndpointDetail = function() {
     selectedEndpoint = null;
     render();
+};
+
+window.discardEndpointDraft = function(client, index) {
+    const selection = endpointSelection(client, index);
+    const discardedId = selection.id;
+    if (!hasEndpointDraft(client, index)) return;
+    if (!confirm('放弃这个节点的未保存修改吗？')) return;
+    config = discardEndpointDraftState(
+        persistedConfig,
+        config,
+        client,
+        selection,
+    );
+    clearCredentialPreviews(discardedId);
+    selectedEndpoint = null;
+    render();
+    showToast('已放弃未保存修改', 'success');
 };
 
 window.switchTab = function(tabId) {
@@ -4729,94 +4869,6 @@ window.renderClassificationMetricsDetail = function() {
             </div>
         </div>
     `;
-};
-
-// Shared custom select for mini-tools. Mirrors the add-node popover styling so long labels stay readable.
-const UI_SELECT_HANDLERS = new Map();
-
-function renderUiSelectHtml({ id, value, options = [], disabled = false, placeholder = '请选择', onChange = null }) {
-    if (typeof onChange === 'function') {
-        UI_SELECT_HANDLERS.set(id, onChange);
-    } else {
-        UI_SELECT_HANDLERS.delete(id);
-    }
-
-    const items = Array.isArray(options) ? options : [];
-    const selected = items.find(item => String(item.value) === String(value));
-    const label = selected?.label || placeholder;
-    const optionsHtml = items.length
-        ? items.map(item => {
-            const active = String(item.value) === String(value);
-            const description = item.description
-                ? '<span class="ui-select-option-description">' + escapeHtml(item.description) + '</span>'
-                : '';
-            return '<button type="button" class="ui-select-option' + (active ? ' is-active' : '') + '" role="option" data-value="' + escapeHtml(String(item.value)) + '"'
-                + " onclick='chooseUiSelectOption(" + JSON.stringify(id) + ", " + JSON.stringify(String(item.value)) + ", event)'>"
-                + '<span class="ui-select-option-copy">'
-                + '<span class="ui-select-option-title">' + escapeHtml(item.label) + '</span>'
-                + description
-                + '</span>'
-                + '<span class="ui-select-check" aria-hidden="true">' + (active ? '✓' : '') + '</span>'
-                + '</button>';
-        }).join('')
-        : '<div class="ui-select-empty">' + escapeHtml(placeholder || '暂无选项') + '</div>';
-
-    return '<div class="ui-select-dropdown' + (disabled ? ' is-disabled' : '') + '" id="ui-select-' + escapeHtml(id) + '" data-ui-select-id="' + escapeHtml(id) + '">'
-        + '<button type="button" class="ui-select-trigger media-gen-form-control" ' + (disabled ? 'disabled' : '')
-        + ' aria-expanded="false" aria-haspopup="listbox"'
-        + " onclick='toggleUiSelect(" + JSON.stringify(id) + ", event)'>"
-        + '<span class="ui-select-label">' + escapeHtml(label) + '</span>'
-        + '<svg class="ui-select-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>'
-        + '</button>'
-        + '<div class="ui-select-popover" role="listbox">' + optionsHtml + '</div>'
-        + '</div>';
-}
-
-window.closeUiSelects = function(exceptId = '') {
-    document.querySelectorAll('.ui-select-dropdown.is-open').forEach(dropdown => {
-        if (exceptId && dropdown.dataset.uiSelectId === exceptId) return;
-        dropdown.classList.remove('is-open');
-        dropdown.querySelector('.ui-select-trigger')?.setAttribute('aria-expanded', 'false');
-    });
-};
-
-window.toggleUiSelect = function(id, event) {
-    event?.stopPropagation();
-    const dropdown = document.getElementById('ui-select-' + id);
-    if (!dropdown || dropdown.classList.contains('is-disabled')) return;
-    const trigger = dropdown.querySelector('.ui-select-trigger');
-    if (trigger?.disabled) return;
-    const shouldOpen = !dropdown.classList.contains('is-open');
-    closeUiSelects(id);
-    closeAddNodeMenus();
-    closeAllCtxWindowMenus();
-    closeAllCtxVisionMenus();
-    dropdown.classList.toggle('is-open', shouldOpen);
-    trigger?.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
-    if (shouldOpen) {
-        dropdown.querySelector('.ui-select-option.is-active, .ui-select-option')?.focus();
-    }
-};
-
-window.chooseUiSelectOption = function(id, value, event) {
-    event?.stopPropagation();
-    const dropdown = document.getElementById('ui-select-' + id);
-    if (dropdown) {
-        const labelEl = dropdown.querySelector('.ui-select-label');
-        dropdown.querySelectorAll('.ui-select-option').forEach(btn => {
-            const active = btn.getAttribute('data-value') === String(value);
-            btn.classList.toggle('is-active', active);
-            const check = btn.querySelector('.ui-select-check');
-            if (check) check.textContent = active ? '✓' : '';
-            if (active && labelEl) {
-                const title = btn.querySelector('.ui-select-option-title');
-                if (title) labelEl.textContent = title.textContent;
-            }
-        });
-    }
-    closeUiSelects();
-    const handler = UI_SELECT_HANDLERS.get(id);
-    if (typeof handler === 'function') handler(value);
 };
 
 // Shared by image/video/TTS mini-tools. Capability type is selected by endpoint purpose, never protocol type.
@@ -6197,6 +6249,7 @@ window.setAsDefaultEmbedding = async function(client, index) {
         if (ep.purpose === 'embedding') ep.is_default = (i === index);
     });
     render();
+    if (persistedEndpointIndex(client, endpoint.id) < 0) return;
     const saved = await saveConfig({ client, scope: 'default-embedding' });
     if (!saved) {
         config.clients[client].endpoints.forEach((ep, i) => {
@@ -6255,6 +6308,7 @@ window.setAsDefaultWebSearch = async function(client, index) {
         if (ep.purpose === 'web_search') ep.is_default = (i === index);
     });
     render();
+    if (persistedEndpointIndex(client, endpoint.id) < 0) return;
     const saved = await saveConfig({ client, scope: 'default-web-search' });
     if (!saved) {
         config.clients[client].endpoints.forEach((ep, i) => {
@@ -6272,7 +6326,18 @@ window.removeEndpoint = async function(client, index) {
         selectedEndpoint = null;
     }
     render();
-    const saved = await saveConfig({ client, scope: 'delete' });
+    if (!removedEndpoint || !persistedConfig.clients?.[client]?.endpoints?.some(
+        endpoint => endpoint.id === removedEndpoint.id
+    )) {
+        showToast('未保存节点已删除', 'success');
+        return;
+    }
+    const saved = await saveConfig({
+        client,
+        scope: 'delete',
+        deletedEndpointId: removedEndpoint.id || '',
+        deletedEndpointIndex: index,
+    });
     if (!saved) {
         config.clients[client].endpoints.splice(index, 0, removedEndpoint);
         selectedEndpoint = previousSelection;
@@ -6281,7 +6346,8 @@ window.removeEndpoint = async function(client, index) {
 }
 
 window.setAsDefault = async function(client, index) {
-    const purpose = config.clients[client].endpoints[index]?.purpose;
+    const endpoint = config.clients[client].endpoints[index];
+    const purpose = endpoint?.purpose;
     if (['vision_fallback', 'web_search', 'embedding'].includes(purpose)) return;
     const previousDefaults = config.clients[client].endpoints.map(ep => ep.is_default === true);
     const previousSlots = client === 'code'
@@ -6292,6 +6358,7 @@ window.setAsDefault = async function(client, index) {
     });
     if (client === 'code') pruneClaudeCodeModelSlots();
     render();
+    if (persistedEndpointIndex(client, endpoint?.id) < 0) return;
     const saved = await saveConfig({ client, scope: 'default' });
     if (!saved) {
         config.clients[client].endpoints.forEach((ep, i) => {
@@ -6308,6 +6375,85 @@ window.updateEndpoint = function(client, index, field, value) {
     if (field === 'name' && selectedEndpoint && selectedEndpoint.client === client && selectedEndpoint.index === index) {
         const title = document.querySelector('.detail-title');
         if (title) title.textContent = value || `节点 ${index + 1}`;
+    }
+    if (field === 'api_key') {
+        render();
+        return;
+    }
+    updateSelectedDraftIndicators();
+}
+
+window.addApiKey = function(client, index) {
+    const endpoint = config.clients?.[client]?.endpoints?.[index];
+    if (!endpoint) return;
+    if (!endpoint.api_keys?.length) {
+        const input = document.getElementById(`api-key-${client}-${index}`);
+        const value = String(input?.value || '');
+        if (value) endpoint.api_key = value;
+    }
+    addCredential(endpoint);
+    clearCredentialPreviews(endpoint.id);
+    render();
+}
+
+window.removeApiKey = function(client, index, credentialId) {
+    const endpoint = config.clients?.[client]?.endpoints?.[index];
+    if (!endpoint) return;
+    if (!removeCredential(endpoint, credentialId)) return;
+    clearCredentialPreviews(endpoint.id);
+    render();
+}
+
+window.updateApiKey = function(client, index, credentialId, value) {
+    const endpoint = config.clients?.[client]?.endpoints?.[index];
+    if (!endpoint) return;
+    setCredentialValue(endpoint, credentialId, value);
+    render();
+}
+
+window.setEndpointKeyStrategy = function(client, index, strategy) {
+    const endpoint = config.clients?.[client]?.endpoints?.[index];
+    if (!endpoint) return;
+    setKeyStrategy(endpoint, strategy);
+    render();
+}
+
+window.toggleMultiKeyVisibility = async function(client, index, credentialId, inputId) {
+    const endpoint = config.clients?.[client]?.endpoints?.[index];
+    const input = document.getElementById(inputId);
+    if (!endpoint || !input) return;
+    const btn = input.nextElementSibling;
+    if (input.type === 'password') {
+        if (!input.value && endpoint.id) {
+            btn.disabled = true;
+            try {
+                const params = new URLSearchParams({
+                    id: endpoint.id,
+                    credential_id: credentialId,
+                });
+                const response = await fetch(`/v1/config/secret?${params}`, {
+                    headers: { 'X-Gateway-Secret-Intent': 'reveal' },
+                    cache: 'no-store',
+                });
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    throw new Error(payload.error?.message || '读取密钥失败');
+                }
+                input.value = payload.api_key || '';
+            } catch (error) {
+                showToast(error.message || '读取密钥失败', 'error');
+                return;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+        input.type = 'text';
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+        btn.title = '隐藏密钥';
+    } else {
+        input.type = 'password';
+        btn.title = input.value ? '显示密钥' : '查看已保存密钥';
     }
 }
 
@@ -6562,7 +6708,12 @@ window.removeMapping = function(client, index, key) {
             }
         }
     }
-    await saveConfig({ button: btn, client, scope: 'node' });
+    await saveConfig({
+        button: btn,
+        client,
+        scope: 'node',
+        endpoint: endpointSelection(client, index),
+    });
 }
 
 window.saveCurrentConfig = async function() {
@@ -6584,10 +6735,15 @@ window.toggleEndpointExposure = async function(event, client, index, input) {
     if (!endpoint || !input) return;
     const previous = endpoint.expose_models === true;
     endpoint.expose_models = input.checked;
+    if (persistedEndpointIndex(client, endpoint.id) < 0) {
+        render();
+        return;
+    }
     const saved = await saveConfig({
         button: input,
         client,
         scope: 'exposure',
+        endpoint: endpointSelection(client, index),
     });
     if (!saved) {
         endpoint.expose_models = previous;
@@ -6602,10 +6758,12 @@ window.toggleEndpointEnabled = async function(event, client, index, input) {
     const previous = endpoint.enabled !== false;
     endpoint.enabled = input.checked;
     render();
+    if (persistedEndpointIndex(client, endpoint.id) < 0) return;
     const saved = await saveConfig({
         button: input,
         client,
         scope: 'enabled',
+        endpoint: endpointSelection(client, index),
     });
     if (!saved) {
         endpoint.enabled = previous;
@@ -6624,29 +6782,59 @@ window.saveConfig = async function(options = {}) {
     if (btn) btn.disabled = true;
 
     try {
-        pruneClaudeCodeModelSlots();
+        const workingBeforeSave = structuredClone(config);
+        const saveConfigPayload = buildScopedSaveConfig(
+            persistedConfig,
+            workingBeforeSave,
+            options,
+        );
+        pruneClaudeCodeModelSlots(saveConfigPayload);
         const res = await fetch('/v1/config/save', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-Gateway-Config-Client': options.client || (options.scope === 'template' ? 'code' : activeClient)
             },
-            body: JSON.stringify(config)
+            body: JSON.stringify(saveConfigPayload)
         });
 
         if (res.ok) {
             const payload = await res.json().catch(() => ({}));
-            for (const client of Object.values(config.clients || {})) {
+            const savedEndpointId = options.scope === 'node'
+                ? options.endpoint?.id || ''
+                : '';
+            for (const client of Object.values(saveConfigPayload.clients || {})) {
                 for (const endpoint of client.endpoints || []) {
                     if (endpoint.api_key) endpoint.has_api_key = true;
+                    if (endpoint.api_key_values) endpoint.has_api_key = true;
                     delete endpoint.api_key;
                     delete endpoint.api_key_env;
+                    delete endpoint.api_key_values;
                 }
+            }
+            persistedConfig = structuredClone(saveConfigPayload);
+            config = reconcileWorkingConfigAfterSave(
+                persistedConfig,
+                workingBeforeSave,
+                options,
+            );
+            clearCredentialPreviews();
+            if (options.scope === 'node' && options.client) {
+                const savedEndpoint = config.clients?.[options.client]?.endpoints
+                    ?.find(ep => ep.id === (options.endpoint?.id || ''));
+                if (savedEndpoint) clearLegacyCredentialMark(savedEndpoint);
             }
             if (payload.codex_model_catalog?.path_posix) {
                 codexModelCatalogPath = payload.codex_model_catalog.path_posix;
             } else if (payload.codex_model_catalog?.path) {
                 codexModelCatalogPath = String(payload.codex_model_catalog.path).replaceAll('\\', '/');
+            }
+            if (savedEndpointId && selectedEndpoint) {
+                const index = (config.clients?.[selectedEndpoint.client]?.endpoints || [])
+                    .findIndex(endpoint => endpoint.id === savedEndpointId);
+                selectedEndpoint = index >= 0
+                    ? { client: selectedEndpoint.client, index }
+                    : null;
             }
             render();
             if (options.scope === 'exposure') {
@@ -6941,6 +7129,10 @@ document.addEventListener('click', (e) => {
     if (clientCreateOpen && !e.target.closest('#client-create-modal .skill-modal') && !e.target.closest('.nav-create-client')) {
         closeClientCreateModal();
     }
+});
+
+document.addEventListener('change', () => {
+    updateSelectedDraftIndicators();
 });
 
 document.addEventListener('keydown', (e) => {

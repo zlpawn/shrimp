@@ -12,18 +12,28 @@ export interface ClientConfig {
   [key: string]: unknown;
 }
 
+export type KeyStrategy = "failover" | "round-robin" | "random";
+
+export interface Credential {
+  id: string;
+  label?: string;
+}
+
 export interface Endpoint {
   id?: string;
   name: string;
   type: string;
   base_url: string;
-  api_key: string;
+  api_key?: string;
   models: string[];
   model_mapping?: Record<string, string>;
   is_default?: boolean;
   enabled?: boolean;
   purpose?: string;
   proxy?: string;
+  api_keys?: Credential[];
+  key_strategy?: KeyStrategy;
+  api_key_values?: Record<string, string>;
   [key: string]: unknown;
 }
 
