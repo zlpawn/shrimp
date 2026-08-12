@@ -7,6 +7,9 @@ import vm from "node:vm";
 
 import { parseArgs, runCli } from "../../lib/dream-skin/index.mjs";
 
+// Helper: build a process.argv-like array: ["node", "index.mjs", ...tokens]
+const argv = (...tokens) => ["node", "lib/dream-skin/index.mjs", ...tokens];
+
 const PNG_BYTES = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00]);
 
 const validThemeJson = JSON.stringify({
@@ -27,25 +30,25 @@ const validThemeJson = JSON.stringify({
 
 test("parseArgs rejects inject/launch/cleanup/remove commands", () => {
   for (const cmd of ["inject", "launch", "cleanup", "remove"]) {
-    const args = parseArgs(["--", cmd]);
+    const args = parseArgs(argv(cmd));
     assert.ok(args.errors.length > 0, `should reject ${cmd}`);
   }
 });
 
 test("parseArgs rejects --app and --port options", () => {
-  const args = parseArgs(["--", "validate", "--theme", "x.json", "--app", "/Applications/Codex.app"]);
+  const args = parseArgs(argv("validate", "--theme", "x.json", "--app", "/Applications/Codex.app"));
   assert.ok(args.errors.some((e) => e.includes("--app")));
-  const args2 = parseArgs(["--", "validate", "--port", "19222"]);
+  const args2 = parseArgs(argv("validate", "--port", "19222"));
   assert.ok(args2.errors.some((e) => e.includes("--port")));
 });
 
 test("parseArgs requires --output for build-script", () => {
-  const args = parseArgs(["--", "build-script", "--theme", "x.json", "--image", "bg.png"]);
+  const args = parseArgs(argv("build-script", "--theme", "x.json", "--image", "bg.png"));
   assert.ok(args.errors.some((e) => e.includes("--output")));
 });
 
 test("parseArgs accepts offline commands", () => {
-  const args = parseArgs(["--", "validate", "--theme", "t.json", "--image", "bg.png"]);
+  const args = parseArgs(argv("validate", "--theme", "t.json", "--image", "bg.png"));
   assert.equal(args.command, "validate");
   assert.equal(args.theme, "t.json");
   assert.equal(args.image, "bg.png");
@@ -65,7 +68,7 @@ function makeTemp() {
 test("runCli validate parses theme and writes nothing", async () => {
   const t = makeTemp();
   try {
-    const code = await runCli(parseArgs(["--", "validate", "--theme", t.themePath, "--image", t.imagePath]));
+    const code = await runCli(parseArgs(argv("validate", "--theme", t.themePath, "--image", t.imagePath)));
     assert.equal(code, 0);
     const files = fs.readdirSync(t.dir);
     assert.deepEqual(files.sort(), ["background.png", "theme.json"]);
@@ -79,7 +82,7 @@ test("runCli validate-engines returns four summaries", async () => {
   const origLog = console.log;
   console.log = (...args) => logs.push(args.join(" "));
   try {
-    const code = await runCli(parseArgs(["--", "validate-engines"]));
+    const code = await runCli(parseArgs(argv("validate-engines")));
     assert.equal(code, 0);
     const engines = logs.filter((l) => l.includes("[dream-skin] engine")).length;
     assert.equal(engines, 4);
@@ -91,7 +94,7 @@ test("runCli validate-engines returns four summaries", async () => {
 test("runCli build-script writes parseable JavaScript", async () => {
   const t = makeTemp();
   try {
-    const code = await runCli(parseArgs(["--", "build-script", "--theme", t.themePath, "--image", t.imagePath, "--output", t.outputPath]));
+    const code = await runCli(parseArgs(argv("build-script", "--theme", t.themePath, "--image", t.imagePath, "--output", t.outputPath)));
     assert.equal(code, 0);
     const script = fs.readFileSync(t.outputPath, "utf8");
     assert.doesNotThrow(() => new vm.Script(script));
@@ -103,16 +106,15 @@ test("runCli build-script writes parseable JavaScript", async () => {
 test("runCli build-script refuses to overwrite theme input", async () => {
   const t = makeTemp();
   try {
-    const code = await runCli(parseArgs(["--", "build-script", "--theme", t.themePath, "--image", t.imagePath, "--output", t.themePath]));
+    const code = await runCli(parseArgs(argv("build-script", "--theme", t.themePath, "--image", t.imagePath, "--output", t.themePath)));
     assert.equal(code, 1);
   } finally {
     t.cleanup();
   }
 });
 
-test("index.mjs imports only offline modules", () => {
+test("index.mjs does not import launcher or CDP modules", () => {
   const source = fs.readFileSync("lib/dream-skin/index.mjs", "utf8");
-  // Should not import the executable runtime modules by path
   assert.doesNotMatch(source, /from "\.\/runtime\/launcher\.mjs"/);
   assert.doesNotMatch(source, /from "\.\/runtime\/cdp-client\.mjs"/);
   assert.match(source, /runtime\/injector\.mjs/);
