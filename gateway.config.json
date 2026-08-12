@@ -88,6 +88,9 @@
             "claude-sonnet-4-5": "gpt-5.6-sol",
             "claude-haiku-4-5": "GLM-5.2",
             "claude-haiku-4-0": "deepseek-v4-flash-ga"
+          },
+          "capabilities": {
+            "sanitize_dangling_tool_calls": true
           }
         },
         {
@@ -191,6 +194,44 @@
     },
     "codex": {
       "endpoints": [
+        {
+          "id": "ep_78da3017-759e-4633-973d-c2922fd5707e",
+          "name": "deepseek",
+          "type": "openai-responses",
+          "base_url": "https://api.deepseek.com",
+          "auth": "bearer",
+          "models": [
+            "DeepSeek-V4-Flash"
+          ],
+          "model_mapping": {},
+          "capabilities": {
+            "input_modalities": [
+              "text",
+              "image"
+            ],
+            "reasoning": false,
+            "tools": true,
+            "sanitize_dangling_tool_calls": true
+          },
+          "model_capabilities": {
+            "DeepSeek-V4-Flash": {
+              "image": false
+            }
+          }
+        },
+        {
+          "id": "ep_b90451d6-6823-4418-8774-5158023a7f1b",
+          "name": "antigravity 生成图片",
+          "purpose": "image_generation",
+          "provider": "antigravity",
+          "base_url": "https://daily-cloudcode-pa.googleapis.com",
+          "enabled": true,
+          "is_default": false,
+          "models": [
+            "gemini-3.1-flash-image"
+          ],
+          "model_mapping": {}
+        },
         {
           "id": "ep_9e10cf41-acef-4ac3-938a-f05eb38c5fa8",
           "name": "GPT IMAGE",
@@ -611,15 +652,6 @@
     "claude_model_catalog": {
       "user_models": [],
       "disabled_builtin_models": []
-    }
-  },
-  "sessionSync": {
-    "skillMounts": {
-      "leo-video-to-karpathy-wiki": {
-        "antigravity": false,
-        "claude": false,
-        "codex": true
-      }
     }
   }
 }

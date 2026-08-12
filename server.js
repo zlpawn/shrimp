@@ -10,6 +10,10 @@ import https from "node:https";
 import { Readable } from "node:stream";
 import { responsesRequestToChat } from "./lib/codex/chat-request-adapter.mjs";
 import { sanitizeResponsesInput, sanitizeGrokResponsesInput } from "./lib/codex/grok-input-sanitizer.mjs";
+import {
+  isDeepSeekResponsesModel,
+  sanitizeDeepSeekResponsesInput,
+} from "./lib/codex/deepseek-input-sanitizer.mjs";
 import { extractCompactionSummary } from "./lib/codex/compaction-helper.mjs";
 
 
@@ -5206,7 +5210,7 @@ async function forwardResolvedCodexResponse({
   const upstreamBody = route?.provider?.type === "anthropic"
     ? openAIResponsesToAnthropic(body, resolvedModel, route)
     : route?.provider?.type === "openai-responses" || !route?.provider
-      ? sanitizeResponsesInput({ ...body, model: resolvedModel })
+      ? sanitizeProviderResponsesInput({ ...body, model: resolvedModel }, route?.provider)
       : {
           ...body,
           model: resolvedModel,
@@ -5587,7 +5591,7 @@ async function forwardResolvedCodexResponse({
         let upstream = await fetchConfiguredOpenAI(
           route.provider,
           "/responses",
-          sanitizeResponsesInput({ ...loopBody, model: resolvedModel, stream: false }),
+          sanitizeProviderResponsesInput({ ...loopBody, model: resolvedModel, stream: false }, route.provider),
           clientReq,
           signal,
           !isOpenAIClient(context.client),
@@ -5601,7 +5605,7 @@ async function forwardResolvedCodexResponse({
           fetchAgain: (retryBody) => fetchConfiguredOpenAI(
             route.provider,
             "/responses",
-            sanitizeResponsesInput({ ...retryBody, model: resolvedModel, stream: false }),
+            sanitizeProviderResponsesInput({ ...retryBody, model: resolvedModel, stream: false }, route.provider),
             clientReq,
             signal,
             !isOpenAIClient(context.client),
@@ -5661,7 +5665,7 @@ async function forwardResolvedCodexResponse({
       fetchAgain: (retryBody) => fetchConfiguredOpenAI(
         route.provider,
         "/responses",
-        sanitizeResponsesInput({ ...retryBody, model: resolvedModel }),
+        sanitizeProviderResponsesInput({ ...retryBody, model: resolvedModel }, route.provider),
         clientReq,
         signal,
         !isOpenAIClient(context.client),
@@ -5973,10 +5977,193 @@ function resolveUrl(baseUrl, defaultPath) {
   return `${trimmed}${cleanPath}`;
 }
 
+
+function sanitizeProviderResponsesInput(body, provider = null) {
+  if (isDeepSeekResponsesModel(body?.model, provider)) {
+    return sanitizeDeepSeekResponsesInput(body);
+  }
+  return sanitizeResponsesInput(body);
+}
+
+function shouldSanitizeDanglingToolCalls(provider, body) {
+  if (!provider) return false;
+
+  if (provider.capabilities?.sanitize_dangling_tool_calls === true) return true;
+  if (provider.sanitize_dangling_tool_calls === true) return true;
+
+  // Case-insensitive check on requested model name (e.g. DeepSeek-V4-Flash, deepseek-chat)
+  const modelName = String(body?.model || "").toLowerCase();
+  if (modelName.includes("deepseek")) {
+    return true;
+  }
+
+  // Check mapped model name (e.g. claude-haiku-4-0 -> deepseek-v4-flash-ga)
+  if (provider.model_mapping && typeof provider.model_mapping === "object") {
+    const mappedModel = String(provider.model_mapping[body?.model] || "").toLowerCase();
+    if (mappedModel.includes("deepseek")) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function sanitizeDanglingToolCallsPayload(provider, body) {
+  if (!body || typeof body !== "object") return body;
+
+  const shouldSanitize = shouldSanitizeDanglingToolCalls(provider, body);
+  console.log(`[DEBUG_SANITIZER] provider=${provider?.id} model=${body?.model} shouldSanitize=${shouldSanitize}`);
+
+  if (!shouldSanitize) return body;
+
+  const sanitizedBody = { ...body };
+
+  if (Array.isArray(sanitizedBody.messages)) {
+    const beforeLen = sanitizedBody.messages.length;
+    sanitizedBody.messages = sanitizeDanglingToolCallsOpenAIChat(sanitizedBody.messages);
+    if (sanitizedBody.messages.length !== beforeLen) {
+      console.log(`[DEBUG_SANITIZER] OpenAI Chat messages count changed from ${beforeLen} to ${sanitizedBody.messages.length}`);
+    }
+  }
+
+  if (Array.isArray(sanitizedBody.input)) {
+    const beforeLen = sanitizedBody.input.length;
+    sanitizedBody.input = sanitizeDanglingToolCallsResponsesInput(sanitizedBody.input);
+    if (sanitizedBody.input.length !== beforeLen) {
+      console.log(`[DEBUG_SANITIZER] Responses input count changed from ${beforeLen} to ${sanitizedBody.input.length}`);
+    }
+  }
+
+  return sanitizedBody;
+}
+
+function sanitizeDanglingToolCallsOpenAIChat(messages) {
+  if (!Array.isArray(messages) || messages.length === 0) return messages;
+
+  const existingToolOutputIds = new Set();
+  for (const msg of messages) {
+    if (msg && typeof msg === "object") {
+      if (msg.role === "tool" && msg.tool_call_id) {
+        existingToolOutputIds.add(msg.tool_call_id);
+      }
+      if (Array.isArray(msg.content)) {
+        for (const block of msg.content) {
+          if (block?.type === "tool_result" && block.tool_use_id) {
+            existingToolOutputIds.add(block.tool_use_id);
+          }
+        }
+      }
+    }
+  }
+
+  const newMessages = [];
+  for (const msg of messages) {
+    newMessages.push(msg);
+
+    if (msg && typeof msg === "object" && msg.role === "assistant") {
+      if (Array.isArray(msg.tool_calls) && msg.tool_calls.length > 0) {
+        for (const toolCall of msg.tool_calls) {
+          const callId = toolCall?.id;
+          if (callId && !existingToolOutputIds.has(callId)) {
+            newMessages.push({
+              role: "tool",
+              tool_call_id: callId,
+              content: "[System Note: Tool call execution was interrupted or cancelled.]",
+            });
+            existingToolOutputIds.add(callId);
+          }
+        }
+      }
+      if (Array.isArray(msg.content)) {
+        for (const block of msg.content) {
+          if (block?.type === "tool_use" && block.id && !existingToolOutputIds.has(block.id)) {
+            newMessages.push({
+              role: "user",
+              content: [
+                {
+                  type: "tool_result",
+                  tool_use_id: block.id,
+                  content: "[System Note: Tool call execution was interrupted or cancelled.]",
+                },
+              ],
+            });
+            existingToolOutputIds.add(block.id);
+          }
+        }
+      }
+    }
+  }
+
+  return newMessages;
+}
+
+function sanitizeDanglingToolCallsResponsesInput(input) {
+  if (!Array.isArray(input) || input.length === 0) return input;
+
+  const existingToolOutputIds = new Set();
+  for (const item of input) {
+    if (!item || typeof item !== "object") continue;
+
+    if (item.type === "function_call_output" || item.type === "custom_tool_call_output") {
+      const callId = item.call_id || item.id;
+      if (callId) existingToolOutputIds.add(callId);
+    }
+    if (item.role === "tool" && (item.tool_call_id || item.call_id)) {
+      existingToolOutputIds.add(item.tool_call_id || item.call_id);
+    }
+    if (Array.isArray(item.content)) {
+      for (const block of item.content) {
+        if (block?.type === "tool_result" && (block.tool_use_id || block.tool_call_id)) {
+          existingToolOutputIds.add(block.tool_use_id || block.tool_call_id);
+        }
+      }
+    }
+  }
+
+  const newInput = [];
+  for (const item of input) {
+    newInput.push(item);
+    if (!item || typeof item !== "object") continue;
+
+    // Direct function_call or custom_tool_call
+    if (item.type === "function_call" || item.type === "custom_tool_call") {
+      const callId = item.call_id || item.id;
+      if (callId && !existingToolOutputIds.has(callId)) {
+        const outputType = item.type === "custom_tool_call" ? "custom_tool_call_output" : "function_call_output";
+        newInput.push({
+          type: outputType,
+          call_id: callId,
+          output: "[System Note: Tool call execution was interrupted or cancelled.]",
+        });
+        existingToolOutputIds.add(callId);
+      }
+    }
+
+    // Assistant message or message item containing tool_calls array
+    if ((item.role === "assistant" || item.type === "message") && Array.isArray(item.tool_calls)) {
+      for (const toolCall of item.tool_calls) {
+        const callId = toolCall?.id || toolCall?.call_id;
+        if (callId && !existingToolOutputIds.has(callId)) {
+          newInput.push({
+            type: "function_call_output",
+            call_id: callId,
+            output: "[System Note: Tool call execution was interrupted or cancelled.]",
+          });
+          existingToolOutputIds.add(callId);
+        }
+      }
+    }
+  }
+
+  return newInput;
+}
+
 async function fetchConfiguredAnthropic(provider, body, clientReq, signal) {
   if (!provider?.base_url) {
     throw httpError(500, `Provider ${provider?.id || "unknown"} is missing base_url`);
   }
+
+  body = sanitizeDanglingToolCallsPayload(provider, body);
 
   if (provider.api_keys?.length) {
     return fetchConfiguredAnthropicWithCredentials(provider, body, clientReq, signal);
@@ -6098,6 +6285,8 @@ async function fetchConfiguredOpenAI(
   if (!provider?.base_url) {
     throw httpError(500, `Provider ${provider?.id || "unknown"} is missing base_url`);
   }
+
+  body = sanitizeDanglingToolCallsPayload(provider, body);
 
   if (provider.api_keys?.length) {
     return fetchConfiguredOpenAIWithCredentials(
@@ -7067,14 +7256,14 @@ async function pipeResponsesUpstream(upstream, clientRes, {
 } = {}) {
   if (!upstream.ok) {
     const text = await upstream.text();
-    clientRes.writeHead(upstream.status, responseHeaders(upstream.headers));
-    clientRes.end(text);
     if (requestId) {
       logInfo("responses_upstream_error", {
         request_id: requestId,
         status: upstream.status,
       });
     }
+    clientRes.writeHead(upstream.status, responseHeaders(upstream.headers));
+    clientRes.end(text);
     return;
   }
 
