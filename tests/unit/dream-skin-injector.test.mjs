@@ -42,6 +42,12 @@ test("loadRuntimeTheme normalizes aliases", () => {
     name: "X",
     style_preset: "codex-snow",
     backgroundImage: "bg.png",
+    colors: {
+      background: "#111318", panel: "#181b22", panelAlt: "#20242d",
+      accent: "#8298a3", accentAlt: "#a8c0ca", secondary: "#6f8791",
+      highlight: "#bfd4dc", text: "#edf2f4", muted: "#a4afb5",
+      line: "rgba(130, 152, 163, 0.28)",
+    },
   }));
   const result = loadRuntimeTheme({ themeJsonBytes: json, imageBytes: PNG_BYTES });
   assert.equal(result.theme.stylePreset, "codex-snow");
@@ -66,6 +72,12 @@ test("loadRuntimeTheme rejects oversized theme JSON", () => {
 test("loadRuntimeTheme rejects image extension mismatch", () => {
   const json = Buffer.from(JSON.stringify({
     schemaVersion: 1, id: "x", name: "X", image: "background.jpg",
+    colors: {
+      background: "#111318", panel: "#181b22", panelAlt: "#20242d",
+      accent: "#8298a3", accentAlt: "#a8c0ca", secondary: "#6f8791",
+      highlight: "#bfd4dc", text: "#edf2f4", muted: "#a4afb5",
+      line: "rgba(130, 152, 163, 0.28)",
+    },
   }));
   assert.throws(
     () => loadRuntimeTheme({ themeJsonBytes: json, imageBytes: PNG_BYTES }),

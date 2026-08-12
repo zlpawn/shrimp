@@ -95,7 +95,7 @@ test("waitForDebugEndpoint polls until deadline", async () => {
       return [{ id: 1 }];
     },
     sleep: async () => {},
-    clock: () => 0, // always before deadline
+    clock: () => 0,
   });
   const targets = await client.waitForDebugEndpoint(19222, { maxWaitMs: 100 });
   assert.equal(targets.length, 1);
@@ -105,7 +105,7 @@ test("waitForDebugEndpoint throws on timeout", async () => {
   const client = createTargetClient({
     requestJson: async () => { throw new Error("down"); },
     sleep: async () => {},
-    clock: () => Date.now() + 100000, // past deadline
+    clock: () => Date.now() + 100000,
   });
   await assert.rejects(
     client.waitForDebugEndpoint(19222, { maxWaitMs: 10 }),
@@ -156,6 +156,7 @@ test("cdp session enables Runtime before evaluate", async () => {
   const session = createCdpSession({
     createWebSocket: () => ws,
     wsUrl: "ws://127.0.0.1:19222/devtools/page/1",
+    commandTimeoutMs: 500,
   });
   const connecting = session.connect();
   ws._setOpen();
@@ -166,7 +167,8 @@ test("cdp session enables Runtime before evaluate", async () => {
   assert.equal(ws.sent[0].method, "Runtime.enable");
   const enableId = ws.sent[0].id;
   ws._emit("message", Buffer.from(JSON.stringify({ id: enableId, result: {} })));
-  // Then the evaluate message
+  // Await a microtask/macrotask so the chained send happens after enable resolves
+  await new Promise((resolve) => setImmediate(resolve));
   assert.equal(ws.sent[1].method, "Runtime.evaluate");
   const evalId = ws.sent[1].id;
   ws._emit("message", Buffer.from(JSON.stringify({ id: evalId, result: { result: { value: 2 } } })));
@@ -217,6 +219,5 @@ test("cdp session ignores malformed messages", async () => {
   ws._setOpen();
   await connecting;
   ws._emit("message", Buffer.from("{not json"));
-  // Should not throw
   assert.ok(true);
 });
