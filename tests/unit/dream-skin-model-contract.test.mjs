@@ -54,7 +54,11 @@ test("types.ts defines Dream Skin interfaces", () => {
     "DreamSkinApiError",
     "DreamSkinPreviewScene",
   ]) {
-    assert.match(source, new RegExp(`interface ${name}`), `${name} should be defined`);
+    if (name === "DreamSkinPreviewScene") {
+      assert.match(source, new RegExp(`type ${name}`), `${name} should be defined as type alias`);
+    } else {
+      assert.match(source, new RegExp(`interface ${name}`), `${name} should be defined`);
+    }
   }
 });
 
