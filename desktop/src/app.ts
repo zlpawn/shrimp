@@ -3406,6 +3406,29 @@ return `<button type="button" class="ctx-window-option${_active ? ' is-active' :
 <div class="ctx-window-popover" role="menu">${_optsHtml}</div>
     </div>`;
 })()}
+${(() => {
+    const _mt = ep.model_capabilities?.[m]?.max_tokens;
+    const _mtOpts = [{"value":8192,"label":"8K"},{"value":16384,"label":"16K"},{"value":32768,"label":"32K"},{"value":4096,"label":"4K"},{"value":2048,"label":"2K"}];
+    const _current = _mtOpts.find(o => o.value === _mt) || _mtOpts[0];
+    const _optsHtml = _mtOpts.map(o => {
+const _active = o.value === _current.value;
+return `<button type="button" class="ctx-window-option${_active ? ' is-active' : ''}"
+    onclick="updateModelMaxTokens('${client}', ${index}, ${i}, '${o.value}')">
+    <span>${o.label}</span>
+    <span class="ctx-window-check">${_active ? '✓' : ''}</span>
+</button>`;
+    }).join('');
+    return `<div class="ctx-window-dropdown ctx-maxtoken-dropdown" id="ctx-maxtoken-${client}-${index}-${i}">
+<button type="button" class="ctx-window-trigger"
+    onclick="toggleCtxMaxTokensMenu('${client}', ${index}, ${i}, event)"
+    title="最大输出 Token（8K 为默认，不写入配置）">
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.7"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+    <span>${_current.label}</span>
+    <svg class="ctx-window-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+</button>
+<div class="ctx-window-popover" role="menu">${_optsHtml}</div>
+    </div>`;
+})()}
                                     ` : ''}
                                     <button type="button" onclick="removeTag('${client}', ${index}, 'models', ${i})" title="移除模型">×</button>
                                 </span>
@@ -6507,6 +6530,7 @@ window.toggleCtxVisionMenu = function(client, index, modelIndex, event) {
     const shouldOpen = !dropdown.classList.contains('is-open');
     closeAllCtxVisionMenus();
     closeAllCtxWindowMenus();
+    closeAllCtxMaxTokensMenus();
     dropdown.classList.toggle('is-open', shouldOpen);
 }
 
@@ -6539,6 +6563,43 @@ window.updateModelContextWindow = function(client, index, modelIndex, value) {
     render();
 }
 
+window.updateModelMaxTokens = function(client, index, modelIndex, value) {
+    const endpoint = config.clients?.[client]?.endpoints?.[index];
+    if (!endpoint) return;
+    const model = endpoint.models?.[modelIndex];
+    if (!model) return;
+
+    const mt = Number(value);
+    if (mt === 8192) {
+        // 8192 (8K) is default - remove field to keep config clean
+        if (endpoint.model_capabilities?.[model]?.max_tokens != null) {
+            delete endpoint.model_capabilities[model].max_tokens;
+            if (Object.keys(endpoint.model_capabilities[model]).length === 0) {
+                delete endpoint.model_capabilities[model];
+            }
+            if (endpoint.model_capabilities && Object.keys(endpoint.model_capabilities).length === 0) {
+                delete endpoint.model_capabilities;
+            }
+        }
+    } else {
+        endpoint.model_capabilities ||= {};
+        endpoint.model_capabilities[model] ||= {};
+        endpoint.model_capabilities[model].max_tokens = mt;
+    }
+    render();
+}
+
+window.toggleCtxMaxTokensMenu = function(client, index, modelIndex, event) {
+    event?.stopPropagation();
+    const dropdown = document.getElementById(`ctx-maxtoken-${client}-${index}-${modelIndex}`);
+    if (!dropdown) return;
+    const shouldOpen = !dropdown.classList.contains('is-open');
+    closeAllCtxWindowMenus();
+    closeAllCtxVisionMenus();
+    closeAllCtxMaxTokensMenus();
+    dropdown.classList.toggle('is-open', shouldOpen);
+}
+
 window.toggleCtxWindowMenu = function(client, index, modelIndex, event) {
     event?.stopPropagation();
     const dropdown = document.getElementById(`ctx-win-${client}-${index}-${modelIndex}`);
@@ -6546,11 +6607,16 @@ window.toggleCtxWindowMenu = function(client, index, modelIndex, event) {
     const shouldOpen = !dropdown.classList.contains('is-open');
     closeAllCtxWindowMenus();
     closeAllCtxVisionMenus();
+    closeAllCtxMaxTokensMenus();
     dropdown.classList.toggle('is-open', shouldOpen);
 }
 
 window.closeAllCtxWindowMenus = function() {
     document.querySelectorAll('.ctx-window-dropdown.is-open').forEach(d => d.classList.remove('is-open'));
+}
+
+window.closeAllCtxMaxTokensMenus = function() {
+    document.querySelectorAll('.ctx-maxtoken-dropdown.is-open').forEach(d => d.classList.remove('is-open'));
 }
 
 window.handleTagInput = function(e, client, index, field) {
@@ -7121,9 +7187,10 @@ document.addEventListener('click', (e) => {
     if (!e.target.closest('.add-node-dropdown')) closeAddNodeMenus();
     if (!e.target.closest('.ui-select-dropdown')) closeUiSelects();
     if (!e.target.closest('.model-suggest-wrap')) document.querySelectorAll('.model-suggest-wrap.is-open').forEach((el) => el.classList.remove('is-open'));
-    if (!e.target.closest('.ctx-window-dropdown')) {
+    if (!e.target.closest('.ctx-window-dropdown') && !e.target.closest('.vision-dropdown')) {
         closeAllCtxWindowMenus();
         closeAllCtxVisionMenus();
+        closeAllCtxMaxTokensMenus();
     }
     // Close the create-agent-node modal when clicking outside its dialog.
     if (clientCreateOpen && !e.target.closest('#client-create-modal .skill-modal') && !e.target.closest('.nav-create-client')) {
@@ -7148,9 +7215,10 @@ document.addEventListener('keydown', (e) => {
         closeUiSelects();
         return;
     }
-    if (e.key === 'Escape' && document.querySelector('.ctx-window-dropdown.is-open')) {
+    if (e.key === 'Escape' && (document.querySelector('.ctx-window-dropdown.is-open') || document.querySelector('.vision-dropdown.is-open'))) {
         closeAllCtxWindowMenus();
         closeAllCtxVisionMenus();
+        closeAllCtxMaxTokensMenus();
         return;
     }
     if (e.key === 'Escape' && selectedEndpoint) {

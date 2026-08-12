@@ -8151,7 +8151,17 @@ function sanitizeAnthropicMessages(messages) {
   return merged;
 }
 
+function resolveMaxTokensFallback(route, modelName) {
+  const configured = route?.endpoint?.model_capabilities?.[modelName]?.max_tokens
+    || route?.provider?.model_capabilities?.[modelName]?.max_tokens;
+  if (configured != null && Number.isFinite(Number(configured)) && Number(configured) > 0) {
+    return Number(configured);
+  }
+  return 8192;
+}
+
 function openAIChatToAnthropic(body, resolvedModel, route) {
+
   const messages = [];
   const system = [];
 
@@ -8174,7 +8184,7 @@ function openAIChatToAnthropic(body, resolvedModel, route) {
   const upstreamBody = {
     model: resolvedModel,
     messages: sanitizedMessages,
-    max_tokens: body.max_completion_tokens || body.max_tokens || 4096,
+    max_tokens: body.max_completion_tokens || body.max_tokens || resolveMaxTokensFallback(route, resolvedModel),
     stream: Boolean(body.stream),
   };
 
@@ -8234,7 +8244,7 @@ function openAIResponsesToAnthropic(body, resolvedModel, route) {
   const upstreamBody = {
     model: resolvedModel,
     messages: sanitizedMessages,
-    max_tokens: body.max_output_tokens || body.max_tokens || 4096,
+    max_tokens: body.max_output_tokens || body.max_tokens || resolveMaxTokensFallback(route, resolvedModel),
     stream: Boolean(body.stream),
   };
 
