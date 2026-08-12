@@ -14,6 +14,11 @@ import {
   isDeepSeekResponsesModel,
   sanitizeDeepSeekResponsesInput,
 } from "./lib/codex/deepseek-input-sanitizer.mjs";
+import {
+  deepSeekAutoContinueMaxAttempts,
+  deepSeekAutoContinuePrompt,
+  runDeepSeekAutoContinueLoop,
+} from "./lib/codex/deepseek-auto-continue.mjs";
 import { extractCompactionSummary } from "./lib/codex/compaction-helper.mjs";
 
 
@@ -5589,41 +5594,51 @@ async function forwardResolvedCodexResponse({
         ...event,
       }),
       fetchResponse: async (loopBody) => {
-        let upstream = await fetchConfiguredOpenAI(
-          route.provider,
-          "/responses",
-          sanitizeProviderResponsesInput({ ...loopBody, model: resolvedModel, stream: false }, route.provider),
+        const fetched = await fetchConfiguredResponsesObject({
+          provider: route.provider,
+          body: loopBody,
+          resolvedModel,
+          requestedModel,
           clientReq,
           signal,
-          !isOpenAIClient(context.client),
-        );
-        upstream = await maybeRetryAfterImageError({
-          upstream,
-          originalBody: loopBody,
-          route,
-          clientReq,
           context,
-          fetchAgain: (retryBody) => fetchConfiguredOpenAI(
-            route.provider,
-            "/responses",
-            sanitizeProviderResponsesInput({ ...retryBody, model: resolvedModel, stream: false }, route.provider),
-            clientReq,
-            signal,
-            !isOpenAIClient(context.client),
-          ),
+          route,
         });
-        if (!upstream.ok) {
-          await sendUpstreamError(upstream, clientRes);
+        if (!fetched.ok) {
+          await sendUpstreamError(fetched.upstream, clientRes);
           return null;
         }
-        const contentType = upstream.headers.get("content-type") || "";
-        if (contentType.includes("text/event-stream")) {
-          return collectResponsesStream(upstream.body, requestedModel);
-        }
-        return upstream.json();
+        return fetched.response;
       },
     });
     if (!loop.response) return;
+
+    const continued = await maybeAutoContinueDeepSeekResponses({
+      body: withoutStreamFlag(body),
+      response: loop.response,
+      model: resolvedModel || requestedModel,
+      provider: route.provider,
+      requestId: context.requestId,
+      client: context.client,
+      fetchResponse: async (continueBody) => {
+        const fetched = await fetchConfiguredResponsesObject({
+          provider: route.provider,
+          body: continueBody,
+          resolvedModel,
+          requestedModel,
+          clientReq,
+          signal,
+          context,
+          route,
+        });
+        if (!fetched.ok) {
+          // Keep the last good response instead of failing the whole turn mid-continue.
+          return null;
+        }
+        return fetched.response;
+      },
+    });
+
     logInfo("openai_responses_response", {
       request_id: context.requestId,
       client: context.client,
@@ -5632,17 +5647,70 @@ async function forwardResolvedCodexResponse({
       translated_to: null,
       gateway_web_search_loops: loop.loops,
       gateway_web_search_stop: loop.stopReason,
+      deepseek_auto_continue_attempts: continued.attempts || 0,
+      deepseek_auto_continue_stop: continued.stopReason || null,
       client_stream: Boolean(body.stream),
     });
-    if (body.stream) {
-      streamFinalResponsesObject(clientRes, loop.response, requestedModel);
-    } else {
-      clientRes.writeHead(200, {
-        "Content-Type": "application/json; charset=utf-8",
-        "Access-Control-Allow-Origin": "*",
-      });
-      clientRes.end(JSON.stringify(loop.response));
+    sendResponsesObject(clientRes, continued.response, requestedModel, {
+      stream: Boolean(body.stream),
+    });
+    return;
+  }
+
+  // DeepSeek auto-continue needs a collected response object. Keep the old
+  // byte-for-byte passthrough path for every non-DeepSeek provider.
+  if (route?.provider && isDeepSeekResponsesModel(resolvedModel || requestedModel, route.provider)) {
+    const fetched = await fetchConfiguredResponsesObject({
+      provider: route.provider,
+      body: withoutStreamFlag(body),
+      resolvedModel,
+      requestedModel,
+      clientReq,
+      signal,
+      context,
+      route,
+    });
+    if (!fetched.ok) {
+      await sendUpstreamError(fetched.upstream, clientRes);
+      return;
     }
+
+    const continued = await maybeAutoContinueDeepSeekResponses({
+      body: withoutStreamFlag(body),
+      response: fetched.response,
+      model: resolvedModel || requestedModel,
+      provider: route.provider,
+      requestId: context.requestId,
+      client: context.client,
+      fetchResponse: async (continueBody) => {
+        const again = await fetchConfiguredResponsesObject({
+          provider: route.provider,
+          body: continueBody,
+          resolvedModel,
+          requestedModel,
+          clientReq,
+          signal,
+          context,
+          route,
+        });
+        if (!again.ok) return null;
+        return again.response;
+      },
+    });
+
+    logInfo("openai_responses_response", {
+      request_id: context.requestId,
+      client: context.client,
+      status: 200,
+      provider: route.provider.id || null,
+      translated_to: null,
+      deepseek_auto_continue_attempts: continued.attempts || 0,
+      deepseek_auto_continue_stop: continued.stopReason || null,
+      client_stream: Boolean(body.stream),
+    });
+    sendResponsesObject(clientRes, continued.response, requestedModel, {
+      stream: Boolean(body.stream),
+    });
     return;
   }
 
@@ -5978,6 +6046,128 @@ function resolveUrl(baseUrl, defaultPath) {
   return `${trimmed}${cleanPath}`;
 }
 
+
+
+async function maybeAutoContinueDeepSeekResponses({
+  body,
+  response,
+  model,
+  provider,
+  fetchResponse,
+  requestId = null,
+  client = null,
+}) {
+  if (!response) {
+    return {
+      response,
+      attempts: 0,
+      stopReason: "no_response",
+    };
+  }
+
+  const maxAttempts = deepSeekAutoContinueMaxAttempts();
+  if (maxAttempts <= 0 || !isDeepSeekResponsesModel(model, provider)) {
+    return {
+      response,
+      attempts: 0,
+      stopReason: "not_eligible",
+    };
+  }
+
+  const result = await runDeepSeekAutoContinueLoop({
+    body,
+    response,
+    model,
+    provider,
+    maxAttempts,
+    prompt: deepSeekAutoContinuePrompt(),
+    fetchResponse,
+    onContinue: (event) => logInfo("deepseek_auto_continue_attempt", {
+      request_id: requestId,
+      client,
+      model,
+      provider: provider?.id || provider?.name || null,
+      ...event,
+    }),
+  });
+
+  if (result.attempts > 0) {
+    logInfo("deepseek_auto_continue_stop", {
+      request_id: requestId,
+      client,
+      model,
+      provider: provider?.id || provider?.name || null,
+      attempts: result.attempts,
+      stop_reason: result.stopReason,
+      decision_reason: result.decision?.reason || null,
+    });
+  }
+
+  return result;
+}
+
+async function fetchConfiguredResponsesObject({
+  provider,
+  body,
+  resolvedModel,
+  requestedModel,
+  clientReq,
+  signal,
+  context,
+  route,
+}) {
+  let upstream = await fetchConfiguredOpenAI(
+    provider,
+    "/responses",
+    sanitizeProviderResponsesInput({ ...body, model: resolvedModel, stream: false }, provider),
+    clientReq,
+    signal,
+    !isOpenAIClient(context.client),
+  );
+  upstream = await maybeRetryAfterImageError({
+    upstream,
+    originalBody: body,
+    route,
+    clientReq,
+    context,
+    fetchAgain: (retryBody) => fetchConfiguredOpenAI(
+      provider,
+      "/responses",
+      sanitizeProviderResponsesInput({ ...retryBody, model: resolvedModel, stream: false }, provider),
+      clientReq,
+      signal,
+      !isOpenAIClient(context.client),
+    ),
+  });
+  if (!upstream.ok) {
+    return { ok: false, upstream, response: null };
+  }
+  const contentType = upstream.headers.get("content-type") || "";
+  if (contentType.includes("text/event-stream")) {
+    return {
+      ok: true,
+      upstream,
+      response: await collectResponsesStream(upstream.body, requestedModel),
+    };
+  }
+  return {
+    ok: true,
+    upstream,
+    response: await upstream.json(),
+  };
+}
+
+function sendResponsesObject(clientRes, response, requestedModel, { stream }) {
+  if (stream) {
+    streamFinalResponsesObject(clientRes, response, requestedModel);
+    return;
+  }
+  clientRes.writeHead(200, {
+    "Content-Type": "application/json; charset=utf-8",
+    "Access-Control-Allow-Origin": "*",
+  });
+  clientRes.end(JSON.stringify(response));
+}
 
 function sanitizeProviderResponsesInput(body, provider = null) {
   if (isDeepSeekResponsesModel(body?.model, provider)) {
