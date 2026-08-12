@@ -72,7 +72,9 @@
     "test:config-panel": "node --test tests/unit/config-panel.test.mjs",
     "test:shrimp": "node --test tests/unit/clis/shrimp/*.test.mjs tests/integration/shrimp-cli.integration.test.mjs",
     "build:panel": "node desktop/esbuild.config.mjs",
-    "dev:panel": "node desktop/esbuild.config.mjs --watch"
+    "dev:panel": "node desktop/esbuild.config.mjs --watch",
+    "test:dream-skin": "node --test tests/unit/dream-skin-*.test.mjs tests/integration/dream-skin-api.test.mjs",
+    "dream-skin:validate-engines": "node lib/dream-skin/index.mjs validate-engines"
   },
   "engines": {
     "node": ">=18"

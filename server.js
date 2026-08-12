@@ -144,6 +144,9 @@ import {
   PROJECT_ROOT,
   resolveProjectPath,
 } from "./lib/config/project-paths.mjs";
+import { resolveDreamSkinPaths } from "./lib/dream-skin/paths.mjs";
+import { createDreamSkinService } from "./lib/dream-skin/application/service.mjs";
+import { routeDreamSkinRequest } from "./lib/dream-skin/http/routes.mjs";
 
 loadDotEnv();
 enableNodeEnvProxy();
@@ -200,6 +203,19 @@ const OFFICIAL_CLAUDE_MODELS = parseList(
     "claude-3-5-sonnet-20241022,claude-3-5-sonnet-latest,claude-3-5-haiku-20241022,claude-3-5-haiku-latest,claude-3-opus-20240229,claude-3-opus-latest",
 );
 const OFFICIAL_CLAUDE_MODEL_IDS = new Set(OFFICIAL_CLAUDE_MODELS);
+let globalDreamSkinService = null;
+
+// Dream Skin service is composed lazily on first route hit so gateway startup
+// stays fast and the service never imports runtime launcher/CDP modules.
+function ensureDreamSkinService() {
+  if (globalDreamSkinService) return globalDreamSkinService;
+  const paths = resolveDreamSkinPaths({
+    configFile: process.env.GATEWAY_CONFIG_FILE || "gateway.config.json",
+  });
+  globalDreamSkinService = createDreamSkinService({ paths, logger: console });
+  return globalDreamSkinService;
+}
+
 let GATEWAY_STATE = loadGatewayState({
   configPath: GATEWAY_CONFIG_FILE,
   secretsPath: GATEWAY_SECRETS_FILE,
@@ -944,7 +960,15 @@ async function route(req, res) {
     return;
   }
 
-  if (reqPath.startsWith("/v1/video-kb/tools/agent-reach")) {
+    if (reqPath.startsWith("/v1/dream-skin")) {
+    if (!checkLocalAuth(req, res)) return;
+    await routeDreamSkinRequest(req, res, context, reqPath, {
+      service: ensureDreamSkinService(),
+    });
+    return;
+  }
+
+if (reqPath.startsWith("/v1/video-kb/tools/agent-reach")) {
     if (!checkLocalAuth(req, res)) return;
     await routeAgentReachRequest(req, res, context, reqPath);
     return;
