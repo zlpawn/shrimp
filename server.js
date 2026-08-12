@@ -3533,6 +3533,7 @@ function mediaProviderContext(req, endpoint, signal) {
     signal,
     fetchImpl,
     getApiKey: (targetEndpoint) => resolveMediaApiKey(req, targetEndpoint || endpoint),
+    proxyUrl,
   };
 }
 

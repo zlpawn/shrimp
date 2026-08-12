@@ -316,3 +316,43 @@ test("decode handles functionCall in response part", () => {
   assert.equal(fc.name, "fn");
   assert.equal(fc.id, "call_0");
 });
+
+
+test("encodeGenerateContentRequest packs responseModalities as field 21", () => {
+  const body = sampleBody();
+  body.request.generationConfig = {
+    responseModalities: ["IMAGE"],
+  };
+  const wrapper = encodeGenerateContentRequest(body);
+  const masterRequest = lengthDelimitedFields(wrapper, 3)[0];
+  const generationConfig = lengthDelimitedFields(masterRequest, 4)[0];
+
+  // Field 21 packed repeated enum: tag (21<<3|2)=0xaa 0x01, length 0x01, value IMAGE=2
+  const packed = Buffer.from([0xaa, 0x01, 0x01, 0x02]);
+  assert.ok(generationConfig.includes(packed), `expected packed responseModalities in ${generationConfig.toString("hex")}`);
+});
+
+test("decodeGenerateContentResponse extracts inline image data", () => {
+  // Blob: mime_type="image/png", data=raw bytes [1,2,3]
+  // mime_type field1: 0a 09 69 6d 61 67 65 2f 70 6e 67
+  // data field2: 12 03 01 02 03
+  const blob = Buffer.from([
+    0x0a, 0x09, ...Buffer.from("image/png"),
+    0x12, 0x03, 0x01, 0x02, 0x03,
+  ]);
+  // Part: field2 inline_data = blob
+  const part = Buffer.concat([Buffer.from([0x12, blob.length]), blob]);
+  // Content: field2 parts = part
+  const content = Buffer.concat([Buffer.from([0x12, part.length]), part]);
+  // Candidate: field2 content = content
+  const candidate = Buffer.concat([Buffer.from([0x12, content.length]), content]);
+  // MasterResponse: field2 candidates = candidate
+  const master = Buffer.concat([Buffer.from([0x12, candidate.length]), candidate]);
+  // V1Response: field1 response = master
+  const v1 = Buffer.concat([Buffer.from([0x0a, master.length]), master]);
+
+  const result = decodeGenerateContentResponse(v1);
+  const inline = result.response.candidates[0].content.parts[0].inlineData;
+  assert.equal(inline.mimeType, "image/png");
+  assert.equal(inline.data, Buffer.from([1, 2, 3]).toString("base64"));
+});
