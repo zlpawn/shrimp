@@ -43,7 +43,7 @@ test("app.ts changes stay minimal: lifecycle only", () => {
 test("section-dream-skin exists with copy explaining no Codex application", () => {
   assert.match(html, /id="section-dream-skin"/);
   assert.match(html, /id="dream-skin-root"/);
-  assert.match(html, /不会应用到 Codex/);
+  assert.match(html, /不会修改 Codex 桌面界面/);
 });
 
 test("panel.css has no oversized card radius", () => {
