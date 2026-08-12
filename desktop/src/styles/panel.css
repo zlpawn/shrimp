@@ -4664,7 +4664,7 @@ input:focus, select:focus {
 .dream-skin-section-head h3 { margin: 0; }
 .dream-skin-section-actions { display: flex; gap: 8px; }
 .dream-skin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
-.dream-skin-card { border: 1px solid var(--border, #333); border-radius: 8px; overflow: hidden; background: var(--card-bg, #1e1e1e); display: flex; flex-direction: column; }
+.dream-skin-card { border: 1px solid var(--border-color, #333); border-radius: 8px; overflow: hidden; background: var(--surface, #1e1e1e); display: flex; flex-direction: column; }
 .dream-skin-thumb { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #111; }
 .dream-skin-thumb-swatch { background: linear-gradient(135deg, #1a1b2e 0%, #2d2e4a 100%); }
 .dream-skin-card-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
@@ -4672,9 +4672,9 @@ input:focus, select:focus {
 .dream-skin-card-meta { font-size: 12px; color: var(--text-secondary, #888); }
 .dream-skin-card-desc { font-size: 12px; color: var(--text-secondary, #888); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .dream-skin-card-tags { display: flex; gap: 4px; flex-wrap: wrap; }
-.dream-skin-tag { font-size: 11px; padding: 1px 6px; border-radius: 4px; background: var(--input-bg, #222); border: 1px solid var(--border, #333); }
+.dream-skin-tag { font-size: 11px; padding: 1px 6px; border-radius: 4px; background: var(--input-bg, #222); border: 1px solid var(--border-color, #333); }
 .dream-skin-card-actions { display: flex; gap: 6px; flex-wrap: wrap; }
-.dream-skin-card-actions .btn { padding: 4px 10px; font-size: 12px; }
+.dream-skin-card-actions .btn { padding: 4px 10px; font-size: 12px; color: var(--text-primary); }
 .dream-skin-danger { color: var(--danger, #ef4444); border-color: var(--danger, #ef4444); }
 .dream-skin-badge { font-size: 11px; padding: 1px 6px; border-radius: 4px; }
 .dream-skin-badge.is-selected { background: rgba(124, 110, 240, 0.18); color: var(--accent, #7c6ef0); }
@@ -4686,12 +4686,12 @@ input:focus, select:focus {
 .dream-skin-tag-select { min-width: 120px; }
 .dream-skin-editor { display: grid; grid-template-columns: minmax(220px, 340px) 1fr; gap: 16px; }
 .dream-skin-editor-fields { display: flex; flex-direction: column; gap: 10px; }
-.dream-skin-editor-fields label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-secondary, #888); }
+.dream-skin-editor-fields label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-secondary); }
 .dream-skin-editor-actions { display: flex; gap: 8px; margin-top: 8px; }
 .dream-skin-editor-preview { display: flex; flex-direction: column; gap: 8px; }
 .dream-skin-preview-scene-tabs { display: flex; gap: 6px; }
 .dream-skin-preview-scene-tabs .btn.is-active { background: var(--accent, #7c6ef0); color: #fff; }
-.dream-skin-workspace-preview { border-radius: 8px; overflow: hidden; min-height: 360px; display: flex; border: 1px solid var(--border, #333); background: var(--ds-color-background, #111318); color: var(--ds-color-text, #edf2f4); }
+.dream-skin-workspace-preview { border-radius: 8px; overflow: hidden; min-height: 360px; display: flex; border: 1px solid var(--border-color, #333); background: var(--ds-color-background, #111318); color: var(--ds-color-text, #edf2f4); }
 .dream-preview-sidebar { width: 96px; background: var(--ds-color-panel, #181b22); border-right: 1px solid var(--ds-color-line, rgba(130,152,163,0.28)); }
 .dream-preview-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .dream-preview-toolbar { height: 36px; background: var(--ds-color-panelAlt, #20242d); border-bottom: 1px solid var(--ds-color-line, rgba(130,152,163,0.28)); }

@@ -87,12 +87,14 @@ async function loadInitial(): Promise<void> {
   state.error = "";
   render();
   try {
-    const [caps, library] = await Promise.all([
+    const [caps, library, market] = await Promise.all([
       getDreamSkinCapabilities(),
       listDreamSkinThemes(),
+      loadDreamSkinMarket().catch(() => null),
     ]);
     state.capabilities = caps;
     state.library = library;
+    state.market = market;
     state.loaded = true;
   } catch (err) {
     state.error = err instanceof Error ? err.message : String(err);
@@ -137,6 +139,11 @@ function render(): void {
   el.querySelectorAll(".dream-skin-view-tab").forEach((btn) => {
     btn.addEventListener("click", () => {
       state.activeView = (btn as HTMLElement).dataset.view as "local" | "market" | "editor";
+      if (state.activeView === "market" && !state.market) {
+        void loadDreamSkinMarket()
+          .then((market) => { state.market = market; render(); })
+          .catch(() => {});
+      }
       render();
     });
   });
