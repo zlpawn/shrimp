@@ -438,7 +438,13 @@ async function handleAction(action: string, id?: string): Promise<void> {
       const d = state.editor.draft;
       const payload = { theme: draftToSaveInput(d) };
       if (state.editor.mode === "create") {
-        await createDreamSkinTheme(payload as Parameters<typeof createDreamSkinTheme>[0]);
+        const created = (await createDreamSkinTheme(payload as Parameters<typeof createDreamSkinTheme>[0])) as { id?: string };
+        // Bind the editor to the newly created theme so later saves update it
+        if (created?.id && state.editor) {
+          state.editor.mode = "edit";
+          state.editor.originalId = created.id;
+          state.editor.draft.id = created.id;
+        }
         showToast("主题已创建");
       } else if (state.editor.originalId) {
         await updateDreamSkinTheme(state.editor.originalId, payload as Parameters<typeof updateDreamSkinTheme>[1]);
@@ -451,7 +457,12 @@ async function handleAction(action: string, id?: string): Promise<void> {
       if (!state.editor?.draft) return;
       const d = state.editor.draft;
       const payload = { theme: { ...draftToSaveInput(d), id: "" } };
-      await createDreamSkinTheme(payload as Parameters<typeof createDreamSkinTheme>[0]);
+      const created = (await createDreamSkinTheme(payload as Parameters<typeof createDreamSkinTheme>[0])) as { id?: string };
+      if (created?.id && state.editor) {
+        state.editor.mode = "edit";
+        state.editor.originalId = created.id;
+        state.editor.draft.id = created.id;
+      }
       state.library = await listDreamSkinThemes();
       showToast("已另存为新主题");
       break;
