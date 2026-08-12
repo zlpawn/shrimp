@@ -2,6 +2,7 @@ import { escapeHtml } from "./core/dom";
 import { renderVideoKbDetail } from "./modules/video-kb";
 import { renderIchingDetail } from "./modules/iching";
 import { showToast } from "./core/ui";
+import { runTabEnter, runTabLeave } from "./core/navigation";
 import { getConfig, loadSyncStatus, fetchJson } from "./core/api";
 import {
     closeUiSelects,
@@ -3728,8 +3729,12 @@ window.switchTab = function(tabId) {
     }
     // Custom agent-node names share one section; route them there but remember
     // which custom client is focused so render() can show its detail view.
+    const previousTab = activeClient;
     const sectionId = isCustomClient(tabId) ? 'custom-clients' : tabId;
     activeClient = tabId;
+    if (previousTab !== tabId) {
+        runTabLeave(previousTab);
+    }
     // Leaving a tab exits detail view (custom clients keep detail only when re-selected)
     if (selectedEndpoint && selectedEndpoint.client !== tabId) {
         selectedEndpoint = null;
@@ -3757,6 +3762,9 @@ window.switchTab = function(tabId) {
 
     render();
 
+    if (tabId === 'dream-skin') {
+        runTabEnter(tabId);
+    }
     if (tabId === 'analytics') {
         loadAnalyticsData();
     }

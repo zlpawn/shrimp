@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "shrimp-default",
+  "name": "Shrimp Default",
+  "stylePreset": "",
+  "image": "",
+  "appearance": "auto",
+  "brandSubtitle": "CODEX DREAM SKIN",
+  "tagline": "Make something wonderful.",
+  "projectPrefix": "\u9009\u62E9\u9879\u76EE \u00B7 ",
+  "projectLabel": "\u9009\u62E9\u9879\u76EE",
+  "statusText": "THEME READY",
+  "quote": "FOCUS",
+  "art": {
+    "focusX": 0.5,
+    "focusY": 0.5,
+    "safeArea": "auto",
+    "taskMode": "ambient"
+  },
+  "colors": {
+    "background": "#1a1b2e",
+    "panel": "#252640",
+    "panelAlt": "#2d2e4a",
+    "accent": "#7c6ef0",
+    "accentAlt": "#9d8ff5",
+    "secondary": "#5a4d9e",
+    "highlight": "#a78bfa",
+    "text": "#e8e6f0",
+    "muted": "#9b98ad",
+    "line": "rgba(124, 110, 240, 0.18)"
+  }
+}

@@ -54,6 +54,10 @@
                 </a>
 
                 <div class="nav-group-title">系统扩展</div>
+                <a href="#dream-skin" class="nav-item" onclick="switchTab('dream-skin')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;"><circle cx="12" cy="12" r="3"></circle><circle cx="5" cy="6" r="1.5"></circle><circle cx="19" cy="6" r="1.5"></circle><circle cx="5" cy="18" r="1.5"></circle><circle cx="19" cy="18" r="1.5"></circle></svg>
+                    主题皮肤 (Dream Skin)
+                </a>
                 <a href="#analytics" class="nav-item" onclick="switchTab('analytics')">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
                     用量统计 (Token Analytics)
@@ -801,6 +805,17 @@ experimental_bearer_token = "dummy"</pre>
                 </div>
 
                 <div id="cli-sources-list" class="skills-list"></div>
+            </section>
+
+            <!-- Dream Skin Section -->
+            <section id="section-dream-skin" class="tab-section" style="display: none;">
+                <div class="section-header">
+                    <div>
+                        <h2>主题皮肤 (Dream Skin)</h2>
+                        <p>管理本地主题、浏览主题市场、编辑主题并在模拟工作台中预览。选择主题仅保存为当前主题，不会修改 Codex 桌面界面。</p>
+                    </div>
+                </div>
+                <div id="dream-skin-root" class="dream-skin-root" aria-live="polite"></div>
             </section>
 
         </main>
