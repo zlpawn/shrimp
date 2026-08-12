@@ -979,7 +979,7 @@ async function route(req, res) {
     return;
   }
 
-    if (reqPath.startsWith("/v1/dream-skin")) {
+  if (reqPath.startsWith("/v1/dream-skin")) {
     if (!checkLocalAuth(req, res)) return;
     await routeDreamSkinRequest(req, res, context, reqPath, {
       service: ensureDreamSkinService(),
@@ -987,7 +987,7 @@ async function route(req, res) {
     return;
   }
 
-if (reqPath.startsWith("/v1/video-kb/tools/agent-reach")) {
+  if (reqPath.startsWith("/v1/video-kb/tools/agent-reach")) {
     if (!checkLocalAuth(req, res)) return;
     await routeAgentReachRequest(req, res, context, reqPath);
     return;
@@ -6229,26 +6229,17 @@ function sanitizeDanglingToolCallsPayload(provider, body) {
   if (!body || typeof body !== "object") return body;
 
   const shouldSanitize = shouldSanitizeDanglingToolCalls(provider, body);
-  console.log(`[DEBUG_SANITIZER] provider=${provider?.id} model=${body?.model} shouldSanitize=${shouldSanitize}`);
 
   if (!shouldSanitize) return body;
 
   const sanitizedBody = { ...body };
 
   if (Array.isArray(sanitizedBody.messages)) {
-    const beforeLen = sanitizedBody.messages.length;
     sanitizedBody.messages = sanitizeDanglingToolCallsOpenAIChat(sanitizedBody.messages);
-    if (sanitizedBody.messages.length !== beforeLen) {
-      console.log(`[DEBUG_SANITIZER] OpenAI Chat messages count changed from ${beforeLen} to ${sanitizedBody.messages.length}`);
-    }
   }
 
   if (Array.isArray(sanitizedBody.input)) {
-    const beforeLen = sanitizedBody.input.length;
     sanitizedBody.input = sanitizeDanglingToolCallsResponsesInput(sanitizedBody.input);
-    if (sanitizedBody.input.length !== beforeLen) {
-      console.log(`[DEBUG_SANITIZER] Responses input count changed from ${beforeLen} to ${sanitizedBody.input.length}`);
-    }
   }
 
   return sanitizedBody;
