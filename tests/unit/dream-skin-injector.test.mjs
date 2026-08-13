@@ -43,7 +43,13 @@ test("loadRuntimeTheme accepts builtin id only with allowBuiltin", () => {
       line: "rgba(130, 152, 163, 0.28)",
     },
   }));
-  assert.throws(() => loadRuntimeTheme({ themeJsonBytes: builtin }), /保留 ID/);
+  // assertValidTheme wraps the reserved-id issue into invalid_theme details
+  assert.throws(
+    () => loadRuntimeTheme({ themeJsonBytes: builtin }),
+    (err) => err instanceof DreamSkinError
+      && err.code === "invalid_theme"
+      && (err.details || []).some((d) => d.code === "invalid_theme_id" && /保留 ID/.test(d.message)),
+  );
   assert.doesNotThrow(() => loadRuntimeTheme({ themeJsonBytes: builtin, allowBuiltin: true }));
 });
 
