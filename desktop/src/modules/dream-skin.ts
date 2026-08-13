@@ -404,6 +404,7 @@ async function handleAction(action: string, id?: string): Promise<void> {
       if (!id) return;
       try {
         await applyDreamSkinTheme(id);
+        state.runtimeStatus = await getDreamSkinRuntimeStatus();
         showToast("主题已应用到 Codex");
       } catch (err) {
         const code = (err as { code?: string })?.code;
@@ -411,6 +412,7 @@ async function handleAction(action: string, id?: string): Promise<void> {
           const ok = window.confirm("Codex 正在运行但没有开启调试端口。是否退出并自动重启 Codex 以应用主题？");
           if (ok) {
             await applyDreamSkinTheme(id, { restart: true });
+            state.runtimeStatus = await getDreamSkinRuntimeStatus();
             showToast("Codex 已重启并应用主题");
           }
         } else {

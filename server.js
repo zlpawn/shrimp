@@ -233,7 +233,10 @@ async function ensureDreamSkinService() {
   });
   // Runtime injection is composed lazily so gateway startup never touches CDP.
   const { createDreamSkinApplier } = await import("./lib/dream-skin/runtime/applier.mjs");
-  const applier = createDreamSkinApplier({ logger: console });
+  const applier = createDreamSkinApplier({
+    codexAppPath: process.env.CODEX_APP_PATH || GATEWAY_CONFIG.dreamSkin?.codexAppPath || "",
+    logger: console,
+  });
   globalDreamSkinService = createDreamSkinService({ paths, applier, logger: console });
   return globalDreamSkinService;
 }

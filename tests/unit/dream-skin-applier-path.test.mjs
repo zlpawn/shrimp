@@ -37,3 +37,20 @@ test("resolveWildcardPath walks multi-segment Windows package paths", async () =
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("createDreamSkinApplier uses configured codexAppPath by default", async () => {
+  const { createDreamSkinApplier } = await import("../../lib/dream-skin/runtime/applier.mjs");
+  const applier = createDreamSkinApplier({
+    platform: "darwin",
+    codexAppPath: "/Applications/Codex.app",
+    exists: async (p) => p === "/Applications/Codex.app",
+    spawn: async () => ({ pid: 1, on() {} }),
+    spawnSync: async () => ({ stdout: "false" }),
+    listTargets: async () => { throw new Error("down"); },
+    waitForDebugEndpoint: async () => {},
+    requestJson: async () => [],
+  });
+  const launcher = applier.launcher;
+  const resolved = await launcher.resolveCodexAppPath("");
+  assert.equal(resolved, "/Applications/Codex.app");
+});
