@@ -20,10 +20,13 @@ test("activatePackagedApp builds hidden COM PowerShell activation", async () => 
   assert.equal(captured[0].opts.windowsHide, true);
   const script = captured[0].args.join(" ");
   assert.match(script, /IApplicationActivationManager/);
+  assert.match(script, /\[PreserveSig\]/);
   assert.match(script, /ActivateApplication/);
   assert.match(script, /OpenAI\.Codex_abc!App/);
   assert.match(script, /--remote-debugging-port=19222/);
+  assert.match(script, /\$activatedPid/);
   assert.doesNotMatch(script, /shell:AppsFolder/);
+  assert.doesNotMatch(script, /\$pid\s*=/);
 });
 
 test("activatePackagedApp rejects invalid PowerShell output", async () => {
