@@ -67,10 +67,10 @@ test("buildMacOSQuitCommand uses osascript with app name", () => {
   assert.equal(cmd.args[1], `tell application "ChatGPT" to quit`);
 });
 
-test("buildMacOSProcessQuery uses pgrep with app name", () => {
+test("buildMacOSProcessQuery uses osascript app query", () => {
   const cmd = buildMacOSProcessQuery("/Applications/Codex.app");
-  assert.equal(cmd.executable, "pgrep");
-  assert.deepEqual(cmd.args, ["-fl", "Codex"]);
+  assert.equal(cmd.executable, "osascript");
+  assert.deepEqual(cmd.args, ["-e", `application "Codex" is running`]);
 });
 
 // --- Fake-process launcher tests ---
@@ -158,7 +158,7 @@ test("createCodexLauncher.launchWithDebugPort restarts when allowRestart is true
   const exists = async (p) => p === "/Applications/Codex.app";
   const spawnSync = async (executable, args) => {
     calls.push({ kind: "spawnSync", executable, args });
-    return { stdout: calls.filter((c) => c.kind === "spawnSync").length === 1 ? "Codex" : "" };
+    return { stdout: calls.filter((c) => c.kind === "spawnSync").length === 1 ? "true" : "false" };
   };
   const spawn = async (executable, args) => {
     calls.push({ kind: "spawn", executable, args });
@@ -177,9 +177,9 @@ test("createCodexLauncher.launchWithDebugPort restarts when allowRestart is true
   assert.equal(result.kind, "macos");
   const kinds = calls.map((c) => `${c.kind}:${c.executable}`);
   assert.deepEqual(kinds, [
-    "spawnSync:pgrep",
+    "spawnSync:osascript",
     "spawn:osascript",
-    "spawnSync:pgrep",
+    "spawnSync:osascript",
     "spawn:open",
   ]);
 });
@@ -189,7 +189,7 @@ test("createCodexLauncher.launchWithDebugPort refuses to quit a running app by d
   const exists = async (p) => p === "/Applications/Codex.app";
   const spawnSync = async (executable, args) => {
     calls.push({ kind: "spawnSync", executable, args });
-    return { stdout: "Codex" };
+    return { stdout: "true" };
   };
   const spawn = async (executable, args) => {
     calls.push({ kind: "spawn", executable, args });
@@ -210,7 +210,7 @@ test("createCodexLauncher.launchWithDebugPort refuses to quit a running app by d
   );
   // pgrep was called once, but never osascript quit or open
   const kinds = calls.map((c) => `${c.kind}:${c.executable}`);
-  assert.deepEqual(kinds, ["spawnSync:pgrep"]);
+  assert.deepEqual(kinds, ["spawnSync:osascript"]);
 });
 
 // --- Windows builders ---

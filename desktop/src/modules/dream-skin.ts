@@ -169,7 +169,13 @@ function render(): void {
 
 function runtimeStatusHtml(): string {
   if (!state.capabilities?.codexRuntime) return "";
-  const ready = state.runtimeStatus?.available;
+  if (!state.runtimeStatus) {
+    return `
+      <div class="dream-skin-runtime-status">
+        <span>检测中…</span>
+      </div>`;
+  }
+  const ready = state.runtimeStatus.available;
   const label = ready ? "Codex 调试端口已就绪" : "未检测到 Codex 调试端口";
   return `
     <div class="dream-skin-runtime-status ${ready ? "is-ready" : "is-offline"}">

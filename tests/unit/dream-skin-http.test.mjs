@@ -251,4 +251,8 @@ test("runtime restart/inject errors map to explicit status codes", async () => {
   const inject = capture(new DreamSkinError("runtime_inject_failed", "inject failed"));
   assert.equal(inject.status, 500);
   assert.equal(inject.body.error.type, "runtime_inject_failed");
+
+  const launch = capture(new DreamSkinError("runtime_launch_failed", "launch failed"));
+  assert.equal(launch.status, 500);
+  assert.equal(launch.body.error.type, "runtime_launch_failed");
 });
