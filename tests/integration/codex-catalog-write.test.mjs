@@ -114,6 +114,7 @@ test("saving config rewrites the Codex model catalog file", async (t) => {
           }],
         },
       },
+      dreamSkin: { codexAppPath: "/Applications/Codex.app" },
     }),
   });
   assert.equal(save.status, 200);
@@ -139,6 +140,7 @@ test("saving config rewrites the Codex model catalog file", async (t) => {
   assert.equal(savedConfig.clients.codex.endpoints[0].api_key, undefined);
   const savedSecrets = JSON.parse(await readFile(secretsPath, "utf8"));
   assert.equal(savedSecrets.api_keys.ep_chat, "env:TEST_KEY");
+  assert.equal(savedConfig.dreamSkin.codexAppPath, "/Applications/Codex.app");
 
   const configApi = await fetch(`http://127.0.0.1:${gatewayPort}/v1/config`);
   assert.equal(configApi.status, 200);
@@ -150,6 +152,7 @@ test("saving config rewrites the Codex model catalog file", async (t) => {
     String(configPayload.codex_model_catalog?.path_posix || ""),
     /gateway-model-catalog\.json$/,
   );
+  assert.equal(configPayload.dreamSkin.codexAppPath, "/Applications/Codex.app");
 
   const unconfirmedReveal = await fetch(
     `http://127.0.0.1:${gatewayPort}/v1/config/secret?id=ep_chat`,
