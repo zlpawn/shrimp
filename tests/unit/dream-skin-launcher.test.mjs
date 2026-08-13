@@ -33,7 +33,6 @@ test("buildMacOSOpenCommand builds exact args", () => {
   const cmd = buildMacOSOpenCommand({ appPath: "/Applications/Codex.app", debugPort: 19222 });
   assert.equal(cmd.executable, "open");
   assert.deepEqual(cmd.args, [
-    "-W",
     "-a",
     "/Applications/Codex.app",
     "--args",
@@ -339,6 +338,26 @@ test("createCodexLauncher.launchWithDebugPort uses packaged activation for Windo
   assert.ok(activated.length === 1);
   assert.ok(activated[0].id.includes("!App"));
   assert.ok(activated[0].args.includes("--remote-debugging-port=19222"));
+});
+
+test("createCodexLauncher refuses packaged restart without allowRestart", async () => {
+  const activated = [];
+  const launcher = createCodexLauncher({
+    platform: "win32",
+    localAppData: "C:\\Users\\me\\AppData\\Local",
+    programFiles: "C:\\Program Files",
+    exists: async (p) => {
+      if (p.includes("WindowsApps\\OpenAI.Codex_*\\app")) return "C:\\Program Files\\WindowsApps\\OpenAI.Codex_1.0.0.0_neutral__abc123\\app";
+      return false;
+    },
+    spawn: async () => ({ pid: 1, on() {} }),
+    spawnSync: async () => ({ stdout: "ChatGPT.exe" }),
+    listTargets: async () => { throw new Error("not reachable"); },
+    waitForDebugEndpoint: async () => {},
+    activatePackagedApp: async (id, args) => { activated.push({ id, args }); return 4242; },
+  });
+  await assert.rejects(launcher.launchWithDebugPort({ debugPort: 19222 }), /请先退出 Codex/);
+  assert.equal(activated.length, 0);
 });
 
 test("createCodexLauncher.launchWithDebugPort rejects unsupported platform", async () => {
