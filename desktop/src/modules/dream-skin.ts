@@ -87,15 +87,22 @@ async function loadInitial(): Promise<void> {
   state.error = "";
   render();
   try {
-    const [caps, library, market] = await Promise.all([
+    const [caps, library] = await Promise.all([
       getDreamSkinCapabilities(),
       listDreamSkinThemes(),
-      loadDreamSkinMarket().catch(() => null),
     ]);
     state.capabilities = caps;
     state.library = library;
-    state.market = market;
     state.loaded = true;
+    // Market data is remote and slow; load in background so local view renders immediately.
+    void loadDreamSkinMarket()
+      .catch(() => null)
+      .then((market) => {
+        if (market) {
+          state.market = market;
+          render();
+        }
+      });
   } catch (err) {
     state.error = err instanceof Error ? err.message : String(err);
   } finally {
