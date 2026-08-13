@@ -380,7 +380,7 @@ async function handleAction(action: string, id?: string): Promise<void> {
       } catch (err) {
         const code = (err as { code?: string })?.code;
         if (code === "runtime_restart_required") {
-          const ok = window.confirm("Codex 正在运行但没有开启调试端口。是否退出并自动重启 Codex 以应用主题？重启会保留你的会话。");
+          const ok = window.confirm("Codex 正在运行但没有开启调试端口。是否退出并自动重启 Codex 以应用主题？");
           if (ok) {
             await applyDreamSkinTheme(id, { restart: true });
             showToast("Codex 已重启并应用主题");
