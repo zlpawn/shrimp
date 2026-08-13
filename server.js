@@ -1086,6 +1086,8 @@ async function route(req, res) {
       });
       GATEWAY_CONFIG = result.config;
       GATEWAY_SECRETS = result.secrets;
+      // Rebuild the lazy Dream Skin service so codexAppPath changes take effect.
+      globalDreamSkinService = null;
       const claude3pSync = syncClaudeThirdPartyInferenceConfig(GATEWAY_CONFIG);
       const saveClient = normalizeClientName(req.headers["x-gateway-config-client"]);
       const claudeCodeSync = saveClient === "code"

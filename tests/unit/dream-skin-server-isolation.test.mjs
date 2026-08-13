@@ -11,6 +11,12 @@ test("server.js only imports dream-skin runtime lazily via dynamic import", () =
   assert.match(source, /await import\("\.\/lib\/dream-skin\/runtime\/applier\.mjs"\)/);
 });
 
+test("server.js rebuilds dream-skin service after config save", () => {
+  const source = fs.readFileSync("server.js", "utf8");
+  const saveBlock = source.slice(source.indexOf("reqPath === \"/v1/config/save\""), source.indexOf("reqPath === \"/v1/config/copy-client\""));
+  assert.match(saveBlock, /globalDreamSkinService = null/);
+});
+
 test("server.js contains exactly one dream-skin prefix dispatch", () => {
   const source = fs.readFileSync("server.js", "utf8");
   const matches = source.match(/startsWith\("\/v1\/dream-skin"\)/g) || [];
