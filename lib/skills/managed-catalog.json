@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-05T03:30:00.000Z",
+  "updatedAt": "2026-08-13T15:36:04.399Z",
   "skills": [
     {
       "id": "leo-video-to-karpathy-wiki",
@@ -94,6 +94,20 @@
         "download",
         "yt-dlp"
       ],
+      "requiresDaemon": false,
+      "promoted": true,
+      "managed": true
+    },
+    {
+      "id": "leo-debrief-performance-master",
+      "name": "leo-debrief-performance-master",
+      "title": "Debrief Performance Master",
+      "summary": "向上对齐 OKR、高高度结构化、业务思考与务实防虚述职教练。专为注重“向上管理/对齐老板 OKR”、“高高度大局观”、“个人对业务深度思考”且“务实扎实防假大空”的述职场景定制。将用户零散的日常工作与项目记录，通过“向上 OKR 对齐”、“务实事实落脚”、“业务痛点洞察”、“MECE战略分类”、“三大逻辑排序”、“结论先行升华标题”、“业务方法论沉淀”与“S",
+      "category": "other",
+      "categoryLabel": "其他",
+      "icon": "🧩",
+      "featured": false,
+      "tags": [],
       "requiresDaemon": false,
       "promoted": true,
       "managed": true
