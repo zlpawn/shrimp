@@ -215,3 +215,27 @@ test("error response includes details when present", () => {
   assert.ok(body.error.details);
   assert.equal(body.error.details[0].field, "name");
 });
+
+test("runtime restart/inject errors map to explicit status codes", async () => {
+  const { sendDreamSkinError } = await import("../../lib/dream-skin/http/routes.mjs");
+  const { DreamSkinError } = await import("../../lib/dream-skin/domain/errors.mjs");
+
+  function capture(error) {
+    let status = null;
+    let body = null;
+    const res = {
+      writeHead(code) { status = code; },
+      end(payload) { body = JSON.parse(payload); },
+    };
+    sendDreamSkinError(res, error);
+    return { status, body };
+  }
+
+  const restart = capture(new DreamSkinError("runtime_restart_required", "need restart"));
+  assert.equal(restart.status, 409);
+  assert.equal(restart.body.error.type, "runtime_restart_required");
+
+  const inject = capture(new DreamSkinError("runtime_inject_failed", "inject failed"));
+  assert.equal(inject.status, 500);
+  assert.equal(inject.body.error.type, "runtime_inject_failed");
+});

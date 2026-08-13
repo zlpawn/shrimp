@@ -316,6 +316,7 @@ test("createCodexLauncher.launchWithDebugPort supports windows standalone", asyn
 
 test("createCodexLauncher.launchWithDebugPort uses packaged activation for WindowsApps", async () => {
   const activated = [];
+  const waits = [];
   const launcher = createCodexLauncher({
     platform: "win32",
     localAppData: "C:\\Users\\me\\AppData\\Local",
@@ -329,7 +330,9 @@ test("createCodexLauncher.launchWithDebugPort uses packaged activation for Windo
     spawn: async () => ({ pid: 1, on() {} }),
     spawnSync: async () => ({ stdout: "" }),
     listTargets: async () => { throw new Error("not reachable"); },
-    waitForDebugEndpoint: async () => {},
+    waitForDebugEndpoint: async (port, opts) => {
+      waits.push({ port, opts });
+    },
     activatePackagedApp: async (id, args) => { activated.push({ id, args }); return 4242; },
   });
   const result = await launcher.launchWithDebugPort({ debugPort: 19222 });
@@ -338,6 +341,9 @@ test("createCodexLauncher.launchWithDebugPort uses packaged activation for Windo
   assert.ok(activated.length === 1);
   assert.ok(activated[0].id.includes("!App"));
   assert.ok(activated[0].args.includes("--remote-debugging-port=19222"));
+  assert.equal(waits.length, 1);
+  assert.equal(waits[0].port, 19222);
+  assert.equal(waits[0].opts.maxWaitMs, 20000);
 });
 
 test("createCodexLauncher refuses packaged restart without allowRestart", async () => {
@@ -383,7 +389,7 @@ test("createCodexLauncher packaged restart quits before re-activation when allow
       return { stdout: running && executable === "tasklist" ? "ChatGPT.exe" : "" };
     },
     listTargets: async () => { throw new Error("not reachable"); },
-    waitForDebugEndpoint: async () => {},
+    waitForDebugEndpoint: async (port) => { calls.push({ kind: "wait", port }); },
     activatePackagedApp: async (id, args) => { activated.push({ id, args }); return 4242; },
   });
   const result = await launcher.launchWithDebugPort({ debugPort: 19222, allowRestart: true });
@@ -391,6 +397,7 @@ test("createCodexLauncher packaged restart quits before re-activation when allow
   assert.equal(activated.length, 1);
   const hasTaskkill = calls.some((c) => c.executable === "taskkill");
   assert.ok(hasTaskkill, "should quit packaged app before re-activation");
+  assert.ok(calls.some((c) => c.kind === "wait" && c.port === 19222), "should wait for debug port after activation");
 });
 
 test("createCodexLauncher.launchWithDebugPort rejects unsupported platform", async () => {
