@@ -379,7 +379,8 @@ test("createCodexLauncher packaged restart quits before re-activation when allow
     },
     spawnSync: async (executable, args) => {
       calls.push({ kind: "spawnSync", executable, args });
-      return { stdout: running ? "ChatGPT.exe" : "" };
+      // Second tasklist call (Codex.exe) returns empty when not running
+      return { stdout: running && executable === "tasklist" ? "ChatGPT.exe" : "" };
     },
     listTargets: async () => { throw new Error("not reachable"); },
     waitForDebugEndpoint: async () => {},
