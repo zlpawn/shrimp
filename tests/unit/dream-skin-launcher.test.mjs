@@ -127,7 +127,7 @@ test("createCodexLauncher.launchWithDebugPort rejects unsupported platform", asy
   await assert.rejects(launcher.launchWithDebugPort(), /only supports macOS and Windows/);
 });
 
-test("createCodexLauncher.launchWithDebugPort succeeds on darwin", async () => {
+test("createCodexLauncher.launchWithDebugPort succeeds on darwin when not running", async () => {
   const spies = makeSpies();
   const launcher = createCodexLauncher({
     platform: "darwin",
@@ -150,13 +150,12 @@ test("createCodexLauncher.launchWithDebugPort succeeds on darwin", async () => {
   assert.ok(spies.calls.spawn[0].args.includes("--remote-debugging-port=19222"));
 });
 
-test("createCodexLauncher.launchWithDebugPort quits running app first", async () => {
+test("createCodexLauncher.launchWithDebugPort refuses to quit a running app", async () => {
   const calls = [];
   const exists = async (p) => p === "/Applications/Codex.app";
   const spawnSync = async (executable, args) => {
     calls.push({ kind: "spawnSync", executable, args });
-    // First query says running, second says stopped
-    return { stdout: calls.filter((c) => c.kind === "spawnSync").length === 1 ? "Codex" : "" };
+    return { stdout: "Codex" };
   };
   const spawn = async (executable, args) => {
     calls.push({ kind: "spawn", executable, args });
@@ -168,18 +167,16 @@ test("createCodexLauncher.launchWithDebugPort quits running app first", async ()
     exists,
     spawn,
     spawnSync,
-    sleep: async () => {},
+    listTargets: async () => { throw new Error("no debug endpoint"); },
     waitForDebugEndpoint: async () => {},
   });
-  await launcher.launchWithDebugPort();
-  // Sequence: pgrep (running) -> osascript quit -> pgrep (stopped) -> open
+  await assert.rejects(
+    launcher.launchWithDebugPort(),
+    /请先退出 Codex/,
+  );
+  // pgrep was called once, but never osascript quit or open
   const kinds = calls.map((c) => `${c.kind}:${c.executable}`);
-  assert.deepEqual(kinds, [
-    "spawnSync:pgrep",
-    "spawn:osascript",
-    "spawnSync:pgrep",
-    "spawn:open",
-  ]);
+  assert.deepEqual(kinds, ["spawnSync:pgrep"]);
 });
 
 
