@@ -67,5 +67,5 @@ media-history.json
 model_prices_cache.json
 node_modules
 extensions.json
-dream-skin/
+/dream-skin/
 gateway-8789.log*
