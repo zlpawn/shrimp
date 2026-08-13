@@ -3,6 +3,7 @@ export interface AppConfig {
   clients: Record<string, ClientConfig>;
   codex_model_catalog?: { path?: string; path_posix?: string };
   custom_prices?: CustomPrice[];
+  dreamSkin?: { codexAppPath?: string };
   [key: string]: unknown;
 }
 

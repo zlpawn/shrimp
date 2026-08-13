@@ -7,6 +7,8 @@ import { registerTab } from "../core/navigation";
 import { showToast } from "../core/ui";
 import { escapeHtml } from "../core/dom";
 import {
+  getConfig,
+  saveConfig,
   getDreamSkinCapabilities,
   getDreamSkinRuntimeStatus,
   listDreamSkinThemes,
@@ -42,6 +44,7 @@ export interface DreamSkinPanelState {
   activeView: "local" | "market" | "editor";
   capabilities: DreamSkinCapabilities | null;
   runtimeStatus: DreamSkinRuntimeStatus | null;
+  codexAppPath: string;
   library: DreamSkinLibraryResponse | null;
   market: DreamSkinMarketResponse | null;
   marketQuery: string;
@@ -65,6 +68,7 @@ export function createDreamSkinPanelState(): DreamSkinPanelState {
     activeView: "local",
     capabilities: null,
     runtimeStatus: null,
+    codexAppPath: "",
     library: null,
     market: null,
     marketQuery: "",
@@ -99,6 +103,8 @@ async function loadInitial(): Promise<void> {
     state.capabilities = caps;
     state.library = library;
     state.loaded = true;
+    const cfg = await getConfig().catch(() => null);
+    state.codexAppPath = String(cfg?.dreamSkin?.codexAppPath || "");
     void getDreamSkinRuntimeStatus()
       .then((status) => { state.runtimeStatus = status; render(); })
       .catch(() => {});
@@ -184,6 +190,16 @@ function runtimeStatusHtml(): string {
     </div>`;
 }
 
+function settingsHtml(): string {
+  return `
+    <div class="dream-skin-settings">
+      <label>Codex 应用路径
+        <input class="form-input" type="text" data-field="codexAppPath" value="${escapeHtml(state.codexAppPath)}" placeholder="留空则自动查找" />
+      </label>
+      <button class="btn" data-action="save-codex-path">保存路径</button>
+    </div>`;
+}
+
 function renderLocalView(): string {
   if (!state.library) return "";
   const cards = state.library.themes.map((t) => {
@@ -214,6 +230,7 @@ function renderLocalView(): string {
   }).join("");
 
   return `
+    ${settingsHtml()}
     ${runtimeStatusHtml()}
     <div class="dream-skin-section-head">
       <h3>本地主题</h3>
@@ -370,8 +387,13 @@ function bindActions(el: HTMLElement): void {
   el.querySelectorAll("[data-field]").forEach((node) => {
     node.addEventListener("change", () => {
       const field = (node as HTMLElement).dataset.field;
-      if (!field || !state.editor?.draft) return;
+      if (!field) return;
       const value = (node as HTMLInputElement | HTMLSelectElement).value;
+      if (field === "codexAppPath") {
+        state.codexAppPath = value;
+        return;
+      }
+      if (!state.editor?.draft) return;
       if (field === "name" || field === "stylePreset" || field === "appearance") {
         (state.editor.draft as Record<string, unknown>)[field] = value;
       }
@@ -423,6 +445,13 @@ async function handleAction(action: string, id?: string): Promise<void> {
     }
     case "probe-runtime": {
       state.runtimeStatus = await getDreamSkinRuntimeStatus();
+      break;
+    }
+    case "save-codex-path": {
+      const cfg = await getConfig().catch(() => null) || { server: { host: "127.0.0.1", port: 8787 }, clients: {} };
+      cfg.dreamSkin = { ...(cfg.dreamSkin || {}), codexAppPath: state.codexAppPath.trim() };
+      await saveConfig(cfg as Parameters<typeof saveConfig>[0]);
+      showToast("Codex 路径已保存");
       break;
     }
     case "select": {
@@ -552,7 +581,12 @@ async function handleAction(action: string, id?: string): Promise<void> {
 registerTab("dream-skin", {
   onEnter() {
     if (!state.loaded) void loadInitial();
-    else render();
+    else {
+      void getDreamSkinRuntimeStatus()
+        .then((status) => { state.runtimeStatus = status; render(); })
+        .catch(() => {});
+      render();
+    }
   },
   onLeave() {},
 });

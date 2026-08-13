@@ -18,6 +18,14 @@ test("dream-skin module escapes external strings", () => {
   assert.ok(escapeUses >= 8, `expected many escapeHtml calls, got ${escapeUses}`);
 });
 
+test("dream-skin panel exposes codex path settings", () => {
+  const source = fs.readFileSync("desktop/src/modules/dream-skin.ts", "utf8");
+  assert.match(source, /codexAppPath/);
+  assert.match(source, /save-codex-path/);
+  assert.match(source, /saveConfig\(/);
+  assert.match(source, /getConfig\(\)/);
+});
+
 test("dream-skin module calls apply API but keeps runtime details out", () => {
   const source = fs.readFileSync("desktop/src/modules/dream-skin.ts", "utf8");
   // UI delegates runtime work to the backend via applyDreamSkinTheme
