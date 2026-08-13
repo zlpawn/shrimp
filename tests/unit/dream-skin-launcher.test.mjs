@@ -1,9 +1,15 @@
-﻿import assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
   DEFAULT_DEBUG_PORT,
   resolveCodexAppCandidates,
+  resolveWindowsAppCandidates,
+  buildWindowsLaunchArgs,
+  buildWindowsPackagedActivation,
+  buildWindowsStandaloneCommand,
+  buildWindowsProcessQuery,
+  buildWindowsQuitCommand,
   buildMacOSOpenCommand,
   buildMacOSQuitCommand,
   buildMacOSProcessQuery,
@@ -117,8 +123,8 @@ test("createCodexLauncher.resolveCodexAppPath rejects missing configured path", 
 });
 
 test("createCodexLauncher.launchWithDebugPort rejects unsupported platform", async () => {
-  const launcher = createCodexLauncher({ platform: "win32" });
-  await assert.rejects(launcher.launchWithDebugPort(), /only supports macOS/);
+  const launcher = createCodexLauncher({ platform: "linux" });
+  await assert.rejects(launcher.launchWithDebugPort(), /only supports macOS and Windows/);
 });
 
 test("createCodexLauncher.launchWithDebugPort succeeds on darwin", async () => {
@@ -175,6 +181,144 @@ test("createCodexLauncher.launchWithDebugPort quits running app first", async ()
     "spawn:open",
   ]);
 });
+
+
+// --- Windows builders ---
+
+test("resolveWindowsAppCandidates includes MS Store and standalone paths", () => {
+  const candidates = resolveWindowsAppCandidates({
+    localAppData: "C:\\Users\\me\\AppData\\Local",
+    programFiles: "C:\\Program Files",
+  });
+  assert.ok(candidates.some((p) => p.includes("WindowsApps\\OpenAI.Codex_*\\app")));
+  assert.ok(candidates.some((p) => p.includes("WindowsApps\\OpenAI.CodexBeta_*\\app")));
+  assert.ok(candidates.some((p) => p.includes("WindowsApps\\OpenAI.ChatGPT-Desktop_*\\app")));
+  assert.ok(candidates.some((p) => p.includes("OpenAI\\Codex\\bin")));
+  assert.ok(candidates.some((p) => p.includes("OpenAI\\Codex")));
+});
+
+test("buildWindowsLaunchArgs builds debug flags and appends extras", () => {
+  const args = buildWindowsLaunchArgs({ debugPort: 19222, extraArgs: ["--no-sandbox"] });
+  assert.deepEqual(args, [
+    "--remote-debugging-port=19222",
+    "--remote-allow-origins=http://127.0.0.1:19222",
+    "--no-sandbox",
+  ]);
+});
+
+test("buildWindowsPackagedActivation builds PowerShell activation metadata", () => {
+  const cmd = buildWindowsPackagedActivation({
+    appUserModelId: "OpenAI.Codex_abc!App",
+    debugPort: 19222,
+  });
+  assert.equal(cmd.type, "packaged");
+  assert.equal(cmd.appUserModelId, "OpenAI.Codex_abc!App");
+  assert.equal(cmd.executable, "powershell.exe");
+  assert.ok(cmd.arguments.includes("--remote-debugging-port=19222"));
+});
+
+test("buildWindowsStandaloneCommand builds direct exe command", () => {
+  const cmd = buildWindowsStandaloneCommand({
+    appPath: "C:\\Users\\me\\AppData\\Local\\OpenAI\\Codex\\bin\\Codex.exe",
+    debugPort: 19222,
+  });
+  assert.equal(cmd.type, "standalone");
+  assert.equal(cmd.executable, "C:\\Users\\me\\AppData\\Local\\OpenAI\\Codex\\bin\\Codex.exe");
+  assert.ok(cmd.args.includes("--remote-debugging-port=19222"));
+});
+
+test("buildWindowsProcessQuery uses tasklist filter", () => {
+  const cmd = buildWindowsProcessQuery({ appName: "Codex" });
+  assert.equal(cmd.executable, "tasklist");
+  assert.deepEqual(cmd.args, ["/FI", "IMAGENAME eq Codex.exe", "/NH"]);
+});
+
+test("buildWindowsQuitCommand uses taskkill force", () => {
+  const cmd = buildWindowsQuitCommand({ appName: "Codex" });
+  assert.equal(cmd.executable, "taskkill");
+  assert.deepEqual(cmd.args, ["/IM", "Codex.exe", "/F"]);
+});
+
+// --- CDP probe + Windows launcher ---
+
+test("createCodexLauncher.launchWithDebugPort reuses existing debug endpoint", async () => {
+  const launcher = createCodexLauncher({
+    platform: "darwin",
+    listTargets: async () => [{ type: "page", title: "Codex" }],
+  });
+  const result = await launcher.launchWithDebugPort({ debugPort: 19222 });
+  assert.equal(result.kind, "existing");
+  assert.equal(result.child, null);
+  assert.equal(result.appPath, "running");
+});
+
+test("createCodexLauncher.launchWithDebugPort falls back to launch when probe fails", async () => {
+  const spies = makeSpies();
+  const launcher = createCodexLauncher({
+    platform: "darwin",
+    homeDir: "/Users/me",
+    exists: spies.exists,
+    spawn: spies.spawn,
+    spawnSync: spies.spawnSync,
+    listTargets: async () => { throw new Error("not reachable"); },
+    waitForDebugEndpoint: async () => {},
+  });
+  const result = await launcher.launchWithDebugPort();
+  assert.equal(result.kind, "macos");
+  assert.equal(spies.calls.spawn[0].executable, "open");
+});
+
+test("createCodexLauncher.launchWithDebugPort supports windows standalone", async () => {
+  const calls = [];
+  const launcher = createCodexLauncher({
+    platform: "win32",
+    localAppData: "C:\\Users\\me\\AppData\\Local",
+    programFiles: "C:\\Program Files",
+    exists: async (p) => {
+      if (p === "C:\\Users\\me\\AppData\\Local\\OpenAI\\Codex\\bin\\Codex.exe") return "C:\\Users\\me\\AppData\\Local\\OpenAI\\Codex\\bin\\Codex.exe";
+      return false;
+    },
+    spawn: async (executable, args) => { calls.push({ executable, args }); return { pid: 999, on() {} }; },
+    spawnSync: async () => ({ stdout: "" }),
+    listTargets: async () => { throw new Error("not reachable"); },
+    waitForDebugEndpoint: async () => {},
+  });
+  const result = await launcher.launchWithDebugPort({ debugPort: 19222 });
+  assert.equal(result.kind, "windows-standalone");
+  assert.ok(calls.some((c) => c.executable.includes("Codex.exe")));
+});
+
+test("createCodexLauncher.launchWithDebugPort uses packaged activation for WindowsApps", async () => {
+  const activated = [];
+  const launcher = createCodexLauncher({
+    platform: "win32",
+    localAppData: "C:\\Users\\me\\AppData\\Local",
+    programFiles: "C:\\Program Files",
+    exists: async (p) => {
+      if (p.includes("WindowsApps\\OpenAI.Codex_*\\app")) {
+        return "C:\\Program Files\\WindowsApps\\OpenAI.Codex_1.0.0.0_neutral__abc123\\app";
+      }
+      return false;
+    },
+    spawn: async () => ({ pid: 1, on() {} }),
+    spawnSync: async () => ({ stdout: "" }),
+    listTargets: async () => { throw new Error("not reachable"); },
+    waitForDebugEndpoint: async () => {},
+    activatePackagedApp: async (id, args) => { activated.push({ id, args }); return 4242; },
+  });
+  const result = await launcher.launchWithDebugPort({ debugPort: 19222 });
+  assert.equal(result.kind, "packaged");
+  assert.equal(result.pid, 4242);
+  assert.ok(activated.length === 1);
+  assert.ok(activated[0].id.includes("!App"));
+  assert.ok(activated[0].args.includes("--remote-debugging-port=19222"));
+});
+
+test("createCodexLauncher.launchWithDebugPort rejects unsupported platform", async () => {
+  const launcher = createCodexLauncher({ platform: "linux" });
+  await assert.rejects(launcher.launchWithDebugPort(), /only supports macOS and Windows/);
+});
+
 
 test("DEFAULT_DEBUG_PORT is 19222", () => {
   assert.equal(DEFAULT_DEBUG_PORT, 19222);
