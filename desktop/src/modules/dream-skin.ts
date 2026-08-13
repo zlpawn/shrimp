@@ -167,9 +167,12 @@ function renderLocalView(): string {
       ? `<img class="dream-skin-thumb" src="${escapeHtml(t.imageUrl)}" alt="" loading="lazy" />`
       : `<div class="dream-skin-thumb dream-skin-thumb-swatch"></div>`;
     const badge = t.selected ? `<span class="dream-skin-badge is-selected">当前主题</span>` : "";
+    const applyButton = state.capabilities?.codexRuntime
+      ? `<button class="btn dream-skin-apply-btn" data-action="apply" data-id="${escapeHtml(t.id)}">应用到 Codex</button>`
+      : "";
     const actions = `
       <div class="dream-skin-card-actions">
-        <button class="btn dream-skin-apply-btn" data-action="apply" data-id="${escapeHtml(t.id)}">应用到 Codex</button>
+        ${applyButton}
         <button class="btn" data-action="select" data-id="${escapeHtml(t.id)}" ${t.selected ? "disabled" : ""}>设为当前</button>
         <button class="btn" data-action="edit" data-id="${escapeHtml(t.id)}">编辑</button>
         <button class="btn" data-action="duplicate" data-id="${escapeHtml(t.id)}">复制</button>

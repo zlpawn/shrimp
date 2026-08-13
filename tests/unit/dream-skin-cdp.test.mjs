@@ -86,29 +86,50 @@ test("target client validates ports", async () => {
   await assert.rejects(client.listTargets(70000), DreamSkinError);
 });
 
-test("waitForDebugEndpoint polls until deadline", async () => {
+test("waitForDebugEndpoint polls until injectable Codex target appears", async () => {
   let n = 0;
+  let now = 0;
   const client = createTargetClient({
     requestJson: async () => {
       n++;
       if (n < 2) throw new Error("not ready");
-      return [{ id: 1 }];
+      return [{ id: 1, type: "page", title: "Codex", url: "app://-/index.html", webSocketDebuggerUrl: "ws://127.0.0.1:1/x" }];
     },
-    sleep: async () => {},
-    clock: () => 0,
+    sleep: async () => { now += 100; },
+    clock: () => now,
   });
-  const targets = await client.waitForDebugEndpoint(19222, { maxWaitMs: 100 });
+  const targets = await client.waitForDebugEndpoint(19222, { maxWaitMs: 500 });
   assert.equal(targets.length, 1);
+  assert.equal(targets[0].title, "Codex");
+});
+
+test("waitForDebugEndpoint ignores non-Codex targets", async () => {
+  let calls = 0;
+  let now = 0;
+  const client = createTargetClient({
+    requestJson: async () => {
+      calls++;
+      return [{ id: 1, type: "page", title: "Other App", url: "https://example.com", webSocketDebuggerUrl: "ws://127.0.0.1:1/x" }];
+    },
+    sleep: async () => { now += 100; },
+    clock: () => now,
+  });
+  await assert.rejects(
+    client.waitForDebugEndpoint(19222, { maxWaitMs: 300 }),
+    /did not become available/,
+  );
+  assert.ok(calls > 0);
 });
 
 test("waitForDebugEndpoint throws on timeout", async () => {
+  let now = 0;
   const client = createTargetClient({
     requestJson: async () => { throw new Error("down"); },
-    sleep: async () => {},
-    clock: () => Date.now() + 100000,
+    sleep: async () => { now += 100; },
+    clock: () => now,
   });
   await assert.rejects(
-    client.waitForDebugEndpoint(19222, { maxWaitMs: 10 }),
+    client.waitForDebugEndpoint(19222, { maxWaitMs: 300 }),
     /did not become available/,
   );
 });

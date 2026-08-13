@@ -10,6 +10,10 @@ import {
   buildWindowsStandaloneCommand,
   buildWindowsProcessQuery,
   buildWindowsQuitCommand,
+  buildWindowsProcessQueryByPath,
+  buildWindowsQuitCommandByPath,
+  buildWindowsPackagedProcessQuery,
+  buildWindowsPackagedQuitCommand,
   buildMacOSOpenCommand,
   buildMacOSQuitCommand,
   buildMacOSProcessQuery,
@@ -265,17 +269,75 @@ test("buildWindowsQuitCommand uses taskkill force", () => {
   assert.deepEqual(cmd.args, ["/IM", "Codex.exe", "/F"]);
 });
 
+test("buildWindowsProcessQueryByPath targets exact executable", () => {
+  const cmd = buildWindowsProcessQueryByPath({ executablePath: "C:\\Codex\\Codex.exe" });
+  assert.equal(cmd.executable, "powershell.exe");
+  assert.ok(cmd.args.some((a) => a.includes("Win32_Process")));
+  assert.ok(cmd.args.some((a) => a.includes("C:\\Codex\\Codex.exe")));
+  assert.ok(cmd.args.some((a) => a.includes(".Count")));
+});
+
+test("buildWindowsQuitCommandByPath stops only matching executable", () => {
+  const cmd = buildWindowsQuitCommandByPath({ executablePath: "C:\\Codex\\Codex.exe" });
+  assert.equal(cmd.executable, "powershell.exe");
+  assert.ok(cmd.args.some((a) => a.includes("Stop-Process")));
+  assert.ok(cmd.args.some((a) => a.includes("C:\\Codex\\Codex.exe")));
+});
+
+test("buildWindowsPackagedProcessQuery scopes to packaged app path", () => {
+  const cmd = buildWindowsPackagedProcessQuery({ appUserModelId: "OpenAI.Codex_abc!App" });
+  assert.equal(cmd.executable, "powershell.exe");
+  const script = cmd.args.join(" ");
+  assert.match(script, /OpenAI\.Codex_\*__abc/);
+  assert.match(script, /ChatGPT\.exe/);
+  assert.match(script, /\.Count/);
+});
+
+test("buildWindowsPackagedQuitCommand scopes to packaged app path", () => {
+  const cmd = buildWindowsPackagedQuitCommand({ appUserModelId: "OpenAI.Codex_abc!App" });
+  assert.equal(cmd.executable, "powershell.exe");
+  const script = cmd.args.join(" ");
+  assert.match(script, /OpenAI\.Codex_\*__abc/);
+  assert.match(script, /Stop-Process/);
+});
+
 // --- CDP probe + Windows launcher ---
 
 test("createCodexLauncher.launchWithDebugPort reuses existing debug endpoint", async () => {
   const launcher = createCodexLauncher({
     platform: "darwin",
-    listTargets: async () => [{ type: "page", title: "Codex" }],
+    listTargets: async () => [{
+      type: "page",
+      title: "Codex",
+      url: "app://-/index.html",
+      webSocketDebuggerUrl: "ws://127.0.0.1:19222/devtools/page/1",
+    }],
   });
   const result = await launcher.launchWithDebugPort({ debugPort: 19222 });
   assert.equal(result.kind, "existing");
   assert.equal(result.child, null);
   assert.equal(result.appPath, "running");
+});
+
+test("createCodexLauncher.launchWithDebugPort does not treat non-Codex targets as existing", async () => {
+  let spawnCalled = false;
+  const launcher = createCodexLauncher({
+    platform: "darwin",
+    homeDir: "/Users/me",
+    exists: async (p) => p === "/Applications/Codex.app",
+    spawn: async (executable, args) => { spawnCalled = true; return { pid: 1, on() {} }; },
+    spawnSync: async () => ({ stdout: "" }),
+    listTargets: async () => [{
+      type: "page",
+      title: "Some Other App",
+      url: "https://example.com",
+      webSocketDebuggerUrl: "ws://127.0.0.1:19222/devtools/page/2",
+    }],
+    waitForDebugEndpoint: async () => {},
+  });
+  const result = await launcher.launchWithDebugPort({ debugPort: 19222 });
+  assert.equal(result.kind, "macos");
+  assert.ok(spawnCalled);
 });
 
 test("createCodexLauncher.launchWithDebugPort falls back to launch when probe fails", async () => {
@@ -357,7 +419,7 @@ test("createCodexLauncher refuses packaged restart without allowRestart", async 
       return false;
     },
     spawn: async () => ({ pid: 1, on() {} }),
-    spawnSync: async () => ({ stdout: "ChatGPT.exe" }),
+    spawnSync: async () => ({ stdout: "1" }),
     listTargets: async () => { throw new Error("not reachable"); },
     waitForDebugEndpoint: async () => {},
     activatePackagedApp: async (id, args) => { activated.push({ id, args }); return 4242; },
@@ -380,13 +442,13 @@ test("createCodexLauncher packaged restart quits before re-activation when allow
     },
     spawn: async (executable, args) => {
       calls.push({ executable, args });
-      if (executable === "taskkill") running = false;
+      if (executable === "powershell.exe" && args.join(" ").includes("Stop-Process")) running = false;
       return { pid: 1, on() {} };
     },
     spawnSync: async (executable, args) => {
       calls.push({ kind: "spawnSync", executable, args });
-      // Second tasklist call (Codex.exe) returns empty when not running
-      return { stdout: running && executable === "tasklist" ? "ChatGPT.exe" : "" };
+      // Query returns "1" while the packaged app is running, "0" after stop.
+      return { stdout: running && executable === "powershell.exe" && args.join(" ").includes("Count") ? "1" : "0" };
     },
     listTargets: async () => { throw new Error("not reachable"); },
     waitForDebugEndpoint: async (port) => { calls.push({ kind: "wait", port }); },
@@ -395,8 +457,8 @@ test("createCodexLauncher packaged restart quits before re-activation when allow
   const result = await launcher.launchWithDebugPort({ debugPort: 19222, allowRestart: true });
   assert.equal(result.kind, "packaged");
   assert.equal(activated.length, 1);
-  const hasTaskkill = calls.some((c) => c.executable === "taskkill");
-  assert.ok(hasTaskkill, "should quit packaged app before re-activation");
+  const hasStop = calls.some((c) => c.executable === "powershell.exe" && c.args.join(" ").includes("Stop-Process"));
+  assert.ok(hasStop, "should quit packaged app before re-activation");
   assert.ok(calls.some((c) => c.kind === "wait" && c.port === 19222), "should wait for debug port after activation");
 });
 
