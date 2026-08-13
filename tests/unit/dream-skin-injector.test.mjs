@@ -1,4 +1,4 @@
-﻿import assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import vm from "node:vm";
 import test from "node:test";
 
@@ -90,7 +90,7 @@ test("buildInjectionScript sets runtime flag and calls clear first", () => {
   const script = buildInjectionScript(theme);
   assert.match(script, /__CODEX_PLUS_EXTERNAL_DREAM_SKIN_RUNTIME__ = true/);
   assert.match(script, /__CODEX_PLUS_CLEAR_DREAM_SKIN__\?\.\(\)/);
-  assert.match(script, /state\.version = "codex-plus:macos:cidala-tiger:r/);
+  assert.match(script, /state\.version = "codex-plus:cidala-tiger:r/);
   assert.doesNotThrow(() => new vm.Script(script));
 });
 
