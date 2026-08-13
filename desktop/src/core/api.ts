@@ -2,6 +2,7 @@ import type {
   AppConfig,
   AnalyticsResponse,
   DreamSkinCapabilities,
+  DreamSkinRuntimeStatus,
   DreamSkinLibraryResponse,
   DreamSkinMarketResponse,
   DreamSkinThemeDetail,
@@ -100,6 +101,10 @@ async function requestDreamSkin<T>(path: string, options?: RequestInit): Promise
 
 export function getDreamSkinCapabilities(): Promise<DreamSkinCapabilities> {
   return requestDreamSkin<DreamSkinCapabilities>("/v1/dream-skin/capabilities");
+}
+
+export function getDreamSkinRuntimeStatus(): Promise<DreamSkinRuntimeStatus> {
+  return requestDreamSkin<DreamSkinRuntimeStatus>("/v1/dream-skin/probe");
 }
 
 export function listDreamSkinThemes(): Promise<DreamSkinLibraryResponse> {

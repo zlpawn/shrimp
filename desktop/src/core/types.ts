@@ -76,6 +76,12 @@ export interface DreamSkinCapabilities {
   codexRuntime: boolean;
 }
 
+export interface DreamSkinRuntimeStatus {
+  available: boolean;
+  codexRuntime: boolean;
+  targets: unknown[];
+}
+
 export interface DreamSkinTheme {
   id: string;
   name: string;

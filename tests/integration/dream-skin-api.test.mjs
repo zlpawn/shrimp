@@ -142,6 +142,20 @@ test("integration: capabilities reflect runtime flag", async () => {
   }
 });
 
+test("integration: probe without applier reports unavailable", async () => {
+  const app = makeApp();
+  try {
+    await app.service.initialize();
+    const res = await app.call("GET", "/v1/dream-skin/probe");
+    assert.equal(res.statusCode, 200);
+    const body = JSON.parse(res.body);
+    assert.equal(body.available, false);
+    assert.equal(body.codexRuntime, false);
+  } finally {
+    app.cleanup();
+  }
+});
+
 test("integration: apply without applier returns 501", async () => {
   const app = makeApp();
   try {

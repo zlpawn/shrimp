@@ -161,6 +161,34 @@ test("service selectTheme changes selection", async () => {
   }
 });
 
+test("service probeCodex without applier reports runtime disabled", async () => {
+  const { service, cleanup } = makeService();
+  try {
+    const result = await service.probeCodex();
+    assert.equal(result.available, false);
+    assert.equal(result.codexRuntime, false);
+  } finally {
+    cleanup();
+  }
+});
+
+test("service probeCodex with injected applier delegates to probe", async () => {
+  const { service, cleanup } = makeService({
+    applier: {
+      probe: async () => ({ available: true, targets: [{ id: "page-1" }] }),
+      applyTheme: async () => ({}),
+    },
+  });
+  try {
+    const result = await service.probeCodex();
+    assert.equal(result.available, true);
+    assert.equal(result.codexRuntime, true);
+    assert.equal(result.targets.length, 1);
+  } finally {
+    cleanup();
+  }
+});
+
 test("service applyTheme without applier throws unsupported_feature", async () => {
   const { service, cleanup } = makeService();
   try {

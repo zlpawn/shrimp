@@ -8,6 +8,7 @@ import { showToast } from "../core/ui";
 import { escapeHtml } from "../core/dom";
 import {
   getDreamSkinCapabilities,
+  getDreamSkinRuntimeStatus,
   listDreamSkinThemes,
   getDreamSkinTheme,
   createDreamSkinTheme,
@@ -30,6 +31,7 @@ import {
 } from "./dream-skin-model";
 import type {
   DreamSkinCapabilities,
+  DreamSkinRuntimeStatus,
   DreamSkinLibraryResponse,
   DreamSkinMarketResponse,
   DreamSkinPreviewScene,
@@ -39,6 +41,7 @@ import type {
 export interface DreamSkinPanelState {
   activeView: "local" | "market" | "editor";
   capabilities: DreamSkinCapabilities | null;
+  runtimeStatus: DreamSkinRuntimeStatus | null;
   library: DreamSkinLibraryResponse | null;
   market: DreamSkinMarketResponse | null;
   marketQuery: string;
@@ -61,6 +64,7 @@ export function createDreamSkinPanelState(): DreamSkinPanelState {
   return {
     activeView: "local",
     capabilities: null,
+    runtimeStatus: null,
     library: null,
     market: null,
     marketQuery: "",
@@ -95,6 +99,9 @@ async function loadInitial(): Promise<void> {
     state.capabilities = caps;
     state.library = library;
     state.loaded = true;
+    void getDreamSkinRuntimeStatus()
+      .then((status) => { state.runtimeStatus = status; render(); })
+      .catch(() => {});
     // Market data is remote and slow; load in background so local view renders immediately.
     void loadDreamSkinMarket()
       .catch(() => null)
@@ -160,6 +167,17 @@ function render(): void {
 
 // --- Local library view ---
 
+function runtimeStatusHtml(): string {
+  if (!state.capabilities?.codexRuntime) return "";
+  const ready = state.runtimeStatus?.available;
+  const label = ready ? "Codex 调试端口已就绪" : "未检测到 Codex 调试端口";
+  return `
+    <div class="dream-skin-runtime-status ${ready ? "is-ready" : "is-offline"}">
+      <span>${escapeHtml(label)}</span>
+      <button class="btn" data-action="probe-runtime">重新检测</button>
+    </div>`;
+}
+
 function renderLocalView(): string {
   if (!state.library) return "";
   const cards = state.library.themes.map((t) => {
@@ -190,6 +208,7 @@ function renderLocalView(): string {
   }).join("");
 
   return `
+    ${runtimeStatusHtml()}
     <div class="dream-skin-section-head">
       <h3>本地主题</h3>
       <div class="dream-skin-section-actions">
@@ -392,6 +411,10 @@ async function handleAction(action: string, id?: string): Promise<void> {
           throw err;
         }
       }
+      break;
+    }
+    case "probe-runtime": {
+      state.runtimeStatus = await getDreamSkinRuntimeStatus();
       break;
     }
     case "select": {
