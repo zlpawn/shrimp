@@ -87,6 +87,27 @@ test("load migrates legacy fields, adds stable ids, extracts keys, and creates a
   }
 });
 
+test("save preserves dreamSkin config", () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), "gateway-config-dreamskin-"));
+  try {
+    const configPath = path.join(root, "gateway.config.json");
+    const secretsPath = path.join(root, "gateway.secrets.json");
+    const config = {
+      server: { host: "127.0.0.1", port: 8787 },
+      clients: { code: { endpoints: [] } },
+      dreamSkin: { codexAppPath: "/opt/Codex.app" },
+    };
+    const first = saveGatewayState({ configPath, secretsPath, config });
+    assert.equal(first.config.dreamSkin.codexAppPath, "/opt/Codex.app");
+    const persisted = JSON.parse(readFileSync(configPath, "utf8"));
+    assert.equal(persisted.dreamSkin.codexAppPath, "/opt/Codex.app");
+    const reloaded = loadGatewayState({ configPath, secretsPath });
+    assert.equal(reloaded.config.dreamSkin.codexAppPath, "/opt/Codex.app");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("save moves endpoint keys to secrets and does not rewrite unchanged files", () => {
   const root = mkdtempSync(path.join(os.tmpdir(), "gateway-config-save-"));
   try {
