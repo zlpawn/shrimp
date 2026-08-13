@@ -1,11 +1,14 @@
-﻿import assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
 
-test("server.js does not import dream-skin runtime modules", () => {
+test("server.js only imports dream-skin runtime lazily via dynamic import", () => {
   const source = fs.readFileSync("server.js", "utf8");
-  assert.doesNotMatch(source, /dream-skin\/runtime/);
-  assert.doesNotMatch(source, /dream-skin\/(?:launcher|cdp-client|injector)\.mjs/);
+  // Static imports must not pull runtime modules; dynamic import in the lazy
+  // service factory is allowed.
+  const staticMatches = source.match(/^import .*dream-skin\/runtime/gm) || [];
+  assert.equal(staticMatches.length, 0);
+  assert.match(source, /await import\("\.\/lib\/dream-skin\/runtime\/applier\.mjs"\)/);
 });
 
 test("server.js contains exactly one dream-skin prefix dispatch", () => {

@@ -1,4 +1,4 @@
-﻿import assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
@@ -26,7 +26,7 @@ const validTheme = {
   },
 };
 
-function makeService() {
+function makeService({ applier } = {}) {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "ds-svc-"));
   const paths = resolveDreamSkinPaths({ configFile: path.join(tmpDir, "gw.json") });
 
@@ -39,6 +39,7 @@ function makeService() {
     paths,
     requestBinary: fakeRequest,
     logger: { warn() {}, log() {} },
+    ...(applier ? { applier } : {}),
   });
 
   return { service, cleanup: () => fs.rmSync(tmpDir, { recursive: true, force: true }) };
@@ -160,13 +161,33 @@ test("service selectTheme changes selection", async () => {
   }
 });
 
-test("service has no apply/launch/inject/runtime methods", () => {
+test("service applyTheme without applier throws unsupported_feature", async () => {
   const { service, cleanup } = makeService();
   try {
-    assert.equal(typeof service.apply, "undefined");
-    assert.equal(typeof service.launch, "undefined");
-    assert.equal(typeof service.inject, "undefined");
-    assert.equal(typeof service.runtime, "undefined");
+    await assert.rejects(service.applyTheme("aurora-night"), /Codex 运行时注入未启用/);
+  } finally {
+    cleanup();
+  }
+});
+
+test("service applyTheme with injected applier builds and injects", async () => {
+  const calls = [];
+  const { service, cleanup } = makeService({
+    applier: {
+      applyTheme: async ({ themeJsonBytes, imageBytes }) => {
+        calls.push({ themeJsonBytes, imageBytes });
+        return { ok: true, kind: "existing", target: "Codex", debugPort: 19222 };
+      },
+    },
+  });
+  try {
+    await service.initialize();
+    await service.createTheme({ theme: validTheme, imageBytes: PNG_BYTES });
+    const result = await service.applyTheme("aurora-night");
+    assert.equal(result.ok, true);
+    assert.equal(calls.length, 1);
+    assert.ok(Buffer.isBuffer(calls[0].themeJsonBytes));
+    assert.ok(Buffer.isBuffer(calls[0].imageBytes));
   } finally {
     cleanup();
   }

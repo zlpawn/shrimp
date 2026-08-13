@@ -136,6 +136,12 @@ export function duplicateDreamSkinTheme(id: string, input: { name?: string } = {
   });
 }
 
+export function applyDreamSkinTheme(id: string): Promise<unknown> {
+  return requestDreamSkin(`/v1/dream-skin/themes/${encodeURIComponent(id)}/apply`, {
+    method: "POST",
+  });
+}
+
 export function selectDreamSkinTheme(id: string): Promise<DreamSkinLibraryResponse> {
   return requestDreamSkin<DreamSkinLibraryResponse>(
     `/v1/dream-skin/themes/${encodeURIComponent(id)}/select`,

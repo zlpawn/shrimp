@@ -1,4 +1,4 @@
-﻿import assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
@@ -129,17 +129,26 @@ function makeApp() {
   };
 }
 
-test("integration: capabilities returns all-false", async () => {
+test("integration: capabilities reflect runtime flag", async () => {
   const app = makeApp();
   try {
     await app.service.initialize();
     const res = await app.call("GET", "/v1/dream-skin/capabilities");
     assert.equal(res.statusCode, 200);
     const body = JSON.parse(res.body);
-    assert.deepEqual(body, {
-      packageImport: false, customCss: false,
-      communityPublishing: false, codexRuntime: false,
-    });
+    assert.equal(body.codexRuntime, false);
+  } finally {
+    app.cleanup();
+  }
+});
+
+test("integration: apply without applier returns 501", async () => {
+  const app = makeApp();
+  try {
+    await app.service.initialize();
+    await app.service.createTheme({ theme: validTheme, imageBytes: PNG_BYTES });
+    const res = await app.call("POST", "/v1/dream-skin/themes/aurora-night/apply");
+    assert.equal(res.statusCode, 501);
   } finally {
     app.cleanup();
   }

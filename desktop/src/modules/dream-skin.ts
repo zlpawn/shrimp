@@ -13,6 +13,7 @@ import {
   createDreamSkinTheme,
   updateDreamSkinTheme,
   duplicateDreamSkinTheme,
+  applyDreamSkinTheme,
   selectDreamSkinTheme,
   deleteDreamSkinTheme,
   importDreamSkinTheme,
@@ -168,6 +169,7 @@ function renderLocalView(): string {
     const badge = t.selected ? `<span class="dream-skin-badge is-selected">当前主题</span>` : "";
     const actions = `
       <div class="dream-skin-card-actions">
+        <button class="btn btn-primary" data-action="apply" data-id="${escapeHtml(t.id)}">应用到 Codex</button>
         <button class="btn" data-action="select" data-id="${escapeHtml(t.id)}" ${t.selected ? "disabled" : ""}>设为当前</button>
         <button class="btn" data-action="edit" data-id="${escapeHtml(t.id)}">编辑</button>
         <button class="btn" data-action="duplicate" data-id="${escapeHtml(t.id)}">复制</button>
@@ -370,6 +372,12 @@ function bindActions(el: HTMLElement): void {
 
 async function handleAction(action: string, id?: string): Promise<void> {
   switch (action) {
+    case "apply": {
+      if (!id) return;
+      await applyDreamSkinTheme(id);
+      showToast("主题已应用到 Codex");
+      break;
+    }
     case "select": {
       if (!id) return;
       await selectDreamSkinTheme(id);

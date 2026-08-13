@@ -1,4 +1,4 @@
-﻿import assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
@@ -33,11 +33,15 @@ test("no product source outside runtime/ imports dream-skin launcher or CDP", ()
   }
 });
 
-test("server.js has no runtime imports or routes", () => {
+test("server.js keeps runtime imports lazy and only opens apply route", () => {
   const src = fs.readFileSync(path.join(ROOT, "server.js"), "utf8");
-  assert.doesNotMatch(src, /dream-skin\/runtime/);
-  assert.doesNotMatch(src, /dream-skin\/(?:launcher|cdp-client|injector)\.mjs/);
-  assert.doesNotMatch(src, /\/v1\/dream-skin\/(?:apply|launch|inject|runtime|community|packages)/);
+  // Static import list must not include runtime modules
+  const staticMatches = src.match(/^import .*dream-skin\/runtime/gm) || [];
+  assert.equal(staticMatches.length, 0);
+  // The lazy factory dynamically imports the applier
+  assert.match(src, /await import\("\.\/lib\/dream-skin\/runtime\/applier\.mjs"\)/);
+  // Only the theme apply route is exposed; launch/inject/runtime stay 404 in routes.mjs
+  assert.doesNotMatch(src, /\/v1\/dream-skin\/(?:launch|inject|runtime|community|packages)/);
 });
 
 test("package.json has no inject/launch/cleanup dream-skin script", () => {
@@ -58,11 +62,15 @@ test("desktop panel has no runtime action copy or route", () => {
   }
 });
 
-test("application service has no runtime method", () => {
+test("application service exposes applyTheme only through injected applier", () => {
   const src = fs.readFileSync(path.join(ROOT, "lib", "dream-skin", "application", "service.mjs"), "utf8");
-  for (const name of ["apply", "launch", "inject", "runtime"]) {
-    assert.doesNotMatch(src, new RegExp(`\\b${name}\\s*\\(`), `service must not expose ${name}()`);
-  }
+  // applyTheme must be the gateway to runtime injection and require the injected applier
+  assert.match(src, /async function applyTheme\(/);
+  assert.match(src, /if \(!applier\)/);
+  assert.match(src, /applier\.applyTheme\(/);
+  // The service itself must not spawn processes or open sockets
+  assert.doesNotMatch(src, /child_process/);
+  assert.doesNotMatch(src, /new WebSocket/);
 });
 
 test("runtime module imports have no top-level side effects", () => {

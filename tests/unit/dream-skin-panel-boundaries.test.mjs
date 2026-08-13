@@ -1,4 +1,4 @@
-﻿import assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
 
@@ -7,18 +7,14 @@ const html = fs.readFileSync("desktop/index.html", "utf8");
 const css = fs.readFileSync("desktop/src/styles/panel.css", "utf8");
 const app = fs.readFileSync("desktop/src/app.ts", "utf8");
 
-test("no runtime action UI in panel", () => {
+test("panel has apply-to-Codex entry and no raw runtime implementation", () => {
   const sources = panel + html;
-  const forbidden = [
-    /应用到 Codex/,
-    /启动 Codex/,
-    /注入/,
-    /Runtime\.evaluate/,
-    /renderer-inject/,
-    /new WebSocket/,
-    /\/v1\/dream-skin\/(apply|launch|inject|runtime|community|packages)/,
-  ];
-  for (const re of forbidden) {
+  // The panel now exposes an explicit apply action, but must not implement
+  // CDP/WebSocket/launcher details itself.
+  assert.match(sources, /应用到 Codex/);
+  assert.match(panel, /data-action="apply"/);
+  assert.match(panel, /applyDreamSkinTheme\(/);
+  for (const re of [/Runtime\.evaluate/, /renderer-inject/, /new WebSocket/, /\/v1\/dream-skin\/(launch|inject|runtime|community|packages)/]) {
     assert.doesNotMatch(sources, re, `forbidden pattern ${re}`);
   }
 });
@@ -40,10 +36,10 @@ test("app.ts changes stay minimal: lifecycle only", () => {
   assert.doesNotMatch(app, /renderLocalView|renderMarketView|renderEditorView|dreamSkinPanel/);
 });
 
-test("section-dream-skin exists with copy explaining no Codex application", () => {
+test("section-dream-skin exists with runtime copy", () => {
   assert.match(html, /id="section-dream-skin"/);
   assert.match(html, /id="dream-skin-root"/);
-  assert.match(html, /不会修改 Codex 桌面界面/);
+  assert.match(html, /主题皮肤/);
 });
 
 test("panel.css has no oversized card radius", () => {

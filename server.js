@@ -226,12 +226,15 @@ let globalDreamSkinService = null;
 
 // Dream Skin service is composed lazily on first route hit so gateway startup
 // stays fast and the service never imports runtime launcher/CDP modules.
-function ensureDreamSkinService() {
+async function ensureDreamSkinService() {
   if (globalDreamSkinService) return globalDreamSkinService;
   const paths = resolveDreamSkinPaths({
     configFile: process.env.GATEWAY_CONFIG_FILE || "gateway.config.json",
   });
-  globalDreamSkinService = createDreamSkinService({ paths, logger: console });
+  // Runtime injection is composed lazily so gateway startup never touches CDP.
+  const { createDreamSkinApplier } = await import("./lib/dream-skin/runtime/applier.mjs");
+  const applier = createDreamSkinApplier({ logger: console });
+  globalDreamSkinService = createDreamSkinService({ paths, applier, logger: console });
   return globalDreamSkinService;
 }
 
@@ -982,7 +985,7 @@ async function route(req, res) {
   if (reqPath.startsWith("/v1/dream-skin")) {
     if (!checkLocalAuth(req, res)) return;
     await routeDreamSkinRequest(req, res, context, reqPath, {
-      service: ensureDreamSkinService(),
+      service: await ensureDreamSkinService(),
     });
     return;
   }

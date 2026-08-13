@@ -1,4 +1,4 @@
-﻿import assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
 
@@ -18,14 +18,17 @@ test("dream-skin module escapes external strings", () => {
   assert.ok(escapeUses >= 8, `expected many escapeHtml calls, got ${escapeUses}`);
 });
 
-test("dream-skin module has no runtime/injection surface", () => {
+test("dream-skin module calls apply API but keeps runtime details out", () => {
   const source = fs.readFileSync("desktop/src/modules/dream-skin.ts", "utf8");
+  // UI delegates runtime work to the backend via applyDreamSkinTheme
+  assert.match(source, /applyDreamSkinTheme\(/);
+  assert.match(source, /应用到 Codex/);
+  // Raw CDP/WebSocket/launcher details stay out of the panel module
   assert.doesNotMatch(source, /renderer-inject/);
   assert.doesNotMatch(source, /Runtime\.evaluate/);
   assert.doesNotMatch(source, /new WebSocket/);
   assert.doesNotMatch(source, /\/v1\/dream-skin\/runtime/);
   assert.doesNotMatch(source, /启动 Codex/);
-  assert.doesNotMatch(source, /应用到 Codex/);
 });
 
 test("panel.css contains dream-skin scoped styles", () => {

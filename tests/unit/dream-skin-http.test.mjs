@@ -1,4 +1,4 @@
-﻿import assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import test from "node:test";
 
 import { routeDreamSkinRequest, sendDreamSkinError, readJsonBody } from "../../lib/dream-skin/http/routes.mjs";
@@ -80,6 +80,9 @@ function makeFakeService() {
     async updateMarketTheme(id) {
       return { id, name: "Market", kind: "stored", builtin: false, selected: false, stylePreset: "", appearance: "auto", imageUrl: "" };
     },
+    async applyTheme(id) {
+      return { ok: true, kind: "existing", target: "Codex", debugPort: 19222 };
+    },
     async getMarketPreview(id) {
       return { bytes: Buffer.from([0x89, 0x50]), mime: "image/png", etag: "abc123" };
     },
@@ -137,6 +140,15 @@ test("POST /themes/:id/select selects theme", async () => {
   const res = makeRes();
   await routeDreamSkinRequest(req, res, {}, "/v1/dream-skin/themes/aurora/select", { service: makeFakeService() });
   assert.equal(res.statusCode, 200);
+});
+
+test("POST /themes/:id/apply applies theme to Codex", async () => {
+  const req = makeReq("POST", "/v1/dream-skin/themes/aurora/apply");
+  const res = makeRes();
+  await routeDreamSkinRequest(req, res, {}, "/v1/dream-skin/themes/aurora/apply", { service: makeFakeService() });
+  assert.equal(res.statusCode, 200);
+  const body = JSON.parse(res.body);
+  assert.equal(body.ok, true);
 });
 
 test("GET /market returns market list", async () => {
