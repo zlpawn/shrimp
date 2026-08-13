@@ -55,9 +55,27 @@ test("panel.css contains dream-skin scoped styles", () => {
     ".dream-skin-card",
     ".dream-skin-editor",
     ".dream-skin-workspace-preview",
+    ".dream-skin-connect-card",
+    ".dream-skin-status-line",
+    ".dream-skin-filter-group",
   ]) {
     assert.ok(css.includes(cls), `${cls} should be styled`);
   }
+});
+
+test("dream-skin local/market toolbars stay compact", () => {
+  const source = fs.readFileSync("desktop/src/modules/dream-skin.ts", "utf8");
+  assert.match(source, /dream-skin-connect-card/);
+  assert.match(source, /Codex 连接/);
+  assert.match(source, /dream-skin-status-line/);
+  assert.match(source, /dream-skin-filter-group/);
+  assert.match(source, /renderUiSelectHtml\(/);
+  assert.match(source, /dream-skin-market-tag/);
+  assert.doesNotMatch(source, /dream-skin-settings/);
+  assert.doesNotMatch(source, /dream-skin-market-toolbar/);
+  assert.doesNotMatch(source, /dream-skin-runtime-status/);
+  assert.doesNotMatch(source, /dream-skin-status-chip/);
+  assert.doesNotMatch(source, /data-role="market-tag"/);
 });
 
 test("panel.css has responsive breakpoints", () => {

@@ -6,6 +6,7 @@
 import { registerTab } from "../core/navigation";
 import { showToast } from "../core/ui";
 import { escapeHtml } from "../core/dom";
+import { renderUiSelectHtml } from "../components/ui-select";
 import {
   getDreamSkinCapabilities,
   getDreamSkinRuntimeStatus,
@@ -174,30 +175,57 @@ function render(): void {
 // --- Local library view ---
 
 function runtimeStatusHtml(): string {
-  if (!state.capabilities?.codexRuntime) return "";
+  if (!state.capabilities?.codexRuntime) {
+    return `
+      <div class="dream-skin-connect-row">
+        <span class="dream-skin-field-label">状态</span>
+        <div class="dream-skin-status-line is-pending" role="status">
+          <span class="dream-skin-status-dot" aria-hidden="true"></span>
+          <span class="dream-skin-status-text">当前环境不支持 Codex 运行时</span>
+        </div>
+      </div>`;
+  }
   if (!state.runtimeStatus) {
     return `
-      <div class="dream-skin-runtime-status">
-        <span>检测中…</span>
+      <div class="dream-skin-connect-row">
+        <span class="dream-skin-field-label">状态</span>
+        <div class="dream-skin-status-line is-pending" role="status">
+          <span class="dream-skin-status-dot" aria-hidden="true"></span>
+          <span class="dream-skin-status-text">检测中…</span>
+        </div>
+        <button class="btn btn-sm" type="button" data-action="probe-runtime" disabled>检测</button>
       </div>`;
   }
   const ready = state.runtimeStatus.available;
-  const label = ready ? "Codex 调试端口已就绪" : "未检测到 Codex 调试端口";
+  const label = ready ? "调试端口已就绪" : "未检测到调试端口";
   return `
-    <div class="dream-skin-runtime-status ${ready ? "is-ready" : "is-offline"}">
-      <span>${escapeHtml(label)}</span>
-      <button class="btn" data-action="probe-runtime">重新检测</button>
+    <div class="dream-skin-connect-row">
+      <span class="dream-skin-field-label">状态</span>
+      <div class="dream-skin-status-line ${ready ? "is-ready" : "is-offline"}" role="status">
+        <span class="dream-skin-status-dot" aria-hidden="true"></span>
+        <span class="dream-skin-status-text">${escapeHtml(label)}</span>
+      </div>
+      <button class="btn btn-sm" type="button" data-action="probe-runtime">检测</button>
     </div>`;
 }
 
 function settingsHtml(): string {
   return `
-    <div class="dream-skin-settings">
-      <label>Codex 应用路径
-        <input class="form-input" type="text" data-field="codexAppPath" value="${escapeHtml(state.codexAppPath)}" placeholder="留空则自动查找" />
-      </label>
-      <button class="btn" data-action="save-codex-path">保存路径</button>
-    </div>`;
+    <section class="dream-skin-connect-card" aria-label="Codex 连接">
+      <div class="dream-skin-connect-head">
+        <h4 class="dream-skin-connect-title">Codex 连接</h4>
+      </div>
+      <div class="dream-skin-connect-body">
+        <div class="dream-skin-connect-row">
+          <span class="dream-skin-field-label">路径</span>
+          <div class="dream-skin-path-input">
+            <input class="dream-skin-control-input" type="text" data-field="codexAppPath" value="${escapeHtml(state.codexAppPath)}" placeholder="留空则自动查找" spellcheck="false" autocomplete="off" />
+          </div>
+          <button class="btn btn-sm" type="button" data-action="save-codex-path">保存</button>
+        </div>
+        ${runtimeStatusHtml()}
+      </div>
+    </section>`;
 }
 
 function renderLocalView(): string {
@@ -231,12 +259,11 @@ function renderLocalView(): string {
 
   return `
     ${settingsHtml()}
-    ${runtimeStatusHtml()}
     <div class="dream-skin-section-head">
       <h3>本地主题</h3>
       <div class="dream-skin-section-actions">
-        <button class="btn" data-action="import">导入主题</button>
-        <button class="btn" data-action="create">新建主题</button>
+        <button class="btn btn-sm" data-action="import">导入主题</button>
+        <button class="btn btn-sm" data-action="create">新建主题</button>
       </div>
     </div>
     <div class="dream-skin-grid">
@@ -251,7 +278,7 @@ function renderMarketView(): string {
     return `
       <div class="dream-skin-section-head">
         <h3>主题市场</h3>
-        <button class="btn" data-action="market-load">加载市场</button>
+        <button class="btn btn-sm" data-action="market-load">加载市场</button>
       </div>
       <div class="dream-skin-empty">市场尚未加载</div>`;
   }
@@ -289,16 +316,29 @@ function renderMarketView(): string {
   return `
     <div class="dream-skin-section-head">
       <h3>主题市场</h3>
-      <button class="btn" data-action="market-refresh">刷新</button>
+      <div class="dream-skin-section-actions">
+        <div class="dream-skin-filter-group">
+          <input class="dream-skin-control-input dream-skin-search" type="search" placeholder="搜索主题" value="${escapeHtml(state.marketQuery)}" data-role="market-search" />
+          <div class="dream-skin-tag-select">
+            ${renderUiSelectHtml({
+              id: "dream-skin-market-tag",
+              value: state.marketTag,
+              placeholder: "全部标签",
+              options: [
+                { value: "", label: "全部标签" },
+                ...tags.map((tag) => ({ value: tag, label: tag })),
+              ],
+              onChange: (value) => {
+                state.marketTag = value;
+                render();
+              },
+            })}
+          </div>
+        </div>
+        <button class="btn btn-sm" data-action="market-refresh">刷新</button>
+      </div>
     </div>
     ${cached}
-    <div class="dream-skin-market-toolbar">
-      <input class="dream-skin-search" type="search" placeholder="搜索主题…" value="${escapeHtml(state.marketQuery)}" data-role="market-search" />
-      <select class="dream-skin-tag-select" data-role="market-tag">
-        <option value="">全部标签</option>
-        ${tags.map((tag) => `<option value="${escapeHtml(tag)}" ${state.marketTag === tag ? "selected" : ""}>${escapeHtml(tag)}</option>`).join("")}
-      </select>
-    </div>
     <div class="dream-skin-grid">${cards || `<div class="dream-skin-empty">没有匹配的主题</div>`}</div>`;
 }
 
@@ -376,16 +416,10 @@ function bindActions(el: HTMLElement): void {
       render();
     });
   });
-  el.querySelectorAll('[data-role="market-tag"]').forEach((select) => {
-    select.addEventListener("change", () => {
-      state.marketTag = (select as HTMLSelectElement).value;
-      render();
-    });
-  });
 
   // Editor field changes
   el.querySelectorAll("[data-field]").forEach((node) => {
-    node.addEventListener("change", () => {
+    const syncField = () => {
       const field = (node as HTMLElement).dataset.field;
       if (!field) return;
       const value = (node as HTMLInputElement | HTMLSelectElement).value;
@@ -398,7 +432,9 @@ function bindActions(el: HTMLElement): void {
         (state.editor.draft as Record<string, unknown>)[field] = value;
       }
       render();
-    });
+    };
+    node.addEventListener("input", syncField);
+    node.addEventListener("change", syncField);
   });
 
   el.querySelectorAll("[data-action]").forEach((node) => {
