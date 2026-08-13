@@ -578,17 +578,30 @@ async function handleAction(action: string, id?: string): Promise<void> {
   }
 }
 
+let probeTimer: ReturnType<typeof setInterval> | null = null;
+
+async function refreshRuntimeStatus(): Promise<void> {
+  try {
+    state.runtimeStatus = await getDreamSkinRuntimeStatus();
+    render();
+  } catch {
+    // keep last known status when probe is unavailable
+  }
+}
+
 registerTab("dream-skin", {
   onEnter() {
     if (!state.loaded) void loadInitial();
-    else {
-      void getDreamSkinRuntimeStatus()
-        .then((status) => { state.runtimeStatus = status; render(); })
-        .catch(() => {});
-      render();
+    else render();
+    void refreshRuntimeStatus();
+    if (!probeTimer) probeTimer = setInterval(() => void refreshRuntimeStatus(), 5000);
+  },
+  onLeave() {
+    if (probeTimer) {
+      clearInterval(probeTimer);
+      probeTimer = null;
     }
   },
-  onLeave() {},
 });
 
 export function renderDreamSkinPanel(): void {
