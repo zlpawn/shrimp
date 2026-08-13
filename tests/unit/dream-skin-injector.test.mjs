@@ -28,6 +28,25 @@ const validThemeJson = Buffer.from(JSON.stringify({
   },
 }));
 
+test("loadRuntimeTheme accepts builtin id only with allowBuiltin", () => {
+  const builtin = Buffer.from(JSON.stringify({
+    schemaVersion: 1,
+    id: "shrimp-default",
+    name: "Default",
+    stylePreset: "",
+    appearance: "auto",
+    art: { focusX: 0.5, focusY: 0.5, safeArea: "auto", taskMode: "ambient" },
+    colors: {
+      background: "#111318", panel: "#181b22", panelAlt: "#20242d",
+      accent: "#8298a3", accentAlt: "#a8c0ca", secondary: "#6f8791",
+      highlight: "#bfd4dc", text: "#edf2f4", muted: "#a4afb5",
+      line: "rgba(130, 152, 163, 0.28)",
+    },
+  }));
+  assert.throws(() => loadRuntimeTheme({ themeJsonBytes: builtin }), /保留 ID/);
+  assert.doesNotThrow(() => loadRuntimeTheme({ themeJsonBytes: builtin, allowBuiltin: true }));
+});
+
 test("loadRuntimeTheme parses and validates bytes", () => {
   const result = loadRuntimeTheme({ themeJsonBytes: validThemeJson, imageBytes: PNG_BYTES });
   assert.equal(result.theme.id, "aurora-night");
