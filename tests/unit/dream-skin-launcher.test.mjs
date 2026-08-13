@@ -393,38 +393,6 @@ test("createCodexLauncher packaged restart quits before re-activation when allow
   assert.ok(hasTaskkill, "should quit packaged app before re-activation");
 });
 
-test("createCodexLauncher packaged restart quits before re-activation when allowed", async () => {
-  const calls = [];
-  const activated = [];
-  let running = true;
-  const launcher = createCodexLauncher({
-    platform: "win32",
-    localAppData: "C:\\Users\\me\\AppData\\Local",
-    programFiles: "C:\\Program Files",
-    exists: async (p) => {
-      if (p.includes("WindowsApps\\OpenAI.Codex_*\\app")) return "C:\\Program Files\\WindowsApps\\OpenAI.Codex_1.0.0.0_neutral__abc123\\app";
-      return false;
-    },
-    spawn: async (executable, args) => {
-      calls.push({ executable, args });
-      if (executable === "taskkill") running = false;
-      return { pid: 1, on() {} };
-    },
-    spawnSync: async (executable, args) => {
-      calls.push({ kind: "spawnSync", executable, args });
-      return { stdout: running ? "ChatGPT.exe" : "" };
-    },
-    listTargets: async () => { throw new Error("not reachable"); },
-    waitForDebugEndpoint: async () => {},
-    activatePackagedApp: async (id, args) => { activated.push({ id, args }); return 4242; },
-  });
-  const result = await launcher.launchWithDebugPort({ debugPort: 19222, allowRestart: true });
-  assert.equal(result.kind, "packaged");
-  assert.equal(activated.length, 1);
-  const hasTaskkill = calls.some((c) => c.executable === "taskkill");
-  assert.ok(hasTaskkill, "should quit packaged app before re-activation");
-});
-
 test("createCodexLauncher.launchWithDebugPort rejects unsupported platform", async () => {
   const launcher = createCodexLauncher({ platform: "linux" });
   await assert.rejects(launcher.launchWithDebugPort(), /only supports macOS and Windows/);
