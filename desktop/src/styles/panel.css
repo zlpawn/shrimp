@@ -5136,8 +5136,8 @@ input:focus, select:focus {
 .dream-skin-tag { font-size: 11px; padding: 1px 6px; border-radius: 4px; background: var(--input-bg, #222); border: 1px solid var(--border-color, #333); }
 .dream-skin-card-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 .dream-skin-card-actions .btn { padding: 4px 10px; font-size: 12px; }
-.dream-skin-apply-btn { background: #22c55e; color: #0b1220; border-color: transparent; font-weight: 600; }
-.dream-skin-apply-btn:hover:not(:disabled) { background: #16a34a; color: #0b1220; }
+.dream-skin-apply-btn { background: var(--brand-primary); color: var(--brand-text); border-color: transparent; font-weight: 600; }
+.dream-skin-apply-btn:hover:not(:disabled) { background: var(--brand-hover); color: var(--brand-text); }
 .dream-skin-danger { color: var(--danger, #ef4444); border-color: var(--danger, #ef4444); }
 .dream-skin-badge { font-size: 11px; padding: 1px 6px; border-radius: 4px; }
 .dream-skin-badge.is-selected { background: rgba(124, 110, 240, 0.18); color: var(--accent, #7c6ef0); }

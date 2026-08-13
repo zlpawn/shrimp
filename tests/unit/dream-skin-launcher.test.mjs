@@ -150,7 +150,7 @@ test("createCodexLauncher.launchWithDebugPort succeeds on darwin when not runnin
   assert.ok(spies.calls.spawn[0].args.includes("--remote-debugging-port=19222"));
 });
 
-test("createCodexLauncher.launchWithDebugPort refuses to quit a running app", async () => {
+test("createCodexLauncher.launchWithDebugPort refuses to quit a running app by default", async () => {
   const calls = [];
   const exists = async (p) => p === "/Applications/Codex.app";
   const spawnSync = async (executable, args) => {
@@ -177,6 +177,38 @@ test("createCodexLauncher.launchWithDebugPort refuses to quit a running app", as
   // pgrep was called once, but never osascript quit or open
   const kinds = calls.map((c) => `${c.kind}:${c.executable}`);
   assert.deepEqual(kinds, ["spawnSync:pgrep"]);
+});
+
+test("createCodexLauncher.launchWithDebugPort restarts when allowRestart is set", async () => {
+  const calls = [];
+  const exists = async (p) => p === "/Applications/Codex.app";
+  const spawnSync = async (executable, args) => {
+    calls.push({ kind: "spawnSync", executable, args });
+    // First query says running, second says stopped
+    return { stdout: calls.filter((c) => c.kind === "spawnSync").length === 1 ? "Codex" : "" };
+  };
+  const spawn = async (executable, args) => {
+    calls.push({ kind: "spawn", executable, args });
+    return { pid: 1, on() {} };
+  };
+  const launcher = createCodexLauncher({
+    platform: "darwin",
+    homeDir: "/Users/me",
+    exists,
+    spawn,
+    spawnSync,
+    listTargets: async () => { throw new Error("no debug endpoint"); },
+    waitForDebugEndpoint: async () => {},
+  });
+  const result = await launcher.launchWithDebugPort({ allowRestart: true });
+  assert.equal(result.kind, "macos");
+  const kinds = calls.map((c) => `${c.kind}:${c.executable}`);
+  assert.deepEqual(kinds, [
+    "spawnSync:pgrep",
+    "spawn:osascript",
+    "spawnSync:pgrep",
+    "spawn:open",
+  ]);
 });
 
 

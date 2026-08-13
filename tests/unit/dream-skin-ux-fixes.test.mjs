@@ -2,12 +2,12 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
 
-test("dream-skin apply button uses readable green style", () => {
+test("dream-skin apply button uses brand tokens with contrast", () => {
   const css = fs.readFileSync("desktop/src/styles/panel.css", "utf8");
   const block = css.split("/* --- Dream Skin panel --- */")[1] || "";
   assert.doesNotMatch(block, /\.dream-skin-card-actions \.btn \{[^}]*color:/);
-  assert.match(block, /\.dream-skin-apply-btn \{[^}]*background: #22c55e/);
-  assert.match(block, /\.dream-skin-apply-btn \{[^}]*color: #0b1220/);
+  assert.match(block, /\.dream-skin-apply-btn \{[^}]*background: var\(--brand-primary\)/);
+  assert.match(block, /\.dream-skin-apply-btn \{[^}]*color: var\(--brand-text\)/);
   assert.match(block, /\.dream-skin-card \{[\s\S]*?background: var\(--surface/);
 });
 
