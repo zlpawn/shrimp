@@ -1,12 +1,13 @@
-﻿import assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
 
-test("dream-skin card buttons do not override btn-primary color", () => {
+test("dream-skin apply button uses readable green style", () => {
   const css = fs.readFileSync("desktop/src/styles/panel.css", "utf8");
   const block = css.split("/* --- Dream Skin panel --- */")[1] || "";
-  // card-actions should not force a color, so btn-primary stays readable
   assert.doesNotMatch(block, /\.dream-skin-card-actions \.btn \{[^}]*color:/);
+  assert.match(block, /\.dream-skin-apply-btn \{[^}]*background: #22c55e/);
+  assert.match(block, /\.dream-skin-apply-btn \{[^}]*color: #0b1220/);
   assert.match(block, /\.dream-skin-card \{[\s\S]*?background: var\(--surface/);
 });
 
