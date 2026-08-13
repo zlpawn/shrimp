@@ -1081,7 +1081,7 @@ async function route(req, res) {
       const result = saveGatewayState({
         configPath: GATEWAY_CONFIG_FILE,
         secretsPath: GATEWAY_SECRETS_FILE,
-        config: { server: newConfig.server, clients: newConfig.clients, tools: newConfig.tools },
+        config: { server: newConfig.server, clients: newConfig.clients, tools: newConfig.tools, dreamSkin: newConfig.dreamSkin },
         officialCodexIds: OFFICIAL_CODEX_MODEL_IDS,
       });
       GATEWAY_CONFIG = result.config;
