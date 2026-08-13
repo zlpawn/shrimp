@@ -154,6 +154,23 @@ test("saving config rewrites the Codex model catalog file", async (t) => {
   );
   assert.equal(configPayload.dreamSkin.codexAppPath, "/Applications/Codex.app");
 
+  const settingsSave = await fetch(`http://127.0.0.1:${gatewayPort}/v1/dream-skin/settings`, {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ codexAppPath: "/Applications/ChatGPT.app" }),
+  });
+  assert.equal(settingsSave.status, 200);
+  assert.deepEqual(await settingsSave.json(), {
+    codexAppPath: "/Applications/ChatGPT.app",
+  });
+
+  const afterSettingsConfig = JSON.parse(await readFile(configPath, "utf8"));
+  assert.equal(afterSettingsConfig.dreamSkin.codexAppPath, "/Applications/ChatGPT.app");
+  assert.equal(afterSettingsConfig.clients.codex.endpoints.length, 1);
+  assert.equal(afterSettingsConfig.clients.codex.endpoints[0].id, "ep_chat");
+  const afterSettingsSecrets = JSON.parse(await readFile(secretsPath, "utf8"));
+  assert.equal(afterSettingsSecrets.api_keys.ep_chat, "env:TEST_KEY");
+
   const unconfirmedReveal = await fetch(
     `http://127.0.0.1:${gatewayPort}/v1/config/secret?id=ep_chat`,
   );

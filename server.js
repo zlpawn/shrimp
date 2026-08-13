@@ -237,7 +237,33 @@ async function ensureDreamSkinService() {
     codexAppPath: process.env.CODEX_APP_PATH || GATEWAY_CONFIG.dreamSkin?.codexAppPath || "",
     logger: console,
   });
-  globalDreamSkinService = createDreamSkinService({ paths, applier, logger: console });
+  const settingsStore = {
+    get() {
+      return { codexAppPath: GATEWAY_CONFIG.dreamSkin?.codexAppPath || "" };
+    },
+    save(settings) {
+      const result = saveGatewayState({
+        configPath: GATEWAY_CONFIG_FILE,
+        secretsPath: GATEWAY_SECRETS_FILE,
+        config: {
+          ...GATEWAY_CONFIG,
+          dreamSkin: { ...(GATEWAY_CONFIG.dreamSkin || {}), ...settings },
+        },
+        officialCodexIds: OFFICIAL_CODEX_MODEL_IDS,
+      });
+      GATEWAY_CONFIG = result.config;
+      GATEWAY_SECRETS = result.secrets;
+      reloadGatewayConfig({ reloadFiles: false });
+      globalDreamSkinService = null;
+      return { codexAppPath: GATEWAY_CONFIG.dreamSkin?.codexAppPath || "" };
+    },
+  };
+  globalDreamSkinService = createDreamSkinService({
+    paths,
+    applier,
+    settingsStore,
+    logger: console,
+  });
   return globalDreamSkinService;
 }
 

@@ -83,6 +83,10 @@ export interface DreamSkinRuntimeStatus {
   targets: unknown[];
 }
 
+export interface DreamSkinSettings {
+  codexAppPath: string;
+}
+
 export interface DreamSkinTheme {
   id: string;
   name: string;

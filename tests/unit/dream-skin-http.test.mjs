@@ -43,6 +43,12 @@ function makeFakeService() {
       packageImport: false, customCss: false,
       communityPublishing: false, codexRuntime: false,
     }),
+    async getSettings() {
+      return { codexAppPath: "/Applications/Codex.app" };
+    },
+    async updateSettings(settings) {
+      return settings;
+    },
     async listThemes() {
       return { selectedThemeId: "shrimp-default", themes: [...themes.values()], invalidEntries: 0, warnings: [] };
     },
@@ -99,6 +105,24 @@ test("GET /capabilities returns capabilities", async () => {
   assert.equal(res.statusCode, 200);
   const body = JSON.parse(res.body);
   assert.equal(body.codexRuntime, false);
+});
+
+test("GET /settings returns Dream Skin settings", async () => {
+  const req = makeReq("GET", "/v1/dream-skin/settings");
+  const res = makeRes();
+  await routeDreamSkinRequest(req, res, {}, "/v1/dream-skin/settings", { service: makeFakeService() });
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(JSON.parse(res.body), { codexAppPath: "/Applications/Codex.app" });
+});
+
+test("PUT /settings updates only Dream Skin settings", async () => {
+  const req = makeReq("PUT", "/v1/dream-skin/settings", {
+    codexAppPath: "/Applications/ChatGPT.app",
+  });
+  const res = makeRes();
+  await routeDreamSkinRequest(req, res, {}, "/v1/dream-skin/settings", { service: makeFakeService() });
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(JSON.parse(res.body), { codexAppPath: "/Applications/ChatGPT.app" });
 });
 
 test("GET /themes returns theme list", async () => {

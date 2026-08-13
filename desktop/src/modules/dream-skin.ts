@@ -7,10 +7,10 @@ import { registerTab } from "../core/navigation";
 import { showToast } from "../core/ui";
 import { escapeHtml } from "../core/dom";
 import {
-  getConfig,
-  saveConfig,
   getDreamSkinCapabilities,
   getDreamSkinRuntimeStatus,
+  getDreamSkinSettings,
+  saveDreamSkinSettings,
   listDreamSkinThemes,
   getDreamSkinTheme,
   createDreamSkinTheme,
@@ -96,15 +96,15 @@ async function loadInitial(): Promise<void> {
   state.error = "";
   render();
   try {
-    const [caps, library] = await Promise.all([
+    const [caps, library, settings] = await Promise.all([
       getDreamSkinCapabilities(),
       listDreamSkinThemes(),
+      getDreamSkinSettings(),
     ]);
     state.capabilities = caps;
     state.library = library;
     state.loaded = true;
-    const cfg = await getConfig().catch(() => null);
-    state.codexAppPath = String(cfg?.dreamSkin?.codexAppPath || "");
+    state.codexAppPath = settings.codexAppPath;
     void getDreamSkinRuntimeStatus()
       .then((status) => { state.runtimeStatus = status; render(); })
       .catch(() => {});
@@ -448,9 +448,8 @@ async function handleAction(action: string, id?: string): Promise<void> {
       break;
     }
     case "save-codex-path": {
-      const cfg = await getConfig().catch(() => null) || { server: { host: "127.0.0.1", port: 8787 }, clients: {} };
-      cfg.dreamSkin = { ...(cfg.dreamSkin || {}), codexAppPath: state.codexAppPath.trim() };
-      await saveConfig(cfg as Parameters<typeof saveConfig>[0]);
+      const saved = await saveDreamSkinSettings({ codexAppPath: state.codexAppPath.trim() });
+      state.codexAppPath = saved.codexAppPath;
       showToast("Codex 路径已保存");
       break;
     }

@@ -36,8 +36,11 @@ test("isLoopbackWebSocketUrl accepts loopback", () => {
 test("isInjectableCodexPage filters targets", () => {
   const base = { type: "page", webSocketDebuggerUrl: "ws://127.0.0.1:19222/devtools/page/1" };
   assert.ok(isInjectableCodexPage({ ...base, title: "Codex", url: "app://-/index.html?initialRoute=%2F" }));
+  assert.ok(isInjectableCodexPage({ ...base, title: "ChatGPT", url: "app://-/index.html?initialRoute=%2F" }));
   assert.ok(isInjectableCodexPage({ ...base, title: "Codex", url: "https://chatgpt.com/c/1" }));
   assert.ok(isInjectableCodexPage({ ...base, title: "ChatGPT", url: "https://chatgpt.com/" }));
+  assert.ok(!isInjectableCodexPage({ ...base, title: "Codex", url: "https://example.com/" }));
+  assert.ok(!isInjectableCodexPage({ ...base, title: "Unrelated Electron App", url: "app://-/index.html" }));
   assert.ok(!isInjectableCodexPage({ ...base, type: "service_worker", url: "app://-/" }));
   assert.ok(!isInjectableCodexPage({ ...base, url: "app://-/index.html?initialRoute=%2Favatar-overlay" }));
   assert.ok(!isInjectableCodexPage({ ...base, url: "app://-/index.html?initialRoute=%2Fchatgpt%2Fquick-chat" }));
@@ -195,6 +198,22 @@ test("cdp session enables Runtime before evaluate", async () => {
   ws._emit("message", Buffer.from(JSON.stringify({ id: evalId, result: { result: { value: 2 } } })));
   const result = await p;
   assert.equal(result.result.value, 2);
+});
+
+test("cdp session can remove a previously registered new-document script", async () => {
+  const ws = makeFakeWs();
+  const session = createCdpSession({ wsUrl: "ws://127.0.0.1:1/x", createWebSocket: () => ws });
+  const connected = session.connect();
+  ws.readyState = 1;
+  ws._emit("open");
+  await connected;
+
+  const removal = session.removeScriptFromNewDocuments("script-1");
+  assert.equal(ws.sent[0].method, "Page.removeScriptToEvaluateOnNewDocument");
+  assert.deepEqual(ws.sent[0].params, { identifier: "script-1" });
+  ws._emit("message", Buffer.from(JSON.stringify({ id: ws.sent[0].id, result: {} })));
+  await removal;
+  session.close();
 });
 
 test("cdp session rejects on CDP error", async () => {

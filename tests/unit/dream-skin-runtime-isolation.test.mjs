@@ -64,9 +64,11 @@ test("desktop panel has no runtime action copy or route", () => {
 
 test("application service exposes applyTheme only through injected applier", () => {
   const src = fs.readFileSync(path.join(ROOT, "lib", "dream-skin", "application", "service.mjs"), "utf8");
-  // applyTheme must be the gateway to runtime injection and require the injected applier
+  // applyTheme must be the gateway to runtime injection and require a supported injected applier
   assert.match(src, /async function applyTheme\(/);
-  assert.match(src, /if \(!applier\)/);
+  assert.match(src, /function runtimeEnabled\(\)/);
+  assert.match(src, /applier\.supported !== false/);
+  assert.match(src, /if \(!runtimeEnabled\(\)\)/);
   assert.match(src, /applier\.applyTheme\(/);
   // The service itself must not spawn processes or open sockets
   assert.doesNotMatch(src, /child_process/);

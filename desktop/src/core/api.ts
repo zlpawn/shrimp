@@ -3,6 +3,7 @@ import type {
   AnalyticsResponse,
   DreamSkinCapabilities,
   DreamSkinRuntimeStatus,
+  DreamSkinSettings,
   DreamSkinLibraryResponse,
   DreamSkinMarketResponse,
   DreamSkinThemeDetail,
@@ -105,6 +106,18 @@ export function getDreamSkinCapabilities(): Promise<DreamSkinCapabilities> {
 
 export function getDreamSkinRuntimeStatus(): Promise<DreamSkinRuntimeStatus> {
   return requestDreamSkin<DreamSkinRuntimeStatus>("/v1/dream-skin/probe");
+}
+
+export function getDreamSkinSettings(): Promise<DreamSkinSettings> {
+  return requestDreamSkin<DreamSkinSettings>("/v1/dream-skin/settings");
+}
+
+export function saveDreamSkinSettings(settings: DreamSkinSettings): Promise<DreamSkinSettings> {
+  return requestDreamSkin<DreamSkinSettings>("/v1/dream-skin/settings", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(settings),
+  });
 }
 
 export function listDreamSkinThemes(): Promise<DreamSkinLibraryResponse> {

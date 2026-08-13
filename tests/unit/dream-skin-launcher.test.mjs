@@ -1,4 +1,8 @@
 import assert from "node:assert/strict";
+import { EventEmitter } from "node:events";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
 
 import {
@@ -19,6 +23,7 @@ import {
   buildMacOSProcessQuery,
   createCodexLauncher,
 } from "../../lib/dream-skin/runtime/launcher.mjs";
+import { resolveWildcardPath } from "../../lib/dream-skin/runtime/applier.mjs";
 import { DreamSkinError } from "../../lib/dream-skin/domain/errors.mjs";
 
 // --- Pure command tests ---
@@ -374,6 +379,61 @@ test("createCodexLauncher.launchWithDebugPort supports windows standalone", asyn
   const result = await launcher.launchWithDebugPort({ debugPort: 19222 });
   assert.equal(result.kind, "windows-standalone");
   assert.ok(calls.some((c) => c.executable.includes("Codex.exe")));
+});
+
+test("createCodexLauncher rejects when a real child process emits an async spawn error", async () => {
+  const launcher = createCodexLauncher({
+    platform: "win32",
+    exists: async (p) => p,
+    spawn: () => {
+      const child = new EventEmitter();
+      queueMicrotask(() => child.emit("error", Object.assign(new Error("missing executable"), { code: "ENOENT" })));
+      return child;
+    },
+    spawnSync: async () => ({ stdout: "0" }),
+    listTargets: async () => { throw new Error("not reachable"); },
+    waitForDebugEndpoint: async () => {},
+  });
+
+  await assert.rejects(
+    launcher.launchWithDebugPort({ appPath: "Z:\\missing\\Codex.exe" }),
+    /missing executable/,
+  );
+});
+
+test("createCodexLauncher absorbs a child error emitted after successful spawn", async () => {
+  const child = new EventEmitter();
+  const launcher = createCodexLauncher({
+    platform: "win32",
+    exists: async (p) => p,
+    spawn: () => {
+      queueMicrotask(() => {
+        child.emit("spawn");
+        queueMicrotask(() => child.emit("error", new Error("late child error")));
+      });
+      return child;
+    },
+    spawnSync: async () => ({ stdout: "0" }),
+    listTargets: async () => { throw new Error("not reachable"); },
+    waitForDebugEndpoint: async () => {},
+  });
+
+  const result = await launcher.launchWithDebugPort({ appPath: "C:\\Codex\\Codex.exe" });
+  assert.equal(result.kind, "windows-standalone");
+  await new Promise((resolve) => setImmediate(resolve));
+});
+
+test("resolveWildcardPath chooses package versions numerically", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "dream-skin-package-version-"));
+  try {
+    await fs.mkdir(path.join(root, "OpenAI.Codex_1.9.0.0_x64__pub", "app"), { recursive: true });
+    await fs.mkdir(path.join(root, "OpenAI.Codex_1.10.0.0_x64__pub", "app"), { recursive: true });
+
+    const resolved = await resolveWildcardPath(`${root}/OpenAI.Codex_*/app`);
+    assert.match(String(resolved), /OpenAI\.Codex_1\.10\.0\.0_x64__pub/);
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
 });
 
 test("createCodexLauncher.launchWithDebugPort uses packaged activation for WindowsApps", async () => {

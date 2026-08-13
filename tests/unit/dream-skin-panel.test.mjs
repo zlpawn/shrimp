@@ -22,8 +22,10 @@ test("dream-skin panel exposes codex path settings", () => {
   const source = fs.readFileSync("desktop/src/modules/dream-skin.ts", "utf8");
   assert.match(source, /codexAppPath/);
   assert.match(source, /save-codex-path/);
-  assert.match(source, /saveConfig\(/);
-  assert.match(source, /getConfig\(\)/);
+  assert.match(source, /saveDreamSkinSettings\(/);
+  assert.match(source, /getDreamSkinSettings\(\)/);
+  assert.doesNotMatch(source, /\bsaveConfig\(/);
+  assert.doesNotMatch(source, /\bgetConfig\(\)/);
 });
 
 test("dream-skin module calls apply API but keeps runtime details out", () => {

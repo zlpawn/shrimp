@@ -26,7 +26,7 @@ const validTheme = {
   },
 };
 
-function makeService({ applier } = {}) {
+function makeService({ applier, settingsStore } = {}) {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "ds-svc-"));
   const paths = resolveDreamSkinPaths({ configFile: path.join(tmpDir, "gw.json") });
 
@@ -40,6 +40,7 @@ function makeService({ applier } = {}) {
     requestBinary: fakeRequest,
     logger: { warn() {}, log() {} },
     ...(applier ? { applier } : {}),
+    ...(settingsStore ? { settingsStore } : {}),
   });
 
   return { service, cleanup: () => fs.rmSync(tmpDir, { recursive: true, force: true }) };
@@ -184,6 +185,44 @@ test("service probeCodex with injected applier delegates to probe", async () => 
     assert.equal(result.available, true);
     assert.equal(result.codexRuntime, true);
     assert.equal(result.targets.length, 1);
+  } finally {
+    cleanup();
+  }
+});
+
+test("service reports runtime disabled when the injected applier is unsupported", async () => {
+  const { service, cleanup } = makeService({
+    applier: {
+      supported: false,
+      probe: async () => ({ available: true, targets: [] }),
+      applyTheme: async () => ({ ok: true }),
+    },
+  });
+  try {
+    assert.equal(service.getCapabilities().codexRuntime, false);
+    assert.equal((await service.probeCodex()).codexRuntime, false);
+    await assert.rejects(service.applyTheme("shrimp-default"), /未启用/);
+  } finally {
+    cleanup();
+  }
+});
+
+test("service reads and updates Dream Skin settings through its settings store", async () => {
+  let current = { codexAppPath: "/Applications/Codex.app" };
+  const { service, cleanup } = makeService({
+    settingsStore: {
+      get: () => current,
+      save: async (settings) => {
+        current = settings;
+        return current;
+      },
+    },
+  });
+  try {
+    assert.deepEqual(await service.getSettings(), current);
+    const saved = await service.updateSettings({ codexAppPath: " /Applications/ChatGPT.app " });
+    assert.deepEqual(saved, { codexAppPath: "/Applications/ChatGPT.app" });
+    assert.deepEqual(current, saved);
   } finally {
     cleanup();
   }
