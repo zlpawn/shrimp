@@ -80,8 +80,8 @@ function makeFakeService() {
     async updateMarketTheme(id) {
       return { id, name: "Market", kind: "stored", builtin: false, selected: false, stylePreset: "", appearance: "auto", imageUrl: "" };
     },
-    async applyTheme(id) {
-      return { ok: true, kind: "existing", target: "Codex", debugPort: 19222 };
+    async applyTheme(id, { restart = false } = {}) {
+      return { ok: true, kind: "existing", target: "Codex", debugPort: 19222, restart };
     },
     async getMarketPreview(id) {
       return { bytes: Buffer.from([0x89, 0x50]), mime: "image/png", etag: "abc123" };
@@ -149,6 +149,16 @@ test("POST /themes/:id/apply applies theme to Codex", async () => {
   assert.equal(res.statusCode, 200);
   const body = JSON.parse(res.body);
   assert.equal(body.ok, true);
+  assert.equal(body.restart, false);
+});
+
+test("POST /themes/:id/apply?restart=1 passes restart flag", async () => {
+  const req = makeReq("POST", "/v1/dream-skin/themes/aurora/apply?restart=1");
+  const res = makeRes();
+  await routeDreamSkinRequest(req, res, {}, "/v1/dream-skin/themes/aurora/apply?restart=1", { service: makeFakeService() });
+  assert.equal(res.statusCode, 200);
+  const body = JSON.parse(res.body);
+  assert.equal(body.restart, true);
 });
 
 test("GET /market returns market list", async () => {

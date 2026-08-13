@@ -174,8 +174,8 @@ test("service applyTheme with injected applier builds and injects", async () => 
   const calls = [];
   const { service, cleanup } = makeService({
     applier: {
-      applyTheme: async ({ themeJsonBytes, imageBytes }) => {
-        calls.push({ themeJsonBytes, imageBytes });
+      applyTheme: async ({ themeJsonBytes, imageBytes, allowRestart }) => {
+        calls.push({ themeJsonBytes, imageBytes, allowRestart });
         return { ok: true, kind: "existing", target: "Codex", debugPort: 19222 };
       },
     },
@@ -186,8 +186,14 @@ test("service applyTheme with injected applier builds and injects", async () => 
     const result = await service.applyTheme("aurora-night");
     assert.equal(result.ok, true);
     assert.equal(calls.length, 1);
+    assert.equal(calls[0].allowRestart, false);
     assert.ok(Buffer.isBuffer(calls[0].themeJsonBytes));
     assert.ok(Buffer.isBuffer(calls[0].imageBytes));
+
+    const restartResult = await service.applyTheme("aurora-night", { restart: true });
+    assert.equal(restartResult.ok, true);
+    assert.equal(calls.length, 2);
+    assert.equal(calls[1].allowRestart, true);
   } finally {
     cleanup();
   }
