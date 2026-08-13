@@ -26,6 +26,9 @@ test("dream-skin module calls apply API but keeps runtime details out", () => {
   // Restart is opt-in through window.confirm, never automatic
   assert.match(source, /window\.confirm/);
   assert.match(source, /applyDreamSkinTheme\(id, \{ restart: true \}\)/);
+  // Restart is opt-in through window.confirm, never automatic
+  assert.match(source, /window\.confirm/);
+  assert.match(source, /applyDreamSkinTheme\(id, \{ restart: true \}\)/);
   // Raw CDP/WebSocket/launcher details stay out of the panel module
   assert.doesNotMatch(source, /renderer-inject/);
   assert.doesNotMatch(source, /Runtime\.evaluate/);
