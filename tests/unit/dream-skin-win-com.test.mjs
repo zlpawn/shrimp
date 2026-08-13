@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { activatePackagedApp } from "../../lib/dream-skin/runtime/win-com.mjs";
 
-test("activatePackagedApp builds hidden PowerShell activation", async () => {
+test("activatePackagedApp builds hidden COM PowerShell activation", async () => {
   const captured = [];
   const fakeExecFile = (exe, args, opts, cb) => {
     captured.push({ exe, args, opts });
@@ -18,8 +18,12 @@ test("activatePackagedApp builds hidden PowerShell activation", async () => {
   assert.ok(captured[0].args.includes("-WindowStyle"));
   assert.ok(captured[0].args.includes("Hidden"));
   assert.equal(captured[0].opts.windowsHide, true);
-  assert.match(captured[0].args.join(" "), /shell:AppsFolder\\OpenAI\.Codex_abc!App/);
-  assert.match(captured[0].args.join(" "), /--remote-debugging-port=19222/);
+  const script = captured[0].args.join(" ");
+  assert.match(script, /IApplicationActivationManager/);
+  assert.match(script, /ActivateApplication/);
+  assert.match(script, /OpenAI\.Codex_abc!App/);
+  assert.match(script, /--remote-debugging-port=19222/);
+  assert.doesNotMatch(script, /shell:AppsFolder/);
 });
 
 test("activatePackagedApp rejects invalid PowerShell output", async () => {
