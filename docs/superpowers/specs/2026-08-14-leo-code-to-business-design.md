@@ -1,6 +1,6 @@
 # Leo Code to Business Skill Design
 
-> Status: reviewed, awaiting user approval
+> Status: user-approved for implementation planning
 > Date: 2026-08-14
 > Skill: `leo-code-to-business`
 > Managed source: `lib/skills/leo-code-to-business`
@@ -17,8 +17,9 @@ The result must serve two audiences from one canonical knowledge model:
 - People receive a searchable offline HTML site organized around business capabilities, use cases,
   rules, states, events, exceptions, and unresolved questions.
 
-The first implementation deeply supports Java/Spring repositories. The architecture must accept
-additional language adapters without changing the business knowledge model.
+The first acceptance repository is Java/Spring, but the investigation workflow is language-neutral.
+Language-specific guides may improve discovery without changing the business knowledge model or
+making a language parser mandatory.
 
 The Skill succeeds only when it can answer concrete business questions such as:
 
@@ -127,9 +128,9 @@ Version 1 does not:
 - generate requirements that are not observable in the repository;
 - treat historical documents as current truth without verification;
 - provide a hosted web service or centralized knowledge server;
-- run a permanent file-watching daemon;
-- guarantee full semantic parsing for every Java framework or metaprogramming mechanism;
-- deeply support languages other than Java/Spring;
+- run its own permanent file-watching daemon;
+- guarantee static resolution of every framework, metaprogramming, reflection, or runtime mechanism;
+- guarantee equal discovery quality for every language before language-specific calibration exists;
 - modify application source code;
 - modify or reuse existing Reversa output directories;
 - optimize for interview storytelling or general technical onboarding.
@@ -171,15 +172,16 @@ incremental dependency analysis.
 ```mermaid
 flowchart LR
     R["Local repository"] --> S["Repository snapshot"]
-    S --> A["Language adapter"]
-    A --> F["Observable fact inventory"]
-    F --> D["Business discovery and tracing"]
+    S --> I["Model-led repository investigation"]
+    I --> F["Evidence-linked fact and investigation ledger"]
+    F --> D["Business discovery and bidirectional tracing"]
     D --> K["Canonical business knowledge model"]
     K --> V["Evidence and coverage validators"]
     V --> AI["AI knowledge package"]
     V --> H["Offline HTML projection"]
     G["Git history"] --> D
     T["Tests, SQL, config, current docs"] --> D
+    P["Optional graph, MCP, IDE, LSP, AST tools"] --> I
     V --> Q["Business question evaluator"]
     Q --> D
 ```
@@ -187,7 +189,10 @@ flowchart LR
 Responsibilities are separated as follows:
 
 - Repository snapshot records branch, HEAD, working-tree state, file hashes, and exclusions.
-- Language adapters discover language-specific facts without defining business semantics.
+- The analysis model investigates code directly, records searches and traces, and translates
+  source-supported behavior into business meaning.
+- Optional code-intelligence providers accelerate discovery but never replace current-source
+  verification.
 - Business discovery reconstructs use cases, rules, lifecycle behavior, and use-case families.
 - Canonical artifacts are the only source for AI and HTML projections.
 - Validators enforce evidence integrity, inventory conservation, depth, and freshness.
@@ -206,7 +211,9 @@ lib/skills/leo-code-to-business/
 │   ├── evidence-and-confidence.md
 │   ├── coverage-and-completion.md
 │   ├── incremental-update.md
-│   ├── java-spring-adapter.md
+│   ├── repository-investigation.md
+│   ├── optional-code-tools.md
+│   ├── java-spring-discovery.md
 │   ├── html-projection.md
 │   └── acceptance-scenarios.md
 ├── schemas/
@@ -234,10 +241,8 @@ lib/skills/leo-code-to-business/
 │   └── coverage.schema.json
 ├── scripts/
 │   ├── business_knowledge_guard.py
-│   ├── java_spring_inventory.py
-│   ├── render_business_site.py
-│   └── java/
-│       └── JavaSourceIndexer.java
+│   ├── repository_snapshot.py
+│   └── render_business_site.py
 └── tests/
     ├── fixtures/
     └── test_business_knowledge_guard.py
@@ -263,8 +268,9 @@ implementation details.
 The agent reads only the reference needed for the current stage:
 
 - all runs: business model, evidence, and coverage;
-- repository reconstruction: business discovery;
-- Java/Spring repositories: Java adapter;
+- repository reconstruction: business discovery and repository investigation;
+- when optional graph/MCP/IDE tools are present: optional code tools;
+- Java/Spring repositories: Java/Spring discovery guide;
 - update runs: incremental update;
 - final projection: HTML projection;
 - validation or calibration: acceptance scenarios.
@@ -275,17 +281,19 @@ The implementation separates observable facts, business interpretation, and vali
 
 | Responsibility | Owner | May decide business meaning? |
 |---|---|---|
-| Repository snapshot, file enumeration, hashes, route parsing, source locations | Deterministic scripts | No |
-| Raw entry, mutation-sink, state-write, external-call, and config-condition inventory | Language adapter | No |
+| Repository snapshot, file hashes, artifact validation, and projection integrity | Deterministic scripts | No |
+| Entry, mutation-sink, state-write, external-call, and condition discovery | Analysis model using current source and available tools | No business conclusion without evidence |
+| Cross-method, reverse, and alternate-entry investigation | Analysis model; optional providers may assist | No business conclusion without source verification |
 | Entry classification, capability grouping, actor/goal interpretation, use-case families | Analysis model | Yes, with evidence and status |
 | Use-case, rule, data meaning, exception, and compensation synthesis | Analysis model | Yes, with required investigation records |
 | Schema, reference, hash, route, count, freshness, and projection checks | Deterministic guard | No |
 | Whether a statement expresses business meaning rather than only code mechanics | Semantic reviewer | Yes, using the frozen rubric |
 | Final `passed`, `partial`, or `blocked` calculation | Guard from deterministic checks plus signed semantic-review results | No free-form override |
 
-The deterministic scanner discovers inventory facts. It does not label an entry as business or
-infrastructure. Classification happens in the semantic stage, and the guard only verifies that each
-raw inventory ID has exactly one classification record with evidence or an unresolved reason.
+The investigation stage discovers inventory facts through explicit, recorded search passes. It does
+not label an entry as business or infrastructure while collecting it. Classification happens in the
+semantic stage, and the guard verifies that each inventory ID has exactly one classification record
+with evidence or an unresolved reason.
 
 The guard cannot prove that prose is insightful. A separate `semantic-review.json` records rubric
 results per use case and acceptance answer. Review modes are:
@@ -804,7 +812,7 @@ Record:
 
 Gate: the repository snapshot and scope must validate before analysis.
 
-### Stage 2: Deterministic Fact Inventory
+### Stage 2: Model-Led Fact Inventory
 
 Discover all observable behavior entry points:
 
@@ -820,8 +828,17 @@ Discover all observable behavior entry points:
 - tests that expose business scenarios;
 - feature flags and configuration-backed rules.
 
-Every raw inventory item receives a stable fact ID. The analysis model then creates exactly one
-classification record:
+The model must use multiple independent discovery passes rather than one broad search:
+
+1. entry-point and externally triggered behavior search;
+2. business noun, identifier, state, and entity search;
+3. persistence mutation and external-effect search;
+4. error, rejection, retry, compensation, and operational-entry search;
+5. tests, configuration, SQL, and current-document lead search.
+
+Each pass records exact queries, tools, scope, truncation, results, and follow-up decisions in
+`investigations.jsonl`. Every raw inventory item receives a stable fact ID. The analysis model then
+creates exactly one classification record:
 
 ```text
 business
@@ -833,8 +850,9 @@ infrastructure
 unresolved
 ```
 
-Gate: no discovered item lacks classification. `unresolved` is allowed and visible; disappearance is
-not allowed.
+Gate: no discovered item lacks classification, every required discovery pass has an investigation
+record, and any truncated result is narrowed or explicitly unresolved. `unresolved` is allowed and
+visible; disappearance is not allowed.
 
 ### Stage 3: Capability and Domain Discovery
 
@@ -1012,8 +1030,8 @@ The coverage report records whether each use case includes:
 These signals measure investigation work, not prose length.
 
 Each signal is backed by `investigations.jsonl`, not a model-authored Boolean. For example, a
-backward trace record names the mutation or state sink, searched relationship types, returned
-writers, provider, and truncation status.
+backward trace record names the mutation or state sink, exact queries, files or symbols inspected,
+returned writers, provider, source-verification result, and truncation status.
 
 ### 12.4 No Confidence-to-Coverage Substitution
 
@@ -1047,15 +1065,16 @@ It must not compensate with confident prose.
 
 ### 12.9 Independent Recall Anchors
 
-Coverage cannot rely only on what the semantic analyzer decided to notice. The deterministic adapter
-creates independent anchor sets before business synthesis:
+Coverage cannot rely only on what the semantic analyzer decided to notice. Version 1 uses
+independent investigation passes and acceptance fixtures to create anchor sets before business
+synthesis:
 
-- all supported entry-point facts;
-- all supported persistence mutations;
-- all supported state-field writes;
-- all external side-effect calls;
-- all schedules, consumers, listeners, and callbacks;
-- all route and listener annotations that the adapter recognized but could not resolve.
+- entry-point candidates from framework/configuration patterns;
+- persistence mutation and state-write candidates from repository-wide searches;
+- external side-effect and event candidates;
+- schedules, consumers, listeners, callbacks, CLI, batch, and operations candidates;
+- route/listener/custom-framework patterns that were searched but could not be resolved;
+- benchmark-specific anchors maintained outside the producing model's output.
 
 Every anchor must map to a use case, supporting role, explicit exclusion, or unresolved record.
 Fixture and reference-repository benchmarks also provide expected anchors that are outside the
@@ -1071,10 +1090,10 @@ Coverage contains at least:
 | Business entry mapping | business entries mapped to use cases/capabilities | business entries |
 | Use-case investigation | completed required investigation signals | required signals |
 | Rule evidence | rules with valid evidence | confirmed and inferred rules |
-| Mutation-anchor mapping | mapped mutations/state writes/external effects | deterministic mutation/state/effect anchors |
-| Guard/branch investigation | investigated deterministic condition and guard anchors | deterministic condition and guard anchors |
-| Scenario coverage | covered benchmark and anchor-derived scenarios | benchmark scenarios plus deterministic guard/condition branches |
-| State transition coverage | traced state writers and guards | deterministic state-write anchors plus resolved guards |
+| Mutation-anchor mapping | mapped mutations/state writes/external effects | discovered mutation/state/effect anchors |
+| Guard/branch investigation | investigated condition and guard anchors | discovered condition and guard anchors |
+| Scenario coverage | covered benchmark and anchor-derived scenarios | benchmark scenarios plus discovered guard/condition branches |
+| State transition coverage | traced state writers and guards | discovered state-write anchors plus resolved guards |
 | Projection integrity | valid projected nodes and links | projected nodes and links |
 
 The report also shows raw counts and unresolved IDs. Percentages without denominators are forbidden.
@@ -1083,7 +1102,7 @@ Initial release gates:
 
 - entry classification coverage is `1.0`;
 - business entry mapping coverage is `1.0`;
-- deterministic anchor mapping coverage is `1.0`;
+- discovered anchor mapping coverage is `1.0`;
 - unresolved and excluded items remain in the denominators and do not count as mapped;
 - a `passed` revision has zero unresolved supported entry anchors in the selected scope;
 - exclusions require a reason and evidence, and cannot exceed `20%` of supported entry anchors
@@ -1091,8 +1110,8 @@ Initial release gates:
 - at least one confirmed business use case exists for each capability containing a business entry;
 - each confirmed use case has a confirmed actor relation, goal, trigger, success outcome, main flow,
   and evidence relation;
-- deterministic guard/branch investigation coverage is `1.0`;
-- every `E3` route exactly matches parsed source evidence;
+- discovered guard/branch investigation coverage is `1.0`;
+- every `E3` route exactly matches current-source evidence;
 - every `E3` rule has valid evidence;
 - no Controller, Schedule, Consumer, Listener, or Callback is unexplained;
 - all projection integrity checks pass;
@@ -1100,151 +1119,158 @@ Initial release gates:
 - every required semantic dimension has a value or searched unknown;
 - acceptance questions meet the frozen rubric or the run is visibly `partial`.
 
-## 14. Java/Spring Adapter Version 1
+## 14. Repository Investigation and Optional Code Intelligence
 
-The adapter produces observable facts, not business conclusions.
+Version 1 is model-first, evidence-driven, and tool-optional. The analysis model reads current
+repository files, follows code relationships, records its investigation, and translates verified
+behavior into business knowledge. It may use any locally available search or code-intelligence tool,
+but no named provider is required.
 
-### 14.1 Implementation Technology
+### 14.1 Portable Baseline
 
-The portable baseline uses Python 3 standard-library scripts plus a bundled Java source indexer
-compiled and run with the target environment's JDK:
+The portable baseline requires only:
 
-- XML parsing for Maven descriptors;
-- the JDK Compiler Tree API (`javax.tools`, `com.sun.source.tree`, `com.sun.source.util`) for Java
-  ASTs, symbols, types, method invocations, assignments, throws, and control-flow locations;
-- a deterministic local symbol table and call graph built from source declarations, imports,
-  injected field types, inheritance, method names, signatures, and resolved compiler elements;
-- forward and reverse indexes for method calls, persistence mutations, state writes, external calls,
-  events, configuration reads, and deterministic condition/guard anchors;
-- a comment/string-aware lexical fallback for files that the JDK parser cannot analyze;
-- `javap` only when compiled classes are already available and source resolution needs confirmation;
-- targeted XML parsing for MyBatis mapper files;
-- Git CLI for history, rename, and snapshot operations.
+- direct local file reading;
+- repository-wide text and filename search;
+- Git status, diff, log, blame, and show operations;
+- existing project build, test, and query commands when safe and useful;
+- Python 3 standard-library scripts bundled with the Skill for snapshots, validation, and rendering.
 
-`JavaSourceIndexer.java` is compiled into the owned run directory and never writes compiled files
-into the analyzed repository. It runs with annotation processing disabled. The adapter may obtain a
-classpath from existing Maven metadata, compiled outputs, and the local Maven cache, but dependency
-download is not required for source-only analysis.
+The baseline does not include a custom Java call-graph implementation. The model is responsible for
+following method calls, interfaces, implementations, persistence writes, events, external clients,
+configuration, and alternate entries by reading enough source to support each conclusion.
 
-The first implementation must not use regex over raw Java text as its sole route, annotation, call,
-or mutation parser.
+Repository tools such as `rg`, `find`, `git`, language-native build tools, and structured parsers may
+be selected according to the environment. Tool availability changes efficiency, not the required
+business-knowledge standard.
 
-### 14.2 Built-In Relationship Resolution
+### 14.2 Required Investigation Protocol
 
-The bundled indexer is the required baseline for cross-method and reverse tracing. It resolves
-relationships in this order:
+For each business question or candidate use case, the model must perform and record:
 
-1. exact compiler symbol and executable element;
-2. declared/injected receiver type plus exact method name and compatible arity/signature;
-3. imports, package, inheritance, and implementation candidates;
-4. unique repository-wide candidate after type and arity filtering;
-5. unresolved candidate set.
+1. **Vocabulary expansion**: business terms, code symbols, aliases, route fragments, table/entity
+   names, state values, error messages, and external operation names.
+2. **Entry search**: HTTP/RPC routes, consumers, listeners, schedules, callbacks, CLI/batch tools,
+   tests, and operational paths.
+3. **Forward trace**: trigger through validation, branches, orchestration, writes, external effects,
+   outcome, failure, retry, and compensation.
+4. **Backward trace**: from records, state writes, external calls, emitted events, index updates, and
+   terminal outcomes back to all reachable business entries.
+5. **Alternate-entry search**: variants sharing the same business object, identifier, mutation,
+   external operation, lifecycle state, or goal.
+6. **Rule search**: constants, enums, comparisons, guards, validation, deduplication, permissions,
+   tenant selection, timing, configuration, and environment conditions.
+7. **Contradiction search**: tests, current docs, comments, Git history, and parallel implementations
+   that disagree with the candidate conclusion.
+8. **Source verification**: reopen the current files containing every load-bearing path and rule
+   before marking the claim confirmed.
 
-Every call edge records:
+An investigation record contains:
 
 ```text
-caller
-call_site
-receiver_expression
-resolved_receiver_type
-callee
-resolution_method
-candidate_callees
-resolution_confidence
-source_location
+question_or_node_id
+investigation_kind
+provider
+provider_version
+queries
+scope
+files_and_symbols_inspected
+candidate_results
+accepted_results
+rejected_results_and_reason
+truncated
+source_verified
+repository_snapshot
 ```
 
-Ambiguous candidate sets never become confirmed edges. They remain visible anchors and cap the
-affected path at `E2`.
+A statement cannot be `E3` merely because the model remembers seeing it or because a search tool
+returned a relationship.
 
-The adapter materializes:
+### 14.3 Optional Provider Policy
 
-- outbound callees for forward tracing;
-- inbound callers for reverse tracing;
-- writers by entity, table, mapper operation, field, and state/status field;
-- readers by entity, table, mapper operation, and field;
-- external effects by client type and invoked operation;
-- event producers and consumers;
-- guard/condition anchors connected to the methods and effects they control.
+If available, the Skill should use code knowledge graphs, `codebase-memory-mcp`, IDE/LSP indexes,
+Tree-sitter/AST tools, or similar local providers to accelerate:
 
-Tracing walks these local indexes transitively with cycle detection, maximum-path safeguards, and
-explicit truncation records. Therefore the Skill's required business reconstruction does not depend
-on any MCP, IDE, LSP server, or external graph service.
+- symbol and definition discovery;
+- caller/callee and data-flow exploration;
+- reverse writer lookup;
+- cross-service route or event matching;
+- omission detection and impact analysis.
 
-### 14.3 Bounded Support Matrix
+If none is available, the Skill continues with the portable baseline. Missing optional providers do
+not lower completion status.
 
-Version 1 guarantees deterministic discovery for:
+Provider output is candidate evidence, not current-behavior truth. Every load-bearing relationship
+must be verified against files from the frozen repository snapshot. Ambiguous, conflicting,
+truncated, or unverified provider results remain `E2` or lower and create an investigation gap.
 
-| Area | Supported patterns |
+### 14.4 `codebase-memory-mcp` Freshness Protocol
+
+When `codebase-memory-mcp` is available:
+
+1. Discover whether the target repository is already indexed.
+2. Read `index_status` and compare canonical root path, status, branch, indexed HEAD/base SHA, and
+   repository existence with the current snapshot.
+3. Run or request `index_repository` before substantial graph use. For an existing index this should
+   permit incremental refresh; for an absent or invalid index it creates or rebuilds the graph.
+4. Wait for a ready status before relying on graph queries.
+5. Record whether automatic watching is enabled when that information is observable, but never treat
+   a running watcher as proof of freshness.
+6. Use graph tools for discovery and tracing, then reopen current repository source for accepted
+   paths and rules.
+7. Recheck repository HEAD and working-tree fingerprints before publication. If they changed during
+   analysis, invalidate affected investigations and refresh or mark the run partial.
+
+`codebase-memory-mcp` may support near-real-time incremental updates through file watching, but the
+Skill assumes eventual rather than strong consistency. A matching Git HEAD is insufficient when the
+working tree has uncommitted changes; file hashes and source verification remain authoritative.
+
+Provider refresh failure does not block the Skill unless the remaining portable investigation
+cannot meet evidence or coverage gates. In that case the affected knowledge is partial or unknown,
+not invented.
+
+### 14.5 Java/Spring Discovery Calibration
+
+The first reference guide teaches the model where Java/Spring business behavior commonly hides:
+
+| Area | Discovery patterns |
 |---|---|
-| Build | Maven reactor modules; Java source/test roots; Java version; resource directories |
-| HTTP entries | `@RequestMapping`, `@GetMapping`, `@PostMapping`, `@PutMapping`, `@DeleteMapping`, `@PatchMapping`; class + method path/method composition |
-| Scheduled/event entries | `@Scheduled`, `@EventListener` |
-| Message entries | directly annotated Kafka listener methods and project-specific listener annotations configured in the adapter reference |
-| Components | `@Controller`, `@RestController`, `@Service`, `@Component`, `@Repository` |
-| External HTTP | `@FeignClient` interfaces and direct method invocations on resolved injected client fields |
-| Persistence | MyBatis mapper interfaces/XML, repository/mapper method calls, entity field assignments, explicit update builder/setter calls |
-| Cross-method tracing | source methods and constructors resolved by compiler symbol or the bounded candidate algorithm in Section 14.2 |
-| Reverse tracing | callers, entity/table writes, state-field writes, external effects, event producers/consumers, and condition anchors from local indexes |
-| Rules | literals, enum/constants, comparisons, guard returns/throws, selected validation annotations |
-| State | assignments or update calls to fields classified as state/status plus surrounding guards |
-| Config | `application*.yml/properties`, Maven profiles, `@Profile`, `@Value`, `@ConfigurationProperties`, common conditional-property annotations |
-| Tests | JUnit test methods, invoked entry/service symbols, assertions, and fixture values |
+| Build and scope | Maven/Gradle modules, source/test roots, resources, profiles |
+| HTTP entries | mapping annotations, class/method path composition, custom composed annotations |
+| Async entries | scheduled methods, event listeners, message consumers, project-specific listener annotations |
+| Components | controllers, services, components, repositories, providers, handlers, strategy implementations |
+| External effects | Feign/HTTP clients, SDKs, producers, file/object storage, search/index synchronization |
+| Persistence | mapper/repository interfaces, XML/SQL, update builders, entity mutations, batch and operational scripts |
+| Rules | constants, enums, guards, validation, configuration, deduplication, tenant/role selection |
+| State | status assignments, transition methods, update conditions, terminal-state readers |
+| Tests | scenario names, fixtures, assertions, mocks, expected failures, integration-test setup |
 
-Version 1 records but does not guarantee resolution for:
+This is a search guide, not a parser contract. Reflection, runtime bytecode generation, AOP,
+dynamic proxies, unresolved SpEL, remote configuration, runtime-created routes, generated sources,
+and dynamic SQL must be surfaced as limitations or unknowns when they affect business conclusions.
 
-- arbitrary custom composed annotations;
-- reflection, runtime bytecode generation, AOP-introduced behavior, dynamic proxies beyond common
-  Spring patterns;
-- SpEL that cannot be statically evaluated;
-- remote configuration centers and database-driven rules;
-- runtime-created routes or listener containers;
-- native SQL assembled dynamically;
-- Lombok-generated methods when source and call graph cannot resolve them;
-- Gradle-only projects beyond source/build metadata discovery.
+Future TypeScript, Python, Go, SQL, and protocol guides reuse the same investigation protocol and
+canonical model.
 
-An unresolved supported-looking construct becomes an inventory anchor with `resolution_status:
-unresolved`; it cannot silently disappear.
-
-### 14.4 Evidence Ceiling and Degradation
+### 14.6 Evidence Ceiling
 
 `E3` requires all of:
 
-- exact source location;
+- exact current source location;
+- a repository snapshot that did not change during verification;
 - selected configuration/profile scope;
-- resolved entry or sink;
+- resolved business entry or effect;
 - complete relevant path within the declared repository scope;
+- direct inspection of each load-bearing hop and condition;
 - no unresolved dynamic dispatch or activation condition on the path;
-- no truncated provider result.
+- no truncated or unverified provider result supporting the conclusion.
 
-Portable lexical facts may be `E3` for route declaration, constant value, and local assignment.
-Interprocedural business paths may be `E3` when every edge is resolved by exact compiler symbol or
-an exact local declaration match and all path conditions above hold. Candidate-based, ambiguous,
-truncated, unsupported, or environment-dependent paths are at most `E2` and force `partial` only for
-affected use cases, not unrelated domains.
+Candidate-based, ambiguous, truncated, unsupported, environment-dependent, or stale-index paths are
+at most `E2` and force `partial` only for affected use cases.
 
-### 14.5 Optional Enhancement Providers
+### 14.7 Fact Boundary
 
-After the built-in index is complete, the Skill may use an available code knowledge graph, IDE/LSP
-index, or similar local tool to:
-
-- find additional candidate relationships;
-- compare forward and reverse paths;
-- detect possible omissions;
-- prioritize manual investigation;
-- cross-check impact analysis.
-
-Enhancement providers are optional. Their absence does not lower completion status. Their output
-cannot by itself create an `E3` claim: every accepted edge or fact must resolve back to current
-repository source through the built-in evidence validator.
-
-Every fact records provider, provider version, query or scan rule, truncation, and resolution status.
-Built-in and enhancement-provider disagreements become conflicts or investigation tasks rather than
-being silently resolved.
-
-### 14.6 Adapter Boundary
-
-The adapter returns a language-neutral fact model:
+The investigation stage returns a language-neutral fact model:
 
 ```text
 symbol
@@ -1263,7 +1289,7 @@ test_scenario
 source_location
 ```
 
-Future TypeScript, Python, Go, SQL, and protocol adapters implement the same fact model.
+Future TypeScript, Python, Go, SQL, and protocol discovery guides use the same fact model.
 
 ## 15. Incremental Update Semantics
 
@@ -1272,7 +1298,7 @@ On every run against existing artifacts:
 1. Read branch, HEAD, and working-tree state.
 2. Compare commit and file hashes with the snapshot referenced by `current.json`.
 3. Detect added, modified, deleted, and renamed files.
-4. Reinventory changed language facts.
+4. Reinventory changed repository facts.
 5. Compute impacted knowledge nodes using evidence and relationship indexes.
 6. Reanalyze impacted use cases, rules, states, entities, and use-case families.
 7. Revalidate unchanged nodes whose dependencies or shared constants changed.
@@ -1287,7 +1313,7 @@ A configurable full-audit interval is stored in `manifest.json`. Version 1 defau
 when:
 
 - no valid previous snapshot exists;
-- adapter or schema version changed;
+- investigation protocol, language guide, or schema version changed;
 - branch history diverged;
 - high-impact files changed;
 - the previous run was partial or stale.
@@ -1472,7 +1498,8 @@ Rules:
 - atomically replace only `current.json`;
 - never replace the last valid revision with an invalid mixed artifact set;
 - resume from the last validated stage when snapshot inputs are unchanged;
-- start a new analysis revision when scope, branch, adapter version, or schema changes;
+- start a new analysis revision when scope, branch, investigation protocol, language guide, or
+  schema changes;
 - preserve partial findings and unresolved items for inspection;
 - do not delete application files or existing Reversa artifacts.
 
@@ -1494,14 +1521,14 @@ Test:
 - atomic writes and recovery;
 - change-impact propagation.
 
-### 19.2 Java/Spring Fixtures
+### 19.2 Repository-Investigation Fixtures
 
 Create small fixture repositories covering:
 
 - class and method route composition;
 - multiple HTTP methods and paths;
-- exact compiler-symbol calls across modules;
-- interface-to-implementation and injected-field call resolution;
+- cross-module calls;
+- interface-to-implementation and injected-field call investigation;
 - overloaded methods and ambiguous candidate sets;
 - multi-hop forward and reverse call traversal with cycles;
 - scheduler, listener, consumer, and callback entries;
@@ -1513,6 +1540,10 @@ Create small fixture repositories covering:
 - alternate use-case variants;
 - stale documentation conflicting with code;
 - changed and deleted source evidence.
+
+Each fixture has a frozen question, expected search anchors, required investigation kinds, accepted
+business facts, prohibited claims, and required unknowns. Tests validate the generated canonical
+artifacts and investigation ledger, not a particular search command or provider.
 
 ### 19.3 Cross-Model Behavioral Tests
 
@@ -1544,12 +1575,13 @@ The benchmark stores:
 - required source chains;
 - prohibited confirmed claims;
 - expected semantic rubric thresholds;
-- baseline commit and adapter/schema versions.
+- baseline commit and investigation-protocol/schema versions.
 
-The benchmark's primary run disables all enhancement providers. It must pass using only the bundled
-Java source indexer, Python scripts, Git, and repository-local evidence. A second optional run may
-enable `codebase-memory-mcp`, an IDE/LSP index, or another graph provider to measure additional
-recall and disagreements, but that result cannot replace the portable baseline.
+The benchmark's primary run disables all optional code-intelligence providers. It must pass using
+the analysis model, ordinary local file/search tools, Python scripts, Git, and repository-local
+evidence. A second optional run enables `codebase-memory-mcp` when available to measure efficiency,
+additional recall, freshness handling, and disagreements. Optional-provider results cannot replace
+the portable baseline or bypass source verification.
 
 ## 20. Acceptance Scenarios
 
@@ -1642,7 +1674,7 @@ Minimum canonical acceptance:
 The Skill fails acceptance if it:
 
 - represents technical mechanisms as business use cases;
-- reports routes that do not exist in parsed current source;
+- reports routes that do not exist in verified current source;
 - marks inferred rules as confirmed;
 - reviews artifacts and then silently regenerates them;
 - equates selected-module completion with business coverage;
@@ -1660,13 +1692,16 @@ complete when an earlier gate fails.
 - revision staging, hashing, publication, freshness, and validation work;
 - deterministic fixtures prove inventory conservation and stale-claim invalidation.
 
-### Milestone 2: Bounded Java/Spring Inventory
+### Milestone 2: Repository Investigation Workflow
 
-- the support matrix in Section 14 is implemented;
+- the required investigation protocol and Java/Spring discovery calibration in Section 14 are
+  implemented;
 - fixture anchors for routes, schedules, listeners, persistence writes, state writes, external calls,
   config conditions, and unsupported constructs are complete;
-- the bundled indexer passes exact, ambiguous, cyclic, multi-hop forward, and reverse tracing
-  fixtures without an enhancement provider;
+- fixture questions produce complete investigation ledgers for ambiguous, cyclic, multi-hop
+  forward, reverse, and alternate-entry searches without an optional provider;
+- optional `codebase-memory-mcp` discovery, refresh, freshness capture, and source-verification
+  behavior is covered without making the provider required;
 - unresolved constructs remain visible.
 
 ### Milestone 3: Business Reconstruction
@@ -1685,15 +1720,18 @@ complete when an earlier gate fails.
 - invocation-time update and immutable revisions work;
 - query can trigger targeted reanalysis when knowledge is stale or insufficient;
 - audit detects stale review and projection changes;
-- both pinned `utopia-scs-recorder` scenarios pass independent semantic review with enhancement
-  providers disabled.
+- both pinned `utopia-scs-recorder` scenarios pass independent semantic review with optional
+  providers disabled;
+- when `codebase-memory-mcp` is available, an additional run proves that stale or changed repository
+  state triggers refresh and current-source verification before publication.
 
 Version 1 is complete when:
 
 1. `leo-code-to-business` exists under `lib/skills/`.
 2. `SKILL.md` is concise and routes agents through the fixed workflow.
 3. Schemas and the deterministic guard enforce the core evidence and coverage contracts.
-4. The Java/Spring adapter inventories the required entry classes and source evidence.
+4. The model-led investigation workflow inventories required entries, effects, variants, and source
+   evidence on the Java/Spring acceptance repository.
 5. Build, update, query, and audit modes are executable after their corresponding milestone.
 6. Canonical artifacts generate both AI and offline HTML projections.
 7. Unit and fixture tests pass.
@@ -1705,9 +1743,9 @@ Version 1 is complete when:
 
 ## 22. Deferred Work
 
-After Java/Spring version 1 is proven:
+After the Java/Spring acceptance baseline is proven:
 
-- TypeScript/Node, Python, Go, and additional protocol adapters;
+- TypeScript/Node, Python, Go, and additional language-specific discovery guides;
 - richer semantic search or embeddings;
 - optional background watcher;
 - cross-repository business flows;
@@ -1729,5 +1767,8 @@ These extensions must reuse the canonical model and must not weaken evidence or 
 - Treat documents as claims until verified against current behavior.
 - Generate AI and HTML outputs from one canonical model.
 - Support invocation-time incremental updates in version 1.
-- Use Java/Spring as the first deep language adapter.
+- Use a model-first, evidence-driven, tool-optional investigation workflow.
+- Treat `codebase-memory-mcp` as an optional accelerator with explicit refresh and source-verification
+  checks.
+- Use Java/Spring as the first language-specific discovery calibration and acceptance repository.
 - Evaluate success with real business questions, not document counts.
