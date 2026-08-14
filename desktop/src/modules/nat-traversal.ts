@@ -234,7 +234,7 @@ function renderDiscoverBox(): string {
           <button class="btn" onclick="window.__ntDiscover()">重新检测</button>
         </div>
         <p class="nt-help">未在常见目录找到 frpc.toml / frpc.ini。你也可以手动填写下方表单，或把配置放到 ~/frp/frpc.toml 后再检测。</p>
-        <p class="nt-help">检测范围：~/frp、~/.frp、~/.config/frp、Homebrew etc、以及 frpc 二进制同目录。</p>
+        <p class="nt-help">检测范围：~/frp、~/frp_0.71.0*、~/.frp、Downloads/Desktop 下 frp_* 目录、Homebrew etc、以及 frpc 二进制附近。</p>
       </div>
     `;
   }
@@ -258,7 +258,7 @@ function renderDiscoverBox(): string {
           <button class="btn btn-primary" onclick="window.__ntImportSelected()">导入到表单</button>
         </div>
       </div>
-      <p class="nt-help">检测到 ${items.length} 个候选配置。导入会填充 server/proxies，并尽量推断 Dashboard URL（默认端口 7500）。token 会写入 secrets。</p>
+      <p class="nt-help">检测到 ${items.length} 个候选配置。导入会填充 server/proxies，并尽量推断 Dashboard URL（默认端口 7500）。token 继续留在原 frpc 配置文件中，不写入 gateway secrets。</p>
       <label class="form-group" style="display:grid;gap:6px;">
         <span style="font-size:12px;color:var(--text-secondary)">候选配置文件</span>
         <select id="nt-discover-path" onchange="window.__ntSelectDiscover(this.value)">${options}</select>
@@ -311,7 +311,7 @@ function renderFrpcDetail(): string {
         ${renderToggle("nt-enabled", Boolean(cfg.enabled), "启用 NAT Traversal / frpc", "关闭后不会自动拉起 frpc 进程")}
         <div class="node-card-row" style="margin-top:12px;gap:8px;flex-wrap:wrap;">
           <span class="badge">PID ${escapeHtml(String(st.provider?.pid || 0))}</span>
-          <span class="badge">Token ${cfg.secrets?.frpcTokenConfigured ? "已配置" : "未配置"}</span>
+          <span class="badge">Token 来自 frpc 配置文件</span>
           <span class="badge">Dashboard Auth ${cfg.secrets?.dashboardAuthConfigured ? "已配置" : "未配置"}</span>
           <span class="badge mono">${escapeHtml(st.provider?.binPath || cfg.frpc?.binPath || "自动发现 frpc")}</span>
           ${configPath ? `<span class="badge mono" title="${escapeHtml(configPath)}">配置源 ${escapeHtml(configPath)}</span>` : ""}
@@ -324,13 +324,12 @@ function renderFrpcDetail(): string {
 
       <div class="usage-guide nt-block">
         <h3>frpc 连接</h3>
-        <p class="nt-help">优先从上方检测结果导入。若本机没有配置文件，再手动填写 serverAddr / token。</p>
+        <p class="nt-help">优先从上方检测结果导入。启动时优先直接使用原 frpc 配置文件（含 token），不强制复制到 secrets。</p>
         <div class="nt-form-grid">
           <label class="form-group"><span>serverAddr</span><input id="nt-server-addr" value="${escapeHtml(cfg.frpc?.serverAddr || "")}" oninput="window.__ntMaybeInferDashboard()" /></label>
           <label class="form-group"><span>serverPort</span><input id="nt-server-port" type="number" value="${escapeHtml(String(cfg.frpc?.serverPort ?? 7000))}" /></label>
           <label class="form-group"><span>binPath</span><input id="nt-bin-path" placeholder="空则自动发现" value="${escapeHtml(cfg.frpc?.binPath || "")}" /></label>
           <label class="form-group"><span>logLevel</span><input id="nt-log-level" value="${escapeHtml(cfg.frpc?.logLevel || "info")}" /></label>
-          <label class="form-group nt-col-2"><span>frpc token（secrets）</span><input id="nt-token" type="password" placeholder="${cfg.secrets?.frpcTokenConfigured ? "已配置，留空保留" : "未配置"}" value="${escapeHtml(state.tokenDraft)}" /></label>
         </div>
       </div>
 
@@ -395,50 +394,6 @@ function renderFrpcDetail(): string {
       </div>
 
       <div class="usage-guide nt-block">
-        <h3>对端 Peers</h3>
-        <p class="nt-help">
-          Peers 记录“你要连的另一台机器”。例如家里电脑作为 Host 时，公司电脑在这里保存它的 SSH 地址或 gatewayApi。
-          第一期主要用于连通测试；后续 Remote Session 会从这里选择对端。
-        </p>
-        <div class="nt-table-wrap">
-          <table class="nt-table">
-            <thead><tr><th>id</th><th>名称</th><th>ssh</th><th>gatewayApi</th><th></th></tr></thead>
-            <tbody>
-              ${
-                peers.length
-                  ? peers
-                      .map(
-                        (p) => `<tr>
-                          <td><code>${escapeHtml(p.id || "")}</code></td>
-                          <td>${escapeHtml(p.displayName || "")}</td>
-                          <td>${escapeHtml(formatPeerSsh(p))}</td>
-                          <td><code>${escapeHtml(p.services?.gatewayApi || "")}</code></td>
-                          <td>
-                            <button class="btn" onclick="window.__ntTestPeer('${escapeHtml(p.id || "")}')">测试</button>
-                            <button class="btn" onclick="window.__ntDeletePeer('${escapeHtml(p.id || "")}')">删除</button>
-                          </td>
-                        </tr>`,
-                      )
-                      .join("")
-                  : `<tr><td colspan="5"><p class="nt-help">暂无对端。Remote Session 前可以先不填。</p></td></tr>`
-              }
-            </tbody>
-          </table>
-        </div>
-        <div class="nt-form-grid" style="margin-top:12px;">
-          <label class="form-group"><span>id</span><input id="nt-peer-id" value="${escapeHtml(state.peerDraft.id)}" /></label>
-          <label class="form-group"><span>displayName</span><input id="nt-peer-name" value="${escapeHtml(state.peerDraft.displayName)}" /></label>
-          <label class="form-group"><span>ssh host</span><input id="nt-peer-host" value="${escapeHtml(state.peerDraft.host)}" /></label>
-          <label class="form-group"><span>ssh port</span><input id="nt-peer-port" value="${escapeHtml(state.peerDraft.port)}" /></label>
-          <label class="form-group"><span>ssh user</span><input id="nt-peer-user" value="${escapeHtml(state.peerDraft.user)}" /></label>
-          <label class="form-group"><span>gatewayApi</span><input id="nt-peer-gw" placeholder="127.0.0.1:18788 或 http://..." value="${escapeHtml(state.peerDraft.gatewayApi)}" /></label>
-        </div>
-        <div class="nt-inline-actions" style="margin-top:12px;">
-          <button class="btn btn-primary" onclick="window.__ntUpsertPeer()">保存 Peer</button>
-        </div>
-      </div>
-
-      <div class="usage-guide nt-block">
         <h3>最近日志</h3>
         <pre class="nt-log">${escapeHtml(logs.slice(-50).join("\n") || "暂无日志")}</pre>
       </div>
@@ -467,7 +422,6 @@ function collectConfigFromDom(): { config: NatConfig; secrets: any } {
   const serverPort = Number((document.getElementById("nt-server-port") as HTMLInputElement | null)?.value || 7000);
   const binPath = (document.getElementById("nt-bin-path") as HTMLInputElement | null)?.value || "";
   const logLevel = (document.getElementById("nt-log-level") as HTMLInputElement | null)?.value || "info";
-  const token = (document.getElementById("nt-token") as HTMLInputElement | null)?.value || "";
   const dashEnabled = (document.getElementById("nt-dash-enabled") as HTMLInputElement | null)?.checked;
   const dashUrl = (document.getElementById("nt-dash-url") as HTMLInputElement | null)?.value || "";
   const dashUser = (document.getElementById("nt-dash-user") as HTMLInputElement | null)?.value || "";
@@ -484,12 +438,10 @@ function collectConfigFromDom(): { config: NatConfig; secrets: any } {
   }
   const proxies = [...proxyMap.entries()].sort((a, b) => a[0] - b[0]).map(([, row]) => row);
 
-  state.tokenDraft = token;
   state.dashUserDraft = dashUser;
   state.dashPassDraft = dashPass;
 
   const secrets: any = {};
-  if (token) secrets.frpc = { token };
   if (dashUser || dashPass) {
     secrets.frpsDashboard = {};
     if (dashUser) secrets.frpsDashboard.username = dashUser;
@@ -658,7 +610,7 @@ async function importSelected(): Promise<void> {
     state.config = result.config;
     state.status = await api<NatStatus>("/v1/nat-traversal/status");
     state.tokenDraft = "";
-    showToast(`已导入 ${path}`, "success");
+    showToast(`已导入 ${path}（token 仍留在该配置文件）`, "success");
     render();
   } catch (error: any) {
     showToast(error?.message || String(error), "error");

@@ -207,3 +207,18 @@ test("inferDashboardUrl defaults to port 7500", () => {
     "http://39.105.19.237:7500/static/#/",
   );
 });
+
+
+test("listFrpcCandidatePaths finds versioned frp directories", async () => {
+  const fs = await import("node:fs");
+  const os = await import("node:os");
+  const path = await import("node:path");
+  const { listFrpcCandidatePaths } = await import("../../lib/nat-traversal/infra/frpc-config-io.mjs");
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "frp-detect-"));
+  const dir = path.join(tmp, "frp_0.71.0_darwin_arm64");
+  fs.mkdirSync(dir, { recursive: true });
+  const cfg = path.join(dir, "frpc.toml");
+  fs.writeFileSync(cfg, 'serverAddr = "1.2.3.4"\nserverPort = 7000\n');
+  const found = listFrpcCandidatePaths({ homeDir: tmp, env: {}, whichBin: () => "" });
+  assert.ok(found.some((f) => f.endsWith("frp_0.71.0_darwin_arm64/frpc.toml")));
+});
