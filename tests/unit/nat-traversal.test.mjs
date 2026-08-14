@@ -11,6 +11,8 @@ import {
   createNatTraversalService,
   resolveNatTraversalPaths,
   NatTraversalError,
+  parseFrpcConfigText,
+  inferDashboardUrl,
 } from "../../lib/nat-traversal/index.mjs";
 import { createFrpcSupervisor } from "../../lib/nat-traversal/process/frpc-supervisor.mjs";
 
@@ -174,4 +176,34 @@ test("frpc supervisor start/stop with fake binary", async () => {
 
   const stopped = await supervisor.stop();
   assert.equal(stopped.status, "stopped");
+});
+
+
+test("parseFrpcConfigText reads toml proxies and token", () => {
+  const parsed = parseFrpcConfigText(`
+serverAddr = "39.105.19.237"
+serverPort = 7000
+
+[auth]
+token = "515325"
+
+[[proxies]]
+name = "ssh-pa-frp"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 22
+remotePort = 6007
+`);
+  assert.equal(parsed.serverAddr, "39.105.19.237");
+  assert.equal(parsed.token, "515325");
+  assert.equal(parsed.proxies.length, 1);
+  assert.equal(parsed.proxies[0].localPort, 22);
+  assert.equal(parsed.proxies[0].remotePort, 6007);
+});
+
+test("inferDashboardUrl defaults to port 7500", () => {
+  assert.equal(
+    inferDashboardUrl("39.105.19.237"),
+    "http://39.105.19.237:7500/static/#/",
+  );
 });

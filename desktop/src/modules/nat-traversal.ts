@@ -7,6 +7,7 @@ type NatConfig = {
   activeProvider?: string;
   frpc?: {
     binPath?: string;
+    configPath?: string;
     serverAddr?: string;
     serverPort?: number;
     logLevel?: string;
@@ -51,12 +52,27 @@ type NatStatus = {
   };
 };
 
+type DiscoverItem = {
+  path: string;
+  mtimeMs: number;
+  bytes: number;
+  parsed: {
+    serverAddr?: string;
+    serverPort?: number;
+    logLevel?: string;
+    proxyCount?: number;
+    hasToken?: boolean;
+  };
+};
+
 const state: {
   view: "catalog" | "frpc";
   loading: boolean;
   error: string;
   config: NatConfig | null;
   status: NatStatus | null;
+  discoveries: DiscoverItem[];
+  selectedDiscoverPath: string;
   tokenDraft: string;
   dashUserDraft: string;
   dashPassDraft: string;
@@ -74,6 +90,8 @@ const state: {
   error: "",
   config: null,
   status: null,
+  discoveries: [],
+  selectedDiscoverPath: "",
   tokenDraft: "",
   dashUserDraft: "",
   dashPassDraft: "",
@@ -93,14 +111,22 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new Error(data?.error?.message || `HTTP ${res.status}`);
-  }
+  if (!res.ok) throw new Error(data?.error?.message || `HTTP ${res.status}`);
   return data as T;
 }
 
 function rootEl(): HTMLElement | null {
   return document.getElementById("nat-traversal-root");
+}
+
+function sectionHeaderEl(): HTMLElement | null {
+  return document.querySelector("#section-nat-traversal > .section-header");
+}
+
+function setOuterHeaderVisible(visible: boolean): void {
+  const header = sectionHeaderEl();
+  if (!header) return;
+  header.style.display = visible ? "" : "none";
 }
 
 function formatPeerSsh(peer: { ssh?: { user?: string; host?: string; port?: number } }): string {
@@ -120,9 +146,22 @@ function statusMeta(status?: string): { text: string; badge: string } {
   return { text: "已停止", badge: "badge" };
 }
 
+function renderToggle(id: string, checked: boolean, label: string, hint = ""): string {
+  return `
+    <label class="nt-toggle" for="${id}">
+      <span class="nt-toggle-copy">
+        <span class="nt-toggle-label">${escapeHtml(label)}</span>
+        ${hint ? `<span class="nt-toggle-hint">${escapeHtml(hint)}</span>` : ""}
+      </span>
+      <input id="${id}" type="checkbox" class="nt-toggle-input" ${checked ? "checked" : ""} />
+      <span class="nt-toggle-track" aria-hidden="true"><span class="nt-toggle-thumb"></span></span>
+    </label>
+  `;
+}
+
 function renderDashboardEmbed(cfg: NatConfig, st: NatStatus): string {
   if (!cfg.frpsDashboard?.enabled) {
-    return `<p class="nt-help">Dashboard 展示已关闭。</p>`;
+    return `<p class="nt-help">Dashboard 展示已关闭。打开上方开关后可在此预览。</p>`;
   }
   if (!cfg.secrets?.dashboardAuthConfigured) {
     return `<p class="nt-help">请先填写并保存 Dashboard 用户名/密码，再嵌入预览。也可先用按钮在新标签打开。</p>`;
@@ -147,7 +186,6 @@ function renderCatalog(): string {
   return `
     <div class="nt-page">
       ${state.error ? `<div class="nt-alert">${escapeHtml(state.error)} <button class="btn" onclick="window.__ntReload()">重试</button></div>` : ""}
-
       <div class="endpoints-grid">
         <div class="node-card" role="button" tabindex="0"
              onclick="window.__ntOpenProvider('frpc')"
@@ -177,10 +215,58 @@ function renderCatalog(): string {
             </div>
           </div>
           <div class="node-card-footer">
-            <span>通过 frpc 连接远端 frps，管理本地端口映射</span>
+            <span>通过 frpc 连接远端 frps，管理本机端口映射</span>
             <span class="node-card-cta">进入管理 →</span>
           </div>
         </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderDiscoverBox(): string {
+  const items = state.discoveries || [];
+  if (!items.length) {
+    return `
+      <div class="nt-discover">
+        <div class="nt-block-head">
+          <h3>本机 frpc 配置检测</h3>
+          <button class="btn" onclick="window.__ntDiscover()">重新检测</button>
+        </div>
+        <p class="nt-help">未在常见目录找到 frpc.toml / frpc.ini。你也可以手动填写下方表单，或把配置放到 ~/frp/frpc.toml 后再检测。</p>
+        <p class="nt-help">检测范围：~/frp、~/.frp、~/.config/frp、Homebrew etc、以及 frpc 二进制同目录。</p>
+      </div>
+    `;
+  }
+
+  const options = items
+    .map((item) => {
+      const selected = (state.selectedDiscoverPath || items[0].path) === item.path ? "selected" : "";
+      const label = `${item.path}  ·  ${item.parsed.serverAddr || "无 serverAddr"}  ·  ${item.parsed.proxyCount || 0} proxies`;
+      return `<option value="${escapeHtml(item.path)}" ${selected}>${escapeHtml(label)}</option>`;
+    })
+    .join("");
+
+  const active = items.find((x) => x.path === (state.selectedDiscoverPath || items[0].path)) || items[0];
+
+  return `
+    <div class="nt-discover">
+      <div class="nt-block-head">
+        <h3>本机 frpc 配置检测</h3>
+        <div class="nt-inline-actions">
+          <button class="btn" onclick="window.__ntDiscover()">重新检测</button>
+          <button class="btn btn-primary" onclick="window.__ntImportSelected()">导入到表单</button>
+        </div>
+      </div>
+      <p class="nt-help">检测到 ${items.length} 个候选配置。导入会填充 server/proxies，并尽量推断 Dashboard URL（默认端口 7500）。token 会写入 secrets。</p>
+      <label class="form-group" style="display:grid;gap:6px;">
+        <span style="font-size:12px;color:var(--text-secondary)">候选配置文件</span>
+        <select id="nt-discover-path" onchange="window.__ntSelectDiscover(this.value)">${options}</select>
+      </label>
+      <div class="node-card-row" style="margin-top:10px;gap:8px;flex-wrap:wrap;">
+        <span class="badge">server ${escapeHtml(active.parsed.serverAddr || "-")}:${escapeHtml(String(active.parsed.serverPort || "-"))}</span>
+        <span class="badge">${escapeHtml(String(active.parsed.proxyCount || 0))} proxies</span>
+        <span class="badge">token ${active.parsed.hasToken ? "有" : "无"}</span>
       </div>
     </div>
   `;
@@ -193,13 +279,14 @@ function renderFrpcDetail(): string {
   const proxies = cfg.frpc?.proxies || [];
   const peers = cfg.peers || [];
   const logs = st.provider?.recentLogs || [];
+  const configPath = cfg.frpc?.configPath || "";
 
   return `
     <div class="nt-page">
       <div class="section-header nt-subhead">
         <div>
           <h2>frp 管理</h2>
-          <p>配置 frpc 连接、本地映射、对端 Peer，并查看 frps Dashboard。</p>
+          <p>从本机配置导入或手动编辑，管理 frpc 连接、端口映射与 Dashboard。</p>
         </div>
         <div class="section-header-actions">
           <span class="${status.badge}">${escapeHtml(status.text)}</span>
@@ -221,22 +308,25 @@ function renderFrpcDetail(): string {
             <button class="btn" onclick="window.__ntRestart()">重启</button>
           </div>
         </div>
-        <label class="nt-check-row">
-          <input type="checkbox" id="nt-enabled" ${cfg.enabled ? "checked" : ""} />
-          <span>启用 NAT Traversal</span>
-        </label>
-        <div class="node-card-row" style="margin-top:10px; gap:8px; flex-wrap:wrap;">
+        ${renderToggle("nt-enabled", Boolean(cfg.enabled), "启用 NAT Traversal / frpc", "关闭后不会自动拉起 frpc 进程")}
+        <div class="node-card-row" style="margin-top:12px;gap:8px;flex-wrap:wrap;">
           <span class="badge">PID ${escapeHtml(String(st.provider?.pid || 0))}</span>
           <span class="badge">Token ${cfg.secrets?.frpcTokenConfigured ? "已配置" : "未配置"}</span>
           <span class="badge">Dashboard Auth ${cfg.secrets?.dashboardAuthConfigured ? "已配置" : "未配置"}</span>
           <span class="badge mono">${escapeHtml(st.provider?.binPath || cfg.frpc?.binPath || "自动发现 frpc")}</span>
+          ${configPath ? `<span class="badge mono" title="${escapeHtml(configPath)}">配置源 ${escapeHtml(configPath)}</span>` : ""}
         </div>
       </div>
 
       <div class="usage-guide nt-block">
+        ${renderDiscoverBox()}
+      </div>
+
+      <div class="usage-guide nt-block">
         <h3>frpc 连接</h3>
+        <p class="nt-help">优先从上方检测结果导入。若本机没有配置文件，再手动填写 serverAddr / token。</p>
         <div class="nt-form-grid">
-          <label class="form-group"><span>serverAddr</span><input id="nt-server-addr" value="${escapeHtml(cfg.frpc?.serverAddr || "")}" /></label>
+          <label class="form-group"><span>serverAddr</span><input id="nt-server-addr" value="${escapeHtml(cfg.frpc?.serverAddr || "")}" oninput="window.__ntMaybeInferDashboard()" /></label>
           <label class="form-group"><span>serverPort</span><input id="nt-server-port" type="number" value="${escapeHtml(String(cfg.frpc?.serverPort ?? 7000))}" /></label>
           <label class="form-group"><span>binPath</span><input id="nt-bin-path" placeholder="空则自动发现" value="${escapeHtml(cfg.frpc?.binPath || "")}" /></label>
           <label class="form-group"><span>logLevel</span><input id="nt-log-level" value="${escapeHtml(cfg.frpc?.logLevel || "info")}" /></label>
@@ -249,6 +339,10 @@ function renderFrpcDetail(): string {
           <h3>本地映射 Proxies</h3>
           <button class="btn" onclick="window.__ntAddProxy()">新增映射</button>
         </div>
+        <p class="nt-help">
+          Proxies 定义“本机端口如何被 frps 暴露到公网/对端”。例如把本机 22 映射到远端 6007，对端就能通过 frps:6007 连到你的 SSH。
+          导入本机 frpc 配置后会自动带入已有映射。
+        </p>
         <div class="nt-table-wrap">
           <table class="nt-table">
             <thead>
@@ -269,7 +363,7 @@ function renderFrpcDetail(): string {
                         </tr>`,
                       )
                       .join("")
-                  : `<tr><td colspan="6"><p class="nt-help">还没有映射。先加一条把本机网关端口暴露出去。</p></td></tr>`
+                  : `<tr><td colspan="6"><p class="nt-help">还没有映射。可导入本机配置，或手动新增。</p></td></tr>`
               }
             </tbody>
           </table>
@@ -278,21 +372,22 @@ function renderFrpcDetail(): string {
 
       <div class="usage-guide nt-block">
         <h3>frps Dashboard</h3>
-        <label class="nt-check-row">
-          <input type="checkbox" id="nt-dash-enabled" ${cfg.frpsDashboard?.enabled ? "checked" : ""} />
-          <span>在管理台展示 Dashboard</span>
-        </label>
+        ${renderToggle("nt-dash-enabled", Boolean(cfg.frpsDashboard?.enabled), "在管理台展示 Dashboard", "关闭后仅保留“新标签打开”，不嵌入预览")}
         <div class="nt-form-grid" style="margin-top:12px;">
-          <label class="form-group nt-col-2"><span>Dashboard URL</span><input id="nt-dash-url" value="${escapeHtml(cfg.frpsDashboard?.url || "")}" /></label>
+          <label class="form-group nt-col-2">
+            <span>Dashboard URL（默认可由 serverAddr + 7500 推断）</span>
+            <input id="nt-dash-url" value="${escapeHtml(cfg.frpsDashboard?.url || "")}" placeholder="http://x.x.x.x:7500/static/#/" />
+          </label>
           <label class="form-group"><span>用户名（secrets）</span><input id="nt-dash-user" value="${escapeHtml(state.dashUserDraft)}" placeholder="${cfg.secrets?.dashboardAuthConfigured ? "已配置，留空保留" : ""}" /></label>
           <label class="form-group"><span>密码（secrets）</span><input id="nt-dash-pass" type="password" value="${escapeHtml(state.dashPassDraft)}" placeholder="${cfg.secrets?.dashboardAuthConfigured ? "已配置，留空保留" : ""}" /></label>
         </div>
-        <div class="node-card-row" style="margin-top:10px; gap:8px; flex-wrap:wrap;">
+        <div class="node-card-row" style="margin-top:10px;gap:8px;flex-wrap:wrap;">
           <span class="badge">可达 ${st.dashboard?.reachable ? "yes" : "no"}</span>
           <span class="badge">HTTP ${escapeHtml(String(st.dashboard?.statusCode || "-"))}</span>
           <span class="badge">${escapeHtml(st.dashboard?.message || "无附加信息")}</span>
         </div>
         <div class="nt-inline-actions" style="margin-top:12px;">
+          <button class="btn" onclick="window.__ntInferDashboard()">按 serverAddr 推断 URL</button>
           <a class="btn" href="/v1/nat-traversal/frps-dashboard/" target="_blank" rel="noreferrer">经网关反代打开</a>
           ${cfg.frpsDashboard?.url ? `<a class="btn" href="${escapeHtml(cfg.frpsDashboard.url)}" target="_blank" rel="noreferrer">打开原始地址</a>` : ""}
         </div>
@@ -301,6 +396,10 @@ function renderFrpcDetail(): string {
 
       <div class="usage-guide nt-block">
         <h3>对端 Peers</h3>
+        <p class="nt-help">
+          Peers 记录“你要连的另一台机器”。例如家里电脑作为 Host 时，公司电脑在这里保存它的 SSH 地址或 gatewayApi。
+          第一期主要用于连通测试；后续 Remote Session 会从这里选择对端。
+        </p>
         <div class="nt-table-wrap">
           <table class="nt-table">
             <thead><tr><th>id</th><th>名称</th><th>ssh</th><th>gatewayApi</th><th></th></tr></thead>
@@ -321,7 +420,7 @@ function renderFrpcDetail(): string {
                         </tr>`,
                       )
                       .join("")
-                  : `<tr><td colspan="5"><p class="nt-help">暂无对端。可手动添加一台机器的 SSH / gatewayApi。</p></td></tr>`
+                  : `<tr><td colspan="5"><p class="nt-help">暂无对端。Remote Session 前可以先不填。</p></td></tr>`
               }
             </tbody>
           </table>
@@ -350,6 +449,7 @@ function renderFrpcDetail(): string {
 function render(): void {
   const el = rootEl();
   if (!el) return;
+  setOuterHeaderVisible(state.view === "catalog");
   if (state.loading && !state.config) {
     el.innerHTML = `<div class="nt-page"><p class="nt-help">正在加载…</p></div>`;
     return;
@@ -400,12 +500,34 @@ function collectConfigFromDom(): { config: NatConfig; secrets: any } {
     config: {
       enabled: Boolean(enabled),
       activeProvider: "frpc",
-      frpc: { binPath, serverAddr, serverPort, logLevel, proxies },
-      frpsDashboard: { enabled: Boolean(dashEnabled), url: dashUrl },
+      frpc: {
+        binPath,
+        configPath: state.config?.frpc?.configPath || "",
+        serverAddr,
+        serverPort,
+        logLevel,
+        proxies,
+      },
+      frpsDashboard: {
+        enabled: Boolean(dashEnabled),
+        url: dashUrl,
+      },
       peers: state.config?.peers || [],
     },
     secrets,
   };
+}
+
+async function discover(autoSelect = true): Promise<void> {
+  try {
+    const data = await api<{ candidates: DiscoverItem[] }>("/v1/nat-traversal/discover-frpc");
+    state.discoveries = data.candidates || [];
+    if (autoSelect && state.discoveries.length && !state.selectedDiscoverPath) {
+      state.selectedDiscoverPath = state.discoveries[0].path;
+    }
+  } catch (error: any) {
+    state.error = error?.message || String(error);
+  }
 }
 
 async function reload(): Promise<void> {
@@ -419,6 +541,9 @@ async function reload(): Promise<void> {
     ]);
     state.config = config;
     state.status = status;
+    if (state.view === "frpc") {
+      await discover(true);
+    }
   } catch (error: any) {
     state.error = error?.message || String(error);
   } finally {
@@ -493,6 +618,53 @@ function removeProxy(index: number): void {
   render();
 }
 
+function inferDashboardFromServerAddr(): void {
+  const serverAddr = (document.getElementById("nt-server-addr") as HTMLInputElement | null)?.value?.trim()
+    || state.config?.frpc?.serverAddr
+    || "";
+  if (!serverAddr) {
+    showToast("请先填写 serverAddr", "error");
+    return;
+  }
+  let host = serverAddr;
+  try {
+    if (serverAddr.includes("://")) host = new URL(serverAddr).hostname;
+  } catch {
+    // keep raw
+  }
+  const url = `http://${host}:7500/static/#/`;
+  const input = document.getElementById("nt-dash-url") as HTMLInputElement | null;
+  if (input) input.value = url;
+  if (state.config) {
+    state.config.frpsDashboard = {
+      ...(state.config.frpsDashboard || {}),
+      url,
+    };
+  }
+  showToast("已按 serverAddr + 7500 推断 Dashboard URL", "success");
+}
+
+async function importSelected(): Promise<void> {
+  const path = state.selectedDiscoverPath || state.discoveries[0]?.path;
+  if (!path) {
+    showToast("没有可导入的配置文件", "error");
+    return;
+  }
+  try {
+    const result = await api<any>("/v1/nat-traversal/import-frpc", {
+      method: "POST",
+      body: JSON.stringify({ path, setEnabled: true }),
+    });
+    state.config = result.config;
+    state.status = await api<NatStatus>("/v1/nat-traversal/status");
+    state.tokenDraft = "";
+    showToast(`已导入 ${path}`, "success");
+    render();
+  } catch (error: any) {
+    showToast(error?.message || String(error), "error");
+  }
+}
+
 async function upsertPeer(): Promise<void> {
   const id = (document.getElementById("nt-peer-id") as HTMLInputElement | null)?.value?.trim();
   const displayName = (document.getElementById("nt-peer-name") as HTMLInputElement | null)?.value?.trim();
@@ -559,13 +731,51 @@ async function testPeer(id: string): Promise<void> {
 (window as any).__ntUpsertPeer = () => { void upsertPeer(); };
 (window as any).__ntDeletePeer = (id: string) => { void deletePeer(id); };
 (window as any).__ntTestPeer = (id: string) => { void testPeer(id); };
-(window as any).__ntOpenProvider = (id: string) => {
+(window as any).__ntDiscover = async () => {
+  await discover(true);
+  render();
+  showToast(state.discoveries.length ? `检测到 ${state.discoveries.length} 个配置` : "未检测到配置", "info");
+};
+(window as any).__ntSelectDiscover = (path: string) => {
+  state.selectedDiscoverPath = path;
+};
+(window as any).__ntImportSelected = () => { void importSelected(); };
+(window as any).__ntInferDashboard = () => inferDashboardFromServerAddr();
+(window as any).__ntMaybeInferDashboard = () => {
+  const urlInput = document.getElementById("nt-dash-url") as HTMLInputElement | null;
+  if (!urlInput) return;
+  if (urlInput.value.trim()) return;
+  // soft auto-fill only when empty
+  const serverAddr = (document.getElementById("nt-server-addr") as HTMLInputElement | null)?.value?.trim();
+  if (!serverAddr) return;
+  let host = serverAddr;
+  try {
+    if (serverAddr.includes("://")) host = new URL(serverAddr).hostname;
+  } catch {
+    // keep
+  }
+  urlInput.value = `http://${host}:7500/static/#/`;
+};
+(window as any).__ntOpenProvider = async (id: string) => {
   if (id !== "frpc") {
     showToast("该穿透方式尚未接入", "info");
     return;
   }
   state.view = "frpc";
   render();
+  await discover(true);
+  // Auto import best candidate once if form still empty.
+  const cfg = state.config;
+  const empty =
+    !cfg?.frpc?.serverAddr &&
+    !(cfg?.frpc?.proxies && cfg.frpc.proxies.length) &&
+    state.discoveries.length > 0;
+  if (empty) {
+    state.selectedDiscoverPath = state.discoveries[0].path;
+    await importSelected();
+  } else {
+    render();
+  }
 };
 (window as any).__ntBackCatalog = () => {
   state.view = "catalog";
@@ -575,6 +785,10 @@ async function testPeer(id: string): Promise<void> {
 registerTab("nat-traversal", {
   onEnter: () => {
     state.view = "catalog";
+    setOuterHeaderVisible(true);
     void reload();
+  },
+  onLeave: () => {
+    setOuterHeaderVisible(true);
   },
 });

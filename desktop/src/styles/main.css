@@ -1,19 +1,10 @@
 @import './panel.css';
 
 
-/* NAT Traversal — reuse Codex node-card / usage-guide language */
-.nt-page {
-  display: grid;
-  gap: 16px;
-}
-.nt-subhead {
-  margin-top: 4px;
-}
-.nt-block h3 {
-  margin: 0 0 10px;
-  font-size: 14px;
-  font-weight: 600;
-}
+/* NAT Traversal — Codex-aligned + toggle switch */
+.nt-page { display: grid; gap: 16px; }
+.nt-subhead { margin-top: 4px; }
+.nt-block h3 { margin: 0 0 10px; font-size: 14px; font-weight: 600; }
 .nt-block-head {
   display: flex;
   align-items: center;
@@ -21,21 +12,12 @@
   gap: 12px;
   margin-bottom: 10px;
 }
-.nt-block-head h3 {
-  margin: 0;
-}
+.nt-block-head h3 { margin: 0; }
 .nt-inline-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
-}
-.nt-check-row {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--text-primary);
 }
 .nt-form-grid {
   display: grid;
@@ -51,7 +33,9 @@
   font-size: 12px;
   color: var(--text-secondary);
 }
-.nt-form-grid input {
+.nt-form-grid input,
+.nt-form-grid select,
+.nt-discover select {
   width: 100%;
   min-height: 36px;
   padding: 8px 10px;
@@ -61,13 +45,13 @@
   color: var(--text-primary);
   font: inherit;
 }
-.nt-form-grid input:focus {
+.nt-form-grid input:focus,
+.nt-form-grid select:focus,
+.nt-discover select:focus {
   outline: none;
   border-color: var(--text-secondary);
 }
-.nt-col-2 {
-  grid-column: 1 / -1;
-}
+.nt-col-2 { grid-column: 1 / -1; }
 .nt-table-wrap {
   overflow: auto;
   border: 1px solid var(--border-color);
@@ -91,9 +75,7 @@
   font-weight: 600;
   background: var(--input-bg);
 }
-.nt-table tr:last-child td {
-  border-bottom: 0;
-}
+.nt-table tr:last-child td { border-bottom: 0; }
 .nt-table input {
   width: 100%;
   min-width: 72px;
@@ -106,14 +88,12 @@
   font: inherit;
 }
 .nt-help {
-  margin: 0;
+  margin: 0 0 10px;
   color: var(--text-secondary);
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.55;
 }
-.nt-help-warn {
-  color: #b76b00;
-}
+.nt-help-warn { color: #b76b00; }
 .nt-alert {
   display: flex;
   align-items: center;
@@ -134,11 +114,7 @@
   height: 520px;
   background: #fff;
 }
-.nt-frame {
-  width: 100%;
-  height: 100%;
-  border: 0;
-}
+.nt-frame { width: 100%; height: 100%; border: 0; }
 .nt-log {
   margin: 0;
   max-height: 260px;
@@ -151,16 +127,71 @@
   line-height: 1.45;
   color: var(--text-primary);
 }
+
+/* Sliding toggle */
+.nt-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  cursor: pointer;
+  user-select: none;
+}
+.nt-toggle-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.nt-toggle-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.nt-toggle-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.nt-toggle-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.nt-toggle-track {
+  position: relative;
+  width: 44px;
+  height: 26px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--border-color) 70%, #999 30%);
+  border: 1px solid var(--border-color);
+  flex: 0 0 auto;
+  transition: background .15s ease, border-color .15s ease;
+}
+.nt-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0,0,0,.18);
+  transition: transform .15s ease;
+}
+.nt-toggle-input:checked + .nt-toggle-track {
+  background: var(--text-primary);
+  border-color: transparent;
+}
+.nt-toggle-input:checked + .nt-toggle-track .nt-toggle-thumb {
+  transform: translateX(18px);
+}
+.nt-toggle-input:focus-visible + .nt-toggle-track {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
+}
+
 @media (max-width: 900px) {
-  .nt-form-grid {
-    grid-template-columns: 1fr;
-  }
-  .nt-col-2 {
-    grid-column: auto;
-  }
+  .nt-form-grid { grid-template-columns: 1fr; }
+  .nt-col-2 { grid-column: auto; }
   .nt-block-head,
-  .nt-subhead {
-    flex-direction: column;
-    align-items: stretch;
-  }
+  .nt-subhead { flex-direction: column; align-items: stretch; }
 }
