@@ -69,7 +69,7 @@
 | 产品终局 | Antigravity 正式产品能力，不是一次性旁路脚本 |
 | 技术路线 | Gateway 控制面 + 挂接 B 本机已运行 Antigravity 后端 |
 | 模块拆分 | Reachability（系统扩展）与 Remote Session（业务能力）分离 |
-| 穿透能力 | 与 Dream Skin 同级的系统扩展；frpc 为第一 provider |
+| 穿透能力 | 系统扩展导航名「内网穿透 (Reachability)」；frpc 为第一 provider；面板内嵌 frps Dashboard |
 | 网络 | 双 NAT + 阿里云 frps；第一期手动配置 SSH/frpc 对端 |
 | 对等模型 | 双向对等，第一期先打通一对机器 |
 | 执行位置 | 全在 Host（被控端）：工作区、终端、文件、审批引擎、额度 |
@@ -221,6 +221,39 @@
 - HTTP/API + 面板入口
 - 可单独启用/停用
 
+
+### 4.1.1 命名与导航风格（对齐现有系统扩展）
+
+现有「系统扩展」导航文案风格：
+
+- `主题皮肤 (Dream Skin)`
+- `用量统计 (Token Analytics)`
+- `会话同步 (Session Sync)`
+
+本能力统一命名：
+
+| 用途 | 名称 |
+| --- | --- |
+| 侧边导航 / 面板标题 | **内网穿透 (Reachability)** |
+| 配置键 | `reachability` |
+| 代码目录 | `lib/reachability/` |
+| 前端模块 | `desktop/src/modules/reachability.ts` |
+| API 前缀 | `/v1/reachability` |
+| CLI | `shrimp reachability ...` |
+
+说明：
+
+- 对外产品名用能力名 **Reachability**，不叫 `frp-extension`
+- frpc / frps 是 provider 与运维对象，作为页内子区块出现
+- 中文主标题用「内网穿透」，与 Dream Skin / Session Sync 的「中文 (English)」格式一致
+
+页内信息架构建议：
+
+1. **概览**：启用开关、当前 provider、总状态
+2. **frpc 客户端**：连接参数、proxy、启停、日志
+3. **frps 控制台**：嵌入/代理展示远程 frps Dashboard
+4. **对端 Peers**：手动 SSH/服务地址、连通测试
+
 ### 4.2 Provider 接口（稳定契约）
 
 Remote Session 只依赖这些能力，不直接依赖 frpc：
@@ -348,21 +381,93 @@ DELETE /v1/reachability/peers/:id
 
 #### 面板能力（第一期）
 
+导航入口：`系统扩展 → 内网穿透 (Reachability)`
+
 - 启用开关
-- frps 连接参数编辑
+- frpc 连接参数编辑（serverAddr/serverPort/proxies）
 - proxy 列表增删改
 - 一键写配置
 - 启停按钮 + 状态徽章
 - 最近日志/错误
 - peer 手动录入（SSH 地址等）
 - “测试连通”
+- **frps Dashboard 展示区**（见下节）
+
+#### frps Dashboard 嵌入（已确认需求）
+
+用户已在远端部署 frps Dashboard，例如：
+
+`http://39.105.19.237:7500/static/#/`
+
+该页通常需要浏览器弹窗 Basic Auth（用户名/密码）。管理台需要把这个页面也展示出来，方便查看服务端状态，而不是只让用户另开浏览器。
+
+设计要求：
+
+1. **配置项**
+   - `dashboardUrl`：如 `http://39.105.19.237:7500/static/#/`
+   - `dashboardUser` / `dashboardPassword`：进入 secrets，不进公开配置
+2. **展示方式（优先顺序）**
+   - **A. 网关反代嵌入（推荐）**  
+     面板 iframe 指向本机 Gateway 代理地址，例如 `/v1/reachability/frps-dashboard/`  
+     由 Gateway 注入 Basic Auth 访问远端 Dashboard，避免浏览器弹窗/跨域/iframe 鉴权问题
+   - **B. 直接 iframe 原地址**  
+     仅当 Dashboard 无鉴权或浏览器可接受时降级使用
+   - **C. 外部打开**  
+     始终提供“在浏览器打开”兜底按钮
+3. **安全**
+   - Dashboard 密码只存 secrets
+   - 反代默认仅本机 Gateway 可访问（跟随现有面板本地访问模型）
+   - 不在前端 localStorage 明文缓存密码
+   - UI 可显示“已配置鉴权 / 未配置”，不回显完整密码
+4. **状态**
+   - 可探测 Dashboard 是否可达（经反代 HEAD/GET）
+   - 失败时展示明确错误：DNS/超时/401/502，而不是空白 iframe
+
+补充 API：
+
+```text
+GET  /v1/reachability/frps-dashboard/status
+ALL  /v1/reachability/frps-dashboard/*   # reverse proxy to configured dashboard
+```
+
+公开配置示例补充：
+
+```json
+{
+  "reachability": {
+    "frpc": {
+      "serverAddr": "39.105.19.237",
+      "serverPort": 7000
+    },
+    "frpsDashboard": {
+      "enabled": true,
+      "url": "http://39.105.19.237:7500/static/#/"
+    }
+  }
+}
+```
+
+secrets 示例补充：
+
+```json
+{
+  "reachability": {
+    "frpc": { "token": "..." },
+    "frpsDashboard": {
+      "username": "...",
+      "password": "..."
+    }
+  }
+}
+```
 
 #### 第一期不做
 
-- 完整 frps 服务端管理
+- 在管理台里完整“取代” frps 服务端运维（扩容、证书、多实例编排）
 - 多 provider 可视化编排器
 - 自动端口分配市场
 - 跨用户分享 tunnel 配置
+- 把 frps Dashboard 账号做成多租户权限系统
 
 ### 4.4 SSH 信任如何用
 
@@ -622,18 +727,21 @@ shrimp remote open --peer home-mac --project <id>
 交付：
 
 1. `lib/reachability` 模块骨架
-2. frpc 配置读写（公开配置 + secrets）
-3. 启停/重启/状态
-4. HTTP API
-5. 网关面板基础管理台
-6. peer 手动配置
-7. `test-link`
-8. 单元测试与基础集成测试
+2. 导航命名：`内网穿透 (Reachability)`
+3. frpc 配置读写（公开配置 + secrets）
+4. 启停/重启/状态
+5. HTTP API
+6. 网关面板基础管理台
+7. frps Dashboard 配置 + 反代嵌入展示
+8. peer 手动配置
+9. `test-link`
+10. 单元测试与基础集成测试
 
 验收：
 
 - 能在面板配置 frpc 并成功启动
 - 能看到 running/error 状态
+- 能配置 frps Dashboard 地址与账号，并在管理台内查看页面
 - 能对手动 peer 做连通测试
 - 不启用时不影响现有网关
 
@@ -728,8 +836,10 @@ shrimp remote open --peer home-mac --project <id>
 3. approval 事件是否已有可订阅接口？
 4. A 侧第一期具体 UI 降级选哪条？
 5. frpc 二进制是复用系统安装，还是网关侧可选管理？
+6. frps Dashboard 反代是否需要支持 HTTPS 自签证书与自定义 Header？
+7. Dashboard 路径是固定 `/static/#/`，还是允许用户填任意 frps 版本路径？
 
-这些问题不阻塞 Phase 1（frpc 管理台），但阻塞 Phase 2 细节实现。
+其中 1-4 不阻塞 Phase 1；5-7 在 Phase 1 实现时按“可配置 + 合理默认”处理即可。
 
 ---
 
