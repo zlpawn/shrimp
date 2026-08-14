@@ -39,6 +39,7 @@ type NatStatus = {
     pid?: number;
     lastError?: string;
     recentLogs?: string[];
+    binPath?: string;
   };
   dashboard?: {
     enabled?: boolean;
@@ -50,7 +51,52 @@ type NatStatus = {
   };
 };
 
+type ProviderCard = {
+  id: string;
+  name: string;
+  subtitle: string;
+  blurb: string;
+  status: "available" | "planned";
+  tags: string[];
+};
+
+const PROVIDER_CARDS: ProviderCard[] = [
+  {
+    id: "frpc",
+    name: "frp",
+    subtitle: "frpc / frps",
+    blurb: "通过 frpc 连接远端 frps，管理本地映射、进程启停，并在网关内查看 frps Dashboard。",
+    status: "available",
+    tags: ["TCP 映射", "Dashboard", "启停管理"],
+  },
+  {
+    id: "ssh",
+    name: "SSH Tunnel",
+    subtitle: "OpenSSH",
+    blurb: "复用现有 SSH 信任建立隧道。下一阶段接入，作为 frp 之外的备用通道。",
+    status: "planned",
+    tags: ["密钥鉴权", "点对点", "规划中"],
+  },
+  {
+    id: "tailscale",
+    name: "Tailscale",
+    subtitle: "WireGuard mesh",
+    blurb: "组网式可达性，适合多机稳定互联。预留 provider 扩展位，不阻塞当前 frp 流程。",
+    status: "planned",
+    tags: ["组网", "多机", "规划中"],
+  },
+  {
+    id: "cloudflare",
+    name: "Cloudflare Tunnel",
+    subtitle: "cloudflared",
+    blurb: "面向公网入口与零信任访问场景。后续可按同一 provider 契约接入。",
+    status: "planned",
+    tags: ["公网入口", "零信任", "规划中"],
+  },
+];
+
 const state: {
+  view: "catalog" | "frpc";
   loading: boolean;
   error: string;
   config: NatConfig | null;
@@ -67,6 +113,7 @@ const state: {
     gatewayApi: string;
   };
 } = {
+  view: "catalog",
   loading: false,
   error: "",
   config: null,
@@ -110,185 +157,293 @@ function formatPeerSsh(peer: { ssh?: { user?: string; host?: string; port?: numb
   return port ? `${auth}:${port}` : auth;
 }
 
+function statusLabel(status?: string): { text: string; tone: string } {
+  const s = status || "stopped";
+  if (s === "running") return { text: "运行中", tone: "ok" };
+  if (s === "starting") return { text: "启动中", tone: "warn" };
+  if (s === "error") return { text: "异常", tone: "err" };
+  return { text: "已停止", tone: "muted" };
+}
 
 function renderDashboardEmbed(cfg: NatConfig, st: NatStatus): string {
   if (!cfg.frpsDashboard?.enabled) {
-    return `<div class="nt-empty">启用后将在此嵌入 frps Dashboard</div>`;
+    return `<div class="nt-note">Dashboard 展示已关闭。开启后可在此预览 frps 控制台。</div>`;
   }
-  // Avoid mounting an unauthenticated iframe that can pop browser Basic Auth
-  // dialogs and freeze the whole management panel.
   if (!cfg.secrets?.dashboardAuthConfigured) {
-    return `<div class="nt-empty">请先填写并保存 Dashboard 用户名/密码，再嵌入预览。也可先用上方按钮在新标签打开。</div>`;
+    return `<div class="nt-note">请先填写并保存 Dashboard 用户名/密码，再嵌入预览。也可先用右侧按钮在新标签打开。</div>`;
   }
   if (st.dashboard && st.dashboard.reachable === false) {
-    return `<div class="nt-empty">Dashboard 当前不可达：${escapeHtml(st.dashboard.message || "unknown error")}</div>`;
+    return `<div class="nt-note nt-note-warn">Dashboard 当前不可达：${escapeHtml(st.dashboard.message || "unknown error")}</div>`;
   }
   if (st.dashboard?.statusCode === 401) {
-    return `<div class="nt-empty">Dashboard 鉴权失败（401）。请检查用户名/密码后重新保存。</div>`;
+    return `<div class="nt-note nt-note-warn">Dashboard 鉴权失败（401）。请检查用户名/密码后重新保存。</div>`;
   }
   return `<div class="nt-frame-wrap"><iframe class="nt-frame" src="/v1/nat-traversal/frps-dashboard/" title="frps dashboard"></iframe></div>`;
 }
 
-function statusBadge(status?: string): string {
-  const s = status || "stopped";
-  const cls =
-    s === "running" ? "ok" : s === "error" ? "err" : s === "starting" ? "warn" : "muted";
-  return `<span class="nt-badge nt-${cls}">${escapeHtml(s)}</span>`;
+function renderCatalog(): string {
+  const st = statusLabel(state.status?.provider?.status);
+  const enabled = Boolean(state.config?.enabled);
+  const server = state.config?.frpc?.serverAddr || "未配置 serverAddr";
+  const proxyCount = state.config?.frpc?.proxies?.length || 0;
+  const dashReady = Boolean(state.config?.secrets?.dashboardAuthConfigured);
+
+  return `
+    <div class="nt-shell">
+      <header class="nt-hero">
+        <div>
+          <div class="nt-kicker">系统扩展</div>
+          <h3 class="nt-title">选择穿透方式</h3>
+          <p class="nt-desc">先选软件，再进入对应管理台。当前已接入 frp；其余 provider 按同一契约扩展。</p>
+        </div>
+        <div class="nt-hero-stats">
+          <div class="nt-stat">
+            <span class="nt-stat-label">总开关</span>
+            <strong>${enabled ? "已启用" : "未启用"}</strong>
+          </div>
+          <div class="nt-stat">
+            <span class="nt-stat-label">frp 状态</span>
+            <strong class="nt-tone-${st.tone}">${escapeHtml(st.text)}</strong>
+          </div>
+          <div class="nt-stat">
+            <span class="nt-stat-label">映射数</span>
+            <strong>${proxyCount}</strong>
+          </div>
+        </div>
+      </header>
+
+      ${state.error ? `<div class="nt-banner nt-banner-err">${escapeHtml(state.error)}</div>` : ""}
+
+      <div class="nt-catalog">
+        ${PROVIDER_CARDS.map((card) => {
+          const isFrp = card.id === "frpc";
+          const available = card.status === "available";
+          const meta = isFrp
+            ? `${escapeHtml(server)} · Dashboard ${dashReady ? "已鉴权" : "待配置"}`
+            : "统一 provider 接口预留位";
+          return `
+            <article class="nt-provider-card ${available ? "is-available" : "is-planned"}">
+              <div class="nt-provider-top">
+                <div class="nt-provider-mark" aria-hidden="true">${escapeHtml(card.name.slice(0, 1))}</div>
+                <div class="nt-provider-heading">
+                  <div class="nt-provider-name-row">
+                    <h4>${escapeHtml(card.name)}</h4>
+                    <span class="nt-chip ${available ? "nt-chip-ok" : "nt-chip-muted"}">${available ? "可用" : "规划中"}</span>
+                  </div>
+                  <div class="nt-provider-sub">${escapeHtml(card.subtitle)}</div>
+                </div>
+              </div>
+              <p class="nt-provider-blurb">${escapeHtml(card.blurb)}</p>
+              <div class="nt-provider-tags">
+                ${card.tags.map((tag) => `<span class="nt-tag">${escapeHtml(tag)}</span>`).join("")}
+              </div>
+              <div class="nt-provider-foot">
+                <span class="nt-provider-meta">${meta}</span>
+                ${
+                  available
+                    ? `<button class="btn btn-primary" onclick="window.__ntOpenProvider('frpc')">进入管理</button>`
+                    : `<button class="btn" disabled title="后续版本接入">即将支持</button>`
+                }
+              </div>
+            </article>
+          `;
+        }).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderFrpcDetail(): string {
+  const cfg = state.config || {};
+  const st = state.status || {};
+  const status = statusLabel(st.provider?.status);
+  const proxies = cfg.frpc?.proxies || [];
+  const peers = cfg.peers || [];
+  const logs = st.provider?.recentLogs || [];
+
+  return `
+    <div class="nt-shell">
+      <div class="nt-detail-bar">
+        <button class="btn nt-back" onclick="window.__ntBackCatalog()">← 返回列表</button>
+        <div class="nt-detail-title">
+          <div class="nt-kicker">Provider</div>
+          <h3>frp 管理台</h3>
+        </div>
+        <span class="nt-chip nt-chip-${status.tone}">${escapeHtml(status.text)}</span>
+      </div>
+
+      ${state.error ? `<div class="nt-banner nt-banner-err">${escapeHtml(state.error)}</div>` : ""}
+      ${st.provider?.lastError ? `<div class="nt-banner nt-banner-err">${escapeHtml(st.provider.lastError)}</div>` : ""}
+
+      <div class="nt-detail-grid">
+        <section class="nt-panel">
+          <div class="nt-panel-head">
+            <h4>运行控制</h4>
+            <span class="nt-soft">PID ${escapeHtml(String(st.provider?.pid || 0))}</span>
+          </div>
+          <label class="nt-switch">
+            <span>启用 NAT Traversal</span>
+            <input type="checkbox" id="nt-enabled" ${cfg.enabled ? "checked" : ""} />
+          </label>
+          <div class="nt-kv">
+            <div><span>二进制</span><code>${escapeHtml(st.provider?.binPath || cfg.frpc?.binPath || "自动发现")}</code></div>
+            <div><span>Token</span><code>${cfg.secrets?.frpcTokenConfigured ? "已配置" : "未配置"}</code></div>
+            <div><span>Dashboard Auth</span><code>${cfg.secrets?.dashboardAuthConfigured ? "已配置" : "未配置"}</code></div>
+          </div>
+          <div class="nt-actions">
+            <button class="btn btn-primary" onclick="window.__ntSave()">保存配置</button>
+            <button class="btn" onclick="window.__ntStart()">启动</button>
+            <button class="btn" onclick="window.__ntStop()">停止</button>
+            <button class="btn" onclick="window.__ntRestart()">重启</button>
+            <button class="btn" onclick="window.__ntReload()">刷新</button>
+          </div>
+        </section>
+
+        <section class="nt-panel">
+          <div class="nt-panel-head"><h4>frpc 连接</h4></div>
+          <div class="nt-form">
+            <label><span>serverAddr</span><input id="nt-server-addr" value="${escapeHtml(cfg.frpc?.serverAddr || "")}" /></label>
+            <label><span>serverPort</span><input id="nt-server-port" type="number" value="${escapeHtml(String(cfg.frpc?.serverPort ?? 7000))}" /></label>
+            <label><span>binPath</span><input id="nt-bin-path" placeholder="空则自动发现" value="${escapeHtml(cfg.frpc?.binPath || "")}" /></label>
+            <label><span>logLevel</span><input id="nt-log-level" value="${escapeHtml(cfg.frpc?.logLevel || "info")}" /></label>
+            <label class="nt-span-2"><span>frpc token（secrets）</span><input id="nt-token" type="password" placeholder="${cfg.secrets?.frpcTokenConfigured ? "已配置，留空保留" : "未配置"}" value="${escapeHtml(state.tokenDraft)}" /></label>
+          </div>
+        </section>
+
+        <section class="nt-panel nt-span-2">
+          <div class="nt-panel-head">
+            <h4>本地映射 Proxies</h4>
+            <button class="btn" onclick="window.__ntAddProxy()">新增映射</button>
+          </div>
+          <div class="nt-table-wrap">
+            <table class="nt-table">
+              <thead>
+                <tr><th>name</th><th>type</th><th>localIp</th><th>localPort</th><th>remotePort</th><th></th></tr>
+              </thead>
+              <tbody>
+                ${
+                  proxies.length
+                    ? proxies
+                        .map(
+                          (p, i) => `<tr>
+                            <td><input data-proxy="${i}" data-k="name" value="${escapeHtml(p.name || "")}" /></td>
+                            <td><input data-proxy="${i}" data-k="type" value="${escapeHtml(p.type || "tcp")}" /></td>
+                            <td><input data-proxy="${i}" data-k="localIp" value="${escapeHtml(p.localIp || "127.0.0.1")}" /></td>
+                            <td><input data-proxy="${i}" data-k="localPort" type="number" value="${escapeHtml(String(p.localPort || 0))}" /></td>
+                            <td><input data-proxy="${i}" data-k="remotePort" type="number" value="${escapeHtml(String(p.remotePort || 0))}" /></td>
+                            <td><button class="btn" onclick="window.__ntRemoveProxy(${i})">删除</button></td>
+                          </tr>`,
+                        )
+                        .join("")
+                    : `<tr><td colspan="6"><div class="nt-note">还没有映射。先加一条把本机网关端口暴露出去。</div></td></tr>`
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="nt-panel nt-span-2">
+          <div class="nt-panel-head"><h4>frps Dashboard</h4></div>
+          <label class="nt-switch">
+            <span>在管理台展示 Dashboard</span>
+            <input type="checkbox" id="nt-dash-enabled" ${cfg.frpsDashboard?.enabled ? "checked" : ""} />
+          </label>
+          <div class="nt-form">
+            <label class="nt-span-2"><span>Dashboard URL</span><input id="nt-dash-url" value="${escapeHtml(cfg.frpsDashboard?.url || "")}" /></label>
+            <label><span>用户名（secrets）</span><input id="nt-dash-user" value="${escapeHtml(state.dashUserDraft)}" placeholder="${cfg.secrets?.dashboardAuthConfigured ? "已配置，留空保留" : ""}" /></label>
+            <label><span>密码（secrets）</span><input id="nt-dash-pass" type="password" value="${escapeHtml(state.dashPassDraft)}" placeholder="${cfg.secrets?.dashboardAuthConfigured ? "已配置，留空保留" : ""}" /></label>
+          </div>
+          <div class="nt-kv">
+            <div><span>可达</span><code>${st.dashboard?.reachable ? "yes" : "no"}</code></div>
+            <div><span>HTTP</span><code>${escapeHtml(String(st.dashboard?.statusCode || "-"))}</code></div>
+            <div><span>说明</span><code>${escapeHtml(st.dashboard?.message || "-")}</code></div>
+          </div>
+          <div class="nt-actions">
+            <a class="btn" href="/v1/nat-traversal/frps-dashboard/" target="_blank" rel="noreferrer">经网关反代打开</a>
+            ${cfg.frpsDashboard?.url ? `<a class="btn" href="${escapeHtml(cfg.frpsDashboard.url)}" target="_blank" rel="noreferrer">打开原始地址</a>` : ""}
+          </div>
+          ${renderDashboardEmbed(cfg, st)}
+        </section>
+
+        <section class="nt-panel nt-span-2">
+          <div class="nt-panel-head"><h4>对端 Peers</h4></div>
+          <div class="nt-table-wrap">
+            <table class="nt-table">
+              <thead><tr><th>id</th><th>名称</th><th>ssh</th><th>gatewayApi</th><th></th></tr></thead>
+              <tbody>
+                ${
+                  peers.length
+                    ? peers
+                        .map(
+                          (p) => `<tr>
+                            <td><code>${escapeHtml(p.id || "")}</code></td>
+                            <td>${escapeHtml(p.displayName || "")}</td>
+                            <td>${escapeHtml(formatPeerSsh(p))}</td>
+                            <td><code>${escapeHtml(p.services?.gatewayApi || "")}</code></td>
+                            <td class="nt-row-actions">
+                              <button class="btn" onclick="window.__ntTestPeer('${escapeHtml(p.id || "")}')">测试</button>
+                              <button class="btn" onclick="window.__ntDeletePeer('${escapeHtml(p.id || "")}')">删除</button>
+                            </td>
+                          </tr>`,
+                        )
+                        .join("")
+                    : `<tr><td colspan="5"><div class="nt-note">暂无对端。可手动添加一台机器的 SSH / gatewayApi。</div></td></tr>`
+                }
+              </tbody>
+            </table>
+          </div>
+          <div class="nt-form">
+            <label><span>id</span><input id="nt-peer-id" value="${escapeHtml(state.peerDraft.id)}" /></label>
+            <label><span>displayName</span><input id="nt-peer-name" value="${escapeHtml(state.peerDraft.displayName)}" /></label>
+            <label><span>ssh host</span><input id="nt-peer-host" value="${escapeHtml(state.peerDraft.host)}" /></label>
+            <label><span>ssh port</span><input id="nt-peer-port" value="${escapeHtml(state.peerDraft.port)}" /></label>
+            <label><span>ssh user</span><input id="nt-peer-user" value="${escapeHtml(state.peerDraft.user)}" /></label>
+            <label><span>gatewayApi</span><input id="nt-peer-gw" placeholder="127.0.0.1:18788 或 http://..." value="${escapeHtml(state.peerDraft.gatewayApi)}" /></label>
+          </div>
+          <div class="nt-actions">
+            <button class="btn btn-primary" onclick="window.__ntUpsertPeer()">保存 Peer</button>
+          </div>
+        </section>
+
+        <section class="nt-panel nt-span-2">
+          <div class="nt-panel-head"><h4>最近日志</h4></div>
+          <pre class="nt-log">${escapeHtml(logs.slice(-50).join("\n") || "暂无日志")}</pre>
+        </section>
+      </div>
+    </div>
+  `;
 }
 
 function render(): void {
   const el = rootEl();
   if (!el) return;
   if (state.loading && !state.config) {
-    el.innerHTML = `<div class="nt-loading">加载中…</div>`;
+    el.innerHTML = `<div class="nt-shell"><div class="nt-loading">正在加载穿透能力…</div></div>`;
     return;
   }
   if (state.error && !state.config) {
-    el.innerHTML = `<div class="nt-error">${escapeHtml(state.error)} <button class="btn" onclick="window.__ntReload()">重试</button></div>`;
+    el.innerHTML = `
+      <div class="nt-shell">
+        <div class="nt-banner nt-banner-err">${escapeHtml(state.error)}</div>
+        <button class="btn" onclick="window.__ntReload()">重试</button>
+      </div>
+    `;
     return;
   }
-
-  const cfg = state.config || {};
-  const st = state.status || {};
-  const proxies = cfg.frpc?.proxies || [];
-  const peers = cfg.peers || [];
-  const logs = st.provider?.recentLogs || [];
-
-  el.innerHTML = `
-    <div class="nt-grid">
-      <section class="nt-card">
-        <div class="nt-card-head">
-          <h3>概览</h3>
-          ${statusBadge(st.provider?.status)}
-        </div>
-        <label class="nt-row"><span>启用 NAT Traversal</span>
-          <input type="checkbox" id="nt-enabled" ${cfg.enabled ? "checked" : ""} />
-        </label>
-        <div class="nt-meta">
-          <div>Provider: <code>${escapeHtml(cfg.activeProvider || "frpc")}</code></div>
-          <div>PID: <code>${escapeHtml(String(st.provider?.pid || 0))}</code></div>
-          <div>Token: <code>${cfg.secrets?.frpcTokenConfigured ? "已配置" : "未配置"}</code></div>
-          <div>Dashboard Auth: <code>${cfg.secrets?.dashboardAuthConfigured ? "已配置" : "未配置"}</code></div>
-        </div>
-        <div class="nt-actions">
-          <button class="btn btn-primary" onclick="window.__ntSave()">保存配置</button>
-          <button class="btn" onclick="window.__ntStart()">启动</button>
-          <button class="btn" onclick="window.__ntStop()">停止</button>
-          <button class="btn" onclick="window.__ntRestart()">重启</button>
-          <button class="btn" onclick="window.__ntReload()">刷新状态</button>
-        </div>
-        ${st.provider?.lastError ? `<div class="nt-error">${escapeHtml(st.provider.lastError)}</div>` : ""}
-        ${state.error ? `<div class="nt-error">${escapeHtml(state.error)}</div>` : ""}
-      </section>
-
-      <section class="nt-card">
-        <div class="nt-card-head"><h3>frpc 客户端</h3></div>
-        <div class="nt-form">
-          <label>serverAddr<input id="nt-server-addr" value="${escapeHtml(cfg.frpc?.serverAddr || "")}" /></label>
-          <label>serverPort<input id="nt-server-port" type="number" value="${escapeHtml(String(cfg.frpc?.serverPort ?? 7000))}" /></label>
-          <label>binPath<input id="nt-bin-path" placeholder="空则自动发现" value="${escapeHtml(cfg.frpc?.binPath || "")}" /></label>
-          <label>logLevel<input id="nt-log-level" value="${escapeHtml(cfg.frpc?.logLevel || "info")}" /></label>
-          <label>frpc token（写入 secrets）<input id="nt-token" type="password" placeholder="${cfg.secrets?.frpcTokenConfigured ? "已配置，留空保留" : "未配置"}" value="${escapeHtml(state.tokenDraft)}" /></label>
-        </div>
-        <h4>Proxies</h4>
-        <div class="nt-table-wrap">
-          <table class="nt-table">
-            <thead><tr><th>name</th><th>type</th><th>localIp</th><th>localPort</th><th>remotePort</th><th></th></tr></thead>
-            <tbody>
-              ${proxies
-                .map(
-                  (p, i) => `<tr>
-                    <td><input data-proxy="${i}" data-k="name" value="${escapeHtml(p.name || "")}" /></td>
-                    <td><input data-proxy="${i}" data-k="type" value="${escapeHtml(p.type || "tcp")}" /></td>
-                    <td><input data-proxy="${i}" data-k="localIp" value="${escapeHtml(p.localIp || "127.0.0.1")}" /></td>
-                    <td><input data-proxy="${i}" data-k="localPort" type="number" value="${escapeHtml(String(p.localPort || 0))}" /></td>
-                    <td><input data-proxy="${i}" data-k="remotePort" type="number" value="${escapeHtml(String(p.remotePort || 0))}" /></td>
-                    <td><button class="btn" onclick="window.__ntRemoveProxy(${i})">删</button></td>
-                  </tr>`,
-                )
-                .join("")}
-            </tbody>
-          </table>
-        </div>
-        <button class="btn" onclick="window.__ntAddProxy()">新增 proxy</button>
-      </section>
-
-      <section class="nt-card">
-        <div class="nt-card-head"><h3>frps Dashboard</h3></div>
-        <label class="nt-row"><span>在管理台展示</span>
-          <input type="checkbox" id="nt-dash-enabled" ${cfg.frpsDashboard?.enabled ? "checked" : ""} />
-        </label>
-        <div class="nt-form">
-          <label>Dashboard URL<input id="nt-dash-url" value="${escapeHtml(cfg.frpsDashboard?.url || "")}" /></label>
-          <label>用户名（secrets）<input id="nt-dash-user" value="${escapeHtml(state.dashUserDraft)}" placeholder="${cfg.secrets?.dashboardAuthConfigured ? "已配置，留空保留" : ""}" /></label>
-          <label>密码（secrets）<input id="nt-dash-pass" type="password" value="${escapeHtml(state.dashPassDraft)}" placeholder="${cfg.secrets?.dashboardAuthConfigured ? "已配置，留空保留" : ""}" /></label>
-        </div>
-        <div class="nt-meta">
-          <div>可达: <code>${st.dashboard?.reachable ? "yes" : "no"}</code></div>
-          <div>HTTP: <code>${escapeHtml(String(st.dashboard?.statusCode || "-"))}</code></div>
-          <div>${escapeHtml(st.dashboard?.message || "")}</div>
-        </div>
-        <div class="nt-actions">
-          <a class="btn" href="/v1/nat-traversal/frps-dashboard/" target="_blank" rel="noreferrer">在浏览器打开（经网关反代）</a>
-          ${cfg.frpsDashboard?.url ? `<a class="btn" href="${escapeHtml(cfg.frpsDashboard.url)}" target="_blank" rel="noreferrer">打开原始地址</a>` : ""}
-        </div>
-        ${renderDashboardEmbed(cfg, st)}
-      </section>
-
-      <section class="nt-card">
-        <div class="nt-card-head"><h3>对端 Peers</h3></div>
-        <div class="nt-table-wrap">
-          <table class="nt-table">
-            <thead><tr><th>id</th><th>名称</th><th>ssh</th><th>gatewayApi</th><th></th></tr></thead>
-            <tbody>
-              ${peers
-                .map(
-                  (p) => `<tr>
-                    <td><code>${escapeHtml(p.id || "")}</code></td>
-                    <td>${escapeHtml(p.displayName || "")}</td>
-                    <td>${escapeHtml(formatPeerSsh(p))}</td>
-                    <td><code>${escapeHtml(p.services?.gatewayApi || "")}</code></td>
-                    <td>
-                      <button class="btn" onclick="window.__ntTestPeer('${escapeHtml(p.id || "")}')">测试</button>
-                      <button class="btn" onclick="window.__ntDeletePeer('${escapeHtml(p.id || "")}')">删</button>
-                    </td>
-                  </tr>`,
-                )
-                .join("")}
-            </tbody>
-          </table>
-        </div>
-        <h4>手动添加 / 更新</h4>
-        <div class="nt-form">
-          <label>id<input id="nt-peer-id" value="${escapeHtml(state.peerDraft.id)}" /></label>
-          <label>displayName<input id="nt-peer-name" value="${escapeHtml(state.peerDraft.displayName)}" /></label>
-          <label>ssh host<input id="nt-peer-host" value="${escapeHtml(state.peerDraft.host)}" /></label>
-          <label>ssh port<input id="nt-peer-port" value="${escapeHtml(state.peerDraft.port)}" /></label>
-          <label>ssh user<input id="nt-peer-user" value="${escapeHtml(state.peerDraft.user)}" /></label>
-          <label>gatewayApi<input id="nt-peer-gw" placeholder="127.0.0.1:18788 或 http://..." value="${escapeHtml(state.peerDraft.gatewayApi)}" /></label>
-        </div>
-        <button class="btn btn-primary" onclick="window.__ntUpsertPeer()">保存 Peer</button>
-      </section>
-
-      <section class="nt-card">
-        <div class="nt-card-head"><h3>最近日志</h3></div>
-        <pre class="nt-log">${escapeHtml(logs.slice(-40).join("\n") || "暂无日志")}</pre>
-      </section>
-    </div>
-  `;
+  el.innerHTML = state.view === "catalog" ? renderCatalog() : renderFrpcDetail();
 }
 
 function collectConfigFromDom(): { config: NatConfig; secrets: any } {
-  const enabled = (document.getElementById("nt-enabled") as HTMLInputElement)?.checked;
-  const serverAddr = (document.getElementById("nt-server-addr") as HTMLInputElement)?.value || "";
-  const serverPort = Number((document.getElementById("nt-server-port") as HTMLInputElement)?.value || 7000);
-  const binPath = (document.getElementById("nt-bin-path") as HTMLInputElement)?.value || "";
-  const logLevel = (document.getElementById("nt-log-level") as HTMLInputElement)?.value || "info";
-  const token = (document.getElementById("nt-token") as HTMLInputElement)?.value || "";
-  const dashEnabled = (document.getElementById("nt-dash-enabled") as HTMLInputElement)?.checked;
-  const dashUrl = (document.getElementById("nt-dash-url") as HTMLInputElement)?.value || "";
-  const dashUser = (document.getElementById("nt-dash-user") as HTMLInputElement)?.value || "";
-  const dashPass = (document.getElementById("nt-dash-pass") as HTMLInputElement)?.value || "";
+  const enabled = (document.getElementById("nt-enabled") as HTMLInputElement | null)?.checked;
+  const serverAddr = (document.getElementById("nt-server-addr") as HTMLInputElement | null)?.value || "";
+  const serverPort = Number((document.getElementById("nt-server-port") as HTMLInputElement | null)?.value || 7000);
+  const binPath = (document.getElementById("nt-bin-path") as HTMLInputElement | null)?.value || "";
+  const logLevel = (document.getElementById("nt-log-level") as HTMLInputElement | null)?.value || "info";
+  const token = (document.getElementById("nt-token") as HTMLInputElement | null)?.value || "";
+  const dashEnabled = (document.getElementById("nt-dash-enabled") as HTMLInputElement | null)?.checked;
+  const dashUrl = (document.getElementById("nt-dash-url") as HTMLInputElement | null)?.value || "";
+  const dashUser = (document.getElementById("nt-dash-user") as HTMLInputElement | null)?.value || "";
+  const dashPass = (document.getElementById("nt-dash-pass") as HTMLInputElement | null)?.value || "";
 
   const proxyInputs = [...document.querySelectorAll("[data-proxy]")] as HTMLInputElement[];
   const proxyMap = new Map<number, any>();
@@ -365,7 +520,7 @@ async function save(): Promise<void> {
     state.status = await api<NatStatus>("/v1/nat-traversal/status");
     state.tokenDraft = "";
     state.dashPassDraft = "";
-    showToast("NAT Traversal 配置已保存", "success");
+    showToast("frp 配置已保存", "success");
     render();
   } catch (error: any) {
     state.error = error?.message || String(error);
@@ -378,7 +533,7 @@ async function runAction(action: "start" | "stop" | "restart"): Promise<void> {
   try {
     await api(`/v1/nat-traversal/${action}`, { method: "POST", body: "{}" });
     state.status = await api<NatStatus>("/v1/nat-traversal/status");
-    showToast(`已${action}`, "success");
+    showToast(`已${action === "start" ? "启动" : action === "stop" ? "停止" : "重启"}`, "success");
     render();
   } catch (error: any) {
     state.error = error?.message || String(error);
@@ -388,27 +543,21 @@ async function runAction(action: "start" | "stop" | "restart"): Promise<void> {
 }
 
 function addProxy(): void {
-  const cfg = state.config || { frpc: { proxies: [] } };
-  cfg.frpc = cfg.frpc || { proxies: [] };
-  cfg.frpc.proxies = [
-    ...(cfg.frpc.proxies || []),
+  const collected = collectConfigFromDom();
+  const proxies = [
+    ...(collected.config.frpc?.proxies || []),
     {
-      name: `proxy-${(cfg.frpc.proxies || []).length + 1}`,
+      name: `proxy-${(collected.config.frpc?.proxies || []).length + 1}`,
       type: "tcp",
       localIp: "127.0.0.1",
       localPort: 8788,
       remotePort: 18788,
     },
   ];
-  state.config = cfg as NatConfig;
-  // preserve form fields already typed
-  const collected = collectConfigFromDom();
   state.config = {
+    ...(state.config || {}),
     ...collected.config,
-    frpc: {
-      ...collected.config.frpc,
-      proxies: cfg.frpc.proxies,
-    },
+    frpc: { ...(collected.config.frpc || {}), proxies },
     peers: state.config?.peers || [],
   };
   render();
@@ -428,12 +577,12 @@ function removeProxy(index: number): void {
 }
 
 async function upsertPeer(): Promise<void> {
-  const id = (document.getElementById("nt-peer-id") as HTMLInputElement)?.value?.trim();
-  const displayName = (document.getElementById("nt-peer-name") as HTMLInputElement)?.value?.trim();
-  const host = (document.getElementById("nt-peer-host") as HTMLInputElement)?.value?.trim();
-  const port = Number((document.getElementById("nt-peer-port") as HTMLInputElement)?.value || 22);
-  const user = (document.getElementById("nt-peer-user") as HTMLInputElement)?.value?.trim();
-  const gatewayApi = (document.getElementById("nt-peer-gw") as HTMLInputElement)?.value?.trim();
+  const id = (document.getElementById("nt-peer-id") as HTMLInputElement | null)?.value?.trim();
+  const displayName = (document.getElementById("nt-peer-name") as HTMLInputElement | null)?.value?.trim();
+  const host = (document.getElementById("nt-peer-host") as HTMLInputElement | null)?.value?.trim();
+  const port = Number((document.getElementById("nt-peer-port") as HTMLInputElement | null)?.value || 22);
+  const user = (document.getElementById("nt-peer-user") as HTMLInputElement | null)?.value?.trim();
+  const gatewayApi = (document.getElementById("nt-peer-gw") as HTMLInputElement | null)?.value?.trim();
   if (!id) {
     showToast("peer id 必填", "error");
     return;
@@ -474,25 +623,57 @@ async function testPeer(id: string): Promise<void> {
       method: "POST",
       body: JSON.stringify({ peerId: id }),
     });
-    showToast(`测试 ${id}: ${result.status}${result.message ? " - " + result.message : ""}`, result.status === "online" ? "success" : "error");
+    showToast(
+      `测试 ${id}: ${result.status}${result.message ? " - " + result.message : ""}`,
+      result.status === "online" ? "success" : "error",
+    );
   } catch (error: any) {
     showToast(error?.message || String(error), "error");
   }
 }
 
-(window as any).__ntReload = () => { void reload(); };
-(window as any).__ntSave = () => { void save(); };
-(window as any).__ntStart = () => { void runAction("start"); };
-(window as any).__ntStop = () => { void runAction("stop"); };
-(window as any).__ntRestart = () => { void runAction("restart"); };
+(window as any).__ntReload = () => {
+  void reload();
+};
+(window as any).__ntSave = () => {
+  void save();
+};
+(window as any).__ntStart = () => {
+  void runAction("start");
+};
+(window as any).__ntStop = () => {
+  void runAction("stop");
+};
+(window as any).__ntRestart = () => {
+  void runAction("restart");
+};
 (window as any).__ntAddProxy = () => addProxy();
 (window as any).__ntRemoveProxy = (i: number) => removeProxy(i);
-(window as any).__ntUpsertPeer = () => { void upsertPeer(); };
-(window as any).__ntDeletePeer = (id: string) => { void deletePeer(id); };
-(window as any).__ntTestPeer = (id: string) => { void testPeer(id); };
+(window as any).__ntUpsertPeer = () => {
+  void upsertPeer();
+};
+(window as any).__ntDeletePeer = (id: string) => {
+  void deletePeer(id);
+};
+(window as any).__ntTestPeer = (id: string) => {
+  void testPeer(id);
+};
+(window as any).__ntOpenProvider = (id: string) => {
+  if (id !== "frpc") {
+    showToast("该穿透方式尚未接入", "info");
+    return;
+  }
+  state.view = "frpc";
+  render();
+};
+(window as any).__ntBackCatalog = () => {
+  state.view = "catalog";
+  render();
+};
 
 registerTab("nat-traversal", {
   onEnter: () => {
+    state.view = "catalog";
     void reload();
   },
 });
