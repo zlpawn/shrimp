@@ -111,10 +111,20 @@
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg, 12px);
   overflow: hidden;
-  height: 520px;
-  background: #fff;
+  height: min(520px, 70vh);
+  min-height: 360px;
+  background: #0b0b0c;
+  isolation: isolate;
+  contain: layout paint size;
 }
-.nt-frame { width: 100%; height: 100%; border: 0; }
+.nt-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  background: #0b0b0c;
+  color-scheme: dark;
+}
 .nt-log {
   margin: 0;
   max-height: 260px;
@@ -209,4 +219,33 @@
   .nt-url-row {
     grid-template-columns: 1fr;
   }
+}
+
+
+/* Keep anchor buttons visually identical to <button class="btn"> */
+.nt-page a.btn {
+  text-decoration: none;
+  color: var(--text-primary);
+  background: transparent;
+  border: 1px solid var(--border-color);
+  box-sizing: border-box;
+}
+.nt-page a.btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--text-secondary);
+  color: var(--text-primary);
+}
+
+
+/* Explicit open-dashboard action: white bg / black text as requested */
+.nt-btn-open-dashboard {
+  background: #ffffff !important;
+  color: #111111 !important;
+  border: 1px solid #d4d4d8 !important;
+  font-weight: 600;
+}
+.nt-btn-open-dashboard:hover:not(:disabled) {
+  background: #f4f4f5 !important;
+  color: #000000 !important;
+  border-color: #a1a1aa !important;
 }

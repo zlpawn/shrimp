@@ -146,33 +146,20 @@ function statusMeta(status?: string): { text: string; badge: string } {
   return { text: "已停止", badge: "badge" };
 }
 
-function renderToggle(id: string, checked: boolean, label: string, hint = ""): string {
-  return `
-    <label class="nt-toggle" for="${id}">
-      <span class="nt-toggle-copy">
-        <span class="nt-toggle-label">${escapeHtml(label)}</span>
-        ${hint ? `<span class="nt-toggle-hint">${escapeHtml(hint)}</span>` : ""}
-      </span>
-      <input id="${id}" type="checkbox" class="nt-toggle-input" ${checked ? "checked" : ""} />
-      <span class="nt-toggle-track" aria-hidden="true"><span class="nt-toggle-thumb"></span></span>
-    </label>
-  `;
-}
 
-function renderDashboardEmbed(cfg: NatConfig, st: NatStatus): string {
-  if (!cfg.frpsDashboard?.enabled) {
-    return `<p class="nt-help">Dashboard 展示已关闭。打开上方开关后可在此预览。</p>`;
-  }
-  if (!cfg.secrets?.dashboardAuthConfigured) {
-    return `<p class="nt-help">请先填写并保存 Dashboard 用户名/密码，再嵌入预览。也可先用按钮在新标签打开。</p>`;
+function renderDashboardHints(cfg: NatConfig, st: NatStatus): string {
+  const bits: string[] = [];
+  if (!cfg.frpsDashboard?.url) {
+    bits.push(`请先填写 Dashboard URL，或点“从 serverAddr 填充”。`);
   }
   if (st.dashboard && st.dashboard.reachable === false) {
-    return `<p class="nt-help nt-help-warn">Dashboard 当前不可达：${escapeHtml(st.dashboard.message || "unknown error")}</p>`;
+    bits.push(`Dashboard 当前不可达：${escapeHtml(st.dashboard.message || "unknown error")}`);
+  } else if (st.dashboard?.statusCode === 401) {
+    bits.push(`Dashboard 需要鉴权（401）。若 frps 开启了用户名/密码，请填写后保存再打开；未开启鉴权可留空。`);
+  } else if (cfg.frpsDashboard?.url) {
+    bits.push(`Dashboard 通过网关代理在新标签打开，不再嵌入本页，避免把管理台布局撑乱。`);
   }
-  if (st.dashboard?.statusCode === 401) {
-    return `<p class="nt-help nt-help-warn">Dashboard 鉴权失败（401）。请检查用户名/密码后重新保存。</p>`;
-  }
-  return `<div class="nt-frame-wrap"><iframe class="nt-frame" src="/v1/nat-traversal/frps-dashboard/" title="frps dashboard"></iframe></div>`;
+  return bits.map((b) => `<p class="nt-help${b.includes("不可达") || b.includes("401") ? " nt-help-warn" : ""}">${b}</p>`).join("");
 }
 
 function renderCatalog(): string {
@@ -309,6 +296,7 @@ function renderFrpcDetail(): string {
         </div>
         <div class="node-card-row" style="margin-top:12px;gap:8px;flex-wrap:wrap;">
           <span class="badge">PID ${escapeHtml(String(st.provider?.pid || 0))}</span>
+          <span class="badge">${escapeHtml(st.provider?.mode === "external-detected" ? "已检测外部进程" : (st.provider?.mode || "background"))}</span>
           <span class="badge mono" title="${escapeHtml(st.provider?.binPath || cfg.frpc?.binPath || "")}">frpc ${escapeHtml(st.provider?.binPath || cfg.frpc?.binPath || "未找到")}</span>
           ${(() => {
             const source = st.provider?.configPath || configPath || "";
@@ -372,7 +360,7 @@ function renderFrpcDetail(): string {
 
       <div class="usage-guide nt-block">
         <h3>frps Dashboard</h3>
-        ${renderToggle("nt-dash-enabled", Boolean(cfg.frpsDashboard?.enabled), "在管理台展示 Dashboard", "关闭后仅保留“新标签打开”，不嵌入预览")}
+        <p class="nt-help">在新标签打开 frps 控制台。用户名/密码可选，仅当 frps 开启了 Dashboard 鉴权时需要。</p>
         <div class="nt-form-grid" style="margin-top:12px;">
           <div class="form-group nt-col-2">
             <span>Dashboard URL</span>
@@ -382,8 +370,8 @@ function renderFrpcDetail(): string {
             </div>
             <p class="nt-help" style="margin-top:6px;">空着时会按 serverAddr + 默认端口 7500 生成；也可手改端口/路径。</p>
           </div>
-          <label class="form-group"><span>用户名（secrets）</span><input id="nt-dash-user" value="${escapeHtml(state.dashUserDraft)}" placeholder="${cfg.secrets?.dashboardAuthConfigured ? "已配置，留空保留" : ""}" /></label>
-          <label class="form-group"><span>密码（secrets）</span><input id="nt-dash-pass" type="password" value="${escapeHtml(state.dashPassDraft)}" placeholder="${cfg.secrets?.dashboardAuthConfigured ? "已配置，留空保留" : ""}" /></label>
+          <label class="form-group"><span>用户名（可选）</span><input id="nt-dash-user" value="${escapeHtml(state.dashUserDraft)}" placeholder="${cfg.secrets?.dashboardAuthConfigured ? "已配置，留空保留" : ""}" /></label>
+          <label class="form-group"><span>密码（可选）</span><input id="nt-dash-pass" type="password" value="${escapeHtml(state.dashPassDraft)}" placeholder="${cfg.secrets?.dashboardAuthConfigured ? "已配置，留空保留" : ""}" /></label>
         </div>
         <div class="node-card-row" style="margin-top:10px;gap:8px;flex-wrap:wrap;">
           <span class="badge">可达 ${st.dashboard?.reachable ? "yes" : "no"}</span>
@@ -391,11 +379,10 @@ function renderFrpcDetail(): string {
           <span class="badge">${escapeHtml(st.dashboard?.message || "无附加信息")}</span>
         </div>
         <div class="nt-inline-actions" style="margin-top:12px;">
-          <button class="btn" onclick="window.__ntOpenDashboardProxy()">保存并打开 Dashboard</button>
-          ${cfg.frpsDashboard?.url ? `<a class="btn" href="${escapeHtml(cfg.frpsDashboard.url)}" target="_blank" rel="noreferrer">打开原始地址</a>` : ""}
+          <button type="button" class="btn nt-btn-open-dashboard" onclick="window.__ntOpenDashboardProxy()">保存并打开 Dashboard</button>
+          ${cfg.frpsDashboard?.url ? `<a class="btn" href="${escapeHtml(cfg.frpsDashboard.url)}" target="_blank" rel="noopener noreferrer">打开原始地址</a>` : ""}
         </div>
-        <p class="nt-help">打开前会先保存用户名/密码。只填写不保存会 Unauthorized。</p>
-        ${renderDashboardEmbed(cfg, st)}
+        ${renderDashboardHints(cfg, st)}
       </div>
 
       <div class="usage-guide nt-block">
@@ -426,8 +413,8 @@ function collectConfigFromDom(): { config: NatConfig; secrets: any } {
   const serverPort = Number((document.getElementById("nt-server-port") as HTMLInputElement | null)?.value || 7000);
   const binPath = (document.getElementById("nt-bin-path") as HTMLInputElement | null)?.value || "";
   const logLevel = (document.getElementById("nt-log-level") as HTMLInputElement | null)?.value || "info";
-  const dashEnabled = (document.getElementById("nt-dash-enabled") as HTMLInputElement | null)?.checked;
   const dashUrl = (document.getElementById("nt-dash-url") as HTMLInputElement | null)?.value || "";
+  const dashEnabled = true; // dashboard open/proxy is always available; no in-page embed
   const dashUser = (document.getElementById("nt-dash-user") as HTMLInputElement | null)?.value || "";
   const dashPass = (document.getElementById("nt-dash-pass") as HTMLInputElement | null)?.value || "";
 
@@ -508,7 +495,7 @@ async function reload(): Promise<void> {
   }
 }
 
-async function save(): Promise<void> {
+async function save(opts: { quietRender?: boolean } = {}): Promise<void> {
   try {
     const { config, secrets } = collectConfigFromDom();
     state.config = await api<NatConfig>("/v1/nat-traversal/config", {
@@ -516,14 +503,19 @@ async function save(): Promise<void> {
       body: JSON.stringify({ ...config, secrets }),
     });
     state.status = await api<NatStatus>("/v1/nat-traversal/status");
-    state.tokenDraft = "";
-    state.dashPassDraft = "";
+    // Keep typed password draft only if user is actively editing; clear after successful save
+    // when we will re-render form fields from server state.
+    if (!opts.quietRender) {
+      state.tokenDraft = "";
+      state.dashPassDraft = "";
+    }
     showToast("frp 配置已保存", "success");
-    render();
+    if (!opts.quietRender) render();
   } catch (error: any) {
     state.error = error?.message || String(error);
     showToast(state.error, "error");
-    render();
+    if (!opts.quietRender) render();
+    throw error;
   }
 }
 
@@ -572,6 +564,45 @@ function removeProxy(index: number): void {
     peers: state.config?.peers || [],
   };
   render();
+}
+
+
+/** Proxy entry that keeps frps relative `../api/*` working. */
+
+/** Open URL as a normal new browser tab (not a feature-constrained popup). */
+function openInNewTab(url: string): void {
+  const href = String(url || "").trim();
+  if (!href) return;
+  const a = document.createElement("a");
+  a.href = href;
+  a.target = "_blank";
+  a.rel = "noopener noreferrer";
+  // Required for Firefox to accept programmatic click in some cases.
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+function buildDashboardProxyEntryPath(targetUrl = ""): string {
+  const raw = String(targetUrl || "").trim();
+  let pathname = "/static/";
+  let hash = "#/";
+  if (raw) {
+    try {
+      const url = new URL(raw);
+      pathname = url.pathname && url.pathname !== "/" ? url.pathname : "/static/";
+      hash = url.hash || "";
+    } catch {
+      // keep defaults
+    }
+  }
+  if (!pathname.startsWith("/")) pathname = `/${pathname}`;
+  if (pathname === "/static") pathname = "/static/";
+  if (!pathname.endsWith("/") && !/\.[a-zA-Z0-9]+$/.test(pathname)) {
+    pathname = `${pathname}/`;
+  }
+  return `/v1/nat-traversal/frps-dashboard${pathname}${hash}`;
 }
 
 function inferDashboardFromServerAddr(): void {
@@ -699,21 +730,20 @@ async function testPeer(id: string): Promise<void> {
 (window as any).__ntInferDashboard = () => inferDashboardFromServerAddr();
 (window as any).__ntOpenDashboardProxy = async () => {
   try {
-    const user = (document.getElementById("nt-dash-user") as HTMLInputElement | null)?.value?.trim() || "";
-    const pass = (document.getElementById("nt-dash-pass") as HTMLInputElement | null)?.value?.trim() || "";
-    const already = Boolean(state.config?.secrets?.dashboardAuthConfigured);
-    if (!already && !user && !pass) {
-      showToast("请先填写 Dashboard 用户名和密码", "error");
+    // Snapshot target first from current form, then quiet-save, then open.
+    // Never re-render this page as part of open — that was making the UI jump.
+    const draftUrl =
+      (document.getElementById("nt-dash-url") as HTMLInputElement | null)?.value?.trim() ||
+      state.config?.frpsDashboard?.url ||
+      "";
+    if (!draftUrl) {
+      showToast("请先填写 Dashboard URL", "error");
       return;
     }
-    // Persist form (including dashboard credentials) before opening proxy page.
-    await save();
-    // Re-check after save.
-    if (!state.config?.secrets?.dashboardAuthConfigured) {
-      showToast("Dashboard 账号未保存成功，请重试保存", "error");
-      return;
-    }
-    window.open("/v1/nat-traversal/frps-dashboard/", "_blank", "noopener,noreferrer");
+    const entry = buildDashboardProxyEntryPath(draftUrl);
+    // Open first while still in the user-gesture stack when possible.
+    openInNewTab(entry);
+    await save({ quietRender: true });
   } catch (error: any) {
     showToast(error?.message || String(error), "error");
   }
