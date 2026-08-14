@@ -347,3 +347,29 @@
     align-items: stretch;
   }
 }
+
+
+/* NAT Traversal button contrast */
+.nt-shell .btn {
+  color: var(--text-primary, #e8e8e8);
+  background: color-mix(in srgb, var(--bg-secondary, #1c1c1c) 88%, #fff 6%);
+  border-color: color-mix(in srgb, var(--border-color, #444) 80%, #fff 8%);
+}
+.nt-shell .btn:hover:not(:disabled) {
+  color: var(--text-primary, #fff);
+  background: color-mix(in srgb, var(--bg-secondary, #222) 75%, #fff 10%);
+}
+.nt-shell .btn-primary {
+  color: #fff !important;
+  background: #2563eb !important;
+  border-color: #1d4ed8 !important;
+}
+.nt-shell .btn-primary:hover:not(:disabled) {
+  color: #fff !important;
+  background: #1d4ed8 !important;
+  border-color: #1e40af !important;
+}
+.nt-shell .btn:disabled {
+  color: color-mix(in srgb, var(--text-secondary, #999) 80%, #fff 10%);
+  opacity: 0.7;
+}

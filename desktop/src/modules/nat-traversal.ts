@@ -69,30 +69,6 @@ const PROVIDER_CARDS: ProviderCard[] = [
     status: "available",
     tags: ["TCP 映射", "Dashboard", "启停管理"],
   },
-  {
-    id: "ssh",
-    name: "SSH Tunnel",
-    subtitle: "OpenSSH",
-    blurb: "复用现有 SSH 信任建立隧道。下一阶段接入，作为 frp 之外的备用通道。",
-    status: "planned",
-    tags: ["密钥鉴权", "点对点", "规划中"],
-  },
-  {
-    id: "tailscale",
-    name: "Tailscale",
-    subtitle: "WireGuard mesh",
-    blurb: "组网式可达性，适合多机稳定互联。预留 provider 扩展位，不阻塞当前 frp 流程。",
-    status: "planned",
-    tags: ["组网", "多机", "规划中"],
-  },
-  {
-    id: "cloudflare",
-    name: "Cloudflare Tunnel",
-    subtitle: "cloudflared",
-    blurb: "面向公网入口与零信任访问场景。后续可按同一 provider 契约接入。",
-    status: "planned",
-    tags: ["公网入口", "零信任", "规划中"],
-  },
 ];
 
 const state: {
@@ -193,8 +169,8 @@ function renderCatalog(): string {
       <header class="nt-hero">
         <div>
           <div class="nt-kicker">系统扩展</div>
-          <h3 class="nt-title">选择穿透方式</h3>
-          <p class="nt-desc">先选软件，再进入对应管理台。当前已接入 frp；其余 provider 按同一契约扩展。</p>
+          <h3 class="nt-title">穿透软件</h3>
+          <p class="nt-desc">当前先接入 frp。进入管理台后可配置映射、启停进程并查看 Dashboard。</p>
         </div>
         <div class="nt-hero-stats">
           <div class="nt-stat">
