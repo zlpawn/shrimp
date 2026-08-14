@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"state-machine.schema.json","title":"Business State Machine","allOf":[{"$ref":"common-node.schema.json"}],"type":"object","required":["states","transitions"],"properties":{"states":{"type":"array"},"transitions":{"type":"array"}}}

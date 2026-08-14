@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "relationship.schema.json",
+  "title": "Business Knowledge Relationship",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "from_id", "type", "to_id", "claim_status", "lifecycle_status"],
+  "properties": {
+    "id": {"type": "string", "minLength": 1},
+    "from_id": {"type": "string", "minLength": 1},
+    "type": {"enum": ["contains", "initiates", "participates_in", "variant_of", "uses_rule", "reads", "writes", "transitions", "emits", "consumes", "calls_external", "fails_to", "compensates", "has_unknown", "conflicts_with", "evidenced_by"]},
+    "to_id": {"type": "string", "minLength": 1},
+    "claim_status": {"enum": ["confirmed", "inferred", "document_claim", "historical", "conflicted", "unknown"]},
+    "lifecycle_status": {"enum": ["active", "conditional", "stale", "invalidated", "expired"]},
+    "valid_from_revision": {"type": ["integer", "null"]},
+    "valid_to_revision": {"type": ["integer", "null"]}
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "use-case.schema.json",
+  "title": "Business Use Case",
+  "allOf": [{"$ref": "common-node.schema.json"}],
+  "type": "object",
+  "required": ["goal", "triggers", "preconditions", "main_flow", "decision_points", "state_changes", "data_changes", "external_effects", "success_outcomes", "rejection_conditions", "failure_paths", "compensation_paths", "permissions", "observability"],
+  "properties": {
+    "goal": {"type": "object"},
+    "triggers": {"type": "array"},
+    "preconditions": {"type": "array"},
+    "main_flow": {"type": "array"},
+    "decision_points": {"type": "array"},
+    "state_changes": {"type": "array"},
+    "data_changes": {"type": "array"},
+    "external_effects": {"type": "array"},
+    "success_outcomes": {"type": "array"},
+    "rejection_conditions": {"type": "array"},
+    "failure_paths": {"type": "array"},
+    "compensation_paths": {"type": "array"},
+    "permissions": {"type": "array"},
+    "observability": {"type": "array"}
+  }
+}

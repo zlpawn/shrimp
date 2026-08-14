@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"alias.schema.json","title":"Business Knowledge Alias","type":"object","required":["alias","target_ids"],"properties":{"alias":{"type":"string","minLength":1},"target_ids":{"type":"array","minItems":1,"items":{"type":"string"}}}}

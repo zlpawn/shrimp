@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "run_id": "RUN-sample",
+  "mode": "build",
+  "status": "reviewed",
+  "repository_snapshot": {
+    "snapshot_id": "SNAP-sample",
+    "snapshot_sha256": "snapshot-sample",
+    "canonical_root": "/tmp/sample-repo",
+    "git": {
+      "branch": "main",
+      "head_sha": "abc123"
+    },
+    "working_tree_dirty": false
+  },
+  "canonical_revision_sha256": "10110dc7d7fa729dfc8f5dc67ca37236a6adb5a8f9c8d26b492f24b1d537f266",
+  "projection_hashes": {
+    "ai": {
+      "canonical_sha256": "10110dc7d7fa729dfc8f5dc67ca37236a6adb5a8f9c8d26b492f24b1d537f266",
+      "sha256": "ai-sample"
+    },
+    "html": {
+      "canonical_sha256": "10110dc7d7fa729dfc8f5dc67ca37236a6adb5a8f9c8d26b492f24b1d537f266",
+      "sha256": "html-sample"
+    }
+  },
+  "provider_observations": [],
+  "coverage_status": "passed"
+}

@@ -1,0 +1,1 @@
+{"classification":"business","id":"FACT-route-create-work-order","kind":"http_entry","mapped_node_ids":["UC-create-work-order"],"name":"POST /work-orders","resolution_status":"resolved","source_location":{"end_line":20,"path":"src/WorkOrderController.java","start_line":10,"symbol":"WorkOrderController.create"}}

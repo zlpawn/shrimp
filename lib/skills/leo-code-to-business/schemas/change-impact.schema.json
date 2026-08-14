@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "change-impact.schema.json",
+  "title": "Business Knowledge Change Impact",
+  "type": "object",
+  "required": ["schema_version", "changed_facts", "affected_node_ids", "invalidated_node_ids"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "changed_facts": {"type": "array"},
+    "affected_node_ids": {"type": "array"},
+    "invalidated_node_ids": {"type": "array"}
+  }
+}
