@@ -591,6 +591,23 @@ def validate_projections(manifest: dict[str, Any], canonical_hash: str) -> None:
             raise ValidationError(f"projection {name} canonical hash mismatch")
 
 
+def validate_projection_files(
+    revision_dir: Path,
+    manifest: dict[str, Any],
+) -> None:
+    for name, record in manifest.get("projection_hashes", {}).items():
+        relative_path = record.get("path") if isinstance(record, dict) else None
+        expected_sha256 = record.get("sha256") if isinstance(record, dict) else None
+        if not relative_path:
+            continue
+        projection_path = revision_dir / relative_path
+        if not projection_path.is_file():
+            raise ValidationError(f"projection {name} file is missing: {relative_path}")
+        actual = hashlib.sha256(projection_path.read_bytes()).hexdigest()
+        if expected_sha256 != actual:
+            raise ValidationError(f"projection {name} file hash mismatch")
+
+
 def validate_revision(revision_dir: Path | str) -> dict[str, Any]:
     root = Path(revision_dir)
     manifest = read_json(root / "manifest.json")
@@ -647,6 +664,7 @@ def validate_revision(revision_dir: Path | str) -> dict[str, Any]:
     if canonical_hash != calculated_hash:
         raise ValidationError("manifest canonical revision hash does not match artifacts")
     validate_projections(manifest, canonical_hash)
+    validate_projection_files(root, manifest)
     validate_semantic_review(read_json(root / "semantic-review.json"), canonical_hash)
 
     pass_metrics = [
