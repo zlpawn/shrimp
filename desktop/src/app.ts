@@ -3561,7 +3561,8 @@ function render() {
 
     ['code', 'desktop', 'codex', 'deeptutor'].forEach(client => {
         const container = document.getElementById(`${client}-endpoints`);
-        const eps = config.clients[client].endpoints || [];
+        if (!container) return;
+        const eps = config.clients?.[client]?.endpoints || [];
         const inDetail = selectedEndpoint && selectedEndpoint.client === client;
 
         setSectionChrome(client, !!inDetail);
@@ -3762,8 +3763,12 @@ window.switchTab = function(tabId) {
 
     render();
 
-    if (tabId === 'dream-skin') {
-        runTabEnter(tabId);
+    if (tabId === 'dream-skin' || tabId === 'nat-traversal') {
+        try {
+            runTabEnter(tabId);
+        } catch (error) {
+            console.error(`[switchTab] ${tabId} onEnter failed`, error);
+        }
     }
     if (tabId === 'analytics') {
         loadAnalyticsData();
@@ -3803,7 +3808,7 @@ window.switchTab = function(tabId) {
     }
 
     // Scroll to top
-    document.querySelector('.content-area').scrollTop = 0;
+    document.querySelector('.content-area')?.scrollTo?.({ top: 0 });
 }
 
 const toolGroupConfigs = [
@@ -6097,7 +6102,7 @@ window.addEventListener('load', () => {
     const hash = window.location.hash.replace('#', '');
     const parts = hash.split('/');
     const tabId = parts[0];
-    const knownTabs = ['code','desktop','codex','deeptutor','analytics','proxy','sync','skills','install-history','tools','extensions','cli','cli-install-history','cli-sources','dream-skin'];
+    const knownTabs = ['code','desktop','codex','deeptutor','analytics','proxy','sync','skills','install-history','tools','extensions','cli','cli-install-history','cli-sources','dream-skin','nat-traversal'];
     if (knownTabs.includes(tabId) || isCustomClient(tabId)) {
         switchTab(tabId);
         // Restore sub-view for tools/extensions
