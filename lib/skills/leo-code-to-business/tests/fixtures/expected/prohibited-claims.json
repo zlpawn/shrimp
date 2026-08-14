@@ -1,0 +1,25 @@
+{
+  "work-order": [
+    {
+      "id": "invented-authorization",
+      "any_of": ["仅管理员可以创建工单", "只有检查员可以创建工单"]
+    },
+    {
+      "id": "invented-missing-site-behavior",
+      "any_of": ["工地不存在时返回 false", "工地不存在时自动创建工地"]
+    },
+    {
+      "id": "invented-duplicate-prevention",
+      "any_of": ["创建前检查重复工单", "系统禁止重复工单"]
+    },
+    {
+      "id": "invented-image-constraints",
+      "any_of": ["最多上传 9 张图片", "图片必须是 jpg"]
+    },
+    {
+      "id": "invented-plan-time-validation",
+      "any_of": ["计划完成时间必须晚于当前时间", "计划完成时间不能为空"]
+    }
+  ],
+  "video-binding": []
+}

@@ -68,3 +68,25 @@ Record alternate-entry and backward-writer investigations.
 
 An answer limited to one controller method fails even when technically accurate. No semantic rubric
 dimension may score 0 and the total must be at least 13/16.
+
+Run deterministic acceptance with:
+
+```text
+business_knowledge_guard.py benchmark
+  --revision <canonical-revision>
+  --expectations tests/fixtures/expected
+  --scenario work-order
+
+business_knowledge_guard.py benchmark
+  --revision <canonical-revision>
+  --expectations tests/fixtures/expected
+  --scenario video-binding
+```
+
+The expectation files are external calibration anchors, not content to copy into generated
+knowledge. The producing model must discover and prove the behavior from the frozen repository.
+
+Real-repository acceptance also requires a fresh independent semantic review that receives only the
+canonical artifacts, frozen questions, and rubric. It must not receive expected answers, prior
+analysis, or source-repository access. A provider-assisted run repeats the same benchmark after a
+fresh index and current-source verification; provider absence remains non-blocking.

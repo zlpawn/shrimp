@@ -1,0 +1,83 @@
+{
+  "scenario": "work-order",
+  "minimum_confirmed_use_cases": 1,
+  "required_evidence": [
+    {
+      "id": "controller-entry",
+      "path_contains": "ConstructionSiteController.java",
+      "symbol_contains": "ConstructionSiteController.addWorkOrder"
+    },
+    {
+      "id": "service-translation",
+      "path_contains": "ConstructionSiteRectificationService.java",
+      "symbol_contains": "ConstructionSiteRectificationService.addWorkOrder"
+    },
+    {
+      "id": "provider-result",
+      "path_contains": "ArtisanWorkOrderProvider.java",
+      "symbol_contains": "ArtisanWorkOrderProvider.addWorkOrder"
+    },
+    {
+      "id": "external-create",
+      "path_contains": "ArtisanWorkOrderProvider.java",
+      "symbol_contains": "workOrderApi.addWorkOrder2"
+    }
+  ],
+  "required_business_concepts": [
+    {
+      "id": "target-project-order",
+      "any_of": ["projectId 标识目标项目订单", "projectId identifies the target project order"]
+    },
+    {
+      "id": "inspector-publisher-operator",
+      "any_of": ["发布人和处理人来自工地检查员", "publisher and operator derive from the construction-site inspector"]
+    },
+    {
+      "id": "home2",
+      "any_of": ["HOME2"]
+    },
+    {
+      "id": "todo",
+      "any_of": ["TODO"]
+    },
+    {
+      "id": "comma-images",
+      "any_of": ["图片地址以逗号拼接", "images are joined with commas"]
+    },
+    {
+      "id": "planned-completion",
+      "any_of": ["计划完成时间沿用请求输入", "沿用请求中的计划完成时间", "planned completion comes from input"]
+    },
+    {
+      "id": "external-system-creates",
+      "any_of": ["外部工单系统实际创建", "external work-order system performs creation"]
+    },
+    {
+      "id": "failed-response",
+      "any_of": ["外部返回为空或失败时返回 false 并记录错误", "empty or failed external response returns false and records error"]
+    }
+  ],
+  "required_unknowns": [
+    {
+      "id": "authorization",
+      "any_of": ["工单创建权限", "authorization"]
+    },
+    {
+      "id": "missing-site",
+      "any_of": ["工地不存在", "missing-site"]
+    },
+    {
+      "id": "duplicate-prevention",
+      "any_of": ["重复工单", "duplicate prevention"]
+    },
+    {
+      "id": "image-constraints",
+      "any_of": ["图片数量或格式限制", "image constraints"]
+    },
+    {
+      "id": "plan-time-validation",
+      "any_of": ["计划完成时间校验", "plan-time validation"]
+    }
+  ],
+  "required_family_members": []
+}

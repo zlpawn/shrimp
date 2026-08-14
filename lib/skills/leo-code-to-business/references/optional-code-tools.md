@@ -50,8 +50,10 @@ metadata is available, indexed branch, HEAD, and base SHA must also match.
 When available:
 
 1. Discover whether the canonical repository root is indexed.
-2. Call `index_status`; compare canonical root, ready status, branch, indexed HEAD/base SHA, and
-   repository existence with the frozen snapshot.
+2. When exposed, call `index_status`; compare canonical root, ready status, branch, indexed
+   HEAD/base SHA, and repository existence with the frozen snapshot. If this provider version has
+   no status operation, record that limitation and rely on the completed refresh response plus the
+   frozen snapshot and final source-hash check.
 3. Call `index_repository` before substantial graph use. An existing graph may refresh
    incrementally; a missing or invalid graph must rebuild.
 4. Wait for ready status. Record refresh request/result and the observed provider version.

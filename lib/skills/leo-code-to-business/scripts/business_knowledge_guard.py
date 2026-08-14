@@ -1049,6 +1049,282 @@ def validate_revision(revision_dir: Path | str) -> dict[str, Any]:
     }
 
 
+def _text_values(value: Any) -> list[str]:
+    if isinstance(value, dict):
+        return [
+            text
+            for nested in value.values()
+            for text in _text_values(nested)
+        ]
+    if isinstance(value, list):
+        return [text for nested in value for text in _text_values(nested)]
+    if value is None:
+        return []
+    return [str(value)]
+
+
+def _normalized_text(value: Any) -> str:
+    return " ".join(_text_values(value)).casefold()
+
+
+def _matches_any(haystack: str, alternatives: list[str]) -> bool:
+    return any(str(alternative).casefold() in haystack for alternative in alternatives)
+
+
+def _load_benchmark_bundle(revision_dir: Path) -> dict[str, Any]:
+    nodes_by_file = load_node_records(revision_dir)
+    return {
+        "manifest": read_json(revision_dir / "manifest.json"),
+        "nodes_by_file": nodes_by_file,
+        "nodes": [
+            node
+            for records in nodes_by_file.values()
+            for node in records
+        ],
+        "relationships": read_jsonl(revision_dir / "relationships.jsonl"),
+        "evidence": read_jsonl(revision_dir / "evidence.jsonl"),
+        "investigations": read_jsonl(revision_dir / "investigations.jsonl"),
+        "review": read_json(revision_dir / "semantic-review.json"),
+    }
+
+
+def _require_concept_groups(
+    label: str,
+    haystack: str,
+    groups: list[dict[str, Any]],
+) -> None:
+    missing = [
+        str(group.get("id", "unnamed"))
+        for group in groups
+        if not _matches_any(haystack, list(group.get("any_of", [])))
+    ]
+    if missing:
+        raise ValidationError(
+            f"benchmark missing {label}: {', '.join(missing)}"
+        )
+
+
+def _validate_benchmark_evidence(
+    evidence: list[dict[str, Any]],
+    requirements: list[dict[str, Any]],
+) -> None:
+    missing: list[str] = []
+    for requirement in requirements:
+        path_contains = str(requirement.get("path_contains", "")).casefold()
+        symbol_contains = str(requirement.get("symbol_contains", "")).casefold()
+        found = any(
+            item.get("source_verified") is True
+            and path_contains
+            in str(item.get("repository_relative_path", "")).casefold()
+            and symbol_contains in str(item.get("symbol", "")).casefold()
+            for item in evidence
+        )
+        if not found:
+            missing.append(str(requirement.get("id", symbol_contains or path_contains)))
+    if missing:
+        raise ValidationError(
+            "benchmark missing current-source evidence: " + ", ".join(missing)
+        )
+
+
+def _validate_business_framing(
+    bundle: dict[str, Any],
+    expectation: dict[str, Any],
+) -> None:
+    use_cases = bundle["nodes_by_file"]["use-cases.jsonl"]
+    confirmed = [
+        item
+        for item in use_cases
+        if item.get("claim_status") == "confirmed"
+        and item.get("lifecycle_status") == "active"
+    ]
+    minimum = int(expectation.get("minimum_confirmed_use_cases", 1))
+    if len(confirmed) < minimum:
+        raise ValidationError(
+            f"benchmark requires at least {minimum} confirmed business use cases"
+        )
+
+    relationships = bundle["relationships"]
+    actor_targets = {
+        item.get("to_id")
+        for item in relationships
+        if item.get("type") == "participates_in"
+    }
+    actor_sources = {
+        item.get("from_id")
+        for item in relationships
+        if item.get("type") == "participates_in"
+    }
+    for use_case in confirmed:
+        use_case_id = use_case.get("id")
+        goal = use_case.get("goal", {})
+        outcomes = use_case.get("success_outcomes", [])
+        if not isinstance(goal, dict) or not goal.get("statement"):
+            raise ValidationError(
+                f"benchmark use case {use_case_id} lacks a business goal"
+            )
+        if not isinstance(outcomes, list) or not outcomes:
+            raise ValidationError(
+                f"benchmark use case {use_case_id} lacks a business outcome"
+            )
+        if use_case_id not in actor_targets and use_case_id not in actor_sources:
+            raise ValidationError(
+                f"benchmark use case {use_case_id} lacks an actor"
+            )
+
+
+def _validate_family_members(
+    nodes: list[dict[str, Any]],
+    requirements: list[dict[str, Any]],
+) -> None:
+    allowed_statuses = {"confirmed", "inferred", "unknown"}
+    searchable = [
+        node
+        for node in nodes
+        if node.get("claim_status") in allowed_statuses
+        and node.get("lifecycle_status") in {"active", "conditional"}
+    ]
+    missing: list[str] = []
+    for requirement in requirements:
+        alternatives = list(requirement.get("any_of", []))
+        if not any(
+            _matches_any(_normalized_text(node), alternatives)
+            for node in searchable
+        ):
+            missing.append(str(requirement.get("id", "unnamed")))
+    if missing:
+        raise ValidationError(
+            "benchmark missing use-case-family members: " + ", ".join(missing)
+        )
+
+
+def _validate_prohibited_claims(
+    nodes_by_file: dict[str, list[dict[str, Any]]],
+    prohibited: dict[str, Any],
+    scenario: str,
+) -> None:
+    confirmed_nodes = [
+        node
+        for filename, records in nodes_by_file.items()
+        if filename != "unknowns.jsonl"
+        for node in records
+        if node.get("claim_status") == "confirmed"
+        and node.get("lifecycle_status") == "active"
+    ]
+    confirmed_text = _normalized_text(confirmed_nodes)
+    violations: list[str] = []
+    for group in prohibited.get(scenario, []):
+        if _matches_any(confirmed_text, list(group.get("any_of", []))):
+            violations.append(str(group.get("id", "unnamed")))
+    if violations:
+        raise ValidationError(
+            "benchmark contains prohibited confirmed claims: "
+            + ", ".join(violations)
+        )
+
+
+def validate_benchmark_review(
+    review: dict[str, Any],
+    semantic_rubric: dict[str, Any],
+) -> None:
+    minimum_total = int(semantic_rubric.get("minimum_total_score", 13))
+    required_minimums = semantic_rubric.get("required_score_minimums", {})
+    if review.get("total_score", 0) < minimum_total:
+        raise ValidationError(
+            f"benchmark semantic review total below {minimum_total}"
+        )
+    for dimension, minimum in required_minimums.items():
+        if review.get("scores", {}).get(dimension, 0) < minimum:
+            raise ValidationError(
+                f"benchmark semantic review {dimension} below {minimum}"
+            )
+    if semantic_rubric.get("reviewer_mode") and review.get(
+        "reviewer_mode"
+    ) != semantic_rubric["reviewer_mode"]:
+        raise ValidationError(
+            "benchmark requires semantic reviewer mode "
+            + str(semantic_rubric["reviewer_mode"])
+        )
+
+
+def benchmark_revision(
+    revision_dir: Path | str,
+    expectations_dir: Path | str,
+    scenario: str,
+) -> dict[str, Any]:
+    root = Path(revision_dir)
+    expected_root = Path(expectations_dir)
+    expectation_path = expected_root / f"utopia-{scenario}.json"
+    if not expectation_path.is_file():
+        raise ValidationError(f"unknown benchmark scenario: {scenario}")
+
+    validation = validate_revision(root)
+    bundle = _load_benchmark_bundle(root)
+    expectation = read_json(expectation_path)
+    semantic_rubric = read_json(expected_root / "semantic-rubric.json")
+    prohibited = read_json(expected_root / "prohibited-claims.json")
+
+    business_nodes = [
+        node
+        for filename, records in bundle["nodes_by_file"].items()
+        if filename != "unknowns.jsonl"
+        for node in records
+        if node.get("claim_status") in {"confirmed", "inferred"}
+        and node.get("lifecycle_status") in {"active", "conditional"}
+    ]
+    business_text = _normalized_text(business_nodes)
+    unknown_text = _normalized_text(
+        bundle["nodes_by_file"]["unknowns.jsonl"]
+    )
+    _validate_business_framing(bundle, expectation)
+    _require_concept_groups(
+        "business concepts",
+        business_text,
+        expectation.get("required_business_concepts", []),
+    )
+    _require_concept_groups(
+        "searched unknowns",
+        unknown_text,
+        expectation.get("required_unknowns", []),
+    )
+    _validate_benchmark_evidence(
+        bundle["evidence"],
+        expectation.get("required_evidence", []),
+    )
+    _validate_family_members(
+        [
+            *bundle["nodes_by_file"]["use-cases.jsonl"],
+            *bundle["nodes_by_file"]["use-case-families.json"],
+        ],
+        expectation.get("required_family_members", []),
+    )
+    _validate_prohibited_claims(
+        bundle["nodes_by_file"],
+        prohibited,
+        scenario,
+    )
+
+    review = bundle["review"]
+    validate_benchmark_review(review, semantic_rubric)
+
+    return {
+        "status": "passed",
+        "scenario": scenario,
+        "canonical_revision_sha256": validation[
+            "canonical_revision_sha256"
+        ],
+        "confirmed_use_cases": len(
+            [
+                node
+                for node in bundle["nodes_by_file"]["use-cases.jsonl"]
+                if node.get("claim_status") == "confirmed"
+            ]
+        ),
+        "evidence_count": len(bundle["evidence"]),
+        "semantic_review_total": review["total_score"],
+    }
+
+
 def publish_revision(
     run_dir: Path | str,
     workspace_root: Path | str,
@@ -1093,6 +1369,14 @@ def build_parser() -> argparse.ArgumentParser:
     publish.add_argument("--workspace", required=True)
     audit = subparsers.add_parser("audit")
     audit.add_argument("--revision", required=True)
+    benchmark = subparsers.add_parser("benchmark")
+    benchmark.add_argument("--revision", required=True)
+    benchmark.add_argument("--expectations", required=True)
+    benchmark.add_argument(
+        "--scenario",
+        required=True,
+        choices=["work-order", "video-binding"],
+    )
     return parser
 
 
@@ -1101,6 +1385,12 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command in {"validate-model", "audit"}:
             result = validate_revision(args.revision)
+        elif args.command == "benchmark":
+            result = benchmark_revision(
+                args.revision,
+                args.expectations,
+                args.scenario,
+            )
         else:
             result = publish_revision(args.run_dir, args.workspace)
     except ValidationError as exc:

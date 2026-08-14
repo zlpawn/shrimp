@@ -341,6 +341,137 @@ class BusinessKnowledgeGuardTests(unittest.TestCase):
 
         self.assertTrue(guard.review_is_stale(before, after))
 
+    def test_benchmark_rejects_technical_chain_without_business_framing(self):
+        bundle = {
+            "nodes_by_file": {
+                "use-cases.jsonl": [
+                    {
+                        "id": "UC-video",
+                        "claim_status": "confirmed",
+                        "lifecycle_status": "active",
+                        "goal": {},
+                        "success_outcomes": [],
+                    }
+                ]
+            },
+            "relationships": [],
+        }
+
+        with self.assertRaisesRegex(guard.ValidationError, "business goal"):
+            guard._validate_business_framing(
+                bundle,
+                {"minimum_confirmed_use_cases": 1},
+            )
+
+    def test_benchmark_rejects_missing_use_case_family_member(self):
+        nodes = [
+            {
+                "id": "UC-video",
+                "title": "普通应用绑定",
+                "summary": "通过应用把视频绑定到工地。",
+                "claim_status": "confirmed",
+                "lifecycle_status": "active",
+            }
+        ]
+
+        with self.assertRaisesRegex(guard.ValidationError, "operational-relink"):
+            guard._validate_family_members(
+                nodes,
+                [
+                    {
+                        "id": "normal",
+                        "any_of": ["普通应用绑定"],
+                    },
+                    {
+                        "id": "operational-relink",
+                        "any_of": ["运维重新关联"],
+                    },
+                ],
+            )
+
+    def test_benchmark_rejects_invented_prohibited_claim(self):
+        nodes_by_file = {
+            "use-cases.jsonl": [
+                {
+                    "id": "UC-work-order",
+                    "claim_status": "confirmed",
+                    "lifecycle_status": "active",
+                    "summary": "仅管理员可以创建工单。",
+                }
+            ],
+            "unknowns.jsonl": [],
+        }
+        prohibited = {
+            "work-order": [
+                {
+                    "id": "invented-authorization",
+                    "any_of": ["仅管理员可以创建工单"],
+                }
+            ]
+        }
+
+        with self.assertRaisesRegex(
+            guard.ValidationError,
+            "invented-authorization",
+        ):
+            guard._validate_prohibited_claims(
+                nodes_by_file,
+                prohibited,
+                "work-order",
+            )
+
+    def test_benchmark_rejects_low_or_zero_semantic_review(self):
+        rubric = {
+            "minimum_total_score": 13,
+            "required_score_minimums": {
+                "business_framing": 2,
+                "evidence": 2,
+            },
+        }
+        low_review = {
+            "scores": {
+                "business_framing": 0,
+                "evidence": 2,
+            },
+            "total_score": 12,
+        }
+
+        with self.assertRaisesRegex(
+            guard.ValidationError,
+            "semantic review total below 13",
+        ):
+            guard.validate_benchmark_review(low_review, rubric)
+
+        zero_dimension_review = {
+            "scores": {
+                "business_framing": 0,
+                "evidence": 2,
+            },
+            "total_score": 13,
+        }
+        with self.assertRaisesRegex(
+            guard.ValidationError,
+            "business_framing below 2",
+        ):
+            guard.validate_benchmark_review(zero_dimension_review, rubric)
+
+    def test_real_repository_expectations_preserve_core_business_gates(self):
+        expected = SKILL_DIR / "tests" / "fixtures" / "expected"
+        work_order = json.loads(
+            (expected / "utopia-work-order.json").read_text(encoding="utf-8")
+        )
+        video = json.loads(
+            (expected / "utopia-video-binding.json").read_text(encoding="utf-8")
+        )
+        rubric = json.loads(
+            (expected / "semantic-rubric.json").read_text(encoding="utf-8")
+        )
+
+        self.assertEqual(len(work_order["required_unknowns"]), 5)
+        self.assertEqual(len(video["required_family_members"]), 8)
+        self.assertEqual(rubric["reviewer_mode"], "independent")
+        self.assertGreaterEqual(rubric["minimum_total_score"], 13)
+
     def test_failed_publication_keeps_current_pointer(self):
         workspace = self.root / "workspace"
         run = workspace / "runs" / "RUN-bad" / "staging-artifacts"
