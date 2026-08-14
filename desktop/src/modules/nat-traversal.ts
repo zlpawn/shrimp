@@ -386,11 +386,13 @@ function renderFrpcDetail(): string {
           <span class="badge">HTTP ${escapeHtml(String(st.dashboard?.statusCode || "-"))}</span>
           <span class="badge">${escapeHtml(st.dashboard?.message || "无附加信息")}</span>
         </div>
+        <p class="nt-help">“按 serverAddr 推断 URL”会根据上面的 serverAddr 自动填成 <code>http://&lt;serverAddr&gt;:7500/static/#/</code>（端口默认 7500，可再改）。</p>
         <div class="nt-inline-actions" style="margin-top:12px;">
           <button class="btn" onclick="window.__ntInferDashboard()">按 serverAddr 推断 URL</button>
-          <a class="btn" href="/v1/nat-traversal/frps-dashboard/" target="_blank" rel="noreferrer">经网关反代打开</a>
+          <button class="btn btn-primary" onclick="window.__ntOpenDashboardProxy()">保存并经网关打开</button>
           ${cfg.frpsDashboard?.url ? `<a class="btn" href="${escapeHtml(cfg.frpsDashboard.url)}" target="_blank" rel="noreferrer">打开原始地址</a>` : ""}
         </div>
+        <p class="nt-help">经网关打开会先保存当前填写的用户名/密码到本地 secrets，再带鉴权访问 Dashboard。若只填了没点保存，会一直 Unauthorized。</p>
         ${renderDashboardEmbed(cfg, st)}
       </div>
 
@@ -693,6 +695,27 @@ async function testPeer(id: string): Promise<void> {
 };
 (window as any).__ntImportSelected = () => { void importSelected(); };
 (window as any).__ntInferDashboard = () => inferDashboardFromServerAddr();
+(window as any).__ntOpenDashboardProxy = async () => {
+  try {
+    const user = (document.getElementById("nt-dash-user") as HTMLInputElement | null)?.value?.trim() || "";
+    const pass = (document.getElementById("nt-dash-pass") as HTMLInputElement | null)?.value?.trim() || "";
+    const already = Boolean(state.config?.secrets?.dashboardAuthConfigured);
+    if (!already && !user && !pass) {
+      showToast("请先填写 Dashboard 用户名和密码", "error");
+      return;
+    }
+    // Persist form (including dashboard credentials) before opening proxy page.
+    await save();
+    // Re-check after save.
+    if (!state.config?.secrets?.dashboardAuthConfigured) {
+      showToast("Dashboard 账号未保存成功，请重试保存", "error");
+      return;
+    }
+    window.open("/v1/nat-traversal/frps-dashboard/", "_blank", "noopener,noreferrer");
+  } catch (error: any) {
+    showToast(error?.message || String(error), "error");
+  }
+};
 (window as any).__ntMaybeInferDashboard = () => {
   const urlInput = document.getElementById("nt-dash-url") as HTMLInputElement | null;
   if (!urlInput) return;
