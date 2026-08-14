@@ -82,6 +82,7 @@
 | 部署 | 第一期两边都装并运行 Gateway + Antigravity |
 | 安全边界 | 不改安装包；secrets 与公开配置分离 |
 | 交付顺序 | 先写完整设计；优先实现 frpc 管理台；再做 Remote Session |
+| 架构风格 | 对齐 Dream Skin：domain/application/http + provider 注入；开闭原则；未启用零影响 |
 
 ---
 
@@ -626,23 +627,30 @@ RemoteSession {
 lib/
   nat-traversal/
     index.mjs
-    config.mjs
-    secrets.mjs
-    service.mjs
+    paths.mjs
+    domain/
+      errors.mjs
+      config-schema.mjs
+      provider-contract.mjs
+      status.mjs
+    application/
+      service.mjs
     providers/
+      registry.mjs
       frpc.mjs
       ssh.mjs
     process/
       frpc-supervisor.mjs
+    infra/
+      secret-store.mjs
+      dashboard-proxy.mjs
     http/
       routes.mjs
-  remote-session/
-    index.mjs
-    service.mjs
-    protocol.mjs
-    host-attach.mjs
+  remote-session/          # Phase 2+
+    domain/
+    application/
+    host-attach/
     http/
-      routes.mjs
 ```
 
 原则对齐现有工程：
@@ -651,6 +659,76 @@ lib/
 - server.js 只做最小路由挂载
 - 配置可选；未启用时零影响
 - 测试独立
+
+
+## 6.1A 架构约束（开闭原则 / 可扩展 / 易维护）
+
+本模块必须对齐现有系统扩展架构，尤其参考 `lib/dream-skin/` 与 extension registry 的做法。这是实现硬约束，不是建议。
+
+### 必须遵守
+
+1. **模块自包含**
+   - 业务代码放在 `lib/nat-traversal/`（Remote Session 后续放 `lib/remote-session/`）
+   - `server.js` 只做最小 import + 路由挂载 + 配置装配
+   - 不把 frpc/进程/反代细节散进 `server.js`
+
+2. **分层清晰（对标 Dream Skin）**
+   ```text
+   lib/nat-traversal/
+     domain/           # 纯规则：配置校验、状态枚举、错误码、provider 契约
+     application/      # service 编排：唯一用例入口
+     providers/        # 可替换实现：frpc、ssh、future...
+     process/          # 进程监督等基础设施
+     http/             # 路由与 DTO，不写业务决策
+     index.mjs         # 对外导出
+   ```
+   - `domain` 不依赖 HTTP、子进程、文件系统副作用（校验函数可纯）
+   - `http/routes` 只做解析请求、调 service、映射错误码
+   - `application/service` 通过构造注入 provider / supervisor / secretStore
+
+3. **开闭原则（Open/Closed）**
+   - 对扩展开放：新增穿透实现 = 新增 provider，不改 Remote Session
+   - 对修改关闭：核心 service 不出现 `if (provider === 'frpc') { ...大段实现... }` 分支堆叠
+   - provider 注册表 + 统一接口（validate/apply/start/stop/status/ensureLink）
+   - 能力用 `capabilities` / feature flags 声明，UI 按能力展示，不按硬编码身份写死
+
+4. **依赖注入，不硬编码全局**
+   - `createNatTraversalService({ configStore, secretStore, providers, supervisorFactory, clock, logger })`
+   - frpc 二进制路径、配置目录、dashboard 反代 client 均可注入，便于测试
+
+5. **配置可选，未启用零影响**
+   - `natTraversal.enabled !== true` 时不启进程、不挂危险路由副作用
+   - 不引入新的必需环境变量
+   - 故障隔离：本模块失败不影响既有 gateway 主路径
+
+6. **secrets 与公开配置分离**
+   - token / dashboard 密码只进 secrets
+   - 公开配置可展示、可备份；secrets 不进模板、不进前端回显
+
+7. **可测试**
+   - domain 与 service 必须可单测（假 provider / 假 supervisor）
+   - HTTP 集成测只验证路由装配与错误映射
+   - 不依赖真实公网 frps 才能跑核心单测
+
+8. **可回滚**
+   - 删除 `lib/nat-traversal/` + 撤销 server/panel 挂载即可移除
+   - 不污染既有 client endpoint 路由逻辑
+
+### 反例（禁止）
+
+- 在 `server.js` 里直接 `spawn('frpc')`
+- UI 写死只支持 frpc，导致以后加 provider 要改全站
+- Remote Session 直接读 `frpc.ini`
+- 为了快把配置、进程、反代、会话全塞进一个大文件
+
+### 扩展点预留
+
+| 扩展点 | 第一期 | 未来 |
+| --- | --- | --- |
+| Tunnel provider | `frpc` | `ssh`, `tailscale`, ... |
+| Dashboard source | frps web dashboard 反代 | 其他状态面板 |
+| Peer auth | 手动 SSH / 预配置 | 配对码 |
+| Consumer | 管理台 + 后续 Remote Session | 其他跨机能力 |
 
 ### 6.2 配置开关
 
