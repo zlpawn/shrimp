@@ -309,10 +309,13 @@ function renderFrpcDetail(): string {
         </div>
         <div class="node-card-row" style="margin-top:12px;gap:8px;flex-wrap:wrap;">
           <span class="badge">PID ${escapeHtml(String(st.provider?.pid || 0))}</span>
-          <span class="badge">Token 来自 frpc 配置文件</span>
-          <span class="badge">Dashboard Auth ${cfg.secrets?.dashboardAuthConfigured ? "已配置" : "未配置"}</span>
-          <span class="badge mono">${escapeHtml(st.provider?.binPath || cfg.frpc?.binPath || "自动发现 frpc")}</span>
-          ${configPath ? `<span class="badge mono" title="${escapeHtml(configPath)}">配置源 ${escapeHtml(configPath)}</span>` : ""}
+          <span class="badge mono" title="${escapeHtml(st.provider?.binPath || cfg.frpc?.binPath || "")}">frpc ${escapeHtml(st.provider?.binPath || cfg.frpc?.binPath || "未找到")}</span>
+          ${(() => {
+            const source = st.provider?.configPath || configPath || "";
+            return source
+              ? `<span class="badge mono" title="${escapeHtml(source)}">配置源 ${escapeHtml(source)}</span>`
+              : "";
+          })()}
         </div>
       </div>
 
