@@ -108,16 +108,6 @@ class RepositorySnapshotTests(unittest.TestCase):
         self.assertNotIn("_leo_business/current.json", result["files"])
         self.assertIn("_leo_business/**", result["exclusions"])
 
-    def test_legacy_business_output_is_still_excluded(self):
-        output = self.repo / "_business_knowledge"
-        output.mkdir()
-        (output / "current.json").write_text("{}\n", encoding="utf-8")
-
-        result = snapshot.capture_snapshot(self.repo)
-
-        self.assertNotIn("_business_knowledge/current.json", result["files"])
-        self.assertIn("_business_knowledge/**", result["exclusions"])
-
     def test_compare_accepts_snapshot_path(self):
         before = snapshot.capture_snapshot(self.repo, exclusions=[])
         before_path = Path(self.temp.name) / "before.json"

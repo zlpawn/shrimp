@@ -20,7 +20,6 @@ SCHEMA_VERSION = "1.0"
 DEFAULT_EXCLUSIONS = [
     ".git/**",
     "_leo_business/**",
-    "_business_knowledge/**",
 ]
 
 
