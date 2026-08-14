@@ -1,11 +1,11 @@
-# Antigravity Remote Session + Reachability 设计
+# Antigravity Remote Session + NAT Traversal 设计
 
 **日期：** 2026-08-14  
 **状态：** 待评审  
 **分支：** `codex/antigravity-remote-session`  
 **工作区：** `.worktrees/codex-antigravity-remote-session`  
 **实现路线：** 方案 1 — Gateway 控制面 + 挂接对端已运行 Antigravity 后端  
-**交付顺序：** 先完整设计，再优先实现 Reachability / frpc 管理台，后做 Remote Session
+**交付顺序：** 先完整设计，再优先实现 NAT Traversal / frpc 管理台，后做 Remote Session
 
 ---
 
@@ -38,7 +38,7 @@
 
 只服务个人两台机器，验收线是：
 
-1. **Reachability / frpc 管理台可用**
+1. **NAT Traversal / frpc 管理台可用**
 2. 在稳定通道之上，Remote Session 达到**写代码闭环**
 
 写代码闭环定义：
@@ -68,8 +68,8 @@
 | --- | --- |
 | 产品终局 | Antigravity 正式产品能力，不是一次性旁路脚本 |
 | 技术路线 | Gateway 控制面 + 挂接 B 本机已运行 Antigravity 后端 |
-| 模块拆分 | Reachability（系统扩展）与 Remote Session（业务能力）分离 |
-| 穿透能力 | 系统扩展导航名「内网穿透 (Reachability)」；frpc 为第一 provider；面板内嵌 frps Dashboard |
+| 模块拆分 | NAT Traversal（系统扩展）与 Remote Session（业务能力）分离 |
+| 穿透能力 | 系统扩展导航名「内网穿透 (NAT Traversal)」；frpc 为第一 provider；面板内嵌 frps Dashboard |
 | 网络 | 双 NAT + 阿里云 frps；第一期手动配置 SSH/frpc 对端 |
 | 对等模型 | 双向对等，第一期先打通一对机器 |
 | 执行位置 | 全在 Host（被控端）：工作区、终端、文件、审批引擎、额度 |
@@ -102,7 +102,7 @@
 │             └──────────────┬───────────────┘                  │
 │                            │ uses                             │
 │                   ┌────────▼────────┐                         │
-│                   │ Reachability    │                         │
+│                   │ NAT Traversal   │                         │
 │                   │ - frpc provider │                         │
 │                   │ - ssh trust     │                         │
 │                   │ - link status   │                         │
@@ -112,7 +112,7 @@
 ┌────────────────────────────┼──────────────────────────────────┐
 │                     Host Machine (B)                          │
 │                   ┌────────▼────────┐                         │
-│                   │ Reachability    │                         │
+│                   │ NAT Traversal   │                         │
 │                   │ - frpc provider │                         │
 │                   │ - local expose  │                         │
 │                   └────────┬────────┘                         │
@@ -138,7 +138,7 @@
 
 ### 3.2 模块职责
 
-#### A. Reachability（系统扩展，与 Dream Skin 同级）
+#### A. NAT Traversal（系统扩展，与 Dream Skin 同级）
 
 **一句话：** 解决“两台机器如何稳定、可配置、可观测地互通”。
 
@@ -203,14 +203,15 @@
 
 ---
 
-## 4. Reachability 设计
+## 4. NAT Traversal 设计
 
 ### 4.1 定位
 
 名称偏能力，不偏工具：
 
-- 模块名建议：`lib/reachability/`
-- 对外能力名：Reachability / Peer Link
+- 模块名建议：`lib/nat-traversal/`
+- 对外能力名：NAT Traversal / Peer Link
+- 配置键：`natTraversal`
 - frpc 只是第一个 provider
 
 对标现有系统扩展风格（如 Dream Skin）：
@@ -234,16 +235,16 @@
 
 | 用途 | 名称 |
 | --- | --- |
-| 侧边导航 / 面板标题 | **内网穿透 (Reachability)** |
-| 配置键 | `reachability` |
-| 代码目录 | `lib/reachability/` |
-| 前端模块 | `desktop/src/modules/reachability.ts` |
-| API 前缀 | `/v1/reachability` |
-| CLI | `shrimp reachability ...` |
+| 侧边导航 / 面板标题 | **内网穿透 (NAT Traversal)** |
+| 配置键 | `natTraversal` |
+| 代码目录 | `lib/nat-traversal/` |
+| 前端模块 | `desktop/src/modules/nat-traversal.ts` |
+| API 前缀 | `/v1/nat-traversal` |
+| CLI | `shrimp nat-traversal ...` |
 
 说明：
 
-- 对外产品名用能力名 **Reachability**，不叫 `frp-extension`
+- 对外产品名用能力名 **NAT Traversal**，不叫 `frp-extension`
 - frpc / frps 是 provider 与运维对象，作为页内子区块出现
 - 中文主标题用「内网穿透」，与 Dream Skin / Session Sync 的「中文 (English)」格式一致
 
@@ -261,7 +262,7 @@ Remote Session 只依赖这些能力，不直接依赖 frpc：
 ```ts
 type PeerId = string;
 
-interface ReachabilityProvider {
+interface NatTraversalProvider {
   id: string; // "frpc" | "ssh" | ...
   capabilities(): string[];
   validateConfig(config: unknown): { ok: true } | { ok: false; error: string };
@@ -300,7 +301,7 @@ type ServiceName =
 
 ```json
 {
-  "reachability": {
+  "natTraversal": {
     "enabled": true,
     "activeProvider": "frpc",
     "frpc": {
@@ -338,11 +339,11 @@ type ServiceName =
 }
 ```
 
-敏感项进 secrets（如 `gateway.secrets.json` 或独立 `reachability.secrets.json`）：
+敏感项进 secrets（如 `gateway.secrets.json` 或独立 `nat-traversal.secrets.json`）：
 
 ```json
 {
-  "reachability": {
+  "natTraversal": {
     "frpc": {
       "token": "..."
     }
@@ -366,22 +367,22 @@ type ServiceName =
 #### 管理 API（建议）
 
 ```text
-GET  /v1/reachability/capabilities
-GET  /v1/reachability/status
-GET  /v1/reachability/config
-PUT  /v1/reachability/config
-POST /v1/reachability/start
-POST /v1/reachability/stop
-POST /v1/reachability/restart
-POST /v1/reachability/test-link
-GET  /v1/reachability/peers
-PUT  /v1/reachability/peers/:id
-DELETE /v1/reachability/peers/:id
+GET  /v1/nat-traversal/capabilities
+GET  /v1/nat-traversal/status
+GET  /v1/nat-traversal/config
+PUT  /v1/nat-traversal/config
+POST /v1/nat-traversal/start
+POST /v1/nat-traversal/stop
+POST /v1/nat-traversal/restart
+POST /v1/nat-traversal/test-link
+GET  /v1/nat-traversal/peers
+PUT  /v1/nat-traversal/peers/:id
+DELETE /v1/nat-traversal/peers/:id
 ```
 
 #### 面板能力（第一期）
 
-导航入口：`系统扩展 → 内网穿透 (Reachability)`
+导航入口：`系统扩展 → 内网穿透 (NAT Traversal)`
 
 - 启用开关
 - frpc 连接参数编辑（serverAddr/serverPort/proxies）
@@ -408,7 +409,7 @@ DELETE /v1/reachability/peers/:id
    - `dashboardUser` / `dashboardPassword`：进入 secrets，不进公开配置
 2. **展示方式（优先顺序）**
    - **A. 网关反代嵌入（推荐）**  
-     面板 iframe 指向本机 Gateway 代理地址，例如 `/v1/reachability/frps-dashboard/`  
+     面板 iframe 指向本机 Gateway 代理地址，例如 `/v1/nat-traversal/frps-dashboard/`  
      由 Gateway 注入 Basic Auth 访问远端 Dashboard，避免浏览器弹窗/跨域/iframe 鉴权问题
    - **B. 直接 iframe 原地址**  
      仅当 Dashboard 无鉴权或浏览器可接受时降级使用
@@ -426,15 +427,15 @@ DELETE /v1/reachability/peers/:id
 补充 API：
 
 ```text
-GET  /v1/reachability/frps-dashboard/status
-ALL  /v1/reachability/frps-dashboard/*   # reverse proxy to configured dashboard
+GET  /v1/nat-traversal/frps-dashboard/status
+ALL  /v1/nat-traversal/frps-dashboard/*   # reverse proxy to configured dashboard
 ```
 
 公开配置示例补充：
 
 ```json
 {
-  "reachability": {
+  "natTraversal": {
     "frpc": {
       "serverAddr": "39.105.19.237",
       "serverPort": 7000
@@ -451,7 +452,7 @@ secrets 示例补充：
 
 ```json
 {
-  "reachability": {
+  "natTraversal": {
     "frpc": { "token": "..." },
     "frpsDashboard": {
       "username": "...",
@@ -528,7 +529,7 @@ RemoteSession {
 
 #### 开启功能
 
-1. 两边 Gateway 启用 Reachability
+1. 两边 Gateway 启用 NAT Traversal
 2. 配置并启动 frpc
 3. 录入对端 peer（手动 SSH/服务地址）
 4. 启用 Remote Session 能力
@@ -536,7 +537,7 @@ RemoteSession {
 #### 建立远程会话
 
 1. A 选择 peer = B
-2. Reachability `ensureLink(B)`
+2. NAT Traversal `ensureLink(B)`
 3. A 请求 B Gateway：`attachLocalBackend`
 4. B 确认本机 Antigravity backend 可用；否则失败并提示打开 Antigravity
 5. A 拉取 B 的 project 列表
@@ -580,7 +581,7 @@ RemoteSession {
 
 传输层第一期可先走：
 
-- Gateway HTTP + SSE/WebSocket over Reachability link
+- Gateway HTTP + SSE/WebSocket over NAT Traversal link
 - 不必一开始自研完整二进制协议
 
 ### 5.5 Host 挂接策略
@@ -623,7 +624,7 @@ RemoteSession {
 
 ```text
 lib/
-  reachability/
+  nat-traversal/
     index.mjs
     config.mjs
     secrets.mjs
@@ -655,23 +656,23 @@ lib/
 
 ```json
 {
-  "reachability": { "enabled": false },
+  "natTraversal": { "enabled": false },
   "remoteSession": { "enabled": false }
 }
 ```
 
 依赖关系：
 
-- `remoteSession.enabled = true` 时，要求 `reachability.enabled = true`
-- Reachability 可单独启用（只做穿透管理，不做远程会话）
+- `remoteSession.enabled = true` 时，要求 `natTraversal.enabled = true`
+- NAT Traversal 可单独启用（只做穿透管理，不做远程会话）
 
 ### 6.3 CLI（建议）
 
 ```text
-shrimp reachability status
-shrimp reachability start
-shrimp reachability stop
-shrimp reachability test --peer home-mac
+shrimp nat-traversal status
+shrimp nat-traversal start
+shrimp nat-traversal stop
+shrimp nat-traversal test --peer home-mac
 
 shrimp remote status
 shrimp remote peers
@@ -679,7 +680,7 @@ shrimp remote projects --peer home-mac
 shrimp remote open --peer home-mac --project <id>
 ```
 
-第一期至少先保证 Reachability CLI/API；Remote CLI 可随第二刀补齐。
+第一期至少先保证 NAT Traversal CLI/API；Remote CLI 可随第二刀补齐。
 
 ---
 
@@ -722,12 +723,12 @@ shrimp remote open --peer home-mac --project <id>
 - 锁定双模块边界
 - 后续实现前补充 Antigravity backend 挂点探测清单
 
-### Phase 1 — Reachability / frpc 管理台（优先）
+### Phase 1 — NAT Traversal / frpc 管理台（优先）
 
 交付：
 
-1. `lib/reachability` 模块骨架
-2. 导航命名：`内网穿透 (Reachability)`
+1. `lib/nat-traversal` 模块骨架
+2. 导航命名：`内网穿透 (NAT Traversal)`
 3. frpc 配置读写（公开配置 + secrets）
 4. 启停/重启/状态
 5. HTTP API
@@ -775,14 +776,14 @@ shrimp remote open --peer home-mac --project <id>
 - 设备配对码
 - 自动拉起 Antigravity
 - Host 上浏览选目录
-- 更多 Reachability providers
+- 更多 NAT Traversal providers
 - 更完整的官方 UI 内建体验
 
 ---
 
 ## 9. 测试策略
 
-### Reachability
+### NAT Traversal
 
 - 配置校验（缺 token、端口冲突、非法 proxy）
 - secrets 与公开配置分离
@@ -869,7 +870,7 @@ shrimp remote open --peer home-mac --project <id>
 ## 12. 建议落地顺序（确认后执行）
 
 1. 评审并批准本设计
-2. 实现 Phase 1：Reachability + frpc 管理台
+2. 实现 Phase 1：NAT Traversal + frpc 管理台
 3. 并行/紧随做 Antigravity backend 挂点探测笔记
 4. 再写 Phase 2 implementation plan
 5. 实现 Remote Session 编码闭环
@@ -880,7 +881,7 @@ shrimp remote open --peer home-mac --project <id>
 
 - 要做正式产品能力，但第一期只服务个人两台机
 - 不做 CDP 主路径，不做独立会话世界主路径
-- 通道层独立成 Reachability，frpc 管理台优先
+- 通道层独立成 NAT Traversal，frpc 管理台优先
 - Remote Session 挂 B 已运行 Antigravity 后端
 - 控制端主导，Host 继续当前回合
 - 未来再嵌官方 UI、配对码、自动拉起
