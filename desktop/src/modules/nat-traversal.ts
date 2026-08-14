@@ -180,7 +180,6 @@ function renderCatalog(): string {
   const st = statusMeta(state.status?.provider?.status);
   const server = cfg.frpc?.serverAddr || "未配置 serverAddr";
   const proxyCount = cfg.frpc?.proxies?.length || 0;
-  const enabled = Boolean(cfg.enabled);
   const dashReady = Boolean(cfg.secrets?.dashboardAuthConfigured);
 
   return `
@@ -201,7 +200,7 @@ function renderCatalog(): string {
           <div class="node-card-meta">
             <div class="node-card-row">
               <span class="badge">frpc / frps</span>
-              <span class="badge ${enabled ? "badge-default" : ""}">${enabled ? "已启用" : "未启用"}</span>
+              <span class="badge ${st.text === "运行中" ? "badge-default" : ""}">${escapeHtml(st.text)}</span>
               <span class="badge">${proxyCount} 条映射</span>
               <span class="badge">${dashReady ? "Dashboard 已鉴权" : "Dashboard 待配置"}</span>
             </div>
@@ -308,7 +307,6 @@ function renderFrpcDetail(): string {
             <button class="btn" onclick="window.__ntRestart()">重启</button>
           </div>
         </div>
-        ${renderToggle("nt-enabled", Boolean(cfg.enabled), "启用 NAT Traversal / frpc", "关闭后不会自动拉起 frpc 进程")}
         <div class="node-card-row" style="margin-top:12px;gap:8px;flex-wrap:wrap;">
           <span class="badge">PID ${escapeHtml(String(st.provider?.pid || 0))}</span>
           <span class="badge">Token 来自 frpc 配置文件</span>
@@ -417,7 +415,6 @@ function render(): void {
 }
 
 function collectConfigFromDom(): { config: NatConfig; secrets: any } {
-  const enabled = (document.getElementById("nt-enabled") as HTMLInputElement | null)?.checked;
   const serverAddr = (document.getElementById("nt-server-addr") as HTMLInputElement | null)?.value || "";
   const serverPort = Number((document.getElementById("nt-server-port") as HTMLInputElement | null)?.value || 7000);
   const binPath = (document.getElementById("nt-bin-path") as HTMLInputElement | null)?.value || "";
@@ -450,7 +447,7 @@ function collectConfigFromDom(): { config: NatConfig; secrets: any } {
 
   return {
     config: {
-      enabled: Boolean(enabled),
+      enabled: true,
       activeProvider: "frpc",
       frpc: {
         binPath,
