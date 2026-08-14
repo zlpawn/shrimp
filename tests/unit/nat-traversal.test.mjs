@@ -153,27 +153,51 @@ test("service updateConfig persists public config and secrets", async () => {
 
 test("frpc supervisor start/stop with fake binary", async () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "frpc-sup-"));
-  const bin = path.join(tmp, "fake-frpc.sh");
+  const bin = path.join(tmp, "fake-frpc");
   const configPath = path.join(tmp, "frpc.toml");
   const pidPath = path.join(tmp, "frpc.pid");
   const logPath = path.join(tmp, "frpc.log");
-  fs.writeFileSync(
-    bin,
-    "#!/bin/sh\nwhile true; do echo hello; sleep 1; done\n",
-    { mode: 0o755 },
-  );
-  fs.writeFileSync(configPath, "serverAddr=\"x\"\n");
+  fs.writeFileSync(configPath, 'serverAddr = "x"\n');
+
+  const children = [];
+  const spawnImpl = () => {
+    const handlers = { error: [], exit: [] };
+    const child = {
+      pid: 4242,
+      killed: false,
+      stdout: { on() {} },
+      stderr: { on() {} },
+      unref() {},
+      once(event, cb) {
+        handlers[event] = handlers[event] || [];
+        handlers[event].push(cb);
+      },
+      on(event, cb) {
+        handlers[event] = handlers[event] || [];
+        handlers[event].push(cb);
+      },
+      kill() {
+        this.killed = true;
+        for (const cb of handlers.exit || []) cb(0, null);
+        return true;
+      },
+    };
+    children.push(child);
+    return child;
+  };
 
   const supervisor = createFrpcSupervisor({
     binPath: bin,
     configPath,
     pidPath,
     logPath,
+    spawnImpl,
+    isPidAliveImpl: (pid) => children.some((c) => c.pid === pid && !c.killed),
   });
 
   const started = await supervisor.start();
   assert.equal(started.status, "running");
-  assert.ok(started.pid > 0);
+  assert.equal(started.pid, 4242);
 
   const stopped = await supervisor.stop();
   assert.equal(stopped.status, "stopped");
@@ -221,7 +245,13 @@ test("listFrpcCandidatePaths finds versioned frp directories", async () => {
   const cfg = path.join(dir, "frpc.toml");
   fs.writeFileSync(cfg, 'serverAddr = "1.2.3.4"\nserverPort = 7000\n');
   const found = listFrpcCandidatePaths({ homeDir: tmp, env: {}, whichBin: () => "" });
-  assert.ok(found.some((f) => f.endsWith("frp_0.71.0_darwin_arm64/frpc.toml")));
+  assert.ok(
+    found.some((f) =>
+      path.normalize(f).endsWith(
+        path.normalize(path.join("frp_0.71.0_darwin_arm64", "frpc.toml")),
+      ),
+    ),
+  );
 });
 
 
