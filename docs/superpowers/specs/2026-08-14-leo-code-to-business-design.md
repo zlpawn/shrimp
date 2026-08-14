@@ -355,10 +355,10 @@ the artifacts and the semantic-review mode satisfies the requested completion le
 
 ## 8. Target Repository Artifacts
 
-The default output root is `_business_knowledge/` inside the analyzed repository:
+The default output root is `_leo_business/` inside the analyzed repository:
 
 ```text
-_business_knowledge/
+_leo_business/
 ├── current.json
 ├── runs/
 │   └── <run-id>/
@@ -1565,7 +1565,7 @@ modifying its existing Reversa outputs.
 The acceptance baseline is commit `c6893715d0d52477849595e7ed7c8c5ec276f322`. Because the working
 tree contains unrelated untracked artifacts, the reproducible benchmark reads tracked files from
 that commit or an isolated temporary worktree. The first test writes only to a separate temporary
-output directory. Writing `_business_knowledge/` into the reference repository requires explicit
+output directory. Writing `_leo_business/` into the reference repository requires explicit
 approval.
 
 The benchmark stores:

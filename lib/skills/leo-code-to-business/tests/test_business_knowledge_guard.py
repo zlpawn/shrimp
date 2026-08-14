@@ -77,7 +77,7 @@ class BusinessKnowledgeGuardTests(unittest.TestCase):
             "unknown",
             "current source",
             "codebase-memory-mcp",
-            "_business_knowledge",
+            "_leo_business",
             "output-workspace.md",
         ]:
             self.assertIn(required, text)
@@ -87,7 +87,7 @@ class BusinessKnowledgeGuardTests(unittest.TestCase):
             SKILL_DIR / "references" / "output-workspace.md"
         ).read_text(encoding="utf-8").lower()
         for required in [
-            "<repository-root>/_business_knowledge/",
+            "<repository-root>/_leo_business/",
             "current.json",
             "ai-context.md",
             "site/index.html",
@@ -104,7 +104,7 @@ class BusinessKnowledgeGuardTests(unittest.TestCase):
 
         workspace = guard.resolve_workspace_root(repo)
 
-        self.assertEqual(workspace, (repo / "_business_knowledge").resolve())
+        self.assertEqual(workspace, (repo / "_leo_business").resolve())
 
     def test_explicit_absolute_workspace_overrides_default(self):
         repo = self.root / "repo"
@@ -123,7 +123,7 @@ class BusinessKnowledgeGuardTests(unittest.TestCase):
             guard.ValidationError,
             "absolute path",
         ):
-            guard.resolve_workspace_root(repo, "_business_knowledge")
+            guard.resolve_workspace_root(repo, "_leo_business")
 
     def test_reference_repository_requires_external_workspace(self):
         repo = self.root / "reference-repo"
@@ -140,7 +140,7 @@ class BusinessKnowledgeGuardTests(unittest.TestCase):
         ):
             guard.resolve_workspace_root(
                 repo,
-                repo / "_business_knowledge",
+                repo / "_leo_business",
                 repository_role="reference",
             )
 

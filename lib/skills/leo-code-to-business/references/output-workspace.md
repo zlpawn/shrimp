@@ -10,7 +10,7 @@ stable way to find the latest published revision.
 For a normal writable primary repository, the default output root is:
 
 ```text
-<repository-root>/_business_knowledge/
+<repository-root>/_leo_business/
 ```
 
 An explicitly requested output root takes precedence. It must be an absolute path.
@@ -32,7 +32,7 @@ Resolve the path deterministically with `resolve_workspace_root(...)` from
 ## Directory Layout
 
 ```text
-_business_knowledge/
+_leo_business/
 ├── current.json
 ├── runs/
 │   └── <run-id>/
@@ -85,7 +85,7 @@ AI reads `ai-context.md` first, then retrieves canonical JSON/JSONL records as n
 ## Snapshot Isolation
 
 The output root must not enter the source evidence snapshot. The default
-`_business_knowledge/**` exclusion is mandatory. When an explicit workspace is located inside the
+`_leo_business/**` exclusion is mandatory. When an explicit workspace is located inside the
 repository, add its repository-relative path to snapshot exclusions before freezing scope.
 
 Do not publish if the output location changed after the snapshot was frozen. Record the resolved

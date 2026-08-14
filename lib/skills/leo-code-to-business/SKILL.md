@@ -47,7 +47,7 @@ Record repository root, branch, HEAD, working-tree state, file hashes, included 
 configuration scope, available tests/SQL/docs, run mode, and output location.
 
 Read [output-workspace.md](references/output-workspace.md). Default to
-`<repository-root>/_business_knowledge/`; explicit absolute output paths take precedence. Use an
+`<repository-root>/_leo_business/`; explicit absolute output paths take precedence. Use an
 external directory for reference, acceptance, detached, or read-only repositories.
 Use `scripts/repository_snapshot.py` when available. Do not analyze against a moving snapshot.
 

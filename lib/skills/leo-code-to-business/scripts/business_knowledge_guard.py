@@ -202,7 +202,7 @@ def resolve_workspace_root(
             raise ValidationError(
                 "explicit external --workspace is required for " + ", ".join(reasons)
             )
-        return repo / "_business_knowledge"
+        return repo / "_leo_business"
 
     raw_output = Path(output_root).expanduser()
     if not raw_output.is_absolute():

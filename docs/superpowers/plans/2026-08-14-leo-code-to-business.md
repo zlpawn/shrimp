@@ -336,13 +336,13 @@ def test_dirty_file_changes_snapshot_without_head_change(self):
 
 ```python
 def test_excluded_business_output_is_not_hashed(self):
-    (self.repo / "_business_knowledge").mkdir()
-    (self.repo / "_business_knowledge" / "current.json").write_text("{}")
+    (self.repo / "_leo_business").mkdir()
+    (self.repo / "_leo_business" / "current.json").write_text("{}")
     result = snapshot.capture_snapshot(
         self.repo,
-        exclusions=["_business_knowledge/**"],
+        exclusions=["_leo_business/**"],
     )
-    self.assertNotIn("_business_knowledge/current.json", result["files"])
+    self.assertNotIn("_leo_business/current.json", result["files"])
 ```
 
 - [ ] **Step 2: Run tests and verify failure**
@@ -362,7 +362,7 @@ Implementation rules:
 
 - use `git -C <repo> rev-parse`, `symbolic-ref`, and `status --porcelain=v1 -z`;
 - hash regular files with SHA-256;
-- skip `.git/**`, `_business_knowledge/**`, configured exclusions, symlinks escaping the root, and
+- skip `.git/**`, `_leo_business/**`, configured exclusions, symlinks escaping the root, and
   unreadable files while recording diagnostics;
 - sort paths before canonical serialization;
 - compute `snapshot_sha256` without `captured_at` and `mtime_ns`;
@@ -402,7 +402,7 @@ python3 -m unittest \
 python3 lib/skills/leo-code-to-business/scripts/repository_snapshot.py \
   capture \
   --repo /Users/pa/project/AI/local-ai-gateway \
-  --exclude "_business_knowledge/**" \
+  --exclude "_leo_business/**" \
   --output /tmp/leo-code-to-business-snapshot.json
 ```
 
@@ -1347,7 +1347,7 @@ run the semantic rubric in a fresh review context
 publish only into "$OUTPUT"
 ```
 
-Do not write `_business_knowledge/` into the reference worktree.
+Do not write `_leo_business/` into the reference worktree.
 
 - [ ] **Step 4: Validate the portable baseline**
 

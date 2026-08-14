@@ -17,7 +17,11 @@ from typing import Any
 
 
 SCHEMA_VERSION = "1.0"
-DEFAULT_EXCLUSIONS = [".git/**", "_business_knowledge/**"]
+DEFAULT_EXCLUSIONS = [
+    ".git/**",
+    "_leo_business/**",
+    "_business_knowledge/**",
+]
 
 
 class SnapshotError(Exception):
