@@ -235,7 +235,9 @@ lib/skills/leo-code-to-business/
 ├── scripts/
 │   ├── business_knowledge_guard.py
 │   ├── java_spring_inventory.py
-│   └── render_business_site.py
+│   ├── render_business_site.py
+│   └── java/
+│       └── JavaSourceIndexer.java
 └── tests/
     ├── fixtures/
     └── test_business_knowledge_guard.py
@@ -1104,30 +1106,72 @@ The adapter produces observable facts, not business conclusions.
 
 ### 14.1 Implementation Technology
 
-The portable baseline uses Python 3 standard-library scripts plus the JDK tools already available in
-the target environment:
+The portable baseline uses Python 3 standard-library scripts plus a bundled Java source indexer
+compiled and run with the target environment's JDK:
 
 - XML parsing for Maven descriptors;
-- deterministic lexical scanning with comment/string-aware tokenization for Java source;
+- the JDK Compiler Tree API (`javax.tools`, `com.sun.source.tree`, `com.sun.source.util`) for Java
+  ASTs, symbols, types, method invocations, assignments, throws, and control-flow locations;
+- a deterministic local symbol table and call graph built from source declarations, imports,
+  injected field types, inheritance, method names, signatures, and resolved compiler elements;
+- forward and reverse indexes for method calls, persistence mutations, state writes, external calls,
+  events, configuration reads, and deterministic condition/guard anchors;
+- a comment/string-aware lexical fallback for files that the JDK parser cannot analyze;
 - `javap` only when compiled classes are already available and source resolution needs confirmation;
 - targeted XML parsing for MyBatis mapper files;
 - Git CLI for history, rename, and snapshot operations.
 
-The first implementation must not use regex over raw Java text as its sole route or annotation
-parser. The scanner tokenizes package, import, annotation, type, method, field, invocation, literal,
-assignment, and control-flow boundaries sufficiently for the supported matrix below.
+`JavaSourceIndexer.java` is compiled into the owned run directory and never writes compiled files
+into the analyzed repository. It runs with annotation processing disabled. The adapter may obtain a
+classpath from existing Maven metadata, compiled outputs, and the local Maven cache, but dependency
+download is not required for source-only analysis.
 
-An available code knowledge graph remains the preferred provider for interprocedural and data-flow
-tracing. Its output is imported through a provider-neutral fact interface. The portable baseline
-does not promise whole-program Java resolution without it.
+The first implementation must not use regex over raw Java text as its sole route, annotation, call,
+or mutation parser.
 
-Milestone 5 reference acceptance requires `codebase-memory-mcp` with a fresh full or moderate index
-for the pinned repository commit. If that provider is unavailable, the Skill may still build a
-portable `partial` revision, but it cannot claim the reference acceptance has passed. This makes the
-deep multi-hop and backward-writer requirement explicit rather than depending on an unspecified
-resolver.
+### 14.2 Built-In Relationship Resolution
 
-### 14.2 Bounded Support Matrix
+The bundled indexer is the required baseline for cross-method and reverse tracing. It resolves
+relationships in this order:
+
+1. exact compiler symbol and executable element;
+2. declared/injected receiver type plus exact method name and compatible arity/signature;
+3. imports, package, inheritance, and implementation candidates;
+4. unique repository-wide candidate after type and arity filtering;
+5. unresolved candidate set.
+
+Every call edge records:
+
+```text
+caller
+call_site
+receiver_expression
+resolved_receiver_type
+callee
+resolution_method
+candidate_callees
+resolution_confidence
+source_location
+```
+
+Ambiguous candidate sets never become confirmed edges. They remain visible anchors and cap the
+affected path at `E2`.
+
+The adapter materializes:
+
+- outbound callees for forward tracing;
+- inbound callers for reverse tracing;
+- writers by entity, table, mapper operation, field, and state/status field;
+- readers by entity, table, mapper operation, and field;
+- external effects by client type and invoked operation;
+- event producers and consumers;
+- guard/condition anchors connected to the methods and effects they control.
+
+Tracing walks these local indexes transitively with cycle detection, maximum-path safeguards, and
+explicit truncation records. Therefore the Skill's required business reconstruction does not depend
+on any MCP, IDE, LSP server, or external graph service.
+
+### 14.3 Bounded Support Matrix
 
 Version 1 guarantees deterministic discovery for:
 
@@ -1140,6 +1184,8 @@ Version 1 guarantees deterministic discovery for:
 | Components | `@Controller`, `@RestController`, `@Service`, `@Component`, `@Repository` |
 | External HTTP | `@FeignClient` interfaces and direct method invocations on resolved injected client fields |
 | Persistence | MyBatis mapper interfaces/XML, repository/mapper method calls, entity field assignments, explicit update builder/setter calls |
+| Cross-method tracing | source methods and constructors resolved by compiler symbol or the bounded candidate algorithm in Section 14.2 |
+| Reverse tracing | callers, entity/table writes, state-field writes, external effects, event producers/consumers, and condition anchors from local indexes |
 | Rules | literals, enum/constants, comparisons, guard returns/throws, selected validation annotations |
 | State | assignments or update calls to fields classified as state/status plus surrounding guards |
 | Config | `application*.yml/properties`, Maven profiles, `@Profile`, `@Value`, `@ConfigurationProperties`, common conditional-property annotations |
@@ -1160,7 +1206,7 @@ Version 1 records but does not guarantee resolution for:
 An unresolved supported-looking construct becomes an inventory anchor with `resolution_status:
 unresolved`; it cannot silently disappear.
 
-### 14.3 Evidence Ceiling and Degradation
+### 14.4 Evidence Ceiling and Degradation
 
 `E3` requires all of:
 
@@ -1172,21 +1218,31 @@ unresolved`; it cannot silently disappear.
 - no truncated provider result.
 
 Portable lexical facts may be `E3` for route declaration, constant value, and local assignment.
-Interprocedural business paths are at most `E2` without either a language-aware graph or a fully
-resolved local call chain. Unsupported or environment-dependent constructs force `partial` for
-affected use cases, not for unrelated domains.
+Interprocedural business paths may be `E3` when every edge is resolved by exact compiler symbol or
+an exact local declaration match and all path conditions above hold. Candidate-based, ambiguous,
+truncated, unsupported, or environment-dependent paths are at most `E2` and force `partial` only for
+affected use cases, not unrelated domains.
 
-### 14.4 Provider Order
+### 14.5 Optional Enhancement Providers
 
-Use:
+After the built-in index is complete, the Skill may use an available code knowledge graph, IDE/LSP
+index, or similar local tool to:
 
-1. an available code knowledge graph for symbol, call, and data-flow relationships;
-2. `java_spring_inventory.py` for deterministic anchors and source evidence;
-3. targeted textual search for literals, logs, documents, SQL fragments, and unsupported patterns.
+- find additional candidate relationships;
+- compare forward and reverse paths;
+- detect possible omissions;
+- prioritize manual investigation;
+- cross-check impact analysis.
+
+Enhancement providers are optional. Their absence does not lower completion status. Their output
+cannot by itself create an `E3` claim: every accepted edge or fact must resolve back to current
+repository source through the built-in evidence validator.
 
 Every fact records provider, provider version, query or scan rule, truncation, and resolution status.
+Built-in and enhancement-provider disagreements become conflicts or investigation tasks rather than
+being silently resolved.
 
-### 14.5 Adapter Boundary
+### 14.6 Adapter Boundary
 
 The adapter returns a language-neutral fact model:
 
@@ -1444,8 +1500,13 @@ Create small fixture repositories covering:
 
 - class and method route composition;
 - multiple HTTP methods and paths;
+- exact compiler-symbol calls across modules;
+- interface-to-implementation and injected-field call resolution;
+- overloaded methods and ambiguous candidate sets;
+- multi-hop forward and reverse call traversal with cycles;
 - scheduler, listener, consumer, and callback entries;
 - service-to-repository and service-to-external-client paths;
+- reverse lookup from entity/table/state writes to all reachable business entries;
 - constants and enum-backed decisions;
 - state mutations;
 - retries and compensation;
@@ -1484,6 +1545,11 @@ The benchmark stores:
 - prohibited confirmed claims;
 - expected semantic rubric thresholds;
 - baseline commit and adapter/schema versions.
+
+The benchmark's primary run disables all enhancement providers. It must pass using only the bundled
+Java source indexer, Python scripts, Git, and repository-local evidence. A second optional run may
+enable `codebase-memory-mcp`, an IDE/LSP index, or another graph provider to measure additional
+recall and disagreements, but that result cannot replace the portable baseline.
 
 ## 20. Acceptance Scenarios
 
@@ -1599,6 +1665,8 @@ complete when an earlier gate fails.
 - the support matrix in Section 14 is implemented;
 - fixture anchors for routes, schedules, listeners, persistence writes, state writes, external calls,
   config conditions, and unsupported constructs are complete;
+- the bundled indexer passes exact, ambiguous, cyclic, multi-hop forward, and reverse tracing
+  fixtures without an enhancement provider;
 - unresolved constructs remain visible.
 
 ### Milestone 3: Business Reconstruction
@@ -1617,7 +1685,8 @@ complete when an earlier gate fails.
 - invocation-time update and immutable revisions work;
 - query can trigger targeted reanalysis when knowledge is stale or insufficient;
 - audit detects stale review and projection changes;
-- both pinned `utopia-scs-recorder` scenarios pass independent semantic review.
+- both pinned `utopia-scs-recorder` scenarios pass independent semantic review with enhancement
+  providers disabled.
 
 Version 1 is complete when:
 
