@@ -151,6 +151,86 @@ test("service updateConfig persists public config and secrets", async () => {
   assert.ok(fs.existsSync(paths.generatedFrpcConfigPath));
 });
 
+
+function makeNatService(initial = {}) {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "nat-service-"));
+  const configPath = path.join(tmp, "gateway.config.json");
+  const secretsPath = path.join(tmp, "nat-traversal.secrets.json");
+  fs.writeFileSync(configPath, JSON.stringify({ server: { port: 8788 }, clients: {} }, null, 2));
+
+  let stored = {
+    enabled: true,
+    activeProvider: "frpc",
+    frpc: {
+      serverAddr: "1.2.3.4",
+      serverPort: 7000,
+      proxies: [],
+    },
+    frpsDashboard: { enabled: false, url: "" },
+    peers: [],
+    ...initial,
+  };
+
+  const paths = resolveNatTraversalPaths({
+    configFile: configPath,
+    secretsFile: secretsPath,
+  });
+
+  const service = createNatTraversalService({
+    paths,
+    configStore: {
+      get: () => stored,
+      save: (next) => {
+        stored = next;
+      },
+    },
+  });
+
+  return { service, getStored: () => stored, tmp };
+}
+
+test("service ensureLink requires known peer", async () => {
+  const { service } = makeNatService();
+  await assert.rejects(
+    () => service.ensureLink("missing"),
+    (error) => error instanceof NatTraversalError && error.code === "peer_not_found",
+  );
+});
+
+test("service openService returns gateway-api endpoint from peer services", async () => {
+  const { service } = makeNatService();
+  await service.updateConfig({
+    enabled: true,
+    frpc: {
+      serverAddr: "1.2.3.4",
+      serverPort: 7000,
+      proxies: [],
+    },
+    peers: [{
+      id: "home",
+      displayName: "Home",
+      services: { gatewayApi: "127.0.0.1:18788" },
+    }],
+  });
+  const endpoint = await service.openService("home", "gateway-api");
+  assert.equal(endpoint.service, "gateway-api");
+  assert.equal(endpoint.endpoint, "127.0.0.1:18788");
+});
+
+test("service ensureLink fails clearly when provider is not running", async () => {
+  const { service } = makeNatService({
+    peers: [{
+      id: "home",
+      displayName: "Home",
+      services: { gatewayApi: "127.0.0.1:18788" },
+    }],
+  });
+  await assert.rejects(
+    () => service.ensureLink("home"),
+    (error) => error instanceof NatTraversalError && error.code === "not_running",
+  );
+});
+
 test("frpc supervisor start/stop with fake binary", async () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "frpc-sup-"));
   const bin = path.join(tmp, "fake-frpc");
