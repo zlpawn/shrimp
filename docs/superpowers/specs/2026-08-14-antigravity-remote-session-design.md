@@ -1,11 +1,12 @@
 # Antigravity Remote Session + NAT Traversal 设计
 
 **日期：** 2026-08-14  
-**状态：** 待评审  
+**状态：** Phase 1 已实现，待 Phase 2  
 **分支：** `codex/antigravity-remote-session`  
-**工作区：** `.worktrees/codex-antigravity-remote-session`  
+**工作区：** `.worktrees/antigravity-remote-session`  
 **实现路线：** 方案 1 — Gateway 控制面 + 挂接对端已运行 Antigravity 后端  
-**交付顺序：** 先完整设计，再优先实现 NAT Traversal / frpc 管理台，后做 Remote Session
+**交付顺序：** 先完整设计，再优先实现 NAT Traversal / frpc 管理台，后做 Remote Session  
+**Phase 2 计划：** `docs/superpowers/plans/2026-08-14-antigravity-remote-session.md`
 
 ---
 
@@ -471,7 +472,34 @@ secrets 示例补充：
 - 跨用户分享 tunnel 配置
 - 把 frps Dashboard 账号做成多租户权限系统
 
+### 4.3.1 Phase 1 implementation deltas
+
+Phase 1 code is already on this branch. The following deviations from the original draft are accepted:
+
+1. **frps Dashboard UX**
+   - Implemented: gateway reverse proxy + open in a new tab
+   - Deferred: in-page iframe embed
+   - Reason: avoid breaking the management panel layout; proxy still solves Basic Auth / CORS issues
+
+2. **Local frpc discovery / import**
+   - Implemented: `GET /v1/nat-traversal/discover-frpc`, `POST /v1/nat-traversal/import-frpc`
+   - Token stays in the original frpc config file by default and is not copied into gateway secrets
+
+3. **Link API for Remote Session**
+   - Provider methods already existed; service/HTTP now expose:
+     - `POST /v1/nat-traversal/ensure-link`
+     - `POST /v1/nat-traversal/open-service`
+   - Remote Session must depend on these APIs, not on frpc process internals
+
+4. **CLI**
+   - Not required for Phase 1 acceptance
+   - Can follow after HTTP/panel path is stable
+
+5. **Cross-platform tests**
+   - NAT unit suite is green on Windows after supervisor injection + path-normalized assertions
+
 ### 4.4 SSH 信任如何用
+
 
 第一期鉴权与运维通道复用现有 SSH：
 
@@ -803,6 +831,8 @@ shrimp remote open --peer home-mac --project <id>
 
 ### Phase 1 — NAT Traversal / frpc 管理台（优先）
 
+状态：**已实现（本分支）**
+
 交付：
 
 1. `lib/nat-traversal` 模块骨架
@@ -811,17 +841,19 @@ shrimp remote open --peer home-mac --project <id>
 4. 启停/重启/状态
 5. HTTP API
 6. 网关面板基础管理台
-7. frps Dashboard 配置 + 反代嵌入展示
+7. frps Dashboard 配置 + 反代（新标签打开）
 8. peer 手动配置
-9. `test-link`
-10. 单元测试与基础集成测试
+9. `test-link` / `ensure-link` / `open-service`
+10. 本机 frpc 发现与导入
+11. 单元测试（含 Windows 基线）
 
 验收：
 
 - 能在面板配置 frpc 并成功启动
 - 能看到 running/error 状态
-- 能配置 frps Dashboard 地址与账号，并在管理台内查看页面
+- 能配置 frps Dashboard 地址与账号，并通过网关代理打开页面
 - 能对手动 peer 做连通测试
+- Remote Session 可调用 `ensureLink` / `openService`
 - 不启用时不影响现有网关
 
 ### Phase 2 — Remote Session 编码闭环
@@ -934,7 +966,8 @@ shrimp remote open --peer home-mac --project <id>
 
 - frpc 管理台可配置、可启停、可观测
 - peer 可手动录入并测通
-- 为 Remote Session 提供稳定 `ensureLink/linkStatus`
+- 为 Remote Session 提供稳定 `ensureLink` / `openService` / `testLink`
+- Dashboard 反代可用；面板默认新标签打开
 
 ### Phase 2 成功
 
@@ -948,9 +981,9 @@ shrimp remote open --peer home-mac --project <id>
 ## 12. 建议落地顺序（确认后执行）
 
 1. 评审并批准本设计
-2. 实现 Phase 1：NAT Traversal + frpc 管理台
-3. 并行/紧随做 Antigravity backend 挂点探测笔记
-4. 再写 Phase 2 implementation plan
+2. 实现 Phase 1：NAT Traversal + frpc 管理台  **（已完成）**
+3. 并行/紧随做 Antigravity backend 挂点探测笔记  **（见 `2026-08-14-antigravity-host-backend-probe.md`）**
+4. 再写 Phase 2 implementation plan  **（已完成：`plans/2026-08-14-antigravity-remote-session.md`）**
 5. 实现 Remote Session 编码闭环
 
 ---
