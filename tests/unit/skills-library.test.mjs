@@ -282,6 +282,47 @@ test("Leo coding standards is a searchable managed development skill", () => {
   }
 });
 
+test("Leo code to business is a managed business-knowledge skill", () => {
+  const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), "leo-code-business-"));
+  try {
+    SkillInstaller.ensureManagedSkills(tmpHome);
+    const snapshot = SkillInstaller.buildLibrarySnapshot({ homeDir: tmpHome });
+    const skill = snapshot.allSkills.find((item) => item.name === "leo-code-to-business");
+
+    assert.ok(skill);
+    assert.equal(skill.managed, true);
+    assert.equal(skill.installed, true);
+    assert.equal(skill.category, "research");
+
+    for (const query of ["业务知识", "代码转业务", "business knowledge"]) {
+      const result = SkillInstaller.buildLibrarySnapshot({ homeDir: tmpHome, query });
+      assert.equal(
+        result.skills.some((item) => item.name === "leo-code-to-business"),
+        true,
+        query,
+      );
+    }
+
+    const installed = path.join(
+      tmpHome,
+      ".agents",
+      "skills",
+      "leo-code-to-business",
+    );
+    for (const relativePath of [
+      "SKILL.md",
+      "agents/openai.yaml",
+      "references/business-knowledge-model.md",
+      "references/repository-investigation.md",
+      "references/optional-code-tools.md",
+    ]) {
+      assert.equal(fs.existsSync(path.join(installed, relativePath)), true, relativePath);
+    }
+  } finally {
+    fs.rmSync(tmpHome, { recursive: true, force: true });
+  }
+});
+
 test("Skill library infers uncataloged Java review skills as development", () => {
   const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), "java-review-category-"));
   try {
