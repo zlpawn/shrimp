@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "use-case-family.schema.json",
+  "title": "Business Use Case Family",
+  "allOf": [{"$ref": "common-node.schema.json"}],
+  "type": "object",
+  "required": ["shared_goal", "differentiating_dimensions", "known_omitted_candidates"],
+  "properties": {
+    "shared_goal": {"type": "string"},
+    "differentiating_dimensions": {"type": "array"},
+    "known_omitted_candidates": {"type": "array"}
+  }
+}

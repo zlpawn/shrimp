@@ -1,0 +1,14 @@
+[
+  {
+    "id": "CAP-work-order",
+    "title": "工单管理",
+    "summary": "为施工问题创建和跟踪待办工单。",
+    "claim_status": "confirmed",
+    "lifecycle_status": "active",
+    "confidence": "E3",
+    "source_snapshot": "SNAP-sample",
+    "semantic_revision": 1,
+    "created_at": "2026-08-14T00:00:00Z",
+    "updated_at": "2026-08-14T00:00:00Z"
+  }
+]

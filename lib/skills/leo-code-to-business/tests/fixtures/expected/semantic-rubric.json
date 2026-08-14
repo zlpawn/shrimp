@@ -1,0 +1,14 @@
+{
+  "reviewer_mode": "independent",
+  "minimum_total_score": 13,
+  "required_score_minimums": {
+    "business_framing": 2,
+    "main_flow": 2,
+    "rules_and_decisions": 1,
+    "effects": 1,
+    "failure_and_recovery": 1,
+    "variants": 1,
+    "evidence": 2,
+    "unknown_discipline": 2
+  }
+}

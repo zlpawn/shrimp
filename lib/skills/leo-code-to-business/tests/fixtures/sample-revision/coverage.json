@@ -1,0 +1,9 @@
+{
+  "entry_classification": 1.0,
+  "business_entry_mapping": 1.0,
+  "required_investigations": 1.0,
+  "rule_evidence": 1.0,
+  "anchor_mapping": 1.0,
+  "scenario_coverage": 1.0,
+  "projection_integrity": 1.0
+}

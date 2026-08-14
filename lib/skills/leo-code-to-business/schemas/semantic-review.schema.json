@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "semantic-review.schema.json",
+  "title": "Business Knowledge Semantic Review",
+  "type": "object",
+  "required": ["review_protocol_version", "reviewer_mode", "canonical_revision_sha256", "scores", "total_score", "reviewed_at"],
+  "properties": {
+    "review_protocol_version": {"type": "string"},
+    "reviewer_mode": {"enum": ["independent", "self_reviewed", "unreviewed"]},
+    "canonical_revision_sha256": {"type": "string"},
+    "scores": {"type": "object"},
+    "total_score": {"type": "integer", "minimum": 0, "maximum": 16},
+    "reviewed_at": {"type": "string"}
+  }
+}
