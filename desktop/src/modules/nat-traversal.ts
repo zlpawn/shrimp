@@ -374,10 +374,14 @@ function renderFrpcDetail(): string {
         <h3>frps Dashboard</h3>
         ${renderToggle("nt-dash-enabled", Boolean(cfg.frpsDashboard?.enabled), "在管理台展示 Dashboard", "关闭后仅保留“新标签打开”，不嵌入预览")}
         <div class="nt-form-grid" style="margin-top:12px;">
-          <label class="form-group nt-col-2">
-            <span>Dashboard URL（默认可由 serverAddr + 7500 推断）</span>
-            <input id="nt-dash-url" value="${escapeHtml(cfg.frpsDashboard?.url || "")}" placeholder="http://x.x.x.x:7500/static/#/" />
-          </label>
+          <div class="form-group nt-col-2">
+            <span>Dashboard URL</span>
+            <div class="nt-url-row">
+              <input id="nt-dash-url" value="${escapeHtml(cfg.frpsDashboard?.url || "")}" placeholder="http://x.x.x.x:7500/static/#/" />
+              <button type="button" class="btn" onclick="window.__ntInferDashboard()" title="根据 frpc 的 serverAddr 生成 http://&lt;serverAddr&gt;:7500/static/#/">从 serverAddr 填充</button>
+            </div>
+            <p class="nt-help" style="margin-top:6px;">空着时会按 serverAddr + 默认端口 7500 生成；也可手改端口/路径。</p>
+          </div>
           <label class="form-group"><span>用户名（secrets）</span><input id="nt-dash-user" value="${escapeHtml(state.dashUserDraft)}" placeholder="${cfg.secrets?.dashboardAuthConfigured ? "已配置，留空保留" : ""}" /></label>
           <label class="form-group"><span>密码（secrets）</span><input id="nt-dash-pass" type="password" value="${escapeHtml(state.dashPassDraft)}" placeholder="${cfg.secrets?.dashboardAuthConfigured ? "已配置，留空保留" : ""}" /></label>
         </div>
@@ -386,13 +390,11 @@ function renderFrpcDetail(): string {
           <span class="badge">HTTP ${escapeHtml(String(st.dashboard?.statusCode || "-"))}</span>
           <span class="badge">${escapeHtml(st.dashboard?.message || "无附加信息")}</span>
         </div>
-        <p class="nt-help">“按 serverAddr 推断 URL”会根据上面的 serverAddr 自动填成 <code>http://&lt;serverAddr&gt;:7500/static/#/</code>（端口默认 7500，可再改）。</p>
         <div class="nt-inline-actions" style="margin-top:12px;">
-          <button class="btn" onclick="window.__ntInferDashboard()">按 serverAddr 推断 URL</button>
-          <button class="btn btn-primary" onclick="window.__ntOpenDashboardProxy()">保存并经网关打开</button>
+          <button class="btn" onclick="window.__ntOpenDashboardProxy()">保存并打开 Dashboard</button>
           ${cfg.frpsDashboard?.url ? `<a class="btn" href="${escapeHtml(cfg.frpsDashboard.url)}" target="_blank" rel="noreferrer">打开原始地址</a>` : ""}
         </div>
-        <p class="nt-help">经网关打开会先保存当前填写的用户名/密码到本地 secrets，再带鉴权访问 Dashboard。若只填了没点保存，会一直 Unauthorized。</p>
+        <p class="nt-help">打开前会先保存用户名/密码。只填写不保存会 Unauthorized。</p>
         ${renderDashboardEmbed(cfg, st)}
       </div>
 
