@@ -315,6 +315,7 @@ test("Leo code to business is a managed business-knowledge skill", () => {
       "references/business-knowledge-model.md",
       "references/repository-investigation.md",
       "references/optional-code-tools.md",
+      "references/output-workspace.md",
     ]) {
       assert.equal(fs.existsSync(path.join(installed, relativePath)), true, relativePath);
     }

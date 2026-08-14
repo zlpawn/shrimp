@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 import shutil
+import subprocess
 import sys
 import uuid
 from pathlib import Path
@@ -143,6 +144,76 @@ QUERY_INTENTS = (
 
 class ValidationError(Exception):
     """Raised when canonical business knowledge violates a release contract."""
+
+
+def _is_within(path: Path, parent: Path) -> bool:
+    try:
+        path.relative_to(parent)
+    except ValueError:
+        return False
+    return True
+
+
+def _is_detached_worktree(repository_root: Path) -> bool:
+    repository_check = subprocess.run(
+        ["git", "-C", str(repository_root), "rev-parse", "--is-inside-work-tree"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        check=False,
+        text=True,
+    )
+    if repository_check.returncode != 0:
+        return False
+    branch_check = subprocess.run(
+        ["git", "-C", str(repository_root), "symbolic-ref", "-q", "HEAD"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    return branch_check.returncode != 0
+
+
+def resolve_workspace_root(
+    repository_root: Path | str,
+    output_root: Path | str | None = None,
+    repository_role: str = "primary",
+) -> Path:
+    repo = Path(repository_root).expanduser().resolve()
+    if not repo.is_dir():
+        raise ValidationError(f"repository root is not a directory: {repo}")
+    if repository_role not in {"primary", "reference", "acceptance"}:
+        raise ValidationError(f"unsupported repository role: {repository_role}")
+
+    detached = _is_detached_worktree(repo)
+    writable = os.access(repo, os.W_OK)
+    external_required = (
+        repository_role in {"reference", "acceptance"} or detached or not writable
+    )
+
+    if output_root is None:
+        if external_required:
+            reasons = []
+            if repository_role != "primary":
+                reasons.append(f"{repository_role} repository")
+            if detached:
+                reasons.append("detached worktree")
+            if not writable:
+                reasons.append("read-only repository")
+            raise ValidationError(
+                "explicit external --workspace is required for " + ", ".join(reasons)
+            )
+        return repo / "_business_knowledge"
+
+    raw_output = Path(output_root).expanduser()
+    if not raw_output.is_absolute():
+        raise ValidationError("explicit workspace must be an absolute path")
+    workspace = raw_output.resolve()
+    if external_required and _is_within(workspace, repo):
+        raise ValidationError(
+            "workspace must be outside a reference, acceptance, detached, "
+            "or read-only repository"
+        )
+    return workspace
 
 
 def changed_paths(change_set: dict[str, Any]) -> set[str]:
@@ -1334,6 +1405,20 @@ def publish_revision(
     validation = validate_revision(staging)
     if validation["status"] == "blocked":
         raise ValidationError("blocked revision cannot be published")
+    required_projections = [
+        staging / "ai-context.md",
+        staging / "site" / "index.html",
+    ]
+    missing_projections = [
+        path.relative_to(staging).as_posix()
+        for path in required_projections
+        if not path.is_file()
+    ]
+    if missing_projections:
+        raise ValidationError(
+            "publication requires generated projections: "
+            + ", ".join(missing_projections)
+        )
     revision_hash = validation["canonical_revision_sha256"]
     revision_id = f"REV-{revision_hash[:16]}"
     revisions = workspace / "revisions"
@@ -1366,7 +1451,13 @@ def build_parser() -> argparse.ArgumentParser:
     validate.add_argument("--revision", required=True)
     publish = subparsers.add_parser("publish")
     publish.add_argument("--run-dir", required=True)
-    publish.add_argument("--workspace", required=True)
+    publish.add_argument("--repo")
+    publish.add_argument("--workspace")
+    publish.add_argument(
+        "--repository-role",
+        default="primary",
+        choices=["primary", "reference", "acceptance"],
+    )
     audit = subparsers.add_parser("audit")
     audit.add_argument("--revision", required=True)
     benchmark = subparsers.add_parser("benchmark")
@@ -1392,7 +1483,20 @@ def main(argv: list[str] | None = None) -> int:
                 args.scenario,
             )
         else:
-            result = publish_revision(args.run_dir, args.workspace)
+            if args.repo:
+                workspace = resolve_workspace_root(
+                    args.repo,
+                    args.workspace,
+                    args.repository_role,
+                )
+            elif args.workspace:
+                raw_workspace = Path(args.workspace).expanduser()
+                if not raw_workspace.is_absolute():
+                    raise ValidationError("explicit workspace must be an absolute path")
+                workspace = raw_workspace.resolve()
+            else:
+                raise ValidationError("publish requires --repo or --workspace")
+            result = publish_revision(args.run_dir, workspace)
     except ValidationError as exc:
         print(str(exc), file=sys.stderr)
         return 1

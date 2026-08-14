@@ -13,6 +13,14 @@ SPEC = importlib.util.spec_from_file_location("business_knowledge_guard", SCRIPT
 guard = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader
 SPEC.loader.exec_module(guard)
+RENDER_SCRIPT = SKILL_DIR / "scripts" / "render_business_site.py"
+RENDER_SPEC = importlib.util.spec_from_file_location(
+    "render_business_site_for_guard_tests",
+    RENDER_SCRIPT,
+)
+renderer = importlib.util.module_from_spec(RENDER_SPEC)
+assert RENDER_SPEC.loader
+RENDER_SPEC.loader.exec_module(renderer)
 
 
 class BusinessKnowledgeGuardTests(unittest.TestCase):
@@ -69,8 +77,82 @@ class BusinessKnowledgeGuardTests(unittest.TestCase):
             "unknown",
             "current source",
             "codebase-memory-mcp",
+            "_business_knowledge",
+            "output-workspace.md",
         ]:
             self.assertIn(required, text)
+
+    def test_output_workspace_reference_defines_ai_and_human_paths(self):
+        text = (
+            SKILL_DIR / "references" / "output-workspace.md"
+        ).read_text(encoding="utf-8").lower()
+        for required in [
+            "<repository-root>/_business_knowledge/",
+            "current.json",
+            "ai-context.md",
+            "site/index.html",
+            "reference or acceptance repository",
+            "detached worktree",
+            "read-only",
+            "snapshot",
+        ]:
+            self.assertIn(required, text)
+
+    def test_default_workspace_is_inside_primary_repository(self):
+        repo = self.root / "repo"
+        repo.mkdir()
+
+        workspace = guard.resolve_workspace_root(repo)
+
+        self.assertEqual(workspace, (repo / "_business_knowledge").resolve())
+
+    def test_explicit_absolute_workspace_overrides_default(self):
+        repo = self.root / "repo"
+        repo.mkdir()
+        external = self.root / "published-knowledge"
+
+        workspace = guard.resolve_workspace_root(repo, external)
+
+        self.assertEqual(workspace, external.resolve())
+
+    def test_explicit_relative_workspace_is_rejected(self):
+        repo = self.root / "repo"
+        repo.mkdir()
+
+        with self.assertRaisesRegex(
+            guard.ValidationError,
+            "absolute path",
+        ):
+            guard.resolve_workspace_root(repo, "_business_knowledge")
+
+    def test_reference_repository_requires_external_workspace(self):
+        repo = self.root / "reference-repo"
+        repo.mkdir()
+
+        with self.assertRaisesRegex(
+            guard.ValidationError,
+            "explicit external",
+        ):
+            guard.resolve_workspace_root(repo, repository_role="reference")
+        with self.assertRaisesRegex(
+            guard.ValidationError,
+            "outside",
+        ):
+            guard.resolve_workspace_root(
+                repo,
+                repo / "_business_knowledge",
+                repository_role="reference",
+            )
+
+        external = self.root / "reference-output"
+        self.assertEqual(
+            guard.resolve_workspace_root(
+                repo,
+                external,
+                repository_role="reference",
+            ),
+            external.resolve(),
+        )
 
     def test_optional_tool_reference_never_makes_mcp_required(self):
         text = (
@@ -493,6 +575,39 @@ class BusinessKnowledgeGuardTests(unittest.TestCase):
             json.loads(current.read_text(encoding="utf-8"))["revision_id"],
             "REV-old",
         )
+
+    def test_successful_publication_points_ai_and_people_to_same_revision(self):
+        workspace = self.root / "workspace"
+        renderer.write_projections(self.revision)
+
+        current = guard.publish_revision(self.revision, workspace)
+
+        revision_id = current["revision_id"]
+        self.assertEqual(
+            current["ai_path"],
+            f"revisions/{revision_id}/ai-context.md",
+        )
+        self.assertEqual(
+            current["html_path"],
+            f"revisions/{revision_id}/site/index.html",
+        )
+        self.assertTrue((workspace / current["ai_path"]).is_file())
+        self.assertTrue((workspace / current["html_path"]).is_file())
+        self.assertEqual(
+            current["canonical_revision_sha256"],
+            json.loads(
+                (workspace / "current.json").read_text(encoding="utf-8")
+            )["canonical_revision_sha256"],
+        )
+
+    def test_publication_rejects_missing_ai_and_html_projections(self):
+        workspace = self.root / "workspace"
+
+        with self.assertRaisesRegex(
+            guard.ValidationError,
+            "generated projections",
+        ):
+            guard.publish_revision(self.revision, workspace)
 
     @staticmethod
     def read_jsonl_from(path):

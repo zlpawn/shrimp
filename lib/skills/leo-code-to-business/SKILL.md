@@ -46,6 +46,9 @@ Every invocation against an existing workspace starts with a repository snapshot
 Record repository root, branch, HEAD, working-tree state, file hashes, included modules, exclusions,
 configuration scope, available tests/SQL/docs, run mode, and output location.
 
+Read [output-workspace.md](references/output-workspace.md). Default to
+`<repository-root>/_business_knowledge/`; explicit absolute output paths take precedence. Use an
+external directory for reference, acceptance, detached, or read-only repositories.
 Use `scripts/repository_snapshot.py` when available. Do not analyze against a moving snapshot.
 
 ### 2. Load Core References
@@ -118,7 +121,8 @@ searched unresolved.
 Use `scripts/business_knowledge_guard.py` to validate inventory conservation, relationships,
 evidence, investigations, unknowns, coverage, semantic review, revision hashes, and projections.
 
-Publish immutable revisions only. Atomically update only `current.json`.
+Publish immutable revisions only. Atomically update only `current.json`; AI and people locate the
+current `ai-context.md` and `site/index.html` through that pointer.
 
 ### 8. Render Projections
 
