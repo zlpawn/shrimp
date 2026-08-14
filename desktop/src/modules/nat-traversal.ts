@@ -97,10 +97,36 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
   return data as T;
 }
 
-function rootEl(): HTMLElement {
-  const el = document.getElementById("nat-traversal-root");
-  if (!el) throw new Error("nat-traversal-root not found");
-  return el;
+function rootEl(): HTMLElement | null {
+  return document.getElementById("nat-traversal-root");
+}
+
+function formatPeerSsh(peer: { ssh?: { user?: string; host?: string; port?: number } }): string {
+  const host = peer.ssh?.host || "";
+  const user = peer.ssh?.user || "";
+  const port = peer.ssh?.port;
+  if (!host && !user) return "";
+  const auth = user ? `${user}@${host}` : host;
+  return port ? `${auth}:${port}` : auth;
+}
+
+
+function renderDashboardEmbed(cfg: NatConfig, st: NatStatus): string {
+  if (!cfg.frpsDashboard?.enabled) {
+    return `<div class="nt-empty">启用后将在此嵌入 frps Dashboard</div>`;
+  }
+  // Avoid mounting an unauthenticated iframe that can pop browser Basic Auth
+  // dialogs and freeze the whole management panel.
+  if (!cfg.secrets?.dashboardAuthConfigured) {
+    return `<div class="nt-empty">请先填写并保存 Dashboard 用户名/密码，再嵌入预览。也可先用上方按钮在新标签打开。</div>`;
+  }
+  if (st.dashboard && st.dashboard.reachable === false) {
+    return `<div class="nt-empty">Dashboard 当前不可达：${escapeHtml(st.dashboard.message || "unknown error")}</div>`;
+  }
+  if (st.dashboard?.statusCode === 401) {
+    return `<div class="nt-empty">Dashboard 鉴权失败（401）。请检查用户名/密码后重新保存。</div>`;
+  }
+  return `<div class="nt-frame-wrap"><iframe class="nt-frame" src="/v1/nat-traversal/frps-dashboard/" title="frps dashboard"></iframe></div>`;
 }
 
 function statusBadge(status?: string): string {
@@ -112,6 +138,7 @@ function statusBadge(status?: string): string {
 
 function render(): void {
   const el = rootEl();
+  if (!el) return;
   if (state.loading && !state.config) {
     el.innerHTML = `<div class="nt-loading">加载中…</div>`;
     return;
@@ -205,11 +232,7 @@ function render(): void {
           <a class="btn" href="/v1/nat-traversal/frps-dashboard/" target="_blank" rel="noreferrer">在浏览器打开（经网关反代）</a>
           ${cfg.frpsDashboard?.url ? `<a class="btn" href="${escapeHtml(cfg.frpsDashboard.url)}" target="_blank" rel="noreferrer">打开原始地址</a>` : ""}
         </div>
-        ${
-          cfg.frpsDashboard?.enabled
-            ? `<div class="nt-frame-wrap"><iframe class="nt-frame" src="/v1/nat-traversal/frps-dashboard/" title="frps dashboard"></iframe></div>`
-            : `<div class="nt-empty">启用后将在此嵌入 frps Dashboard</div>`
-        }
+        ${renderDashboardEmbed(cfg, st)}
       </section>
 
       <section class="nt-card">
@@ -223,7 +246,7 @@ function render(): void {
                   (p) => `<tr>
                     <td><code>${escapeHtml(p.id || "")}</code></td>
                     <td>${escapeHtml(p.displayName || "")}</td>
-                    <td>${escapeHtml([p.ssh?.user, p.ssh?.host, p.ssh?.port].filter(Boolean).join("@").replace("@", "@"))}</td>
+                    <td>${escapeHtml(formatPeerSsh(p))}</td>
                     <td><code>${escapeHtml(p.services?.gatewayApi || "")}</code></td>
                     <td>
                       <button class="btn" onclick="window.__ntTestPeer('${escapeHtml(p.id || "")}')">测试</button>
