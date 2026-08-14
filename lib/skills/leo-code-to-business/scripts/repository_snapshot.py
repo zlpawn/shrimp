@@ -271,6 +271,40 @@ def compare_snapshot(
         if before_files[path].get("sha256") != after_files[path].get("sha256")
         or before_files[path].get("size") != after_files[path].get("size")
     )
+    deleted_by_content: dict[tuple[str | None, int | None], list[str]] = {}
+    added_by_content: dict[tuple[str | None, int | None], list[str]] = {}
+    for path in deleted:
+        metadata = before_files[path]
+        key = (metadata.get("sha256"), metadata.get("size"))
+        deleted_by_content.setdefault(key, []).append(path)
+    for path in added:
+        metadata = after_files[path]
+        key = (metadata.get("sha256"), metadata.get("size"))
+        added_by_content.setdefault(key, []).append(path)
+
+    renamed: list[dict[str, str]] = []
+    renamed_from: set[str] = set()
+    renamed_to: set[str] = set()
+    for key in sorted(deleted_by_content, key=str):
+        old_paths = sorted(deleted_by_content[key])
+        new_paths = sorted(added_by_content.get(key, []))
+        if len(old_paths) != 1 or len(new_paths) != 1:
+            continue
+        renamed.append({"from": old_paths[0], "to": new_paths[0]})
+        renamed_from.add(old_paths[0])
+        renamed_to.add(new_paths[0])
+
+    added = [path for path in added if path not in renamed_to]
+    deleted = [path for path in deleted if path not in renamed_from]
+    changed_paths = sorted(
+        {
+            *added,
+            *modified,
+            *deleted,
+            *(item["from"] for item in renamed),
+            *(item["to"] for item in renamed),
+        }
+    )
     return {
         "schema_version": SCHEMA_VERSION,
         "before_snapshot": before.get("snapshot_id"),
@@ -283,8 +317,9 @@ def compare_snapshot(
         "added": added,
         "modified": modified,
         "deleted": deleted,
-        "renamed": [],
-        "changed_count": len(added) + len(modified) + len(deleted),
+        "renamed": renamed,
+        "changed_paths": changed_paths,
+        "changed_count": len(added) + len(modified) + len(deleted) + len(renamed),
     }
 
 

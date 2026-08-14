@@ -3,6 +3,7 @@ import json
 import shutil
 import tempfile
 import unittest
+from copy import deepcopy
 from pathlib import Path
 
 
@@ -190,6 +191,155 @@ class BusinessKnowledgeGuardTests(unittest.TestCase):
 
         with self.assertRaisesRegex(guard.ValidationError, "semantic review"):
             guard.validate_revision(self.revision)
+
+    def test_changed_source_evidence_propagates_to_business_knowledge(self):
+        change_set = {
+            "modified": ["src/WorkOrderController.java"],
+            "added": [],
+            "deleted": [],
+            "renamed": [],
+            "forced_node_ids": ["CAP-shared-routing"],
+        }
+        evidence_index = {
+            "src/WorkOrderController.java": ["EV-create-work-order-source"],
+        }
+        relationships = self.read_jsonl("relationships.jsonl")
+
+        direct = guard.compute_direct_impacts(change_set, evidence_index)
+        impacted = guard.propagate_impacts(direct, relationships)
+
+        self.assertEqual(
+            direct,
+            {"EV-create-work-order-source", "CAP-shared-routing"},
+        )
+        self.assertTrue(
+            {
+                "EV-create-work-order-source",
+                "UC-create-work-order",
+                "UCF-work-order",
+                "CAP-work-order",
+            }.issubset(impacted)
+        )
+
+    def test_impact_propagation_terminates_on_cycles(self):
+        relationships = [
+            {"from_id": "A", "type": "contains", "to_id": "B"},
+            {"from_id": "B", "type": "variant_of", "to_id": "C"},
+            {"from_id": "C", "type": "uses_rule", "to_id": "A"},
+        ]
+
+        self.assertEqual(
+            guard.propagate_impacts({"A"}, relationships),
+            {"A", "B", "C"},
+        )
+
+    def test_impacted_confirmed_claims_are_marked_stale(self):
+        revision = {
+            "use_cases": self.read_jsonl("use-cases.jsonl"),
+            "rules": self.read_jsonl("business-rules.jsonl"),
+            "relationships": self.read_jsonl("relationships.jsonl"),
+            "deleted_evidence_ids": {"EV-create-work-order-source"},
+        }
+
+        updated = guard.invalidate_stale_claims(
+            revision,
+            {"EV-create-work-order-source", "UC-create-work-order"},
+        )
+        use_case = updated["use_cases"][0]
+        evidence_link = next(
+            item
+            for item in updated["relationships"]
+            if item["id"] == "REL-use-case-evidence"
+        )
+
+        self.assertEqual(use_case["lifecycle_status"], "stale")
+        self.assertEqual(use_case["confidence"], "E0")
+        self.assertEqual(use_case["previous_claim_status"], "confirmed")
+        self.assertEqual(evidence_link["lifecycle_status"], "invalidated")
+
+    def test_query_gap_requires_targeted_reanalysis_for_missing_variants(self):
+        revision = {
+            "nodes": {
+                "UC-bind-video": {
+                    "id": "UC-bind-video",
+                    "title": "绑定工地视频",
+                    "summary": "将视频绑定到项目验收节点。",
+                    "claim_status": "confirmed",
+                    "lifecycle_status": "active",
+                }
+            },
+            "aliases": [],
+            "investigations": [],
+        }
+
+        gap = guard.build_query_gap(
+            "工地和视频还有哪些绑定入口？",
+            revision,
+        )
+
+        self.assertEqual(gap["status"], "reanalyze_before_answer")
+        self.assertIn("variants", gap["missing_dimensions"])
+        self.assertIn("backward_trace", gap["missing_dimensions"])
+        self.assertEqual(
+            gap["required_investigations"],
+            [
+                "alternate_entry_search",
+                "backward_trace",
+                "source_verification",
+            ],
+        )
+
+    def test_missing_optional_provider_does_not_block(self):
+        observation = {
+            "provider": "codebase-memory-mcp",
+            "available": False,
+            "source_verification_required": True,
+        }
+
+        status = guard.provider_readiness([observation])
+
+        self.assertTrue(status["portable_baseline_allowed"])
+        self.assertEqual(status["blocking_errors"], [])
+        self.assertEqual(status["usable_providers"], [])
+
+    def test_stale_provider_requires_refresh_and_ready_provider_needs_source_check(self):
+        stale = {
+            "provider": "codebase-memory-mcp",
+            "available": True,
+            "canonical_root": "/repo",
+            "status": "ready",
+            "refresh_requested": False,
+            "refresh_result": None,
+            "source_verification_required": True,
+        }
+        ready = deepcopy(stale)
+        ready.update(
+            {
+                "refresh_requested": True,
+                "refresh_result": "ready",
+            }
+        )
+
+        stale_status = guard.provider_readiness([stale], canonical_root="/repo")
+        ready_status = guard.provider_readiness([ready], canonical_root="/repo")
+
+        self.assertIn("codebase-memory-mcp", stale_status["refresh_required"])
+        self.assertEqual(ready_status["usable_providers"], ["codebase-memory-mcp"])
+        self.assertTrue(ready_status["source_verification_required"])
+
+    def test_matching_head_does_not_hide_dirty_worktree_review_staleness(self):
+        before = {
+            "canonical_root": "/repo",
+            "snapshot_sha256": "before",
+            "git": {"head_sha": "same"},
+        }
+        after = {
+            "canonical_root": "/repo",
+            "snapshot_sha256": "after",
+            "git": {"head_sha": "same"},
+        }
+
+        self.assertTrue(guard.review_is_stale(before, after))
 
     def test_failed_publication_keeps_current_pointer(self):
         workspace = self.root / "workspace"

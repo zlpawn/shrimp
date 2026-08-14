@@ -79,6 +79,23 @@ class RepositorySnapshotTests(unittest.TestCase):
         self.assertEqual(diff["added"], ["src/NewRule.java"])
         self.assertEqual(diff["deleted"], ["README.md"])
 
+    def test_same_content_move_is_reported_as_rename(self):
+        before = snapshot.capture_snapshot(self.repo, exclusions=[])
+        (self.repo / "src" / "Order.java").rename(
+            self.repo / "src" / "WorkOrder.java"
+        )
+        after = snapshot.capture_snapshot(self.repo, exclusions=[])
+
+        diff = snapshot.compare_snapshot(before, after)
+
+        self.assertEqual(
+            diff["renamed"],
+            [{"from": "src/Order.java", "to": "src/WorkOrder.java"}],
+        )
+        self.assertEqual(diff["added"], [])
+        self.assertEqual(diff["deleted"], [])
+        self.assertEqual(diff["changed_paths"], ["src/Order.java", "src/WorkOrder.java"])
+
     def test_excluded_business_output_is_not_hashed(self):
         output = self.repo / "_business_knowledge"
         output.mkdir()

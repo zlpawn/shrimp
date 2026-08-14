@@ -17,6 +17,34 @@ Provider absence never lowers completion status.
 
 Provider output supplies candidates, not current-behavior truth.
 
+## Provider Observation
+
+Record one observation per provider and run:
+
+```text
+provider
+available
+version
+project
+canonical_root
+status
+indexed_branch
+indexed_head_sha
+indexed_base_sha
+watch_state
+refresh_requested
+refresh_result
+checked_at
+source_verification_required
+```
+
+Pass observations through `provider_readiness(...)`. Provider absence produces no blocking error and
+keeps the portable baseline available. An available provider is usable only when its canonical root
+matches, it is ready, and this run requested and completed a ready refresh. When snapshot Git
+metadata is available, indexed branch, HEAD, and base SHA must also match.
+
+`source_verification_required` remains true even for a usable provider.
+
 ## `codebase-memory-mcp` Freshness Protocol
 
 When available:
@@ -44,6 +72,10 @@ If refresh fails, the root differs, results truncate, or the provider is unavail
 unverified edges and continue with the portable baseline. Block only when the remaining
 investigation cannot satisfy evidence or coverage gates; otherwise publish partial unknowns rather
 than invented certainty.
+
+Do not install, start, or require `codebase-memory-mcp` on behalf of a repository that does not
+already expose it. Do not describe provider absence as reduced business-knowledge quality; quality
+is determined by investigation, evidence, coverage, and semantic review.
 
 ## Gate
 

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import os
@@ -78,10 +79,371 @@ CANONICAL_FILES = [
     "coverage.json",
     "change-impact.json",
 ]
+IMPACT_BIDIRECTIONAL_RELATIONSHIPS = {
+    "contains",
+    "participates_in",
+    "variant_of",
+    "uses_rule",
+    "writes",
+    "transitions",
+    "emits",
+    "consumes",
+    "calls_external",
+    "fails_to",
+    "compensates",
+    "has_unknown",
+    "conflicts_with",
+}
+IMPACT_DEPENDENCY_RELATIONSHIPS = {"reads", "evidenced_by"}
+QUERY_INTENTS = (
+    {
+        "keywords": ("还有", "哪些", "入口", "方式", "渠道", "变体", "variant", "alternate"),
+        "dimensions": ("variants", "backward_trace"),
+        "investigations": (
+            "alternate_entry_search",
+            "backward_trace",
+            "source_verification",
+        ),
+    },
+    {
+        "keywords": ("规则", "条件", "判断", "决定", "rule", "condition", "decision"),
+        "dimensions": ("rules_and_decisions",),
+        "investigations": ("rule_search", "source_verification"),
+    },
+    {
+        "keywords": ("失败", "异常", "重试", "补偿", "修复", "failure", "retry", "compensation"),
+        "dimensions": ("failure_and_recovery",),
+        "investigations": (
+            "forward_trace",
+            "backward_trace",
+            "contradiction_search",
+            "source_verification",
+        ),
+    },
+    {
+        "keywords": ("状态", "生命周期", "流转", "state", "lifecycle", "transition"),
+        "dimensions": ("state_changes",),
+        "investigations": (
+            "forward_trace",
+            "backward_trace",
+            "source_verification",
+        ),
+    },
+    {
+        "keywords": ("权限", "角色", "租户", "谁能", "permission", "role", "tenant"),
+        "dimensions": ("permissions",),
+        "investigations": (
+            "rule_search",
+            "contradiction_search",
+            "source_verification",
+        ),
+    },
+)
 
 
 class ValidationError(Exception):
     """Raised when canonical business knowledge violates a release contract."""
+
+
+def changed_paths(change_set: dict[str, Any]) -> set[str]:
+    paths: set[str] = set(change_set.get("changed_paths", []))
+    for key in ("added", "modified", "deleted"):
+        paths.update(str(path) for path in change_set.get(key, []))
+    for rename in change_set.get("renamed", []):
+        if not isinstance(rename, dict):
+            continue
+        if rename.get("from"):
+            paths.add(str(rename["from"]))
+        if rename.get("to"):
+            paths.add(str(rename["to"]))
+    return paths
+
+
+def compute_direct_impacts(
+    change_set: dict[str, Any],
+    evidence_index: dict[str, Any],
+) -> set[str]:
+    impacted = {
+        str(node_id)
+        for node_id in change_set.get("forced_node_ids", [])
+        if node_id
+    }
+    for path in changed_paths(change_set):
+        records = evidence_index.get(path, [])
+        if isinstance(records, (str, dict)):
+            records = [records]
+        for record in records:
+            if isinstance(record, str):
+                impacted.add(record)
+            elif isinstance(record, dict) and record.get("id"):
+                impacted.add(str(record["id"]))
+    return impacted
+
+
+def propagate_impacts(
+    node_ids: set[str],
+    relationships: list[dict[str, Any]],
+) -> set[str]:
+    adjacency: dict[str, set[str]] = {}
+    for relationship in relationships:
+        source = relationship.get("from_id")
+        target = relationship.get("to_id")
+        relation_type = relationship.get("type")
+        if not source or not target:
+            continue
+        if relation_type in IMPACT_BIDIRECTIONAL_RELATIONSHIPS:
+            adjacency.setdefault(str(source), set()).add(str(target))
+            adjacency.setdefault(str(target), set()).add(str(source))
+        elif relation_type in IMPACT_DEPENDENCY_RELATIONSHIPS:
+            adjacency.setdefault(str(target), set()).add(str(source))
+
+    impacted = {str(node_id) for node_id in node_ids}
+    pending = list(impacted)
+    while pending:
+        current = pending.pop()
+        for dependent in adjacency.get(current, set()):
+            if dependent in impacted:
+                continue
+            impacted.add(dependent)
+            pending.append(dependent)
+    return impacted
+
+
+def _invalidate_claim(record: dict[str, Any], invalidated: bool = False) -> None:
+    if "previous_claim_status" not in record and record.get("claim_status"):
+        record["previous_claim_status"] = record["claim_status"]
+    record["lifecycle_status"] = "invalidated" if invalidated else "stale"
+    if record.get("confidence") in CONFIDENCE_LEVELS:
+        record["confidence"] = "E0"
+
+
+def _invalidate_embedded_claims(
+    node: dict[str, Any],
+    impacted_ids: set[str],
+) -> None:
+    node_id = str(node.get("id", ""))
+    for field, value in node.items():
+        address = f"{node_id}#{field}"
+        if address not in impacted_ids and node_id not in impacted_ids:
+            continue
+        if isinstance(value, dict):
+            _invalidate_claim(value)
+        elif isinstance(value, list):
+            for item in value:
+                if not isinstance(item, dict):
+                    continue
+                local_id = item.get("local_id")
+                local_address = f"{address}/{local_id}" if local_id else address
+                if (
+                    node_id in impacted_ids
+                    or address in impacted_ids
+                    or local_address in impacted_ids
+                ):
+                    _invalidate_claim(item)
+
+
+def invalidate_stale_claims(
+    revision: dict[str, Any],
+    impacted_ids: set[str],
+) -> dict[str, Any]:
+    updated = copy.deepcopy(revision)
+    impacted = {str(node_id) for node_id in impacted_ids}
+    deleted_evidence = {
+        str(node_id) for node_id in updated.get("deleted_evidence_ids", set())
+    }
+
+    for collection_name, records in updated.items():
+        if collection_name in {
+            "relationships",
+            "investigations",
+            "provider_observations",
+        }:
+            continue
+        if not isinstance(records, list):
+            continue
+        for record in records:
+            if not isinstance(record, dict) or not record.get("id"):
+                continue
+            record_id = str(record["id"])
+            if record_id in impacted:
+                _invalidate_claim(record, invalidated=record_id in deleted_evidence)
+                _invalidate_embedded_claims(record, impacted)
+
+    for relationship in updated.get("relationships", []):
+        if not isinstance(relationship, dict):
+            continue
+        relation_id = str(relationship.get("id", ""))
+        source = str(relationship.get("from_id", ""))
+        target = str(relationship.get("to_id", ""))
+        if target in deleted_evidence or source in deleted_evidence:
+            _invalidate_claim(relationship, invalidated=True)
+        elif relation_id in impacted:
+            _invalidate_claim(relationship)
+    return updated
+
+
+def _query_candidates(question: str, revision: dict[str, Any]) -> list[str]:
+    normalized = question.casefold()
+    nodes = revision.get("nodes", {})
+    if isinstance(nodes, list):
+        nodes = {
+            item.get("id"): item
+            for item in nodes
+            if isinstance(item, dict) and item.get("id")
+        }
+    aliases_by_target: dict[str, list[str]] = {}
+    for alias in revision.get("aliases", []):
+        if not isinstance(alias, dict):
+            continue
+        for target_id in alias.get("target_ids", []):
+            aliases_by_target.setdefault(str(target_id), []).append(
+                str(alias.get("alias", ""))
+            )
+    candidates: list[str] = []
+    for node_id, node in nodes.items():
+        if not isinstance(node, dict):
+            continue
+        searchable = " ".join(
+            [
+                str(node.get("title", "")),
+                str(node.get("summary", "")),
+                *aliases_by_target.get(str(node_id), []),
+            ]
+        ).casefold()
+        terms = {
+            term
+            for term in searchable.replace("/", " ").replace("-", " ").split()
+            if len(term) >= 2
+        }
+        compact = "".join(character for character in searchable if not character.isspace())
+        terms.update(
+            compact[index : index + 2]
+            for index in range(max(0, len(compact) - 1))
+            if any("\u4e00" <= character <= "\u9fff" for character in compact[index : index + 2])
+        )
+        if searchable and (
+            searchable in normalized
+            or normalized in searchable
+            or any(term in normalized for term in terms)
+        ):
+            candidates.append(str(node_id))
+    return sorted(candidates)
+
+
+def build_query_gap(
+    question: str,
+    revision: dict[str, Any],
+) -> dict[str, Any]:
+    normalized = question.casefold()
+    candidate_ids = _query_candidates(question, revision)
+    missing_dimensions: list[str] = []
+    required_investigations: list[str] = []
+    for intent in QUERY_INTENTS:
+        if not any(keyword.casefold() in normalized for keyword in intent["keywords"]):
+            continue
+        for dimension in intent["dimensions"]:
+            if dimension not in missing_dimensions:
+                missing_dimensions.append(dimension)
+        for investigation in intent["investigations"]:
+            if investigation not in required_investigations:
+                required_investigations.append(investigation)
+
+    if not candidate_ids:
+        missing_dimensions.insert(0, "subject_resolution")
+        for investigation in (
+            "vocabulary_expansion",
+            "entry_search",
+            "source_verification",
+        ):
+            if investigation not in required_investigations:
+                required_investigations.append(investigation)
+    elif not required_investigations:
+        missing_dimensions.append("current_source_answer")
+        required_investigations.extend(
+            ["forward_trace", "backward_trace", "source_verification"]
+        )
+
+    return {
+        "question": question,
+        "candidate_node_ids": candidate_ids,
+        "missing_dimensions": missing_dimensions,
+        "required_investigations": required_investigations,
+        "status": "reanalyze_before_answer",
+    }
+
+
+def provider_readiness(
+    observations: list[dict[str, Any]],
+    canonical_root: str | None = None,
+    repository_snapshot: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    usable: list[str] = []
+    refresh_required: list[str] = []
+    ignored: dict[str, list[str]] = {}
+    source_verification_required = False
+
+    for observation in observations:
+        provider = str(observation.get("provider", "unknown-provider"))
+        if not observation.get("available"):
+            ignored[provider] = ["unavailable"]
+            continue
+
+        reasons: list[str] = []
+        observed_root = observation.get("canonical_root")
+        if canonical_root and observed_root != canonical_root:
+            reasons.append("canonical_root_mismatch")
+        if observation.get("status") != "ready":
+            reasons.append("provider_not_ready")
+        if observation.get("refresh_requested") is not True:
+            reasons.append("refresh_not_requested_for_run")
+        if observation.get("refresh_result") != "ready":
+            reasons.append("refresh_not_ready")
+
+        snapshot = repository_snapshot or {}
+        git = snapshot.get("git", {})
+        expected_branch = git.get("branch")
+        expected_head = git.get("head_sha")
+        expected_base = git.get("base_sha")
+        if expected_branch and observation.get("indexed_branch") != expected_branch:
+            reasons.append("indexed_branch_mismatch")
+        if expected_head and observation.get("indexed_head_sha") != expected_head:
+            reasons.append("indexed_head_mismatch")
+        if expected_base and observation.get("indexed_base_sha") != expected_base:
+            reasons.append("indexed_base_mismatch")
+
+        source_verification_required = (
+            source_verification_required
+            or observation.get("source_verification_required", True)
+        )
+        if reasons:
+            ignored[provider] = reasons
+            refresh_required.append(provider)
+            continue
+        usable.append(provider)
+
+    return {
+        "portable_baseline_allowed": True,
+        "usable_providers": sorted(set(usable)),
+        "refresh_required": sorted(set(refresh_required)),
+        "ignored_providers": ignored,
+        "source_verification_required": source_verification_required,
+        "blocking_errors": [],
+    }
+
+
+def review_is_stale(
+    reviewed_snapshot: dict[str, Any],
+    current_snapshot: dict[str, Any],
+) -> bool:
+    if reviewed_snapshot.get("canonical_root") != current_snapshot.get(
+        "canonical_root"
+    ):
+        return True
+    reviewed_hash = reviewed_snapshot.get("snapshot_sha256")
+    current_hash = current_snapshot.get("snapshot_sha256")
+    if reviewed_hash or current_hash:
+        return reviewed_hash != current_hash
+    return canonical_sha256(reviewed_snapshot) != canonical_sha256(current_snapshot)
 
 
 def canonical_bytes(value: Any) -> bytes:
