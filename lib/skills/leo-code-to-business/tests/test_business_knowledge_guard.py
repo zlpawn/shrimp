@@ -58,6 +58,51 @@ class BusinessKnowledgeGuardTests(unittest.TestCase):
         self.assertEqual(result["errors"], [])
         self.assertEqual(result["coverage"]["entry_classification"], 1.0)
 
+    def test_skill_requires_bidirectional_business_investigation(self):
+        text = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8").lower()
+        for required in [
+            "business knowledge",
+            "forward trace",
+            "backward trace",
+            "use-case famil",
+            "unknown",
+            "current source",
+            "codebase-memory-mcp",
+        ]:
+            self.assertIn(required, text)
+
+    def test_optional_tool_reference_never_makes_mcp_required(self):
+        text = (
+            SKILL_DIR / "references" / "optional-code-tools.md"
+        ).read_text(encoding="utf-8").lower()
+        self.assertIn("optional", text)
+        self.assertIn("index_status", text)
+        self.assertIn("index_repository", text)
+        self.assertIn("working-tree", text)
+        self.assertIn("source verification", text)
+        self.assertIn("portable baseline", text)
+        self.assertNotIn("cannot pass without codebase-memory-mcp", text)
+
+    def test_references_define_all_investigation_kinds(self):
+        text = (
+            SKILL_DIR / "references" / "repository-investigation.md"
+        ).read_text(encoding="utf-8")
+        for investigation_kind in sorted(guard.REQUIRED_INVESTIGATIONS):
+            self.assertIn(investigation_kind, text)
+
+    def test_business_reference_bans_technical_substitution(self):
+        text = (
+            SKILL_DIR / "references" / "business-discovery.md"
+        ).read_text(encoding="utf-8").lower()
+        for phrase in [
+            "method-name translation",
+            "one-controller",
+            "use-case family",
+            "actor",
+            "business outcome",
+        ]:
+            self.assertIn(phrase, text)
+
     def test_inventory_requires_exactly_one_classification(self):
         inventory = self.read_jsonl("inventory.jsonl")
         inventory[0]["classification"] = None

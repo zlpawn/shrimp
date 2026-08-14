@@ -4,12 +4,50 @@
 
 Calibrate model-led discovery for Java/Spring without requiring a custom parser.
 
-## Search Areas
+## Build and Scope
 
-Inspect build modules, routes and composed annotations, controllers, services, providers, handlers,
-strategies, listeners, consumers, schedules, Feign/HTTP clients, mappers, repositories, XML/SQL,
-update builders, state writes, constants, enums, validation, profiles, tenant/role context, tests,
-and operational repair code.
+Inspect Maven/Gradle modules, source/test roots, resource directories, profiles, generated-source
+configuration, and active property files. Do not assume every module or profile is active.
+
+## Entry Discovery
+
+Search:
+
+```text
+@RequestMapping and HTTP method mappings
+custom composed route annotations
+RPC/GraphQL/WebSocket adapters
+@Scheduled and jobs
+@EventListener
+Kafka/RocketMQ/custom consumers
+callbacks and webhooks
+CLI, batch, migration, and repair commands
+```
+
+Compose class-level and method-level routes. Search important application-service methods that may
+have no visible controller in the same repository.
+
+## Relationship Discovery
+
+Inspect controllers, services, providers, handlers, strategies, interfaces and implementations,
+constructor/field injection, bean qualifiers, configuration selection, callers, tests, and runtime
+conditions.
+
+Do not silently choose an implementation when multiple candidates remain.
+
+## Effects and Rules
+
+Search Feign/HTTP clients, SDKs, producers, object/file storage, search-index synchronization,
+mappers, repositories, XML/SQL, update wrappers, entity setters, status writes, constants, enums,
+guards, validation, deduplication, tenant/role context, profiles, properties, and feature flags.
+
+Reverse-search every important table/entity/status write and external call for alternate entries,
+operations, retries, reconciliation, unbind/rebind, and repair.
+
+## Tests and Documents
+
+Tests expose scenarios, values, failures, and implementation selection but may be stale. Documents
+and comments are leads until verified against current source.
 
 Reflection, AOP, dynamic proxies, generated code, remote configuration, dynamic SQL, and
 runtime-created routes become explicit limitations when unresolved.
