@@ -169,7 +169,7 @@
 不负责：
 
 - frpc.ini 细节
-- 穿透进程生命周期（交给 Reachability）
+- 穿透进程生命周期（交给 NAT Traversal）
 
 #### C. Antigravity Host Backend（执行面）
 
