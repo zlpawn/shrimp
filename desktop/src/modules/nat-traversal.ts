@@ -215,7 +215,7 @@ function renderCatalog(): string {
             </div>
           </div>
           <div class="node-card-footer">
-            <span>通过 frpc 连接远端 frps，管理本机端口映射</span>
+            <span>后台托管 frpc（macOS / Windows 可手动启停）</span>
             <span class="node-card-cta">进入管理 →</span>
           </div>
         </div>
@@ -234,7 +234,7 @@ function renderDiscoverBox(): string {
           <button class="btn" onclick="window.__ntDiscover()">重新检测</button>
         </div>
         <p class="nt-help">未在常见目录找到 frpc.toml / frpc.ini。你也可以手动填写下方表单，或把配置放到 ~/frp/frpc.toml 后再检测。</p>
-        <p class="nt-help">检测范围：~/frp、~/frp_0.71.0*、~/.frp、Downloads/Desktop 下 frp_* 目录、Homebrew etc、以及 frpc 二进制附近。</p>
+        <p class="nt-help">检测范围：用户目录下 frp/frp_*，Downloads/Desktop/Documents；Windows 还会扫各盘符根目录（如 D:\\frp_0.71.0_windows_amd64）。</p>
       </div>
     `;
   }
