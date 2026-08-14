@@ -166,6 +166,9 @@ import {
 import { resolveDreamSkinPaths } from "./lib/dream-skin/paths.mjs";
 import { createDreamSkinService } from "./lib/dream-skin/application/service.mjs";
 import { routeDreamSkinRequest } from "./lib/dream-skin/http/routes.mjs";
+import { resolveNatTraversalPaths } from "./lib/nat-traversal/paths.mjs";
+import { createNatTraversalService } from "./lib/nat-traversal/application/service.mjs";
+import { routeNatTraversalRequest } from "./lib/nat-traversal/http/routes.mjs";
 
 loadDotEnv();
 enableNodeEnvProxy();
@@ -223,6 +226,40 @@ const OFFICIAL_CLAUDE_MODELS = parseList(
 );
 const OFFICIAL_CLAUDE_MODEL_IDS = new Set(OFFICIAL_CLAUDE_MODELS);
 let globalDreamSkinService = null;
+let globalNatTraversalService = null;
+
+function ensureNatTraversalService() {
+  if (globalNatTraversalService) return globalNatTraversalService;
+  const paths = resolveNatTraversalPaths({
+    configFile: process.env.GATEWAY_CONFIG_FILE || "gateway.config.json",
+    secretsFile: process.env.NAT_TRAVERSAL_SECRETS_FILE || "",
+  });
+  const configStore = {
+    get() {
+      return GATEWAY_CONFIG.natTraversal || {};
+    },
+    save(next) {
+      const result = saveGatewayState({
+        configPath: GATEWAY_CONFIG_FILE,
+        secretsPath: GATEWAY_SECRETS_FILE,
+        config: {
+          ...GATEWAY_CONFIG,
+          natTraversal: next,
+        },
+        officialCodexIds: OFFICIAL_CODEX_MODEL_IDS,
+      });
+      GATEWAY_CONFIG = result.config;
+      GATEWAY_SECRETS = result.secrets;
+      reloadGatewayConfig({ reloadFiles: false });
+    },
+  };
+  globalNatTraversalService = createNatTraversalService({
+    paths,
+    configStore,
+    logger: console,
+  });
+  return globalNatTraversalService;
+}
 
 // Dream Skin service is composed lazily on first route hit so gateway startup
 // stays fast and the service never imports runtime launcher/CDP modules.
@@ -1019,6 +1056,14 @@ async function route(req, res) {
     return;
   }
 
+  if (reqPath.startsWith("/v1/nat-traversal")) {
+    if (!checkLocalAuth(req, res)) return;
+    await routeNatTraversalRequest(req, res, context, reqPath, {
+      service: ensureNatTraversalService(),
+    });
+    return;
+  }
+
   if (reqPath.startsWith("/v1/video-kb/tools/agent-reach")) {
     if (!checkLocalAuth(req, res)) return;
     await routeAgentReachRequest(req, res, context, reqPath);
@@ -1107,7 +1152,7 @@ async function route(req, res) {
       const result = saveGatewayState({
         configPath: GATEWAY_CONFIG_FILE,
         secretsPath: GATEWAY_SECRETS_FILE,
-        config: { server: newConfig.server, clients: newConfig.clients, tools: newConfig.tools, dreamSkin: newConfig.dreamSkin },
+        config: { server: newConfig.server, clients: newConfig.clients, tools: newConfig.tools, dreamSkin: newConfig.dreamSkin, natTraversal: newConfig.natTraversal },
         officialCodexIds: OFFICIAL_CODEX_MODEL_IDS,
       });
       GATEWAY_CONFIG = result.config;

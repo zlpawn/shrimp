@@ -3765,6 +3765,9 @@ window.switchTab = function(tabId) {
     if (tabId === 'dream-skin') {
         runTabEnter(tabId);
     }
+    if (tabId === 'nat-traversal') {
+        runTabEnter(tabId);
+    }
     if (tabId === 'analytics') {
         loadAnalyticsData();
     }

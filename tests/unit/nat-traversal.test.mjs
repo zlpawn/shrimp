@@ -1,0 +1,177 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+
+import {
+  normalizeNatTraversalConfig,
+  validateNatTraversalConfig,
+  renderFrpcToml,
+  createNatTraversalService,
+  resolveNatTraversalPaths,
+  NatTraversalError,
+} from "../../lib/nat-traversal/index.mjs";
+import { createFrpcSupervisor } from "../../lib/nat-traversal/process/frpc-supervisor.mjs";
+
+test("normalize and validate frpc config", () => {
+  const cfg = validateNatTraversalConfig({
+    enabled: true,
+    activeProvider: "frpc",
+    frpc: {
+      serverAddr: "39.105.19.237",
+      serverPort: 7000,
+      proxies: [
+        {
+          name: "shrimp-gateway",
+          type: "tcp",
+          localIp: "127.0.0.1",
+          localPort: 8788,
+          remotePort: 18788,
+        },
+      ],
+    },
+    frpsDashboard: {
+      enabled: true,
+      url: "http://39.105.19.237:7500/static/#/",
+    },
+    peers: [{ id: "home", displayName: "Home", ssh: { host: "1.2.3.4" } }],
+  });
+  assert.equal(cfg.frpc.serverAddr, "39.105.19.237");
+  assert.equal(cfg.peers[0].id, "home");
+});
+
+test("validate rejects missing serverAddr", () => {
+  assert.throws(
+    () =>
+      validateNatTraversalConfig({
+        enabled: true,
+        activeProvider: "frpc",
+        frpc: { serverAddr: "", serverPort: 7000, proxies: [] },
+      }),
+    (error) => error instanceof NatTraversalError && error.code === "invalid_config",
+  );
+});
+
+test("renderFrpcToml includes token and proxies", () => {
+  const toml = renderFrpcToml({
+    config: {
+      enabled: true,
+      frpc: {
+        serverAddr: "example.com",
+        serverPort: 7000,
+        proxies: [
+          {
+            name: "gw",
+            type: "tcp",
+            localIp: "127.0.0.1",
+            localPort: 8788,
+            remotePort: 18788,
+          },
+        ],
+      },
+    },
+    token: "secret-token",
+  });
+  assert.match(toml, /serverAddr = "example.com"/);
+  assert.match(toml, /auth\.token = "secret-token"/);
+  assert.match(toml, /name = "gw"/);
+  assert.match(toml, /localPort = 8788/);
+});
+
+test("service updateConfig persists public config and secrets", async () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "nat-traversal-"));
+  const configPath = path.join(tmp, "gateway.config.json");
+  const secretsPath = path.join(tmp, "nat-traversal.secrets.json");
+  fs.writeFileSync(configPath, JSON.stringify({ server: { port: 8788 }, clients: {} }, null, 2));
+
+  let stored = {
+    enabled: false,
+    activeProvider: "frpc",
+    frpc: {
+      serverAddr: "example.com",
+      serverPort: 7000,
+      proxies: [],
+    },
+    frpsDashboard: { enabled: false, url: "" },
+    peers: [],
+  };
+
+  const paths = resolveNatTraversalPaths({
+    configFile: configPath,
+    secretsFile: secretsPath,
+  });
+
+  const service = createNatTraversalService({
+    paths,
+    configStore: {
+      get: () => stored,
+      save: (next) => {
+        stored = next;
+      },
+    },
+  });
+
+  const view = await service.updateConfig(
+    {
+      enabled: true,
+      frpc: {
+        serverAddr: "39.105.19.237",
+        serverPort: 7000,
+        proxies: [
+          {
+            name: "shrimp-gateway",
+            localPort: 8788,
+            remotePort: 18788,
+          },
+        ],
+      },
+      frpsDashboard: {
+        enabled: true,
+        url: "http://39.105.19.237:7500/static/#/",
+      },
+    },
+    {
+      frpc: { token: "tok-1" },
+      frpsDashboard: { username: "admin", password: "pass" },
+    },
+  );
+
+  assert.equal(view.enabled, true);
+  assert.equal(view.secrets.frpcTokenConfigured, true);
+  assert.equal(view.secrets.dashboardAuthConfigured, true);
+  assert.equal(stored.frpc.serverAddr, "39.105.19.237");
+
+  const secretsOnDisk = JSON.parse(fs.readFileSync(secretsPath, "utf8"));
+  assert.equal(secretsOnDisk.frpc.token, "tok-1");
+  assert.equal(secretsOnDisk.frpsDashboard.username, "admin");
+  assert.ok(fs.existsSync(paths.generatedFrpcConfigPath));
+});
+
+test("frpc supervisor start/stop with fake binary", async () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "frpc-sup-"));
+  const bin = path.join(tmp, "fake-frpc.sh");
+  const configPath = path.join(tmp, "frpc.toml");
+  const pidPath = path.join(tmp, "frpc.pid");
+  const logPath = path.join(tmp, "frpc.log");
+  fs.writeFileSync(
+    bin,
+    "#!/bin/sh\nwhile true; do echo hello; sleep 1; done\n",
+    { mode: 0o755 },
+  );
+  fs.writeFileSync(configPath, "serverAddr=\"x\"\n");
+
+  const supervisor = createFrpcSupervisor({
+    binPath: bin,
+    configPath,
+    pidPath,
+    logPath,
+  });
+
+  const started = await supervisor.start();
+  assert.equal(started.status, "running");
+  assert.ok(started.pid > 0);
+
+  const stopped = await supervisor.stop();
+  assert.equal(stopped.status, "stopped");
+});

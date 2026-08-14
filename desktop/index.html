@@ -58,6 +58,10 @@
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;"><circle cx="12" cy="12" r="3"></circle><circle cx="5" cy="6" r="1.5"></circle><circle cx="19" cy="6" r="1.5"></circle><circle cx="5" cy="18" r="1.5"></circle><circle cx="19" cy="18" r="1.5"></circle></svg>
                     主题皮肤 (Dream Skin)
                 </a>
+                <a href="#nat-traversal" class="nav-item" onclick="switchTab('nat-traversal')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;"><path d="M4 12h6l2-3 2 6 2-3h4"></path><circle cx="12" cy="12" r="10"></circle></svg>
+                    内网穿透 (NAT Traversal)
+                </a>
                 <a href="#analytics" class="nav-item" onclick="switchTab('analytics')">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
                     用量统计 (Token Analytics)
@@ -816,6 +820,17 @@ experimental_bearer_token = "dummy"</pre>
                     </div>
                 </div>
                 <div id="dream-skin-root" class="dream-skin-root" aria-live="polite"></div>
+            </section>
+
+            <!-- NAT Traversal Section -->
+            <section id="section-nat-traversal" class="tab-section" style="display: none;">
+                <div class="section-header">
+                    <div>
+                        <h2>内网穿透 (NAT Traversal)</h2>
+                        <p>配置 frpc、启停穿透进程，并在管理台中查看 frps Dashboard。</p>
+                    </div>
+                </div>
+                <div id="nat-traversal-root" class="nat-traversal-root" aria-live="polite"></div>
             </section>
 
         </main>
