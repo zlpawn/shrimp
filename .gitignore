@@ -70,6 +70,6 @@ extensions.json
 /dream-skin/
 gateway-8789.log*
 
-# NAT Traversal local secrets / runtime
-nat-traversal.secrets.json
-nat-traversal/
+# NAT Traversal local secrets / runtime (repo root only)
+/nat-traversal.secrets.json
+/nat-traversal/
