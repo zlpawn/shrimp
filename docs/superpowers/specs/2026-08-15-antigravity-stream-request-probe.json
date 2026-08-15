@@ -1,0 +1,58 @@
+{
+  "cascadeId": "d7ad0811-10ca-4a76-ae20-db45f5e35d8c",
+  "start": "{\"cascadeId\":\"d7ad0811-10ca-4a76-ae20-db45f5e35d8c\"}",
+  "send": "{}",
+  "results": [
+    {
+      "body": {
+        "conversationId": "d7ad0811-10ca-4a76-ae20-db45f5e35d8c",
+        "subscriberId": "dc3c4661-50bf-474e-a951-5fd6b7a44208",
+        "trajectoryVerbosity": "PROD_UI"
+      },
+      "error": "timeout",
+      "contentType": "",
+      "frameCount": 0,
+      "frames": [],
+      "textPreview": ""
+    },
+    {
+      "body": {
+        "conversationId": "d7ad0811-10ca-4a76-ae20-db45f5e35d8c",
+        "subscriberId": "dc3c4661-50bf-474e-a951-5fd6b7a44208",
+        "trajectoryVerbosity": "CLIENT_TRAJECTORY_VERBOSITY_PROD_UI"
+      },
+      "error": "timeout",
+      "contentType": "",
+      "frameCount": 0,
+      "frames": [],
+      "textPreview": ""
+    },
+    {
+      "body": {
+        "conversationId": "d7ad0811-10ca-4a76-ae20-db45f5e35d8c",
+        "subscriberId": "dc3c4661-50bf-474e-a951-5fd6b7a44208",
+        "trajectoryVerbosity": 2
+      },
+      "error": "timeout",
+      "contentType": "",
+      "frameCount": 0,
+      "frames": [],
+      "textPreview": ""
+    },
+    {
+      "body": {
+        "conversationId": "d7ad0811-10ca-4a76-ae20-db45f5e35d8c",
+        "subscriberId": "dc3c4661-50bf-474e-a951-5fd6b7a44208"
+      },
+      "error": "timeout",
+      "contentType": "",
+      "frameCount": 0,
+      "frames": [],
+      "textPreview": ""
+    }
+  ],
+  "long": {
+    "error": "timeout",
+    "frames": []
+  }
+}
