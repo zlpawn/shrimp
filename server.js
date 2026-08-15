@@ -171,6 +171,8 @@ import { createDreamSkinService } from "./lib/dream-skin/application/service.mjs
 import { routeDreamSkinRequest } from "./lib/dream-skin/http/routes.mjs";
 import { resolveNatTraversalPaths } from "./lib/nat-traversal/paths.mjs";
 import { createNatTraversalService } from "./lib/nat-traversal/application/service.mjs";
+import { createCommandAppsService } from "./lib/command-apps/application/service.mjs";
+import { routeCommandAppsRequest } from "./lib/command-apps/http/routes.mjs";
 import { routeNatTraversalRequest } from "./lib/nat-traversal/http/routes.mjs";
 
 loadDotEnv();
@@ -230,6 +232,7 @@ const OFFICIAL_CLAUDE_MODELS = parseList(
 const OFFICIAL_CLAUDE_MODEL_IDS = new Set(OFFICIAL_CLAUDE_MODELS);
 let globalDreamSkinService = null;
 let globalNatTraversalService = null;
+let globalCommandAppsService = null;
 
 function ensureNatTraversalService() {
   if (globalNatTraversalService) return globalNatTraversalService;
@@ -264,6 +267,33 @@ function ensureNatTraversalService() {
   return globalNatTraversalService;
 }
 
+function ensureCommandAppsService() {
+  if (globalCommandAppsService) return globalCommandAppsService;
+  const configStore = {
+    get() {
+      return GATEWAY_CONFIG.commandApps || {};
+    },
+    save(next) {
+      const result = saveGatewayState({
+        configPath: GATEWAY_CONFIG_FILE,
+        secretsPath: GATEWAY_SECRETS_FILE,
+        config: {
+          ...GATEWAY_CONFIG,
+          commandApps: next,
+        },
+        officialCodexIds: OFFICIAL_CODEX_MODEL_IDS,
+      });
+      GATEWAY_CONFIG = result.config;
+      GATEWAY_SECRETS = result.secrets;
+      reloadGatewayConfig({ reloadFiles: false });
+    },
+  };
+  globalCommandAppsService = createCommandAppsService({
+    configStore,
+    logger: console,
+  });
+  return globalCommandAppsService;
+}
 // Dream Skin service is composed lazily on first route hit so gateway startup
 // stays fast and the service never imports runtime launcher/CDP modules.
 async function ensureDreamSkinService() {
@@ -1059,6 +1089,13 @@ async function route(req, res) {
     return;
   }
 
+  if (reqPath.startsWith("/v1/command-apps")) {
+    if (!checkLocalAuth(req, res)) return;
+    await routeCommandAppsRequest(req, res, context, reqPath, {
+      service: ensureCommandAppsService(),
+    });
+    return;
+  }
   if (reqPath.startsWith("/v1/nat-traversal")) {
     if (!checkLocalAuth(req, res)) return;
     await routeNatTraversalRequest(req, res, context, reqPath, {
@@ -11918,3 +11955,4 @@ async function readText(req) {
     req.on("error", reject);
   });
 }
+
