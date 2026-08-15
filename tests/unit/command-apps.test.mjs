@@ -129,3 +129,120 @@ test("terminating a process uses taskkill with argument array", async () => {
   assert.deepEqual(calls[0].args, ["/PID", "4242", "/T", "/F"]);
   assert.equal(calls[0].options.windowsHide, true);
 });
+
+import { createCommandAppsService } from "../../lib/command-apps/application/service.mjs";
+import { routeCommandAppsRequest } from "../../lib/command-apps/http/routes.mjs";
+
+function createFixture() {
+  const executable = "C:\\Apps\\Antigravity\\Antigravity.exe";
+  const saved = [];
+  const configStore = {
+    get() { return saved.at(-1) || { apps: {} }; },
+    save(next) { saved.push(next); return next; },
+  };
+  const processStore = createCommandAppsProcessStore();
+  const child = { pid: 4242, unref() { this.unrefed = true; }, unrefed: false };
+  const spawnCalls = [];
+  const service = createCommandAppsService({
+    configStore,
+    platform: "win32",
+    discovery: async () => ({
+      selected: { path: executable, strategy: "test" },
+      candidates: [{ path: executable, strategy: "test" }],
+    }),
+    processStore,
+    listProcesses: async () => [
+      { pid: 4242, executablePath: executable },
+      { pid: 9999, executablePath: "C:\\Apps\\Other\\Antigravity.exe" },
+    ],
+    terminateProcess: async () => {},
+    spawnProcess: (...args) => { spawnCalls.push(args); return child; },
+    fileExists: (value) => value === executable,
+  });
+  return { service, saved, spawnCalls, child, processStore, executable };
+}
+
+test("service launch discovers, persists, and spawns Antigravity safely", async () => {
+  const fx = createFixture();
+  const result = await fx.service.launch("antigravity");
+  assert.equal(result.executablePath, fx.executable);
+  assert.equal(fx.saved[0].apps.antigravity.executablePath, fx.executable);
+  assert.equal(fx.spawnCalls.length, 1);
+  assert.equal(fx.spawnCalls[0][0], fx.executable);
+  assert.deepEqual(fx.spawnCalls[0][1], ["--no-sandbox"]);
+  assert.equal(fx.spawnCalls[0][2].detached, true);
+  assert.equal(fx.spawnCalls[0][2].stdio, "ignore");
+  assert.equal(fx.spawnCalls[0][2].windowsHide, true);
+  assert.equal(fx.child.unrefed, true);
+  assert.equal(result.process.status, "running");
+  assert.equal(result.process.launchedByPanel, true);
+});
+
+test("service reports externally launched processes and stops only matches", async () => {
+  const fx = createFixture();
+  const stopped = [];
+  fx.service = createCommandAppsService({
+    configStore: { get: () => ({ apps: { antigravity: { executablePath: fx.executable } } }), save() {} },
+    platform: "win32",
+    processStore: fx.processStore,
+    listProcesses: async () => [
+      { pid: 4242, executablePath: fx.executable },
+      { pid: 9999, executablePath: "C:\\Apps\\Other\\Antigravity.exe" },
+    ],
+    terminateProcess: async (pid) => stopped.push(pid),
+    spawnProcess: () => { throw new Error("should not spawn"); },
+    fileExists: () => true,
+  });
+  const status = await fx.service.getStatus("antigravity");
+  assert.equal(status.process.status, "running");
+  assert.equal(status.process.count, 1);
+  assert.equal(status.process.launchedByPanel, false);
+  await fx.service.stop("antigravity");
+  assert.deepEqual(stopped, [4242]);
+});
+
+test("service config update rejects request args and invalid paths", async () => {
+  const fx = createFixture();
+  await assert.rejects(
+    () => fx.service.updateConfig("antigravity", { executablePath: fx.executable, args: ["--danger"] }),
+    CommandAppsError,
+  );
+  await assert.rejects(
+    () => fx.service.updateConfig("antigravity", { executablePath: "C:\\Missing\\Antigravity.exe" }),
+    CommandAppsError,
+  );
+});
+
+function createRouteFixture() {
+  const fx = createFixture();
+  const responses = [];
+  const reqFor = (method, url, body) => ({
+    method,
+    url,
+    headers: {},
+    on(event, listener) {
+      if (event === "data" && body) listener(Buffer.from(JSON.stringify(body)));
+      if (event === "end") listener();
+      return this;
+    },
+  });
+  const res = {
+    writeHead(status, headers) { this.status = status; this.headers = headers; },
+    end(body) { responses.push({ status: this.status, body }); },
+  };
+  return { fx, reqFor, res, responses };
+}
+
+test("routes expose config update and unknown app errors", async () => {
+  const { fx, reqFor, res, responses } = createRouteFixture();
+  await routeCommandAppsRequest(reqFor("PUT", "/v1/command-apps/apps/antigravity/config", { executablePath: fx.executable }), res, null, "/v1/command-apps/apps/antigravity/config", { service: fx.service });
+  assert.equal(responses[0].status, 200);
+  await routeCommandAppsRequest(reqFor("POST", "/v1/command-apps/apps/unknown/launch", { args: ["--danger"] }), res, null, "/v1/command-apps/apps/unknown/launch", { service: fx.service });
+  assert.equal(responses[1].status, 404);
+});
+
+test("launch request cannot override fixed arguments", async () => {
+  const { fx, reqFor, res } = createRouteFixture();
+  await routeCommandAppsRequest(reqFor("POST", "/v1/command-apps/apps/antigravity/launch", { args: ["--danger"] }), res, null, "/v1/command-apps/apps/antigravity/launch", { service: fx.service });
+  assert.deepEqual(fx.spawnCalls[0][1], ["--no-sandbox"]);
+});
