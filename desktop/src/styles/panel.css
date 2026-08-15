@@ -5403,3 +5403,54 @@ input:focus, select:focus {
   .command-apps-skeleton { animation: none; }
   .command-apps-actions .btn { transition: none; }
 }
+
+
+/* DeepSeek auto-continue mini-tool */
+.dsac-detail .dsac-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin: 0 0 16px;
+}
+@media (max-width: 900px) {
+    .dsac-detail .dsac-summary-grid {
+        grid-template-columns: 1fr;
+    }
+}
+.dsac-detail .dsac-capability-options {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+@media (max-width: 900px) {
+    .dsac-detail .dsac-capability-options {
+        grid-template-columns: 1fr;
+    }
+}
+.dsac-detail .dsac-max-attempts {
+    width: 96px;
+    max-width: 100%;
+}
+.dsac-detail .dsac-textarea {
+    width: 100%;
+    min-height: 96px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--input-bg);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.5;
+    resize: vertical;
+}
+.dsac-detail .dsac-textarea:focus {
+    outline: none;
+    border-color: var(--text-primary);
+    background: var(--input-focus-bg);
+}
+.dsac-detail .dsac-result-card.is-positive {
+    border-color: rgba(48, 164, 108, 0.35);
+    background: rgba(48, 164, 108, 0.06);
+}
+.dsac-detail .dsac-result-card.is-neutral {
+    border-color: var(--border-color);
+}

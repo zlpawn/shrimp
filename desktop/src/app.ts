@@ -378,47 +378,192 @@ window.renderDeepSeekAutoContinueDetail = function() {
     if (!deepseekAutoContinueState.loaded && !deepseekAutoContinueState.loading) {
         loadDeepSeekAutoContinueSettings();
     }
+
     const st = deepseekAutoContinueState.settings || DEFAULT_DEEPSEEK_AUTO_CONTINUE_UI;
     const decision = deepseekAutoContinueState.decision;
     const env = deepseekAutoContinueState.env_overrides || {};
-    const envHints = Object.entries(env)
-        .filter(([, v]) => v != null && String(v).trim() !== '')
-        .map(([k, v]) => '<code>' + escapeHtml(k) + '=' + escapeHtml(String(v)) + '</code>')
-        .join(' ');
+    const envEntries = Object.entries(env).filter(([, v]) => v != null && String(v).trim() !== '');
+    const enabled = st.enabled !== false && Number(st.max_attempts || 0) > 0;
+    const statusBadge = enabled
+        ? '<span class="badge badge-key-configured">已启用</span>'
+        : '<span class="badge badge-key-missing">已关闭</span>';
+    const modeBadge = st.require_agent_context !== false
+        ? '<span class="badge">仅 agent/tool</span>'
+        : '<span class="badge">全部 DeepSeek 请求</span>';
+    const preserveBadge = st.preserve_stage_text !== false
+        ? '<span class="badge">保留阶段总结</span>'
+        : '<span class="badge">仅返回后续轮</span>';
+    const attemptsBadge = `<span class="badge">最多 ${escapeHtml(String(st.max_attempts ?? 1))} 次</span>`;
+    const busyText = deepseekAutoContinueState.loading
+        ? '加载中…'
+        : (deepseekAutoContinueState.saving
+            ? '保存中…'
+            : (deepseekAutoContinueState.evaluating ? '试判中…' : '配置可编辑'));
+
+    const decisionCard = decision ? `
+        <div class="node-card dsac-result-card ${decision.ok ? 'is-positive' : 'is-neutral'}" style="cursor:default; min-height:auto;">
+            <div class="node-card-top">
+                <div class="node-card-title-row">
+                    <div class="node-card-title">${decision.ok ? '会触发自动续写' : '不会触发自动续写'}</div>
+                    <span class="badge ${decision.ok ? 'badge-key-configured' : ''}">${escapeHtml(decision.reason || '')}</span>
+                </div>
+            </div>
+            <div class="node-card-meta">
+                <div class="node-card-row">
+                    <span>${decision.ok ? '网关会在本轮后再补一次 continue 请求' : '按当前设置，这段回复会直接返回给客户端'}</span>
+                </div>
+                ${decision.text ? `<div class="node-card-row"><span class="mono" title="${escapeHtml(String(decision.text))}">${escapeHtml(String(decision.text).slice(0, 220))}${String(decision.text).length > 220 ? '…' : ''}</span></div>` : ''}
+            </div>
+        </div>
+    ` : `
+        <div class="usage-guide" style="margin:0;">
+            <p style="margin:0;">填写一段 DeepSeek 纯文本回复，点「试判是否会续写」。不会真实请求模型，只做本地判定。</p>
+        </div>
+    `;
+
+    const envCard = envEntries.length ? `
+        <div class="form-group full">
+            <label>环境变量覆盖</label>
+            <div class="tags-list">
+                ${envEntries.map(([k, v]) => `<span class="tag"><code>${escapeHtml(k)}</code>=${escapeHtml(String(v))}</span>`).join('')}
+            </div>
+            <div class="usage-guide" style="margin:8px 0 0;">
+                <p style="margin:0;">环境变量优先级高于面板保存值，适合临时止血或调试。</p>
+            </div>
+        </div>
+    ` : '';
+
     detail.innerHTML = `
-        <button class="tools-detail-back" onclick="backToToolsCards()">返回工具列表</button>
-        <div class="media-gen-panel">
-            <h3>DeepSeek 自动续写（安全模式）</h3>
-            <p class="media-gen-tip">只在 DeepSeek Responses 的 agent/tool 场景，把“阶段总结后不调工具就停”续成下一轮。默认收窄触发，避免普通问答被误继续。</p>
-            ${deepseekAutoContinueState.error ? '<div class="embed-error" style="margin-bottom:12px;">' + escapeHtml(deepseekAutoContinueState.error) + '</div>' : ''}
-            ${deepseekAutoContinueState.message ? '<div class="media-gen-tip" style="margin-bottom:12px;">' + escapeHtml(deepseekAutoContinueState.message) + '</div>' : ''}
-            <div class="form-group full"><label><input id="dsac-enabled" type="checkbox" ${st.enabled ? 'checked' : ''}> 启用自动续写</label></div>
-            <div class="form-group"><label>最大续写次数（0-3）</label>
-                <input id="dsac-max-attempts" type="number" min="0" max="3" value="${escapeHtml(String(st.max_attempts))}" class="mono">
+        <div class="detail-view dsac-detail">
+            <div class="detail-toolbar">
+                <div class="detail-toolbar-left">
+                    <button class="btn btn-sm" onclick="backToToolsCards()" title="返回迷你工具列表">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                        返回
+                    </button>
+                    <div>
+                        <div class="detail-title">DeepSeek 自动续写</div>
+                        <div class="detail-subtitle">
+                            安全模式 · 仅处理中途停住
+                            ${statusBadge}
+                        </div>
+                    </div>
+                </div>
+                <div class="detail-actions">
+                    <button class="btn btn-sm" onclick="loadDeepSeekAutoContinueSettings(true)" ${deepseekAutoContinueState.loading ? 'disabled' : ''}>刷新</button>
+                    <button class="btn btn-sm" onclick="resetDeepSeekAutoContinueSettings()" ${deepseekAutoContinueState.saving ? 'disabled' : ''}>恢复默认</button>
+                    <button class="btn btn-sm btn-primary" onclick="saveDeepSeekAutoContinueSettings()" ${deepseekAutoContinueState.saving ? 'disabled' : ''}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                        ${deepseekAutoContinueState.saving ? '保存中…' : '保存配置'}
+                    </button>
+                </div>
             </div>
-            <div class="form-group full"><label><input id="dsac-require-agent" type="checkbox" ${st.require_agent_context ? 'checked' : ''}> 仅 agent/tool 场景启用（推荐）</label></div>
-            <div class="form-group full"><label><input id="dsac-preserve-stage" type="checkbox" ${st.preserve_stage_text ? 'checked' : ''}> 续写后保留第一轮阶段总结</label></div>
-            <div class="form-group full"><label>续写提示词</label>
-                <textarea id="dsac-prompt" rows="3" class="mono">${escapeHtml(st.prompt || '')}</textarea>
+
+            ${deepseekAutoContinueState.error ? `<div class="protocol-hint" role="alert" style="border-color: rgba(239,68,68,.35); background: rgba(239,68,68,.08);"><span>${escapeHtml(deepseekAutoContinueState.error)}</span></div>` : ''}
+            ${deepseekAutoContinueState.message ? `<div class="protocol-hint" role="status"><span>${escapeHtml(deepseekAutoContinueState.message)}</span></div>` : ''}
+
+            <div class="dsac-summary-grid">
+                <div class="node-card" style="cursor:default; min-height:auto;">
+                    <div class="node-card-top">
+                        <div class="node-card-title-row">
+                            <div class="node-card-title">当前生效策略</div>
+                            ${statusBadge}
+                        </div>
+                    </div>
+                    <div class="node-card-models">
+                        ${attemptsBadge}
+                        ${modeBadge}
+                        ${preserveBadge}
+                    </div>
+                    <div class="node-card-footer">
+                        <span>${escapeHtml(busyText)}</span>
+                        <span class="node-card-cta">DeepSeek 专用策略</span>
+                    </div>
+                </div>
+                <div class="node-card" style="cursor:default; min-height:auto;">
+                    <div class="node-card-top">
+                        <div class="node-card-title-row">
+                            <div class="node-card-title">适用场景</div>
+                            <span class="badge">DeepSeek Responses</span>
+                        </div>
+                    </div>
+                    <div class="node-card-meta">
+                        <div class="node-card-row"><span>agent/tool 任务中途只总结不调工具时，自动补一轮 continue</span></div>
+                        <div class="node-card-row"><span>普通问答默认不触发，避免误继续</span></div>
+                    </div>
+                </div>
             </div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;">
-                <button class="btn btn-primary" onclick="saveDeepSeekAutoContinueSettings()" ${deepseekAutoContinueState.saving ? 'disabled' : ''}>保存配置</button>
-                <button class="btn" onclick="loadDeepSeekAutoContinueSettings(true)" ${deepseekAutoContinueState.loading ? 'disabled' : ''}>刷新</button>
-                <button class="btn" onclick="resetDeepSeekAutoContinueSettings()">恢复默认</button>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>基础配置</h3>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group full">
+                        <label>策略开关</label>
+                        <div class="capability-options dsac-capability-options">
+                            <label class="capability-option">
+                                <input class="capability-checkbox" id="dsac-enabled" type="checkbox" ${st.enabled ? 'checked' : ''}>
+                                <span>启用自动续写</span>
+                            </label>
+                            <label class="capability-option">
+                                <input class="capability-checkbox" id="dsac-require-agent" type="checkbox" ${st.require_agent_context ? 'checked' : ''}>
+                                <span>仅 agent/tool 场景</span>
+                            </label>
+                            <label class="capability-option">
+                                <input class="capability-checkbox" id="dsac-preserve-stage" type="checkbox" ${st.preserve_stage_text ? 'checked' : ''}>
+                                <span>保留阶段总结</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>最大续写次数（0-3）</label>
+                        <input id="dsac-max-attempts" class="mono dsac-max-attempts" type="number" min="0" max="3" value="${escapeHtml(String(st.max_attempts ?? 1))}">
+                    </div>
+                    <div class="form-group full">
+                        <label>续写提示词</label>
+                        <textarea id="dsac-prompt" class="mono dsac-textarea" rows="3">${escapeHtml(st.prompt || '')}</textarea>
+                        <div class="usage-guide" style="margin:0;">
+                            <p style="margin:0;">这是网关内部塞给模型的合成 user 消息，用来催它继续执行，而不是只做阶段总结。</p>
+                        </div>
+                    </div>
+
+                    ${envCard}
+                </div>
             </div>
-            <div class="form-group full"><label>当前生效说明</label>
-                <div class="media-gen-tip">保存写入 <code>gateway.config.json → tools.deepseek_auto_continue</code>。环境变量可覆盖：DEEPSEEK_AUTO_CONTINUE_*</div>
-                ${envHints ? '<div class="media-gen-tip" style="margin-top:8px;">检测到 env 覆盖：' + envHints + '</div>' : ''}
+
+            <div class="card" style="margin-top:16px;">
+                <div class="card-header">
+                    <h3>试判面板</h3>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group full">
+                        <label>模拟上下文</label>
+                        <div class="capability-options" style="grid-template-columns: 1fr;">
+                            <label class="capability-option">
+                                <input class="capability-checkbox" id="dsac-has-tools" type="checkbox" ${deepseekAutoContinueState.hasTools ? 'checked' : ''}>
+                                <span>请求带 tools / agent 上下文</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group full">
+                        <label>模型纯文本回复样本</label>
+                        <textarea id="dsac-sample-text" class="mono dsac-textarea" rows="5">${escapeHtml(deepseekAutoContinueState.sampleText || '')}</textarea>
+                    </div>
+                    <div class="form-group full">
+                        <div class="detail-actions" style="justify-content:flex-start;">
+                            <button class="btn btn-sm btn-primary" onclick="evaluateDeepSeekAutoContinueSample()" ${deepseekAutoContinueState.evaluating ? 'disabled' : ''}>
+                                ${deepseekAutoContinueState.evaluating ? '试判中…' : '试判是否会续写'}
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group full">
+                        <label>判定结果</label>
+                        ${decisionCard}
+                    </div>
+                </div>
             </div>
-            <hr style="margin:18px 0;opacity:.2;">
-            <h4>试判面板</h4>
-            <p class="media-gen-tip">不会真的请求 DeepSeek，只根据当前表单设置判断“会不会触发自动续写”。</p>
-            <div class="form-group full"><label><input id="dsac-has-tools" type="checkbox" ${deepseekAutoContinueState.hasTools ? 'checked' : ''}> 模拟请求带 tools / agent 上下文</label></div>
-            <div class="form-group full"><label>模型纯文本回复样本</label>
-                <textarea id="dsac-sample-text" rows="4" class="mono">${escapeHtml(deepseekAutoContinueState.sampleText || '')}</textarea>
-            </div>
-            <button class="btn" onclick="evaluateDeepSeekAutoContinueSample()" ${deepseekAutoContinueState.evaluating ? 'disabled' : ''}>试判是否会续写</button>
-            ${decision ? '<div class="media-gen-tip" style="margin-top:12px;"><strong>结果：</strong>' + (decision.ok ? '会触发自动续写' : '不会触发') + ' <code>' + escapeHtml(decision.reason || '') + '</code>' + (decision.text ? '<div style="margin-top:6px;opacity:.85;">' + escapeHtml(String(decision.text).slice(0, 240)) + '</div>' : '') + '</div>' : ''}
         </div>
     `;
 };
