@@ -546,6 +546,12 @@ test("subscription tools render grok and remaining usage", async () => {
   assert.match(html, /formatSubscriptionUsage/);
 });
 
+test("subscription usage refresh handlers are exposed to inline onclick", async () => {
+  const html = await readSources();
+  assert.match(html, /window\.loadSubscriptionUsage\s*=\s*async function/);
+  assert.match(html, /window\.loadGrokAuthStatus\s*=\s*async function/);
+});
+
 test("endpoint type list includes antigravity google subscription label", async () => {
   const html = await readSources();
   assert.match(html, /value: "antigravity"/);

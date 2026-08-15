@@ -4500,7 +4500,7 @@ async function loadCodexAuthStatus() {
     }
 }
 
-async function loadSubscriptionUsage(provider) {
+window.loadSubscriptionUsage = async function(provider) {
     if (provider === 'grok') grokAuthState.usageLoading = true;
     try {
         const res = await fetch('/v1/subscription-auth/' + encodeURIComponent(provider) + '/usage', { method: 'POST' });
@@ -4648,7 +4648,7 @@ window.refreshCodexAuthToken = async function() {
     }
 };
 
-async function loadGrokAuthStatus() {
+window.loadGrokAuthStatus = async function() {
     grokAuthState.loading = true;
     grokAuthState.error = '';
     renderGrokSubscribeDetail(false);
