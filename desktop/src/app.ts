@@ -4459,12 +4459,14 @@ function formatSubscriptionUsage(usage) {
     if (usage.available === false) {
         return usage?.error?.message || '不可用';
     }
-    if (Number.isFinite(Number(usage.remaining_credits))) {
+    if (usage.remaining_credits !== null && usage.remaining_credits !== undefined && Number.isFinite(Number(usage.remaining_credits))) {
         return '剩余 ' + usage.remaining_credits + ' credits';
     }
     if (Number.isFinite(Number(usage.remaining_percent))) {
         const percent = Number(usage.remaining_percent);
-        const reset = usage.reset_at ? '，' + formatUsageTime(usage.reset_at) + ' 重置' : '';
+        const reset = usage.reset_hint
+            ? '，' + usage.reset_hint
+            : (usage.reset_at ? '，' + formatUsageTime(usage.reset_at) + ' 重置' : '');
         return percent.toFixed(1).replace(/\.0$/, '') + '%' + reset;
     }
     return '已获取，但上游未提供剩余量';

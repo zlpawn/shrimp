@@ -566,6 +566,12 @@ test("subscription usage formats ISO and epoch reset times", async () => {
   assert.match(html, /formatUsageTime\(usage\.reset_at\)/);
 });
 
+test("antigravity percentage usage does not fall into null credits branch", async () => {
+  const html = await readSources();
+  assert.match(html, /usage\.remaining_credits !== null && usage\.remaining_credits !== undefined/);
+  assert.match(html, /usage\.reset_hint/);
+});
+
 test("endpoint type list includes antigravity google subscription label", async () => {
   const html = await readSources();
   assert.match(html, /value: "antigravity"/);
