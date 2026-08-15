@@ -572,6 +572,13 @@ test("antigravity percentage usage does not fall into null credits branch", asyn
   assert.match(html, /usage\.reset_hint/);
 });
 
+test("antigravity usage renders every localized limit separately", async () => {
+  const html = await readSources();
+  assert.match(html, /function formatAntigravityUsageLimits/);
+  assert.match(html, /周额度/);
+  assert.match(html, /5 小时额度/);
+});
+
 test("endpoint type list includes antigravity google subscription label", async () => {
   const html = await readSources();
   assert.match(html, /value: "antigravity"/);
