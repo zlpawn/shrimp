@@ -2502,6 +2502,11 @@ if (reqPath === "/v1/config/secret" && req.method === "GET") {
             ...process.env,
             GROK_PROXY: process.env.GROK_PROXY || buildProxyUrl(GATEWAY_CONFIG.server?.proxy || {}),
           },
+          proxyUrl: configuredOutboundProxyUrl(
+            Object.values(GATEWAY_CONFIG.clients || {})
+              .flatMap((client) => client?.endpoints || [])
+              .find((endpoint) => endpoint?.type === "antigravity") || {},
+          ) || null,
           payload: body,
           save: body.save !== false,
         });
