@@ -41,13 +41,26 @@ let codexModelCatalogPath = "~/.codex/gateway-model-catalog.json";
 // Craft-style navigation: null = card list, {client,index} = detail editor
 let selectedEndpoint = null;
 let activeClient = 'code';
-let toolsView = 'cards'; // 'cards' | 'embedding' | 'classification-metrics' | 'antigravity-subscribe' | 'codex-subscribe' | 'video-kb' | 'deepseek-auto-continue'
+let toolsView = 'cards'; // 'cards' | 'embedding' | 'classification-metrics' | 'antigravity-subscribe' | 'codex-subscribe' | 'grok-subscribe' | 'video-kb' | 'deepseek-auto-continue'
 let codexAuthState = {
     loading: false,
     busyAction: '',
     error: '',
     message: '',
     status: null,
+};
+let grokAuthState = {
+    loading: false,
+    busyAction: '',
+    error: '',
+    message: '',
+    status: null,
+    usage: null,
+    usageLoading: false,
+};
+const subscriptionUsageState = {
+    codex: null,
+    antigravity: null,
 };
 let antigravityAuthState = {
     loading: false,
@@ -4180,7 +4193,7 @@ const toolGroupConfigs = [
     { title: '媒体生成', tools: ['image-gen', 'video-gen', 'tts-gen'] },
     { title: '向量化', tools: ['embedding'] },
     { title: '知识库', tools: ['video-kb'] },
-    { title: '订阅接入', tools: ['antigravity-subscribe', 'codex-subscribe'] },
+    { title: '订阅接入', tools: ['antigravity-subscribe', 'codex-subscribe', 'grok-subscribe'] },
     { title: '模型配置', tools: ['claude-model-catalog', 'deepseek-auto-continue'] },
     { title: '联网搜索', tools: ['web-search'] },
     { title: '国学', tools: ['iching'] },
@@ -4196,6 +4209,7 @@ function toolDefs() {
         'video-kb': { name: '视频知识库', desc: '输入视频 URL，自动下载、转录、向量化，存入 LanceDB 后可语义检索。', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="14" height="16" rx="2"></rect><path d="m22 8-6 4 6 4V8z"></path></svg>' },
         'antigravity-subscribe': { name: '接入 Antigravity 订阅', desc: '从本机提取 OAuth 凭据，登录 Google 订阅账号，让网关使用 Antigravity 的 Gemini 模型。', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M9 12l2 2 4-4"></path></svg>' },
         'codex-subscribe': { name: '接入 Codex 订阅', desc: '读取本机 Codex/ChatGPT 登录态，把官方模型做成可给 Claude Desktop / DeepTutor 使用的节点。', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M8 12h8"></path><path d="M12 8v8"></path></svg>' },
+        'grok-subscribe': { name: '接入 Grok 订阅', desc: '读取本机 Grok CLI 登录态，检测官方模型和订阅剩余用量。', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"></path><path d="M2 12h20"></path><path d="m4.9 4.9 14.2 14.2"></path><path d="M19.1 4.9 4.9 19.1"></path></svg>' },
         'claude-model-catalog': { name: 'Claude 模型列表', desc: '维护 Claude Desktop 映射原模型候选项：内置官方名 + 用户自定义。', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"></path><rect x="4" y="8" width="16" height="12" rx="2"></rect><path d="M2 14h2"></path><path d="M20 14h2"></path><path d="M15 13v2"></path><path d="M9 13v2"></path></svg>' },
         'deepseek-auto-continue': { name: 'DeepSeek 自动续写', desc: '调节 DeepSeek agent 中途停住时的安全自动续写：开关、次数、仅 tool 场景、是否保留阶段总结，并支持样本文本试判。', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"></path><polyline points="21 3 21 9 15 9"></polyline><path d="M9 12h6"></path><path d="M12 9v6"></path></svg>' },
         'web-search': { name: '联网搜索', desc: '使用已配置的 web_search 节点，输入查询词、选择结果数量与时间范围，实时检索网页并查看本地搜索历史。', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20"></path><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>' },
@@ -4246,6 +4260,7 @@ window.openTool = function(toolId) {
     else if (toolId === 'classification-metrics') renderClassificationMetricsDetail();
     else if (toolId === 'antigravity-subscribe') renderAntigravitySubscribeDetail();
     else if (toolId === 'codex-subscribe') renderCodexSubscribeDetail();
+    else if (toolId === 'grok-subscribe') renderGrokSubscribeDetail();
     else if (toolId === 'video-kb') renderVideoKbDetail();
     else renderToolsDetail();
 };
@@ -4425,6 +4440,28 @@ function formatExpiresIn(seconds) {
     return s + ' 秒';
 }
 
+function formatUsageEpoch(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n) || n <= 0) return '未知';
+    return new Date(n < 10_000_000_000 ? n * 1000 : n).toLocaleString();
+}
+
+function formatSubscriptionUsage(usage) {
+    if (!usage) return '尚未获取';
+    if (usage.available === false) {
+        return usage?.error?.message || '不可用';
+    }
+    if (Number.isFinite(Number(usage.remaining_credits))) {
+        return '剩余 ' + usage.remaining_credits + ' credits';
+    }
+    if (Number.isFinite(Number(usage.remaining_percent))) {
+        const percent = Number(usage.remaining_percent);
+        const reset = usage.reset_at ? '，' + formatUsageEpoch(usage.reset_at) + ' 重置' : '';
+        return percent.toFixed(1).replace(/\.0$/, '') + '%' + reset;
+    }
+    return '已获取，但上游未提供剩余量';
+}
+
 async function loadAntigravityAuthStatus() {
     antigravityAuthState.loading = true;
     antigravityAuthState.error = '';
@@ -4463,6 +4500,27 @@ async function loadCodexAuthStatus() {
     }
 }
 
+async function loadSubscriptionUsage(provider) {
+    if (provider === 'grok') grokAuthState.usageLoading = true;
+    try {
+        const res = await fetch('/v1/subscription-auth/' + encodeURIComponent(provider) + '/usage', { method: 'POST' });
+        const json = await res.json();
+        if (!res.ok || json.success === false) throw new Error(json?.error?.message || json?.error?.message || '获取用量失败');
+        const usage = json.available === undefined ? json.result : json;
+        if (provider === 'grok') grokAuthState.usage = usage;
+        else subscriptionUsageState[provider] = usage;
+    } catch (err) {
+        const failed = { available: false, error: { message: err.message || String(err) } };
+        if (provider === 'grok') grokAuthState.usage = failed;
+        else subscriptionUsageState[provider] = failed;
+    } finally {
+        if (provider === 'grok') grokAuthState.usageLoading = false;
+        if (provider === 'grok') renderGrokSubscribeDetail(false);
+        else if (provider === 'codex') renderCodexSubscribeDetail(false);
+        else if (provider === 'antigravity') renderAntigravitySubscribeDetail(false);
+    }
+}
+
 window.renderCodexSubscribeDetail = function(autoLoad = true) {
     const cards = document.getElementById('tools-cards');
     const detail = document.getElementById('tools-detail');
@@ -4479,6 +4537,7 @@ window.renderCodexSubscribeDetail = function(autoLoad = true) {
     const state = s?.state || (codexAuthState.loading ? 'loading' : 'unknown');
     const stateLabel = s?.state_label || (codexAuthState.loading ? '加载中' : '未知');
     const badgeClass = subauthBadgeClass(state);
+    const usage = subscriptionUsageState.codex;
     const nextSteps = (s?.next_steps || []).map((step) => '<li>' + escapeHtml(step) + '</li>').join('')
         || '<li>打开工具后会自动检查本机 Codex 登录态。</li>';
     const nodeHint = s?.nodes?.configured
@@ -4501,6 +4560,7 @@ window.renderCodexSubscribeDetail = function(autoLoad = true) {
         '      <div class="subauth-stat"><div class="subauth-stat-label">账号</div><div class="subauth-stat-value">' + escapeHtml(s?.token?.account_id || '未登录') + '</div></div>',
         '      <div class="subauth-stat"><div class="subauth-stat-label">Token 剩余</div><div class="subauth-stat-value">' + escapeHtml(formatExpiresIn(s?.token?.expires_in_seconds)) + '</div></div>',
         '      <div class="subauth-stat"><div class="subauth-stat-label">登录模式</div><div class="subauth-stat-value">' + escapeHtml(s?.token?.auth_mode || '未知') + '</div></div>',
+        '      <div class="subauth-stat"><div class="subauth-stat-label">订阅剩余用量</div><div class="subauth-stat-value">' + escapeHtml(formatSubscriptionUsage(usage)) + '</div></div>',
         '    </div>',
         codexAuthState.error ? ('    <div class="subauth-error">' + escapeHtml(codexAuthState.error) + '</div>') : '',
         codexAuthState.message ? ('    <div class="subauth-success">' + escapeHtml(codexAuthState.message) + '</div>') : '',
@@ -4515,6 +4575,7 @@ window.renderCodexSubscribeDetail = function(autoLoad = true) {
         '      <button class="btn" onclick="loadCodexAuthStatus()" ' + (busy ? 'disabled' : '') + '>刷新状态</button>',
         '      <button class="btn btn-primary" onclick="discoverCodexAuth()" ' + (busy ? 'disabled' : '') + '>' + (codexAuthState.busyAction === 'discover' ? '检测中...' : '检测本机登录态') + '</button>',
         '      <button class="btn" onclick="refreshCodexAuthToken()" ' + (busy ? 'disabled' : '') + '>' + (codexAuthState.busyAction === 'refresh' ? '刷新中...' : '尝试刷新 Token') + '</button>',
+        '      <button class="btn" onclick="loadSubscriptionUsage(\'codex\')" ' + (busy ? 'disabled' : '') + '>刷新剩余用量</button>',
         '    </div>',
         '  </div>',
         '  <div class="subauth-panel">',
@@ -4587,6 +4648,77 @@ window.refreshCodexAuthToken = async function() {
     }
 };
 
+async function loadGrokAuthStatus() {
+    grokAuthState.loading = true;
+    grokAuthState.error = '';
+    renderGrokSubscribeDetail(false);
+    try {
+        const res = await fetch('/v1/subscription-auth/grok/status');
+        const json = await res.json();
+        if (!res.ok) throw new Error(json?.error?.message || '加载状态失败');
+        grokAuthState.status = json;
+    } catch (err) {
+        grokAuthState.error = err.message || String(err);
+    } finally {
+        grokAuthState.loading = false;
+        renderGrokSubscribeDetail(false);
+    }
+}
+
+window.renderGrokSubscribeDetail = function(autoLoad = true) {
+    const cards = document.getElementById('tools-cards');
+    const detail = document.getElementById('tools-detail');
+    if (!cards || !detail) return;
+    cards.style.display = 'none';
+    toolsView = 'grok-subscribe';
+    if (autoLoad && !grokAuthState.status && !grokAuthState.loading && !grokAuthState.error) {
+        loadGrokAuthStatus();
+    }
+    const s = grokAuthState.status;
+    const busy = Boolean(grokAuthState.busyAction || grokAuthState.loading || grokAuthState.usageLoading);
+    const state = s?.state || (grokAuthState.loading ? 'loading' : 'unknown');
+    const stateLabel = s?.state_label || (grokAuthState.loading ? '加载中' : '未知');
+    const nextSteps = (s?.next_steps || [
+        '请先在本机运行 grok login 完成订阅登录。',
+        '登录后在 Claude Desktop / DeepTutor / Codex 节点页添加 Grok 订阅节点。',
+    ]).map((step) => '<li>' + escapeHtml(step) + '</li>').join('');
+    const nodeHint = s?.nodes?.configured
+        ? ('已检测到 ' + s.nodes.count + ' 个 Grok 订阅节点。')
+        : '尚未配置 type=grok 的节点。';
+    detail.innerHTML = [
+        '<button class="tools-detail-back" onclick="backToToolsCards()">返回工具列表</button>',
+        '<div class="subauth-layout">',
+        '  <div class="subauth-panel">',
+        '    <h3>接入 Grok 订阅</h3>',
+        '    <div class="subauth-status-grid">',
+        '      <div class="subauth-stat"><div class="subauth-stat-label">当前状态</div><div class="subauth-stat-value"><span class="subauth-badge ' + subauthBadgeClass(state) + '">' + escapeHtml(stateLabel) + '</span></div></div>',
+        '      <div class="subauth-stat"><div class="subauth-stat-label">账号</div><div class="subauth-stat-value">' + escapeHtml(s?.token?.account_id || '未登录') + '</div></div>',
+        '      <div class="subauth-stat"><div class="subauth-stat-label">Token 剩余</div><div class="subauth-stat-value">' + escapeHtml(formatExpiresIn(s?.token?.expires_in_seconds)) + '</div></div>',
+        '      <div class="subauth-stat"><div class="subauth-stat-label">订阅剩余用量</div><div class="subauth-stat-value">' + escapeHtml(formatSubscriptionUsage(grokAuthState.usage)) + '</div></div>',
+        '    </div>',
+        grokAuthState.error ? ('<div class="subauth-error">' + escapeHtml(grokAuthState.error) + '</div>') : '',
+        grokAuthState.message ? ('<div class="subauth-success">' + escapeHtml(grokAuthState.message) + '</div>') : '',
+        '    <div class="subauth-help">',
+        '      <div>Auth 文件：<span class="subauth-path">' + escapeHtml(s?.auth_path || '~/.grok/auth.json') + '</span></div>',
+        '      <div style="margin-top:6px;">节点配置：' + escapeHtml(nodeHint) + '</div>',
+        '    </div>',
+        '    <div class="subauth-actions">',
+        '      <button class="btn" onclick="loadGrokAuthStatus()" ' + (busy ? 'disabled' : '') + '>刷新状态</button>',
+        '      <button class="btn" onclick="loadSubscriptionUsage(\'grok\')" ' + (busy ? 'disabled' : '') + '>' + (grokAuthState.usageLoading ? '获取中...' : '刷新剩余用量') + '</button>',
+        '    </div>',
+        '  </div>',
+        '  <div class="subauth-panel">',
+        '    <h3>接下来做什么</h3>',
+        '    <ol class="subauth-steps">' + nextSteps + '</ol>',
+        '    <div class="subauth-help">',
+        '      <div><strong>真实上游协议</strong></div>',
+        '      <div class="subauth-muted" style="margin-top:6px;">Grok 订阅节点走 cli-chat-proxy.grok.com/v1，读取本机 ~/.grok/auth.json，不需要 API Key。登录和 Token 刷新由 grok CLI 负责。</div>',
+        '    </div>',
+        '  </div>',
+        '</div>',
+    ].join('');
+};
+
 
 window.renderAntigravitySubscribeDetail = function(autoLoad = true) {
     const cards = document.getElementById('tools-cards');
@@ -4612,6 +4744,7 @@ window.renderAntigravitySubscribeDetail = function(autoLoad = true) {
     const installHint = s?.install?.detected
         ? ('已检测到：' + (s.install.install_root || ''))
         : '未检测到本机 Antigravity 安装，可手动填写 client_id / client_secret。';
+    const usage = subscriptionUsageState.antigravity;
 
     detail.innerHTML = [
         '<button class="tools-detail-back" onclick="backToToolsCards()">返回工具列表</button>',
@@ -4623,6 +4756,7 @@ window.renderAntigravitySubscribeDetail = function(autoLoad = true) {
         '      <div class="subauth-stat"><div class="subauth-stat-label">账号</div><div class="subauth-stat-value">' + escapeHtml(s?.token?.account_id || '未登录') + '</div></div>',
         '      <div class="subauth-stat"><div class="subauth-stat-label">Token 剩余</div><div class="subauth-stat-value">' + escapeHtml(formatExpiresIn(s?.token?.expires_in_seconds)) + '</div></div>',
         '      <div class="subauth-stat"><div class="subauth-stat-label">Client 凭据</div><div class="subauth-stat-value">' + (s?.client?.configured ? escapeHtml(s.client.client_id_masked || '已配置') : '未配置') + '</div></div>',
+        '      <div class="subauth-stat"><div class="subauth-stat-label">订阅剩余用量</div><div class="subauth-stat-value">' + escapeHtml(formatSubscriptionUsage(usage)) + '</div></div>',
         '    </div>',
         '    <div class="subauth-actions">',
         '      <button class="btn" onclick="loadAntigravityAuthStatus()" ' + (busy ? 'disabled' : '') + '>刷新状态</button>',
@@ -4630,6 +4764,7 @@ window.renderAntigravitySubscribeDetail = function(autoLoad = true) {
         '      <button class="btn btn-primary" onclick="loginAntigravitySubscription()" ' + (busy ? 'disabled' : '') + '>' + (antigravityAuthState.busyAction === 'login-start' ? '启动中...' : (antigravityAuthState.busyAction === 'login-wait' ? '等待授权中' : '一键登录')) + '</button>',
         (antigravityAuthState.busyAction === 'login-wait' ? '<button class="btn" onclick="cancelAntigravityLoginWait()">取消等待</button>' : ''),
         '      <button class="btn" onclick="toggleAntigravityManualForm()" ' + (busy ? 'disabled' : '') + '>手动填写</button>',
+        '      <button class="btn" onclick="loadSubscriptionUsage(\'antigravity\')" ' + (busy ? 'disabled' : '') + '>刷新剩余用量</button>',
         '    </div>',
         antigravityAuthState.showManual ? (
           '<div class="subauth-form-row">' +

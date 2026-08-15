@@ -535,6 +535,17 @@ test("tools cards list renders antigravity subscribe card", async () => {
   assert.match(html, /一键登录/);
 });
 
+test("subscription tools render grok and remaining usage", async () => {
+  const html = await readSources();
+  assert.match(html, /tools: \['antigravity-subscribe', 'codex-subscribe', 'grok-subscribe'\]/);
+  assert.match(html, /'grok-subscribe': { name: '接入 Grok 订阅'/);
+  assert.match(html, /toolId === 'grok-subscribe'\) renderGrokSubscribeDetail/);
+  assert.match(html, /v1\/subscription-auth\/grok\/status/);
+  assert.match(html, /loadSubscriptionUsage/);
+  assert.match(html, /订阅剩余用量/);
+  assert.match(html, /formatSubscriptionUsage/);
+});
+
 test("endpoint type list includes antigravity google subscription label", async () => {
   const html = await readSources();
   assert.match(html, /value: "antigravity"/);
