@@ -17,7 +17,10 @@ import {
 import {
   deepSeekAutoContinueMaxAttempts,
   deepSeekAutoContinuePrompt,
+  resolveDeepSeekAutoContinueSettings,
+  evaluateDeepSeekAutoContinueCandidate,
   runDeepSeekAutoContinueLoop,
+  DEFAULT_DEEPSEEK_AUTO_CONTINUE_SETTINGS,
 } from "./lib/codex/deepseek-auto-continue.mjs";
 import { extractCompactionSummary } from "./lib/codex/compaction-helper.mjs";
 
@@ -2483,6 +2486,141 @@ if (reqPath === "/v1/config/secret" && req.method === "GET") {
       }
       return;
     }
+  }
+
+  if (reqPath === "/v1/tools/deepseek-auto-continue" && req.method === "GET") {
+    if (!checkLocalAuth(req, res)) return;
+    const settings = resolveDeepSeekAutoContinueSettings({
+      config: GATEWAY_CONFIG,
+      env: process.env,
+    });
+    sendJson(res, 200, {
+      success: true,
+      settings,
+      defaults: DEFAULT_DEEPSEEK_AUTO_CONTINUE_SETTINGS,
+      source: {
+        config: GATEWAY_CONFIG?.tools?.deepseek_auto_continue || null,
+        env_overrides: {
+          DEEPSEEK_AUTO_CONTINUE_MAX_ATTEMPTS: process.env.DEEPSEEK_AUTO_CONTINUE_MAX_ATTEMPTS || null,
+          DEEPSEEK_AUTO_CONTINUE_PROMPT: process.env.DEEPSEEK_AUTO_CONTINUE_PROMPT || null,
+          DEEPSEEK_AUTO_CONTINUE_ENABLED: process.env.DEEPSEEK_AUTO_CONTINUE_ENABLED || null,
+          DEEPSEEK_AUTO_CONTINUE_REQUIRE_AGENT_CONTEXT: process.env.DEEPSEEK_AUTO_CONTINUE_REQUIRE_AGENT_CONTEXT || null,
+          DEEPSEEK_AUTO_CONTINUE_PRESERVE_STAGE_TEXT: process.env.DEEPSEEK_AUTO_CONTINUE_PRESERVE_STAGE_TEXT || null,
+        },
+      },
+    });
+    return;
+  }
+
+  if (reqPath === "/v1/tools/deepseek-auto-continue" && req.method === "POST") {
+    if (!checkLocalAuth(req, res)) return;
+    try {
+      const payload = JSON.parse(await readText(req));
+      const incoming = payload?.settings && typeof payload.settings === "object"
+        ? payload.settings
+        : payload;
+      const nextSettings = {
+        enabled: incoming?.enabled !== false,
+        max_attempts: Math.max(0, Math.min(3, Number(incoming?.max_attempts ?? 1) || 0)),
+        require_agent_context: incoming?.require_agent_context !== false,
+        preserve_stage_text: incoming?.preserve_stage_text !== false,
+        prompt: String(incoming?.prompt || DEFAULT_DEEPSEEK_AUTO_CONTINUE_SETTINGS.prompt).trim()
+          || DEFAULT_DEEPSEEK_AUTO_CONTINUE_SETTINGS.prompt,
+      };
+      const nextConfig = {
+        ...GATEWAY_CONFIG,
+        tools: {
+          ...(GATEWAY_CONFIG.tools || {}),
+          deepseek_auto_continue: nextSettings,
+        },
+      };
+      const result = saveGatewayState({
+        configPath: GATEWAY_CONFIG_FILE,
+        secretsPath: GATEWAY_SECRETS_FILE,
+        config: {
+          server: nextConfig.server,
+          clients: nextConfig.clients,
+          tools: nextConfig.tools,
+          dreamSkin: nextConfig.dreamSkin,
+          natTraversal: nextConfig.natTraversal,
+        },
+        officialCodexIds: OFFICIAL_CODEX_MODEL_IDS,
+      });
+      GATEWAY_CONFIG = result.config;
+      GATEWAY_SECRETS = result.secrets;
+      reloadGatewayConfig({ reloadFiles: false });
+      const settings = resolveDeepSeekAutoContinueSettings({
+        config: GATEWAY_CONFIG,
+        env: process.env,
+      });
+      logInfo("deepseek_auto_continue_settings_saved", {
+        config_changed: result.configChanged,
+        settings,
+      });
+      sendJson(res, 200, {
+        success: true,
+        settings,
+        config_changed: result.configChanged,
+      });
+    } catch (error) {
+      sendJson(res, 400, {
+        success: false,
+        error: error?.message || String(error),
+      });
+    }
+    return;
+  }
+
+  if (reqPath === "/v1/tools/deepseek-auto-continue/evaluate" && req.method === "POST") {
+    if (!checkLocalAuth(req, res)) return;
+    try {
+      const payload = JSON.parse(await readText(req));
+      const settings = resolveDeepSeekAutoContinueSettings({
+        config: {
+          tools: {
+            deepseek_auto_continue: payload?.settings || GATEWAY_CONFIG?.tools?.deepseek_auto_continue,
+          },
+        },
+        env: process.env,
+      });
+      const sampleText = String(payload?.text || "").trim();
+      const body = payload?.body && typeof payload.body === "object"
+        ? payload.body
+        : {
+          model: payload?.model || "DeepSeek-V4-Flash",
+          tools: payload?.has_tools === false ? [] : [{ type: "function", name: "shell_command" }],
+          input: [{ type: "message", role: "user", content: [{ type: "input_text", text: "agent task" }] }],
+        };
+      const response = payload?.response && typeof payload.response === "object"
+        ? payload.response
+        : {
+          status: "completed",
+          output_text: sampleText,
+          output: [{
+            type: "message",
+            role: "assistant",
+            content: [{ type: "output_text", text: sampleText }],
+          }],
+        };
+      const decision = evaluateDeepSeekAutoContinueCandidate({
+        model: payload?.model || body.model || "DeepSeek-V4-Flash",
+        provider: payload?.provider || { name: "deepseek", base_url: "https://api.deepseek.com" },
+        body,
+        response,
+        settings,
+      });
+      sendJson(res, 200, {
+        success: true,
+        settings,
+        decision,
+      });
+    } catch (error) {
+      sendJson(res, 400, {
+        success: false,
+        error: error?.message || String(error),
+      });
+    }
+    return;
   }
 
   if (reqPath === "/v1/config" && req.method === "GET") {
@@ -5719,7 +5857,7 @@ async function forwardResolvedCodexResponse({
     if (!loop.response) return;
 
     const continued = await maybeAutoContinueDeepSeekResponses({
-      body: withoutStreamFlag(body),
+      body: withoutStreamFlag(loop.body || body),
       response: loop.response,
       model: resolvedModel || requestedModel,
       provider: route.provider,
@@ -6170,12 +6308,16 @@ async function maybeAutoContinueDeepSeekResponses({
     };
   }
 
-  const maxAttempts = deepSeekAutoContinueMaxAttempts();
-  if (maxAttempts <= 0 || !isDeepSeekResponsesModel(model, provider)) {
+  const settings = resolveDeepSeekAutoContinueSettings({
+    config: GATEWAY_CONFIG,
+    env: process.env,
+  });
+  if (!settings.enabled || settings.max_attempts <= 0 || !isDeepSeekResponsesModel(model, provider)) {
     return {
       response,
       attempts: 0,
       stopReason: "not_eligible",
+      settings,
     };
   }
 
@@ -6184,8 +6326,10 @@ async function maybeAutoContinueDeepSeekResponses({
     response,
     model,
     provider,
-    maxAttempts,
-    prompt: deepSeekAutoContinuePrompt(),
+    maxAttempts: settings.max_attempts,
+    prompt: settings.prompt,
+    requireAgentContext: settings.require_agent_context,
+    preserveStageText: settings.preserve_stage_text,
     fetchResponse,
     onContinue: (event) => logInfo("deepseek_auto_continue_attempt", {
       request_id: requestId,
@@ -6205,10 +6349,12 @@ async function maybeAutoContinueDeepSeekResponses({
       attempts: result.attempts,
       stop_reason: result.stopReason,
       decision_reason: result.decision?.reason || null,
+      require_agent_context: settings.require_agent_context,
+      preserve_stage_text: settings.preserve_stage_text,
     });
   }
 
-  return result;
+  return { ...result, settings };
 }
 
 async function fetchConfiguredResponsesObject({

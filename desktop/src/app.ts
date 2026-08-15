@@ -41,7 +41,7 @@ let codexModelCatalogPath = "~/.codex/gateway-model-catalog.json";
 // Craft-style navigation: null = card list, {client,index} = detail editor
 let selectedEndpoint = null;
 let activeClient = 'code';
-let toolsView = 'cards'; // 'cards' | 'embedding' | 'classification-metrics' | 'antigravity-subscribe' | 'codex-subscribe' | 'video-kb'
+let toolsView = 'cards'; // 'cards' | 'embedding' | 'classification-metrics' | 'antigravity-subscribe' | 'codex-subscribe' | 'video-kb' | 'deepseek-auto-continue'
 let codexAuthState = {
     loading: false,
     busyAction: '',
@@ -310,6 +310,226 @@ const BUILTIN_CLAUDE_OFFICIAL_MODELS = [
     'claude-haiku-4-5',
     'claude-haiku-4-0',
 ];
+
+
+const DEFAULT_DEEPSEEK_AUTO_CONTINUE_UI = {
+    enabled: true,
+    max_attempts: 1,
+    require_agent_context: true,
+    preserve_stage_text: true,
+    prompt: '继续执行未完成的任务，不要只做阶段性总结。如果还有下一步，请直接调用工具继续。',
+};
+
+function getDeepSeekAutoContinueConfig() {
+    config.tools = config.tools || {};
+    const current = config.tools.deepseek_auto_continue && typeof config.tools.deepseek_auto_continue === 'object'
+        ? config.tools.deepseek_auto_continue
+        : {};
+    config.tools.deepseek_auto_continue = {
+        enabled: current.enabled !== false,
+        max_attempts: Math.max(0, Math.min(3, Number(current.max_attempts ?? 1) || 0)),
+        require_agent_context: current.require_agent_context !== false,
+        preserve_stage_text: current.preserve_stage_text !== false,
+        prompt: String(current.prompt || DEFAULT_DEEPSEEK_AUTO_CONTINUE_UI.prompt).trim() || DEFAULT_DEEPSEEK_AUTO_CONTINUE_UI.prompt,
+    };
+    return config.tools.deepseek_auto_continue;
+}
+
+let deepseekAutoContinueState = {
+    loaded: false,
+    loading: false,
+    saving: false,
+    evaluating: false,
+    error: '',
+    message: '',
+    settings: { ...DEFAULT_DEEPSEEK_AUTO_CONTINUE_UI },
+    defaults: { ...DEFAULT_DEEPSEEK_AUTO_CONTINUE_UI },
+    env_overrides: {},
+    sampleText: 'Plan 3 完成（203 tests 全绿）。现在进入 Plan 4：运行时静态隔离。',
+    hasTools: true,
+    decision: null,
+};
+
+function readDeepSeekAutoContinueForm() {
+    const enabled = document.getElementById('dsac-enabled');
+    const maxAttempts = document.getElementById('dsac-max-attempts');
+    const requireAgent = document.getElementById('dsac-require-agent');
+    const preserveStage = document.getElementById('dsac-preserve-stage');
+    const prompt = document.getElementById('dsac-prompt');
+    const sample = document.getElementById('dsac-sample-text');
+    const hasTools = document.getElementById('dsac-has-tools');
+    return {
+        enabled: enabled ? enabled.checked : deepseekAutoContinueState.settings.enabled,
+        max_attempts: maxAttempts ? Math.max(0, Math.min(3, Number(maxAttempts.value || 0))) : deepseekAutoContinueState.settings.max_attempts,
+        require_agent_context: requireAgent ? requireAgent.checked : deepseekAutoContinueState.settings.require_agent_context,
+        preserve_stage_text: preserveStage ? preserveStage.checked : deepseekAutoContinueState.settings.preserve_stage_text,
+        prompt: prompt ? String(prompt.value || '').trim() : deepseekAutoContinueState.settings.prompt,
+        sampleText: sample ? String(sample.value || '') : deepseekAutoContinueState.sampleText,
+        hasTools: hasTools ? hasTools.checked : deepseekAutoContinueState.hasTools,
+    };
+}
+
+window.renderDeepSeekAutoContinueDetail = function() {
+    const cards = document.getElementById('tools-cards');
+    const detail = document.getElementById('tools-detail');
+    if (!cards || !detail) return;
+    cards.style.display = 'none';
+    toolsView = 'deepseek-auto-continue';
+    if (!deepseekAutoContinueState.loaded && !deepseekAutoContinueState.loading) {
+        loadDeepSeekAutoContinueSettings();
+    }
+    const st = deepseekAutoContinueState.settings || DEFAULT_DEEPSEEK_AUTO_CONTINUE_UI;
+    const decision = deepseekAutoContinueState.decision;
+    const env = deepseekAutoContinueState.env_overrides || {};
+    const envHints = Object.entries(env)
+        .filter(([, v]) => v != null && String(v).trim() !== '')
+        .map(([k, v]) => '<code>' + escapeHtml(k) + '=' + escapeHtml(String(v)) + '</code>')
+        .join(' ');
+    detail.innerHTML = `
+        <button class="tools-detail-back" onclick="backToToolsCards()">返回工具列表</button>
+        <div class="media-gen-panel">
+            <h3>DeepSeek 自动续写（安全模式）</h3>
+            <p class="media-gen-tip">只在 DeepSeek Responses 的 agent/tool 场景，把“阶段总结后不调工具就停”续成下一轮。默认收窄触发，避免普通问答被误继续。</p>
+            ${deepseekAutoContinueState.error ? '<div class="embed-error" style="margin-bottom:12px;">' + escapeHtml(deepseekAutoContinueState.error) + '</div>' : ''}
+            ${deepseekAutoContinueState.message ? '<div class="media-gen-tip" style="margin-bottom:12px;">' + escapeHtml(deepseekAutoContinueState.message) + '</div>' : ''}
+            <div class="form-group full"><label><input id="dsac-enabled" type="checkbox" ${st.enabled ? 'checked' : ''}> 启用自动续写</label></div>
+            <div class="form-group"><label>最大续写次数（0-3）</label>
+                <input id="dsac-max-attempts" type="number" min="0" max="3" value="${escapeHtml(String(st.max_attempts))}" class="mono">
+            </div>
+            <div class="form-group full"><label><input id="dsac-require-agent" type="checkbox" ${st.require_agent_context ? 'checked' : ''}> 仅 agent/tool 场景启用（推荐）</label></div>
+            <div class="form-group full"><label><input id="dsac-preserve-stage" type="checkbox" ${st.preserve_stage_text ? 'checked' : ''}> 续写后保留第一轮阶段总结</label></div>
+            <div class="form-group full"><label>续写提示词</label>
+                <textarea id="dsac-prompt" rows="3" class="mono">${escapeHtml(st.prompt || '')}</textarea>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;">
+                <button class="btn btn-primary" onclick="saveDeepSeekAutoContinueSettings()" ${deepseekAutoContinueState.saving ? 'disabled' : ''}>保存配置</button>
+                <button class="btn" onclick="loadDeepSeekAutoContinueSettings(true)" ${deepseekAutoContinueState.loading ? 'disabled' : ''}>刷新</button>
+                <button class="btn" onclick="resetDeepSeekAutoContinueSettings()">恢复默认</button>
+            </div>
+            <div class="form-group full"><label>当前生效说明</label>
+                <div class="media-gen-tip">保存写入 <code>gateway.config.json → tools.deepseek_auto_continue</code>。环境变量可覆盖：DEEPSEEK_AUTO_CONTINUE_*</div>
+                ${envHints ? '<div class="media-gen-tip" style="margin-top:8px;">检测到 env 覆盖：' + envHints + '</div>' : ''}
+            </div>
+            <hr style="margin:18px 0;opacity:.2;">
+            <h4>试判面板</h4>
+            <p class="media-gen-tip">不会真的请求 DeepSeek，只根据当前表单设置判断“会不会触发自动续写”。</p>
+            <div class="form-group full"><label><input id="dsac-has-tools" type="checkbox" ${deepseekAutoContinueState.hasTools ? 'checked' : ''}> 模拟请求带 tools / agent 上下文</label></div>
+            <div class="form-group full"><label>模型纯文本回复样本</label>
+                <textarea id="dsac-sample-text" rows="4" class="mono">${escapeHtml(deepseekAutoContinueState.sampleText || '')}</textarea>
+            </div>
+            <button class="btn" onclick="evaluateDeepSeekAutoContinueSample()" ${deepseekAutoContinueState.evaluating ? 'disabled' : ''}>试判是否会续写</button>
+            ${decision ? '<div class="media-gen-tip" style="margin-top:12px;"><strong>结果：</strong>' + (decision.ok ? '会触发自动续写' : '不会触发') + ' <code>' + escapeHtml(decision.reason || '') + '</code>' + (decision.text ? '<div style="margin-top:6px;opacity:.85;">' + escapeHtml(String(decision.text).slice(0, 240)) + '</div>' : '') + '</div>' : ''}
+        </div>
+    `;
+};
+
+window.loadDeepSeekAutoContinueSettings = async function(force = false) {
+    if (deepseekAutoContinueState.loading) return;
+    deepseekAutoContinueState.loading = true;
+    deepseekAutoContinueState.error = '';
+    if (toolsView === 'deepseek-auto-continue') renderDeepSeekAutoContinueDetail();
+    try {
+        const res = await fetch('/v1/tools/deepseek-auto-continue');
+        const json = await res.json();
+        if (!res.ok || json?.success === false) throw new Error(json?.error || ('加载失败 (' + res.status + ')'));
+        deepseekAutoContinueState.settings = { ...DEFAULT_DEEPSEEK_AUTO_CONTINUE_UI, ...(json.settings || {}) };
+        deepseekAutoContinueState.defaults = { ...DEFAULT_DEEPSEEK_AUTO_CONTINUE_UI, ...(json.defaults || {}) };
+        deepseekAutoContinueState.env_overrides = json?.source?.env_overrides || {};
+        config.tools = config.tools || {};
+        config.tools.deepseek_auto_continue = { ...deepseekAutoContinueState.settings };
+        deepseekAutoContinueState.loaded = true;
+        deepseekAutoContinueState.message = force ? '已刷新生效配置' : '';
+    } catch (err) {
+        deepseekAutoContinueState.settings = { ...getDeepSeekAutoContinueConfig() };
+        deepseekAutoContinueState.loaded = true;
+        deepseekAutoContinueState.error = err.message || String(err);
+    } finally {
+        deepseekAutoContinueState.loading = false;
+        if (toolsView === 'deepseek-auto-continue') renderDeepSeekAutoContinueDetail();
+    }
+};
+
+window.saveDeepSeekAutoContinueSettings = async function() {
+    const form = readDeepSeekAutoContinueForm();
+    deepseekAutoContinueState.saving = true;
+    deepseekAutoContinueState.error = '';
+    deepseekAutoContinueState.message = '';
+    deepseekAutoContinueState.sampleText = form.sampleText;
+    deepseekAutoContinueState.hasTools = form.hasTools;
+    if (toolsView === 'deepseek-auto-continue') renderDeepSeekAutoContinueDetail();
+    try {
+        const settings = {
+            enabled: form.enabled,
+            max_attempts: form.max_attempts,
+            require_agent_context: form.require_agent_context,
+            preserve_stage_text: form.preserve_stage_text,
+            prompt: form.prompt || DEFAULT_DEEPSEEK_AUTO_CONTINUE_UI.prompt,
+        };
+        const res = await fetch('/v1/tools/deepseek-auto-continue', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ settings }),
+        });
+        const json = await res.json();
+        if (!res.ok || json?.success === false) throw new Error(json?.error || ('保存失败 (' + res.status + ')'));
+        deepseekAutoContinueState.settings = { ...DEFAULT_DEEPSEEK_AUTO_CONTINUE_UI, ...(json.settings || settings) };
+        config.tools = config.tools || {};
+        config.tools.deepseek_auto_continue = { ...deepseekAutoContinueState.settings };
+        deepseekAutoContinueState.message = '已保存 DeepSeek 自动续写配置';
+        showToast('DeepSeek 自动续写配置已保存', 'success');
+    } catch (err) {
+        deepseekAutoContinueState.error = err.message || String(err);
+        showToast('保存失败: ' + deepseekAutoContinueState.error, 'danger');
+    } finally {
+        deepseekAutoContinueState.saving = false;
+        if (toolsView === 'deepseek-auto-continue') renderDeepSeekAutoContinueDetail();
+    }
+};
+
+window.resetDeepSeekAutoContinueSettings = function() {
+    deepseekAutoContinueState.settings = { ...DEFAULT_DEEPSEEK_AUTO_CONTINUE_UI };
+    deepseekAutoContinueState.decision = null;
+    deepseekAutoContinueState.message = '已恢复默认值（尚未保存）';
+    renderDeepSeekAutoContinueDetail();
+};
+
+window.evaluateDeepSeekAutoContinueSample = async function() {
+    const form = readDeepSeekAutoContinueForm();
+    deepseekAutoContinueState.evaluating = true;
+    deepseekAutoContinueState.error = '';
+    deepseekAutoContinueState.sampleText = form.sampleText;
+    deepseekAutoContinueState.hasTools = form.hasTools;
+    deepseekAutoContinueState.settings = {
+        enabled: form.enabled,
+        max_attempts: form.max_attempts,
+        require_agent_context: form.require_agent_context,
+        preserve_stage_text: form.preserve_stage_text,
+        prompt: form.prompt || DEFAULT_DEEPSEEK_AUTO_CONTINUE_UI.prompt,
+    };
+    if (toolsView === 'deepseek-auto-continue') renderDeepSeekAutoContinueDetail();
+    try {
+        const res = await fetch('/v1/tools/deepseek-auto-continue/evaluate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                settings: deepseekAutoContinueState.settings,
+                text: form.sampleText,
+                has_tools: form.hasTools,
+                model: 'DeepSeek-V4-Flash',
+            }),
+        });
+        const json = await res.json();
+        if (!res.ok || json?.success === false) throw new Error(json?.error || ('试判失败 (' + res.status + ')'));
+        deepseekAutoContinueState.decision = json.decision || null;
+        if (json.settings) deepseekAutoContinueState.settings = { ...deepseekAutoContinueState.settings, ...json.settings };
+    } catch (err) {
+        deepseekAutoContinueState.error = err.message || String(err);
+        deepseekAutoContinueState.decision = null;
+    } finally {
+        deepseekAutoContinueState.evaluating = false;
+        if (toolsView === 'deepseek-auto-continue') renderDeepSeekAutoContinueDetail();
+    }
+};
 
 function getClaudeModelCatalogConfig() {
     config.tools = config.tools || {};
@@ -3816,7 +4036,7 @@ const toolGroupConfigs = [
     { title: '向量化', tools: ['embedding'] },
     { title: '知识库', tools: ['video-kb'] },
     { title: '订阅接入', tools: ['antigravity-subscribe', 'codex-subscribe'] },
-    { title: '模型配置', tools: ['claude-model-catalog'] },
+    { title: '模型配置', tools: ['claude-model-catalog', 'deepseek-auto-continue'] },
     { title: '联网搜索', tools: ['web-search'] },
     { title: '国学', tools: ['iching'] },
     { title: '其他', tools: ['classification-metrics'] },
@@ -3832,6 +4052,7 @@ function toolDefs() {
         'antigravity-subscribe': { name: '接入 Antigravity 订阅', desc: '从本机提取 OAuth 凭据，登录 Google 订阅账号，让网关使用 Antigravity 的 Gemini 模型。', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M9 12l2 2 4-4"></path></svg>' },
         'codex-subscribe': { name: '接入 Codex 订阅', desc: '读取本机 Codex/ChatGPT 登录态，把官方模型做成可给 Claude Desktop / DeepTutor 使用的节点。', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M8 12h8"></path><path d="M12 8v8"></path></svg>' },
         'claude-model-catalog': { name: 'Claude 模型列表', desc: '维护 Claude Desktop 映射原模型候选项：内置官方名 + 用户自定义。', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"></path><rect x="4" y="8" width="16" height="12" rx="2"></rect><path d="M2 14h2"></path><path d="M20 14h2"></path><path d="M15 13v2"></path><path d="M9 13v2"></path></svg>' },
+        'deepseek-auto-continue': { name: 'DeepSeek 自动续写', desc: '调节 DeepSeek agent 中途停住时的安全自动续写：开关、次数、仅 tool 场景、是否保留阶段总结，并支持样本文本试判。', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"></path><polyline points="21 3 21 9 15 9"></polyline><path d="M9 12h6"></path><path d="M12 9v6"></path></svg>' },
         'web-search': { name: '联网搜索', desc: '使用已配置的 web_search 节点，输入查询词、选择结果数量与时间范围，实时检索网页并查看本地搜索历史。', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20"></path><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>' },
         'iching': { name: '易经六十四卦', desc: '转动双圆环浏览六十四卦，查看完整卦辞、大象传、爻辞与小象传。', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="2" x2="12" y2="22"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>' },
         'classification-metrics': { name: '分类评估实验室', desc: '讲清 TP/FP/FN/TN，以及准确率、精准率、召回率，并用你的数据现场计算。', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>' },
@@ -3875,6 +4096,7 @@ window.openTool = function(toolId) {
     else if (toolId === 'tts-gen') renderTtsGenDetail();
     else if (toolId === 'web-search') renderWebSearchDetail();
     else if (toolId === 'claude-model-catalog') renderClaudeModelCatalogDetail();
+    else if (toolId === 'deepseek-auto-continue') renderDeepSeekAutoContinueDetail();
     else if (toolId === 'iching') renderIchingDetail();
     else if (toolId === 'classification-metrics') renderClassificationMetricsDetail();
     else if (toolId === 'antigravity-subscribe') renderAntigravitySubscribeDetail();
