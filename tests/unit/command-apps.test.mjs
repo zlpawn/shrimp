@@ -57,3 +57,40 @@ test("validateAppSettings accepts an existing absolute exe", () => {
   });
   assert.equal(result.executablePath, windowsPath);
 });
+
+import { discoverCommandApp } from "../../lib/command-apps/infra/discovery.mjs";
+
+test("discovery ranks well-known paths before registry and PATH", async () => {
+  const app = getCommandApp("antigravity");
+  const existing = new Set([
+    "C:\\Users\\xtea\\AppData\\Local\\Programs\\antigravity\\Antigravity.exe",
+    "C:\\Windows\\Antigravity.exe",
+  ]);
+  const result = await discoverCommandApp(app, {
+    platform: "win32",
+    env: { LOCALAPPDATA: "C:\\Users\\xtea\\AppData\\Local", PATH: "C:\\Windows" },
+    fileExists: (p) => existing.has(p),
+    statFile: async () => ({ isFile: () => true }),
+    queryAppPaths: async () => ["C:\\Windows\\Antigravity.exe"],
+    searchPathDirs: async () => ["C:\\Windows"],
+    readShortcutTarget: async () => "",
+  });
+  assert.equal(result.candidates.length, 2);
+  assert.equal(result.selected.path, "C:\\Users\\xtea\\AppData\\Local\\Programs\\antigravity\\Antigravity.exe");
+});
+
+test("discovery filters missing and non-exe candidates", async () => {
+  const app = getCommandApp("antigravity");
+  const result = await discoverCommandApp(app, {
+    platform: "win32",
+    env: { LOCALAPPDATA: "C:\\Users\\xtea\\AppData\\Local" },
+    fileExists: (p) => p === "C:\\Users\\xtea\\AppData\\Local\\Programs\\antigravity\\Antigravity.exe",
+    statFile: async () => ({ isFile: () => true }),
+    queryAppPaths: async () => ["C:\\Missing\\App.exe"],
+    searchPathDirs: async () => [],
+    readShortcutTarget: async () => "",
+  });
+  assert.equal(result.candidates.length, 1);
+  assert.equal(result.selected.strategy, "well-known-localappdata");
+});
+
