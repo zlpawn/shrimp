@@ -173,6 +173,7 @@ import { resolveNatTraversalPaths } from "./lib/nat-traversal/paths.mjs";
 import { createNatTraversalService } from "./lib/nat-traversal/application/service.mjs";
 import { createCommandAppsService } from "./lib/command-apps/application/service.mjs";
 import { routeCommandAppsRequest } from "./lib/command-apps/http/routes.mjs";
+import { createCommandAppsSqliteStore } from "./lib/command-apps/infra/sqlite-store.mjs";
 import { routeNatTraversalRequest } from "./lib/nat-traversal/http/routes.mjs";
 
 loadDotEnv();
@@ -269,25 +270,10 @@ function ensureNatTraversalService() {
 
 function ensureCommandAppsService() {
   if (globalCommandAppsService) return globalCommandAppsService;
-  const configStore = {
-    get() {
-      return GATEWAY_CONFIG.commandApps || {};
-    },
-    save(next) {
-      const result = saveGatewayState({
-        configPath: GATEWAY_CONFIG_FILE,
-        secretsPath: GATEWAY_SECRETS_FILE,
-        config: {
-          ...GATEWAY_CONFIG,
-          commandApps: next,
-        },
-        officialCodexIds: OFFICIAL_CODEX_MODEL_IDS,
-      });
-      GATEWAY_CONFIG = result.config;
-      GATEWAY_SECRETS = result.secrets;
-      reloadGatewayConfig({ reloadFiles: false });
-    },
-  };
+  const configStore = createCommandAppsSqliteStore({
+    dbPath: process.env.COMMAND_APPS_DB_FILE || path.join(path.dirname(GATEWAY_CONFIG_FILE), "gateway.db"),
+    platform: process.platform,
+  });
   globalCommandAppsService = createCommandAppsService({
     configStore,
     logger: console,
@@ -11955,4 +11941,5 @@ async function readText(req) {
     req.on("error", reject);
   });
 }
+
 

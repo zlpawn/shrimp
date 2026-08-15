@@ -293,3 +293,31 @@ test("status infers launch time from running processes when panel never launched
   assert.equal(status.process.status, "running");
   assert.equal(status.lastLaunchedAt, "2026-08-15T01:00:00.000Z");
 });
+
+import { createCommandAppsSqliteStore } from "../../lib/command-apps/infra/sqlite-store.mjs";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+
+test("command apps sqlite store persists settings outside gateway config", () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "command-apps-sqlite-"));
+  const store = createCommandAppsSqliteStore({
+    dbPath: path.join(tmp, "gateway.db"),
+    platform: "win32",
+  });
+  const settings = {
+    executablePath: "C:\\Apps\\Antigravity\\Antigravity.exe",
+    args: ["--danger"],
+    manuallyConfigured: true,
+    lastLaunchedAt: "2026-08-15T01:00:00.000Z",
+  };
+  store.save({ apps: { antigravity: settings } });
+  assert.deepEqual(store.get().apps.antigravity, {
+    executablePath: settings.executablePath,
+    args: ["--no-sandbox"],
+    manuallyConfigured: true,
+    lastLaunchedAt: settings.lastLaunchedAt,
+  });
+  store.close();
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
