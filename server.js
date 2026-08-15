@@ -174,6 +174,13 @@ import { createNatTraversalService } from "./lib/nat-traversal/application/servi
 import { createCommandAppsService } from "./lib/command-apps/application/service.mjs";
 import { routeCommandAppsRequest } from "./lib/command-apps/http/routes.mjs";
 import { createCommandAppsSqliteStore } from "./lib/command-apps/infra/sqlite-store.mjs";
+import { createSessionKanbanStore } from "./lib/session-kanban/infra/sqlite-store.mjs";
+import { createSessionKanbanService } from "./lib/session-kanban/application/service.mjs";
+import { createCodexReader } from "./lib/session-kanban/infra/codex-reader.mjs";
+import { createClaudeReader } from "./lib/session-kanban/infra/claude-reader.mjs";
+import { createAntigravityReader } from "./lib/session-kanban/infra/antigravity-reader.mjs";
+import { createCliDispatchers } from "./lib/session-kanban/infra/cli-dispatchers.mjs";
+import { routeSessionKanbanRequest } from "./lib/session-kanban/http/routes.mjs";
 import { routeNatTraversalRequest } from "./lib/nat-traversal/http/routes.mjs";
 
 loadDotEnv();
@@ -279,6 +286,24 @@ function ensureCommandAppsService() {
     logger: console,
   });
   return globalCommandAppsService;
+}
+
+let globalSessionKanbanService = null;
+function ensureSessionKanbanService() {
+  if (globalSessionKanbanService) return globalSessionKanbanService;
+  const store = createSessionKanbanStore({
+    dbPath: process.env.SESSION_KANBAN_DB_FILE || path.join(path.dirname(GATEWAY_CONFIG_FILE), "gateway.db"),
+  });
+  globalSessionKanbanService = createSessionKanbanService({
+    store,
+    readers: [
+      createCodexReader(),
+      createClaudeReader(),
+      createAntigravityReader(),
+    ],
+    dispatchers: createCliDispatchers(),
+  });
+  return globalSessionKanbanService;
 }
 // Dream Skin service is composed lazily on first route hit so gateway startup
 // stays fast and the service never imports runtime launcher/CDP modules.
@@ -1079,6 +1104,14 @@ async function route(req, res) {
     if (!checkLocalAuth(req, res)) return;
     await routeCommandAppsRequest(req, res, context, reqPath, {
       service: ensureCommandAppsService(),
+    });
+    return;
+  }
+
+  if (reqPath.startsWith("/v1/session-kanban")) {
+    if (!checkLocalAuth(req, res)) return;
+    await routeSessionKanbanRequest(req, res, reqPath, {
+      service: ensureSessionKanbanService(),
     });
     return;
   }
