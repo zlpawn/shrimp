@@ -246,3 +246,21 @@ test("launch request cannot override fixed arguments", async () => {
   await routeCommandAppsRequest(reqFor("POST", "/v1/command-apps/apps/antigravity/launch", { args: ["--danger"] }), res, null, "/v1/command-apps/apps/antigravity/launch", { service: fx.service });
   assert.deepEqual(fx.spawnCalls[0][1], ["--no-sandbox"]);
 });
+
+test("windows process matching falls back to executable name when path is unavailable", () => {
+  const matches = findProcessesByExecutable([
+    { pid: 10, executablePath: "", name: "Antigravity.exe" },
+    { pid: 11, executablePath: "", name: "Other.exe" },
+  ], "C:\\Apps\\antigravity\\Antigravity.exe", { platform: "win32" });
+  assert.deepEqual(matches.map((p) => p.pid), [10]);
+});
+
+test("service status reports platform support accurately", async () => {
+  const service = createCommandAppsService({
+    configStore: { get: () => ({}), save() {} },
+    platform: "win32",
+    listProcesses: async () => [],
+  });
+  const status = await service.getStatus("antigravity");
+  assert.equal(status.app.supported, true);
+});
