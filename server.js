@@ -266,7 +266,7 @@ function ensureNatTraversalService() {
   return globalNatTraversalService;
 }
 
-function ensureRemoteSessionService() {
+async function ensureRemoteSessionService() {
   if (globalRemoteSessionService) return globalRemoteSessionService;
   const paths = resolveRemoteSessionPaths({
     configFile: process.env.GATEWAY_CONFIG_FILE || "gateway.config.json",
@@ -290,17 +290,28 @@ function ensureRemoteSessionService() {
       reloadGatewayConfig({ reloadFiles: false });
     },
   };
-  // Phase 2 first slice: use fake host so operator APIs and tests can exercise
-  // the coding loop before a real Antigravity attach surface is confirmed.
+  // Phase 2:
+  // - local-host uses partial real Host discovery (filesystem projects + dynamic endpoint)
+  // - fake-host remains available for safe coding-loop demos
+  // - conversation/prompt/approval still unsupported on real local-host until API surface is confirmed
+  const { createLocalHostBackend } = await import("./lib/remote-session/host-attach/local-host.mjs");
   const fakeHost = createFakeHostBackend({
     id: "fake-host",
     projects: [{ id: "p1", name: "demo", path: process.cwd() }],
+  });
+  const localHost = createLocalHostBackend({
+    id: "local-host",
+    logger: console,
   });
   globalRemoteSessionService = createRemoteSessionService({
     paths,
     configStore,
     natTraversal: ensureNatTraversalService(),
-    hostBackendFactory: async () => fakeHost,
+    hostBackendFactory: async ({ peerId }) => {
+      if (peerId === "fake-host") return fakeHost;
+      if (peerId === "local-host") return localHost;
+      return null; // fall through to peer proxy path
+    },
     logger: console,
   });
   return globalRemoteSessionService;
@@ -1112,7 +1123,7 @@ async function route(req, res) {
   if (reqPath.startsWith("/v1/remote-session")) {
     if (!checkLocalAuth(req, res)) return;
     await routeRemoteSessionRequest(req, res, context, reqPath, {
-      service: ensureRemoteSessionService(),
+      service: await ensureRemoteSessionService(),
     });
     return;
   }

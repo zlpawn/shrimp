@@ -1,10 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 
 import {
   RemoteSessionError,
   createFakeHostBackend,
   createLocalHostBackend,
+  listProjectsFromStore,
+  discoverDynamicLocalEndpoint,
   probeLocalAntigravityBackend,
 } from "../../lib/remote-session/index.mjs";
 
@@ -83,9 +88,58 @@ test("fake host subscribeEvents resumes from cursor", async () => {
   assert.equal(rest[0].seq, first[1].seq);
 });
 
+test("listProjectsFromStore reads filesystem project json", () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "rs-projects-"));
+  fs.writeFileSync(
+    path.join(tmp, "59df.json"),
+    JSON.stringify({
+      id: "59df",
+      name: "nightmare",
+      projectResources: {
+        resources: [
+          {
+            gitFolder: {
+              folderUri: "file:///d%3A/Java%20Project/AI/bg/nightmare",
+              defaultBranch: "master",
+            },
+          },
+        ],
+      },
+    }),
+  );
+  fs.writeFileSync(
+    path.join(tmp, "outside-of-project.json"),
+    JSON.stringify({ id: "outside", name: "outside" }),
+  );
+  const projects = listProjectsFromStore({ storeDir: tmp });
+  assert.equal(projects.length, 1);
+  assert.equal(projects[0].id, "59df");
+  assert.equal(projects[0].name, "nightmare");
+  assert.match(projects[0].path.replace(/\\/g, "/"), /d:\/Java Project\/AI\/bg\/nightmare/i);
+});
+
+test("discoverDynamicLocalEndpoint reads latest local url and csrf", () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "rs-endpoint-"));
+  const logPath = path.join(tmp, "main.log");
+  fs.writeFileSync(
+    logPath,
+    [
+      "Spawning: language_server.exe --https_server_port 0 --csrf_token old-token",
+      "Local:       https://127.0.0.1:1111/",
+      "Spawning: language_server.exe --https_server_port 0 --csrf_token new-token",
+      "Local:       https://127.0.0.1:9608/",
+    ].join("\n"),
+  );
+  const endpoint = discoverDynamicLocalEndpoint({ mainLogPath: logPath });
+  assert.equal(endpoint.url, "https://127.0.0.1:9608/");
+  assert.equal(endpoint.port, 9608);
+  assert.equal(endpoint.csrfToken, "new-token");
+});
+
 test("local host attach fails clearly when Antigravity is not running", async () => {
   const host = createLocalHostBackend({
     probe: async () => ({ running: false, supported: false, reason: "process_not_found" }),
+    allowPartialAttach: false,
   });
   await assert.rejects(
     () => host.attach(),
@@ -93,17 +147,65 @@ test("local host attach fails clearly when Antigravity is not running", async ()
   );
 });
 
-test("local host attach fails clearly when attach surface unsupported", async () => {
+test("local host attach fails clearly when full attach required but unsupported", async () => {
   const host = createLocalHostBackend({
     probe: async () => ({
       running: true,
       supported: false,
       reason: "process_found_but_attach_surface_unconfirmed",
     }),
+    allowPartialAttach: false,
   });
   await assert.rejects(
     () => host.attach(),
     (error) => error instanceof RemoteSessionError && error.code === "host_backend_unsupported",
+  );
+});
+
+test("local host partial attach can list filesystem projects", async () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "rs-local-partial-"));
+  const storeDir = path.join(tmp, "projects");
+  const logsDir = path.join(tmp, "logs");
+  fs.mkdirSync(storeDir, { recursive: true });
+  fs.mkdirSync(logsDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(storeDir, "p1.json"),
+    JSON.stringify({
+      id: "p1",
+      name: "demo",
+      projectResources: {
+        resources: [{ gitFolder: { folderUri: "file:///tmp/demo" } }],
+      },
+    }),
+  );
+  fs.writeFileSync(
+    path.join(logsDir, "main.log"),
+    "Local:       https://127.0.0.1:9608/\n--csrf_token abc\n",
+  );
+
+  const host = createLocalHostBackend({
+    probe: async () => ({
+      running: true,
+      supported: false,
+      reason: "process_found_but_attach_surface_unconfirmed",
+    }),
+    paths: {
+      projectStoreDir: storeDir,
+      mainLogPath: path.join(logsDir, "main.log"),
+    },
+    logger: { warn() {}, log() {} },
+  });
+
+  const attached = await host.attach();
+  assert.equal(attached.transport, "local-partial");
+  assert.equal(attached.endpoint.url, "https://127.0.0.1:9608/");
+  const projects = await host.listProjects();
+  assert.equal(projects.length, 1);
+  assert.equal(projects[0].id, "p1");
+
+  await assert.rejects(
+    () => host.createConversation("p1"),
+    (error) => error instanceof RemoteSessionError && error.code === "unsupported_feature",
   );
 });
 
