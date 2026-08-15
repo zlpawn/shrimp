@@ -5,6 +5,7 @@ import {
   buildStartCascadeRequest,
   buildSendUserCascadeMessageRequest,
   buildCascadeConfig,
+  buildRequestedModel,
   buildRequestedModelAlias,
   toFileUri,
   createLocalHostBackend,
@@ -26,17 +27,18 @@ test("toFileUri normalizes windows paths", () => {
   assert.equal(toFileUri("file:///d:/agent-transfer"), "file:///d:/agent-transfer");
 });
 
-test("buildSendUserCascadeMessageRequest includes text chunk and model config", () => {
+test("buildSendUserCascadeMessageRequest includes text item and model config", () => {
   const body = buildSendUserCascadeMessageRequest({
     cascadeId: "c1",
     prompt: "hello",
-    requestedModel: buildRequestedModelAlias("AUTO"),
+    requestedModel: buildRequestedModel("MODEL_PLACEHOLDER_M298"),
   });
   assert.equal(body.cascadeId, "c1");
-  assert.equal(body.items[0].chunk.case, "text");
-  assert.equal(body.items[0].chunk.value, "hello");
-  assert.equal(body.cascadeConfig.plannerConfig.requestedModel.choice.case, "alias");
-  assert.equal(body.cascadeConfig.plannerConfig.requestedModel.choice.value, "AUTO");
+  assert.equal(body.items[0].text, "hello");
+  assert.equal(
+    body.cascadeConfig.plannerConfig.requestedModel.model,
+    "MODEL_PLACEHOLDER_M298",
+  );
 });
 
 test("local host experimental createConversation uses StartCascade", async () => {
@@ -102,14 +104,20 @@ test("local host experimental createConversation uses StartCascade", async () =>
   assert.equal(calls[0][0], "start");
   assert.equal(calls[0][1].source, "CORTEX_TRAJECTORY_SOURCE_CASCADE_CLIENT");
   assert.equal(calls[0][1].workspaceUris[0], "file:///d:/agent-transfer");
+  assert.equal(calls[0][1].requestedModel, undefined);
 
   const dispatched = await host.dispatchPrompt({
     conversationId: "fixed-id",
     prompt: "hello",
     controllerPeerId: "a",
+    model: "MODEL_PLACEHOLDER_M298",
   });
   assert.equal(calls[1][0], "send");
-  assert.equal(calls[1][1].items[0].chunk.value, "hello");
+  assert.equal(calls[1][1].items[0].text, "hello");
+  assert.equal(
+    calls[1][1].cascadeConfig.plannerConfig.requestedModel.model,
+    "MODEL_PLACEHOLDER_M298",
+  );
   assert.ok(dispatched.events.some((e) => e.type === "assistant_text"));
 });
 

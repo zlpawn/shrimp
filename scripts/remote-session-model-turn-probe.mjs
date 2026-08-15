@@ -1,13 +1,11 @@
 import https from "node:https";
 import crypto from "node:crypto";
 import fs from "node:fs";
-import path from "node:path";
-import os from "node:os";
 
 const agent = new https.Agent({ rejectUnauthorized: false });
 function get(url) {
   return new Promise((resolve, reject) => {
-    https.get(url, { agent, timeout: 15000 }, (res) => {
+    https.get(url, { agent, timeout: 10000 }, (res) => {
       const c = [];
       res.on("data", (d) => c.push(d));
       res.on("end", () => resolve(Buffer.concat(c).toString("utf8")));
@@ -44,7 +42,7 @@ function post(url, body, headers = {}) {
           try {
             j = JSON.parse(t);
           } catch {}
-          resolve({ status: res.statusCode, json: j, preview: t.slice(0, 1200) });
+          resolve({ status: res.statusCode, json: j, preview: t.slice(0, 1500) });
         });
       },
     );
@@ -58,164 +56,158 @@ function post(url, body, headers = {}) {
   });
 }
 
-function discoverFromLog() {
-  const mainLog = path.join(
-    process.env.APPDATA || "",
-    "Antigravity",
-    "logs",
-    "main.log",
-  );
-  const text = fs.readFileSync(mainLog, "utf8");
-  const locals = [...text.matchAll(/Local:\s+(https:\/\/127\.0\.0\.1:(\d+)\/?)/g)];
-  const csrf = [...text.matchAll(/--csrf_token\s+([A-Za-z0-9-]+)/gi)];
-  const latest = locals.at(-1);
-  return {
-    baseUrl: latest ? latest[1].replace(/\/?$/, "") : "",
-    csrfFromLog: csrf.at(-1)?.[1] || "",
-  };
-}
-
-const discovered = discoverFromLog();
-const baseUrl = discovered.baseUrl || "https://127.0.0.1:12683";
+const baseUrl = "https://127.0.0.1:6506";
 const html = await get(baseUrl + "/");
-const csrf = html.match(/csrfToken":"([^"]+)/)?.[1] || discovered.csrfFromLog;
+const csrf = html.match(/csrfToken":"([^"]+)/)?.[1] || "";
 const headers = { "x-codeium-csrf-token": csrf };
 const service = baseUrl + "/exa.language_server_pb.LanguageServerService";
-console.log({ baseUrl, csrf: csrf.slice(0, 8) + "..." });
 
-// probe model-related methods
-const modelMethods = [
-  "GetCascadeModelConfigData",
-  "GetModelConfigData",
-  "GetClientModelConfig",
-  "GetUserModelConfig",
-  "GetModelConfigs",
-  "ListModels",
-  "GetModels",
-  "GetUserStatus",
-  "GetPlanStatus",
-  "GetUserSettings",
-];
-const methodResults = [];
-for (const m of modelMethods) {
-  const res = await post(service + "/" + m, {}, headers);
-  methodResults.push({
-    method: m,
-    status: res.status,
-    code: res.json?.code || null,
-    message: res.json?.message || null,
-    keys: res.json && !res.json.code ? Object.keys(res.json) : [],
-    preview: res.preview?.slice(0, 250),
-  });
-  console.log(m, res.status, res.json?.code || "ok", (res.preview || "").slice(0, 160));
-}
-
-// reuse model from known successful conversation if still present
-const known = "21335b56-743a-4e24-8066-43540024eb37";
-const knownDetail = await post(service + "/GetCascadeTrajectory", { cascadeId: known }, headers);
-console.log(
-  "known detail",
-  knownDetail.status,
-  knownDetail.json?.status,
-  knownDetail.json?.trajectory?.steps?.at?.(-1)?.metadata?.modelUsage?.model,
-);
-
-// try create+send with model config variants
-const modelCandidates = [
-  { label: "alias AUTO", requestedModel: { choice: { case: "alias", value: "AUTO" } } },
-  { label: "alias RECOMMENDED", requestedModel: { choice: { case: "alias", value: "RECOMMENDED" } } },
-  { label: "alias CASCADE_BASE", requestedModel: { choice: { case: "alias", value: "CASCADE_BASE" } } },
-  { label: "model PLACEHOLDER_M298", requestedModel: { choice: { case: "model", value: "MODEL_PLACEHOLDER_M298" } } },
-  { label: "model number 1298", requestedModel: { choice: { case: "model", value: 1298 } } },
-  { label: "model GOOGLE flash name", requestedModel: { choice: { case: "model", value: "GOOGLE_GEMINI_2_5_FLASH" } } },
+const model = "MODEL_PLACEHOLDER_M298";
+const requestedModelShapes = [
+  { name: "model_string_field", value: { model } },
+  { name: "choice_model", value: { choice: { case: "model", value: model } } },
+  { name: "plain_enum_string", value: model },
+  { name: "plain_enum_number_guess", value: 1298 },
 ];
 
-const itemCandidates = [
-  { name: "text_field", items: [{ text: "用一句话回答 1+1=?" }] },
-  { name: "chunk_case_value", items: [{ chunk: { case: "text", value: "用一句话回答 1+1=?" } }] },
-  { name: "chunk_text", items: [{ chunk: { text: "用一句话回答 1+1=?" } }] },
-  { name: "text_value_obj", items: [{ text: { value: "用一句话回答 1+1=?" } }] },
-  { name: "raw_string_items", items: ["用一句话回答 1+1=?"] },
+const itemShapes = [
+  {
+    name: "chunk_case_value",
+    items: [{ chunk: { case: "text", value: "用一句话回答：1+1等于几？不要工具，不要改文件。" } }],
+  },
+  {
+    name: "text_field",
+    items: [{ text: "用一句话回答：1+1等于几？不要工具，不要改文件。" }],
+  },
 ];
 
-const turnResults = [];
-for (const model of modelCandidates) {
-  for (const item of itemCandidates.slice(0, 2)) {
-    // limit combos a bit
+const results = [];
+for (const modelShape of requestedModelShapes) {
+  for (const itemShape of itemShapes) {
     const cascadeId = crypto.randomUUID();
-    const startBody = {
-      cascadeId,
-      source: "CORTEX_TRAJECTORY_SOURCE_CASCADE_CLIENT",
-      trajectoryType: "CORTEX_TRAJECTORY_TYPE_CASCADE",
-      workspaceUris: ["file:///d:/agent-transfer"],
-      requestedModel: model.requestedModel,
-    };
-    const start = await post(service + "/StartCascade", startBody, headers);
-    const sendBody = {
-      cascadeId,
-      items: item.items,
-      cascadeConfig: {
-        plannerConfig: {
-          requestedModel: model.requestedModel,
-          plannerTypeConfig: {
-            case: "conversational",
-            value: {
-              plannerMode: "DEFAULT",
-              agenticMode: true,
-            },
+    // StartCascade WITHOUT requestedModel (it is enum and rejects objects)
+    const start = await post(
+      service + "/StartCascade",
+      {
+        cascadeId,
+        source: "CORTEX_TRAJECTORY_SOURCE_CASCADE_CLIENT",
+        trajectoryType: "CORTEX_TRAJECTORY_TYPE_CASCADE",
+        workspaceUris: ["file:///d:/agent-transfer"],
+      },
+      headers,
+    );
+    if (start.status !== 200) {
+      results.push({
+        modelShape: modelShape.name,
+        itemShape: itemShape.name,
+        stage: "start",
+        start,
+      });
+      console.log("start fail", modelShape.name, start.preview);
+      continue;
+    }
+
+    const cascadeConfig = {
+      plannerConfig: {
+        requestedModel: modelShape.value,
+        planModel: model,
+        plannerTypeConfig: {
+          case: "conversational",
+          value: {
+            plannerMode: "DEFAULT",
+            agenticMode: true,
           },
         },
       },
     };
-    const send = await post(service + "/SendUserCascadeMessage", sendBody, headers);
-    await new Promise((r) => setTimeout(r, 1200));
-    const detail = await post(service + "/GetCascadeTrajectory", { cascadeId }, headers);
-    const steps = detail.json?.trajectory?.steps || [];
+
+    const send = await post(
+      service + "/SendUserCascadeMessage",
+      {
+        cascadeId,
+        items: itemShape.items,
+        cascadeConfig,
+      },
+      headers,
+    );
+
+    let final = null;
+    for (let i = 0; i < 10; i++) {
+      await new Promise((r) => setTimeout(r, 1000));
+      final = await post(service + "/GetCascadeTrajectory", { cascadeId }, headers);
+      const steps = final.json?.trajectory?.steps || [];
+      const types = steps.map((s) => s.type);
+      if (
+        String(final.json?.status || "").includes("IDLE") &&
+        (types.some((t) => String(t).includes("PLANNER_RESPONSE")) ||
+          types.some((t) => String(t).includes("ERROR")) ||
+          types.length > 0)
+      ) {
+        // keep polling a bit if only user input so far and not idle? but usually idle quickly on error
+        if (
+          types.some((t) => String(t).includes("PLANNER_RESPONSE")) ||
+          types.some((t) => String(t).includes("ERROR")) ||
+          i >= 2
+        ) {
+          break;
+        }
+      }
+    }
+
+    const steps = final?.json?.trajectory?.steps || [];
     const user = steps.find((s) => String(s.type || "").includes("USER_INPUT"));
     const err = steps.find((s) => String(s.type || "").includes("ERROR"));
-    const assistant = steps.find((s) => String(s.type || "").includes("PLANNER_RESPONSE"));
+    const asst = steps.find((s) => String(s.type || "").includes("PLANNER_RESPONSE"));
     const row = {
-      model: model.label,
-      item: item.name,
+      modelShape: modelShape.name,
+      itemShape: itemShape.name,
+      cascadeId,
       startStatus: start.status,
-      startMsg: start.json?.message || null,
       sendStatus: send.status,
       sendMsg: send.json?.message || null,
-      runStatus: detail.json?.status || null,
+      runStatus: final?.json?.status || null,
       stepTypes: steps.map((s) => s.type),
       userText:
         user?.userInput?.userResponse ||
         user?.userInput?.items?.[0]?.text ||
         JSON.stringify(user?.userInput?.items || null),
+      userItems: user?.userInput?.items || null,
       error:
         err?.errorMessage?.error?.shortError ||
         err?.errorMessage?.error?.userErrorMessage ||
         null,
       assistant:
-        assistant?.plannerResponse?.modifiedResponse ||
-        assistant?.plannerResponse?.response ||
+        asst?.plannerResponse?.modifiedResponse ||
+        asst?.plannerResponse?.response ||
         null,
     };
-    turnResults.push(row);
+    results.push(row);
     console.log(
-      model.label,
-      item.name,
+      "CASE",
+      modelShape.name,
+      itemShape.name,
       "steps",
       row.stepTypes,
       "user",
-      String(row.userText).slice(0, 40),
+      String(row.userText).slice(0, 50),
       "err",
-      String(row.error || "").slice(0, 80),
-      "assistant",
-      String(row.assistant || "").slice(0, 40),
+      String(row.error || "").slice(0, 90),
+      "asst",
+      String(row.assistant || "").slice(0, 60),
     );
-    if (row.assistant) break;
+    if (row.assistant) {
+      fs.writeFileSync(
+        "docs/superpowers/specs/2026-08-15-antigravity-model-turn-probe.json",
+        JSON.stringify({ baseUrl, results }, null, 2),
+      );
+      console.log("SUCCESS");
+      process.exit(0);
+    }
   }
-  if (turnResults.some((r) => r.assistant)) break;
 }
 
 fs.writeFileSync(
   "docs/superpowers/specs/2026-08-15-antigravity-model-turn-probe.json",
-  JSON.stringify({ baseUrl, methodResults, turnResults }, null, 2),
+  JSON.stringify({ baseUrl, results }, null, 2),
 );
-console.log("wrote probe json, assistantHits", turnResults.filter((r) => r.assistant).length);
+console.log("done, assistantHits", results.filter((r) => r.assistant).length);

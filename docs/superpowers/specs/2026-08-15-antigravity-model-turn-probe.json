@@ -1,0 +1,49 @@
+{
+  "baseUrl": "https://127.0.0.1:6506",
+  "results": [
+    {
+      "modelShape": "model_string_field",
+      "itemShape": "chunk_case_value",
+      "cascadeId": "fe0c1b68-b924-4028-835c-49382795691c",
+      "startStatus": 200,
+      "sendStatus": 200,
+      "sendMsg": null,
+      "runStatus": "CASCADE_RUN_STATUS_IDLE",
+      "stepTypes": [
+        "CORTEX_STEP_TYPE_USER_INPUT",
+        "CORTEX_STEP_TYPE_CHECKPOINT",
+        "CORTEX_STEP_TYPE_PLANNER_RESPONSE",
+        "CORTEX_STEP_TYPE_VIEW_FILE",
+        "CORTEX_STEP_TYPE_PLANNER_RESPONSE"
+      ],
+      "userText": "[{}]",
+      "userItems": [
+        {}
+      ],
+      "error": null,
+      "assistant": null
+    },
+    {
+      "modelShape": "model_string_field",
+      "itemShape": "text_field",
+      "cascadeId": "49d8ce60-b725-473e-90a0-6f221dbdb782",
+      "startStatus": 200,
+      "sendStatus": 200,
+      "sendMsg": null,
+      "runStatus": "CASCADE_RUN_STATUS_IDLE",
+      "stepTypes": [
+        "CORTEX_STEP_TYPE_USER_INPUT",
+        "CORTEX_STEP_TYPE_CHECKPOINT",
+        "CORTEX_STEP_TYPE_PLANNER_RESPONSE"
+      ],
+      "userText": "用一句话回答：1+1等于几？不要工具，不要改文件。",
+      "userItems": [
+        {
+          "text": "用一句话回答：1+1等于几？不要工具，不要改文件。"
+        }
+      ],
+      "error": null,
+      "assistant": "1+1 等于 2。"
+    }
+  ]
+}
