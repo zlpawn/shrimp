@@ -195,6 +195,25 @@
     "codex": {
       "endpoints": [
         {
+          "id": "ep_f3e23095-9ff5-4e7f-86ef-5119d32d5d21",
+          "name": "智谱",
+          "type": "openai-responses",
+          "base_url": "https://open.bigmodel.cn/api/v1",
+          "auth": "bearer",
+          "models": [],
+          "model_mapping": {
+            "glm-5.3-zp": "GLM-5.3"
+          },
+          "capabilities": {
+            "input_modalities": [
+              "text",
+              "image"
+            ],
+            "reasoning": true,
+            "tools": true
+          }
+        },
+        {
           "id": "ep_78da3017-759e-4633-973d-c2922fd5707e",
           "name": "deepseek",
           "type": "openai-responses",
@@ -470,8 +489,7 @@
           "type": "antigravity",
           "models": [
             "gemini-3.6-flash-high",
-            "gemini-3.6-flash-medium",
-            "gemini-3.6-flash-low"
+            "gemini-3.7-flash-high"
           ],
           "model_mapping": {},
           "capabilities": {
@@ -661,5 +679,30 @@
       "user_models": [],
       "disabled_builtin_models": []
     }
+  },
+  "natTraversal": {
+    "enabled": true,
+    "activeProvider": "frpc",
+    "frpc": {
+      "binPath": "",
+      "configPath": "D:\\frp\\frpc.toml",
+      "serverAddr": "39.105.19.237",
+      "serverPort": 7000,
+      "logLevel": "info",
+      "proxies": [
+        {
+          "name": "ssh-win11",
+          "type": "tcp",
+          "localIp": "127.0.0.1",
+          "localPort": 22,
+          "remotePort": 6005
+        }
+      ]
+    },
+    "frpsDashboard": {
+      "enabled": true,
+      "url": "http://39.105.19.237:7500/static/#/"
+    },
+    "peers": []
   }
 }
