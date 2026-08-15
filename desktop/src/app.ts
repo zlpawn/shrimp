@@ -4448,10 +4448,10 @@ function formatExpiresIn(seconds) {
     return s + ' 秒';
 }
 
-function formatUsageEpoch(value) {
-    const n = Number(value);
-    if (!Number.isFinite(n) || n <= 0) return '未知';
-    return new Date(n < 10_000_000_000 ? n * 1000 : n).toLocaleString();
+function formatUsageTime(value) {
+    if (!value) return '未知';
+    const date = typeof value === 'string' ? new Date(value) : new Date(Number(value) < 10_000_000_000 ? Number(value) * 1000 : Number(value));
+    return Number.isNaN(date.getTime()) ? '未知' : date.toLocaleString();
 }
 
 function formatSubscriptionUsage(usage) {
@@ -4464,7 +4464,7 @@ function formatSubscriptionUsage(usage) {
     }
     if (Number.isFinite(Number(usage.remaining_percent))) {
         const percent = Number(usage.remaining_percent);
-        const reset = usage.reset_at ? '，' + formatUsageEpoch(usage.reset_at) + ' 重置' : '';
+        const reset = usage.reset_at ? '，' + formatUsageTime(usage.reset_at) + ' 重置' : '';
         return percent.toFixed(1).replace(/\.0$/, '') + '%' + reset;
     }
     return '已获取，但上游未提供剩余量';
