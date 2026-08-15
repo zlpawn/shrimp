@@ -1,0 +1,539 @@
+{
+  "csrf": "a26da6e0-d58e-4d7c-80e3-4066214c4941",
+  "nonGoogleTypeNames": [
+    "exa.cortex_pb.WorkflowSpec"
+  ],
+  "nearby": {
+    "StartCascade": null,
+    "startCascade": "PECIFIED?!0:b===1?a===G.CascadeCommandsAutoExecution.OFF:b===2?a!==G.CascadeCommandsAutoExecution.EAGER:!0}function wya(a,b,c){return c===\"project\"&&a===G.AgentSettingPolicy.UNSPECIFIED?!0:b===1?a===G.AgentSettingPolicy.DENY:b===2?a!==G.AgentSettingPolicy.ALLOW:!0};function xya(a){var b=new Map,c=a.startCascade,e=a.streamAgentStateUpdates;return{...a,startCascade:async(f,g)=>{var h=d,k=d;try{let l=f.cascadeId;if(!l)return c.call(a,f,g);let m=b.get(l),n=Jj();b.set(l,n.promise);if(m)try{k(await h(m))}catch{k()}try{let p=k(await h(c.call(a,f,g)));n.resolve();return p}catch(p){throw k(),n.resolve(",
+    "SendUserCascadeMessage": null,
+    "GetCascadeTrajectory": null,
+    "GetAllCascadeTrajectories": null,
+    "StreamAgentStateUpdates": "ortex_pb_jetski_cortex,28);\nzf.CascadeTrajectorySummariesSchema=u(zf.file_third_party_jetski_jetski_cortex_pb_jetski_cortex,29);zf.CortexStepUpdateSchema=u(zf.file_third_party_jetski_jetski_cortex_pb_jetski_cortex,30);zf.SliceSchema=u(zf.file_third_party_jetski_jetski_cortex_pb_jetski_cortex,31);zf.StreamAgentStateUpdatesRequestSchema=u(zf.file_third_party_jetski_jetski_cortex_pb_jetski_cortex,32);zf.StreamAgentStateUpdatesResponseSchema=u(zf.file_third_party_jetski_jetski_cortex_pb_jetski_cortex,33);\nzf.AgentStatePageUpdateRequestSchema=u(zf.file_third_party_jetski_jetski_cortex_pb_jetski_cor",
+    "CancelCascadeInvocation": null
+  },
+  "byStatus": {
+    "200": 161,
+    "400": 1,
+    "404": 5,
+    "415": 1,
+    "500": 2
+  },
+  "nonHtmlCount": 10,
+  "nonHtmlSample": [
+    {
+      "url": "https://127.0.0.1:9608/exa.language_server_pb.LanguageServerService/StartCascade",
+      "status": 400,
+      "contentType": "application/json",
+      "headers": {
+        "content-type": "application/json",
+        "content-length": "140",
+        "connection": "close"
+      },
+      "length": 140,
+      "looksHtml": false,
+      "looksJson": true,
+      "preview": "{\"code\":\"invalid_argument\",\"message\":\"invalid_argument: CortexTrajectorySource is unspecified (error ID: 3005c687f7fd4b5d9c016df9d742d479)\"}"
+    },
+    {
+      "url": "https://127.0.0.1:9608/exa.language_server_pb.LanguageServerService/startCascade",
+      "status": 404,
+      "contentType": "text/plain; charset=utf-8",
+      "headers": {
+        "content-type": "text/plain; charset=utf-8",
+        "x-content-type-options": "nosniff",
+        "content-length": "19",
+        "connection": "close"
+      },
+      "length": 19,
+      "looksHtml": false,
+      "looksJson": false,
+      "preview": "404 page not found "
+    },
+    {
+      "url": "https://127.0.0.1:9608/exa.language_server_pb.LanguageServerService/GetCascadeTrajectory",
+      "status": 500,
+      "contentType": "application/json",
+      "headers": {
+        "content-type": "application/json",
+        "content-length": "96",
+        "connection": "close"
+      },
+      "length": 96,
+      "looksHtml": false,
+      "looksJson": true,
+      "preview": "{\"code\":\"unknown\",\"message\":\"trajectory not found (error ID: 7518b6544bae4e6c855a373b42a63021)\"}"
+    },
+    {
+      "url": "https://127.0.0.1:9608/exa.language_server_pb.LanguageServerService/getCascadeTrajectory",
+      "status": 404,
+      "contentType": "text/plain; charset=utf-8",
+      "headers": {
+        "content-type": "text/plain; charset=utf-8",
+        "x-content-type-options": "nosniff",
+        "content-length": "19",
+        "connection": "close"
+      },
+      "length": 19,
+      "looksHtml": false,
+      "looksJson": false,
+      "preview": "404 page not found "
+    },
+    {
+      "url": "https://127.0.0.1:9608/exa.language_server_pb.LanguageServerService/GetAllCascadeTrajectories",
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "content-type": "application/json",
+        "content-length": "1276",
+        "connection": "close"
+      },
+      "length": 1276,
+      "looksHtml": false,
+      "looksJson": true,
+      "preview": "{\"trajectorySummaries\":{\"21335b56-743a-4e24-8066-43540024eb37\":{\"summary\":\"Inquiring About AI Identity\",\"stepCount\":3,\"lastModifiedTime\":\"2026-08-15T02:17:30.151898500Z\",\"trajectoryId\":\"e4e80710-9f18-48c1-980a-4d6cdc8428cb\",\"status\":\"CASCADE_RUN_STATUS_IDLE\",\"createdTime\":\"2026-08-15T02:17:17.139099"
+    },
+    {
+      "url": "https://127.0.0.1:9608/exa.language_server_pb.LanguageServerService/getAllCascadeTrajectories",
+      "status": 404,
+      "contentType": "text/plain; charset=utf-8",
+      "headers": {
+        "content-type": "text/plain; charset=utf-8",
+        "x-content-type-options": "nosniff",
+        "content-length": "19",
+        "connection": "close"
+      },
+      "length": 19,
+      "looksHtml": false,
+      "looksJson": false,
+      "preview": "404 page not found "
+    },
+    {
+      "url": "https://127.0.0.1:9608/exa.language_server_pb.LanguageServerService/SendUserCascadeMessage",
+      "status": 500,
+      "contentType": "application/json",
+      "headers": {
+        "content-type": "application/json",
+        "content-length": "98",
+        "connection": "close"
+      },
+      "length": 98,
+      "looksHtml": false,
+      "looksJson": true,
+      "preview": "{\"code\":\"unknown\",\"message\":\"trajectory not found: (error ID: 3268375b003c4b5b912e6869c2f23d26)\"}"
+    },
+    {
+      "url": "https://127.0.0.1:9608/exa.language_server_pb.LanguageServerService/sendUserCascadeMessage",
+      "status": 404,
+      "contentType": "text/plain; charset=utf-8",
+      "headers": {
+        "content-type": "text/plain; charset=utf-8",
+        "x-content-type-options": "nosniff",
+        "content-length": "19",
+        "connection": "close"
+      },
+      "length": 19,
+      "looksHtml": false,
+      "looksJson": false,
+      "preview": "404 page not found "
+    },
+    {
+      "url": "https://127.0.0.1:9608/exa.language_server_pb.LanguageServerService/StreamAgentStateUpdates",
+      "status": 415,
+      "contentType": "",
+      "headers": {
+        "content-length": "0",
+        "connection": "close"
+      },
+      "length": 0,
+      "looksHtml": false,
+      "looksJson": false,
+      "preview": ""
+    },
+    {
+      "url": "https://127.0.0.1:9608/exa.language_server_pb.LanguageServerService/streamAgentStateUpdates",
+      "status": 404,
+      "contentType": "text/plain; charset=utf-8",
+      "headers": {
+        "content-type": "text/plain; charset=utf-8",
+        "x-content-type-options": "nosniff",
+        "content-length": "19",
+        "connection": "close"
+      },
+      "length": 19,
+      "looksHtml": false,
+      "looksJson": false,
+      "preview": "404 page not found "
+    }
+  ],
+  "interesting": [
+    {
+      "url": "https://127.0.0.1:9608/exa.language_server_pb.LanguageServerService/StartCascade",
+      "status": 400,
+      "contentType": "application/json",
+      "headers": {
+        "content-type": "application/json",
+        "content-length": "140",
+        "connection": "close"
+      },
+      "length": 140,
+      "looksHtml": false,
+      "looksJson": true,
+      "preview": "{\"code\":\"invalid_argument\",\"message\":\"invalid_argument: CortexTrajectorySource is unspecified (error ID: 3005c687f7fd4b5d9c016df9d742d479)\"}"
+    },
+    {
+      "url": "https://127.0.0.1:9608/exa.language_server_pb.LanguageServerService/startCascade",
+      "status": 404,
+      "contentType": "text/plain; charset=utf-8",
+      "headers": {
+        "content-type": "text/plain; charset=utf-8",
+        "x-content-type-options": "nosniff",
+        "content-length": "19",
+        "connection": "close"
+      },
+      "length": 19,
+      "looksHtml": false,
+      "looksJson": false,
+      "preview": "404 page not found "
+    },
+    {
+      "url": "https://127.0.0.1:9608/exa.language_server_pb.LanguageServerService/GetCascadeTrajectory",
+      "status": 500,
+      "contentType": "application/json",
+      "headers": {
+        "content-type": "application/json",
+        "content-length": "96",
+        "connection": "close"
+      },
+      "length": 96,
+      "looksHtml": false,
+      "looksJson": true,
+      "preview": "{\"code\":\"unknown\",\"message\":\"trajectory not found (error ID: 7518b6544bae4e6c855a373b42a63021)\"}"
+    },
+    {
+      "url": "https://127.0.0.1:9608/exa.language_server_pb.LanguageServerService/getCascadeTrajectory",
+      "status": 404,
+      "contentType": "text/plain; charset=utf-8",
+      "headers": {
+        "content-type": "text/plain; charset=utf-8",
+        "x-content-type-options": "nosniff",
+        "content-length": "19",
+        "connection": "close"
+      },
+      "length": 19,
+      "looksHtml": false,
+      "looksJson": false,
+      "preview": "404 page not found "
+    },
+    {
+      "url": "https://127.0.0.1:9608/exa.language_server_pb.LanguageServerService/GetAllCascadeTrajectories",
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "content-type": "application/json",
+        "content-length": "1276",
+        "connection": "close"
+      },
+      "length": 1276,
+      "looksHtml": false,
+      "looksJson": true,
+      "preview": "{\"trajectorySummaries\":{\"21335b56-743a-4e24-8066-43540024eb37\":{\"summary\":\"Inquiring About AI Identity\",\"stepCount\":3,\"lastModifiedTime\":\"2026-08-15T02:17:30.151898500Z\",\"trajectoryId\":\"e4e80710-9f18-48c1-980a-4d6cdc8428cb\",\"status\":\"CASCADE_RUN_STATUS_IDLE\",\"createdTime\":\"2026-08-15T02:17:17.139099"
+    },
+    {
+      "url": "https://127.0.0.1:9608/exa.language_server_pb.LanguageServerService/getAllCascadeTrajectories",
+      "status": 404,
+      "contentType": "text/plain; charset=utf-8",
+      "headers": {
+        "content-type": "text/plain; charset=utf-8",
+        "x-content-type-options": "nosniff",
+        "content-length": "19",
+        "connection": "close"
+      },
+      "length": 19,
+      "looksHtml": false,
+      "looksJson": false,
+      "preview": "404 page not found "
+    },
+    {
+      "url": "https://127.0.0.1:9608/exa.language_server_pb.LanguageServerService/SendUserCascadeMessage",
+      "status": 500,
+      "contentType": "application/json",
+      "headers": {
+        "content-type": "application/json",
+        "content-length": "98",
+        "connection": "close"
+      },
+      "length": 98,
+      "looksHtml": false,
+      "looksJson": true,
+      "preview": "{\"code\":\"unknown\",\"message\":\"trajectory not found: (error ID: 3268375b003c4b5b912e6869c2f23d26)\"}"
+    },
+    {
+      "url": "https://127.0.0.1:9608/exa.language_server_pb.LanguageServerService/sendUserCascadeMessage",
+      "status": 404,
+      "contentType": "text/plain; charset=utf-8",
+      "headers": {
+        "content-type": "text/plain; charset=utf-8",
+        "x-content-type-options": "nosniff",
+        "content-length": "19",
+        "connection": "close"
+      },
+      "length": 19,
+      "looksHtml": false,
+      "looksJson": false,
+      "preview": "404 page not found "
+    },
+    {
+      "url": "https://127.0.0.1:9608/exa.language_server_pb.LanguageServerService/StreamAgentStateUpdates",
+      "status": 415,
+      "contentType": "",
+      "headers": {
+        "content-length": "0",
+        "connection": "close"
+      },
+      "length": 0,
+      "looksHtml": false,
+      "looksJson": false,
+      "preview": ""
+    },
+    {
+      "url": "https://127.0.0.1:9608/exa.language_server_pb.LanguageServerService/streamAgentStateUpdates",
+      "status": 404,
+      "contentType": "text/plain; charset=utf-8",
+      "headers": {
+        "content-type": "text/plain; charset=utf-8",
+        "x-content-type-options": "nosniff",
+        "content-length": "19",
+        "connection": "close"
+      },
+      "length": 19,
+      "looksHtml": false,
+      "looksJson": false,
+      "preview": "404 page not found "
+    }
+  ],
+  "upgrades": [
+    {
+      "port": 9609,
+      "path": "/connect-websocket",
+      "status": 101,
+      "upgrade": true,
+      "headers": {
+        "upgrade": "websocket",
+        "connection": "Upgrade",
+        "sec-websocket-accept": "en5EY9fYIrPHGucGLD6Dk/EXON4="
+      }
+    },
+    {
+      "port": 9608,
+      "path": "/connect-websocket",
+      "status": 400,
+      "upgrade": false,
+      "headers": {},
+      "body": "Client sent an HTTP request to an HTTPS server.\n"
+    },
+    {
+      "port": 9609,
+      "path": "/connect-websocket/",
+      "status": 101,
+      "upgrade": true,
+      "headers": {
+        "upgrade": "websocket",
+        "connection": "Upgrade",
+        "sec-websocket-accept": "en5EY9fYIrPHGucGLD6Dk/EXON4="
+      }
+    },
+    {
+      "port": 9608,
+      "path": "/connect-websocket/",
+      "status": 400,
+      "upgrade": false,
+      "headers": {},
+      "body": "Client sent an HTTP request to an HTTPS server.\n"
+    },
+    {
+      "port": 9609,
+      "path": "/ws",
+      "status": 101,
+      "upgrade": true,
+      "headers": {
+        "upgrade": "websocket",
+        "connection": "Upgrade",
+        "sec-websocket-accept": "en5EY9fYIrPHGucGLD6Dk/EXON4="
+      }
+    },
+    {
+      "port": 9608,
+      "path": "/ws",
+      "status": 400,
+      "upgrade": false,
+      "headers": {},
+      "body": "Client sent an HTTP request to an HTTPS server.\n"
+    },
+    {
+      "port": 9609,
+      "path": "/",
+      "status": 101,
+      "upgrade": true,
+      "headers": {
+        "upgrade": "websocket",
+        "connection": "Upgrade",
+        "sec-websocket-accept": "en5EY9fYIrPHGucGLD6Dk/EXON4="
+      }
+    },
+    {
+      "port": 9608,
+      "path": "/",
+      "status": 400,
+      "upgrade": false,
+      "headers": {},
+      "body": "Client sent an HTTP request to an HTTPS server.\n"
+    }
+  ],
+  "gold": [
+    {
+      "url": "https://127.0.0.1:9608/exa.language_server_pb.LanguageServerService/StartCascade",
+      "status": 400,
+      "contentType": "application/json",
+      "headers": {
+        "content-type": "application/json",
+        "content-length": "140",
+        "connection": "close"
+      },
+      "length": 140,
+      "looksHtml": false,
+      "looksJson": true,
+      "preview": "{\"code\":\"invalid_argument\",\"message\":\"invalid_argument: CortexTrajectorySource is unspecified (error ID: 3005c687f7fd4b5d9c016df9d742d479)\"}"
+    },
+    {
+      "url": "https://127.0.0.1:9608/exa.language_server_pb.LanguageServerService/startCascade",
+      "status": 404,
+      "contentType": "text/plain; charset=utf-8",
+      "headers": {
+        "content-type": "text/plain; charset=utf-8",
+        "x-content-type-options": "nosniff",
+        "content-length": "19",
+        "connection": "close"
+      },
+      "length": 19,
+      "looksHtml": false,
+      "looksJson": false,
+      "preview": "404 page not found "
+    },
+    {
+      "url": "https://127.0.0.1:9608/exa.language_server_pb.LanguageServerService/GetCascadeTrajectory",
+      "status": 500,
+      "contentType": "application/json",
+      "headers": {
+        "content-type": "application/json",
+        "content-length": "96",
+        "connection": "close"
+      },
+      "length": 96,
+      "looksHtml": false,
+      "looksJson": true,
+      "preview": "{\"code\":\"unknown\",\"message\":\"trajectory not found (error ID: 7518b6544bae4e6c855a373b42a63021)\"}"
+    },
+    {
+      "url": "https://127.0.0.1:9608/exa.language_server_pb.LanguageServerService/getCascadeTrajectory",
+      "status": 404,
+      "contentType": "text/plain; charset=utf-8",
+      "headers": {
+        "content-type": "text/plain; charset=utf-8",
+        "x-content-type-options": "nosniff",
+        "content-length": "19",
+        "connection": "close"
+      },
+      "length": 19,
+      "looksHtml": false,
+      "looksJson": false,
+      "preview": "404 page not found "
+    },
+    {
+      "url": "https://127.0.0.1:9608/exa.language_server_pb.LanguageServerService/GetAllCascadeTrajectories",
+      "status": 200,
+      "contentType": "application/json",
+      "headers": {
+        "content-type": "application/json",
+        "content-length": "1276",
+        "connection": "close"
+      },
+      "length": 1276,
+      "looksHtml": false,
+      "looksJson": true,
+      "preview": "{\"trajectorySummaries\":{\"21335b56-743a-4e24-8066-43540024eb37\":{\"summary\":\"Inquiring About AI Identity\",\"stepCount\":3,\"lastModifiedTime\":\"2026-08-15T02:17:30.151898500Z\",\"trajectoryId\":\"e4e80710-9f18-48c1-980a-4d6cdc8428cb\",\"status\":\"CASCADE_RUN_STATUS_IDLE\",\"createdTime\":\"2026-08-15T02:17:17.139099"
+    },
+    {
+      "url": "https://127.0.0.1:9608/exa.language_server_pb.LanguageServerService/getAllCascadeTrajectories",
+      "status": 404,
+      "contentType": "text/plain; charset=utf-8",
+      "headers": {
+        "content-type": "text/plain; charset=utf-8",
+        "x-content-type-options": "nosniff",
+        "content-length": "19",
+        "connection": "close"
+      },
+      "length": 19,
+      "looksHtml": false,
+      "looksJson": false,
+      "preview": "404 page not found "
+    },
+    {
+      "url": "https://127.0.0.1:9608/exa.language_server_pb.LanguageServerService/SendUserCascadeMessage",
+      "status": 500,
+      "contentType": "application/json",
+      "headers": {
+        "content-type": "application/json",
+        "content-length": "98",
+        "connection": "close"
+      },
+      "length": 98,
+      "looksHtml": false,
+      "looksJson": true,
+      "preview": "{\"code\":\"unknown\",\"message\":\"trajectory not found: (error ID: 3268375b003c4b5b912e6869c2f23d26)\"}"
+    },
+    {
+      "url": "https://127.0.0.1:9608/exa.language_server_pb.LanguageServerService/sendUserCascadeMessage",
+      "status": 404,
+      "contentType": "text/plain; charset=utf-8",
+      "headers": {
+        "content-type": "text/plain; charset=utf-8",
+        "x-content-type-options": "nosniff",
+        "content-length": "19",
+        "connection": "close"
+      },
+      "length": 19,
+      "looksHtml": false,
+      "looksJson": false,
+      "preview": "404 page not found "
+    },
+    {
+      "url": "https://127.0.0.1:9608/exa.language_server_pb.LanguageServerService/StreamAgentStateUpdates",
+      "status": 415,
+      "contentType": "",
+      "headers": {
+        "content-length": "0",
+        "connection": "close"
+      },
+      "length": 0,
+      "looksHtml": false,
+      "looksJson": false,
+      "preview": ""
+    },
+    {
+      "url": "https://127.0.0.1:9608/exa.language_server_pb.LanguageServerService/streamAgentStateUpdates",
+      "status": 404,
+      "contentType": "text/plain; charset=utf-8",
+      "headers": {
+        "content-type": "text/plain; charset=utf-8",
+        "x-content-type-options": "nosniff",
+        "content-length": "19",
+        "connection": "close"
+      },
+      "length": 19,
+      "looksHtml": false,
+      "looksJson": false,
+      "preview": "404 page not found "
+    }
+  ]
+}

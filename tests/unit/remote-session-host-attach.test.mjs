@@ -149,6 +149,7 @@ test("local host attach fails clearly when Antigravity is not running", async ()
 
 test("local host attach fails clearly when full attach required but unsupported", async () => {
   const host = createLocalHostBackend({
+    preferLiveConnect: false,
     probe: async () => ({
       running: true,
       supported: false,
@@ -184,6 +185,7 @@ test("local host partial attach can list filesystem projects", async () => {
   );
 
   const host = createLocalHostBackend({
+    preferLiveConnect: false,
     probe: async () => ({
       running: true,
       supported: false,

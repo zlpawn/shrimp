@@ -178,6 +178,7 @@ test("local host partial attach can list and inspect conversations", async () =>
   );
 
   const host = createLocalHostBackend({
+    preferLiveConnect: false,
     probe: async () => ({
       running: true,
       supported: false,
