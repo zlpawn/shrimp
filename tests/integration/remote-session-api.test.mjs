@@ -197,3 +197,35 @@ test("SSE event stream emits session events", async () => {
   assert.match(payload, /event: session_event/);
   assert.match(payload, /approval_required|assistant_text|session_opened/);
 });
+
+test("lists and inspects conversations via HTTP", async () => {
+  const service = makeService();
+  // create one fake conversation by opening a session
+  const opened = await call(service, "POST", "/v1/remote-session/sessions", {
+    peerId: "local-host",
+    projectId: "p1",
+    controllerPeerId: "a",
+  });
+  assert.equal(opened.res.statusCode, 200);
+  const conversationId = opened.json.session.hostConversationId;
+
+  const listed = await call(
+    service,
+    "GET",
+    "/v1/remote-session/conversations?peerId=local-host&limit=10",
+  );
+  assert.equal(listed.res.statusCode, 200);
+  assert.ok(Array.isArray(listed.json.conversations));
+  assert.ok(
+    listed.json.conversations.some((item) => item.conversationId === conversationId),
+  );
+
+  const inspected = await call(
+    service,
+    "GET",
+    "/v1/remote-session/conversations/" + encodeURIComponent(conversationId) + "?peerId=local-host",
+  );
+  assert.equal(inspected.res.statusCode, 200);
+  assert.equal(inspected.json.conversation.id, conversationId);
+});
+
