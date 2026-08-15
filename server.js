@@ -176,6 +176,7 @@ import { routeCommandAppsRequest } from "./lib/command-apps/http/routes.mjs";
 import { createCommandAppsSqliteStore } from "./lib/command-apps/infra/sqlite-store.mjs";
 import { createSessionKanbanStore } from "./lib/session-kanban/infra/sqlite-store.mjs";
 import { createSessionKanbanService } from "./lib/session-kanban/application/service.mjs";
+import { createSessionKanbanScheduler } from "./lib/session-kanban/application/scheduler.mjs";
 import { createCodexReader } from "./lib/session-kanban/infra/codex-reader.mjs";
 import { createClaudeReader } from "./lib/session-kanban/infra/claude-reader.mjs";
 import { createAntigravityReader } from "./lib/session-kanban/infra/antigravity-reader.mjs";
@@ -289,6 +290,7 @@ function ensureCommandAppsService() {
 }
 
 let globalSessionKanbanService = null;
+let globalSessionKanbanScheduler = null;
 function ensureSessionKanbanService() {
   if (globalSessionKanbanService) return globalSessionKanbanService;
   const store = createSessionKanbanStore({
@@ -303,6 +305,10 @@ function ensureSessionKanbanService() {
     ],
     dispatchers: createCliDispatchers(),
   });
+  globalSessionKanbanScheduler = createSessionKanbanScheduler(globalSessionKanbanService, {
+    intervalMs: Number(process.env.SESSION_KANBAN_INTERVAL_MS || 30 * 1000),
+  });
+  globalSessionKanbanScheduler.start();
   return globalSessionKanbanService;
 }
 // Dream Skin service is composed lazily on first route hit so gateway startup
