@@ -210,7 +210,8 @@
               "image"
             ],
             "reasoning": true,
-            "tools": true
+            "tools": true,
+            "sanitize_dangling_tool_calls": true
           }
         },
         {
@@ -220,7 +221,8 @@
           "base_url": "https://api.deepseek.com",
           "auth": "bearer",
           "models": [
-            "DeepSeek-V4-Flash"
+            "DeepSeek-V4-Flash",
+            "deepseek-v4-pro"
           ],
           "model_mapping": {},
           "capabilities": {
@@ -236,6 +238,9 @@
             "DeepSeek-V4-Flash": {
               "image": false,
               "max_tokens": 16384
+            },
+            "deepseek-v4-pro": {
+              "image": false
             }
           },
           "is_default": false

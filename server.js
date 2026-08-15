@@ -5653,13 +5653,9 @@ async function forwardResolvedCodexResponse({
         client_stream: Boolean(body.stream),
       });
       if (body.stream) {
-        streamFinalResponsesObject(clientRes, loop.response, requestedModel);
+        streamFinalResponsesObject(clientRes, loop.response, requestedModel, responseToolKinds);
       } else {
-        clientRes.writeHead(200, {
-          "Content-Type": "application/json; charset=utf-8",
-          "Access-Control-Allow-Origin": "*",
-        });
-        clientRes.end(JSON.stringify(loop.response));
+        sendResponsesObject(clientRes, loop.response, requestedModel, { stream: false }, responseToolKinds);
       }
       return;
     }
@@ -5782,13 +5778,9 @@ async function forwardResolvedCodexResponse({
         client_stream: Boolean(body.stream),
       });
       if (body.stream) {
-        streamFinalResponsesObject(clientRes, payload, requestedModel);
+        streamFinalResponsesObject(clientRes, payload, requestedModel, responseToolKinds);
       } else {
-        clientRes.writeHead(200, {
-          "Content-Type": "application/json; charset=utf-8",
-          "Access-Control-Allow-Origin": "*",
-        });
-        clientRes.end(JSON.stringify(payload));
+        sendResponsesObject(clientRes, payload, requestedModel, { stream: false }, responseToolKinds);
       }
       return;
     }
@@ -5919,7 +5911,7 @@ async function forwardResolvedCodexResponse({
     });
     sendResponsesObject(clientRes, continued.response, requestedModel, {
       stream: Boolean(body.stream),
-    });
+    }, responseToolKinds);
     return;
   }
 
@@ -5976,7 +5968,7 @@ async function forwardResolvedCodexResponse({
     });
     sendResponsesObject(clientRes, continued.response, requestedModel, {
       stream: Boolean(body.stream),
-    });
+    }, responseToolKinds);
     return;
   }
 
@@ -6017,6 +6009,28 @@ async function forwardResolvedCodexResponse({
   });
 
   if (body.stream) {
+    // If client requested custom tools (e.g. Codex desktop sandbox tools) and the provider
+    // is a 3rd-party Responses endpoint that only speaks standard function_call, collect
+    // and stream through streamFinalResponsesObject to map custom_tool_call properly.
+    if (route?.provider && !isOfficialCodexModel(requestedModel) && [...responseToolKinds.values()].some((k) => k === "custom")) {
+      const fetched = await fetchConfiguredResponsesObject({
+        provider: route.provider,
+        body: withoutStreamFlag(body),
+        resolvedModel,
+        requestedModel,
+        clientReq,
+        signal,
+        context,
+        route,
+      });
+      if (!fetched.ok) {
+        await sendUpstreamError(fetched.upstream, clientRes);
+        return;
+      }
+      sendResponsesObject(clientRes, fetched.response, requestedModel, { stream: true }, responseToolKinds);
+      return;
+    }
+
     await pipeResponsesUpstream(upstream, clientRes, {
       requestId: context.requestId,
       model: requestedModel,
@@ -6431,16 +6445,69 @@ async function fetchConfiguredResponsesObject({
   };
 }
 
-function sendResponsesObject(clientRes, response, requestedModel, { stream }) {
+function sendResponsesObject(clientRes, response, requestedModel, { stream }, toolKinds = new Map()) {
   if (stream) {
-    streamFinalResponsesObject(clientRes, response, requestedModel);
+    streamFinalResponsesObject(clientRes, response, requestedModel, toolKinds);
     return;
   }
+  const formattedResponse = convertResponsesOutputToolKinds(response, toolKinds);
   clientRes.writeHead(200, {
     "Content-Type": "application/json; charset=utf-8",
     "Access-Control-Allow-Origin": "*",
   });
-  clientRes.end(JSON.stringify(response));
+  clientRes.end(JSON.stringify(formattedResponse));
+}
+
+function convertResponsesOutputToolKinds(response, toolKinds = new Map()) {
+  if (!response || typeof response !== "object" || !Array.isArray(response.output)) {
+    return response;
+  }
+  const newOutput = response.output.map((item, index) => {
+    if (!item || typeof item !== "object") return item;
+    if (item.type === "function_call" || item.type === "custom_tool_call") {
+      const name = item.name || "";
+      const kind = toolKinds.get(name) || (item.type === "custom_tool_call" ? "custom" : "function");
+      const callId = item.call_id || item.id || `call_${Date.now()}_${index}`;
+      const rawArgs = typeof item.arguments === "string"
+        ? item.arguments
+        : (typeof item.input === "string" ? item.input : JSON.stringify(item.arguments ?? item.input ?? {}));
+
+      logInfo("responses_tool_call_json_mapped", {
+        tool: name,
+        kind,
+        raw_type: item.type,
+        call_id: callId,
+      });
+
+      if (kind === "custom") {
+        const normalized = normalizeCustomInput(rawArgs);
+        if (normalized.fallback) {
+          logInfo("custom_tool_arguments_fallback", {
+            model: response?.model || "custom-model",
+            tool: name,
+            arguments_length: rawArgs.length,
+            shape: normalized.shape,
+          });
+        }
+        return {
+          id: item.id || `fc_${callId}`,
+          type: "custom_tool_call",
+          call_id: callId,
+          name,
+          input: normalized.input,
+        };
+      }
+      return {
+        id: item.id || `fc_${callId}`,
+        type: "function_call",
+        call_id: callId,
+        name,
+        arguments: rawArgs,
+      };
+    }
+    return item;
+  });
+  return { ...response, output: newOutput };
 }
 
 function sanitizeProviderResponsesInput(body, provider = null) {
@@ -9872,7 +9939,7 @@ function responsesSseHeadersLocal() {
   };
 }
 
-function streamFinalResponsesObject(clientRes, response, requestedModel) {
+function streamFinalResponsesObject(clientRes, response, requestedModel, toolKinds = new Map()) {
   clientRes.writeHead(200, responsesSseHeadersLocal());
   const writer = new ResponsesWriter({
     model: requestedModel || response?.model || "custom-model",
@@ -9889,40 +9956,94 @@ function streamFinalResponsesObject(clientRes, response, requestedModel) {
       for (const item of response.output) {
         if (!item || typeof item !== "object") continue;
         if (item.type === "reasoning") {
-          const reasoningText = Array.isArray(item.summary)
-            ? item.summary.map((s) => s?.text || "").join("")
-            : (item.text || "");
-          if (reasoningText) writer.reasoningDelta(reasoningText);
+          let reasoningText = "";
+          if (Array.isArray(item.summary) && item.summary.length > 0) {
+            reasoningText = item.summary.map((s) => s?.text || "").join("");
+          } else if (Array.isArray(item.content) && item.content.length > 0) {
+            reasoningText = item.content
+              .filter((part) => part && typeof part === "object")
+              .map((part) => part.text || part.reasoning_text || "")
+              .join("");
+          } else if (typeof item.text === "string" && item.text) {
+            reasoningText = item.text;
+          } else if (typeof item.reasoning_content === "string" && item.reasoning_content) {
+            reasoningText = item.reasoning_content;
+          }
+          if (reasoningText) {
+            logInfo("responses_reasoning_extracted", {
+              model: requestedModel || "unknown",
+              length: reasoningText.length,
+              source: Array.isArray(item.summary) && item.summary.length > 0
+                ? "summary"
+                : Array.isArray(item.content) && item.content.length > 0
+                  ? "content"
+                  : "text",
+            });
+            writer.reasoningDelta(reasoningText);
+          }
         } else if (item.type === "message") {
           const text = Array.isArray(item.content)
             ? item.content
-              .filter((part) => part?.type === "output_text")
+              .filter((part) => part?.type === "output_text" || part?.type === "text")
               .map((part) => part.text || "")
               .join("")
             : (item.text || "");
           if (text) writer.textDelta(text);
         } else if (item.type === "function_call" || item.type === "custom_tool_call") {
-          const kind = item.type === "custom_tool_call" ? "custom" : "function";
-          const callId = item.call_id || item.id || `call_${Date.now()}_${toolIndex}`;
           const name = item.name || "";
-          const argsText = kind === "custom"
-            ? (typeof item.input === "string" ? item.input : JSON.stringify(item.input ?? {}))
-            : (typeof item.arguments === "string" ? item.arguments : JSON.stringify(item.arguments ?? {}));
-          
-          writer.functionArgumentsDelta({
-            index: toolIndex,
-            callId,
-            name,
-            delta: argsText,
+          const kind = toolKinds.get(name) || (item.type === "custom_tool_call" ? "custom" : "function");
+          const callId = item.call_id || item.id || `call_${Date.now()}_${toolIndex}`;
+          const rawArgs = typeof item.arguments === "string"
+            ? item.arguments
+            : (typeof item.input === "string" ? item.input : JSON.stringify(item.arguments ?? item.input ?? {}));
+
+          logInfo("responses_tool_call_stream_mapped", {
+            tool: name,
             kind,
+            raw_type: item.type,
+            call_id: callId,
           });
-          writer.finishFunction({
-            index: toolIndex,
-            callId,
-            name,
-            argumentsText: argsText,
-            kind,
-          });
+
+          if (kind === "custom") {
+            const normalized = normalizeCustomInput(rawArgs);
+            if (normalized.fallback) {
+              logInfo("custom_tool_arguments_fallback", {
+                model: requestedModel || "custom-model",
+                tool: name,
+                arguments_length: rawArgs.length,
+                shape: normalized.shape,
+              });
+            }
+            writer.functionArgumentsDelta({
+              index: toolIndex,
+              callId,
+              name,
+              delta: normalized.input,
+              kind,
+            });
+            writer.finishFunction({
+              index: toolIndex,
+              callId,
+              name,
+              argumentsText: rawArgs,
+              kind,
+            });
+          } else {
+            writer.functionArgumentsDelta({
+              index: toolIndex,
+              callId,
+              name,
+              delta: rawArgs,
+              kind,
+            });
+            writer.finishFunction({
+              index: toolIndex,
+              callId,
+              name,
+              argumentsText: rawArgs,
+              kind,
+            });
+          }
           toolIndex++;
         }
       }
@@ -9932,6 +10053,10 @@ function streamFinalResponsesObject(clientRes, response, requestedModel) {
     }
     writer.completed(response?.usage || {});
   } catch (error) {
+    logError("responses_stream_final_failed", {
+      model: requestedModel || "unknown",
+      error: error.message || error,
+    });
     writer.failed({
       code: error.code || "gateway_web_search_stream_error",
       message: error.message || "Failed to stream final response.",
