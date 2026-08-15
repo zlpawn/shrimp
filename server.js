@@ -2498,6 +2498,10 @@ if (reqPath === "/v1/config/secret" && req.method === "GET") {
         const body = JSON.parse((await readText(req)) || "{}");
         const result = await runSubscriptionAuthAction(providerId, action, {
           config: GATEWAY_CONFIG,
+          env: {
+            ...process.env,
+            GROK_PROXY: process.env.GROK_PROXY || buildProxyUrl(GATEWAY_CONFIG.server?.proxy || {}),
+          },
           payload: body,
           save: body.save !== false,
         });
