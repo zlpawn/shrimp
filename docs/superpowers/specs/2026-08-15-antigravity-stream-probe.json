@@ -1,0 +1,338 @@
+{
+  "cascadeId": "48012b4f-7b95-4e62-9932-a5a51d7b7bbd",
+  "results": [
+    {
+      "contentType": "application/json",
+      "body": {},
+      "status": 415,
+      "error": null,
+      "respCT": "",
+      "preview": ""
+    },
+    {
+      "contentType": "application/json",
+      "body": {
+        "cascadeId": "48012b4f-7b95-4e62-9932-a5a51d7b7bbd"
+      },
+      "status": 415,
+      "error": null,
+      "respCT": "",
+      "preview": ""
+    },
+    {
+      "contentType": "application/json",
+      "body": {
+        "conversationId": "48012b4f-7b95-4e62-9932-a5a51d7b7bbd"
+      },
+      "status": 415,
+      "error": null,
+      "respCT": "",
+      "preview": ""
+    },
+    {
+      "contentType": "application/json",
+      "body": {
+        "cascadeIds": [
+          "48012b4f-7b95-4e62-9932-a5a51d7b7bbd"
+        ]
+      },
+      "status": 415,
+      "error": null,
+      "respCT": "",
+      "preview": ""
+    },
+    {
+      "contentType": "application/json",
+      "body": {
+        "ids": [
+          "48012b4f-7b95-4e62-9932-a5a51d7b7bbd"
+        ]
+      },
+      "status": 415,
+      "error": null,
+      "respCT": "",
+      "preview": ""
+    },
+    {
+      "contentType": "application/connect+json",
+      "body": {},
+      "status": 200,
+      "error": null,
+      "respCT": "application/connect+json",
+      "preview": "\u0002\u0000\u0000\u0000�{\"error\":{\"code\":\"invalid_argument\",\"message\":\"invalid_argument: protocol error: incomplete envelope: unexpected EOF (error ID: 0b6a8ce2ca134e0fba4fe392e249bce7)\"}}"
+    },
+    {
+      "contentType": "application/connect+json",
+      "body": {
+        "cascadeId": "48012b4f-7b95-4e62-9932-a5a51d7b7bbd"
+      },
+      "status": 200,
+      "error": null,
+      "respCT": "application/connect+json",
+      "preview": "\u0002\u0000\u0000\u0000�{\"error\":{\"code\":\"invalid_argument\",\"message\":\"invalid_argument: protocol error: promised 576938355 bytes in enveloped message, got 47 bytes (error ID: 29b8a2d17b844b948d49ce8d5a7c150f)\"}}"
+    },
+    {
+      "contentType": "application/connect+json",
+      "body": {
+        "conversationId": "48012b4f-7b95-4e62-9932-a5a51d7b7bbd"
+      },
+      "status": 200,
+      "error": null,
+      "respCT": "application/connect+json",
+      "preview": "\u0002\u0000\u0000\u0000�{\"error\":{\"code\":\"invalid_argument\",\"message\":\"invalid_argument: protocol error: promised 576941934 bytes in enveloped message, got 52 bytes (error ID: 1c93f8f5e27e423ca6f0c7d6f190d72d)\"}}"
+    },
+    {
+      "contentType": "application/connect+json",
+      "body": {
+        "cascadeIds": [
+          "48012b4f-7b95-4e62-9932-a5a51d7b7bbd"
+        ]
+      },
+      "status": 200,
+      "error": null,
+      "respCT": "application/connect+json",
+      "preview": "\u0002\u0000\u0000\u0000�{\"error\":{\"code\":\"invalid_argument\",\"message\":\"invalid_argument: protocol error: promised 576938355 bytes in enveloped message, got 50 bytes (error ID: b665520567ef4c3fb38c7a687a7a9c2a)\"}}"
+    },
+    {
+      "contentType": "application/connect+json",
+      "body": {
+        "ids": [
+          "48012b4f-7b95-4e62-9932-a5a51d7b7bbd"
+        ]
+      },
+      "status": 200,
+      "error": null,
+      "respCT": "application/connect+json",
+      "preview": "\u0002\u0000\u0000\u0000�{\"error\":{\"code\":\"invalid_argument\",\"message\":\"invalid_argument: protocol error: promised 577332339 bytes in enveloped message, got 43 bytes (error ID: 7ae48aaa7a9d47868311ef6d5032eef8)\"}}"
+    },
+    {
+      "contentType": "application/connect+proto",
+      "body": {},
+      "status": 200,
+      "error": null,
+      "respCT": "application/connect+proto",
+      "preview": "\u0002\u0000\u0000\u0000�{\"error\":{\"code\":\"invalid_argument\",\"message\":\"invalid_argument: protocol error: incomplete envelope: unexpected EOF (error ID: b81358f792f34b9eba0e8d0978b1fc5c)\"}}"
+    },
+    {
+      "contentType": "application/connect+proto",
+      "body": {
+        "cascadeId": "48012b4f-7b95-4e62-9932-a5a51d7b7bbd"
+      },
+      "status": 200,
+      "error": null,
+      "respCT": "application/connect+proto",
+      "preview": "\u0002\u0000\u0000\u0000�{\"error\":{\"code\":\"invalid_argument\",\"message\":\"invalid_argument: protocol error: promised 576938355 bytes in enveloped message, got 47 bytes (error ID: 0f71390e206a4da5b383f91ecefe2ee1)\"}}"
+    },
+    {
+      "contentType": "application/connect+proto",
+      "body": {
+        "conversationId": "48012b4f-7b95-4e62-9932-a5a51d7b7bbd"
+      },
+      "status": 200,
+      "error": null,
+      "respCT": "application/connect+proto",
+      "preview": "\u0002\u0000\u0000\u0000�{\"error\":{\"code\":\"invalid_argument\",\"message\":\"invalid_argument: protocol error: promised 576941934 bytes in enveloped message, got 52 bytes (error ID: 42c8a4eb26134d4e80a388e0726d9e70)\"}}"
+    },
+    {
+      "contentType": "application/connect+proto",
+      "body": {
+        "cascadeIds": [
+          "48012b4f-7b95-4e62-9932-a5a51d7b7bbd"
+        ]
+      },
+      "status": 200,
+      "error": null,
+      "respCT": "application/connect+proto",
+      "preview": "\u0002\u0000\u0000\u0000�{\"error\":{\"code\":\"invalid_argument\",\"message\":\"invalid_argument: protocol error: promised 576938355 bytes in enveloped message, got 50 bytes (error ID: 437416a5d8f04fa19e7fbe1eed69f3b4)\"}}"
+    },
+    {
+      "contentType": "application/connect+proto",
+      "body": {
+        "ids": [
+          "48012b4f-7b95-4e62-9932-a5a51d7b7bbd"
+        ]
+      },
+      "status": 200,
+      "error": null,
+      "respCT": "application/connect+proto",
+      "preview": "\u0002\u0000\u0000\u0000�{\"error\":{\"code\":\"invalid_argument\",\"message\":\"invalid_argument: protocol error: promised 577332339 bytes in enveloped message, got 43 bytes (error ID: 29fbd22583144592ad00057e4ab822a8)\"}}"
+    },
+    {
+      "contentType": "application/grpc-web+json",
+      "body": {},
+      "status": 200,
+      "error": null,
+      "respCT": "application/grpc-web+json",
+      "preview": ""
+    },
+    {
+      "contentType": "application/grpc-web+json",
+      "body": {
+        "cascadeId": "48012b4f-7b95-4e62-9932-a5a51d7b7bbd"
+      },
+      "status": 200,
+      "error": null,
+      "respCT": "application/grpc-web+json",
+      "preview": ""
+    },
+    {
+      "contentType": "application/grpc-web+json",
+      "body": {
+        "conversationId": "48012b4f-7b95-4e62-9932-a5a51d7b7bbd"
+      },
+      "status": 200,
+      "error": null,
+      "respCT": "application/grpc-web+json",
+      "preview": ""
+    },
+    {
+      "contentType": "application/grpc-web+json",
+      "body": {
+        "cascadeIds": [
+          "48012b4f-7b95-4e62-9932-a5a51d7b7bbd"
+        ]
+      },
+      "status": 200,
+      "error": null,
+      "respCT": "application/grpc-web+json",
+      "preview": ""
+    },
+    {
+      "contentType": "application/grpc-web+json",
+      "body": {
+        "ids": [
+          "48012b4f-7b95-4e62-9932-a5a51d7b7bbd"
+        ]
+      },
+      "status": 200,
+      "error": null,
+      "respCT": "application/grpc-web+json",
+      "preview": ""
+    },
+    {
+      "contentType": "application/grpc-web+proto",
+      "body": {},
+      "status": 200,
+      "error": null,
+      "respCT": "application/grpc-web+proto",
+      "preview": ""
+    },
+    {
+      "contentType": "application/grpc-web+proto",
+      "body": {
+        "cascadeId": "48012b4f-7b95-4e62-9932-a5a51d7b7bbd"
+      },
+      "status": 200,
+      "error": null,
+      "respCT": "application/grpc-web+proto",
+      "preview": ""
+    },
+    {
+      "contentType": "application/grpc-web+proto",
+      "body": {
+        "conversationId": "48012b4f-7b95-4e62-9932-a5a51d7b7bbd"
+      },
+      "status": 200,
+      "error": null,
+      "respCT": "application/grpc-web+proto",
+      "preview": ""
+    },
+    {
+      "contentType": "application/grpc-web+proto",
+      "body": {
+        "cascadeIds": [
+          "48012b4f-7b95-4e62-9932-a5a51d7b7bbd"
+        ]
+      },
+      "status": 200,
+      "error": null,
+      "respCT": "application/grpc-web+proto",
+      "preview": ""
+    },
+    {
+      "contentType": "application/grpc-web+proto",
+      "body": {
+        "ids": [
+          "48012b4f-7b95-4e62-9932-a5a51d7b7bbd"
+        ]
+      },
+      "status": 200,
+      "error": null,
+      "respCT": "application/grpc-web+proto",
+      "preview": ""
+    },
+    {
+      "contentType": "application/connect+json-framed",
+      "body": {},
+      "status": 200,
+      "error": null,
+      "respCT": "application/connect+json",
+      "preview": "\u0002\u0000\u0000\u0000�{\"error\":{\"code\":\"unknown\",\"message\":\"failed to ensure trajectory loaded: failed to load trajectory  on-demand: cascade ID is empty (error ID: 0e76391731294583a8d925b2eb40f99c)\"}}",
+      "hex": "02000000b37b226572726f72223a7b22636f6465223a22756e6b6e6f776e222c226d657373616765"
+    },
+    {
+      "contentType": "application/connect+json-framed",
+      "body": {
+        "cascadeId": "48012b4f-7b95-4e62-9932-a5a51d7b7bbd"
+      },
+      "status": 200,
+      "error": null,
+      "respCT": "application/connect+json",
+      "preview": "\u0002\u0000\u0000\u0000�{\"error\":{\"code\":\"unknown\",\"message\":\"failed to ensure trajectory loaded: failed to load trajectory  on-demand: cascade ID is empty (error ID: 80f81c2110214c1e8430ef86014294e5)\"}}",
+      "hex": "02000000b37b226572726f72223a7b22636f6465223a22756e6b6e6f776e222c226d657373616765"
+    }
+  ],
+  "upgrades": [
+    {
+      "upgrade": true,
+      "status": 101,
+      "headers": {
+        "upgrade": "websocket",
+        "connection": "Upgrade",
+        "sec-websocket-accept": "YU4EMgQ3hnZaJnI1yRb3IE7RtAM="
+      },
+      "path": "/connect-websocket",
+      "port": 6507
+    },
+    {
+      "upgrade": false,
+      "status": 400,
+      "headers": {},
+      "body": "Client sent an HTTP request to an HTTPS server.\n"
+    },
+    {
+      "upgrade": true,
+      "status": 101,
+      "headers": {
+        "upgrade": "websocket",
+        "connection": "Upgrade",
+        "sec-websocket-accept": "Qu8j2cjoKV3sCRV4v0NYcRuWr78="
+      },
+      "path": "/",
+      "port": 6507
+    },
+    {
+      "upgrade": false,
+      "status": 400,
+      "headers": {},
+      "body": "Client sent an HTTP request to an HTTPS server.\n"
+    },
+    {
+      "upgrade": true,
+      "status": 101,
+      "headers": {
+        "upgrade": "websocket",
+        "connection": "Upgrade",
+        "sec-websocket-accept": "YOA9JL87KAN9ppp1WFrRQumtAA0="
+      },
+      "path": "/ws",
+      "port": 6507
+    },
+    {
+      "upgrade": false,
+      "status": 400,
+      "headers": {},
+      "body": "Client sent an HTTP request to an HTTPS server.\n"
+    }
+  ]
+}
