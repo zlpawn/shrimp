@@ -169,6 +169,10 @@ import { routeDreamSkinRequest } from "./lib/dream-skin/http/routes.mjs";
 import { resolveNatTraversalPaths } from "./lib/nat-traversal/paths.mjs";
 import { createNatTraversalService } from "./lib/nat-traversal/application/service.mjs";
 import { routeNatTraversalRequest } from "./lib/nat-traversal/http/routes.mjs";
+import { resolveRemoteSessionPaths } from "./lib/remote-session/paths.mjs";
+import { createRemoteSessionService } from "./lib/remote-session/application/service.mjs";
+import { routeRemoteSessionRequest } from "./lib/remote-session/http/routes.mjs";
+import { createFakeHostBackend } from "./lib/remote-session/host-attach/fake-host.mjs";
 
 loadDotEnv();
 enableNodeEnvProxy();
@@ -227,6 +231,7 @@ const OFFICIAL_CLAUDE_MODELS = parseList(
 const OFFICIAL_CLAUDE_MODEL_IDS = new Set(OFFICIAL_CLAUDE_MODELS);
 let globalDreamSkinService = null;
 let globalNatTraversalService = null;
+let globalRemoteSessionService = null;
 
 function ensureNatTraversalService() {
   if (globalNatTraversalService) return globalNatTraversalService;
@@ -259,6 +264,46 @@ function ensureNatTraversalService() {
     logger: console,
   });
   return globalNatTraversalService;
+}
+
+function ensureRemoteSessionService() {
+  if (globalRemoteSessionService) return globalRemoteSessionService;
+  const paths = resolveRemoteSessionPaths({
+    configFile: process.env.GATEWAY_CONFIG_FILE || "gateway.config.json",
+  });
+  const configStore = {
+    get() {
+      return GATEWAY_CONFIG.remoteSession || {};
+    },
+    save(next) {
+      const result = saveGatewayState({
+        configPath: GATEWAY_CONFIG_FILE,
+        secretsPath: GATEWAY_SECRETS_FILE,
+        config: {
+          ...GATEWAY_CONFIG,
+          remoteSession: next,
+        },
+        officialCodexIds: OFFICIAL_CODEX_MODEL_IDS,
+      });
+      GATEWAY_CONFIG = result.config;
+      GATEWAY_SECRETS = result.secrets;
+      reloadGatewayConfig({ reloadFiles: false });
+    },
+  };
+  // Phase 2 first slice: use fake host so operator APIs and tests can exercise
+  // the coding loop before a real Antigravity attach surface is confirmed.
+  const fakeHost = createFakeHostBackend({
+    id: "fake-host",
+    projects: [{ id: "p1", name: "demo", path: process.cwd() }],
+  });
+  globalRemoteSessionService = createRemoteSessionService({
+    paths,
+    configStore,
+    natTraversal: ensureNatTraversalService(),
+    hostBackendFactory: async () => fakeHost,
+    logger: console,
+  });
+  return globalRemoteSessionService;
 }
 
 // Dream Skin service is composed lazily on first route hit so gateway startup
@@ -1064,6 +1109,14 @@ async function route(req, res) {
     return;
   }
 
+  if (reqPath.startsWith("/v1/remote-session")) {
+    if (!checkLocalAuth(req, res)) return;
+    await routeRemoteSessionRequest(req, res, context, reqPath, {
+      service: ensureRemoteSessionService(),
+    });
+    return;
+  }
+
   if (reqPath.startsWith("/v1/video-kb/tools/agent-reach")) {
     if (!checkLocalAuth(req, res)) return;
     await routeAgentReachRequest(req, res, context, reqPath);
@@ -1152,7 +1205,7 @@ async function route(req, res) {
       const result = saveGatewayState({
         configPath: GATEWAY_CONFIG_FILE,
         secretsPath: GATEWAY_SECRETS_FILE,
-        config: { server: newConfig.server, clients: newConfig.clients, tools: newConfig.tools, dreamSkin: newConfig.dreamSkin, natTraversal: newConfig.natTraversal },
+        config: { server: newConfig.server, clients: newConfig.clients, tools: newConfig.tools, dreamSkin: newConfig.dreamSkin, natTraversal: newConfig.natTraversal, remoteSession: newConfig.remoteSession },
         officialCodexIds: OFFICIAL_CODEX_MODEL_IDS,
       });
       GATEWAY_CONFIG = result.config;
