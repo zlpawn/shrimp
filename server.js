@@ -175,6 +175,10 @@ import { createCommandAppsService } from "./lib/command-apps/application/service
 import { routeCommandAppsRequest } from "./lib/command-apps/http/routes.mjs";
 import { createCommandAppsSqliteStore } from "./lib/command-apps/infra/sqlite-store.mjs";
 import { routeNatTraversalRequest } from "./lib/nat-traversal/http/routes.mjs";
+import { resolveMcpPaths } from "./lib/mcp-management/paths.mjs";
+import { createMcpStore } from "./lib/mcp-management/store.mjs";
+import { createMcpManagementService } from "./lib/mcp-management/application/service.mjs";
+import { routeMcpManagementRequest } from "./lib/mcp-management/http/routes.mjs";
 
 loadDotEnv();
 enableNodeEnvProxy();
@@ -234,6 +238,7 @@ const OFFICIAL_CLAUDE_MODEL_IDS = new Set(OFFICIAL_CLAUDE_MODELS);
 let globalDreamSkinService = null;
 let globalNatTraversalService = null;
 let globalCommandAppsService = null;
+let globalMcpManagementService = null;
 
 function ensureNatTraversalService() {
   if (globalNatTraversalService) return globalNatTraversalService;
@@ -280,6 +285,20 @@ function ensureCommandAppsService() {
   });
   return globalCommandAppsService;
 }
+
+function ensureMcpManagementService() {
+  if (globalMcpManagementService) return globalMcpManagementService;
+  const paths = resolveMcpPaths({
+    configFile: process.env.GATEWAY_CONFIG_FILE || "gateway.config.json",
+    secretsFile: process.env.MCP_SECRETS_FILE || "",
+  });
+  globalMcpManagementService = createMcpManagementService({
+    store: createMcpStore(paths),
+    logger: console,
+  });
+  return globalMcpManagementService;
+}
+
 // Dream Skin service is composed lazily on first route hit so gateway startup
 // stays fast and the service never imports runtime launcher/CDP modules.
 async function ensureDreamSkinService() {
@@ -1079,6 +1098,13 @@ async function route(req, res) {
     if (!checkLocalAuth(req, res)) return;
     await routeCommandAppsRequest(req, res, context, reqPath, {
       service: ensureCommandAppsService(),
+    });
+    return;
+  }
+  if (reqPath.startsWith("/v1/mcp-management")) {
+    if (!checkLocalAuth(req, res)) return;
+    await routeMcpManagementRequest(req, res, context, reqPath, {
+      service: ensureMcpManagementService(),
     });
     return;
   }
