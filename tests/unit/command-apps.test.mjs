@@ -94,3 +94,38 @@ test("discovery filters missing and non-exe candidates", async () => {
   assert.equal(result.selected.strategy, "well-known-localappdata");
 });
 
+
+import {
+  createCommandAppsProcessStore,
+  findProcessesByExecutable,
+  terminateProcessTree,
+} from "../../lib/command-apps/infra/windows-processes.mjs";
+
+test("process store records and clears managed children", () => {
+  const store = createCommandAppsProcessStore();
+  const child = { pid: 4242, unref() {} };
+  store.record("antigravity", child);
+  assert.equal(store.get("antigravity").pid, 4242);
+  store.clear("antigravity", 4242);
+  assert.equal(store.get("antigravity"), null);
+});
+
+test("windows process matching is exact and case-insensitive", () => {
+  const matches = findProcessesByExecutable([
+    { pid: 1, executablePath: "C:\\Apps\\ANTIGRAVITY\\Antigravity.exe" },
+    { pid: 2, executablePath: "C:\\Apps\\Other\\Antigravity.exe" },
+  ], "c:\\apps\\antigravity\\antigravity.exe", { platform: "win32" });
+  assert.deepEqual(matches.map((p) => p.pid), [1]);
+});
+
+test("terminating a process uses taskkill with argument array", async () => {
+  const calls = [];
+  const execFile = (file, args, options, cb) => {
+    calls.push({ file, args, options });
+    cb(null, "", "");
+  };
+  await terminateProcessTree(4242, { execFile });
+  assert.equal(calls[0].file, "taskkill");
+  assert.deepEqual(calls[0].args, ["/PID", "4242", "/T", "/F"]);
+  assert.equal(calls[0].options.windowsHide, true);
+});
