@@ -210,14 +210,14 @@ Fill this table after measuring a machine with Antigravity installed/running.
 
 | Capability | Status | Evidence | Notes |
 | --- | --- | --- | --- |
-| process presence | pending |  |  |
-| install root discovery | pending |  |  |
-| local port/socket discovery | pending |  |  |
-| project list API | pending |  |  |
-| conversation create API | pending |  |  |
-| event subscribe API | pending |  |  |
-| approval decide API | pending |  |  |
-| joint UI visibility | pending |  |  |
+| process presence | YES | multiple Antigravity.exe + language_server.exe | 2026-08-15 Windows host |
+| install root discovery | YES | Local\\Programs\\Antigravity | includes language_server.exe |
+| local port/socket discovery | PARTIAL | dynamic https://127.0.0.1:9608/ + CDP 9607 | port is not stable; assigned by --https_server_port 0 |
+| project list API | PARTIAL | filesystem ~/.gemini/config/projects/*.json | no confirmed HTTP API yet |
+| conversation create API | NO | not found | SPA HTML only on local https endpoints |
+| event subscribe API | NO | not found |  |
+| approval decide API | NO | not found |  |
+| joint UI visibility | UNKNOWN | no proven hook | RemoteControlEnabled=false in logs |
 
 Also attach:
 
@@ -251,3 +251,8 @@ Also attach:
 2. Implement fake host fully for domain tests
 3. Run real-machine probe on at least one Host
 4. Update this document with measured results before claiming Joint Session support
+
+
+## Measured run
+
+See docs/superpowers/specs/2026-08-15-antigravity-host-backend-probe-results.md.

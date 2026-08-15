@@ -1,0 +1,549 @@
+{
+  "measuredAt": "2026-08-15T01:31:33.789Z",
+  "latestLocalUrl": "https://127.0.0.1:9608/",
+  "latestPort": 9608,
+  "latestCsrfPresent": true,
+  "listeningInteresting": [
+    {
+      "address": "127.0.0.1",
+      "port": 13864,
+      "pid": 39284
+    },
+    {
+      "address": "127.0.0.1",
+      "port": 13854,
+      "pid": 40928
+    },
+    {
+      "address": "127.0.0.1",
+      "port": 13799,
+      "pid": 11208
+    },
+    {
+      "address": "127.0.0.1",
+      "port": 13619,
+      "pid": 11672
+    },
+    {
+      "address": "127.0.0.1",
+      "port": 13609,
+      "pid": 23076
+    },
+    {
+      "address": "127.0.0.1",
+      "port": 13598,
+      "pid": 21864
+    },
+    {
+      "address": "127.0.0.1",
+      "port": 13587,
+      "pid": 12948
+    },
+    {
+      "address": "127.0.0.1",
+      "port": 13577,
+      "pid": 25636
+    },
+    {
+      "address": "127.0.0.1",
+      "port": 10570,
+      "pid": 24628
+    },
+    {
+      "address": "127.0.0.1",
+      "port": 10557,
+      "pid": 6480
+    },
+    {
+      "address": "127.0.0.1",
+      "port": 10545,
+      "pid": 42376
+    },
+    {
+      "address": "127.0.0.1",
+      "port": 10530,
+      "pid": 15712
+    },
+    {
+      "address": "127.0.0.1",
+      "port": 10516,
+      "pid": 12384
+    },
+    {
+      "address": "127.0.0.1",
+      "port": 10000,
+      "pid": 24040
+    },
+    {
+      "address": "127.0.0.1",
+      "port": 9609,
+      "pid": 29440
+    },
+    {
+      "address": "127.0.0.1",
+      "port": 9608,
+      "pid": 29440
+    },
+    {
+      "address": "127.0.0.1",
+      "port": 9607,
+      "pid": 34900
+    },
+    {
+      "address": "127.0.0.1",
+      "port": 9010,
+      "pid": 11604
+    },
+    {
+      "address": "127.0.0.1",
+      "port": 8787,
+      "pid": 40964
+    }
+  ],
+  "probeResults": [
+    {
+      "url": "https://127.0.0.1:9608/",
+      "ok": true,
+      "status": 200,
+      "headers": {
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "text/html; charset=utf-8",
+        "vary": "Origin, Accept-Encoding",
+        "date": "Sat, 15 Aug 2026 01:31:33 GMT",
+        "transfer-encoding": "chunked"
+      },
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"wid",
+      "withCsrf": false
+    },
+    {
+      "url": "https://127.0.0.1:9608/",
+      "ok": true,
+      "status": 200,
+      "headers": {
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "text/html; charset=utf-8",
+        "vary": "Origin, Accept-Encoding",
+        "date": "Sat, 15 Aug 2026 01:31:33 GMT",
+        "transfer-encoding": "chunked"
+      },
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"wid",
+      "withCsrf": true
+    },
+    {
+      "url": "https://127.0.0.1:9608/health",
+      "ok": true,
+      "status": 200,
+      "headers": {
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "text/html; charset=utf-8",
+        "vary": "Origin, Accept-Encoding",
+        "date": "Sat, 15 Aug 2026 01:31:33 GMT",
+        "transfer-encoding": "chunked"
+      },
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"wid",
+      "withCsrf": false
+    },
+    {
+      "url": "https://127.0.0.1:9608/health",
+      "ok": true,
+      "status": 200,
+      "headers": {
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "text/html; charset=utf-8",
+        "vary": "Origin, Accept-Encoding",
+        "date": "Sat, 15 Aug 2026 01:31:33 GMT",
+        "transfer-encoding": "chunked"
+      },
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"wid",
+      "withCsrf": true
+    },
+    {
+      "url": "https://127.0.0.1:9608/api/health",
+      "ok": true,
+      "status": 200,
+      "headers": {
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "text/html; charset=utf-8",
+        "vary": "Origin, Accept-Encoding",
+        "date": "Sat, 15 Aug 2026 01:31:33 GMT",
+        "transfer-encoding": "chunked"
+      },
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"wid",
+      "withCsrf": false
+    },
+    {
+      "url": "https://127.0.0.1:9608/api/health",
+      "ok": true,
+      "status": 200,
+      "headers": {
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "text/html; charset=utf-8",
+        "vary": "Origin, Accept-Encoding",
+        "date": "Sat, 15 Aug 2026 01:31:33 GMT",
+        "transfer-encoding": "chunked"
+      },
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"wid",
+      "withCsrf": true
+    },
+    {
+      "url": "https://127.0.0.1:9608/v1/health",
+      "ok": true,
+      "status": 200,
+      "headers": {
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "text/html; charset=utf-8",
+        "vary": "Origin, Accept-Encoding",
+        "date": "Sat, 15 Aug 2026 01:31:33 GMT",
+        "transfer-encoding": "chunked"
+      },
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"wid",
+      "withCsrf": false
+    },
+    {
+      "url": "https://127.0.0.1:9608/v1/health",
+      "ok": true,
+      "status": 200,
+      "headers": {
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "text/html; charset=utf-8",
+        "vary": "Origin, Accept-Encoding",
+        "date": "Sat, 15 Aug 2026 01:31:33 GMT",
+        "transfer-encoding": "chunked"
+      },
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"wid",
+      "withCsrf": true
+    },
+    {
+      "url": "https://127.0.0.1:9608/status",
+      "ok": true,
+      "status": 200,
+      "headers": {
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "text/html; charset=utf-8",
+        "vary": "Origin, Accept-Encoding",
+        "date": "Sat, 15 Aug 2026 01:31:33 GMT",
+        "transfer-encoding": "chunked"
+      },
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"wid",
+      "withCsrf": false
+    },
+    {
+      "url": "https://127.0.0.1:9608/status",
+      "ok": true,
+      "status": 200,
+      "headers": {
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "text/html; charset=utf-8",
+        "vary": "Origin, Accept-Encoding",
+        "date": "Sat, 15 Aug 2026 01:31:33 GMT",
+        "transfer-encoding": "chunked"
+      },
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"wid",
+      "withCsrf": true
+    },
+    {
+      "url": "https://127.0.0.1:9608/",
+      "ok": true,
+      "status": 200,
+      "headers": {
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "text/html; charset=utf-8",
+        "vary": "Origin, Accept-Encoding",
+        "date": "Sat, 15 Aug 2026 01:31:33 GMT",
+        "transfer-encoding": "chunked"
+      },
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"wid",
+      "withCsrf": false
+    },
+    {
+      "url": "https://127.0.0.1:9608/",
+      "ok": true,
+      "status": 200,
+      "headers": {
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "text/html; charset=utf-8",
+        "vary": "Origin, Accept-Encoding",
+        "date": "Sat, 15 Aug 2026 01:31:33 GMT",
+        "transfer-encoding": "chunked"
+      },
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"wid",
+      "withCsrf": true
+    },
+    {
+      "url": "https://127.0.0.1:9607/",
+      "ok": false,
+      "status": 0,
+      "message": "Client network socket disconnected before secure TLS connection was established",
+      "withCsrf": false
+    },
+    {
+      "url": "https://127.0.0.1:9607/",
+      "ok": false,
+      "status": 0,
+      "message": "Client network socket disconnected before secure TLS connection was established",
+      "withCsrf": true
+    },
+    {
+      "url": "http://127.0.0.1:9607/json/version",
+      "ok": true,
+      "status": 200,
+      "bodyPreview": "{\r\n   \"Browser\": \"Chrome/146.0.7680.72\",\r\n   \"Protocol-Version\": \"1.3\",\r\n   \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Antigravity/2.8.1 Chrome/146.0.7680.72 Electron/41.0.2 Safari/537.36\",\r\n   \"V8-Version\": \"14.6.202.11\",\r\n   \"WebKit-Version\": \"5",
+      "withCsrf": false
+    },
+    {
+      "url": "http://127.0.0.1:9607/json/list",
+      "ok": true,
+      "status": 200,
+      "bodyPreview": "[ {\r\n   \"description\": \"\",\r\n   \"devtoolsFrontendUrl\": \"https://chrome-devtools-frontend.appspot.com/serve_rev/@cb10bb07c0a5dac19a421f7cbfd002146e74aaed/inspector.html?ws=127.0.0.1:9607/devtools/page/E5A4522574871D9C38A45077685DC4DD\",\r\n   \"id\": \"E5A4522574871D9C38A45077685DC4DD\",\r\n   \"title\": \"Antigr",
+      "withCsrf": false
+    }
+  ],
+  "projectTree": {
+    "C:/Users/xtea/.gemini/config/projects": [
+      {
+        "name": "06aafac1-03c0-4fbb-8a4c-6d581777e8cb.json",
+        "dir": false
+      },
+      {
+        "name": "33b4b2bc-ab7a-4ca0-ae77-04de3a28ad75.json",
+        "dir": false
+      },
+      {
+        "name": "4ddea4aa-6bdf-46cc-b7b6-d28949d7422e.json",
+        "dir": false
+      },
+      {
+        "name": "5273cb58-1ce7-45b2-bfc4-cc69f437eb61.json",
+        "dir": false
+      },
+      {
+        "name": "59df0025-4f03-4edc-b9e4-4d29007b299d.json",
+        "dir": false
+      },
+      {
+        "name": "77458f16-f531-49ef-89b8-a4d60ab34156.json",
+        "dir": false
+      },
+      {
+        "name": "81c18722-da52-471b-9cc3-b9679de58fd5.json",
+        "dir": false
+      },
+      {
+        "name": "a1b98713-ba27-42bb-b3a4-2dc51250e962.json",
+        "dir": false
+      },
+      {
+        "name": "a244b6ab-c669-45ae-afae-d828a90162d2.json",
+        "dir": false
+      },
+      {
+        "name": "bb278a2a-f0a5-465e-ab66-77054651293e.json",
+        "dir": false
+      },
+      {
+        "name": "be4e6f99-b04d-49ac-84dc-68240dbb6ce7.json",
+        "dir": false
+      },
+      {
+        "name": "f0aa2c93-dad3-4f42-ba19-a701f3e3cccf.json",
+        "dir": false
+      },
+      {
+        "name": "f10ae948-72d9-42ac-ba84-48354ae3803c.json",
+        "dir": false
+      },
+      {
+        "name": "outside-of-project.json",
+        "dir": false
+      }
+    ],
+    "C:/Users/xtea/.gemini/antigravity": [
+      {
+        "name": ".gsd-profile",
+        "dir": false
+      },
+      {
+        "name": "agents",
+        "dir": true
+      },
+      {
+        "name": "agyhub_summaries_proto.pb",
+        "dir": false
+      },
+      {
+        "name": "annotations",
+        "dir": true
+      },
+      {
+        "name": "antigravity_state.pbtxt",
+        "dir": false
+      },
+      {
+        "name": "bin",
+        "dir": true
+      },
+      {
+        "name": "brain",
+        "dir": true
+      },
+      {
+        "name": "builtin",
+        "dir": true
+      },
+      {
+        "name": "conversations",
+        "dir": true
+      },
+      {
+        "name": "crashes",
+        "dir": true
+      },
+      {
+        "name": "gsd-core",
+        "dir": true
+      },
+      {
+        "name": "gsd-file-manifest.json",
+        "dir": false
+      },
+      {
+        "name": "gsd-install-state.json",
+        "dir": false
+      },
+      {
+        "name": "hooks",
+        "dir": true
+      },
+      {
+        "name": "installation_id",
+        "dir": false
+      },
+      {
+        "name": "knowledge",
+        "dir": true
+      },
+      {
+        "name": "mcp",
+        "dir": true
+      },
+      {
+        "name": "package.json",
+        "dir": false
+      },
+      {
+        "name": "scratch",
+        "dir": true
+      },
+      {
+        "name": "scripts",
+        "dir": true
+      },
+      {
+        "name": "settings.json",
+        "dir": false
+      },
+      {
+        "name": "skills",
+        "dir": true
+      }
+    ],
+    "C:/Users/xtea/AppData/Roaming/Antigravity": [
+      {
+        "name": ".updaterId",
+        "dir": false
+      },
+      {
+        "name": "app_storage.json",
+        "dir": false
+      },
+      {
+        "name": "bin",
+        "dir": true
+      },
+      {
+        "name": "blob_storage",
+        "dir": true
+      },
+      {
+        "name": "Cache",
+        "dir": true
+      },
+      {
+        "name": "Code Cache",
+        "dir": true
+      },
+      {
+        "name": "DawnGraphiteCache",
+        "dir": true
+      },
+      {
+        "name": "DawnWebGPUCache",
+        "dir": true
+      },
+      {
+        "name": "DevToolsActivePort",
+        "dir": false
+      },
+      {
+        "name": "DIPS",
+        "dir": false
+      },
+      {
+        "name": "DIPS-wal",
+        "dir": false
+      },
+      {
+        "name": "GPUCache",
+        "dir": true
+      },
+      {
+        "name": "Local State",
+        "dir": false
+      },
+      {
+        "name": "Local Storage",
+        "dir": true
+      },
+      {
+        "name": "lockfile",
+        "dir": false
+      },
+      {
+        "name": "logs",
+        "dir": true
+      },
+      {
+        "name": "Network",
+        "dir": true
+      },
+      {
+        "name": "Preferences",
+        "dir": false
+      },
+      {
+        "name": "Session Storage",
+        "dir": true
+      },
+      {
+        "name": "Shared Dictionary",
+        "dir": true
+      },
+      {
+        "name": "SharedStorage",
+        "dir": false
+      },
+      {
+        "name": "SharedStorage-wal",
+        "dir": false
+      },
+      {
+        "name": "shared_proto_db",
+        "dir": true
+      },
+      {
+        "name": "VideoDecodeStats",
+        "dir": true
+      }
+    ]
+  }
+}

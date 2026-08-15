@@ -1,0 +1,496 @@
+{
+  "measuredAt": "2026-08-15T01:30:32.235Z",
+  "platform": "win32",
+  "note": "Read-only probe only. No gateway start, no desktop launch/restart, no process kill.",
+  "install": {
+    "candidates": [
+      "C:\\Users\\xtea\\AppData\\Local\\Programs\\Antigravity",
+      "C:\\Users\\xtea\\AppData\\Local\\Antigravity",
+      "C:\\Program Files\\Antigravity",
+      "C:\\Program Files (x86)\\Antigravity"
+    ],
+    "installRoot": "C:\\Users\\xtea\\AppData\\Local\\Programs\\Antigravity",
+    "scanTargets": [
+      "C:\\Users\\xtea\\AppData\\Local\\Programs\\Antigravity\\resources\\bin\\language_server.exe",
+      "C:\\Users\\xtea\\AppData\\Local\\Programs\\Antigravity\\resources\\app.asar",
+      "C:\\Users\\xtea\\AppData\\Local\\Programs\\Antigravity\\Antigravity.exe"
+    ],
+    "languageServerBinary": "C:\\Users\\xtea\\AppData\\Local\\Programs\\Antigravity\\resources\\bin\\language_server.exe"
+  },
+  "processes": {
+    "ok": true,
+    "error": "",
+    "antigravity": [
+      {
+        "pid": 34900,
+        "name": "Antigravity.exe",
+        "executablePath": "",
+        "command": "",
+        "kind": "antigravity"
+      },
+      {
+        "pid": 35480,
+        "name": "Antigravity.exe",
+        "executablePath": "",
+        "command": "",
+        "kind": "antigravity"
+      },
+      {
+        "pid": 13104,
+        "name": "Antigravity.exe",
+        "executablePath": "",
+        "command": "",
+        "kind": "antigravity"
+      },
+      {
+        "pid": 30324,
+        "name": "Antigravity.exe",
+        "executablePath": "",
+        "command": "",
+        "kind": "antigravity"
+      },
+      {
+        "pid": 3320,
+        "name": "Antigravity.exe",
+        "executablePath": "",
+        "command": "",
+        "kind": "antigravity"
+      },
+      {
+        "pid": 31284,
+        "name": "Antigravity.exe",
+        "executablePath": "",
+        "command": "",
+        "kind": "antigravity"
+      },
+      {
+        "pid": 6280,
+        "name": "pwsh.exe",
+        "executablePath": "C:\\Users\\xtea\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\native\\powershell\\pwsh.exe",
+        "command": "\"C:\\Users\\xtea\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\native\\powershell\\pwsh.exe\" -Command \"try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}\n$base = \\\"D:\\agent-transfer\\.worktrees\\antigravity-remote-session\\\"\n(Get-Content \\\"$base\\scripts\\remote-session-host-probe.mjs\\\" -Raw) `\n  -replace './lib/antigravity/client-discovery.mjs','../lib/antigravity/client-discovery.mjs' `\n  -replace './lib/remote-session/host-attach/probe.mjs','../lib/remote-session/host-attach/probe.mjs' |\n  Set-Content -Path \\\"$base\\scripts\\remote-session-host-probe.mjs\\\" -Encoding utf8\nnode \\\"$base\\scripts\\remote-session-host-probe.mjs\\\"\"",
+        "kind": "antigravity"
+      },
+      {
+        "pid": 31812,
+        "name": "node.exe",
+        "executablePath": "D:\\nvm4w\\nodejs\\node.exe",
+        "command": "\"D:\\nvm4w\\nodejs\\node.exe\" D:\\agent-transfer\\.worktrees\\antigravity-remote-session\\scripts\\remote-session-host-probe.mjs",
+        "kind": "antigravity"
+      },
+      {
+        "pid": 8784,
+        "name": "powershell.exe",
+        "executablePath": "C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "command": "powershell.exe -NoProfile -NonInteractive -Command \"\n  $procs = Get-CimInstance Win32_Process |\n    Where-Object {\n      $_.Name -match 'Antigravity|language_server|Codex|ChatGPT' -or\n      ($_.CommandLine -and ($_.CommandLine -match 'Antigravity|language_server|Codex|ChatGPT'))\n    } |\n    Select-Object ProcessId, Name, ExecutablePath, CommandLine;\n  $procs | ConvertTo-Json -Compress\n  \"",
+        "kind": "antigravity"
+      }
+    ],
+    "languageServer": [
+      {
+        "pid": 29440,
+        "name": "language_server.exe",
+        "executablePath": "",
+        "command": "",
+        "kind": "language_server"
+      }
+    ],
+    "codexOrChatgpt": [
+      {
+        "pid": 36772,
+        "name": "cmd.exe",
+        "executablePath": "C:\\WINDOWS\\system32\\cmd.exe",
+        "command": "C:\\WINDOWS\\system32\\cmd.exe /d /s /c \"\"C:\\Users\\xtea\\.codex\\plugins\\cache\\openai-bundled\\chrome\\latest\\extension-host\\windows\\x64\\extension-host.exe\" chrome-extension://hehggadaopoacecdllhhajmbjkdcmajg/ --parent-window=0\" < \\\\.\\pipe\\chrome.nativeMessaging.in.6169dc6b85f867d9 > \\\\.\\pipe\\chrome.nativeMessaging.out.6169dc6b85f867d9",
+        "kind": "codex_or_chatgpt"
+      },
+      {
+        "pid": 10640,
+        "name": "extension-host.exe",
+        "executablePath": "C:\\Users\\xtea\\.codex\\plugins\\cache\\openai-bundled\\chrome\\latest\\extension-host\\windows\\x64\\extension-host.exe",
+        "command": "\"C:\\Users\\xtea\\.codex\\plugins\\cache\\openai-bundled\\chrome\\latest\\extension-host\\windows\\x64\\extension-host.exe\"  chrome-extension://hehggadaopoacecdllhhajmbjkdcmajg/ --parent-window=0 ",
+        "kind": "codex_or_chatgpt"
+      },
+      {
+        "pid": 34796,
+        "name": "ChatGPT.exe",
+        "executablePath": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.810.6296.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe",
+        "command": "\"C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.810.6296.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe\" --no-first-run --no-pings --no-default-browser-check --no-experiments --hide-crash-restore-bubble --allow-browser-signin=false --extension-content-verification=enforce_strict --disable-domain-reliability --disable-features=,DropInputEventsWhilePaintHolding,WebUIOmniboxPopup,WebUIOmniboxAimPopup --no-startup-window --force-fieldtrials=WebRTC-Sctp-Snap/Enabled/WebRTC-IceHandshakeDtls/Enabled/WebRTC-ForceDtls13/Enabled/ --owl-scoped-user-agent-additional-hosts=openai.com,chatgpt.com --owl-scoped-user-agent-prefix=ChatGPTBrowser --disable-blink-features=ReplacedNormalFlowStackingInlinePaint --standard-schemes=app,codex-sandbox --service-worker-schemes=codex-sandbox --secure-schemes=app,codex-sandbox,sentry-ipc --bypasscsp-schemes=sentry-ipc --fetch-schemes=app,codex-sandbox,sentry-ipc --cors-schemes=codex-sandbox,sentry-ipc --streaming-schemes=app,codex-sandbox --do-not-de-elevate",
+        "kind": "codex_or_chatgpt"
+      },
+      {
+        "pid": 37584,
+        "name": "ChatGPT.exe",
+        "executablePath": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.810.6296.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe",
+        "command": "\"C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.810.6296.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe\" --type=crashpad-handler --user-data-dir=C:\\Users\\xtea\\AppData\\Roaming\\Codex\\web\\Codex /prefetch:4 --monitor-self --monitor-self-argument=--type=crashpad-handler --monitor-self-argument=--user-data-dir=C:\\Users\\xtea\\AppData\\Roaming\\Codex\\web\\Codex --monitor-self-argument=/prefetch:4 --monitor-self-annotation=ptype=crashpad-handler --database=C:\\Users\\xtea\\AppData\\Roaming\\Codex\\web\\Codex\\Crashpad --annotation=plat=Win64 --annotation=prod=Codex --annotation=ver=151.0.7922.137 --initial-client-data=0x11c,0x120,0x124,0xf8,0x128,0x7ff804f4ff80,0x7ff804f4ff90,0x7ff804f4ffa0",
+        "kind": "codex_or_chatgpt"
+      },
+      {
+        "pid": 4824,
+        "name": "ChatGPT.exe",
+        "executablePath": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.810.6296.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe",
+        "command": "\"C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.810.6296.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe\" --type=crashpad-handler --user-data-dir=C:\\Users\\xtea\\AppData\\Roaming\\Codex\\web\\Codex /prefetch:4 --no-periodic-tasks --monitor-self-annotation=ptype=crashpad-handler --database=C:\\Users\\xtea\\AppData\\Roaming\\Codex\\web\\Codex\\Crashpad --annotation=plat=Win64 --annotation=prod=Codex --annotation=ver=151.0.7922.137 --initial-client-data=0x17c,0x180,0x184,0x144,0x18c,0x7ff7dac52db0,0x7ff7dac52dc0,0x7ff7dac52dd0",
+        "kind": "codex_or_chatgpt"
+      },
+      {
+        "pid": 20420,
+        "name": "ChatGPT.exe",
+        "executablePath": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.810.6296.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe",
+        "command": "\"C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.810.6296.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe\" --type=gpu-process --no-pre-read-main-dll --start-stack-profiler --gpu-preferences=WAAAAAAAAADgAAAEAAAAAAAAAAAAAGAAQAAAAAAAAAADAAAAAAAAADgAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAKAAAAAAAAAAoAAAAAAAAAAgAAAAAAAAAEAAAAAIAAAABAAAAAAAAAAgAAAAAAAAACAAAAAAAAAA= --metrics-shmem-handle=2536,i,7976840871718203043,8730754263437998464,262144 --field-trial-handle=2632,i,7857606687270625320,5805956781303035225,262144 --enable-features=ReportStuckThrottle --disable-features=DropInputEventsWhilePaintHolding,WebUIOmniboxAimPopup,WebUIOmniboxPopup --variations-seed-version --pseudonymization-salt-handle=2636,i,408663560188689794,14567900506133868332,4 --trace-process-track-uuid=3190708988185955192 --mojo-platform-channel-handle=2628 /prefetch:2",
+        "kind": "codex_or_chatgpt"
+      },
+      {
+        "pid": 29644,
+        "name": "ChatGPT.exe",
+        "executablePath": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.810.6296.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe",
+        "command": "\"C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.810.6296.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe\" --type=utility --utility-sub-type=network.mojom.NetworkService --lang=zh-CN --service-sandbox-type=none --owl-scoped-user-agent-additional-hosts=openai.com,chatgpt.com --owl-scoped-user-agent-prefix=ChatGPTBrowser --standard-schemes=app,codex-sandbox --service-worker-schemes=codex-sandbox --secure-schemes=app,codex-sandbox,sentry-ipc --bypasscsp-schemes=sentry-ipc --fetch-schemes=app,codex-sandbox,sentry-ipc --cors-schemes=codex-sandbox,sentry-ipc --streaming-schemes=app,codex-sandbox --no-pre-read-main-dll --start-stack-profiler --metrics-shmem-handle=2852,i,11239135604492794723,4301497627570931790,524288 --field-trial-handle=2632,i,7857606687270625320,5805956781303035225,262144 --enable-features=ReportStuckThrottle --disable-features=DropInputEventsWhilePaintHolding,WebUIOmniboxAimPopup,WebUIOmniboxPopup --variations-seed-version --pseudonymization-salt-handle=2636,i,408663560188689794,14567900506133868332,4 --trace-process-track-uuid=3190708989122997041 --mojo-platform-channel-handle=2720 /prefetch:11",
+        "kind": "codex_or_chatgpt"
+      },
+      {
+        "pid": 40112,
+        "name": "ChatGPT.exe",
+        "executablePath": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.810.6296.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe",
+        "command": "\"C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.810.6296.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe\" --type=utility --utility-sub-type=storage.mojom.StorageService --lang=zh-CN --service-sandbox-type=service --standard-schemes=app,codex-sandbox --service-worker-schemes=codex-sandbox --secure-schemes=app,codex-sandbox,sentry-ipc --bypasscsp-schemes=sentry-ipc --fetch-schemes=app,codex-sandbox,sentry-ipc --cors-schemes=codex-sandbox,sentry-ipc --streaming-schemes=app,codex-sandbox --no-pre-read-main-dll --metrics-shmem-handle=2992,i,627188954506145067,16084098411297482491,524288 --field-trial-handle=2632,i,7857606687270625320,5805956781303035225,262144 --enable-features=ReportStuckThrottle --disable-features=DropInputEventsWhilePaintHolding,WebUIOmniboxAimPopup,WebUIOmniboxPopup --variations-seed-version --pseudonymization-salt-handle=2636,i,408663560188689794,14567900506133868332,4 --trace-process-track-uuid=3190708990060038890 --mojo-platform-channel-handle=2656 /prefetch:13",
+        "kind": "codex_or_chatgpt"
+      },
+      {
+        "pid": 41660,
+        "name": "ChatGPT.exe",
+        "executablePath": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.810.6296.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe",
+        "command": "\"C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.810.6296.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe\" --type=renderer --standard-schemes=app,codex-sandbox --service-worker-schemes=codex-sandbox --secure-schemes=app,codex-sandbox,sentry-ipc --bypasscsp-schemes=sentry-ipc --fetch-schemes=app,codex-sandbox,sentry-ipc --cors-schemes=codex-sandbox,sentry-ipc --streaming-schemes=app,codex-sandbox --owl-scoped-user-agent-additional-hosts=openai.com,chatgpt.com --owl-scoped-user-agent-prefix=ChatGPTBrowser --no-pre-read-main-dll --start-stack-profiler --disable-blink-features=ReplacedNormalFlowStackingInlinePaint --video-capture-use-gpu-memory-buffer --lang=zh-CN --device-scale-factor=1.25 --num-raster-threads=4 --enable-main-frame-before-activation --renderer-client-id=6 --time-ticks-at-unix-epoch=-1784484397611486 --launch-time-ticks=2272036350320 --metrics-shmem-handle=5164,i,6035907460065286687,3767748207236702022,2097152 --field-trial-handle=2632,i,7857606687270625320,5805956781303035225,262144 --enable-features=ReportStuckThrottle --disable-features=DropInputEventsWhilePaintHolding,WebUIOmniboxAimPopup,WebUIOmniboxPopup --variations-seed-version --pseudonymization-salt-handle=2636,i,408663560188689794,14567900506133868332,4 --trace-process-track-uuid=3190708991934122588 --mojo-platform-channel-handle=5176 /prefetch:1",
+        "kind": "codex_or_chatgpt"
+      },
+      {
+        "pid": 39280,
+        "name": "ChatGPT.exe",
+        "executablePath": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.810.6296.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe",
+        "command": "\"C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.810.6296.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe\" --type=renderer --standard-schemes=app,codex-sandbox --service-worker-schemes=codex-sandbox --secure-schemes=app,codex-sandbox,sentry-ipc --bypasscsp-schemes=sentry-ipc --fetch-schemes=app,codex-sandbox,sentry-ipc --cors-schemes=codex-sandbox,sentry-ipc --streaming-schemes=app,codex-sandbox --owl-scoped-user-agent-additional-hosts=openai.com,chatgpt.com --owl-scoped-user-agent-prefix=ChatGPTBrowser --no-pre-read-main-dll --disable-blink-features=ReplacedNormalFlowStackingInlinePaint --video-capture-use-gpu-memory-buffer --lang=zh-CN --device-scale-factor=1.25 --num-raster-threads=4 --enable-main-frame-before-activation --renderer-client-id=5 --time-ticks-at-unix-epoch=-1784484397611486 --launch-time-ticks=2272036354263 --metrics-shmem-handle=5208,i,10268686115913747049,12501744860536260785,2097152 --field-trial-handle=2632,i,7857606687270625320,5805956781303035225,262144 --enable-features=ReportStuckThrottle --disable-features=DropInputEventsWhilePaintHolding,WebUIOmniboxAimPopup,WebUIOmniboxPopup --variations-seed-version --pseudonymization-salt-handle=2636,i,408663560188689794,14567900506133868332,4 --trace-process-track-uuid=3190708990997080739 --mojo-platform-channel-handle=5240 /prefetch:1",
+        "kind": "codex_or_chatgpt"
+      },
+      {
+        "pid": 3440,
+        "name": "codex.exe",
+        "executablePath": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.810.6296.0_x64__2p2nqsd0c76g0\\app\\resources\\codex.exe",
+        "command": "\"C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.810.6296.0_x64__2p2nqsd0c76g0\\app\\resources\\codex.exe\" -c features.code_mode_host=true app-server --analytics-default-enabled",
+        "kind": "codex_or_chatgpt"
+      },
+      {
+        "pid": 41616,
+        "name": "ChatGPT.exe",
+        "executablePath": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.810.6296.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe",
+        "command": "\"C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.810.6296.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe\" --type=renderer --standard-schemes=app,codex-sandbox --service-worker-schemes=codex-sandbox --secure-schemes=app,codex-sandbox,sentry-ipc --bypasscsp-schemes=sentry-ipc --fetch-schemes=app,codex-sandbox,sentry-ipc --cors-schemes=codex-sandbox,sentry-ipc --streaming-schemes=app,codex-sandbox --owl-scoped-user-agent-additional-hosts=openai.com,chatgpt.com --owl-scoped-user-agent-prefix=ChatGPTBrowser --no-pre-read-main-dll --disable-blink-features=ReplacedNormalFlowStackingInlinePaint --video-capture-use-gpu-memory-buffer --lang=zh-CN --device-scale-factor=1.25 --num-raster-threads=4 --enable-main-frame-before-activation --renderer-client-id=9 --time-ticks-at-unix-epoch=-1784484397611486 --launch-time-ticks=2272053868315 --metrics-shmem-handle=6944,i,8773317025093072704,15111252283755424435,2097152 --field-trial-handle=2632,i,7857606687270625320,5805956781303035225,262144 --enable-features=ReportStuckThrottle --disable-features=DropInputEventsWhilePaintHolding,WebUIOmniboxAimPopup,WebUIOmniboxPopup --variations-seed-version --pseudonymization-salt-handle=2636,i,408663560188689794,14567900506133868332,4 --trace-process-track-uuid=3190708994745248135 --mojo-platform-channel-handle=8076 /prefetch:1",
+        "kind": "codex_or_chatgpt"
+      },
+      {
+        "pid": 42256,
+        "name": "ssh.exe",
+        "executablePath": "C:\\windows\\System32\\OpenSSH\\ssh.EXE",
+        "command": "C:\\windows\\System32\\OpenSSH\\ssh.EXE -T -v -o BatchMode=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=12 -i C:\\Users\\xtea\\.ssh\\id_rsa -p 6007 pa@39.105.19.237 \"sh -c 'if [ -z \\\"$SHELL\\\" ] || [ ! -x \\\"$SHELL\\\" ]; then echo \\\"Codex remote SSH requires SHELL to point to an executable login shell\\\" >&2; exit 127; fi; CODEX_REMOTE_PAYLOAD=\\\"$1\\\"; export CODEX_REMOTE_PAYLOAD; case \\\"${SHELL##*/}\\\" in csh|tcsh) exec \\\"$SHELL\\\" -i -c '\\''set loginsh=1; if ( -r /etc/csh.login ) source /etc/csh.login; if ( -r ~/.login ) source ~/.login; exec /bin/sh -c \\\"$CODEX_REMOTE_PAYLOAD\\\"'\\'' ;; nu) exec \\\"$SHELL\\\" -l -i -c '\\''exec /bin/sh -c $env.CODEX_REMOTE_PAYLOAD'\\'' ;; fish|xonsh) exec \\\"$SHELL\\\" -l -i -c '\\''exec /bin/sh -c \\\"$CODEX_REMOTE_PAYLOAD\\\"'\\'' ;; *) exec \\\"$SHELL\\\" -l -i -c '\\''CODEX_HOME=\\\"${CODEX_HOME:-$HOME/.codex}\\\"; export CODEX_HOME; exec /bin/sh -c \\\"$CODEX_REMOTE_PAYLOAD\\\"'\\'' ;; esac' sh 'printf '\\''%b'\\'' '\\''\\046\\117\\224\\046\\373\\232\\166\\072'\\''; PATH=\\\"${CODEX_INSTALL_DIR:-$HOME/.local/bin}:$PATH\\\"; export PATH; if [ -S \\\"${SSH_AUTH_SOCK:-}\\\" ]; then ln -sfn -- \\\"$SSH_AUTH_SOCK\\\" \\\"${CODEX_HOME:-$HOME/.codex}/app-server-control/forwarded-ssh-agent.sock\\\"; elif [ ! -S \\\"${CODEX_HOME:-$HOME/.codex}/app-server-control/forwarded-ssh-agent.sock\\\" ]; then rm -f -- \\\"${CODEX_HOME:-$HOME/.codex}/app-server-control/forwarded-ssh-agent.sock\\\"; fi && exec codex app-server proxy'\"",
+        "kind": "codex_or_chatgpt"
+      },
+      {
+        "pid": 44436,
+        "name": "node_repl.exe",
+        "executablePath": "C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe",
+        "command": "\"C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe\"",
+        "kind": "codex_or_chatgpt"
+      },
+      {
+        "pid": 9128,
+        "name": "node_repl.exe",
+        "executablePath": "C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe",
+        "command": "\"C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe\"",
+        "kind": "codex_or_chatgpt"
+      },
+      {
+        "pid": 42264,
+        "name": "node_repl.exe",
+        "executablePath": "C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe",
+        "command": "\"C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe\"",
+        "kind": "codex_or_chatgpt"
+      },
+      {
+        "pid": 31868,
+        "name": "node_repl.exe",
+        "executablePath": "C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe",
+        "command": "\"C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe\"",
+        "kind": "codex_or_chatgpt"
+      },
+      {
+        "pid": 38476,
+        "name": "pwsh.exe",
+        "executablePath": "C:\\Users\\xtea\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\native\\powershell\\pwsh.exe",
+        "command": "\"C:\\Users\\xtea\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\native\\powershell\\pwsh.exe\" -NoLogo -NoProfile -NonInteractive -EncodedCommand JABFAHIAcgBvAHIAQQBjAHQAaQBvAG4AUAByAGUAZgBlAHIAZQBuAGMAZQAgAD0AIAAnAFMAdABvAHAAJwANAAoAJABQAHIAbwBnAHIAZQBzAHMAUAByAGUAZgBlAHIAZQBuAGMAZQAgAD0AIAAnAFMAaQBsAGUAbgB0AGwAeQBDAG8AbgB0AGkAbgB1AGUAJwANAAoADQAKACMAIABMAG8AbgBnAC0AbABpAHYAZQBkACAAUABvAHcAZQByAFMAaABlAGwAbAAgAEEAUwBUACAAcABhAHIAcwBlAHIAIAB1AHMAZQBkACAAYgB5ACAAdABoAGUAIABSAHUAcwB0ACAAYwBvAG0AbQBhAG4AZAAtAHMAYQBmAGUAdAB5ACAAbABhAHkAZQByACAAbwBuACAAVwBpAG4AZABvAHcAcwAuAA0ACgAjACAAVABoAGUAIABjAGEAbABsAGUAcgAgAHMAdABhAHIAdABzACAAbwBuAGUAIABjAGgAaQBsAGQAIABwAHIAbwBjAGUAcwBzACAAcABlAHIAIABQAG8AdwBlAHIAUwBoAGUAbABsACAAZQB4AGUAYwB1AHQAYQBiAGwAZQAgAHYAYQByAGkAYQBuAHQAIABhAG4AZAAgAHQAaABlAG4AIABzAGUAbgBkAHMADQAKACMAIABuAGUAdwBsAGkAbgBlAC0AZABlAGwAaQBtAGkAdABlAGQAIABKAFMATwBOACAAcgBlAHEAdQBlAHMAdABzACAAbwB2AGUAcgAgAHMAdABkAGkAbgA6AA0ACgAjACAAIAAgAHsAIAAiAGkAZAAiADoAIAA8AHUANgA0AD4ALAAgACIAcABhAHkAbABvAGEAZAAiADoAIAAiADwAYgBhAHMAZQA2ADQALQBlAG4AYwBvAGQAZQBkACAAVQBUAEYALQAxADYATABFACAAcwBjAHIAaQBwAHQAPgAiACAAfQANAAoAIwAgAFcAZQAgAGEAbgBzAHcAZQByACAAdwBpAHQAaAAgAG8AbgBlACAAYwBvAG0AcABhAGMAdAAgAEoAUwBPAE4AIABsAGkAbgBlACAAcABlAHIAIAByAGUAcQB1AGUAcwB0ADoADQAKACMAIAAgACAAewAgACIAaQBkACIAOgAgADwAcwBhAG0AZQA+ACwAIAAiAHMAdABhAHQAdQBzACIAOgAgACIAbwBrACIALAAgACIAYwBvAG0AbQBhAG4AZABzACIAOgAgAFsAWwAiAEcAZQB0AC0AQwBvAG4AdABlAG4AdAAiACwAIAAiAGYAbwBvAC4AdAB4AHQAIgBdAF0AIAB9AA0ACgAjACAAbwByADoADQAKACMAIAAgACAAewAgACIAaQBkACIAOgAgADwAcwBhAG0AZQA+ACwAIAAiAHMAdABhAHQAdQBzACIAOgAgACIAcABhAHIAcwBlAF8AZgBhAGkAbABlAGQAIgAgAHwAIAAiAHAAYQByAHMAZQBfAGUAcgByAG8AcgBzACIAIAB8ACAAIgB1AG4AcwB1AHAAcABvAHIAdABlAGQAIgAgAH0ADQAKACMADQAKACMAIAAiAHUAbgBzAHUAcABwAG8AcgB0AGUAZAAiACAAaQBzACAAaQBuAHQAZQBuAHQAaQBvAG4AYQBsADoAIABpAHQAIABtAGUAYQBuAHMAIAB0AGgAZQAgAHMAYwByAGkAcAB0ACAAcABhAHIAcwBlAGQAIABzAHUAYwBjAGUAcwBzAGYAdQBsAGwAeQAsACAAYgB1AHQAIAB0AGgAZQAgAEEAUwBUAA0ACgAjACAAaQBuAGMAbAB1AGQAZQBkACAAYwBvAG4AcwB0AHIAdQBjAHQAcwAgAHQAaABhAHQAIAB3AGUAIABjAG8AbgBzAGUAcgB2AGEAdABpAHYAZQBsAHkAIAByAGUAZgB1AHMAZQAgAHQAbwAgAGwAbwB3AGUAcgAgAGkAbgB0AG8AIABhAHIAZwB2AC0AbABpAGsAZQAgAGMAbwBtAG0AYQBuAGQAIAB3AG8AcgBkAHMALgANAAoAIwAgAFQAaABlACAAUgB1AHMAdAAgAHMAaQBkAGUAIAB0AHIAZQBhAHQAcwAgAHQAaABhAHQAIAB0AGgAZQAgAHMAYQBtAGUAIAB3AGEAeQAgAGEAcwAgAGEAbgAgAHUAbgBzAGEAZgBlACAAYwBvAG0AbQBhAG4AZAAuAA0ACgANAAoAIwAgAFUAcwBlACAAQgBPAE0ALQBmAHIAZQBlACAAVQBUAEYALQA4ACAAbwBuACAAdABoAGUAIABwAHIAbwB0AG8AYwBvAGwAIABzAHQAcgBlAGEAbQAgAHMAbwAgAFIAdQBzAHQAIABzAGUAZQBzACAAYwBsAGUAYQBuACAASgBTAE8ATgAgAGwAaQBuAGUAcwAgAHcAaQB0AGgAIABuAG8ADQAKACMAIABsAGUAYQBkAGkAbgBnACAAQgBPAE0AIABiAHkAdABlAHMAIABvAG4AIAB0AGgAZQAgAGYAaQByAHMAdAAgAHIAZQBzAHAAbwBuAHMAZQAuAA0ACgAkAHUAdABmADgAIAA9ACAAWwBTAHkAcwB0AGUAbQAuAFQAZQB4AHQALgBVAFQARgA4AEUAbgBjAG8AZABpAG4AZwBdADoAOgBuAGUAdwAoACQAZgBhAGwAcwBlACkADQAKACQAcwB0AGQAaQBuACAAPQAgAFsAUwB5AHMAdABlAG0ALgBJAE8ALgBTAHQAcgBlAGEAbQBSAGUAYQBkAGUAcgBdADoAOgBuAGUAdwAoAFsAQwBvAG4AcwBvAGwAZQBdADoAOgBPAHAAZQBuAFMAdABhAG4AZABhAHIAZABJAG4AcAB1AHQAKAApACwAIAAkAHUAdABmADgALAAgACQAZgBhAGwAcwBlACkADQAKACQAcwB0AGQAbwB1AHQAIAA9ACAAWwBTAHkAcwB0AGUAbQAuAEkATwAuAFMAdAByAGUAYQBtAFcAcgBpAHQAZQByAF0AOgA6AG4AZQB3ACgAWwBDAG8AbgBzAG8AbABlAF0AOgA6AE8AcABlAG4AUwB0AGEAbgBkAGEAcgBkAE8AdQB0AHAAdQB0ACgAKQAsACAAJAB1AHQAZgA4ACkADQAKACQAcwB0AGQAbwB1AHQALgBBAHUAdABvAEYAbAB1AHMAaAAgAD0AIAAkAHQAcgB1AGUADQAKAA0ACgBmAHUAbgBjAHQAaQBvAG4AIABJAG4AdgBvAGsAZQAtAFAAYQByAHMAZQBSAGUAcQB1AGUAcwB0ACAAewANAAoAIAAgACAAIABwAGEAcgBhAG0AKAAkAFIAZQBxAHUAZQBzAHQASQBkACwAIAAkAFMAbwB1AHIAYwBlACkADQAKAA0ACgAgACAAIAAgACQAdABvAGsAZQBuAHMAIAA9ACAAJABuAHUAbABsAA0ACgAgACAAIAAgACQAZQByAHIAbwByAHMAIAA9ACAAJABuAHUAbABsAA0ACgANAAoAIAAgACAAIAAkAGEAcwB0ACAAPQAgACQAbgB1AGwAbAANAAoAIAAgACAAIAB0AHIAeQAgAHsADQAKACAAIAAgACAAIAAgACAAIAAkAGEAcwB0ACAAPQAgAFsAUwB5AHMAdABlAG0ALgBNAGEAbgBhAGcAZQBtAGUAbgB0AC4AQQB1AHQAbwBtAGEAdABpAG8AbgAuAEwAYQBuAGcAdQBhAGcAZQAuAFAAYQByAHMAZQByAF0AOgA6AFAAYQByAHMAZQBJAG4AcAB1AHQAKAANAAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAJABTAG8AdQByAGMAZQAsAA0ACgAgACAAIAAgACAAIAAgACAAIAAgACAAIABbAHIAZQBmAF0AJAB0AG8AawBlAG4AcwAsAA0ACgAgACAAIAAgACAAIAAgACAAIAAgACAAIABbAHIAZQBmAF0AJABlAHIAcgBvAHIAcwANAAoAIAAgACAAIAAgACAAIAAgACkADQAKACAAIAAgACAAfQAgAGMAYQB0AGMAaAAgAHsADQAKACAAIAAgACAAIAAgACAAIAByAGUAdAB1AHIAbgAgAEAAewAgAGkAZAAgAD0AIAAkAFIAZQBxAHUAZQBzAHQASQBkADsAIABzAHQAYQB0AHUAcwAgAD0AIAAnAHAAYQByAHMAZQBfAGYAYQBpAGwAZQBkACcAIAB9AA0ACgAgACAAIAAgAH0ADQAKAA0ACgAgACAAIAAgAGkAZgAgACgAJABlAHIAcgBvAHIAcwAuAEMAbwB1AG4AdAAgAC0AZwB0ACAAMAApACAAewANAAoAIAAgACAAIAAgACAAIAAgAHIAZQB0AHUAcgBuACAAQAB7ACAAaQBkACAAPQAgACQAUgBlAHEAdQBlAHMAdABJAGQAOwAgAHMAdABhAHQAdQBzACAAPQAgACcAcABhAHIAcwBlAF8AZQByAHIAbwByAHMAJwAgAH0ADQAKACAAIAAgACAAfQANAAoADQAKACAAIAAgACAAIwAgAFQAbwBwAC0AbABlAHYAZQBsACAAQQBTAFQAIAByAGUAZwBpAG8AbgBzACAAYQBuAGQAIABjAG8AbABsAGUAYwB0AGkAbwBuAHMAIABvAHUAdABzAGkAZABlACAAdABoAGUAIABlAG4AZAAtAGIAbABvAGMAawAgAHMAdABhAHQAZQBtAGUAbgB0ACAAbABpAHMAdAANAAoAIAAgACAAIAAjACAAYwBhAG4AIABlAHgAZQBjAHUAdABlACAAYwBvAGQAZQAgAHQAaABhAHQAIAB0AGgAZQAgAGMAbwBtAG0AYQBuAGQAIABsAG8AdwBlAHIAaQBuAGcAIABiAGUAbABvAHcAIABkAG8AZQBzACAAbgBvAHQAIABpAG4AcwBwAGUAYwB0AC4ADQAKACAAIAAgACAAJABjAGwAZQBhAG4AQgBsAG8AYwBrACAAPQAgACQAYQBzAHQALgBQAFMATwBiAGoAZQBjAHQALgBQAHIAbwBwAGUAcgB0AGkAZQBzAFsAJwBDAGwAZQBhAG4AQgBsAG8AYwBrACcAXQANAAoAIAAgACAAIABpAGYAIAAoAA0ACgAgACAAIAAgACAAIAAgACAAJABhAHMAdAAuAFAAYQByAGEAbQBCAGwAbwBjAGsAIAAtAG4AZQAgACQAbgB1AGwAbAAgAC0AbwByAA0ACgAgACAAIAAgACAAIAAgACAAJABhAHMAdAAuAEQAeQBuAGEAbQBpAGMAUABhAHIAYQBtAEIAbABvAGMAawAgAC0AbgBlACAAJABuAHUAbABsACAALQBvAHIADQAKACAAIAAgACAAIAAgACAAIAAkAGEAcwB0AC4AQgBlAGcAaQBuAEIAbABvAGMAawAgAC0AbgBlACAAJABuAHUAbABsACAALQBvAHIADQAKACAAIAAgACAAIAAgACAAIAAkAGEAcwB0AC4AUAByAG8AYwBlAHMAcwBCAGwAbwBjAGsAIAAtAG4AZQAgACQAbgB1AGwAbAAgAC0AbwByAA0ACgAgACAAIAAgACAAIAAgACAAKAAkAGMAbABlAGEAbgBCAGwAbwBjAGsAIAAtAG4AZQAgACQAbgB1AGwAbAAgAC0AYQBuAGQAIAAkAGMAbABlAGEAbgBCAGwAbwBjAGsALgBWAGEAbAB1AGUAIAAtAG4AZQAgACQAbgB1AGwAbAApACAALQBvAHIADQAKACAAIAAgACAAIAAgACAAIAAkAGEAcwB0AC4AVQBzAGkAbgBnAFMAdABhAHQAZQBtAGUAbgB0AHMALgBDAG8AdQBuAHQAIAAtAGcAdAAgADAAIAAtAG8AcgANAAoAIAAgACAAIAAgACAAIAAgACQAYQBzAHQALgBFAG4AZABCAGwAbwBjAGsALgBUAHIAYQBwAHMALgBDAG8AdQBuAHQAIAAtAGcAdAAgADAADQAKACAAIAAgACAAKQAgAHsADQAKACAAIAAgACAAIAAgACAAIAByAGUAdAB1AHIAbgAgAEAAewAgAGkAZAAgAD0AIAAkAFIAZQBxAHUAZQBzAHQASQBkADsAIABzAHQAYQB0AHUAcwAgAD0AIAAnAHUAbgBzAHUAcABwAG8AcgB0AGUAZAAnACAAfQANAAoAIAAgACAAIAB9AA0ACgANAAoAIAAgACAAIAAjACAAUABvAHcAZQByAFMAaABlAGwAbAAnAHMAIABzAHQAbwBwAC0AcABhAHIAcwBpAG4AZwAgAG0AYQByAGsAZQByACAAaABhAG4AZABzACAAdABoAGUAIAByAGUAbQBhAGkAbgBpAG4AZwAgAHMAbwB1AHIAYwBlACAAdABlAHgAdAAgAHQAbwAgAG4AYQB0AGkAdgBlAA0ACgAgACAAIAAgACMAIABjAG8AbQBtAGEAbgBkAHMAIAB3AGkAdABoACAAcgB1AG4AdABpAG0AZQAgAGEAcgBnAHUAbQBlAG4AdAAgAGgAYQBuAGQAbABpAG4AZwAgAHQAaABhAHQAIABkAG8AZQBzACAAbgBvAHQAIABtAGEAdABjAGgAIAB0AGgAZQAgAEEAUwBUACAAcwBoAGEAcABlACAAdwBlAA0ACgAgACAAIAAgACMAIABmAGwAYQB0AHQAZQBuACAAYgBlAGwAbwB3AC4AIABLAGUAZQBwACAAdABoAGEAdAAgAGYAbwByAG0AIABvAHUAdAAgAG8AZgAgAHQAaABlACAAYQByAGcAdgAtAGwAaQBrAGUAIABsAG8AdwBlAHIAaQBuAGcAIABwAGEAdABoACAAZQBuAHQAaQByAGUAbAB5AC4ADQAKACAAIAAgACAAZgBvAHIAZQBhAGMAaAAgACgAJAB0AG8AawBlAG4AIABpAG4AIAAkAHQAbwBrAGUAbgBzACkAIAB7AA0ACgAgACAAIAAgACAAIAAgACAAaQBmACAAKAAkAHQAbwBrAGUAbgAuAFQAZQB4AHQAIAAtAGUAcQAgACcALQAtACUAJwApACAAewANAAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAcgBlAHQAdQByAG4AIABAAHsAIABpAGQAIAA9ACAAJABSAGUAcQB1AGUAcwB0AEkAZAA7ACAAcwB0AGEAdAB1AHMAIAA9ACAAJwB1AG4AcwB1AHAAcABvAHIAdABlAGQAJwAgAH0ADQAKACAAIAAgACAAIAAgACAAIAB9AA0ACgAgACAAIAAgAH0ADQAKAA0ACgAgACAAIAAgACMAIABPAG4AbAB5ACAAYQBjAGMAZQBwAHQAIABBAFMAVAAgAHMAaABhAHAAZQBzACAAdwBlACAAYwBhAG4AIABmAGwAYQB0AHQAZQBuACAAaQBuAHQAbwAgAGEAIABsAGkAcwB0ACAAbwBmACAAYQByAGcAdgAtAGwAaQBrAGUAIABjAG8AbQBtAGEAbgBkACAAdwBvAHIAZABzAC4ADQAKACAAIAAgACAAIwAgAEEAbgB5AHQAaABpAG4AZwAgAG0AbwByAGUAIABkAHkAbgBhAG0AaQBjACAAdABoAGEAbgAgAHQAaABhAHQAIABiAGUAYwBvAG0AZQBzACAAIgB1AG4AcwB1AHAAcABvAHIAdABlAGQAIgAgAGkAbgBzAHQAZQBhAGQAIABvAGYAIABiAGUAaQBuAGcAIABnAHUAZQBzAHMAZQBkACAAYQB0AC4ADQAKACAAIAAgACAAJABjAG8AbQBtAGEAbgBkAHMAIAA9ACAAWwBTAHkAcwB0AGUAbQAuAEMAbwBsAGwAZQBjAHQAaQBvAG4AcwAuAEEAcgByAGEAeQBMAGkAcwB0AF0AOgA6AG4AZQB3ACgAKQANAAoADQAKACAAIAAgACAAZgBvAHIAZQBhAGMAaAAgACgAJABzAHQAYQB0AGUAbQBlAG4AdAAgAGkAbgAgACQAYQBzAHQALgBFAG4AZABCAGwAbwBjAGsALgBTAHQAYQB0AGUAbQBlAG4AdABzACkAIAB7AA0ACgAgACAAIAAgACAAIAAgACAAaQBmACAAKAAtAG4AbwB0ACAAKABBAGQAZAAtAEMAbwBtAG0AYQBuAGQAcwBGAHIAbwBtAFAAaQBwAGUAbABpAG4AZQBCAGEAcwBlACAAJABzAHQAYQB0AGUAbQBlAG4AdAAgACQAYwBvAG0AbQBhAG4AZABzACkAKQAgAHsADQAKACAAIAAgACAAIAAgACAAIAAgACAAIAAgACQAYwBvAG0AbQBhAG4AZABzACAAPQAgACQAbgB1AGwAbAANAAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAYgByAGUAYQBrAA0ACgAgACAAIAAgACAAIAAgACAAfQANAAoAIAAgACAAIAB9AA0ACgANAAoAIAAgACAAIABpAGYAIAAoACQAYwBvAG0AbQBhAG4AZABzACAALQBuAGUAIAAkAG4AdQBsAGwAKQAgAHsADQAKACAAIAAgACAAIAAgACAAIAAkAG4AbwByAG0AYQBsAGkAegBlAGQAIAA9ACAAWwBTAHkAcwB0AGUAbQAuAEMAbwBsAGwAZQBjAHQAaQBvAG4AcwAuAEEAcgByAGEAeQBMAGkAcwB0AF0AOgA6AG4AZQB3ACgAKQANAAoAIAAgACAAIAAgACAAIAAgAGYAbwByAGUAYQBjAGgAIAAoACQAYwBtAGQAIABpAG4AIAAkAGMAbwBtAG0AYQBuAGQAcwApACAAewANAAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIwAgAEMAbwBuAHYAZQByAHQAIABlAHYAZQByAHkAIABzAHUAYwBjAGUAcwBzAGYAdQBsACAAcABhAHIAcwBlACAAcgBlAHMAdQBsAHQAIAB0AG8AIABhAG4AIABhAHIAcgBhAHkALQBvAGYALQBhAHIAcgBhAHkAcwAgAHMAaABhAHAAZQAgAHMAbwAgAHQAaABlACAAUgB1AHMAdAANAAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIwAgAHMAaQBkAGUAIABjAGEAbgAgAGQAZQBzAGUAcgBpAGEAbABpAHoAZQAgAG8AbgBlACAAdQBuAGkAZgBvAHIAbQAgAHIAZQBwAHIAZQBzAGUAbgB0AGEAdABpAG8AbgAuAA0ACgAgACAAIAAgACAAIAAgACAAIAAgACAAIABpAGYAIAAoACQAYwBtAGQAIAAtAGkAcwAgAFsAcwB0AHIAaQBuAGcAXQApACAAewANAAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAkAG4AdQBsAGwAIAA9ACAAJABuAG8AcgBtAGEAbABpAHoAZQBkAC4AQQBkAGQAKABAACgAJABjAG0AZAApACkADQAKACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAYwBvAG4AdABpAG4AdQBlAA0ACgAgACAAIAAgACAAIAAgACAAIAAgACAAIAB9AA0ACgANAAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAaQBmACAAKAAkAGMAbQBkACAALQBpAHMAIABbAFMAeQBzAHQAZQBtAC4AQQByAHIAYQB5AF0AIAAtAG8AcgAgACQAYwBtAGQAIAAtAGkAcwAgAFsAUwB5AHMAdABlAG0ALgBDAG8AbABsAGUAYwB0AGkAbwBuAHMALgBJAEUAbgB1AG0AZQByAGEAYgBsAGUAXQApACAAewANAAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAkAG4AdQBsAGwAIAA9ACAAJABuAG8AcgBtAGEAbABpAHoAZQBkAC4AQQBkAGQAKABAACgAJABjAG0AZAApACkADQAKACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAYwBvAG4AdABpAG4AdQBlAA0ACgAgACAAIAAgACAAIAAgACAAIAAgACAAIAB9AA0ACgANAAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAJABuAG8AcgBtAGEAbABpAHoAZQBkACAAPQAgACQAbgB1AGwAbAANAAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAYgByAGUAYQBrAA0ACgAgACAAIAAgACAAIAAgACAAfQANAAoADQAKACAAIAAgACAAIAAgACAAIAAkAGMAbwBtAG0AYQBuAGQAcwAgAD0AIAAkAG4AbwByAG0AYQBsAGkAegBlAGQADQAKACAAIAAgACAAfQANAAoADQAKACAAIAAgACAAaQBmACAAKAAkAGMAbwBtAG0AYQBuAGQAcwAgAC0AZQBxACAAJABuAHUAbABsACkAIAB7AA0ACgAgACAAIAAgACAAIAAgACAAcgBlAHQAdQByAG4AIABAAHsAIABpAGQAIAA9ACAAJABSAGUAcQB1AGUAcwB0AEkAZAA7ACAAcwB0AGEAdAB1AHMAIAA9ACAAJwB1AG4AcwB1AHAAcABvAHIAdABlAGQAJwAgAH0ADQAKACAAIAAgACAAfQANAAoADQAKACAAIAAgACAAcgBlAHQAdQByAG4AIABAAHsAIABpAGQAIAA9ACAAJABSAGUAcQB1AGUAcwB0AEkAZAA7ACAAcwB0AGEAdAB1AHMAIAA9ACAAJwBvAGsAJwA7ACAAYwBvAG0AbQBhAG4AZABzACAAPQAgACQAYwBvAG0AbQBhAG4AZABzACAAfQANAAoAfQANAAoADQAKAGYAdQBuAGMAdABpAG8AbgAgAFcAcgBpAHQAZQAtAFIAZQBzAHAAbwBuAHMAZQAgAHsADQAKACAAIAAgACAAcABhAHIAYQBtACgAJABSAGUAcwBwAG8AbgBzAGUAKQANAAoADQAKACAAIAAgACAAJABzAHQAZABvAHUAdAAuAFcAcgBpAHQAZQBMAGkAbgBlACgAKAAkAFIAZQBzAHAAbwBuAHMAZQAgAHwAIABDAG8AbgB2AGUAcgB0AFQAbwAtAEoAcwBvAG4AIAAtAEMAbwBtAHAAcgBlAHMAcwAgAC0ARABlAHAAdABoACAAMwApACkADQAKAH0ADQAKAA0ACgBmAHUAbgBjAHQAaQBvAG4AIABDAG8AbgB2AGUAcgB0AC0AQwBvAG0AbQBhAG4AZABFAGwAZQBtAGUAbgB0ACAAewANAAoAIAAgACAAIABwAGEAcgBhAG0AKAAkAGUAbABlAG0AZQBuAHQAKQANAAoADQAKACAAIAAgACAAIwAgAEEAYwBjAGUAcAB0ACAAbwBuAGwAeQAgAGwAaQB0AGUAcgBhAGwALQBpAHMAaAAgAGMAbwBtAG0AYQBuAGQAIABlAGwAZQBtAGUAbgB0AHMALgAgAFYAYQByAGkAYQBiAGwAZQAgAGUAeABwAGEAbgBzAGkAbwBuACwAIABzAHUAYgBlAHgAcAByAGUAcwBzAGkAbwBuAHMALAAgAHMAcABsAGEAdABzACwADQAKACAAIAAgACAAIwAgAGEAbgBkACAAbwB0AGgAZQByACAAZAB5AG4AYQBtAGkAYwAgAGYAbwByAG0AcwAgAHIAZQB0AHUAcgBuACAAJABuAHUAbABsACAAcwBvACAAdABoAGUAIAB3AGgAbwBsAGUAIAByAGUAcQB1AGUAcwB0ACAAYgBlAGMAbwBtAGUAcwAgAHUAbgBzAHUAcABwAG8AcgB0AGUAZAAuAA0ACgAgACAAIAAgAGkAZgAgACgAJABlAGwAZQBtAGUAbgB0ACAALQBpAHMAIABbAFMAeQBzAHQAZQBtAC4ATQBhAG4AYQBnAGUAbQBlAG4AdAAuAEEAdQB0AG8AbQBhAHQAaQBvAG4ALgBMAGEAbgBnAHUAYQBnAGUALgBTAHQAcgBpAG4AZwBDAG8AbgBzAHQAYQBuAHQARQB4AHAAcgBlAHMAcwBpAG8AbgBBAHMAdABdACkAIAB7AA0ACgAgACAAIAAgACAAIAAgACAAcgBlAHQAdQByAG4AIABAACgAJABlAGwAZQBtAGUAbgB0AC4AVgBhAGwAdQBlACkADQAKACAAIAAgACAAfQANAAoADQAKACAAIAAgACAAaQBmACAAKAAkAGUAbABlAG0AZQBuAHQAIAAtAGkAcwAgAFsAUwB5AHMAdABlAG0ALgBNAGEAbgBhAGcAZQBtAGUAbgB0AC4AQQB1AHQAbwBtAGEAdABpAG8AbgAuAEwAYQBuAGcAdQBhAGcAZQAuAEUAeABwAGEAbgBkAGEAYgBsAGUAUwB0AHIAaQBuAGcARQB4AHAAcgBlAHMAcwBpAG8AbgBBAHMAdABdACkAIAB7AA0ACgAgACAAIAAgACAAIAAgACAAaQBmACAAKAAkAGUAbABlAG0AZQBuAHQALgBOAGUAcwB0AGUAZABFAHgAcAByAGUAcwBzAGkAbwBuAHMALgBDAG8AdQBuAHQAIAAtAGcAdAAgADAAKQAgAHsADQAKACAAIAAgACAAIAAgACAAIAAgACAAIAAgAHIAZQB0AHUAcgBuACAAJABuAHUAbABsAA0ACgAgACAAIAAgACAAIAAgACAAfQANAAoAIAAgACAAIAAgACAAIAAgAHIAZQB0AHUAcgBuACAAQAAoACQAZQBsAGUAbQBlAG4AdAAuAFYAYQBsAHUAZQApAA0ACgAgACAAIAAgAH0ADQAKAA0ACgAgACAAIAAgAGkAZgAgACgAJABlAGwAZQBtAGUAbgB0ACAALQBpAHMAIABbAFMAeQBzAHQAZQBtAC4ATQBhAG4AYQBnAGUAbQBlAG4AdAAuAEEAdQB0AG8AbQBhAHQAaQBvAG4ALgBMAGEAbgBnAHUAYQBnAGUALgBDAG8AbgBzAHQAYQBuAHQARQB4AHAAcgBlAHMAcwBpAG8AbgBBAHMAdABdACkAIAB7AA0ACgAgACAAIAAgACAAIAAgACAAcgBlAHQAdQByAG4AIABAACgAJABlAGwAZQBtAGUAbgB0AC4AVgBhAGwAdQBlAC4AVABvAFMAdAByAGkAbgBnACgAKQApAA0ACgAgACAAIAAgAH0ADQAKAA0ACgAgACAAIAAgAGkAZgAgACgAJABlAGwAZQBtAGUAbgB0ACAALQBpAHMAIABbAFMAeQBzAHQAZQBtAC4ATQBhAG4AYQBnAGUAbQBlAG4AdAAuAEEAdQB0AG8AbQBhAHQAaQBvAG4ALgBMAGEAbgBnAHUAYQBnAGUALgBDAG8AbQBtAGEAbgBkAFAAYQByAGEAbQBlAHQAZQByAEEAcwB0AF0AKQAgAHsADQAKACAAIAAgACAAIAAgACAAIABpAGYAIAAoACQAZQBsAGUAbQBlAG4AdAAuAEEAcgBnAHUAbQBlAG4AdAAgAC0AZQBxACAAJABuAHUAbABsACkAIAB7AA0ACgAgACAAIAAgACAAIAAgACAAIAAgACAAIAByAGUAdAB1AHIAbgAgAEAAKAAnAC0AJwAgACsAIAAkAGUAbABlAG0AZQBuAHQALgBQAGEAcgBhAG0AZQB0AGUAcgBOAGEAbQBlACkADQAKACAAIAAgACAAIAAgACAAIAB9AA0ACgANAAoAIAAgACAAIAAgACAAIAAgAGkAZgAgACgAJABlAGwAZQBtAGUAbgB0AC4AQQByAGcAdQBtAGUAbgB0ACAALQBpAHMAIABbAFMAeQBzAHQAZQBtAC4ATQBhAG4AYQBnAGUAbQBlAG4AdAAuAEEAdQB0AG8AbQBhAHQAaQBvAG4ALgBMAGEAbgBnAHUAYQBnAGUALgBTAHQAcgBpAG4AZwBDAG8AbgBzAHQAYQBuAHQARQB4AHAAcgBlAHMAcwBpAG8AbgBBAHMAdABdACkAIAB7AA0ACgAgACAAIAAgACAAIAAgACAAIAAgACAAIAByAGUAdAB1AHIAbgAgAEAAKAAnAC0AJwAgACsAIAAkAGUAbABlAG0AZQBuAHQALgBQAGEAcgBhAG0AZQB0AGUAcgBOAGEAbQBlACwAIAAkAGUAbABlAG0AZQBuAHQALgBBAHIAZwB1AG0AZQBuAHQALgBWAGEAbAB1AGUAKQANAAoAIAAgACAAIAAgACAAIAAgAH0ADQAKAA0ACgAgACAAIAAgACAAIAAgACAAaQBmACAAKAAkAGUAbABlAG0AZQBuAHQALgBBAHIAZwB1AG0AZQBuAHQAIAAtAGkAcwAgAFsAUwB5AHMAdABlAG0ALgBNAGEAbgBhAGcAZQBtAGUAbgB0AC4AQQB1AHQAbwBtAGEAdABpAG8AbgAuAEwAYQBuAGcAdQBhAGcAZQAuAEMAbwBuAHMAdABhAG4AdABFAHgAcAByAGUAcwBzAGkAbwBuAEEAcwB0AF0AKQAgAHsADQAKACAAIAAgACAAIAAgACAAIAAgACAAIAAgAHIAZQB0AHUAcgBuACAAQAAoACcALQAnACAAKwAgACQAZQBsAGUAbQBlAG4AdAAuAFAAYQByAGEAbQBlAHQAZQByAE4AYQBtAGUALAAgACQAZQBsAGUAbQBlAG4AdAAuAEEAcgBnAHUAbQBlAG4AdAAuAFYAYQBsAHUAZQAuAFQAbwBTAHQAcgBpAG4AZwAoACkAKQANAAoAIAAgACAAIAAgACAAIAAgAH0ADQAKAA0ACgAgACAAIAAgACAAIAAgACAAcgBlAHQAdQByAG4AIAAkAG4AdQBsAGwADQAKACAAIAAgACAAfQANAAoADQAKACAAIAAgACAAcgBlAHQAdQByAG4AIAAkAG4AdQBsAGwADQAKAH0ADQAKAA0ACgBmAHUAbgBjAHQAaQBvAG4AIABDAG8AbgB2AGUAcgB0AC0AUABpAHAAZQBsAGkAbgBlAEUAbABlAG0AZQBuAHQAIAB7AA0ACgAgACAAIAAgAHAAYQByAGEAbQAoACQAZQBsAGUAbQBlAG4AdAApAA0ACgANAAoAIAAgACAAIABpAGYAIAAoACQAZQBsAGUAbQBlAG4AdAAgAC0AaQBzACAAWwBTAHkAcwB0AGUAbQAuAE0AYQBuAGEAZwBlAG0AZQBuAHQALgBBAHUAdABvAG0AYQB0AGkAbwBuAC4ATABhAG4AZwB1AGEAZwBlAC4AQwBvAG0AbQBhAG4AZABBAHMAdABdACkAIAB7AA0ACgAgACAAIAAgACAAIAAgACAAIwAgAFIAZQBkAGkAcgBlAGMAdABpAG8AbgBzACAAYQBuAGQAIABpAG4AdgBvAGMAYQB0AGkAbwBuACAAbwBwAGUAcgBhAHQAbwByAHMAIABtAGEAawBlACAAdABoAGUAIABjAG8AbQBtAGEAbgBkACAAaABhAHIAZABlAHIAIAB0AG8AIABjAGwAYQBzAHMAaQBmAHkAIABzAGEAZgBlAGwAeQAsAA0ACgAgACAAIAAgACAAIAAgACAAIwAgAHMAbwAgAHIAZQBqAGUAYwB0ACAAdABoAGUAbQAgAHIAYQB0AGgAZQByACAAdABoAGEAbgAgAHQAcgB5AGkAbgBnACAAdABvACAAbgBvAHIAbQBhAGwAaQB6AGUAIAB0AGgAZQBtAC4ADQAKACAAIAAgACAAIAAgACAAIABpAGYAIAAoACQAZQBsAGUAbQBlAG4AdAAuAFIAZQBkAGkAcgBlAGMAdABpAG8AbgBzAC4AQwBvAHUAbgB0ACAALQBnAHQAIAAwACkAIAB7AA0ACgAgACAAIAAgACAAIAAgACAAIAAgACAAIAByAGUAdAB1AHIAbgAgACQAbgB1AGwAbAANAAoAIAAgACAAIAAgACAAIAAgAH0ADQAKAA0ACgAgACAAIAAgACAAIAAgACAAaQBmACAAKAANAAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAJABlAGwAZQBtAGUAbgB0AC4ASQBuAHYAbwBjAGEAdABpAG8AbgBPAHAAZQByAGEAdABvAHIAIAAtAG4AZQAgACQAbgB1AGwAbAAgAC0AYQBuAGQADQAKACAAIAAgACAAIAAgACAAIAAgACAAIAAgACQAZQBsAGUAbQBlAG4AdAAuAEkAbgB2AG8AYwBhAHQAaQBvAG4ATwBwAGUAcgBhAHQAbwByACAALQBuAGUAIABbAFMAeQBzAHQAZQBtAC4ATQBhAG4AYQBnAGUAbQBlAG4AdAAuAEEAdQB0AG8AbQBhAHQAaQBvAG4ALgBMAGEAbgBnAHUAYQBnAGUALgBUAG8AawBlAG4ASwBpAG4AZABdADoAOgBVAG4AawBuAG8AdwBuAA0ACgAgACAAIAAgACAAIAAgACAAKQAgAHsADQAKACAAIAAgACAAIAAgACAAIAAgACAAIAAgAHIAZQB0AHUAcgBuACAAJABuAHUAbABsAA0ACgAgACAAIAAgACAAIAAgACAAfQANAAoADQAKACAAIAAgACAAIAAgACAAIAAkAHAAYQByAHQAcwAgAD0AIABAACgAKQANAAoAIAAgACAAIAAgACAAIAAgAGYAbwByAGUAYQBjAGgAIAAoACQAYwBvAG0AbQBhAG4AZABFAGwAZQBtAGUAbgB0ACAAaQBuACAAJABlAGwAZQBtAGUAbgB0AC4AQwBvAG0AbQBhAG4AZABFAGwAZQBtAGUAbgB0AHMAKQAgAHsADQAKACAAIAAgACAAIAAgACAAIAAgACAAIAAgACQAYwBvAG4AdgBlAHIAdABlAGQAIAA9ACAAQwBvAG4AdgBlAHIAdAAtAEMAbwBtAG0AYQBuAGQARQBsAGUAbQBlAG4AdAAgACQAYwBvAG0AbQBhAG4AZABFAGwAZQBtAGUAbgB0AA0ACgAgACAAIAAgACAAIAAgACAAIAAgACAAIABpAGYAIAAoACQAYwBvAG4AdgBlAHIAdABlAGQAIAAtAGUAcQAgACQAbgB1AGwAbAApACAAewANAAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAByAGUAdAB1AHIAbgAgACQAbgB1AGwAbAANAAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAfQANAAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAJABwAGEAcgB0AHMAIAArAD0AIAAkAGMAbwBuAHYAZQByAHQAZQBkAA0ACgAgACAAIAAgACAAIAAgACAAfQANAAoAIAAgACAAIAAgACAAIAAgAHIAZQB0AHUAcgBuACAAJABwAGEAcgB0AHMADQAKACAAIAAgACAAfQANAAoADQAKACAAIAAgACAAaQBmACAAKAAkAGUAbABlAG0AZQBuAHQAIAAtAGkAcwAgAFsAUwB5AHMAdABlAG0ALgBNAGEAbgBhAGcAZQBtAGUAbgB0AC4AQQB1AHQAbwBtAGEAdABpAG8AbgAuAEwAYQBuAGcAdQBhAGcAZQAuAEMAbwBtAG0AYQBuAGQARQB4AHAAcgBlAHMAcwBpAG8AbgBBAHMAdABdACkAIAB7AA0ACgAgACAAIAAgACAAIAAgACAAaQBmACAAKAAkAGUAbABlAG0AZQBuAHQALgBSAGUAZABpAHIAZQBjAHQAaQBvAG4AcwAuAEMAbwB1AG4AdAAgAC0AZwB0ACAAMAApACAAewANAAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAcgBlAHQAdQByAG4AIAAkAG4AdQBsAGwADQAKACAAIAAgACAAIAAgACAAIAB9AA0ACgANAAoAIAAgACAAIAAgACAAIAAgACMAIABBAGwAbABvAHcAIABhACAAcABhAHIAZQBuAHQAaABlAHMAaQB6AGUAZAAgAHMAaQBuAGcAbABlACAAcABpAHAAZQBsAGkAbgBlACAAZQBsAGUAbQBlAG4AdAAgAGwAaQBrAGUAIAAiACgARwBlAHQALQBDAG8AbgB0AGUAbgB0ACAAZgBvAG8ALgByAHMAIAAtAFIAYQB3ACkAIgAgAHMAbwANAAoAIAAgACAAIAAgACAAIAAgACMAIAB0AGgAZQAgAGMAYQBsAGwAZQByACAAcwB0AGkAbABsACAAcwBlAGUAcwAgAHQAaABlACAAaQBuAG4AZQByACAAYwBvAG0AbQBhAG4AZAAgAHcAbwByAGQAcwAuACAATQBvAHIAZQAgAGMAbwBtAHAAbABlAHgAIABlAHgAcAByAGUAcwBzAGkAbwBuAHMAIABzAHQAYQB5ACAAdQBuAHMAdQBwAHAAbwByAHQAZQBkAC4ADQAKACAAIAAgACAAIAAgACAAIABpAGYAIAAoACQAZQBsAGUAbQBlAG4AdAAuAEUAeABwAHIAZQBzAHMAaQBvAG4AIAAtAGkAcwAgAFsAUwB5AHMAdABlAG0ALgBNAGEAbgBhAGcAZQBtAGUAbgB0AC4AQQB1AHQAbwBtAGEAdABpAG8AbgAuAEwAYQBuAGcAdQBhAGcAZQAuAFAAYQByAGUAbgBFAHgAcAByAGUAcwBzAGkAbwBuAEEAcwB0AF0AKQAgAHsADQAKACAAIAAgACAAIAAgACAAIAAgACAAIAAgACQAaQBuAG4AZQByAFAAaQBwAGUAbABpAG4AZQAgAD0AIAAkAGUAbABlAG0AZQBuAHQALgBFAHgAcAByAGUAcwBzAGkAbwBuAC4AUABpAHAAZQBsAGkAbgBlAA0ACgAgACAAIAAgACAAIAAgACAAIAAgACAAIABpAGYAIAAoACQAaQBuAG4AZQByAFAAaQBwAGUAbABpAG4AZQAgAC0AYQBuAGQAIAAkAGkAbgBuAGUAcgBQAGkAcABlAGwAaQBuAGUALgBQAGkAcABlAGwAaQBuAGUARQBsAGUAbQBlAG4AdABzAC4AQwBvAHUAbgB0ACAALQBlAHEAIAAxACkAIAB7AA0ACgAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgAHIAZQB0AHUAcgBuACAAQwBvAG4AdgBlAHIAdAAtAFAAaQBwAGUAbABpAG4AZQBFAGwAZQBtAGUAbgB0ACAAJABpAG4AbgBlAHIAUABpAHAAZQBsAGkAbgBlAC4AUABpAHAAZQBsAGkAbgBlAEUAbABlAG0AZQBuAHQAcwBbADAAXQANAAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAfQANAAoAIAAgACAAIAAgACAAIAAgAH0ADQAKAA0ACgAgACAAIAAgACAAIAAgACAAcgBlAHQAdQByAG4AIAAkAG4AdQBsAGwADQAKACAAIAAgACAAfQANAAoADQAKACAAIAAgACAAcgBlAHQAdQByAG4AIAAkAG4AdQBsAGwADQAKAH0ADQAKAA0ACgBmAHUAbgBjAHQAaQBvAG4AIABBAGQAZAAtAEMAbwBtAG0AYQBuAGQAcwBGAHIAbwBtAFAAaQBwAGUAbABpAG4AZQBBAHMAdAAgAHsADQAKACAAIAAgACAAcABhAHIAYQBtACgAJABwAGkAcABlAGwAaQBuAGUALAAgACQAYwBvAG0AbQBhAG4AZABzACkADQAKAA0ACgAgACAAIAAgAGkAZgAgACgAJABwAGkAcABlAGwAaQBuAGUALgBQAGkAcABlAGwAaQBuAGUARQBsAGUAbQBlAG4AdABzAC4AQwBvAHUAbgB0ACAALQBlAHEAIAAwACkAIAB7AA0ACgAgACAAIAAgACAAIAAgACAAcgBlAHQAdQByAG4AIAAkAGYAYQBsAHMAZQANAAoAIAAgACAAIAB9AA0ACgANAAoAIAAgACAAIABmAG8AcgBlAGEAYwBoACAAKAAkAGUAbABlAG0AZQBuAHQAIABpAG4AIAAkAHAAaQBwAGUAbABpAG4AZQAuAFAAaQBwAGUAbABpAG4AZQBFAGwAZQBtAGUAbgB0AHMAKQAgAHsADQAKACAAIAAgACAAIAAgACAAIAAkAHcAbwByAGQAcwAgAD0AIABDAG8AbgB2AGUAcgB0AC0AUABpAHAAZQBsAGkAbgBlAEUAbABlAG0AZQBuAHQAIAAkAGUAbABlAG0AZQBuAHQADQAKACAAIAAgACAAIAAgACAAIABpAGYAIAAoACQAdwBvAHIAZABzACAALQBlAHEAIAAkAG4AdQBsAGwAIAAtAG8AcgAgACQAdwBvAHIAZABzAC4AQwBvAHUAbgB0ACAALQBlAHEAIAAwACkAIAB7AA0ACgAgACAAIAAgACAAIAAgACAAIAAgACAAIAByAGUAdAB1AHIAbgAgACQAZgBhAGwAcwBlAA0ACgAgACAAIAAgACAAIAAgACAAfQANAAoAIAAgACAAIAAgACAAIAAgACQAbgB1AGwAbAAgAD0AIAAkAGMAbwBtAG0AYQBuAGQAcwAuAEEAZABkACgAJAB3AG8AcgBkAHMAKQANAAoAIAAgACAAIAB9AA0ACgANAAoAIAAgACAAIAByAGUAdAB1AHIAbgAgACQAdAByAHUAZQANAAoAfQANAAoADQAKAGYAdQBuAGMAdABpAG8AbgAgAEEAZABkAC0AQwBvAG0AbQBhAG4AZABzAEYAcgBvAG0AUABpAHAAZQBsAGkAbgBlAEMAaABhAGkAbgAgAHsADQAKACAAIAAgACAAcABhAHIAYQBtACgAJABjAGgAYQBpAG4ALAAgACQAYwBvAG0AbQBhAG4AZABzACkADQAKAA0ACgAgACAAIAAgAGkAZgAgACgALQBuAG8AdAAgACgAQQBkAGQALQBDAG8AbQBtAGEAbgBkAHMARgByAG8AbQBQAGkAcABlAGwAaQBuAGUAQgBhAHMAZQAgACQAYwBoAGEAaQBuAC4ATABoAHMAUABpAHAAZQBsAGkAbgBlAEMAaABhAGkAbgAgACQAYwBvAG0AbQBhAG4AZABzACkAKQAgAHsADQAKACAAIAAgACAAIAAgACAAIAByAGUAdAB1AHIAbgAgACQAZgBhAGwAcwBlAA0ACgAgACAAIAAgAH0ADQAKAA0ACgAgACAAIAAgAGkAZgAgACgALQBuAG8AdAAgACgAQQBkAGQALQBDAG8AbQBtAGEAbgBkAHMARgByAG8AbQBQAGkAcABlAGwAaQBuAGUAQQBzAHQAIAAkAGMAaABhAGkAbgAuAFIAaABzAFAAaQBwAGUAbABpAG4AZQAgACQAYwBvAG0AbQBhAG4AZABzACkAKQAgAHsADQAKACAAIAAgACAAIAAgACAAIAByAGUAdAB1AHIAbgAgACQAZgBhAGwAcwBlAA0ACgAgACAAIAAgAH0ADQAKAA0ACgAgACAAIAAgAHIAZQB0AHUAcgBuACAAJAB0AHIAdQBlAA0ACgB9AA0ACgANAAoAZgB1AG4AYwB0AGkAbwBuACAAQQBkAGQALQBDAG8AbQBtAGEAbgBkAHMARgByAG8AbQBQAGkAcABlAGwAaQBuAGUAQgBhAHMAZQAgAHsADQAKACAAIAAgACAAcABhAHIAYQBtACgAJABwAGkAcABlAGwAaQBuAGUALAAgACQAYwBvAG0AbQBhAG4AZABzACkADQAKAA0ACgAgACAAIAAgAGkAZgAgACgAJABwAGkAcABlAGwAaQBuAGUAIAAtAGkAcwAgAFsAUwB5AHMAdABlAG0ALgBNAGEAbgBhAGcAZQBtAGUAbgB0AC4AQQB1AHQAbwBtAGEAdABpAG8AbgAuAEwAYQBuAGcAdQBhAGcAZQAuAFAAaQBwAGUAbABpAG4AZQBBAHMAdABdACkAIAB7AA0ACgAgACAAIAAgACAAIAAgACAAcgBlAHQAdQByAG4AIABBAGQAZAAtAEMAbwBtAG0AYQBuAGQAcwBGAHIAbwBtAFAAaQBwAGUAbABpAG4AZQBBAHMAdAAgACQAcABpAHAAZQBsAGkAbgBlACAAJABjAG8AbQBtAGEAbgBkAHMADQAKACAAIAAgACAAfQANAAoADQAKACAAIAAgACAAIwAgAFcAaQBuAGQAbwB3AHMAIABQAG8AdwBlAHIAUwBoAGUAbABsACAANQAuADEAIABkAG8AZQBzACAAbgBvAHQAIABkAGUAZgBpAG4AZQAgAFAAaQBwAGUAbABpAG4AZQBDAGgAYQBpAG4AQQBzAHQALAAgAHMAbwAgAGEAdgBvAGkAZAAgAGEAIABkAGkAcgBlAGMAdAAgAHQAeQBwAGUADQAKACAAIAAgACAAIwAgAHIAZQBmAGUAcgBlAG4AYwBlACAAaABlAHIAZQAgAGEAbgBkACAAaQBuAHMAdABlAGEAZAAgAGMAaABlAGMAawAgAHQAaABlACAAcgB1AG4AdABpAG0AZQAgAHQAeQBwAGUAIABuAGEAbQBlAC4ADQAKACAAIAAgACAAaQBmACAAKAAkAHAAaQBwAGUAbABpAG4AZQAuAEcAZQB0AFQAeQBwAGUAKAApAC4ARgB1AGwAbABOAGEAbQBlACAALQBlAHEAIAAnAFMAeQBzAHQAZQBtAC4ATQBhAG4AYQBnAGUAbQBlAG4AdAAuAEEAdQB0AG8AbQBhAHQAaQBvAG4ALgBMAGEAbgBnAHUAYQBnAGUALgBQAGkAcABlAGwAaQBuAGUAQwBoAGEAaQBuAEEAcwB0ACcAKQAgAHsADQAKACAAIAAgACAAIAAgACAAIAByAGUAdAB1AHIAbgAgAEEAZABkAC0AQwBvAG0AbQBhAG4AZABzAEYAcgBvAG0AUABpAHAAZQBsAGkAbgBlAEMAaABhAGkAbgAgACQAcABpAHAAZQBsAGkAbgBlACAAJABjAG8AbQBtAGEAbgBkAHMADQAKACAAIAAgACAAfQANAAoADQAKACAAIAAgACAAcgBlAHQAdQByAG4AIAAkAGYAYQBsAHMAZQANAAoAfQANAAoADQAKACMAIABUAGgAaQBzACAAcwBjAHIAaQBwAHQAIABzAHQAYQB5AHMAIABhAGwAaQB2AGUAIABzAG8AIAB0AGgAZQAgAFIAdQBzAHQAIABjAGEAbABsAGUAcgAgAGMAYQBuACAAYQBtAG8AcgB0AGkAegBlACAAUABvAHcAZQByAFMAaABlAGwAbAAgAHMAdABhAHIAdAB1AHAAIABhAGMAcgBvAHMAcwANAAoAIwAgAG0AYQBuAHkAIABwAGEAcgBzAGUAIAByAGUAcQB1AGUAcwB0AHMALgAgAEUAYQBjAGgAIAByAGUAcQB1AGUAcwB0ACAAYQBuAGQAIAByAGUAcwBwAG8AbgBzAGUAIABpAHMAIABvAG4AZQAgAGMAbwBtAHAAYQBjAHQAIABKAFMATwBOACAAbABpAG4AZQAuAA0ACgB3AGgAaQBsAGUAIAAoACgAJAByAGUAcQB1AGUAcwB0AEwAaQBuAGUAIAA9ACAAJABzAHQAZABpAG4ALgBSAGUAYQBkAEwAaQBuAGUAKAApACkAIAAtAG4AZQAgACQAbgB1AGwAbAApACAAewANAAoAIAAgACAAIAAkAHIAZQBxAHUAZQBzAHQAIAA9ACAAJABuAHUAbABsAA0ACgAgACAAIAAgAHQAcgB5ACAAewANAAoAIAAgACAAIAAgACAAIAAgACQAcgBlAHEAdQBlAHMAdAAgAD0AIAAkAHIAZQBxAHUAZQBzAHQATABpAG4AZQAgAHwAIABDAG8AbgB2AGUAcgB0AEYAcgBvAG0ALQBKAHMAbwBuAA0ACgAgACAAIAAgAH0AIABjAGEAdABjAGgAIAB7AA0ACgAgACAAIAAgACAAIAAgACAAVwByAGkAdABlAC0AUgBlAHMAcABvAG4AcwBlACAAQAB7ACAAaQBkACAAPQAgACQAbgB1AGwAbAA7ACAAcwB0AGEAdAB1AHMAIAA9ACAAJwBwAGEAcgBzAGUAXwBmAGEAaQBsAGUAZAAnACAAfQANAAoAIAAgACAAIAAgACAAIAAgAGMAbwBuAHQAaQBuAHUAZQANAAoAIAAgACAAIAB9AA0ACgANAAoAIAAgACAAIAAjACAAVwBlACAAcAByAG8AYwBlAHMAcwAgAHIAZQBxAHUAZQBzAHQAcwAgAHMAZQByAGkAYQBsAGwAeQAsACAAYgB1AHQAIABzAHQAaQBsAGwAIABlAGMAaABvACAAdABoAGUAIABpAGQAIABiAGEAYwBrACAAcwBvACAAdABoAGUAIABSAHUAcwB0ACAAcwBpAGQAZQAgAGMAYQBuAA0ACgAgACAAIAAgACMAIABkAGUAdABlAGMAdAAgAHAAcgBvAHQAbwBjAG8AbAAgAGQAZQBzAHkAbgBjAHMAIABpAG4AcwB0AGUAYQBkACAAbwBmACAAcwBpAGwAZQBuAHQAbAB5ACAAdAByAHUAcwB0AGkAbgBnACAAbQBpAHgAZQBkACAAcwB0AGQAbwB1AHQALgANAAoAIAAgACAAIAAkAHIAZQBxAHUAZQBzAHQASQBkACAAPQAgACQAcgBlAHEAdQBlAHMAdAAuAGkAZAANAAoAIAAgACAAIAAkAHAAYQB5AGwAbwBhAGQAIAA9ACAAJAByAGUAcQB1AGUAcwB0AC4AcABhAHkAbABvAGEAZAANAAoAIAAgACAAIABpAGYAIAAoAFsAcwB0AHIAaQBuAGcAXQA6ADoASQBzAE4AdQBsAGwATwByAEUAbQBwAHQAeQAoACQAcABhAHkAbABvAGEAZAApACkAIAB7AA0ACgAgACAAIAAgACAAIAAgACAAVwByAGkAdABlAC0AUgBlAHMAcABvAG4AcwBlACAAQAB7ACAAaQBkACAAPQAgACQAcgBlAHEAdQBlAHMAdABJAGQAOwAgAHMAdABhAHQAdQBzACAAPQAgACcAcABhAHIAcwBlAF8AZgBhAGkAbABlAGQAJwAgAH0ADQAKACAAIAAgACAAIAAgACAAIABjAG8AbgB0AGkAbgB1AGUADQAKACAAIAAgACAAfQANAAoADQAKACAAIAAgACAAdAByAHkAIAB7AA0ACgAgACAAIAAgACAAIAAgACAAJABzAG8AdQByAGMAZQAgAD0ADQAKACAAIAAgACAAIAAgACAAIAAgACAAIAAgAFsAUwB5AHMAdABlAG0ALgBUAGUAeAB0AC4ARQBuAGMAbwBkAGkAbgBnAF0AOgA6AFUAbgBpAGMAbwBkAGUALgBHAGUAdABTAHQAcgBpAG4AZwAoAA0ACgAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgAFsAUwB5AHMAdABlAG0ALgBDAG8AbgB2AGUAcgB0AF0AOgA6AEYAcgBvAG0AQgBhAHMAZQA2ADQAUwB0AHIAaQBuAGcAKAAkAHAAYQB5AGwAbwBhAGQAKQANAAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAKQANAAoAIAAgACAAIAB9ACAAYwBhAHQAYwBoACAAewANAAoAIAAgACAAIAAgACAAIAAgAFcAcgBpAHQAZQAtAFIAZQBzAHAAbwBuAHMAZQAgAEAAewAgAGkAZAAgAD0AIAAkAHIAZQBxAHUAZQBzAHQASQBkADsAIABzAHQAYQB0AHUAcwAgAD0AIAAnAHAAYQByAHMAZQBfAGYAYQBpAGwAZQBkACcAIAB9AA0ACgAgACAAIAAgACAAIAAgACAAYwBvAG4AdABpAG4AdQBlAA0ACgAgACAAIAAgAH0ADQAKAA0ACgAgACAAIAAgAFcAcgBpAHQAZQAtAFIAZQBzAHAAbwBuAHMAZQAgACgASQBuAHYAbwBrAGUALQBQAGEAcgBzAGUAUgBlAHEAdQBlAHMAdAAgAC0AUgBlAHEAdQBlAHMAdABJAGQAIAAkAHIAZQBxAHUAZQBzAHQASQBkACAALQBTAG8AdQByAGMAZQAgACQAcwBvAHUAcgBjAGUAKQANAAoAfQANAAoA",
+        "kind": "codex_or_chatgpt"
+      },
+      {
+        "pid": 9012,
+        "name": "node_repl.exe",
+        "executablePath": "C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe",
+        "command": "\"C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe\"",
+        "kind": "codex_or_chatgpt"
+      },
+      {
+        "pid": 26404,
+        "name": "node_repl.exe",
+        "executablePath": "C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe",
+        "command": "\"C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe\"",
+        "kind": "codex_or_chatgpt"
+      },
+      {
+        "pid": 25148,
+        "name": "node_repl.exe",
+        "executablePath": "C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe",
+        "command": "\"C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe\"",
+        "kind": "codex_or_chatgpt"
+      },
+      {
+        "pid": 40672,
+        "name": "node_repl.exe",
+        "executablePath": "C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe",
+        "command": "\"C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe\"",
+        "kind": "codex_or_chatgpt"
+      },
+      {
+        "pid": 13868,
+        "name": "node_repl.exe",
+        "executablePath": "C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe",
+        "command": "\"C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe\"",
+        "kind": "codex_or_chatgpt"
+      },
+      {
+        "pid": 28276,
+        "name": "node_repl.exe",
+        "executablePath": "C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe",
+        "command": "\"C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe\"",
+        "kind": "codex_or_chatgpt"
+      },
+      {
+        "pid": 26352,
+        "name": "node_repl.exe",
+        "executablePath": "C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe",
+        "command": "\"C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe\"",
+        "kind": "codex_or_chatgpt"
+      },
+      {
+        "pid": 42524,
+        "name": "node_repl.exe",
+        "executablePath": "C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe",
+        "command": "\"C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe\"",
+        "kind": "codex_or_chatgpt"
+      },
+      {
+        "pid": 44652,
+        "name": "node_repl.exe",
+        "executablePath": "C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe",
+        "command": "\"C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe\"",
+        "kind": "codex_or_chatgpt"
+      },
+      {
+        "pid": 9364,
+        "name": "node_repl.exe",
+        "executablePath": "C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe",
+        "command": "\"C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe\"",
+        "kind": "codex_or_chatgpt"
+      },
+      {
+        "pid": 22212,
+        "name": "node_repl.exe",
+        "executablePath": "C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe",
+        "command": "\"C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe\"",
+        "kind": "codex_or_chatgpt"
+      },
+      {
+        "pid": 17120,
+        "name": "node_repl.exe",
+        "executablePath": "C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe",
+        "command": "\"C:\\Users\\xtea\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\9ec47c3bbf131bc8\\bin\\node_repl.exe\"",
+        "kind": "codex_or_chatgpt"
+      }
+    ],
+    "otherMatched": []
+  },
+  "localProbe": {
+    "running": true,
+    "supported": false,
+    "reason": "process_found_but_attach_surface_unconfirmed",
+    "platform": "win32",
+    "installRoot": "C:\\Users\\xtea\\AppData\\Local\\Programs\\Antigravity",
+    "languageServerPath": "C:\\Users\\xtea\\AppData\\Local\\Programs\\Antigravity\\resources\\bin\\language_server.exe",
+    "hasLanguageServerBinary": true,
+    "processes": [
+      {
+        "pid": 34900,
+        "name": "Antigravity.exe",
+        "command": ""
+      },
+      {
+        "pid": 35480,
+        "name": "Antigravity.exe",
+        "command": ""
+      },
+      {
+        "pid": 13104,
+        "name": "Antigravity.exe",
+        "command": ""
+      },
+      {
+        "pid": 29440,
+        "name": "language_server.exe",
+        "command": ""
+      },
+      {
+        "pid": 30324,
+        "name": "Antigravity.exe",
+        "command": ""
+      },
+      {
+        "pid": 3320,
+        "name": "Antigravity.exe",
+        "command": ""
+      },
+      {
+        "pid": 31284,
+        "name": "Antigravity.exe",
+        "command": ""
+      },
+      {
+        "pid": 6280,
+        "name": "pwsh.exe",
+        "command": "\"C:\\Users\\xtea\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\native\\powershell\\pwsh.exe\" -Command \"try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}\n$base = \\\"D:\\agent-transfer\\.worktrees\\antigravity-remote-session\\\"\n(Get-Content \\\"$base\\scripts\\remote-session-host-probe.mjs\\\" -Raw) `\n  -replace './lib/antigravity/client-discovery.mjs','../lib/antigravity/client-discovery.mjs' `\n  -replace './lib/remote-session/host-attach/probe.mjs','../lib/remote-session/host-attach/probe.mjs' |\n  Set-Content -Path \\\"$base\\scripts\\remote-session-host-probe.mjs\\\" -Encoding utf8\nnode \\\"$base\\scripts\\remote-session-host-probe.mjs\\\"\""
+      },
+      {
+        "pid": 31812,
+        "name": "node.exe",
+        "command": "\"D:\\nvm4w\\nodejs\\node.exe\" D:\\agent-transfer\\.worktrees\\antigravity-remote-session\\scripts\\remote-session-host-probe.mjs"
+      },
+      {
+        "pid": 8784,
+        "name": "powershell.exe",
+        "command": "powershell.exe -NoProfile -NonInteractive -Command \"\n  $procs = Get-CimInstance Win32_Process |\n    Where-Object {\n      $_.Name -match 'Antigravity|language_server|Codex|ChatGPT' -or\n      ($_.CommandLine -and ($_.CommandLine -match 'Antigravity|language_server|Codex|ChatGPT'))\n    } |\n    Select-Object ProcessId, Name, ExecutablePath, CommandLine;\n  $procs | ConvertTo-Json -Compress\n  \""
+      }
+    ],
+    "scanTargets": [
+      "C:\\Users\\xtea\\AppData\\Local\\Programs\\Antigravity\\resources\\bin\\language_server.exe",
+      "C:\\Users\\xtea\\AppData\\Local\\Programs\\Antigravity\\resources\\app.asar",
+      "C:\\Users\\xtea\\AppData\\Local\\Programs\\Antigravity\\Antigravity.exe"
+    ],
+    "discoveryFiles": [],
+    "openPorts": [
+      {
+        "port": 6045,
+        "url": "http://127.0.0.1:6045/",
+        "ok": false,
+        "status": 0,
+        "message": "fetch failed"
+      },
+      {
+        "port": 6046,
+        "url": "http://127.0.0.1:6046/",
+        "ok": false,
+        "status": 0,
+        "message": "fetch failed"
+      },
+      {
+        "port": 8787,
+        "url": "http://127.0.0.1:8787/",
+        "ok": true,
+        "status": 200
+      },
+      {
+        "port": 8788,
+        "url": "http://127.0.0.1:8788/",
+        "ok": false,
+        "status": 0,
+        "message": "fetch failed"
+      },
+      {
+        "port": 9222,
+        "url": "http://127.0.0.1:9222/",
+        "ok": false,
+        "status": 0,
+        "message": "fetch failed"
+      },
+      {
+        "port": 19222,
+        "url": "http://127.0.0.1:19222/",
+        "ok": false,
+        "status": 0,
+        "message": "fetch failed"
+      }
+    ],
+    "capabilities": {
+      "processPresence": true,
+      "installDiscovery": true,
+      "languageServerBinary": true,
+      "localPortProbe": true,
+      "projectList": false,
+      "conversationCreate": false,
+      "eventSubscribe": false,
+      "approvalDecide": false,
+      "jointVisibility": false
+    },
+    "measuredAt": "2026-08-15T01:30:32.211Z"
+  },
+  "ports": [
+    {
+      "port": 6045,
+      "url": "http://127.0.0.1:6045/",
+      "ok": false,
+      "status": 0,
+      "message": "fetch failed"
+    },
+    {
+      "port": 6046,
+      "url": "http://127.0.0.1:6046/",
+      "ok": false,
+      "status": 0,
+      "message": "fetch failed"
+    },
+    {
+      "port": 8787,
+      "url": "http://127.0.0.1:8787/",
+      "ok": true,
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bodyPreview": "<!DOCTYPE html>\r\n<html lang=\"en\" data-theme=\"dark\">\r\n<head>\r\n    <meta charset=\"UTF-8\">\r\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\r\n    <title>Shri"
+    },
+    {
+      "port": 8788,
+      "url": "http://127.0.0.1:8788/",
+      "ok": false,
+      "status": 0,
+      "message": "fetch failed"
+    },
+    {
+      "port": 9222,
+      "url": "http://127.0.0.1:9222/",
+      "ok": false,
+      "status": 0,
+      "message": "fetch failed"
+    },
+    {
+      "port": 19222,
+      "url": "http://127.0.0.1:19222/",
+      "ok": false,
+      "status": 0,
+      "message": "fetch failed"
+    },
+    {
+      "port": 7500,
+      "url": "http://127.0.0.1:7500/",
+      "ok": false,
+      "status": 0,
+      "message": "fetch failed"
+    }
+  ],
+  "interestingFiles": [
+    "C:\\Users\\xtea\\AppData\\Local\\Programs\\Antigravity\\vk_swiftshader_icd.json",
+    "C:\\Users\\xtea\\AppData\\Roaming\\Antigravity\\app_storage.json",
+    "C:\\Users\\xtea\\AppData\\Roaming\\Antigravity\\DevToolsActivePort",
+    "C:\\Users\\xtea\\AppData\\Roaming\\Antigravity\\Session Storage\\000003.log",
+    "C:\\Users\\xtea\\AppData\\Roaming\\Antigravity\\Session Storage\\LOG",
+    "C:\\Users\\xtea\\AppData\\Roaming\\Antigravity\\Session Storage\\LOG.old",
+    "C:\\Users\\xtea\\AppData\\Roaming\\Antigravity\\logs\\language_server.log",
+    "C:\\Users\\xtea\\AppData\\Roaming\\Antigravity\\logs\\main.log",
+    "C:\\Users\\xtea\\AppData\\Roaming\\Antigravity\\logs\\main.old.log"
+  ]
+}
