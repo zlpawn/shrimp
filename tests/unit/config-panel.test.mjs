@@ -618,3 +618,23 @@ test("chat model discovery suggestions and Claude catalog mini-tool are wired", 
   assert.match(firstDocument, /renderClaudeModelCatalogDetail/);
   assert.doesNotMatch(firstDocument, /endpoint\.models\s*=\s*json\.models/);
 });
+
+test("command apps tab is integrated into system extensions", async () => {
+  const html = await readSources();
+  assert.match(html, /命令行程序 \(Command Apps\)/);
+  assert.match(html, /section-command-apps/);
+  assert.match(html, /command-apps-root/);
+  assert.match(html, /command-apps/);
+  assert.match(html, /重新扫描/);
+  assert.match(html, /手动路径/);
+});
+
+test("command apps module renders complete action states", async () => {
+  const source = await readFile(path.join(ROOT, "desktop", "src", "modules", "command-apps.ts"), "utf8");
+  assert.match(source, /Antigravity/);
+  assert.match(source, /启动/);
+  assert.match(source, /停止/);
+  assert.match(source, /正在检测/);
+  assert.match(source, /当前系统暂不支持/);
+  assert.match(source, /escapeHtml/);
+});
