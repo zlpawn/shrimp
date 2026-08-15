@@ -22,11 +22,14 @@ type BoardSession = {
 };
 
 const columns = [
-  { id: "queued", title: "排队中" },
-  { id: "running", title: "运行中" },
-  { id: "waiting_input", title: "等待输入" },
-  { id: "error", title: "异常" },
+  { id: "queued", title: "排队中", hint: "等待空闲后投递" },
+  { id: "running", title: "运行中", hint: "90 秒内有活动" },
+  { id: "waiting_input", title: "等待输入", hint: "24 小时内空闲" },
+  { id: "completed", title: "已完成", hint: "超过 24 小时未活动" },
+  { id: "idle", title: "待处理", hint: "无队列任务的历史会话" },
+  { id: "error", title: "异常", hint: "读取或投递失败" },
 ] as const;
+const clients = ["all", "codex", "claude", "antigravity"] as const;
 
 const state = {
   loading: false,
@@ -35,6 +38,8 @@ const state = {
   queue: [] as QueueItem[],
   selectedSessionId: "",
   draft: "",
+  clientFilter: "all",
+  search: "",
 };
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -69,6 +74,31 @@ function renderCard(session: BoardSession) {
   `;
 }
 
+function displayClient(client: string) {
+  if (client === "codex") return "Codex";
+  if (client === "claude") return "Claude";
+  if (client === "antigravity") return "Antigravity";
+  return client;
+}
+
+function visibleSessions() {
+  const keyword = state.search.trim().toLowerCase();
+  const target = state.selectedSessionId;
+  const selected = state.sessions.find(session => session.id === target);
+  const filtered = state.sessions.filter(session => {
+    if (state.clientFilter !== "all" && session.client !== state.clientFilter) return false;
+    if (session.status === "completed" || session.status === "error") return false;
+    if (!keyword) return true;
+    return session.title.toLowerCase().includes(keyword)
+      || session.workspacePath?.toLowerCase().includes(keyword)
+      || session.id.toLowerCase().includes(keyword);
+  });
+  const base = filtered.some(session => session.id === target) || !selected
+    ? filtered
+    : [selected, ...filtered];
+  return base.slice(0, 30);
+}
+
 function renderQueue(item: QueueItem) {
   const action = item.status === "failed" || item.status === "canceled"
     ? `<button class="btn" onclick="window.__sessionKanbanRetry('${item.id}')">重试</button>`
@@ -99,8 +129,8 @@ function render() {
   const boardHtml = columns.map(column => {
     const items = state.sessions.filter(session => session.status === column.id);
     return `
-      <section class="session-kanban-column">
-        <header><h3>${column.title}</h3><span>${items.length}</span></header>
+      <section class="session-kanban-column" data-status="${column.id}">
+        <header><div><h3>${column.title}</h3><small>${column.hint}</small></div><span>${items.length}</span></header>
         ${items.map(renderCard).join("")}
       </section>
     `;
@@ -108,11 +138,25 @@ function render() {
 
   el.innerHTML = `
     ${state.error ? `<div class="session-kanban-error">${escapeHtml(state.error)}</div>` : ""}
+    <div class="session-kanban-toolbar">
+      <input id="session-kanban-search" value="${escapeHtml(state.search)}" placeholder="搜索标题、路径或会话 ID" />
+      <div class="session-kanban-segmented">
+        ${clients.map(client => `<button type="button" class="${state.clientFilter === client ? "active" : ""}" onclick="window.__sessionKanbanFilter('${client}')">${client === "all" ? "全部" : displayClient(client)}</button>`).join("")}
+      </div>
+      <button class="btn" type="button" onclick="window.__sessionKanbanRefresh()">刷新</button>
+    </div>
+    <div class="session-kanban-meta">
+      <span>共 ${state.sessions.length} 个会话</span>
+      <span>排队中 ${state.sessions.filter(item => item.status === "queued").length}</span>
+      <span>运行中 ${state.sessions.filter(item => item.status === "running").length}</span>
+      <span>等待输入 ${state.sessions.filter(item => item.status === "waiting_input").length}</span>
+      <span>已完成 ${state.sessions.filter(item => item.status === "completed").length}</span>
+    </div>
     <div class="session-kanban-board">${boardHtml}</div>
     <form class="session-kanban-compose" onsubmit="window.__sessionKanbanSubmit(event)">
       <label for="session-kanban-target">目标会话</label>
       <select id="session-kanban-target">
-        ${state.sessions.map(session => `<option value="${escapeHtml(session.id)}" ${session.id === state.selectedSessionId ? "selected" : ""}>${escapeHtml(session.client)} · ${escapeHtml(session.title)}</option>`).join("")}
+        ${visibleSessions().map(session => `<option value="${escapeHtml(session.id)}" ${session.id === state.selectedSessionId ? "selected" : ""}>${escapeHtml(displayClient(session.client))} · ${escapeHtml(session.title.slice(0, 48))}${session.title.length > 48 ? "…" : ""}</option>`).join("")}
       </select>
       <label for="session-kanban-message">待发消息</label>
       <textarea id="session-kanban-message" rows="3" placeholder="会话空闲后自动投递">${escapeHtml(state.draft)}</textarea>
@@ -143,6 +187,15 @@ async function load() {
 function select(id: string) {
   state.selectedSessionId = id;
   render();
+}
+
+function setClientFilter(client: string) {
+  state.clientFilter = clients.includes(client as any) ? client : "all";
+  render();
+}
+
+function refresh() {
+  return load();
 }
 
 async function submit(event: Event) {
@@ -196,6 +249,8 @@ async function dispatchReady() {
 }
 
 (window as any).__sessionKanbanSelect = select;
+(window as any).__sessionKanbanFilter = setClientFilter;
+(window as any).__sessionKanbanRefresh = refresh;
 (window as any).__sessionKanbanSubmit = submit;
 (window as any).__sessionKanbanCancel = cancel;
 (window as any).__sessionKanbanRetry = retry;
@@ -204,6 +259,12 @@ async function dispatchReady() {
 document.addEventListener("input", event => {
   const target = event.target as HTMLElement | null;
   if (target?.id === "session-kanban-message") state.draft = (target as HTMLTextAreaElement).value;
+  if (target?.id === "session-kanban-search") {
+    state.search = (target as HTMLInputElement).value;
+    const active = document.activeElement?.id;
+    render();
+    document.getElementById(active || "")?.focus();
+  }
 });
 
 registerTab("session-kanban", {

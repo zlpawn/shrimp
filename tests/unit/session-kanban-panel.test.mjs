@@ -24,6 +24,14 @@ test("panel module fetches board and submits queue messages", () => {
   assert.match(source, /registerTab\("session-kanban"/);
 });
 
+test("panel module filters clients and limits target options", () => {
+  const source = fs.readFileSync(path.join(root, "desktop/src/modules/session-kanban.ts"), "utf8");
+  assert.match(source, /visibleSessions/);
+  assert.match(source, /slice\(0, 30\)/);
+  assert.match(source, /completed/);
+  assert.match(source, /idle/);
+});
+
 test("styles define board columns without nested cards", () => {
   const css = fs.readFileSync(path.join(root, "desktop/src/styles/panel.css"), "utf8");
   assert.match(css, /\.session-kanban-board/);

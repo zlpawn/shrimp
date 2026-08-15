@@ -52,8 +52,8 @@ test("antigravity reader reads conversations and excludes missing transcripts", 
   const convo = path.join(dir, "conversation-1");
   fs.mkdirSync(path.join(convo, ".system_generated", "logs"), { recursive: true });
   fs.writeFileSync(path.join(convo, ".system_generated", "logs", "transcript.jsonl"), [
-    JSON.stringify({ timestamp: "2026-08-15T02:00:00.000Z", type: "USER_INPUT", content: "Generate images" }),
-    JSON.stringify({ timestamp: "2026-08-15T02:02:00.000Z", type: "PLANNER_RESPONSE", content: "Completed" }),
+    JSON.stringify({ created_at: "2026-08-15T02:00:00.000Z", type: "USER_INPUT", content: "<USER_REQUEST>\nGenerate images\n</USER_REQUEST>" }),
+    JSON.stringify({ created_at: "2026-08-15T02:02:00.000Z", type: "PLANNER_RESPONSE", content: "Completed" }),
   ].join("\n"));
   fs.mkdirSync(path.join(dir, "conversation-2"), { recursive: true });
   const sessions = await createAntigravityReader({ brainDir: dir }).list();
@@ -62,4 +62,18 @@ test("antigravity reader reads conversations and excludes missing transcripts", 
   assert.equal(sessions[0].id, "conversation-1");
   assert.equal(sessions[0].title, "Generate images");
   assert.equal(sessions[0].lastActivityAt, "2026-08-15T02:02:00.000Z");
+});
+
+test("readers normalize windows extended paths and long noisy titles", async () => {
+  const dir = tempDir();
+  const stateFile = path.join(dir, "state_5.sqlite");
+  const db = new DatabaseSync(stateFile);
+  db.exec("CREATE TABLE threads (id TEXT PRIMARY KEY, title TEXT NOT NULL, cwd TEXT NOT NULL, created_at_ms INTEGER NOT NULL, updated_at_ms INTEGER NOT NULL, archived INTEGER NOT NULL, rollout_path TEXT NOT NULL)");
+  db.prepare("INSERT INTO threads VALUES ('thread-1', ?, ?, 1000, 2000, 0, 'C:/rollout.jsonl')").run(
+    "[$skill:one](C:/long/path/SKILL.md) [$skill:two](C:/long/path/SKILL.md)\n1 do the first thing\n2 do the second thing",
+    "\\\\?\\D:\\repo");
+  db.close();
+  const [session] = await createCodexReader({ stateFile }).list();
+  assert.equal(session.title, "$skill:one $skill:two 1 do the first thing 2 do the second thing");
+  assert.equal(session.workspacePath, "D:\\repo");
 });
