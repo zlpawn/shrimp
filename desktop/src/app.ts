@@ -61,6 +61,14 @@ let grokAuthState = {
 const subscriptionUsageState = {
     codex: null,
     antigravity: null,
+    loading: {
+        codex: false,
+        antigravity: false,
+    },
+    autoLoaded: {
+        codex: false,
+        antigravity: false,
+    },
 };
 let antigravityAuthState = {
     loading: false,
@@ -4462,6 +4470,13 @@ function formatSubscriptionUsage(usage) {
     return '已获取，但上游未提供剩余量';
 }
 
+function subscriptionUsageText(usage, loading) {
+    if (loading) return '获取订阅剩余用量中...';
+    const value = formatSubscriptionUsage(usage);
+    const updated = usage?.updated_at ? '（最近更新 ' + new Date(usage.updated_at).toLocaleTimeString() + '）' : '';
+    return value + updated;
+}
+
 async function loadAntigravityAuthStatus() {
     antigravityAuthState.loading = true;
     antigravityAuthState.error = '';
@@ -4502,6 +4517,7 @@ async function loadCodexAuthStatus() {
 
 window.loadSubscriptionUsage = async function(provider) {
     if (provider === 'grok') grokAuthState.usageLoading = true;
+    else subscriptionUsageState.loading[provider] = true;
     try {
         const res = await fetch('/v1/subscription-auth/' + encodeURIComponent(provider) + '/usage', { method: 'POST' });
         const json = await res.json();
@@ -4515,10 +4531,22 @@ window.loadSubscriptionUsage = async function(provider) {
         else subscriptionUsageState[provider] = failed;
     } finally {
         if (provider === 'grok') grokAuthState.usageLoading = false;
+        else subscriptionUsageState.loading[provider] = false;
         if (provider === 'grok') renderGrokSubscribeDetail(false);
         else if (provider === 'codex') renderCodexSubscribeDetail(false);
         else if (provider === 'antigravity') renderAntigravitySubscribeDetail(false);
     }
+}
+
+function autoLoadUsage(provider, enabled, renderer) {
+    if (!enabled) return;
+    const grokNeedsLoad = provider === 'grok' && !grokAuthState.usage && !grokAuthState.usageLoading;
+    const providerNeedsLoad = provider !== 'grok'
+        && !subscriptionUsageState.autoLoaded[provider]
+        && !subscriptionUsageState.loading[provider];
+    if (!grokNeedsLoad && !providerNeedsLoad) return;
+    if (provider !== 'grok') subscriptionUsageState.autoLoaded[provider] = true;
+    loadSubscriptionUsage(provider);
 }
 
 window.renderCodexSubscribeDetail = function(autoLoad = true) {
@@ -4531,6 +4559,7 @@ window.renderCodexSubscribeDetail = function(autoLoad = true) {
     if (autoLoad && !codexAuthState.status && !codexAuthState.loading && !codexAuthState.error) {
         loadCodexAuthStatus();
     }
+    autoLoadUsage('codex', autoLoad);
 
     const s = codexAuthState.status;
     const busy = Boolean(codexAuthState.busyAction);
@@ -4538,6 +4567,7 @@ window.renderCodexSubscribeDetail = function(autoLoad = true) {
     const stateLabel = s?.state_label || (codexAuthState.loading ? '加载中' : '未知');
     const badgeClass = subauthBadgeClass(state);
     const usage = subscriptionUsageState.codex;
+    const usageLoading = subscriptionUsageState.loading.codex;
     const nextSteps = (s?.next_steps || []).map((step) => '<li>' + escapeHtml(step) + '</li>').join('')
         || '<li>打开工具后会自动检查本机 Codex 登录态。</li>';
     const nodeHint = s?.nodes?.configured
@@ -4560,7 +4590,7 @@ window.renderCodexSubscribeDetail = function(autoLoad = true) {
         '      <div class="subauth-stat"><div class="subauth-stat-label">账号</div><div class="subauth-stat-value">' + escapeHtml(s?.token?.account_id || '未登录') + '</div></div>',
         '      <div class="subauth-stat"><div class="subauth-stat-label">Token 剩余</div><div class="subauth-stat-value">' + escapeHtml(formatExpiresIn(s?.token?.expires_in_seconds)) + '</div></div>',
         '      <div class="subauth-stat"><div class="subauth-stat-label">登录模式</div><div class="subauth-stat-value">' + escapeHtml(s?.token?.auth_mode || '未知') + '</div></div>',
-        '      <div class="subauth-stat"><div class="subauth-stat-label">订阅剩余用量</div><div class="subauth-stat-value">' + escapeHtml(formatSubscriptionUsage(usage)) + '</div></div>',
+        '      <div class="subauth-stat"><div class="subauth-stat-label">订阅剩余用量</div><div class="subauth-stat-value">' + escapeHtml(subscriptionUsageText(usage, usageLoading)) + '</div></div>',
         '    </div>',
         codexAuthState.error ? ('    <div class="subauth-error">' + escapeHtml(codexAuthState.error) + '</div>') : '',
         codexAuthState.message ? ('    <div class="subauth-success">' + escapeHtml(codexAuthState.message) + '</div>') : '',
@@ -4575,7 +4605,7 @@ window.renderCodexSubscribeDetail = function(autoLoad = true) {
         '      <button class="btn" onclick="loadCodexAuthStatus()" ' + (busy ? 'disabled' : '') + '>刷新状态</button>',
         '      <button class="btn btn-primary" onclick="discoverCodexAuth()" ' + (busy ? 'disabled' : '') + '>' + (codexAuthState.busyAction === 'discover' ? '检测中...' : '检测本机登录态') + '</button>',
         '      <button class="btn" onclick="refreshCodexAuthToken()" ' + (busy ? 'disabled' : '') + '>' + (codexAuthState.busyAction === 'refresh' ? '刷新中...' : '尝试刷新 Token') + '</button>',
-        '      <button class="btn" onclick="loadSubscriptionUsage(\'codex\')" ' + (busy ? 'disabled' : '') + '>刷新剩余用量</button>',
+        '      <button class="btn" onclick="loadSubscriptionUsage(\'codex\')" ' + (busy ? 'disabled' : '') + '>' + (usageLoading ? '获取中...' : '刷新剩余用量') + '</button>',
         '    </div>',
         '  </div>',
         '  <div class="subauth-panel">',
@@ -4674,6 +4704,7 @@ window.renderGrokSubscribeDetail = function(autoLoad = true) {
     if (autoLoad && !grokAuthState.status && !grokAuthState.loading && !grokAuthState.error) {
         loadGrokAuthStatus();
     }
+    autoLoadUsage('grok', autoLoad);
     const s = grokAuthState.status;
     const busy = Boolean(grokAuthState.busyAction || grokAuthState.loading || grokAuthState.usageLoading);
     const state = s?.state || (grokAuthState.loading ? 'loading' : 'unknown');
@@ -4694,7 +4725,7 @@ window.renderGrokSubscribeDetail = function(autoLoad = true) {
         '      <div class="subauth-stat"><div class="subauth-stat-label">当前状态</div><div class="subauth-stat-value"><span class="subauth-badge ' + subauthBadgeClass(state) + '">' + escapeHtml(stateLabel) + '</span></div></div>',
         '      <div class="subauth-stat"><div class="subauth-stat-label">账号</div><div class="subauth-stat-value">' + escapeHtml(s?.token?.account_id || '未登录') + '</div></div>',
         '      <div class="subauth-stat"><div class="subauth-stat-label">Token 剩余</div><div class="subauth-stat-value">' + escapeHtml(formatExpiresIn(s?.token?.expires_in_seconds)) + '</div></div>',
-        '      <div class="subauth-stat"><div class="subauth-stat-label">订阅剩余用量</div><div class="subauth-stat-value">' + escapeHtml(formatSubscriptionUsage(grokAuthState.usage)) + '</div></div>',
+        '      <div class="subauth-stat"><div class="subauth-stat-label">订阅剩余用量</div><div class="subauth-stat-value">' + escapeHtml(subscriptionUsageText(grokAuthState.usage, grokAuthState.usageLoading)) + '</div></div>',
         '    </div>',
         grokAuthState.error ? ('<div class="subauth-error">' + escapeHtml(grokAuthState.error) + '</div>') : '',
         grokAuthState.message ? ('<div class="subauth-success">' + escapeHtml(grokAuthState.message) + '</div>') : '',
@@ -4730,6 +4761,7 @@ window.renderAntigravitySubscribeDetail = function(autoLoad = true) {
     if (autoLoad && !antigravityAuthState.status && !antigravityAuthState.loading && !antigravityAuthState.error) {
         loadAntigravityAuthStatus();
     }
+    autoLoadUsage('antigravity', autoLoad);
 
     const s = antigravityAuthState.status;
     const busy = Boolean(antigravityAuthState.busyAction);
@@ -4745,6 +4777,7 @@ window.renderAntigravitySubscribeDetail = function(autoLoad = true) {
         ? ('已检测到：' + (s.install.install_root || ''))
         : '未检测到本机 Antigravity 安装，可手动填写 client_id / client_secret。';
     const usage = subscriptionUsageState.antigravity;
+    const usageLoading = subscriptionUsageState.loading.antigravity;
 
     detail.innerHTML = [
         '<button class="tools-detail-back" onclick="backToToolsCards()">返回工具列表</button>',
@@ -4756,7 +4789,7 @@ window.renderAntigravitySubscribeDetail = function(autoLoad = true) {
         '      <div class="subauth-stat"><div class="subauth-stat-label">账号</div><div class="subauth-stat-value">' + escapeHtml(s?.token?.account_id || '未登录') + '</div></div>',
         '      <div class="subauth-stat"><div class="subauth-stat-label">Token 剩余</div><div class="subauth-stat-value">' + escapeHtml(formatExpiresIn(s?.token?.expires_in_seconds)) + '</div></div>',
         '      <div class="subauth-stat"><div class="subauth-stat-label">Client 凭据</div><div class="subauth-stat-value">' + (s?.client?.configured ? escapeHtml(s.client.client_id_masked || '已配置') : '未配置') + '</div></div>',
-        '      <div class="subauth-stat"><div class="subauth-stat-label">订阅剩余用量</div><div class="subauth-stat-value">' + escapeHtml(formatSubscriptionUsage(usage)) + '</div></div>',
+        '      <div class="subauth-stat"><div class="subauth-stat-label">订阅剩余用量</div><div class="subauth-stat-value">' + escapeHtml(subscriptionUsageText(usage, usageLoading)) + '</div></div>',
         '    </div>',
         '    <div class="subauth-actions">',
         '      <button class="btn" onclick="loadAntigravityAuthStatus()" ' + (busy ? 'disabled' : '') + '>刷新状态</button>',
@@ -4764,7 +4797,7 @@ window.renderAntigravitySubscribeDetail = function(autoLoad = true) {
         '      <button class="btn btn-primary" onclick="loginAntigravitySubscription()" ' + (busy ? 'disabled' : '') + '>' + (antigravityAuthState.busyAction === 'login-start' ? '启动中...' : (antigravityAuthState.busyAction === 'login-wait' ? '等待授权中' : '一键登录')) + '</button>',
         (antigravityAuthState.busyAction === 'login-wait' ? '<button class="btn" onclick="cancelAntigravityLoginWait()">取消等待</button>' : ''),
         '      <button class="btn" onclick="toggleAntigravityManualForm()" ' + (busy ? 'disabled' : '') + '>手动填写</button>',
-        '      <button class="btn" onclick="loadSubscriptionUsage(\'antigravity\')" ' + (busy ? 'disabled' : '') + '>刷新剩余用量</button>',
+        '      <button class="btn" onclick="loadSubscriptionUsage(\'antigravity\')" ' + (busy ? 'disabled' : '') + '>' + (usageLoading ? '获取中...' : '刷新剩余用量') + '</button>',
         '    </div>',
         antigravityAuthState.showManual ? (
           '<div class="subauth-form-row">' +

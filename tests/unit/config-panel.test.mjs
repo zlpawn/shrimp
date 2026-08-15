@@ -552,6 +552,14 @@ test("subscription usage refresh handlers are exposed to inline onclick", async 
   assert.match(html, /window\.loadGrokAuthStatus\s*=\s*async function/);
 });
 
+test("subscription detail pages auto-load usage and show loading state", async () => {
+  const html = await readSources();
+  assert.match(html, /usageLoading: false/);
+  assert.match(html, /autoLoadUsage/);
+  assert.match(html, /获取订阅剩余用量中/);
+  assert.match(html, /最近更新/);
+});
+
 test("endpoint type list includes antigravity google subscription label", async () => {
   const html = await readSources();
   assert.match(html, /value: "antigravity"/);
