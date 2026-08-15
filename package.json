@@ -70,6 +70,7 @@
     "release:check": "npm run check && npm run test:cli && npm run test:codex:unit && npm run test:adapters && npm run test:codex:catalog-write && npm run test:codex:integration && npm run test:codex:e2e",
     "prepublishOnly": "npm run build:panel && npm run release:check",
     "test:config-panel": "node --test tests/unit/config-panel.test.mjs",
+    "test:session-kanban": "node --test tests/unit/session-kanban-*.test.mjs tests/integration/session-kanban-api.test.mjs",
     "test:shrimp": "node --test tests/unit/clis/shrimp/*.test.mjs tests/integration/shrimp-cli.integration.test.mjs",
     "build:panel": "node desktop/esbuild.config.mjs",
     "dev:panel": "node desktop/esbuild.config.mjs --watch",

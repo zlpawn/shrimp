@@ -1,0 +1,211 @@
+import { registerTab } from "../core/navigation";
+import { showToast } from "../core/ui";
+import { escapeHtml } from "../core/dom";
+
+type QueueItem = {
+  id: string;
+  sessionId: string;
+  message: string;
+  status: string;
+  error?: string;
+  updatedAt: string;
+};
+
+type BoardSession = {
+  id: string;
+  client: string;
+  title: string;
+  workspacePath?: string;
+  lastActivityAt?: string;
+  status: string;
+  queuedCount?: number;
+};
+
+const columns = [
+  { id: "queued", title: "排队中" },
+  { id: "running", title: "运行中" },
+  { id: "waiting_input", title: "等待输入" },
+  { id: "error", title: "异常" },
+] as const;
+
+const state = {
+  loading: false,
+  error: "",
+  sessions: [] as BoardSession[],
+  queue: [] as QueueItem[],
+  selectedSessionId: "",
+  draft: "",
+};
+
+async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(path, {
+    ...init,
+    headers: { "Content-Type": "application/json", ...(init?.headers || {}) },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.error?.message || `HTTP ${res.status}`);
+  return data as T;
+}
+
+function root() {
+  return document.getElementById("session-kanban-root");
+}
+
+function formatTime(value?: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : date.toLocaleString();
+}
+
+function renderCard(session: BoardSession) {
+  const selected = session.id === state.selectedSessionId ? " selected" : "";
+  return `
+    <button class="session-kanban-card${selected}" onclick="window.__sessionKanbanSelect('${escapeHtml(session.id)}')">
+      <span class="session-kanban-client">${escapeHtml(session.client)}</span>
+      <strong>${escapeHtml(session.title)}</strong>
+      <small>${escapeHtml(session.workspacePath || "global")}</small>
+      <time>${escapeHtml(formatTime(session.lastActivityAt))}</time>
+    </button>
+  `;
+}
+
+function renderQueue(item: QueueItem) {
+  const action = item.status === "failed" || item.status === "canceled"
+    ? `<button class="btn" onclick="window.__sessionKanbanRetry('${item.id}')">重试</button>`
+    : item.status === "pending"
+      ? `<button class="btn" onclick="window.__sessionKanbanCancel('${item.id}')">取消</button>`
+      : "";
+  return `
+    <div class="session-kanban-queue-row">
+      <div>
+        <strong>${escapeHtml(item.sessionId)}</strong>
+        <p>${escapeHtml(item.message)}</p>
+        ${item.error ? `<small>${escapeHtml(item.error)}</small>` : ""}
+      </div>
+      <span>${escapeHtml(item.status)}</span>
+      ${action}
+    </div>
+  `;
+}
+
+function render() {
+  const el = root();
+  if (!el) return;
+  if (state.loading) {
+    el.innerHTML = "<div class=\"session-kanban-empty\">正在读取会话…</div>";
+    return;
+  }
+
+  const boardHtml = columns.map(column => {
+    const items = state.sessions.filter(session => session.status === column.id);
+    return `
+      <section class="session-kanban-column">
+        <header><h3>${column.title}</h3><span>${items.length}</span></header>
+        ${items.map(renderCard).join("")}
+      </section>
+    `;
+  }).join("");
+
+  el.innerHTML = `
+    ${state.error ? `<div class="session-kanban-error">${escapeHtml(state.error)}</div>` : ""}
+    <div class="session-kanban-board">${boardHtml}</div>
+    <form class="session-kanban-compose" onsubmit="window.__sessionKanbanSubmit(event)">
+      <label for="session-kanban-target">目标会话</label>
+      <select id="session-kanban-target">
+        ${state.sessions.map(session => `<option value="${escapeHtml(session.id)}" ${session.id === state.selectedSessionId ? "selected" : ""}>${escapeHtml(session.client)} · ${escapeHtml(session.title)}</option>`).join("")}
+      </select>
+      <label for="session-kanban-message">待发消息</label>
+      <textarea id="session-kanban-message" rows="3" placeholder="会话空闲后自动投递">${escapeHtml(state.draft)}</textarea>
+      <button class="btn btn-primary" type="submit">加入队列</button>
+      <button class="btn" type="button" onclick="window.__sessionKanbanDispatch()">立即调度可投递项</button>
+    </form>
+    <div class="session-kanban-queue">${state.queue.map(renderQueue).join("")}</div>
+  `;
+}
+
+async function load() {
+  state.loading = true;
+  state.error = "";
+  render();
+  try {
+    const board = await api<{ sessions: BoardSession[]; queue: QueueItem[] }>("/v1/session-kanban/board");
+    state.sessions = board.sessions || [];
+    state.queue = board.queue || [];
+    if (!state.selectedSessionId && state.sessions.length) state.selectedSessionId = state.sessions[0].id;
+  } catch (error: any) {
+    state.error = error?.message || String(error);
+  } finally {
+    state.loading = false;
+    render();
+  }
+}
+
+function select(id: string) {
+  state.selectedSessionId = id;
+  render();
+}
+
+async function submit(event: Event) {
+  event.preventDefault();
+  const target = document.getElementById("session-kanban-target") as HTMLSelectElement | null;
+  const input = document.getElementById("session-kanban-message") as HTMLTextAreaElement | null;
+  const message = input?.value?.trim() || "";
+  if (!target?.value || !message) {
+    showToast("请选择会话并输入消息", "danger");
+    return;
+  }
+  try {
+    await api("/v1/session-kanban/queue", {
+      method: "POST",
+      body: JSON.stringify({ sessionId: target.value, message }),
+    });
+    state.draft = "";
+    showToast("已加入队列", "success");
+    await load();
+  } catch (error: any) {
+    showToast(error?.message || "入队失败", "danger");
+  }
+}
+
+async function cancel(id: string) {
+  try {
+    await api(`/v1/session-kanban/queue/${encodeURIComponent(id)}/cancel`, { method: "POST" });
+    await load();
+  } catch (error: any) {
+    showToast(error?.message || "取消失败", "danger");
+  }
+}
+
+async function retry(id: string) {
+  try {
+    await api(`/v1/session-kanban/queue/${encodeURIComponent(id)}/retry`, { method: "POST" });
+    await load();
+  } catch (error: any) {
+    showToast(error?.message || "重试失败", "danger");
+  }
+}
+
+async function dispatchReady() {
+  try {
+    const result = await api<{ dispatched: number; waiting: number }>("/v1/session-kanban/dispatch", { method: "POST" });
+    showToast(`已投递 ${result.dispatched}，等待 ${result.waiting}`, "success");
+    await load();
+  } catch (error: any) {
+    showToast(error?.message || "调度失败", "danger");
+  }
+}
+
+(window as any).__sessionKanbanSelect = select;
+(window as any).__sessionKanbanSubmit = submit;
+(window as any).__sessionKanbanCancel = cancel;
+(window as any).__sessionKanbanRetry = retry;
+(window as any).__sessionKanbanDispatch = dispatchReady;
+
+document.addEventListener("input", event => {
+  const target = event.target as HTMLElement | null;
+  if (target?.id === "session-kanban-message") state.draft = (target as HTMLTextAreaElement).value;
+});
+
+registerTab("session-kanban", {
+  onEnter: () => { void load(); },
+});

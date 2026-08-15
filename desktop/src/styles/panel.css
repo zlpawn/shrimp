@@ -5358,6 +5358,26 @@ input:focus, select:focus {
 
 /* Command Apps module */
 .command-apps-root { padding: 16px 0; }
+
+.session-kanban-root { display: flex; flex-direction: column; gap: 20px; }
+.session-kanban-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.session-kanban-column { border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--input-bg); min-height: 220px; display: flex; flex-direction: column; gap: 8px; }
+.session-kanban-column header { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--border-color); }
+.session-kanban-column h3 { font-size: 13px; margin: 0; }
+.session-kanban-card { display: grid; gap: 3px; margin: 0 8px; padding: 9px 10px; text-align: left; border: 1px solid transparent; border-radius: var(--radius-md); background: var(--surface); color: var(--text-primary); cursor: pointer; }
+.session-kanban-card.selected, .session-kanban-card:hover { border-color: var(--text-secondary); }
+.session-kanban-card strong { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.session-kanban-card small, .session-kanban-card time { font-size: 11px; color: var(--text-secondary); }
+.session-kanban-client { justify-self: start; font-size: 10px; padding: 1px 6px; border-radius: 999px; background: var(--tag-bg); }
+.session-kanban-compose { display: grid; gap: 8px; border: 1px solid var(--border-color); border-radius: var(--radius-lg); background: var(--surface); padding: 14px; }
+.session-kanban-compose label { font-size: 12px; color: var(--text-secondary); }
+.session-kanban-compose textarea { resize: vertical; }
+.session-kanban-queue { display: flex; flex-direction: column; gap: 8px; }
+.session-kanban-queue-row { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--surface); padding: 10px 12px; }
+.session-kanban-queue-row p { font-size: 12px; margin: 0; }
+.session-kanban-queue-row small { color: var(--danger); }
+.session-kanban-empty, .session-kanban-error { color: var(--text-secondary); font-size: 13px; }
+.session-kanban-error { color: var(--danger); }
 .command-apps-card {
   max-width: 780px;
   padding: 22px;
