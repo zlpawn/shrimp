@@ -1,0 +1,148 @@
+{
+  "results": [
+    {
+      "name": "items_text_chunk",
+      "cascadeId": "c1c6aeae-9050-41cb-a9a1-55df90c3a367",
+      "status": 200,
+      "error": null,
+      "code": null,
+      "message": null,
+      "keys": [],
+      "preview": "{}",
+      "inspect": {
+        "status": 200,
+        "runStatus": "CASCADE_RUN_STATUS_IDLE",
+        "stepCount": 2,
+        "firstStepType": "CORTEX_STEP_TYPE_USER_INPUT"
+      }
+    },
+    {
+      "name": "items_plain_text",
+      "cascadeId": "331c710c-a0f6-4e5a-a057-1e007a261572",
+      "status": 200,
+      "error": null,
+      "code": null,
+      "message": null,
+      "keys": [],
+      "preview": "{}",
+      "inspect": {
+        "status": 200,
+        "runStatus": "CASCADE_RUN_STATUS_IDLE",
+        "stepCount": 2,
+        "firstStepType": "CORTEX_STEP_TYPE_USER_INPUT"
+      }
+    },
+    {
+      "name": "items_oneof_text",
+      "cascadeId": "4d7c5cc9-5ed0-45cc-a854-92647ccb7982",
+      "status": 200,
+      "error": null,
+      "code": null,
+      "message": null,
+      "keys": [],
+      "preview": "{}",
+      "inspect": {
+        "status": 200,
+        "runStatus": "CASCADE_RUN_STATUS_IDLE",
+        "stepCount": 2,
+        "firstStepType": "CORTEX_STEP_TYPE_USER_INPUT"
+      }
+    },
+    {
+      "name": "items_value_text",
+      "cascadeId": "3421773e-d26a-4102-a775-c900eba077a9",
+      "status": 200,
+      "error": null,
+      "code": null,
+      "message": null,
+      "keys": [],
+      "preview": "{}",
+      "inspect": {
+        "status": 200,
+        "runStatus": "CASCADE_RUN_STATUS_IDLE",
+        "stepCount": 2,
+        "firstStepType": "CORTEX_STEP_TYPE_USER_INPUT"
+      }
+    },
+    {
+      "name": "items_content_text",
+      "cascadeId": "518a4743-e333-4a8b-9702-650e82aeb7b5",
+      "status": 200,
+      "error": null,
+      "code": null,
+      "message": null,
+      "keys": [],
+      "preview": "{}",
+      "inspect": {
+        "status": 200,
+        "runStatus": "CASCADE_RUN_STATUS_IDLE",
+        "stepCount": 2,
+        "firstStepType": "CORTEX_STEP_TYPE_USER_INPUT"
+      }
+    },
+    {
+      "name": "message_field",
+      "cascadeId": "8d122dad-088f-4476-94c0-5876fc280f64",
+      "status": 200,
+      "error": null,
+      "code": null,
+      "message": null,
+      "keys": [],
+      "preview": "{}",
+      "inspect": {
+        "status": 200,
+        "runStatus": "CASCADE_RUN_STATUS_IDLE",
+        "stepCount": 1,
+        "firstStepType": "CORTEX_STEP_TYPE_ERROR_MESSAGE"
+      }
+    },
+    {
+      "name": "prompt_field",
+      "cascadeId": "57d3efde-a74c-44d3-80c6-bf696f833afc",
+      "status": 200,
+      "error": null,
+      "code": null,
+      "message": null,
+      "keys": [],
+      "preview": "{}",
+      "inspect": {
+        "status": 200,
+        "runStatus": "CASCADE_RUN_STATUS_IDLE",
+        "stepCount": 1,
+        "firstStepType": "CORTEX_STEP_TYPE_ERROR_MESSAGE"
+      }
+    },
+    {
+      "name": "items_chunk_text_only",
+      "cascadeId": "8eaa6c63-ca3e-474f-a5bb-27edc51a8bbe",
+      "status": 200,
+      "error": null,
+      "code": null,
+      "message": null,
+      "keys": [],
+      "preview": "{}",
+      "inspect": {
+        "status": 200,
+        "runStatus": "CASCADE_RUN_STATUS_IDLE",
+        "stepCount": 2,
+        "firstStepType": "CORTEX_STEP_TYPE_USER_INPUT"
+      }
+    },
+    {
+      "name": "items_case_text_field",
+      "cascadeId": "39df1b5a-b579-4415-9525-74d5441c693c",
+      "status": 200,
+      "error": null,
+      "code": null,
+      "message": null,
+      "keys": [],
+      "preview": "{}",
+      "inspect": {
+        "status": 200,
+        "runStatus": "CASCADE_RUN_STATUS_IDLE",
+        "stepCount": 2,
+        "firstStepType": "CORTEX_STEP_TYPE_USER_INPUT"
+      }
+    }
+  ]
+}

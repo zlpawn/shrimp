@@ -1,0 +1,173 @@
+{
+  "csrf": "a26da6e0...",
+  "results": [
+    {
+      "name": "source_enum_name",
+      "body": {
+        "cascadeId": "74b0730c-0278-43d5-be3e-790b4eea9da4",
+        "source": "CORTEX_TRAJECTORY_SOURCE_CASCADE_CLIENT",
+        "workspaceUris": [
+          "file:///d:/agent-transfer"
+        ]
+      },
+      "status": 200,
+      "error": null,
+      "code": null,
+      "message": null,
+      "keys": [
+        "cascadeId"
+      ],
+      "preview": "{\"cascadeId\":\"74b0730c-0278-43d5-be3e-790b4eea9da4\"}"
+    },
+    {
+      "name": "source_short_name",
+      "body": {
+        "cascadeId": "f9dc3331-fc39-49f6-a725-c6e12f193e96",
+        "source": "CASCADE_CLIENT",
+        "workspaceUris": [
+          "file:///d:/agent-transfer"
+        ]
+      },
+      "status": 400,
+      "error": null,
+      "code": "invalid_argument",
+      "message": "invalid_argument: CortexTrajectorySource is unspecified (error ID: ca057e21251f4658aa607c29fe7a0456)",
+      "keys": [],
+      "preview": "{\"code\":\"invalid_argument\",\"message\":\"invalid_argument: CortexTrajectorySource is unspecified (error ID: ca057e21251f4658aa607c29fe7a0456)\"}"
+    },
+    {
+      "name": "source_number",
+      "body": {
+        "cascadeId": "58ba4d6f-a4b9-40de-884d-4191882681ec",
+        "source": 1,
+        "workspaceUris": [
+          "file:///d:/agent-transfer"
+        ]
+      },
+      "status": 200,
+      "error": null,
+      "code": null,
+      "message": null,
+      "keys": [
+        "cascadeId"
+      ],
+      "preview": "{\"cascadeId\":\"58ba4d6f-a4b9-40de-884d-4191882681ec\"}"
+    },
+    {
+      "name": "source_and_type_cascade",
+      "body": {
+        "cascadeId": "351d8505-e9ef-4a0d-8900-4c96718e9691",
+        "source": "CASCADE_CLIENT",
+        "trajectoryType": "CASCADE",
+        "workspaceUris": [
+          "file:///d:/agent-transfer"
+        ]
+      },
+      "status": 400,
+      "error": null,
+      "code": "invalid_argument",
+      "message": "invalid_argument: CortexTrajectorySource is unspecified (error ID: 57b2e3d5bb974cc3ba3a6fbb5698f084)",
+      "keys": [],
+      "preview": "{\"code\":\"invalid_argument\",\"message\":\"invalid_argument: CortexTrajectorySource is unspecified (error ID: 57b2e3d5bb974cc3ba3a6fbb5698f084)\"}"
+    },
+    {
+      "name": "source_and_type_full",
+      "body": {
+        "cascadeId": "cba0cfae-ea42-46f1-b0fc-3731ea060351",
+        "source": "CORTEX_TRAJECTORY_SOURCE_CASCADE_CLIENT",
+        "trajectoryType": "CORTEX_TRAJECTORY_TYPE_CASCADE",
+        "workspaceUris": [
+          "file:///d:/agent-transfer"
+        ]
+      },
+      "status": 200,
+      "error": null,
+      "code": null,
+      "message": null,
+      "keys": [
+        "cascadeId"
+      ],
+      "preview": "{\"cascadeId\":\"cba0cfae-ea42-46f1-b0fc-3731ea060351\"}"
+    },
+    {
+      "name": "source_type_numbers",
+      "body": {
+        "cascadeId": "bca33ca4-3860-4ca7-93e5-21ed7f747a7d",
+        "source": 1,
+        "trajectoryType": 4,
+        "workspaceUris": [
+          "file:///d:/agent-transfer"
+        ]
+      },
+      "status": 200,
+      "error": null,
+      "code": null,
+      "message": null,
+      "keys": [
+        "cascadeId"
+      ],
+      "preview": "{\"cascadeId\":\"bca33ca4-3860-4ca7-93e5-21ed7f747a7d\"}"
+    },
+    {
+      "name": "interactive_source",
+      "body": {
+        "cascadeId": "5a00e937-0128-46cc-9f35-6724f0b2b7a8",
+        "source": "INTERACTIVE_CASCADE",
+        "trajectoryType": "CASCADE",
+        "workspaceUris": [
+          "file:///d:/agent-transfer"
+        ]
+      },
+      "status": 400,
+      "error": null,
+      "code": "invalid_argument",
+      "message": "invalid_argument: CortexTrajectorySource is unspecified (error ID: dbe69e9244e04f5495be20293c765f84)",
+      "keys": [],
+      "preview": "{\"code\":\"invalid_argument\",\"message\":\"invalid_argument: CortexTrajectorySource is unspecified (error ID: dbe69e9244e04f5495be20293c765f84)\"}"
+    },
+    {
+      "name": "agent_api_source",
+      "body": {
+        "cascadeId": "26464027-5a22-4d48-a90d-dc8b8d844c87",
+        "source": "AGENT_API",
+        "trajectoryType": "CASCADE",
+        "workspaceUris": [
+          "file:///d:/agent-transfer"
+        ]
+      },
+      "status": 400,
+      "error": null,
+      "code": "invalid_argument",
+      "message": "invalid_argument: CortexTrajectorySource is unspecified (error ID: 04f97c06415a4b18af00f9d57c9cdebb)",
+      "keys": [],
+      "preview": "{\"code\":\"invalid_argument\",\"message\":\"invalid_argument: CortexTrajectorySource is unspecified (error ID: 04f97c06415a4b18af00f9d57c9cdebb)\"}"
+    },
+    {
+      "name": "only_source_no_workspace",
+      "body": {
+        "cascadeId": "c79856cb-4c66-40cf-9d85-e5e63799716c",
+        "source": "CASCADE_CLIENT"
+      },
+      "status": 400,
+      "error": null,
+      "code": "invalid_argument",
+      "message": "invalid_argument: CortexTrajectorySource is unspecified (error ID: f1867fefc62143688b9ab9a51e90d027)",
+      "keys": [],
+      "preview": "{\"code\":\"invalid_argument\",\"message\":\"invalid_argument: CortexTrajectorySource is unspecified (error ID: f1867fefc62143688b9ab9a51e90d027)\"}"
+    },
+    {
+      "name": "workspace_single_field",
+      "body": {
+        "cascadeId": "ea2714ce-5169-4a1b-b70b-3d6ad610ca51",
+        "source": "CASCADE_CLIENT",
+        "workspaceUri": "file:///d:/agent-transfer"
+      },
+      "status": 400,
+      "error": null,
+      "code": "invalid_argument",
+      "message": "invalid_argument: CortexTrajectorySource is unspecified (error ID: 3a682b00524e4618a3aac72c3975c0e0)",
+      "keys": [],
+      "preview": "{\"code\":\"invalid_argument\",\"message\":\"invalid_argument: CortexTrajectorySource is unspecified (error ID: 3a682b00524e4618a3aac72c3975c0e0)\"}"
+    }
+  ]
+}

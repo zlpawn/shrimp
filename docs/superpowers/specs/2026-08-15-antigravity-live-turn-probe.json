@@ -1,0 +1,12 @@
+{
+  "cascadeId": "671166be-6b4f-45d1-b138-3ff4bdaa3542",
+  "startStatus": 200,
+  "sendStatus": 200,
+  "finalStatus": "CASCADE_RUN_STATUS_IDLE",
+  "stepTypes": [
+    "CORTEX_STEP_TYPE_USER_INPUT",
+    "CORTEX_STEP_TYPE_ERROR_MESSAGE"
+  ],
+  "user": null,
+  "assistant": null
+}
