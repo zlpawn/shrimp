@@ -1,7 +1,7 @@
 # Antigravity Remote Session + NAT Traversal 设计
 
 **日期：** 2026-08-14  
-**状态：** Phase 1 已实现，待 Phase 2  
+**状态：** Phase 1 已实现；Phase 2 fake/local API 闭环已实现；真实 Antigravity Joint Session 待探测  
 **分支：** `codex/antigravity-remote-session`  
 **工作区：** `.worktrees/antigravity-remote-session`  
 **实现路线：** 方案 1 — Gateway 控制面 + 挂接对端已运行 Antigravity 后端  
@@ -968,6 +968,16 @@ shrimp remote open --peer home-mac --project <id>
 - peer 可手动录入并测通
 - 为 Remote Session 提供稳定 `ensureLink` / `openService` / `testLink`
 - Dashboard 反代可用；面板默认新标签打开
+
+### Phase 2 当前落地状态（2026-08-15）
+
+- fake/local API 编码闭环：完成
+  - domain / host-attach(fake) / application service / HTTP / panel / peer client
+  - safe smoke: 
+pm run smoke:remote-session（仅进程内 fake host，不触碰已打开的 Codex 桌面）
+- 真实 Antigravity Joint Session：未完成
+  - local-host probe 仍可能返回 host_backend_unsupported
+  - 需按 2026-08-14-antigravity-host-backend-probe.md 实测后再升级
 
 ### Phase 2 成功
 
