@@ -3763,7 +3763,7 @@ window.switchTab = function(tabId) {
 
     render();
 
-    if (tabId === 'dream-skin' || tabId === 'nat-traversal') {
+    if (tabId === 'dream-skin' || tabId === 'nat-traversal' || tabId === 'remote-session') {
         try {
             runTabEnter(tabId);
         } catch (error) {
@@ -6102,7 +6102,7 @@ window.addEventListener('load', () => {
     const hash = window.location.hash.replace('#', '');
     const parts = hash.split('/');
     const tabId = parts[0];
-    const knownTabs = ['code','desktop','codex','deeptutor','analytics','proxy','sync','skills','install-history','tools','extensions','cli','cli-install-history','cli-sources','dream-skin','nat-traversal'];
+    const knownTabs = ['code','desktop','codex','deeptutor','analytics','proxy','sync','skills','install-history','tools','extensions','cli','cli-install-history','cli-sources','dream-skin','nat-traversal','remote-session'];
     if (knownTabs.includes(tabId) || isCustomClient(tabId)) {
         switchTab(tabId);
         // Restore sub-view for tools/extensions
