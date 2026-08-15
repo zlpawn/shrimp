@@ -1,0 +1,139 @@
+{
+  "measuredAt": "2026-08-15T02:03:00.790Z",
+  "baseUrl": "https://127.0.0.1:9608",
+  "csrfPresent": true,
+  "results": [
+    {
+      "method": "GET",
+      "path": "/api/store",
+      "status": 200,
+      "headers": {
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "text/html; charset=utf-8",
+        "vary": "Origin, Accept-Encoding",
+        "date": "Sat, 15 Aug 2026 02:03:00 GMT",
+        "transfer-encoding": "chunked"
+      },
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect secondary CDNs for dynamic UI icons (Drive, Docs, Colab) -->\n    <link rel=\"preconnect\" href=\"https://",
+      "contentType": "text/html; charset=utf-8"
+    },
+    {
+      "method": "GET",
+      "path": "/api/store#subscribelistener",
+      "status": 200,
+      "headers": {
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "text/html; charset=utf-8",
+        "vary": "Origin, Accept-Encoding",
+        "date": "Sat, 15 Aug 2026 02:03:00 GMT",
+        "transfer-encoding": "chunked"
+      },
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect secondary CDNs for dynamic UI icons (Drive, Docs, Colab) -->\n    <link rel=\"preconnect\" href=\"https://",
+      "contentType": "text/html; charset=utf-8"
+    },
+    {
+      "method": "POST",
+      "path": "/api/store",
+      "body": "{\"type\":\"subscribe\"}",
+      "status": 200,
+      "headers": {
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "text/html; charset=utf-8",
+        "vary": "Origin, Accept-Encoding",
+        "date": "Sat, 15 Aug 2026 02:03:00 GMT",
+        "transfer-encoding": "chunked"
+      },
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect secondary CDNs for dynamic UI icons (Drive, Docs, Colab) -->\n    <link rel=\"preconnect\" href=\"https://",
+      "contentType": "text/html; charset=utf-8"
+    },
+    {
+      "method": "POST",
+      "path": "/api/store",
+      "body": "{\"method\":\"listProjects\"}",
+      "status": 200,
+      "headers": {
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "text/html; charset=utf-8",
+        "vary": "Origin, Accept-Encoding",
+        "date": "Sat, 15 Aug 2026 02:03:00 GMT",
+        "transfer-encoding": "chunked"
+      },
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect secondary CDNs for dynamic UI icons (Drive, Docs, Colab) -->\n    <link rel=\"preconnect\" href=\"https://",
+      "contentType": "text/html; charset=utf-8"
+    },
+    {
+      "method": "POST",
+      "path": "/api/store",
+      "body": "{\"method\":\"getConversationItems\"}",
+      "status": 200,
+      "headers": {
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "text/html; charset=utf-8",
+        "vary": "Origin, Accept-Encoding",
+        "date": "Sat, 15 Aug 2026 02:03:00 GMT",
+        "transfer-encoding": "chunked"
+      },
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect secondary CDNs for dynamic UI icons (Drive, Docs, Colab) -->\n    <link rel=\"preconnect\" href=\"https://",
+      "contentType": "text/html; charset=utf-8"
+    },
+    {
+      "method": "POST",
+      "path": "/api/store",
+      "body": "{\"method\":\"openNewConversation\"}",
+      "status": 200,
+      "headers": {
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "text/html; charset=utf-8",
+        "vary": "Origin, Accept-Encoding",
+        "date": "Sat, 15 Aug 2026 02:03:00 GMT",
+        "transfer-encoding": "chunked"
+      },
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect secondary CDNs for dynamic UI icons (Drive, Docs, Colab) -->\n    <link rel=\"preconnect\" href=\"https://",
+      "contentType": "text/html; charset=utf-8"
+    },
+    {
+      "method": "POST",
+      "path": "/api/store",
+      "body": "{\"op\":\"list\",\"resource\":\"projects\"}",
+      "status": 200,
+      "headers": {
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "text/html; charset=utf-8",
+        "vary": "Origin, Accept-Encoding",
+        "date": "Sat, 15 Aug 2026 02:03:00 GMT",
+        "transfer-encoding": "chunked"
+      },
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect secondary CDNs for dynamic UI icons (Drive, Docs, Colab) -->\n    <link rel=\"preconnect\" href=\"https://",
+      "contentType": "text/html; charset=utf-8"
+    },
+    {
+      "method": "POST",
+      "path": "/api/store",
+      "body": "{\"type\":\"rpc\",\"method\":\"listProjects\",\"params\":{}}",
+      "status": 200,
+      "headers": {
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "text/html; charset=utf-8",
+        "vary": "Origin, Accept-Encoding",
+        "date": "Sat, 15 Aug 2026 02:03:00 GMT",
+        "transfer-encoding": "chunked"
+      },
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect secondary CDNs for dynamic UI icons (Drive, Docs, Colab) -->\n    <link rel=\"preconnect\" href=\"https://",
+      "contentType": "text/html; charset=utf-8"
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/api/store",
+      "status": 200,
+      "headers": {
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "content-type": "text/html; charset=utf-8",
+        "vary": "Origin, Accept-Encoding",
+        "date": "Sat, 15 Aug 2026 02:03:00 GMT",
+        "transfer-encoding": "chunked"
+      },
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect secondary CDNs for dynamic UI icons (Drive, Docs, Colab) -->\n    <link rel=\"preconnect\" href=\"https://",
+      "contentType": "text/html; charset=utf-8"
+    }
+  ]
+}

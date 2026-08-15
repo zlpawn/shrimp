@@ -1,0 +1,261 @@
+{
+  "measuredAt": "2026-08-15T02:02:15.525Z",
+  "jsBytes": 8945876,
+  "reports": [
+    {
+      "label": "api_paths",
+      "count": 2,
+      "samples": [
+        "/api/store"
+      ]
+    },
+    {
+      "label": "v1_paths",
+      "count": 1,
+      "samples": [
+        "/v1/feedback/products/5372208/web"
+      ]
+    },
+    {
+      "label": "quoted_domain_paths",
+      "count": 2,
+      "samples": [
+        "\"/new-project\"",
+        "\"/antigravityCascadeDone.mp3\""
+      ]
+    },
+    {
+      "label": "quoted_interesting_paths",
+      "count": 10,
+      "samples": [
+        "/browser",
+        "/c/$cascadeId",
+        "/new-project",
+        "/forked/$sourceCascadeId/$newCascadeId",
+        "/c/${a.payload.cascadeId}",
+        "/antigravityCascadeDone.mp3"
+      ]
+    },
+    {
+      "label": "interesting_identifiers",
+      "count": 1413,
+      "samples": [
+        "McpPromptMessageSchema",
+        "McpPromptArgumentSchema",
+        "McpPromptScopeItemSchema",
+        "AntigravityProjectSchema",
+        "ArtifactApprovalStatus",
+        "ArtifactApprovalStatusSchema",
+        "NewConversationEventSchema",
+        "MessagePromptMetadataSchema",
+        "PromptSectionMetadata_PromptSectionSourceType",
+        "PromptSectionMetadata_PromptSectionSourceTypeSchema",
+        "CascadeConversationalPlannerConfigSchema",
+        "CustomAgentSystemPromptConfigSchema",
+        "CustomPromptSectionSchema",
+        "CortexStepConversationHistorySchema",
+        "CortexTrajectoryToPromptConfigSchema",
+        "CortexMemoryProjectScopeSchema",
+        "McpPromptSpecSchema",
+        "HeuristicPromptSchema",
+        "InteractiveCascadeEditImportance",
+        "InteractiveCascadeEditImportanceSchema",
+        "_resolveConversations",
+        "initialPrompt",
+        "createAgentStateSession",
+        "openNewConversation",
+        "openConversationHistory",
+        "showProjectError",
+        "forceProjectPicker",
+        "setProjectPickerState",
+        "initialProject",
+        "submitProject",
+        "setProjectError",
+        "hasProject",
+        "hasContextProject",
+        "getCascadeTrajectory",
+        "getCascadeTrajectorySteps",
+        "getCascadeTrajectoryGeneratorMetadata",
+        "allowCascadeAccessGitignoreFiles",
+        "disableCascadeAutoFixLints",
+        "enterpriseGcpProjectId",
+        "enterpriseGcpProjectRegion",
+        "explainAndFixInCurrentConversation",
+        "disableOpenCascadeOnReload",
+        "copyConversationMarkdown",
+        "archiveConversation",
+        "findInConversation",
+        "isRemoteControl",
+        "openConversationPicker",
+        "toggleProjectSelector",
+        "modelResetPerConversation",
+        "newConversation",
+        "newConversationPanes",
+        "multiConversation",
+        "multiConversationPane",
+        "toCascadeId",
+        "outsideOfProject",
+        "parentConversationId",
+        "byProjectEnvironment",
+        "unarchivedByProjectEnvironment",
+        "childrenConversationIds",
+        "winningConversationId",
+        "eliminatedConversationId",
+        "subConversationIds",
+        "eliminatingConversationIds",
+        "setEliminatingConversation",
+        "pendingTriggerPrompts",
+        "isBestOfNEnabledByConversation",
+        "setPendingTriggerPrompt",
+        "childConversationId",
+        "startingConversations",
+        "previousCascadeId",
+        "focusedHistoryCascadeId",
+        "editingCascadeId",
+        "setCascadeId",
+        "leaveConversation",
+        "registerStartingConversation",
+        "unregisterStartingConversation",
+        "cleanupDeletedConversation",
+        "setFocusedHistoryCascadeId",
+        "setEditingCascadeId",
+        "lastSidebarFocusedConversation",
+        "dragOverChatCascadeId",
+        "setDragOverChatCascadeId",
+        "selectedEnvironmentByProject",
+        "isPseudoProjectSelected",
+        "setPseudoProjectPayload",
+        "pseudoProjectPayload",
+        "setPseudoProjectSelected",
+        "workspaceUrisByCascadeId",
+        "projectIdsByCascadeId",
+        "setProjectIdForConvo",
+        "resolveProjectResources",
+        "useResolveProjectResourcesQuery",
+        "chatSessionInput",
+        "vscodeLocalChatSession",
+        "startOsConversationNotifications",
+        "_currentSessionId",
+        "_clearProjectSettings",
+        "validateProject",
+        "showProjectPicker",
+        "activeProfileByCascadeId",
+        "newProject",
+        "isBattleConversation",
+        "startCascade",
+        "cancelCascadeInvocation",
+        "forceStopCascadeTree",
+        "sendUserCascadeMessage",
+        "revertToCascadeStep",
+        "handleCascadeUserInteraction",
+        "cancelCascadeSteps",
+        "forkConversation",
+        "sourceConversationId",
+        "winnerConversationId",
+        "setBrowserOpenConversation",
+        "listMcpPrompts",
+        "getMcpPrompt",
+        "getAllCascadeTrajectories",
+        "deleteCascadeTrajectory",
+        "importProjectFromUrl",
+        "updateConversationAnnotations",
+        "getAvailableCascadePlugins"
+      ]
+    }
+  ],
+  "contextHits": {
+    "createConversation": [],
+    "listConversations": [],
+    "listProjects": [],
+    "RemoteControl": [
+      ").get(\"extensionView\")===\"true\"?Kn=!0:!1}function Mn(){return typeof window===\"undefined\"?!1:!!window.__APP_CONFIG__?.isRemoteControl}var Nn=/^(\\/jetski-devs)?\\/web\\/[^/]+/;function On(){return typeof window===\"undefined\"?!1:!!window.__APP_CONFIG__?.devMode}function Pn(){if(typeof window===\"undefine",
+      "n);return{runtimeEnvironment:(0,x.useMemo)(()=>{var h={binary:c===\"Ide\"?\"ide\":\"hub\",host:e,viewportWidthCohort:a,os:f,isRemoteControl:Mn(),isInIframe:Pn(),isDevMode:On()};return g?.enabled?{...h,...(g.os!==void 0?{os:g.os}:{}),...(g.host!==void 0?{host:g.host}:{}),...(g.userCohort!==void 0?{userCoho",
+      "Gating.viewportWidthCohort,g=a.runtimeGating.host,h=a.runtimeGating.os,k=a.runtimeGating.customFlag,l=a.runtimeGating.isRemoteControl,m=a.runtimeGating.isInIframe;a=a.runtimeGating.isDevMode;if(c&&(!b.userCohort||!c.includes(b.userCohort))||e&&(!b.binary||!e.includes(b.binary))||f&&(!b.viewportWidth",
+      "p,n)))return!0}return h&&(!b.os||!h.includes(b.os))||k&&(!b.customFlags||!b.customFlags.includes(k))||l!==void 0&&!!b.isRemoteControl!==l||m!==void 0&&!!b.isInIframe!==m||a!==void 0&&!!b.isDevMode!==a?!0:!1}function Tn(a){return typeof a===\"object\"&&a!==null&&!Array.isArray(a)&&Object.prototype.toSt",
+      "||\"\",alt:\"Enlarged media\",className:\"max-h-[90vh] w-[90vw] max-w-fit rounded-md\",onError:()=>{h(!0)}})))},DU=a=>{var {isRemoteControl:b}=(0,x.useContext)(eo); return b?x.createElement(D6a,{...a}):x.createElement(C6a,{...a})};const E6a=(0,x.createContext)({allowOpenInTab:!0});var F6a=E6a.Provider;var",
+      "lt:b,...c})=>{var {openUri:e,resolveArtifactUrl:f,disableImages:g,allowlistedUrls:h,artifactsDir:k}= VU(),l=go().get(\"isRemoteControl\"),m=dD(a||\"\");if(m&&g&&!WDa(m,h||[]))return x.createElement(V5a,{src:a,alt:b});m=a?HC.some(t=>a.toLowerCase().endsWith(t)):!1;var n=a?GC.some(t=>a.toLowerCase().endsW",
+      "ll,\"quick pick\"),\".\")))})};var ieb=({step:a,status:b})=>{var {stepHandler:{openFile:c,resolveArtifactUrl:e}={}}=ey(),{isRemoteControl:f}=(0,x.useContext)(eo),g=a.generatedMedia,{blobUrl:h}=FU(f&&g?.uri?g.uri:void 0),k=void 0;f&&g?.uri?k=h:g?.uri?k=e?.(g.uri)||void 0:g?.payload.case===\"inlineData\"&&(",
+      "gnedOut\",k=g?.context.isGcpTos??!1;g=g?.context.project;var l=Lib(),m=iN(),n=go(),p=n.get(\"settingsFeature\"),r=n.get(\"isRemoteControl\")??!1,t=p?.useCloseSettings()??(()=>{});p=In();var v=hY();p=p===\"Hub\"||v;v=NRa();var w=rN(\"remote-control-setting-enabled\"),y=kN(Cm.REMOTE_CONTROL_ENABLED)??!1,z=(0,x"
+    ],
+    "/api/conversations": [],
+    "/api/projects": [],
+    "approval": [
+      "tion:\"Useful for typical development with an emphasis on security. It prioritizes safety over speed by requiring manual approval for all terminal commands and files outside the project directory.\",iconName:\"shield_lock\"},full_machine_unix:{displayName:\"Full machine\",shortDisplayName:\"Machine\",shortD",
+      "e agent has full read and write access to all local files, but all proposed terminal commands require manual review and approval before running.\", iconName:\"laptop_shield\"},unrestricted_unix:{displayName:\"Turbo mode\",shortDisplayName:\"Turbo\",shortDescription:\"Disables all safety barriers for maximal",
+      "tion:\"Useful for typical development with an emphasis on security. It prioritizes safety over speed by requiring manual approval for all terminal commands and files outside the project directory.\",iconName:\"shield_lock\"},full_machine_windows:{displayName:\"Full machine\",shortDisplayName:\"Machine\",sho",
+      "e agent has full read and write access to all local files, but all proposed terminal commands require manual review and approval before running.\", iconName:\"laptop_shield\"},unrestricted_windows:{displayName:\"Turbo mode\",shortDisplayName:\"Turbo\",shortDescription:\"Disables all safety barriers for maxi",
+      "bledInSecureMode:!1}];LD.map(a=>`\\u2022 ${a.label} - ${a.description}`).join(\"\\n\"); function HFa(a){return a?.some(b=>b.approvalStatus===G.ArtifactApprovalStatus.APPROVED)??!1}function IFa(a,b,c){return(0,x.useMemo)(()=>{var e=c===Q.CortexStepSource.SYSTEM;var f=(b?.length??0)>0&&a.length===0;f=HFa(",
+      "ution\", description:a===\"Cider\"?\"Google-wide Allowlist: If you are eligible, commands in the this list run without your approval, in addition to the below options. This policy applies to any host, regardless of internet connectivity. Check on eligibility on go/can-i-autorun-agents.\\n\\nNote: please r",
+      "orun-agents.\\n\\nNote: please reload for these changes to take effect.\":\"Controls whether terminal commands require your approval before running.\\n\\nNote: A change to this setting will only apply to new messages sent to the agent. In-progress responses will use the previous setting value.\", options:a",
+      "y.DISABLED:return\"Block all browser JavaScript execution.\";case G.BrowserJsExecutionPolicy.ALWAYS_ASK:return\"Prompt for approval before running browser scripts.\";case G.BrowserJsExecutionPolicy.TURBO:return\"Allow full browser script execution without prompting.\";default:return\"Prompt for approval be"
+    ],
+    "dispatch": [
+      "se{if(k===void 0)window.localStorage.removeItem(a);else{let l=b(k);window.localStorage.setItem(a,l)}g.current=!0;window.dispatchEvent(new StorageEvent(\"storage\",{key:a,newValue:k===void 0?null:b(k),oldValue:null,storageArea:window.localStorage}));g.current= !1}}catch(l){console.warn(`Error setting l",
+      "row Error(\"Dispatching while constructing your middleware is not allowed. Other middleware would not be applied to this dispatch.\");},g={getState:c.getState,dispatch:(h,...k)=>f(h,...k)};e=a.map(h=>h(g));f=bp(...e)(c.dispatch);return{...c,dispatch:f}}};const cp=()=>Math.random().toString(36).substri",
+      "ting your middleware is not allowed. Other middleware would not be applied to this dispatch.\");},g={getState:c.getState,dispatch:(h,...k)=>f(h,...k)};e=a.map(h=>h(g));f=bp(...e)(c.dispatch);return{...c,dispatch:f}}};const cp=()=>Math.random().toString(36).substring(7).split(\"\").join(\".\");var dp=`@@r",
+      "not be applied to this dispatch.\");},g={getState:c.getState,dispatch:(h,...k)=>f(h,...k)};e=a.map(h=>h(g));f=bp(...e)(c.dispatch);return{...c,dispatch:f}}};const cp=()=>Math.random().toString(36).substring(7).split(\"\").join(\".\");var dp=`@@redux/INIT${cp()}`,Kga=`@@redux/REPLACE${cp()}`;function ep(a",
+      " dispatch.\");},g={getState:c.getState,dispatch:(h,...k)=>f(h,...k)};e=a.map(h=>h(g));f=bp(...e)(c.dispatch);return{...c,dispatch:f}}};const cp=()=>Math.random().toString(36).substring(7).split(\"\").join(\".\");var dp=`@@redux/INIT${cp()}`,Kga=`@@redux/REPLACE${cp()}`;function ep(a){if(typeof a!==\"objec",
+      "lain objects. Instead, the actual type was: '${typeof t}'. You may need to add middleware to your store setup to handle dispatching other values, such as 'redux-thunk' to handle dispatching functions. See https://redux.js.org/tutorials/fundamentals/part-4-store#middleware and https://redux.js.org/tu",
+      " You may need to add middleware to your store setup to handle dispatching other values, such as 'redux-thunk' to handle dispatching functions. See https://redux.js.org/tutorials/fundamentals/part-4-store#middleware and https://redux.js.org/tutorials/fundamentals/part-6-async-logic#using-the-redux-th",
+      "ead, the actual type was: '${typeof t.type}'. Value was: '${t.type}' (stringified)`);if(r)throw Error(\"Reducers may not dispatch actions.\");try{r=!0,l=k(l,t)}finally{r=!1}(m=n).forEach(v=>{v()});return t}if(typeof a!==\"function\")throw Error(`Expected the root reducer to be a function. Instead, recei"
+    ],
+    "sendMessage": [
+      "houghtEditingEnabled:K,selectionSteeringEnabled:J,handleReviewChanges:L,isBrowserPaneAvailable:M,openUrlInBrowserPane:O,sendMessage:N})=>{var P=(0,x.useMemo)(()=>({workspaceInfo:c,cascadeContext:b,devModeEnabled:e,stepHandler:f,chatParams:g,customLinks:h,renderers:k,getStepRendererConfig:l,userStatu",
+      "houghtEditingEnabled:K,selectionSteeringEnabled:J,handleReviewChanges:L,isBrowserPaneAvailable:M,openUrlInBrowserPane:O,sendMessage:N}),[c,b,e,f,g,h,k,m,n,p,r,t,v,w,l,y,z,A,B,C,D,E,F,I,H,K,J,L,M,O,N]);return x.createElement(dy.Provider,{value:P},a)},ey=()=>{var a=(0,x.useContext)(dy);if(!a)throw Err",
+      "allback)(b=>{if(b)return a.getAgentStates().get(b)?.provider.getState()},[a])};var Dy=(0,x.createContext)({cascadeId:\"\",sendMessage:()=>Promise.resolve(),nuxesState:void 0,pushNuxUpdate:()=>{},logEvent:()=>{},logger:{trace:()=>{},debug:()=>{},info:()=>{},warn:()=>{},error:()=>{}}}),mza=({cascadeId:a",
+      "forEach(C=>{r({type:\"setComments\",artifactSourceUri:C,state:[]})})}catch(C){throw y(),h.error(`[artifactServiceContext] sendMessage: failed to send artifact review for ${b.displayName}: ${C}`), h.error(`[artifactServiceContext] planner config: ${JSON.stringify(B.plannerConfig)}`),C;}}else h.error(`s",
+      "Name}: ${C}`), h.error(`[artifactServiceContext] planner config: ${JSON.stringify(B.plannerConfig)}`),C;}}else h.error(`sendMessage: missing cascade config for artifact ${b.displayName} (${b.toString()})`);else h.error(`sendMessage: missing cascade ID for artifact ${b.displayName} (${b.toString()})`",
+      "),C;}}else h.error(`sendMessage: missing cascade config for artifact ${b.displayName} (${b.toString()})`);else h.error(`sendMessage: missing cascade ID for artifact ${b.displayName} (${b.toString()})`)}finally{w()}},[l,a,b,h,e,p,r]);return x.createElement(Dy.Provider,{value:{cascadeId:a,sendMessage:",
+      ".displayName} (${b.toString()})`)}finally{w()}},[l,a,b,h,e,p,r]);return x.createElement(Dy.Provider,{value:{cascadeId:a,sendMessage:f,nuxesState:m,pushNuxUpdate:n,logger:h,logEvent:k}},c)};const nza=(0,x.createContext)(void 0); var Ey=()=>{var a=(0,x.useContext)(nza);if(a===void 0)throw Error(\"useAr",
+      ")=>{},getSelectionRange:()=>null,setVisualHighlight:()=>{}}),getTokensForContent:()=>[],resolveLanguageFromPath:()=>\"\"},sendMessage:async()=>{}}),[h,c,g,f,e]);return x.createElement(dy.Provider,{value:k},a)};function v7a(a,b,c){return b?(a=a.summaries[b])?a.summary||c:c:c};function w7a(a,b,c){var e="
+    ],
+    "cascade": [
+      "psLength:0,lastStepType:Q.CortexStepType.UNSPECIFIED,...a}} function xf(a){var b=a.steps.at(-1);return{conversationId:a.cascadeId,trajectoryId:a.trajectoryId,trajectoryType:a.trajectoryType,metadata:a.metadata,parentReferences:a.parentReferences,battleModeInfos:a.battleModeInfos,executorMetadataSlic",
+      "Metadata.length,m=f.numTotalGeneratorMetadata,n=h<k,p=l<m;if(!n&&!p)return f;let [r,t]=e(await c(Promise.all([n?Sfa(a,b.cascadeId,b.trajectoryVerbosity,h,k):Promise.resolve([]),p?Tfa(a,b.cascadeId,l,m):Promise.resolve([])])));g.steps.push(...r);g.generatorMetadata.push(...t);return f}finally{c()}} a",
+      ")return f;let [r,t]=e(await c(Promise.all([n?Sfa(a,b.cascadeId,b.trajectoryVerbosity,h,k):Promise.resolve([]),p?Tfa(a,b.cascadeId,l,m):Promise.resolve([])])));g.steps.push(...r);g.generatorMetadata.push(...t);return f}finally{c()}} async function Sfa(a,b,c,e,f){var g=d,h=d;try{let k=[];for(;e<f;){le",
+      "}} async function Sfa(a,b,c,e,f){var g=d,h=d;try{let k=[];for(;e<f;){let l=h(await g(a.getCascadeTrajectorySteps(q(Wda,{cascadeId:b,trajectoryVerbosity:c,stepOffset:e}))));if(l.steps.length===0)break;k.push(...l.steps);e+=l.steps.length}return k}finally{g()}} async function Tfa(a,b,c,e){var f=d,g=d;",
+      "unction Tfa(a,b,c,e){var f=d,g=d;try{let h=[];for(;c<e;){let k=g(await f(a.getCascadeTrajectoryGeneratorMetadata(q(Xda,{cascadeId:b,generatorMetadataOffset:c}))));if(k.generatorMetadata.length===0)break;h.push(...k.generatorMetadata);c+=k.generatorMetadata.length}return h}finally{f()}};var Ufa=class",
+      "mode is enabled.\";case 1:return\"This setting is managed by your organization.\"}};var Cm={CASCADE_AUTO_EXECUTION_POLICY:\"cascadeAutoExecutionPolicy\",AGENT_HOST_ADDRESS:\"agentHostAddress\",PLANNING_MODE:\"planningMode\",AGENT_ENVIRONMENT:\"agentEnvironment\",ALLOW_CASCADE_ACCESS_GITIGNORE_FILES:\"allowCasca",
+      "owserUserProfilePath\", BROWSER_CDP_PORT:\"browserCdpPort\",BROWSER_ALLOWLIST:\"browserAllowlist\",CASCADE_ALLOWED_COMMANDS:\"cascadeAllowedCommands\",CASCADE_DENIED_COMMANDS:\"cascadeDeniedCommands\",SECURE_MODE_ENABLED:\"secureModeEnabled\",IS_SNOOZED:\"isSnoozed\",AUTOCOMPLETE_SPEED:\"autocompleteSpeed\",ENABLE",
+      "dpPort\",BROWSER_ALLOWLIST:\"browserAllowlist\",CASCADE_ALLOWED_COMMANDS:\"cascadeAllowedCommands\",CASCADE_DENIED_COMMANDS:\"cascadeDeniedCommands\",SECURE_MODE_ENABLED:\"secureModeEnabled\",IS_SNOOZED:\"isSnoozed\",AUTOCOMPLETE_SPEED:\"autocompleteSpeed\",ENABLE_TAB_SOUNDS:\"enableTabSounds\",ALLOW_TAB_ACCESS_GI"
+    ]
+  },
+  "interestingPathProbes": [
+    {
+      "path": "/browser",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devM"
+    },
+    {
+      "path": "/c/$cascadeId",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devM"
+    },
+    {
+      "path": "/new-project",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devM"
+    },
+    {
+      "path": "/forked/$sourceCascadeId/$newCascadeId",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devM"
+    },
+    {
+      "path": "/c/${a.payload.cascadeId}",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devM"
+    },
+    {
+      "path": "/antigravityCascadeDone.mp3",
+      "status": 200,
+      "contentType": "audio/mpeg",
+      "bodyPreview": "ID3\u0002\u0000\u0000\u0000\u0000\u001fvTSS\u0000\u0000\u0011\u0000Logic Pro 11.1.2COM\u0000\u0000h\u0000engiTunNORM\u0000 00000E51 00000E82 0000781F 000079B8 00000288 00000288 00007DB1 00007E86 00000270 00000270\u0000COM\u0000\u0000�\u0000engiTunSMPB\u0000 00000000 00000210"
+    }
+  ]
+}

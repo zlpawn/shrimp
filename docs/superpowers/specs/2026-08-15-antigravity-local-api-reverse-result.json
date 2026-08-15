@@ -1,0 +1,895 @@
+{
+  "measuredAt": "2026-08-15T02:01:45.470Z",
+  "baseUrl": "https://127.0.0.1:9608",
+  "appConfig": {
+    "productName": "antigravity",
+    "csrfToken": "a26da6e0-d58e-4d7c-80e3-4066214c4941",
+    "appVersion": "2.8.1",
+    "devMode": false
+  },
+  "assets": [
+    "/styles.css",
+    "/jetbox.css",
+    "/compiled_tailwind.css",
+    "/prism_bundle.js",
+    "/main.js"
+  ],
+  "probes": [
+    {
+      "path": "/",
+      "withCsrf": false,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/",
+      "withCsrf": true,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/health",
+      "withCsrf": false,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/health",
+      "withCsrf": true,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/status",
+      "withCsrf": false,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/status",
+      "withCsrf": true,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api",
+      "withCsrf": false,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api",
+      "withCsrf": true,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api/health",
+      "withCsrf": false,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api/health",
+      "withCsrf": true,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api/status",
+      "withCsrf": false,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api/status",
+      "withCsrf": true,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api/version",
+      "withCsrf": false,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api/version",
+      "withCsrf": true,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api/projects",
+      "withCsrf": false,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api/projects",
+      "withCsrf": true,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api/project",
+      "withCsrf": false,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api/project",
+      "withCsrf": true,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api/conversations",
+      "withCsrf": false,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api/conversations",
+      "withCsrf": true,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api/conversation",
+      "withCsrf": false,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api/conversation",
+      "withCsrf": true,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api/sessions",
+      "withCsrf": false,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api/sessions",
+      "withCsrf": true,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api/session",
+      "withCsrf": false,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api/session",
+      "withCsrf": true,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api/agents",
+      "withCsrf": false,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api/agents",
+      "withCsrf": true,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api/agent",
+      "withCsrf": false,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api/agent",
+      "withCsrf": true,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api/v1/projects",
+      "withCsrf": false,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api/v1/projects",
+      "withCsrf": true,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api/v1/conversations",
+      "withCsrf": false,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api/v1/conversations",
+      "withCsrf": true,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api/v1/sessions",
+      "withCsrf": false,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api/v1/sessions",
+      "withCsrf": true,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/v1/projects",
+      "withCsrf": false,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/v1/projects",
+      "withCsrf": true,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/v1/conversations",
+      "withCsrf": false,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/v1/conversations",
+      "withCsrf": true,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/v1/sessions",
+      "withCsrf": false,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/v1/sessions",
+      "withCsrf": true,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/v1/agents",
+      "withCsrf": false,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/v1/agents",
+      "withCsrf": true,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/graphql",
+      "withCsrf": false,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/graphql",
+      "withCsrf": true,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/rpc",
+      "withCsrf": false,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/rpc",
+      "withCsrf": true,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/jsonrpc",
+      "withCsrf": false,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/jsonrpc",
+      "withCsrf": true,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/ws",
+      "withCsrf": false,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/ws",
+      "withCsrf": true,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/socket.io",
+      "withCsrf": false,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/socket.io",
+      "withCsrf": true,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/openapi.json",
+      "withCsrf": false,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/openapi.json",
+      "withCsrf": true,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/swagger.json",
+      "withCsrf": false,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/swagger.json",
+      "withCsrf": true,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/.well-known/openapi",
+      "withCsrf": false,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/.well-known/openapi",
+      "withCsrf": true,
+      "status": 200,
+      "ok": true,
+      "contentType": "text/html; charset=utf-8",
+      "looksJson": false,
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    }
+  ],
+  "mutating": [
+    {
+      "path": "/api/conversations",
+      "method": "OPTIONS",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api/conversations",
+      "method": "POST",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api/v1/conversations",
+      "method": "OPTIONS",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/api/v1/conversations",
+      "method": "POST",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/v1/conversations",
+      "method": "OPTIONS",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/v1/conversations",
+      "method": "POST",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/graphql",
+      "method": "OPTIONS",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/graphql",
+      "method": "POST",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/rpc",
+      "method": "OPTIONS",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    },
+    {
+      "path": "/rpc",
+      "method": "POST",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "bodyPreview": "<!doctype html>\n<html lang=\"en\">\n  <head>\n<script>window.__APP_CONFIG__ = {\"productName\":\"antigravity\",\"csrfToken\":\"a26da6e0-d58e-4d7c-80e3-4066214c4941\",\"appVersion\":\"2.8.1\",\"devMode\":false};</script>\n    <meta charset=\"UTF-8\" />\n    <title>Antigravity</title>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0\" />\n    <!-- Preconnect se",
+      "message": ""
+    }
+  ],
+  "downloaded": [
+    {
+      "url": "https://127.0.0.1:9608/styles.css",
+      "bytes": 3183,
+      "contentType": "text/html; charset=utf-8"
+    },
+    {
+      "url": "https://127.0.0.1:9608/jetbox.css",
+      "bytes": 10287,
+      "contentType": "text/css; charset=utf-8"
+    },
+    {
+      "url": "https://127.0.0.1:9608/compiled_tailwind.css",
+      "bytes": 193751,
+      "contentType": "text/css; charset=utf-8"
+    },
+    {
+      "url": "https://127.0.0.1:9608/prism_bundle.js",
+      "bytes": 138685,
+      "contentType": "text/javascript; charset=utf-8"
+    },
+    {
+      "url": "https://127.0.0.1:9608/main.js",
+      "bytes": 8945876,
+      "contentType": "text/javascript; charset=utf-8"
+    }
+  ],
+  "assetHits": [
+    {
+      "url": "https://127.0.0.1:9608/prism_bundle.js",
+      "found": {
+        "/agent[sA-Za-z0-9_\\-]*/gi": [
+          "AGENT_INFO"
+        ]
+      }
+    },
+    {
+      "url": "https://127.0.0.1:9608/main.js",
+      "found": {
+        "/\\/api\\/[A-Za-z0-9_\\-\\/{}]+/g": [
+          "/api/store"
+        ],
+        "/\\/v1\\/[A-Za-z0-9_\\-\\/{}]+/g": [
+          "/v1/feedback/products/5372208/web"
+        ],
+        "/conversation[sA-Za-z0-9_\\-]*/gi": [
+          "ConversationBrainConfigSchema",
+          "ConversationScopeItemSchema",
+          "ConversationalPlannerMode",
+          "ConversationalPlannerModeSchema",
+          "CONVERSATION_AVAILABLE",
+          "CONVERSATION",
+          "CONVERSATION_DROPDOWN",
+          "CONVERSATION_ON_DROPDOWN",
+          "CONVERSATION_SHARING",
+          "ConversationEventSchema",
+          "ConversationMetadataEventSchema",
+          "ConversationalPlannerConfigSchema",
+          "ConversationHistorySchema",
+          "ConversationHistoryConfigSchema",
+          "CONVERSATION_HISTORY",
+          "ConversationSchema",
+          "ConversationStateSchema",
+          "conversationId",
+          "ConversationCostSummarySchema",
+          "ConversationAnnotationsSchema",
+          "conversations",
+          "Conversations",
+          "Conversation",
+          "conversation_new",
+          "ConversationHistory",
+          "conversation_history_open",
+          "CONVERSATION_HISTORY_ENABLED",
+          "conversationHistoryEnabled",
+          "CONVERSATION_WIDTH",
+          "conversationWidth",
+          "conversationView",
+          "ConversationMarkdown",
+          "conversation",
+          "CONVERSATION_PICKER",
+          "ConversationPicker",
+          "conversationPanes",
+          "ConversationPanes",
+          "ConversationPane",
+          "ConversationId",
+          "ConversationIds"
+        ],
+        "/project[sA-Za-z0-9_\\-]*/gi": [
+          "ProjectSchema",
+          "PROJECT_CREATED",
+          "PROJECT_ENVIRONMENT_SELECTION",
+          "PROJECT_DIALOG",
+          "PROJECT_CLICKED",
+          "PROJECT",
+          "PROJECT_ISOLATION",
+          "ProjectScopeSchema",
+          "project",
+          "ProjectError",
+          "ProjectPicker",
+          "ProjectPickerState",
+          "PROJECT_PICKER",
+          "Project",
+          "projectPicker",
+          "PROJECT_INVALID",
+          "PROJECT_ID",
+          "ProjectId",
+          "PROJECT_REGION",
+          "ProjectRegion",
+          "PROJECT_SELECTOR",
+          "ProjectSelector",
+          "projectId",
+          "ProjectEnvironment",
+          "ProjectSelected",
+          "ProjectPayload",
+          "projectIdsByCascadeId",
+          "ProjectIdForConvo",
+          "project_uri_parse_failed",
+          "projectResources",
+          "projectsApi",
+          "ProjectResources",
+          "projectManagementFeature",
+          "ProjectResourcesQuery",
+          "projectV5MigrationUi",
+          "ProjectSettings",
+          "projectRequired",
+          "ProjectFromUrl",
+          "ProjectsEnabledInternally",
+          "ProjectDir"
+        ],
+        "/approval[sA-Za-z0-9_\\-]*/gi": [
+          "ApprovalStatus",
+          "ApprovalStatusSchema",
+          "ApprovalInteractionSchema",
+          "ApprovalInteractionSpecSchema",
+          "approval",
+          "approvalStatus",
+          "approvalInteraction",
+          "Approval"
+        ],
+        "/agent[sA-Za-z0-9_\\-]*/gi": [
+          "AgentManagerServicesContext",
+          "AgentManagerServicesContextProvider",
+          "AgentSidePanelServicesContextProvider",
+          "AgentPermissionPreset",
+          "AgentPermissionPresetSchema",
+          "AgentBrowserTools",
+          "AgentBrowserToolsSchema",
+          "AgentSettingPolicy",
+          "AgentSettingPolicySchema",
+          "AGENT_CONFIG_PAGE_OPENED",
+          "AGENT",
+          "AgentScriptCommandSpecSchema",
+          "AgentScriptPythonSpecSchema",
+          "AgentScriptConfigPathSchema",
+          "AgentCustomizationSchema",
+          "AgentScriptItemSchema",
+          "AgentPermissionsSchema",
+          "AgentApiConfigSchema",
+          "agentToolConfigSchema",
+          "agentContextConfigSchema",
+          "agentContextConfig_ContextType",
+          "agentContextConfig_ContextTypeSchema",
+          "agentReminderModeSchema",
+          "AgenticModeConfigSchema",
+          "AgentSystemPromptConfigSchema",
+          "AgentDiscoveryConfigSchema",
+          "AgentConfigSchema",
+          "AgentSpecSchema",
+          "agentSnapshotSchema",
+          "AgentConfigResolutionSchema",
+          "agentSchema",
+          "agentSpecSchema",
+          "agentResultSchema",
+          "AgentMessageSchema",
+          "AGENT_API",
+          "AgentMode",
+          "AgentModeSchema",
+          "agentMode",
+          "AGENT_ONLY",
+          "AGENT_PRIMARILY"
+        ],
+        "/csrf[A-Za-z0-9_\\-]*/gi": [
+          "csrfToken",
+          "csrf-token",
+          "CSRF",
+          "csrf",
+          "CsrfToken"
+        ],
+        "/RemoteControl[A-Za-z0-9_\\-]*/g": [
+          "RemoteControl"
+        ]
+      }
+    }
+  ]
+}
