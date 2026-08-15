@@ -229,3 +229,72 @@ test("lists and inspects conversations via HTTP", async () => {
   assert.equal(inspected.json.conversation.id, conversationId);
 });
 
+test("session HTTP API forwards model fields and host event stream flag", async () => {
+  const host = createFakeHostBackend({
+    projects: [{ id: "p1", name: "demo" }],
+  });
+  const forwarded = [];
+  const wrappedHost = new Proxy(host, {
+    get(target, prop, receiver) {
+      const value = Reflect.get(target, prop, receiver);
+      if (prop === "createConversation") {
+        return async (...args) => {
+          forwarded.push(["create", ...args]);
+          return value.apply(target, args);
+        };
+      }
+      if (prop === "dispatchPrompt") {
+        return async (...args) => {
+          forwarded.push(["dispatch", ...args]);
+          return value.apply(target, args);
+        };
+      }
+      if (prop === "subscribeEvents") {
+        return async (...args) => {
+          forwarded.push(["subscribe", ...args]);
+          return value.apply(target, args);
+        };
+      }
+      return value;
+    },
+  });
+
+  let stored = { enabled: true };
+  const service = createRemoteSessionService({
+    configStore: {
+      get: () => stored,
+      save: (next) => {
+        stored = next;
+      },
+    },
+    natTraversal: makeNatTraversal({ enabled: true }),
+    hostBackendFactory: async () => wrappedHost,
+    eventLogFactory: createMemoryEventLog,
+  });
+
+  const opened = await call(service, "POST", "/v1/remote-session/sessions", {
+    peerId: "local-host",
+    projectId: "p1",
+    controllerPeerId: "a",
+    model: "MODEL_PLACEHOLDER_M298",
+  });
+  assert.equal(opened.res.statusCode, 200);
+  assert.equal(forwarded[0][0], "create");
+  assert.equal(forwarded[0][2].model, "MODEL_PLACEHOLDER_M298");
+
+  const sessionId = opened.json.session.id;
+  const prompted = await call(
+    service,
+    "POST",
+    "/v1/remote-session/sessions/" + sessionId + "/prompt",
+    {
+      prompt: "hello",
+      controllerPeerId: "a",
+      model: "MODEL_PLACEHOLDER_M298",
+    },
+  );
+  assert.equal(prompted.res.statusCode, 200);
+  assert.equal(forwarded[1][0], "dispatch");
+  assert.equal(forwarded[1][1].model, "MODEL_PLACEHOLDER_M298");
+});
+

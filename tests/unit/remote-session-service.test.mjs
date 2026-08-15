@@ -188,6 +188,91 @@ test("resume after disconnect continues from cursor", async () => {
   assert.equal(resumed.events[0].seq, before.events[1].seq);
 });
 
+test("live local host session can dispatch with explicit model and stream host events", async () => {
+  const calls = [];
+  const host = {
+    id: "local-host",
+    capabilities() {
+      return ["attach", "createConversation", "dispatchPrompt", "subscribeEvents"];
+    },
+    async attach() {
+      calls.push(["attach"]);
+      return { transport: "local-connect-readonly" };
+    },
+    async listProjects() {
+      return [{ id: "p-live", name: "live", path: "d:/agent-transfer" }];
+    },
+    async listConversations() {
+      return [];
+    },
+    async getConversation() {
+      return null;
+    },
+    async createConversation(projectId, options = {}) {
+      calls.push(["create", projectId, options]);
+      return { conversationId: "cascade-live" };
+    },
+    async dispatchPrompt({ conversationId, prompt, model }) {
+      calls.push(["dispatch", conversationId, prompt, model]);
+      return {
+        turnId: "turn-live",
+        events: [
+          { type: "user_text", text: prompt },
+          { type: "assistant_text", text: "12" },
+        ],
+      };
+    },
+    async subscribeEvents({ conversationId, cursor = 0 }) {
+      calls.push(["subscribe", conversationId, cursor]);
+      async function* iterator() {
+        yield { seq: cursor + 1, type: "assistant_text", text: "12" };
+        yield { seq: cursor + 2, type: "turn_completed" };
+      }
+      return iterator();
+    },
+  };
+  const { service } = makeService({ host });
+  await service.updateConfig({ enabled: true });
+  const session = await service.openSession({
+    peerId: "local-host",
+    projectId: "p-live",
+    controllerPeerId: "a",
+    model: "MODEL_PLACEHOLDER_M298",
+  });
+  assert.equal(session.hostConversationId, "cascade-live");
+  assert.deepEqual(calls[1], [
+    "create",
+    "p-live",
+    { model: "MODEL_PLACEHOLDER_M298" },
+  ]);
+
+  const dispatched = await service.dispatchPrompt({
+    sessionId: session.id,
+    prompt: "只回答数字：6+6=?",
+    controllerPeerId: "a",
+    model: "MODEL_PLACEHOLDER_M298",
+  });
+  assert.equal(dispatched.turnId, "turn-live");
+  assert.deepEqual(calls[2], [
+    "dispatch",
+    "cascade-live",
+    "只回答数字：6+6=?",
+    "MODEL_PLACEHOLDER_M298",
+  ]);
+
+  const streamed = [];
+  for await (const event of service.subscribe({
+    sessionId: session.id,
+    cursor: 0,
+    includeHostEvents: true,
+  })) {
+    streamed.push(event);
+    if (streamed.length >= 4) break;
+  }
+  assert.ok(streamed.some((event) => event.hostEvent?.text === "12"));
+  assert.ok(calls.some((call) => call[0] === "subscribe"));
+});
+
 test("enabling remote session requires nat traversal", async () => {
   const { service } = makeService({ natEnabled: false, enabled: false });
   await assert.rejects(
