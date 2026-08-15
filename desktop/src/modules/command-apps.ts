@@ -219,14 +219,13 @@ async function stop(): Promise<void> {
 
 async function rescan(): Promise<void> {
   await runAction("rescan", async () => {
-    const result = await api<{ selected?: { path?: string } | null }>("/v1/command-apps/discover");
-    if (!result.selected?.path) {
+    state.status = await api<CommandAppStatus>("/v1/command-apps/discover");
+    if (!state.status?.configured) {
       state.error = "重新扫描未找到 Antigravity，请尝试手动路径。";
       state.editing = true;
       return;
     }
-    state.status = await api<CommandAppStatus>("/v1/command-apps/status");
-    state.pathDraft = state.status.executablePath || result.selected.path;
+    state.pathDraft = state.status.executablePath || "";
     showToast("已找到 Antigravity", "success");
   });
 }
@@ -273,3 +272,4 @@ document.addEventListener("input", (event) => {
 registerTab("command-apps", {
   onEnter: () => { void load(); },
 });
+

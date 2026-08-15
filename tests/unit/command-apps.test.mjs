@@ -264,3 +264,32 @@ test("service status reports platform support accurately", async () => {
   const status = await service.getStatus("antigravity");
   assert.equal(status.app.supported, true);
 });
+
+test("status auto-discovers and persists an unconfigured executable", async () => {
+  const executable = "C:\\Apps\\Antigravity\\Antigravity.exe";
+  const saved = [];
+  const service = createCommandAppsService({
+    configStore: { get: () => saved.at(-1) || { apps: {} }, save(next) { saved.push(next); } },
+    platform: "win32",
+    discovery: async () => ({ selected: { path: executable }, candidates: [] }),
+    listProcesses: async () => [{ pid: 77, executablePath: executable }],
+    fileExists: (value) => value === executable,
+  });
+  const status = await service.getStatus("antigravity");
+  assert.equal(status.configured, true);
+  assert.equal(status.executablePath, executable);
+  assert.equal(status.process.status, "running");
+  assert.equal(saved[0].apps.antigravity.executablePath, executable);
+});
+
+test("status infers launch time from running processes when panel never launched", async () => {
+  const service = createCommandAppsService({
+    configStore: { get: () => ({ apps: { antigravity: { executablePath: "C:\\Apps\\Antigravity\\Antigravity.exe" } } }), save() {} },
+    platform: "win32",
+    listProcesses: async () => [{ pid: 1, name: "Antigravity.exe", executablePath: "", createdAt: "2026-08-15T01:00:00.000Z" }],
+    fileExists: () => true,
+  });
+  const status = await service.getStatus("antigravity");
+  assert.equal(status.process.status, "running");
+  assert.equal(status.lastLaunchedAt, "2026-08-15T01:00:00.000Z");
+});
