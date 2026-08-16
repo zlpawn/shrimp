@@ -45,7 +45,7 @@ test("board annotates sessions with queue state", async () => {
 
 test("board separates recent waiting from completed sessions", async () => {
   const recent = { ...idleClaude, lastActivityAt: new Date(Date.now() - 30 * 60 * 1000).toISOString() };
-  const old = { ...idleClaude, id: "claude-old", lastActivityAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() };
+  const old = { ...idleClaude, id: "claude-old", lastActivityAt: new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString() };
   const running = { ...idleClaude, id: "claude-running", lastActivityAt: new Date().toISOString() };
   const { service } = setup({ sessions: [recent, old, running] });
   const board = await service.board();
@@ -53,6 +53,15 @@ test("board separates recent waiting from completed sessions", async () => {
   assert.equal(byId.get("claude-1"), "waiting_input");
   assert.equal(byId.get("claude-old"), "completed");
   assert.equal(byId.get("claude-running"), "running");
+});
+
+test("board hides sessions inactive for more than forty-eight hours", async () => {
+  const old = { ...idleClaude, id: "claude-old", lastActivityAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() };
+  const recent = { ...idleClaude, id: "claude-recent", lastActivityAt: new Date(Date.now() - 47 * 60 * 60 * 1000).toISOString() };
+  const { service } = setup({ sessions: [old, recent] });
+  const board = await service.board();
+  assert.equal(board.sessions.length, 1);
+  assert.equal(board.sessions[0].id, "claude-recent");
 });
 
 test("dispatchReady skips running sessions and dispatches idle sessions", async () => {

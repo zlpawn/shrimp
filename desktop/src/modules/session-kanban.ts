@@ -66,8 +66,8 @@ function renderCard(session: BoardSession) {
   const selected = session.id === state.selectedSessionId ? " selected" : "";
   return `
     <button class="session-kanban-card${selected}" onclick="window.__sessionKanbanSelect('${escapeHtml(session.id)}')">
-      <span class="session-kanban-client">${escapeHtml(session.client)}</span>
-      <strong>${escapeHtml(session.title)}</strong>
+      <span class="session-kanban-client">${escapeHtml(displayClient(session.client))}</span>
+      <strong class="session-kanban-title" title="双击复制标题" ondblclick="event.stopPropagation(); window.__sessionKanbanCopyTitle('${escapeHtml(session.id)}')">${escapeHtml(session.title)}</strong>
       <small>${escapeHtml(session.workspacePath || "global")}</small>
       <time>${escapeHtml(formatTime(session.lastActivityAt))}</time>
     </button>
@@ -76,7 +76,7 @@ function renderCard(session: BoardSession) {
 
 function displayClient(client: string) {
   if (client === "codex") return "Codex";
-  if (client === "claude") return "Claude";
+  if (client === "claude") return "Claude desktop";
   if (client === "antigravity") return "Antigravity";
   return client;
 }
@@ -97,6 +97,26 @@ function visibleSessions() {
     ? filtered
     : [selected, ...filtered];
   return base.slice(0, 30);
+}
+
+function visibleSessionsByClient() {
+  const result = new Map<string, BoardSession[]>();
+  for (const session of visibleSessions()) {
+    const list = result.get(session.client) || [];
+    list.push(session);
+    result.set(session.client, list);
+  }
+  return result;
+}
+
+function renderTargetOptions() {
+  const groups = visibleSessionsByClient();
+  if (!groups.size) return `<option value="">当前筛选下没有可投递会话</option>`;
+  return [...groups.entries()].map(([client, sessions]) => `
+    <optgroup label="${escapeHtml(displayClient(client))}">
+      ${sessions.map(session => `<option value="${escapeHtml(session.id)}" ${session.id === state.selectedSessionId ? "selected" : ""}>${escapeHtml(session.title.slice(0, 48))}${session.title.length > 48 ? "…" : ""}</option>`).join("")}
+    </optgroup>
+  `).join("");
 }
 
 function renderQueue(item: QueueItem) {
@@ -156,7 +176,7 @@ function render() {
     <form class="session-kanban-compose" onsubmit="window.__sessionKanbanSubmit(event)">
       <label for="session-kanban-target">目标会话</label>
       <select id="session-kanban-target">
-        ${visibleSessions().map(session => `<option value="${escapeHtml(session.id)}" ${session.id === state.selectedSessionId ? "selected" : ""}>${escapeHtml(displayClient(session.client))} · ${escapeHtml(session.title.slice(0, 48))}${session.title.length > 48 ? "…" : ""}</option>`).join("")}
+        ${renderTargetOptions()}
       </select>
       <label for="session-kanban-message">待发消息</label>
       <textarea id="session-kanban-message" rows="3" placeholder="会话空闲后自动投递">${escapeHtml(state.draft)}</textarea>
@@ -196,6 +216,15 @@ function setClientFilter(client: string) {
 
 function refresh() {
   return load();
+}
+
+function copyTitle(id: string) {
+  const session = state.sessions.find(item => item.id === id);
+  if (!session) return;
+  navigator.clipboard.writeText(session.title).then(
+    () => showToast("标题已复制", "success"),
+    () => showToast("复制标题失败", "danger"),
+  );
 }
 
 async function submit(event: Event) {
@@ -249,6 +278,7 @@ async function dispatchReady() {
 }
 
 (window as any).__sessionKanbanSelect = select;
+(window as any).__sessionKanbanCopyTitle = copyTitle;
 (window as any).__sessionKanbanFilter = setClientFilter;
 (window as any).__sessionKanbanRefresh = refresh;
 (window as any).__sessionKanbanSubmit = submit;

@@ -29,7 +29,29 @@ test("panel module filters clients and limits target options", () => {
   assert.match(source, /visibleSessions/);
   assert.match(source, /slice\(0, 30\)/);
   assert.match(source, /completed/);
-  assert.match(source, /idle/);
+ assert.match(source, /idle/);
+
+});
+
+test("panel exposes client display names and title copy action", () => {
+  const source = fs.readFileSync(path.join(root, "desktop/src/modules/session-kanban.ts"), "utf8");
+  assert.match(source, /"Claude desktop"/);
+  assert.match(source, /"Antigravity"/);
+  assert.match(source, /__sessionKanbanCopyTitle/);
+  assert.match(source, /ondblclick/);
+});
+
+test("target session options are grouped by client", () => {
+  const source = fs.readFileSync(path.join(root, "desktop/src/modules/session-kanban.ts"), "utf8");
+  assert.match(source, /renderTargetOptions/);
+  assert.match(source, /<optgroup label=/);
+  assert.match(source, /visibleSessionsByClient/);
+});
+
+test("card metadata is not selectable while title remains copyable", () => {
+  const css = fs.readFileSync(path.join(root, "desktop/src/styles/panel.css"), "utf8");
+  assert.match(css, /\.session-kanban-title/);
+  assert.match(css, /\.session-kanban-card small, \.session-kanban-card time \{[^}]*user-select: none/);
 });
 
 test("styles define board columns without nested cards", () => {

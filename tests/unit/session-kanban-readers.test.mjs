@@ -31,18 +31,35 @@ test("codex reader normalizes thread metadata", async () => {
   assert.equal(sessions[0].dispatchTarget, "thread-1");
 });
 
+test("codex reader prefers renamed thread titles", async () => {
+  const dir = tempDir();
+  const stateFile = path.join(dir, "state_5.sqlite");
+  const db = new DatabaseSync(stateFile);
+  db.exec("CREATE TABLE threads (id TEXT PRIMARY KEY, title TEXT NOT NULL, cwd TEXT NOT NULL, created_at_ms INTEGER NOT NULL, updated_at_ms INTEGER NOT NULL, archived INTEGER NOT NULL, rollout_path TEXT NOT NULL)");
+  db.prepare("INSERT INTO threads VALUES ('thread-1', 'Old first prompt', 'D:/repo', 1000, 2000, 0, 'C:/rollout.jsonl')").run();
+  db.close();
+  const indexFile = path.join(dir, "session_index.jsonl");
+  fs.writeFileSync(indexFile, [
+    JSON.stringify({ id: "thread-1", thread_name: "First name", updated_at: "2026-08-15T01:00:00Z" }),
+    JSON.stringify({ id: "thread-1", thread_name: "Final name", updated_at: "2026-08-15T02:00:00Z" }),
+  ].join("\n"));
+  const [session] = await createCodexReader({ stateFile, indexFile }).list();
+  assert.equal(session.title, "Final name");
+});
+
 test("claude reader reads desktop sessions and skips subagents", async () => {
   const dir = tempDir();
   fs.writeFileSync(path.join(dir, "session.jsonl"), [
     JSON.stringify({ timestamp: "2026-08-15T01:00:00.000Z", cwd: "D:/repo", entrypoint: "claude-desktop-3p", type: "user", message: { content: "Please continue" } }),
     JSON.stringify({ timestamp: "2026-08-15T01:01:00.000Z", type: "assistant", message: { content: "Done" } }),
+    JSON.stringify({ type: "custom-title", customTitle: "Claude custom title", sessionId: "session" }),
   ].join("\n"));
   fs.writeFileSync(path.join(dir, "agent-sub.jsonl"), "{}\n");
   const sessions = await createClaudeReader({ projectsDir: dir }).list();
   assert.equal(sessions.length, 1);
   assert.equal(sessions[0].client, "claude");
   assert.equal(sessions[0].id, "session");
-  assert.equal(sessions[0].title, "Please continue");
+  assert.equal(sessions[0].title, "Claude custom title");
   assert.equal(sessions[0].workspacePath, "D:/repo");
   assert.equal(sessions[0].lastActivityAt, "2026-08-15T01:01:00.000Z");
 });
@@ -54,14 +71,15 @@ test("antigravity reader reads conversations and excludes missing transcripts", 
   fs.writeFileSync(path.join(convo, ".system_generated", "logs", "transcript.jsonl"), [
     JSON.stringify({ created_at: "2026-08-15T02:00:00.000Z", type: "USER_INPUT", content: "<USER_REQUEST>\nGenerate images\n</USER_REQUEST>" }),
     JSON.stringify({ created_at: "2026-08-15T02:02:00.000Z", type: "PLANNER_RESPONSE", content: "Completed" }),
+    JSON.stringify({ created_at: "2026-08-15T02:03:00.000Z", type: "CHECKPOINT", content: "# USER Objective:\nAntigravity checkpoint title" }),
   ].join("\n"));
   fs.mkdirSync(path.join(dir, "conversation-2"), { recursive: true });
   const sessions = await createAntigravityReader({ brainDir: dir }).list();
   assert.equal(sessions.length, 1);
   assert.equal(sessions[0].client, "antigravity");
   assert.equal(sessions[0].id, "conversation-1");
-  assert.equal(sessions[0].title, "Generate images");
-  assert.equal(sessions[0].lastActivityAt, "2026-08-15T02:02:00.000Z");
+  assert.equal(sessions[0].title, "Antigravity checkpoint title");
+  assert.equal(sessions[0].lastActivityAt, "2026-08-15T02:03:00.000Z");
 });
 
 test("readers normalize windows extended paths and long noisy titles", async () => {
