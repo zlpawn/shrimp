@@ -317,7 +317,6 @@ function ensureSessionKanbanService() {
   return globalSessionKanbanService;
 }
 
-let globalMcpManagementService = null;
 function ensureMcpManagementService() {
   if (globalMcpManagementService) return globalMcpManagementService;
   const paths = resolveMcpPaths({
