@@ -69,6 +69,10 @@
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
                     用量统计 (Token Analytics)
                 </a>
+                <a href="#session-kanban" class="nav-item" onclick="switchTab('session-kanban')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="margin-right: 8px;"><rect x="3" y="4" width="5" height="16" rx="1"></rect><rect x="10" y="4" width="5" height="10" rx="1"></rect><rect x="17" y="4" width="4" height="14" rx="1"></rect></svg>
+                    会话看板 (Session Kanban)
+                </a>
                 <a href="#proxy" class="nav-item" onclick="switchTab('proxy')">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
                     网络代理 (System Proxy)
@@ -834,6 +838,15 @@ experimental_bearer_token = "dummy"</pre>
                     </div>
                 </div>
                 <div id="command-apps-root" class="command-apps-root" aria-live="polite"></div>
+            </section>
+            <section id="section-session-kanban" class="tab-section" style="display: none;">
+                <div class="section-header">
+                    <div>
+                        <h2>会话看板 (Session Kanban)</h2>
+                        <p>统一查看 Codex、Claude Desktop 和 Antigravity 会话，并将下一条消息排队到空闲后自动投递。</p>
+                    </div>
+                </div>
+                <div id="session-kanban-root" class="session-kanban-root" aria-live="polite"></div>
             </section>
             <!-- NAT Traversal Section -->
             <section id="section-nat-traversal" class="tab-section" style="display: none;">
