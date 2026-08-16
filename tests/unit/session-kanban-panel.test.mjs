@@ -47,7 +47,6 @@ test("target session options are grouped by client", () => {
   assert.match(source, /<optgroup label=/);
   assert.match(source, /targetSessionsByClient/);
   const css = fs.readFileSync(path.join(root, "desktop/src/styles/panel.css"), "utf8");
-  assert.match(css, /grid-template-columns: minmax\(180px, 320px\) minmax\(300px, auto\) auto/);
 });
 
 test("card metadata is not selectable while title remains copyable", () => {
@@ -73,7 +72,22 @@ test("board filters are independent from target session picker", () => {
 test("board toolbar keeps search and segmented controls grouped", () => {
   const css = fs.readFileSync(path.join(root, "desktop/src/styles/panel.css"), "utf8");
   assert.match(css, /\.session-kanban-filter-group\s*\{/);
-  assert.match(css, /\.session-kanban-segmented button\s*\{[^}]*padding: 0 14px/);
+  assert.match(css, /\.session-kanban-segmented button\s*\{[^}]*padding: 0 18px/);
+});
+
+test("client filter labels stay on one line and refresh is right-aligned", () => {
+  const css = fs.readFileSync(path.join(root, "desktop/src/styles/panel.css"), "utf8");
+  assert.match(css, /\.session-kanban-segmented button\s*\{[^}]*white-space: nowrap/);
+  assert.match(css, /\.session-kanban-segmented button\s*\{[^}]*justify-content: center/);
+  assert.match(css, /\.session-kanban-toolbar\s*\{[^}]*grid-template-columns: minmax\(0, auto\) auto/);
+});
+
+test("board explains status transitions near the toolbar", () => {
+  const source = fs.readFileSync(path.join(root, "desktop/src/modules/session-kanban.ts"), "utf8");
+  assert.match(source, /session-kanban-rules/);
+  assert.match(source, /90 秒内有活动/);
+  assert.match(source, /超过 48 小时不展示/);
+  assert.match(source, /有待发消息时优先显示为「排队中」/);
 });
 
 test("session id supports double-click copy", () => {

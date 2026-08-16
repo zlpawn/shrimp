@@ -5361,7 +5361,7 @@ input:focus, select:focus {
 
 .session-kanban-root { display: flex; flex-direction: column; gap: 20px; }
 .session-kanban-toolbar {
-  display: grid; grid-template-columns: minmax(180px, 320px) minmax(300px, auto) auto; gap: 10px; align-items: center; justify-content: space-between;
+  display: grid; grid-template-columns: minmax(0, auto) auto; gap: 16px; align-items: center; justify-content: space-between;
 }
 
 .session-kanban-meta {
@@ -5375,6 +5375,11 @@ input:focus, select:focus {
   background: var(--input-bg); color: var(--text-primary);
 }
 
+.session-kanban-rules {
+  display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--text-secondary);
+  font-size: 11px; line-height: 1.4;
+}
+
 .session-kanban-filter-group { display: flex; align-items: center; gap: 8px; }
 .session-kanban-filter-group input { width: 220px; }
 .session-kanban-segmented {
@@ -5382,7 +5387,8 @@ input:focus, select:focus {
   border-radius: 8px; background: var(--input-bg);
 }
 .session-kanban-segmented button {
-  min-width: 72px; height: 30px; padding: 0 14px; border: none; border-radius: 6px;
+  min-width: 96px; height: 32px; padding: 0 18px; border: none; border-radius: 6px;
+  display: inline-flex; align-items: center; justify-content: center; white-space: nowrap;
   background: transparent; color: var(--text-secondary); font-size: 12px; font-weight: 550;
   transition: background .18s ease, color .18s ease, transform .18s ease;
 }

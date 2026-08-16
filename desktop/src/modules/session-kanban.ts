@@ -167,6 +167,13 @@ function render() {
       </div>
       <button class="btn" type="button" onclick="window.__sessionKanbanRefresh()">刷新</button>
     </div>
+    <div class="session-kanban-rules">
+      <span>运行中：90 秒内有活动</span>
+      <span>等待输入：90 秒到 24 小时无活动</span>
+      <span>已完成：超过 24 小时无活动</span>
+      <span>超过 48 小时不展示</span>
+      <span>有待发消息时优先显示为「排队中」</span>
+    </div>
     <div class="session-kanban-meta">
       <span>共 ${state.sessions.length} 个会话</span>
       <span>排队中 ${state.sessions.filter(item => item.status === "queued").length}</span>
