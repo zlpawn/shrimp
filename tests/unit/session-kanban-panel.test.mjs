@@ -26,7 +26,7 @@ test("panel module fetches board and submits queue messages", () => {
 
 test("panel module filters clients and limits target options", () => {
   const source = fs.readFileSync(path.join(root, "desktop/src/modules/session-kanban.ts"), "utf8");
-  assert.match(source, /visibleSessions/);
+  assert.match(source, /filterBoardSessions/);
   assert.match(source, /slice\(0, 30\)/);
   assert.match(source, /completed/);
  assert.match(source, /idle/);
@@ -45,9 +45,8 @@ test("target session options are grouped by client", () => {
   const source = fs.readFileSync(path.join(root, "desktop/src/modules/session-kanban.ts"), "utf8");
   assert.match(source, /renderTargetOptions/);
   assert.match(source, /<optgroup label=/);
- assert.match(source, /visibleSessionsByClient/);
+  assert.match(source, /targetSessionsByClient/);
   const css = fs.readFileSync(path.join(root, "desktop/src/styles/panel.css"), "utf8");
-  assert.match(source, /visibleSessions\(\{ includeCompleted: false }\).filter/);
   assert.match(css, /grid-template-columns: minmax\(180px, 320px\) minmax\(300px, auto\) auto/);
 });
 
@@ -59,10 +58,28 @@ test("card metadata is not selectable while title remains copyable", () => {
 
 test("board renders only meaningful columns and shows searchable short ids", () => {
   const source = fs.readFileSync(path.join(root, "desktop/src/modules/session-kanban.ts"), "utf8");
-  assert.match(source, /columnsToRender/);
   assert.match(source, /shortSessionId/);
   assert.match(source, /session-kanban-id/);
   assert.match(source, /搜索标题、路径或 ID/);
+});
+
+test("board filters are independent from target session picker", () => {
+  const source = fs.readFileSync(path.join(root, "desktop/src/modules/session-kanban.ts"), "utf8");
+  assert.match(source, /filterBoardSessions/);
+  assert.match(source, /targetSessionsByClient/);
+  assert.doesNotMatch(source, /visibleSessions\(\{ includeCompleted: false }\).filter/);
+});
+
+test("board toolbar keeps search and segmented controls grouped", () => {
+  const css = fs.readFileSync(path.join(root, "desktop/src/styles/panel.css"), "utf8");
+  assert.match(css, /\.session-kanban-filter-group\s*\{/);
+  assert.match(css, /\.session-kanban-segmented button\s*\{[^}]*padding: 0 14px/);
+});
+
+test("session id supports double-click copy", () => {
+  const source = fs.readFileSync(path.join(root, "desktop/src/modules/session-kanban.ts"), "utf8");
+  assert.match(source, /__sessionKanbanCopyId/);
+  assert.match(source, /session-kanban-id[^>]*ondblclick/);
 });
 
 test("compose form uses the panel input typography", () => {

@@ -72,7 +72,7 @@ function renderCard(session: BoardSession) {
     <button class="session-kanban-card${selected}" onclick="window.__sessionKanbanSelect('${escapeHtml(session.id)}')">
       <span class="session-kanban-client">${escapeHtml(displayClient(session.client))}</span>
       <strong class="session-kanban-title" title="双击复制标题" ondblclick="event.stopPropagation(); window.__sessionKanbanCopyTitle('${escapeHtml(session.id)}')">${escapeHtml(session.title)}</strong>
-      <code class="session-kanban-id" title="${escapeHtml(session.id)}">${escapeHtml(shortSessionId(session.id))}</code>
+      <code class="session-kanban-id" title="双击复制 ID" ondblclick="event.stopPropagation(); window.__sessionKanbanCopyId('${escapeHtml(session.id)}')">${escapeHtml(shortSessionId(session.id))}</code>
       <small>${escapeHtml(session.workspacePath || "global")}</small>
       <time>${escapeHtml(formatTime(session.lastActivityAt))}</time>
     </button>
@@ -86,27 +86,23 @@ function displayClient(client: string) {
   return client;
 }
 
-function visibleSessions({ includeCompleted = true } = {}) {
+function filterBoardSessions() {
   const keyword = state.search.trim().toLowerCase();
-  const target = state.selectedSessionId;
-  const selected = state.sessions.find(session => session.id === target);
   const filtered = state.sessions.filter(session => {
     if (state.clientFilter !== "all" && session.client !== state.clientFilter) return false;
-    if (!includeCompleted && (session.status === "completed" || session.status === "error")) return false;
     if (!keyword) return true;
     return session.title.toLowerCase().includes(keyword)
       || session.workspacePath?.toLowerCase().includes(keyword)
       || session.id.toLowerCase().includes(keyword);
   });
-  const base = filtered.some(session => session.id === target) || !selected
-    ? filtered
-    : [selected, ...filtered];
-  return base.slice(0, 30);
+  return filtered;
 }
 
-function visibleSessionsByClient() {
+function targetSessionsByClient() {
   const result = new Map<string, BoardSession[]>();
-  for (const session of visibleSessions()) {
+  for (const session of state.sessions
+    .filter(session => session.status !== "completed" && session.status !== "error")
+    .slice(0, 30)) {
     const list = result.get(session.client) || [];
     list.push(session);
     result.set(session.client, list);
@@ -115,8 +111,8 @@ function visibleSessionsByClient() {
 }
 
 function renderTargetOptions() {
-  const groups = visibleSessionsByClient();
-  if (!groups.size) return `<option value="">当前筛选下没有可投递会话</option>`;
+  const groups = targetSessionsByClient();
+  if (!groups.size) return `<option value="">没有可投递会话</option>`;
   return [...groups.entries()].map(([client, sessions]) => `
     <optgroup label="${escapeHtml(displayClient(client))}">
       ${sessions.map(session => `<option value="${escapeHtml(session.id)}" ${session.id === state.selectedSessionId ? "selected" : ""}>${escapeHtml(session.title.slice(0, 48))}${session.title.length > 48 ? "…" : ""}</option>`).join("")}
@@ -152,8 +148,7 @@ function render() {
   }
 
   const boardHtml = columns.map(column => {
-    const items = visibleSessions({ includeCompleted: false }).filter(session => session.status === column.id);
-    if (!items.length) return "";
+    const items = filterBoardSessions().filter(session => session.status === column.id);
     return `
       <section class="session-kanban-column" data-status="${column.id}">
         <header><div><h3>${column.title}</h3><small>${column.hint}</small></div><span>${items.length}</span></header>
@@ -161,14 +156,14 @@ function render() {
       </section>
     `;
   }).join("");
-  const columnsToRender = boardHtml;
-
   el.innerHTML = `
     ${state.error ? `<div class="session-kanban-error">${escapeHtml(state.error)}</div>` : ""}
     <div class="session-kanban-toolbar">
-      <input id="session-kanban-search" value="${escapeHtml(state.search)}" placeholder="搜索标题、路径或 ID" />
-      <div class="session-kanban-segmented">
+      <div class="session-kanban-filter-group">
+        <input id="session-kanban-search" value="${escapeHtml(state.search)}" placeholder="搜索标题、路径或 ID" />
+        <div class="session-kanban-segmented">
         ${clients.map(client => `<button type="button" class="${state.clientFilter === client ? "active" : ""}" onclick="window.__sessionKanbanFilter('${client}')">${client === "all" ? "全部" : displayClient(client)}</button>`).join("")}
+      </div>
       </div>
       <button class="btn" type="button" onclick="window.__sessionKanbanRefresh()">刷新</button>
     </div>
@@ -234,6 +229,13 @@ function copyTitle(id: string) {
   );
 }
 
+function copyId(id: string) {
+  navigator.clipboard.writeText(id).then(
+    () => showToast("ID 已复制", "success"),
+    () => showToast("复制 ID 失败", "danger"),
+  );
+}
+
 async function submit(event: Event) {
   event.preventDefault();
   const target = document.getElementById("session-kanban-target") as HTMLSelectElement | null;
@@ -286,6 +288,7 @@ async function dispatchReady() {
 
 (window as any).__sessionKanbanSelect = select;
 (window as any).__sessionKanbanCopyTitle = copyTitle;
+(window as any).__sessionKanbanCopyId = copyId;
 (window as any).__sessionKanbanFilter = setClientFilter;
 (window as any).__sessionKanbanRefresh = refresh;
 (window as any).__sessionKanbanSubmit = submit;
