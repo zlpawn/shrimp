@@ -121,6 +121,9 @@ function renderTargetOptions() {
 }
 
 function renderQueue(item: QueueItem) {
+  const session = state.sessions.find(s => s.id === item.sessionId);
+  const sessionTitle = session?.title || "";
+  const displayTitle = sessionTitle || item.sessionId;
   const action = item.status === "failed" || item.status === "canceled"
     ? `<button class="btn" onclick="window.__sessionKanbanRetry('${item.id}')">重试</button>`
     : item.status === "pending"
@@ -129,7 +132,10 @@ function renderQueue(item: QueueItem) {
   return `
     <div class="session-kanban-queue-row">
       <div>
-        <strong>${escapeHtml(item.sessionId)}</strong>
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <strong>${escapeHtml(displayTitle)}</strong>
+          ${sessionTitle ? `<code class="session-kanban-id" title="双击复制 ID" ondblclick="event.stopPropagation(); window.__sessionKanbanCopyId('${escapeHtml(item.sessionId)}')">${escapeHtml(shortSessionId(item.sessionId))}</code>` : ""}
+        </div>
         <p>${escapeHtml(item.message)}</p>
         ${item.error ? `<small>${escapeHtml(item.error)}</small>` : ""}
       </div>
