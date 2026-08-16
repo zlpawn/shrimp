@@ -45,7 +45,10 @@ test("target session options are grouped by client", () => {
   const source = fs.readFileSync(path.join(root, "desktop/src/modules/session-kanban.ts"), "utf8");
   assert.match(source, /renderTargetOptions/);
   assert.match(source, /<optgroup label=/);
-  assert.match(source, /visibleSessionsByClient/);
+ assert.match(source, /visibleSessionsByClient/);
+  const css = fs.readFileSync(path.join(root, "desktop/src/styles/panel.css"), "utf8");
+  assert.match(source, /visibleSessions\(\{ includeCompleted: false }\).filter/);
+  assert.match(css, /grid-template-columns: minmax\(180px, 320px\) minmax\(300px, auto\) auto/);
 });
 
 test("card metadata is not selectable while title remains copyable", () => {

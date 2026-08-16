@@ -5361,7 +5361,7 @@ input:focus, select:focus {
 
 .session-kanban-root { display: flex; flex-direction: column; gap: 20px; }
 .session-kanban-toolbar {
-  display: grid; grid-template-columns: minmax(240px, 1fr) auto auto; gap: 10px; align-items: center;
+  display: grid; grid-template-columns: minmax(180px, 320px) minmax(300px, auto) auto; gap: 10px; align-items: center; justify-content: space-between;
 }
 
 .session-kanban-meta {

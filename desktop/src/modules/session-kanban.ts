@@ -81,13 +81,13 @@ function displayClient(client: string) {
   return client;
 }
 
-function visibleSessions() {
+function visibleSessions({ includeCompleted = true } = {}) {
   const keyword = state.search.trim().toLowerCase();
   const target = state.selectedSessionId;
   const selected = state.sessions.find(session => session.id === target);
   const filtered = state.sessions.filter(session => {
     if (state.clientFilter !== "all" && session.client !== state.clientFilter) return false;
-    if (session.status === "completed" || session.status === "error") return false;
+    if (!includeCompleted && (session.status === "completed" || session.status === "error")) return false;
     if (!keyword) return true;
     return session.title.toLowerCase().includes(keyword)
       || session.workspacePath?.toLowerCase().includes(keyword)
@@ -147,7 +147,7 @@ function render() {
   }
 
   const boardHtml = columns.map(column => {
-    const items = state.sessions.filter(session => session.status === column.id);
+    const items = visibleSessions({ includeCompleted: false }).filter(session => session.status === column.id);
     return `
       <section class="session-kanban-column" data-status="${column.id}">
         <header><div><h3>${column.title}</h3><small>${column.hint}</small></div><span>${items.length}</span></header>
