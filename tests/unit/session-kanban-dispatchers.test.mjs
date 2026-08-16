@@ -38,11 +38,15 @@ test("codex uses official resume command", async () => {
   const codex = dispatchers.find(item => item.client === "codex");
   await codex.dispatch({ dispatchTarget: "thread1", workspacePath: "D:/repo" }, "Continue");
 
-  assert.deepEqual(calls[0], ["resume", "thread1", "Continue"]);
+  assert.deepEqual(calls[0], ["exec", "resume", "thread1", "Continue"]);
 });
 
-test("command failure throws stderr", async () => {
-  const runners = new Map([["claude", async () => ({ stdout: "", stderr: "auth failed" })]]);
+test("command failure throws error", async () => {
+  const runners = new Map([["claude", async () => {
+    const error = new Error("auth failed");
+    error.stderr = "auth failed";
+    throw error;
+  }]]);
   const dispatchers = createCliDispatchers({ runners });
   const claude = dispatchers.find(item => item.client === "claude");
   await assert.rejects(() => claude.dispatch({ dispatchTarget: "s1" }, "Hi"), /auth failed/);
