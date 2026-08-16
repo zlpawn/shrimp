@@ -1,6 +1,7 @@
 # Local secrets and user config
 .env
 gateway.secrets.json
+mcp.secrets.json
 models.json
 cli-sources.json
 cli-install-history.json
