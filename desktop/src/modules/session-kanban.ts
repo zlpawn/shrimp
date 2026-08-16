@@ -37,11 +37,18 @@ type ClientPathConfig = {
 
 type PathsConfig = Record<string, ClientPathConfig>;
 
+type ToolCall = {
+  name: string;
+  summary?: string;
+  detail?: string;
+};
+
 type ChatMessage = {
   id: string;
   role: "user" | "assistant" | "system";
   content: string;
   timestamp?: string;
+  tools?: ToolCall[];
 };
 
 type SessionTranscript = {
@@ -111,14 +118,14 @@ function renderCard(session: BoardSession) {
   const selected = session.id === state.selectedSessionId ? " selected" : "";
   return `
     <div class="session-kanban-card${selected}" onclick="window.__sessionKanbanSelect('${escapeHtml(session.id)}')">
-      <div class="session-kanban-card-top">
-        <span class="session-kanban-client">${escapeHtml(displayClient(session.client))}</span>
-        <button class="btn btn-xs session-kanban-view-btn" type="button" onclick="event.stopPropagation(); window.__sessionKanbanOpenChat('${escapeHtml(session.id)}')">💬 查看对话</button>
-      </div>
+      <span class="session-kanban-client">${escapeHtml(displayClient(session.client))}</span>
       <strong class="session-kanban-title" title="双击复制标题" ondblclick="event.stopPropagation(); window.__sessionKanbanCopyTitle('${escapeHtml(session.id)}')">${escapeHtml(session.title)}</strong>
       <code class="session-kanban-id" title="双击复制 ID" ondblclick="event.stopPropagation(); window.__sessionKanbanCopyId('${escapeHtml(session.id)}')">${escapeHtml(shortSessionId(session.id))}</code>
       <small>${escapeHtml(session.workspacePath || "global")}</small>
-      <time>${escapeHtml(formatTime(session.lastActivityAt))}</time>
+      <div class="session-kanban-card-footer">
+        <time>${escapeHtml(formatTime(session.lastActivityAt))}</time>
+        <button class="btn btn-xs session-kanban-view-btn" type="button" onclick="event.stopPropagation(); window.__sessionKanbanOpenChat('${escapeHtml(session.id)}')">💬 查看对话</button>
+      </div>
     </div>
   `;
 }
@@ -268,19 +275,42 @@ function renderChatDrawer() {
 
   let contentHtml = "";
   if (state.chatLoading) {
-    contentHtml = "<div class=\"session-kanban-empty\">正在加载对话流…</div>";
+    contentHtml = "<div class=\"session-kanban-empty\">正在加载对话流与工具记录…</div>";
   } else if (!data || data.messages.length === 0) {
     contentHtml = "<div class=\"session-kanban-empty\">暂无对话内容</div>";
   } else {
-    contentHtml = data.messages.map(msg => `
-      <div class="session-kanban-msg-item ${msg.role === "user" ? "is-user" : "is-assistant"}">
-        <div class="session-kanban-msg-meta">
-          <strong>${msg.role === "user" ? "用户提问" : "AI 回复"}</strong>
-          <time>${escapeHtml(formatTime(msg.timestamp))}</time>
+    contentHtml = data.messages.map(msg => {
+      const isUser = msg.role === "user";
+      const toolsHtml = msg.tools && msg.tools.length > 0 ? `
+        <details class="session-kanban-tools-details">
+          <summary class="session-kanban-tools-summary">
+            <span>🛠️ 调用了 <strong>${msg.tools.length}</strong> 个工具 (${escapeHtml([...new Set(msg.tools.map(t => t.name))].slice(0, 3).join(", "))}${msg.tools.length > 3 ? "..." : ""})</span>
+          </summary>
+          <div class="session-kanban-tools-content">
+            ${msg.tools.map(tool => `
+              <div class="session-kanban-tool-badge">
+                <div class="session-kanban-tool-row">
+                  <code class="session-kanban-tool-name">${escapeHtml(tool.name)}</code>
+                  ${tool.summary ? `<span class="session-kanban-tool-desc">${escapeHtml(tool.summary)}</span>` : ""}
+                </div>
+                ${tool.detail ? `<pre class="session-kanban-tool-code">${escapeHtml(tool.detail)}</pre>` : ""}
+              </div>
+            `).join("")}
+          </div>
+        </details>
+      ` : "";
+
+      return `
+        <div class="session-kanban-msg-item ${isUser ? "is-user" : "is-assistant"}">
+          <div class="session-kanban-msg-meta">
+            <strong>${isUser ? "👤 用户提问" : "🤖 Agent 回复"}</strong>
+            <time>${escapeHtml(formatTime(msg.timestamp))}</time>
+          </div>
+          ${toolsHtml}
+          ${msg.content ? `<div class="session-kanban-msg-content">${escapeHtml(msg.content)}</div>` : ""}
         </div>
-        <div class="session-kanban-msg-content">${escapeHtml(msg.content)}</div>
-      </div>
-    `).join("");
+      `;
+    }).join("");
   }
 
   return `
