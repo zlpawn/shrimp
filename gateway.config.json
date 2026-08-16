@@ -709,5 +709,17 @@
       "url": "http://39.105.19.237:7500/static/#/"
     },
     "peers": []
+  },
+  "commandApps": {
+    "apps": {
+      "antigravity": {
+        "executablePath": "C:\\Users\\xtea\\AppData\\Local\\Programs\\antigravity\\Antigravity.exe",
+        "args": [
+          "--no-sandbox"
+        ],
+        "manuallyConfigured": false,
+        "lastLaunchedAt": null
+      }
+    }
   }
 }

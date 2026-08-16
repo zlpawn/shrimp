@@ -535,6 +535,50 @@ test("tools cards list renders antigravity subscribe card", async () => {
   assert.match(html, /一键登录/);
 });
 
+test("subscription tools render grok and remaining usage", async () => {
+  const html = await readSources();
+  assert.match(html, /tools: \['antigravity-subscribe', 'codex-subscribe', 'grok-subscribe'\]/);
+  assert.match(html, /'grok-subscribe': { name: '接入 Grok 订阅'/);
+  assert.match(html, /toolId === 'grok-subscribe'\) renderGrokSubscribeDetail/);
+  assert.match(html, /v1\/subscription-auth\/grok\/status/);
+  assert.match(html, /loadSubscriptionUsage/);
+  assert.match(html, /订阅剩余用量/);
+  assert.match(html, /formatSubscriptionUsage/);
+});
+
+test("subscription usage refresh handlers are exposed to inline onclick", async () => {
+  const html = await readSources();
+  assert.match(html, /window\.loadSubscriptionUsage\s*=\s*async function/);
+  assert.match(html, /window\.loadGrokAuthStatus\s*=\s*async function/);
+});
+
+test("subscription detail pages auto-load usage and show loading state", async () => {
+  const html = await readSources();
+  assert.match(html, /usageLoading: false/);
+  assert.match(html, /autoLoadUsage/);
+  assert.match(html, /获取订阅剩余用量中/);
+  assert.match(html, /最近更新/);
+});
+
+test("subscription usage formats ISO and epoch reset times", async () => {
+  const html = await readSources();
+  assert.match(html, /function formatUsageTime/);
+  assert.match(html, /formatUsageTime\(usage\.reset_at\)/);
+});
+
+test("antigravity percentage usage does not fall into null credits branch", async () => {
+  const html = await readSources();
+  assert.match(html, /usage\.remaining_credits !== null && usage\.remaining_credits !== undefined/);
+  assert.match(html, /usage\.reset_hint/);
+});
+
+test("antigravity usage renders every localized limit separately", async () => {
+  const html = await readSources();
+  assert.match(html, /function formatAntigravityUsageLimits/);
+  assert.match(html, /周额度/);
+  assert.match(html, /5 小时额度/);
+});
+
 test("endpoint type list includes antigravity google subscription label", async () => {
   const html = await readSources();
   assert.match(html, /value: "antigravity"/);
