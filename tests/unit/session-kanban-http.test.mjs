@@ -61,3 +61,25 @@ test("routes cancel retry and dispatch", async () => {
   assert.equal(response.statusCode, 200);
   assert.deepEqual(response.body, { dispatched: 0, waiting: 0 });
 });
+
+test("routes paths config get, update and reset", async () => {
+  const mockPaths = { codex: { id: "codex", fields: [{ key: "stateFile", value: "C:/test.db" }] } };
+  const service = {
+    getPathsConfig: async () => mockPaths,
+    setPathsConfig: async body => ({ ...mockPaths, ...body }),
+    resetPathsConfig: async () => mockPaths,
+  };
+
+  const getRes = res();
+  await routeSessionKanbanRequest(req("GET"), getRes, "/v1/session-kanban/paths", { service });
+  assert.equal(getRes.statusCode, 200);
+  assert.deepEqual(getRes.body, mockPaths);
+
+  const putRes = res();
+  await routeSessionKanbanRequest(req("PUT", { codex: { id: "codex" } }), putRes, "/v1/session-kanban/paths", { service });
+  assert.equal(putRes.statusCode, 200);
+
+  const resetRes = res();
+  await routeSessionKanbanRequest(req("POST", {}), resetRes, "/v1/session-kanban/paths/reset", { service });
+  assert.equal(resetRes.statusCode, 200);
+});

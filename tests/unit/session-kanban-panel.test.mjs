@@ -108,3 +108,15 @@ test("styles define board columns without nested cards", () => {
   assert.match(css, /\.session-kanban-board/);
   assert.match(css, /\.session-kanban-card/);
 });
+
+test("panel exposes paths configuration modal and actions", () => {
+  const source = fs.readFileSync(path.join(root, "desktop/src/modules/session-kanban.ts"), "utf8");
+  const css = fs.readFileSync(path.join(root, "desktop/src/styles/panel.css"), "utf8");
+  assert.match(source, /\/v1\/session-kanban\/paths/);
+  assert.match(source, /__sessionKanbanOpenPaths/);
+  assert.match(source, /__sessionKanbanSavePaths/);
+  assert.match(source, /__sessionKanbanResetPaths/);
+  assert.match(css, /\.session-kanban-modal/);
+  assert.match(css, /\.path-badge\.exists/);
+  assert.match(css, /\.path-badge\.missing/);
+});

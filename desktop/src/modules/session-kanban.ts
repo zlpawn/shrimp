@@ -21,6 +21,22 @@ type BoardSession = {
   queuedCount?: number;
 };
 
+type PathField = {
+  key: string;
+  label: string;
+  value: string;
+  exists?: boolean;
+};
+
+type ClientPathConfig = {
+  id: string;
+  name: string;
+  description: string;
+  fields: PathField[];
+};
+
+type PathsConfig = Record<string, ClientPathConfig>;
+
 const columns = [
   { id: "queued", title: "排队中", hint: "等待空闲后投递" },
   { id: "running", title: "运行中", hint: "90 秒内有活动" },
@@ -40,6 +56,10 @@ const state = {
   draft: "",
   clientFilter: "all",
   search: "",
+  pathsOpen: false,
+  pathsLoading: false,
+  pathsSaving: false,
+  pathsConfig: null as PathsConfig | null,
 };
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -145,6 +165,74 @@ function renderQueue(item: QueueItem) {
   `;
 }
 
+function renderPathsModal() {
+  if (!state.pathsOpen) return "";
+  const config = state.pathsConfig;
+  if (!config) {
+    return `
+      <div class="session-kanban-modal-backdrop" onclick="window.__sessionKanbanClosePaths(event)">
+        <div class="session-kanban-modal" onclick="event.stopPropagation()">
+          <div class="session-kanban-modal-header">
+            <h3>客户端会话路径设置</h3>
+            <button class="session-kanban-modal-close" type="button" onclick="window.__sessionKanbanClosePaths()">×</button>
+          </div>
+          <div class="session-kanban-modal-body">
+            <div class="session-kanban-empty">正在加载路径配置…</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  const clientCards = Object.entries(config).map(([clientId, client]) => `
+    <div class="session-kanban-client-card" data-client="${escapeHtml(clientId)}">
+      <div class="session-kanban-client-head">
+        <strong>${escapeHtml(client.name)}</strong>
+        <small>${escapeHtml(client.description)}</small>
+      </div>
+      ${client.fields.map(field => `
+        <div class="session-kanban-field-row">
+          <div class="session-kanban-field-label-row">
+            <label>${escapeHtml(field.label)}</label>
+            <span class="path-badge ${field.exists ? "exists" : "missing"}">${field.exists ? "✓ 路径有效" : "⚠ 未检测到"}</span>
+          </div>
+          <input
+            class="session-kanban-path-input"
+            data-client="${escapeHtml(clientId)}"
+            data-key="${escapeHtml(field.key)}"
+            value="${escapeHtml(field.value)}"
+            onchange="window.__sessionKanbanUpdatePathField('${escapeHtml(clientId)}', '${escapeHtml(field.key)}', this.value)"
+          />
+        </div>
+      `).join("")}
+    </div>
+  `).join("");
+
+  return `
+    <div class="session-kanban-modal-backdrop" onclick="window.__sessionKanbanClosePaths(event)">
+      <div class="session-kanban-modal" onclick="event.stopPropagation()">
+        <div class="session-kanban-modal-header">
+          <h3>客户端会话路径设置</h3>
+          <button class="session-kanban-modal-close" type="button" onclick="window.__sessionKanbanClosePaths()">×</button>
+        </div>
+        <div class="session-kanban-modal-body">
+          <p class="session-kanban-modal-intro">
+            查看与自定义各个客户端会话的扫描路径。修改后保存，看板将使用新路径即时扫描并同步会话。
+          </p>
+          ${clientCards}
+        </div>
+        <div class="session-kanban-modal-footer">
+          <button class="btn" type="button" onclick="window.__sessionKanbanResetPaths()">恢复默认</button>
+          <div class="session-kanban-modal-footer-right">
+            <button class="btn" type="button" onclick="window.__sessionKanbanClosePaths()">取消</button>
+            <button class="btn btn-primary" type="button" onclick="window.__sessionKanbanSavePaths()">${state.pathsSaving ? "保存中…" : "保存并刷新"}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function render() {
   const el = root();
   if (!el) return;
@@ -171,7 +259,10 @@ function render() {
         ${clients.map(client => `<button type="button" class="${state.clientFilter === client ? "active" : ""}" onclick="window.__sessionKanbanFilter('${client}')">${client === "all" ? "全部" : displayClient(client)}</button>`).join("")}
       </div>
       </div>
-      <button class="btn" type="button" onclick="window.__sessionKanbanRefresh()">刷新</button>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <button class="btn" type="button" onclick="window.__sessionKanbanOpenPaths()">⚙ 路径配置</button>
+        <button class="btn" type="button" onclick="window.__sessionKanbanRefresh()">刷新</button>
+      </div>
     </div>
     <div class="session-kanban-rules">
       <span>运行中：90 秒内有活动</span>
@@ -205,6 +296,7 @@ function render() {
       </div>
     </form>
     <div class="session-kanban-queue">${state.queue.map(renderQueue).join("")}</div>
+    ${renderPathsModal()}
   `;
 }
 
@@ -237,6 +329,66 @@ function setClientFilter(client: string) {
 
 function refresh() {
   return load();
+}
+
+async function openPaths() {
+  state.pathsOpen = true;
+  state.pathsLoading = true;
+  render();
+  try {
+    const config = await api<PathsConfig>("/v1/session-kanban/paths");
+    state.pathsConfig = config;
+  } catch (error: any) {
+    showToast(error?.message || "获取路径配置失败", "danger");
+  } finally {
+    state.pathsLoading = false;
+    render();
+  }
+}
+
+function closePaths(event?: Event) {
+  if (event && event.target !== event.currentTarget) return;
+  state.pathsOpen = false;
+  render();
+}
+
+function updatePathField(clientId: string, key: string, value: string) {
+  if (!state.pathsConfig || !state.pathsConfig[clientId]) return;
+  const field = state.pathsConfig[clientId].fields.find(f => f.key === key);
+  if (field) field.value = value;
+}
+
+async function savePaths() {
+  if (!state.pathsConfig) return;
+  state.pathsSaving = true;
+  render();
+  try {
+    const updated = await api<PathsConfig>("/v1/session-kanban/paths", {
+      method: "PUT",
+      body: JSON.stringify(state.pathsConfig),
+    });
+    state.pathsConfig = updated;
+    state.pathsOpen = false;
+    showToast("路径配置已保存并刷新", "success");
+    await load();
+  } catch (error: any) {
+    showToast(error?.message || "保存路径配置失败", "danger");
+  } finally {
+    state.pathsSaving = false;
+    render();
+  }
+}
+
+async function resetPaths() {
+  try {
+    const defaults = await api<PathsConfig>("/v1/session-kanban/paths/reset", { method: "POST" });
+    state.pathsConfig = defaults;
+    showToast("已恢复默认路径", "success");
+    render();
+    await load();
+  } catch (error: any) {
+    showToast(error?.message || "恢复默认失败", "danger");
+  }
 }
 
 function copyTitle(id: string) {
@@ -314,6 +466,11 @@ async function dispatchReady() {
 (window as any).__sessionKanbanCancel = cancel;
 (window as any).__sessionKanbanRetry = retry;
 (window as any).__sessionKanbanDispatch = dispatchReady;
+(window as any).__sessionKanbanOpenPaths = openPaths;
+(window as any).__sessionKanbanClosePaths = closePaths;
+(window as any).__sessionKanbanUpdatePathField = updatePathField;
+(window as any).__sessionKanbanSavePaths = savePaths;
+(window as any).__sessionKanbanResetPaths = resetPaths;
 
 document.addEventListener("input", event => {
   const target = event.target as HTMLElement | null;
