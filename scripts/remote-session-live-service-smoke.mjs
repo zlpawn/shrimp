@@ -48,7 +48,6 @@ const session = await service.openSession({
   peerId: "local-host",
   projectId: project.id,
   controllerPeerId: "live-service-smoke",
-  model: "MODEL_PLACEHOLDER_M298",
 });
 console.log("session", {
   id: session.id,
@@ -59,7 +58,6 @@ const result = await service.dispatchPrompt({
   sessionId: session.id,
   prompt: "只回答数字：7+7=?",
   controllerPeerId: "live-service-smoke",
-  model: "MODEL_PLACEHOLDER_M298",
 });
 console.log(
   "dispatch",
@@ -92,4 +90,3 @@ console.log(
   "finalEvents",
   (await service.listEvents({ sessionId: session.id, cursor: 0 })).events.map((event) => event.type),
 );
-

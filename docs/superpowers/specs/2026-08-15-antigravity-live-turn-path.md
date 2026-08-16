@@ -76,6 +76,26 @@ Live smoke result:
 - joint UI visibility guarantees
 - richer tool/event mapping beyond transcript inspect
 
+## Automatic model selection
+
+Implemented on 2026-08-16.
+
+Selection order:
+
+1. explicit model argument
+2. model alias other than AUTO
+3. most recent live conversation containing a completed assistant step with modelUsage
+4. first recommended model from GetCascadeModelConfigData
+5. known-safe MODEL_PLACEHOLDER_M298 fallback
+
+The backend exposes getAutoModel() for diagnostics:
+
+- model
+- source: recent-conversation / recommended-config / safe-default
+
+Live verification currently reaches the same Gemini model previously used
+successfully, MODEL_PLACEHOLDER_M298, via recent-conversation inference.
+
 ## Product claim update
 
 Can claim:
