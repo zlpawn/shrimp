@@ -49,6 +49,8 @@ const state = {
   preview: "",
   confirming: false,
   busy: "" as "" | "scan" | "save" | "preview" | "apply" | "path",
+  pathClient: "",
+  pathDraft: "",
   draft: {
     name: "",
     title: "",
@@ -57,6 +59,8 @@ const state = {
     command: "",
     args: "",
     url: "",
+    env: "",
+    headers: "",
     enabled: true,
     codex: false,
     claude: false,
