@@ -5522,6 +5522,66 @@ input:focus, select:focus {
 @media (max-width: 1500px) { .session-kanban-board { grid-template-columns: repeat(3, minmax(190px, 1fr)); } }
 @media (max-width: 900px) { .session-kanban-board { grid-template-columns: repeat(2, minmax(190px, 1fr)); } .session-kanban-toolbar { grid-template-columns: 1fr; } }
 
+/* Chat Drawer */
+.session-kanban-card-top {
+  display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 2px;
+}
+.session-kanban-view-btn {
+  font-size: 10px; padding: 2px 6px; border-radius: 4px; line-height: 1.2;
+}
+.session-kanban-drawer-backdrop {
+  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65);
+  display: flex; justify-content: flex-end; z-index: 1000;
+}
+.session-kanban-drawer {
+  background: var(--surface); border-left: 1px solid var(--border-color);
+  width: 620px; max-width: 90vw; height: 100vh;
+  display: flex; flex-direction: column; box-shadow: -10px 0 36px rgba(0, 0, 0, 0.35);
+  animation: session-drawer-slide-in 0.2s ease-out;
+}
+@keyframes session-drawer-slide-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+.session-kanban-drawer-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 16px 20px; border-bottom: 1px solid var(--border-color); gap: 12px;
+}
+.session-kanban-drawer-header h3 { margin: 0; font-size: 15px; word-break: break-word; }
+.session-kanban-drawer-body {
+  flex: 1; padding: 18px 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px;
+}
+.session-kanban-msg-item {
+  display: flex; flex-direction: column; gap: 6px; max-width: 90%;
+  padding: 12px 14px; border-radius: 10px; font-size: 13px; line-height: 1.5;
+}
+.session-kanban-msg-item.is-user {
+  align-self: flex-end; background: var(--input-bg); border: 1px solid var(--border-color);
+}
+.session-kanban-msg-item.is-assistant {
+  align-self: flex-start; background: var(--surface); border: 1px solid rgba(112, 128, 162, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+.session-kanban-msg-meta {
+  display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-secondary); gap: 12px;
+}
+.session-kanban-msg-content {
+  white-space: pre-wrap; word-break: break-word;
+}
+.session-kanban-drawer-footer {
+  padding: 14px 18px; border-top: 1px solid var(--border-color);
+  background: var(--surface); display: flex; flex-direction: column; gap: 10px;
+}
+.session-kanban-drawer-footer textarea {
+  width: 100%; border: 1px solid var(--border-color); border-radius: 8px;
+  background: var(--input-bg); color: var(--text-primary); font-size: 13px;
+  padding: 8px 10px; font-family: var(--font-sans); resize: vertical;
+}
+.session-kanban-drawer-actions {
+  display: flex; justify-content: flex-end; gap: 8px;
+}
+
+
 .command-apps-card {
   max-width: 780px;
   padding: 22px;

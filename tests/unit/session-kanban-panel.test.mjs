@@ -120,3 +120,15 @@ test("panel exposes paths configuration modal and actions", () => {
   assert.match(css, /\.path-badge\.exists/);
   assert.match(css, /\.path-badge\.missing/);
 });
+
+test("panel renders chat drawer and full conversation stream", () => {
+  const source = fs.readFileSync(path.join(root, "desktop/src/modules/session-kanban.ts"), "utf8");
+  const css = fs.readFileSync(path.join(root, "desktop/src/styles/panel.css"), "utf8");
+  assert.match(source, /\/v1\/session-kanban\/sessions\//);
+  assert.match(source, /__sessionKanbanOpenChat/);
+  assert.match(source, /__sessionKanbanChatDispatch/);
+  assert.match(css, /\.session-kanban-drawer/);
+  assert.match(css, /\.session-kanban-msg-item/);
+  assert.match(css, /\.session-kanban-msg-item\.is-user/);
+  assert.match(css, /\.session-kanban-msg-item\.is-assistant/);
+});

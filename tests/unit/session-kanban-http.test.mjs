@@ -83,3 +83,15 @@ test("routes paths config get, update and reset", async () => {
   await routeSessionKanbanRequest(req("POST", {}), resetRes, "/v1/session-kanban/paths/reset", { service });
   assert.equal(resetRes.statusCode, 200);
 });
+
+test("routes session transcript requests", async () => {
+  const mockTranscript = { sessionId: "s1", client: "antigravity", messages: [{ id: "m1", role: "user", content: "Hi" }] };
+  const service = {
+    getTranscript: async id => (id === "s1" ? mockTranscript : null),
+  };
+
+  const response = res();
+  await routeSessionKanbanRequest(req("GET"), response, "/v1/session-kanban/sessions/s1/transcript", { service });
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(response.body, mockTranscript);
+});

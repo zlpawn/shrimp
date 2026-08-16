@@ -37,6 +37,22 @@ type ClientPathConfig = {
 
 type PathsConfig = Record<string, ClientPathConfig>;
 
+type ChatMessage = {
+  id: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  timestamp?: string;
+};
+
+type SessionTranscript = {
+  sessionId: string;
+  client: string;
+  title: string;
+  workspacePath?: string;
+  lastActivityAt?: string;
+  messages: ChatMessage[];
+};
+
 const columns = [
   { id: "queued", title: "排队中", hint: "等待空闲后投递" },
   { id: "running", title: "运行中", hint: "90 秒内有活动" },
@@ -60,6 +76,11 @@ const state = {
   pathsLoading: false,
   pathsSaving: false,
   pathsConfig: null as PathsConfig | null,
+  chatOpen: false,
+  chatLoading: false,
+  chatSessionId: "",
+  chatData: null as SessionTranscript | null,
+  chatDraft: "",
 };
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -89,13 +110,16 @@ function shortSessionId(id: string) {
 function renderCard(session: BoardSession) {
   const selected = session.id === state.selectedSessionId ? " selected" : "";
   return `
-    <button class="session-kanban-card${selected}" onclick="window.__sessionKanbanSelect('${escapeHtml(session.id)}')">
-      <span class="session-kanban-client">${escapeHtml(displayClient(session.client))}</span>
+    <div class="session-kanban-card${selected}" onclick="window.__sessionKanbanSelect('${escapeHtml(session.id)}')">
+      <div class="session-kanban-card-top">
+        <span class="session-kanban-client">${escapeHtml(displayClient(session.client))}</span>
+        <button class="btn btn-xs session-kanban-view-btn" type="button" onclick="event.stopPropagation(); window.__sessionKanbanOpenChat('${escapeHtml(session.id)}')">💬 查看对话</button>
+      </div>
       <strong class="session-kanban-title" title="双击复制标题" ondblclick="event.stopPropagation(); window.__sessionKanbanCopyTitle('${escapeHtml(session.id)}')">${escapeHtml(session.title)}</strong>
       <code class="session-kanban-id" title="双击复制 ID" ondblclick="event.stopPropagation(); window.__sessionKanbanCopyId('${escapeHtml(session.id)}')">${escapeHtml(shortSessionId(session.id))}</code>
       <small>${escapeHtml(session.workspacePath || "global")}</small>
       <time>${escapeHtml(formatTime(session.lastActivityAt))}</time>
-    </button>
+    </div>
   `;
 }
 
@@ -155,6 +179,7 @@ function renderQueue(item: QueueItem) {
         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <strong>${escapeHtml(displayTitle)}</strong>
           ${sessionTitle ? `<code class="session-kanban-id" title="双击复制 ID" ondblclick="event.stopPropagation(); window.__sessionKanbanCopyId('${escapeHtml(item.sessionId)}')">${escapeHtml(shortSessionId(item.sessionId))}</code>` : ""}
+          <button class="btn btn-xs" type="button" onclick="window.__sessionKanbanOpenChat('${escapeHtml(item.sessionId)}')">💬 对话</button>
         </div>
         <p>${escapeHtml(item.message)}</p>
         ${item.error ? `<small>${escapeHtml(item.error)}</small>` : ""}
@@ -233,6 +258,66 @@ function renderPathsModal() {
   `;
 }
 
+function renderChatDrawer() {
+  if (!state.chatOpen) return "";
+  const data = state.chatData;
+  const sessionId = state.chatSessionId;
+  const session = state.sessions.find(s => s.id === sessionId);
+  const title = data?.title || session?.title || sessionId;
+  const clientName = displayClient(data?.client || session?.client || "unknown");
+
+  let contentHtml = "";
+  if (state.chatLoading) {
+    contentHtml = "<div class=\"session-kanban-empty\">正在加载对话流…</div>";
+  } else if (!data || data.messages.length === 0) {
+    contentHtml = "<div class=\"session-kanban-empty\">暂无对话内容</div>";
+  } else {
+    contentHtml = data.messages.map(msg => `
+      <div class="session-kanban-msg-item ${msg.role === "user" ? "is-user" : "is-assistant"}">
+        <div class="session-kanban-msg-meta">
+          <strong>${msg.role === "user" ? "用户提问" : "AI 回复"}</strong>
+          <time>${escapeHtml(formatTime(msg.timestamp))}</time>
+        </div>
+        <div class="session-kanban-msg-content">${escapeHtml(msg.content)}</div>
+      </div>
+    `).join("");
+  }
+
+  return `
+    <div class="session-kanban-drawer-backdrop" onclick="window.__sessionKanbanCloseChat(event)">
+      <div class="session-kanban-drawer" onclick="event.stopPropagation()">
+        <div class="session-kanban-drawer-header">
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="session-kanban-client">${escapeHtml(clientName)}</span>
+              <h3>${escapeHtml(title)}</h3>
+            </div>
+            <code class="session-kanban-id" title="双击复制完整 ID" ondblclick="window.__sessionKanbanCopyId('${escapeHtml(sessionId)}')">${escapeHtml(sessionId)}</code>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button class="btn btn-xs" type="button" onclick="window.__sessionKanbanReloadChat()">刷新</button>
+            <button class="session-kanban-modal-close" type="button" onclick="window.__sessionKanbanCloseChat()">×</button>
+          </div>
+        </div>
+        <div class="session-kanban-drawer-body" id="session-kanban-chat-body">
+          ${contentHtml}
+        </div>
+        <div class="session-kanban-drawer-footer">
+          <textarea
+            id="session-kanban-chat-input"
+            rows="2"
+            placeholder="向当前会话输入新消息并投递..."
+          >${escapeHtml(state.chatDraft)}</textarea>
+          <div class="session-kanban-drawer-actions">
+            <button class="btn" type="button" onclick="window.__sessionKanbanChatEnqueue()">加入队列</button>
+            <button class="btn btn-primary" type="button" onclick="window.__sessionKanbanChatDispatch()">立即投递</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function render() {
   const el = root();
   if (!el) return;
@@ -297,7 +382,16 @@ function render() {
     </form>
     <div class="session-kanban-queue">${state.queue.map(renderQueue).join("")}</div>
     ${renderPathsModal()}
+    ${renderChatDrawer()}
   `;
+
+  // Auto scroll chat body if open
+  if (state.chatOpen) {
+    setTimeout(() => {
+      const body = document.getElementById("session-kanban-chat-body");
+      if (body) body.scrollTop = body.scrollHeight;
+    }, 50);
+  }
 }
 
 async function load() {
@@ -329,6 +423,62 @@ function setClientFilter(client: string) {
 
 function refresh() {
   return load();
+}
+
+async function openChat(id: string) {
+  state.chatOpen = true;
+  state.chatSessionId = id;
+  state.selectedSessionId = id;
+  state.chatLoading = true;
+  state.chatData = null;
+  render();
+  try {
+    const transcript = await api<SessionTranscript>(`/v1/session-kanban/sessions/${encodeURIComponent(id)}/transcript`);
+    state.chatData = transcript;
+  } catch (error: any) {
+    showToast(error?.message || "获取对话失败", "danger");
+  } finally {
+    state.chatLoading = false;
+    render();
+  }
+}
+
+function closeChat(event?: Event) {
+  if (event && event.target !== event.currentTarget) return;
+  state.chatOpen = false;
+  render();
+}
+
+function reloadChat() {
+  if (state.chatSessionId) openChat(state.chatSessionId);
+}
+
+async function chatEnqueue() {
+  const input = document.getElementById("session-kanban-chat-input") as HTMLTextAreaElement | null;
+  const message = input?.value?.trim() || "";
+  const sessionId = state.chatSessionId;
+  if (!sessionId || !message) {
+    showToast("请输入消息", "danger");
+    return;
+  }
+  try {
+    await api("/v1/session-kanban/queue", {
+      method: "POST",
+      body: JSON.stringify({ sessionId, message }),
+    });
+    if (input) input.value = "";
+    state.chatDraft = "";
+    showToast("已加入队列", "success");
+    await load();
+  } catch (error: any) {
+    showToast(error?.message || "入队失败", "danger");
+  }
+}
+
+async function chatDispatch() {
+  await chatEnqueue();
+  await dispatchReady();
+  setTimeout(() => reloadChat(), 1000);
 }
 
 async function openPaths() {
@@ -471,10 +621,16 @@ async function dispatchReady() {
 (window as any).__sessionKanbanUpdatePathField = updatePathField;
 (window as any).__sessionKanbanSavePaths = savePaths;
 (window as any).__sessionKanbanResetPaths = resetPaths;
+(window as any).__sessionKanbanOpenChat = openChat;
+(window as any).__sessionKanbanCloseChat = closeChat;
+(window as any).__sessionKanbanReloadChat = reloadChat;
+(window as any).__sessionKanbanChatEnqueue = chatEnqueue;
+(window as any).__sessionKanbanChatDispatch = chatDispatch;
 
 document.addEventListener("input", event => {
   const target = event.target as HTMLElement | null;
   if (target?.id === "session-kanban-message") state.draft = (target as HTMLTextAreaElement).value;
+  if (target?.id === "session-kanban-chat-input") state.chatDraft = (target as HTMLTextAreaElement).value;
   if (target?.id === "session-kanban-search") {
     state.search = (target as HTMLInputElement).value;
     const active = document.activeElement?.id;
