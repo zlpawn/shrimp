@@ -5453,11 +5453,9 @@ input:focus, select:focus {
   background: var(--input-bg); color: var(--text-primary); font-family: var(--font-sans);
   font-size: 13px; line-height: 1.5; padding: 9px 10px;
 }
-.session-kanban-compose select, .session-kanban-compose textarea {
-  width: 100%; border: 1px solid var(--border-color); border-radius: var(--radius-md);
-  background: var(--input-bg); color: var(--text-primary); font-family: var(--font-sans);
-  font-size: 13px; line-height: 1.5; padding: 9px 10px;
-}
+.session-kanban-actions { display: flex; gap: 8px; align-items: center; }
+.session-kanban-dispatch-hint { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+.session-kanban-dispatch-hint span strong { color: var(--text-primary); font-weight: 600; }
 .session-kanban-queue { display: flex; flex-direction: column; gap: 8px; }
 .session-kanban-queue-row { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--surface); padding: 10px 12px; }
 .session-kanban-queue-row p { font-size: 12px; margin: 0; }

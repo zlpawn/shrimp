@@ -195,8 +195,14 @@ function render() {
       </select>
       <label for="session-kanban-message">待发消息</label>
       <textarea id="session-kanban-message" rows="3" placeholder="会话空闲后自动投递">${escapeHtml(state.draft)}</textarea>
-      <button class="btn btn-primary" type="submit">加入队列</button>
-      <button class="btn" type="button" onclick="window.__sessionKanbanDispatch()">立即调度可投递项</button>
+      <div class="session-kanban-actions">
+        <button class="btn btn-primary" type="submit">加入队列</button>
+        <button class="btn" type="button" onclick="window.__sessionKanbanDispatch()">立即调度</button>
+      </div>
+      <div class="session-kanban-dispatch-hint">
+        <span><strong>加入队列</strong>：存入待发池，后台每 30 秒自动轮询，待会话空闲后全自动投递。</span>
+        <span><strong>立即调度</strong>：跳过 30 秒等待周期，立即向当前空闲的目标会话发起投递。</span>
+      </div>
     </form>
     <div class="session-kanban-queue">${state.queue.map(renderQueue).join("")}</div>
   `;
