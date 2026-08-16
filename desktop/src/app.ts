@@ -4748,6 +4748,29 @@ window.loadGrokAuthStatus = async function() {
     }
 }
 
+window.refreshGrokAuth = async function() {
+    grokAuthState.busyAction = 'refresh';
+    grokAuthState.error = '';
+    grokAuthState.message = '';
+    renderGrokSubscribeDetail(false);
+    try {
+        const res = await fetch('/v1/subscription-auth/grok/refresh', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({}),
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success) throw new Error(json?.error?.message || '刷新 Token 失败');
+        grokAuthState.message = 'Token 刷新成功！';
+        await loadGrokAuthStatus();
+    } catch (err) {
+        grokAuthState.error = err.message || String(err);
+    } finally {
+        grokAuthState.busyAction = '';
+        renderGrokSubscribeDetail(false);
+    }
+};
+
 window.renderGrokSubscribeDetail = function(autoLoad = true) {
     const cards = document.getElementById('tools-cards');
     const detail = document.getElementById('tools-detail');
@@ -4788,6 +4811,7 @@ window.renderGrokSubscribeDetail = function(autoLoad = true) {
         '    </div>',
         '    <div class="subauth-actions">',
         '      <button class="btn" onclick="loadGrokAuthStatus()" ' + (busy ? 'disabled' : '') + '>刷新状态</button>',
+        '      <button class="btn btn-primary" onclick="refreshGrokAuth()" ' + (busy ? 'disabled' : '') + '>' + (grokAuthState.busyAction === 'refresh' ? '刷新中...' : '刷新 Token') + '</button>',
         '      <button class="btn" onclick="loadSubscriptionUsage(\'grok\')" ' + (busy ? 'disabled' : '') + '>' + (grokAuthState.usageLoading ? '获取中...' : '刷新剩余用量') + '</button>',
         '    </div>',
         '  </div>',
@@ -4796,7 +4820,7 @@ window.renderGrokSubscribeDetail = function(autoLoad = true) {
         '    <ol class="subauth-steps">' + nextSteps + '</ol>',
         '    <div class="subauth-help">',
         '      <div><strong>真实上游协议</strong></div>',
-        '      <div class="subauth-muted" style="margin-top:6px;">Grok 订阅节点走 cli-chat-proxy.grok.com/v1，读取本机 ~/.grok/auth.json，不需要 API Key。登录和 Token 刷新由 grok CLI 负责。</div>',
+        '      <div class="subauth-muted" style="margin-top:6px;">Grok 订阅节点走 cli-chat-proxy.grok.com/v1，读取本机 ~/.grok/auth.json，不需要 API Key。支持基于 refresh_token 自动刷新。</div>',
         '    </div>',
         '  </div>',
         '</div>',

@@ -68,6 +68,10 @@ import {
   resolveCodexAuthPath,
 } from "./lib/codex/local-auth.mjs";
 import {
+  ensureFreshGrokAuth,
+  refreshGrokToken,
+} from "./lib/grok/subscription-auth.mjs";
+import {
   GatewayConfigError,
   buildClaudeCodeModelRoutes,
   buildClaudeInferenceModels,
@@ -4134,6 +4138,11 @@ function extractAntigravityModelsFromLoadCodeAssist(raw) {
 }
 
 async function fetchOfficialGrokModels(endpoint = null) {
+  const authPath = resolveHomePath(endpoint?.auth_path) || GROK_AUTH_PATH;
+  const proxyUrl = configuredOutboundProxyUrl(endpoint || {});
+  try {
+    await ensureFreshGrokAuth({ authPath, proxyUrl, env: process.env });
+  } catch {}
   // Official Grok catalog from cli-chat-proxy, matching grok-build ModelsManager behavior.
   const base = String(endpoint?.base_url || process.env.GROK_MODELS_BASE_URL || GROK_DEFAULT_BASE_URL || "https://cli-chat-proxy.grok.com/v1")
     .replace(/\/+$/, "");
@@ -7442,7 +7451,13 @@ function nodeResToFetchLike(res) {
 
 async function fetchGrok(provider, endpointPath, body, signal) {
   const authPath = resolveHomePath(provider?.auth_path) || GROK_AUTH_PATH;
-  const authInfo = readGrokToken(authPath);
+  const proxyUrl = configuredOutboundProxyUrl(provider);
+  let authInfo;
+  try {
+    authInfo = await ensureFreshGrokAuth({ authPath, proxyUrl, env: process.env });
+  } catch {
+    authInfo = readGrokToken(authPath);
+  }
   const baseUrl = trimRight(provider?.base_url || GROK_DEFAULT_BASE_URL, "/");
   const model = body?.model || "";
   const headers = grokHeaders(provider, model, authInfo);
@@ -7455,7 +7470,6 @@ async function fetchGrok(provider, endpointPath, body, signal) {
   }
   const url = `${baseUrl}${endpointPath}`;
   const transport = new URL(url).protocol === "http:" ? http : https;
-  const proxyUrl = configuredOutboundProxyUrl(provider);
   const agent = grokProxyAgentFor(proxyUrl);
   await grokAcquire(provider, signal);
   let timedOut = false;
