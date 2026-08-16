@@ -17,6 +17,7 @@ function makeService(root, {
   config = {},
   codexText = null,
   claudeText = null,
+  claudeCodeText = null,
   antigravityText = null,
   fsImpl = fs,
 } = {}) {
@@ -35,10 +36,12 @@ function makeService(root, {
   const clientPaths = {
     codex: path.join(root, "codex.toml"),
     claude: path.join(root, "claude.json"),
+    claude_code: path.join(root, "claude_code.json"),
     antigravity: path.join(root, "antigravity.json"),
   };
   if (codexText !== null) fs.writeFileSync(clientPaths.codex, codexText);
   if (claudeText !== null) fs.writeFileSync(clientPaths.claude, claudeText);
+  if (claudeCodeText !== null) fs.writeFileSync(clientPaths.claude_code, claudeCodeText);
   if (antigravityText !== null) fs.writeFileSync(clientPaths.antigravity, antigravityText);
 
   const service = createMcpManagementService({
@@ -49,11 +52,12 @@ function makeService(root, {
   });
   service.setClientPath({ client: "codex", path: clientPaths.codex });
   service.setClientPath({ client: "claude", path: clientPaths.claude });
+  service.setClientPath({ client: "claude_code", path: clientPaths.claude_code });
   service.setClientPath({ client: "antigravity", path: clientPaths.antigravity });
   return { service, store, clientPaths };
 }
 
-function remoteServer(name = "safe", distribution = { codex: true, claude: true, antigravity: true }) {
+function remoteServer(name = "safe", distribution = { codex: true, claude: true, claude_code: true, antigravity: true }) {
   return {
     name,
     title: name,
@@ -70,9 +74,9 @@ test("state scans clients without recursive scan call", () => {
   try {
     const { service } = makeService(root);
     const result = service.state();
-    assert.equal(result.clients.length, 3);
+    assert.equal(result.clients.length, 4);
     assert.deepEqual(Object.keys(result.presentIn), []);
-    assert.equal(result.clientsMeta.length, 3);
+    assert.equal(result.clientsMeta.length, 4);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -299,6 +303,97 @@ test("upsert replaces provided secret maps and null clears them", () => {
       headers: null,
     });
     assert.equal(store.load().secrets.servers.secretful, undefined);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("single server preview and apply only affects the specified server", () => {
+  const root = makeRoot();
+  try {
+    const { service, clientPaths } = makeService(root, {
+      claudeText: "{}",
+    });
+    service.upsertServer(remoteServer("server_a", { claude: true }));
+    service.upsertServer(remoteServer("server_b", { claude: true }));
+
+    // Preview single server
+    const previewA = service.preview({ targets: { claude: true }, serverName: "server_a" });
+    assert.equal(previewA.serverName, "server_a");
+    assert.equal(previewA.previews[0].servers.length, 1);
+    assert.equal(previewA.previews[0].servers[0], "server_a");
+
+    // Apply single server_a only
+    const applyA = service.apply({ targets: { claude: true }, serverName: "server_a" });
+    assert.equal(applyA.serverName, "server_a");
+    const parsed = JSON.parse(fs.readFileSync(clientPaths.claude, "utf8"));
+    assert.ok(parsed.mcpServers.server_a);
+    assert.equal(parsed.mcpServers.server_b, undefined);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("remote server url placeholder interpolation dynamically merges secret variables", () => {
+  const root = makeRoot();
+  try {
+    const { service, clientPaths } = makeService(root, {
+      claudeText: "{}",
+    });
+    service.upsertServer({
+      name: "remote_api",
+      title: "Remote API",
+      description: "",
+      enabled: true,
+      transport: "remote",
+      url: "https://mcp.example.com/sse?api_key=${MY_API_KEY}&tenant=${TENANT_ID}",
+      distribution: { claude: true },
+      env: {
+        MY_API_KEY: "secret-token-12345",
+        TENANT_ID: "team-alpha",
+      },
+    });
+
+    // Verify preview renders the interpolated URL
+    const preview = service.preview({ targets: { claude: true }, serverName: "remote_api" });
+    assert.match(preview.previews[0].text, /https:\/\/mcp\.example\.com\/sse\?api_key=secret-token-12345&tenant=team-alpha/);
+
+    // Verify apply writes the interpolated URL
+    service.apply({ targets: { claude: true }, serverName: "remote_api" });
+    const parsed = JSON.parse(fs.readFileSync(clientPaths.claude, "utf8"));
+    assert.equal(
+      parsed.mcpServers.remote_api.url,
+      "https://mcp.example.com/sse?api_key=secret-token-12345&tenant=team-alpha",
+    );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("service state auto-detects in-repo custom MCPs under mcps/ directory", () => {
+  const root = makeRoot();
+  try {
+    const mcpsDir = path.join(root, "mcps");
+    fs.mkdirSync(path.join(mcpsDir, "node_tool"), { recursive: true });
+    fs.writeFileSync(path.join(mcpsDir, "node_tool", "index.mjs"), "// node mcp");
+
+    fs.mkdirSync(path.join(mcpsDir, "py_tool"), { recursive: true });
+    fs.writeFileSync(path.join(mcpsDir, "py_tool", "server.py"), "# py mcp");
+
+    const { service } = makeService(root);
+    const s = service.state();
+    assert.ok(Array.isArray(s.inRepoMcps));
+    const nodeFound = s.inRepoMcps.find((m) => m.name === "node_tool");
+    const pyFound = s.inRepoMcps.find((m) => m.name === "py_tool");
+    assert.ok(nodeFound);
+    assert.equal(nodeFound.lang, "node");
+    assert.equal(nodeFound.command, "node");
+    assert.deepEqual(nodeFound.args, ["./mcps/node_tool/index.mjs"]);
+
+    assert.ok(pyFound);
+    assert.equal(pyFound.lang, "python");
+    assert.equal(pyFound.command, "uv");
+    assert.deepEqual(pyFound.args, ["run", "--directory", "./mcps/py_tool", "server.py"]);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
