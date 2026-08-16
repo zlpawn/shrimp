@@ -57,6 +57,21 @@ test("card metadata is not selectable while title remains copyable", () => {
   assert.match(css, /\.session-kanban-card small, \.session-kanban-card time \{[^}]*user-select: none/);
 });
 
+test("board renders only meaningful columns and shows searchable short ids", () => {
+  const source = fs.readFileSync(path.join(root, "desktop/src/modules/session-kanban.ts"), "utf8");
+  assert.match(source, /columnsToRender/);
+  assert.match(source, /shortSessionId/);
+  assert.match(source, /session-kanban-id/);
+  assert.match(source, /搜索标题、路径或 ID/);
+});
+
+test("compose form uses the panel input typography", () => {
+  const css = fs.readFileSync(path.join(root, "desktop/src/styles/panel.css"), "utf8");
+  assert.match(css, /\.session-kanban-compose select,\.session-kanban-compose textarea\s*\{/);
+  assert.match(css, /font-family: var\(--font-sans\)/);
+  assert.match(css, /font-size: 13px/);
+});
+
 test("styles define board columns without nested cards", () => {
   const css = fs.readFileSync(path.join(root, "desktop/src/styles/panel.css"), "utf8");
   assert.match(css, /\.session-kanban-board/);

@@ -62,12 +62,17 @@ function formatTime(value?: string) {
   return Number.isNaN(date.getTime()) ? "" : date.toLocaleString();
 }
 
+function shortSessionId(id: string) {
+  return id.length > 10 ? id.slice(0, 8) + "…" : id;
+}
+
 function renderCard(session: BoardSession) {
   const selected = session.id === state.selectedSessionId ? " selected" : "";
   return `
     <button class="session-kanban-card${selected}" onclick="window.__sessionKanbanSelect('${escapeHtml(session.id)}')">
       <span class="session-kanban-client">${escapeHtml(displayClient(session.client))}</span>
       <strong class="session-kanban-title" title="双击复制标题" ondblclick="event.stopPropagation(); window.__sessionKanbanCopyTitle('${escapeHtml(session.id)}')">${escapeHtml(session.title)}</strong>
+      <code class="session-kanban-id" title="${escapeHtml(session.id)}">${escapeHtml(shortSessionId(session.id))}</code>
       <small>${escapeHtml(session.workspacePath || "global")}</small>
       <time>${escapeHtml(formatTime(session.lastActivityAt))}</time>
     </button>
@@ -148,6 +153,7 @@ function render() {
 
   const boardHtml = columns.map(column => {
     const items = visibleSessions({ includeCompleted: false }).filter(session => session.status === column.id);
+    if (!items.length) return "";
     return `
       <section class="session-kanban-column" data-status="${column.id}">
         <header><div><h3>${column.title}</h3><small>${column.hint}</small></div><span>${items.length}</span></header>
@@ -155,11 +161,12 @@ function render() {
       </section>
     `;
   }).join("");
+  const columnsToRender = boardHtml;
 
   el.innerHTML = `
     ${state.error ? `<div class="session-kanban-error">${escapeHtml(state.error)}</div>` : ""}
     <div class="session-kanban-toolbar">
-      <input id="session-kanban-search" value="${escapeHtml(state.search)}" placeholder="搜索标题、路径或会话 ID" />
+      <input id="session-kanban-search" value="${escapeHtml(state.search)}" placeholder="搜索标题、路径或 ID" />
       <div class="session-kanban-segmented">
         ${clients.map(client => `<button type="button" class="${state.clientFilter === client ? "active" : ""}" onclick="window.__sessionKanbanFilter('${client}')">${client === "all" ? "全部" : displayClient(client)}</button>`).join("")}
       </div>
