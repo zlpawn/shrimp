@@ -4454,10 +4454,28 @@ function formatUsageTime(value) {
     return Number.isNaN(date.getTime()) ? '未知' : date.toLocaleString();
 }
 
-function formatSubscriptionUsage(usage) {
+function formatSubscriptionUsage(usage: any) {
     if (!usage) return '尚未获取';
     if (usage.available === false) {
         return usage?.error?.message || '不可用';
+    }
+    if (Array.isArray(usage.limits) && usage.limits.length) {
+        const visibleLimits = usage.limits.filter((l: any) => !l.group || l.group === 'gemini');
+        const targetLimits = visibleLimits.length ? visibleLimits : usage.limits;
+        const sorted = [...targetLimits].sort((a: any, b: any) => {
+            const order = (l: any) => (l.id === '5h' ? 0 : l.id === 'weekly' ? 1 : 2);
+            return order(a) - order(b);
+        });
+        return sorted.map((limit: any) => {
+            const percent = Number(limit.remaining_percent);
+            const value = Number.isFinite(percent) ? percent.toFixed(1).replace(/\.0$/, '') + '%' : '未知';
+            const rawLabel = limit.label || limit.id || '额度';
+            const label = rawLabel === '5h' ? '5 小时额度' : rawLabel === 'weekly' ? '周额度' : rawLabel;
+            const reset = limit.reset_after
+                ? ('，将在 ' + limit.reset_after + ' 后刷新')
+                : (limit.reset_hint ? ('，' + limit.reset_hint) : '');
+            return label + ' ' + value + reset;
+        }).join('；');
     }
     if (usage.remaining_credits !== null && usage.remaining_credits !== undefined && Number.isFinite(Number(usage.remaining_credits))) {
         return '剩余 ' + usage.remaining_credits + ' credits';
@@ -4472,15 +4490,37 @@ function formatSubscriptionUsage(usage) {
     return '已获取，但上游未提供剩余量';
 }
 
-function formatAntigravityUsageLimits(usage) {
-    if (!Array.isArray(usage?.limits) || !usage.limits.length) return formatSubscriptionUsage(usage);
-    return usage.limits.map((limit) => {
+function formatAntigravityUsageLimits(usage: any) {
+    if (!Array.isArray(usage?.limits) || !usage.limits.length) return escapeHtml(formatSubscriptionUsage(usage));
+    const visibleLimits = usage.limits.filter((limit: any) => !limit.group || limit.group === 'gemini');
+    const targetLimits = visibleLimits.length ? visibleLimits : usage.limits;
+    const sorted = [...targetLimits].sort((a: any, b: any) => {
+        const order = (l: any) => (l.id === '5h' ? 0 : l.id === 'weekly' ? 1 : 2);
+        return order(a) - order(b);
+    });
+    return sorted.map((limit: any) => {
         const percent = Number(limit.remaining_percent);
         const value = Number.isFinite(percent) ? percent.toFixed(1).replace(/\.0$/, '') + '%' : '未知';
         const rawLabel = limit.label || limit.id || '额度';
-        const label = rawLabel === 'weekly' ? '周额度' : rawLabel === '5h' ? '5 小时额度' : rawLabel;
-        return escapeHtml(label + '：' + value + (limit.reset_hint ? '，' + limit.reset_hint : ''));
-    }).join('<br>');
+        const label = rawLabel === '5h' ? '5 小时额度' : rawLabel === 'weekly' ? '周额度' : rawLabel;
+        const reset = limit.reset_after
+            ? ('，将在 ' + limit.reset_after + ' 后刷新')
+            : (limit.reset_hint ? ('，' + limit.reset_hint) : '');
+        return '<div class="subauth-limit-line" style="line-height:1.45;">' + escapeHtml(label + ' ' + value + reset) + '</div>';
+    }).join('');
+}
+
+function subscriptionUsageHtml(usage: any, loading: boolean) {
+    if (loading) return '<span class="subauth-muted">获取订阅剩余用量中...</span>';
+    if (!usage) return '尚未获取';
+    if (usage.available === false) {
+        return '<span class="subauth-error">' + escapeHtml(usage?.error?.message || '不可用') + '</span>';
+    }
+    const updated = usage?.updated_at ? '<div class="subauth-muted" style="margin-top:4px;font-size:12px;">最近更新 ' + escapeHtml(new Date(usage.updated_at).toLocaleTimeString()) + '</div>' : '';
+    if (Array.isArray(usage.limits) && usage.limits.length) {
+        return formatAntigravityUsageLimits(usage) + updated;
+    }
+    return escapeHtml(formatSubscriptionUsage(usage)) + updated;
 }
 
 function subscriptionUsageText(usage, loading) {
@@ -4603,7 +4643,7 @@ window.renderCodexSubscribeDetail = function(autoLoad = true) {
         '      <div class="subauth-stat"><div class="subauth-stat-label">账号</div><div class="subauth-stat-value">' + escapeHtml(s?.token?.account_id || '未登录') + '</div></div>',
         '      <div class="subauth-stat"><div class="subauth-stat-label">Token 剩余</div><div class="subauth-stat-value">' + escapeHtml(formatExpiresIn(s?.token?.expires_in_seconds)) + '</div></div>',
         '      <div class="subauth-stat"><div class="subauth-stat-label">登录模式</div><div class="subauth-stat-value">' + escapeHtml(s?.token?.auth_mode || '未知') + '</div></div>',
-        '      <div class="subauth-stat"><div class="subauth-stat-label">订阅剩余用量</div><div class="subauth-stat-value">' + formatAntigravityUsageLimits(usage) + (usage?.updated_at && Array.isArray(usage?.limits) && usage.limits.length ? '<div class="subauth-muted">最近更新 ' + escapeHtml(new Date(usage.updated_at).toLocaleTimeString()) + '</div>' : escapeHtml(usageLoading ? '获取订阅剩余用量中...' : '')) + '</div></div>',
+        '      <div class="subauth-stat"><div class="subauth-stat-label">订阅剩余用量</div><div class="subauth-stat-value">' + subscriptionUsageHtml(usage, usageLoading) + '</div></div>',
         '    </div>',
         codexAuthState.error ? ('    <div class="subauth-error">' + escapeHtml(codexAuthState.error) + '</div>') : '',
         codexAuthState.message ? ('    <div class="subauth-success">' + escapeHtml(codexAuthState.message) + '</div>') : '',
@@ -4738,7 +4778,7 @@ window.renderGrokSubscribeDetail = function(autoLoad = true) {
         '      <div class="subauth-stat"><div class="subauth-stat-label">当前状态</div><div class="subauth-stat-value"><span class="subauth-badge ' + subauthBadgeClass(state) + '">' + escapeHtml(stateLabel) + '</span></div></div>',
         '      <div class="subauth-stat"><div class="subauth-stat-label">账号</div><div class="subauth-stat-value">' + escapeHtml(s?.token?.account_id || '未登录') + '</div></div>',
         '      <div class="subauth-stat"><div class="subauth-stat-label">Token 剩余</div><div class="subauth-stat-value">' + escapeHtml(formatExpiresIn(s?.token?.expires_in_seconds)) + '</div></div>',
-        '      <div class="subauth-stat"><div class="subauth-stat-label">订阅剩余用量</div><div class="subauth-stat-value">' + escapeHtml(subscriptionUsageText(grokAuthState.usage, grokAuthState.usageLoading)) + '</div></div>',
+        '      <div class="subauth-stat"><div class="subauth-stat-label">订阅剩余用量</div><div class="subauth-stat-value">' + subscriptionUsageHtml(grokAuthState.usage, grokAuthState.usageLoading) + '</div></div>',
         '    </div>',
         grokAuthState.error ? ('<div class="subauth-error">' + escapeHtml(grokAuthState.error) + '</div>') : '',
         grokAuthState.message ? ('<div class="subauth-success">' + escapeHtml(grokAuthState.message) + '</div>') : '',
@@ -4802,7 +4842,7 @@ window.renderAntigravitySubscribeDetail = function(autoLoad = true) {
         '      <div class="subauth-stat"><div class="subauth-stat-label">账号</div><div class="subauth-stat-value">' + escapeHtml(s?.token?.account_id || '未登录') + '</div></div>',
         '      <div class="subauth-stat"><div class="subauth-stat-label">Token 剩余</div><div class="subauth-stat-value">' + escapeHtml(formatExpiresIn(s?.token?.expires_in_seconds)) + '</div></div>',
         '      <div class="subauth-stat"><div class="subauth-stat-label">Client 凭据</div><div class="subauth-stat-value">' + (s?.client?.configured ? escapeHtml(s.client.client_id_masked || '已配置') : '未配置') + '</div></div>',
-        '      <div class="subauth-stat"><div class="subauth-stat-label">订阅剩余用量</div><div class="subauth-stat-value">' + escapeHtml(subscriptionUsageText(usage, usageLoading)) + '</div></div>',
+        '      <div class="subauth-stat"><div class="subauth-stat-label">订阅剩余用量</div><div class="subauth-stat-value">' + subscriptionUsageHtml(usage, usageLoading) + '</div></div>',
         '    </div>',
         '    <div class="subauth-actions">',
         '      <button class="btn" onclick="loadAntigravityAuthStatus()" ' + (busy ? 'disabled' : '') + '>刷新状态</button>',
