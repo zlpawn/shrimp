@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "coverage.schema.json",
+  "title": "Business Knowledge Coverage",
+  "type": "object",
+  "required": ["entry_classification", "business_entry_mapping", "required_investigations", "rule_evidence", "anchor_mapping", "scenario_coverage", "projection_integrity"],
+  "properties": {
+    "entry_classification": {"type": "number", "minimum": 0, "maximum": 1},
+    "business_entry_mapping": {"type": "number", "minimum": 0, "maximum": 1},
+    "required_investigations": {"type": "number", "minimum": 0, "maximum": 1},
+    "rule_evidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "anchor_mapping": {"type": "number", "minimum": 0, "maximum": 1},
+    "scenario_coverage": {"type": "number", "minimum": 0, "maximum": 1},
+    "projection_integrity": {"type": "number", "minimum": 0, "maximum": 1}
+  }
+}

@@ -16,5 +16,14 @@
   },
   "dreamSkin": {
     "codexAppPath": ""
+  },
+  "tools": {
+    "deepseek_auto_continue": {
+      "enabled": true,
+      "max_attempts": 1,
+      "require_agent_context": true,
+      "preserve_stage_text": true,
+      "prompt": "继续执行未完成的任务，不要只做阶段性总结。如果还有下一步，请直接调用工具继续。"
+    }
   }
 }

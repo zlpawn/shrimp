@@ -66,9 +66,17 @@
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                     远程会话 (Remote Session)
                 </a>
+                <a href="#command-apps" class="nav-item" onclick="switchTab('command-apps')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+                    命令行程序 (Command Apps)
+                </a>
                 <a href="#analytics" class="nav-item" onclick="switchTab('analytics')">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
                     用量统计 (Token Analytics)
+                </a>
+                <a href="#session-kanban" class="nav-item" onclick="switchTab('session-kanban')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="margin-right: 8px;"><rect x="3" y="4" width="5" height="16" rx="1"></rect><rect x="10" y="4" width="5" height="10" rx="1"></rect><rect x="17" y="4" width="4" height="14" rx="1"></rect></svg>
+                    会话看板 (Session Kanban)
                 </a>
                 <a href="#proxy" class="nav-item" onclick="switchTab('proxy')">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
@@ -92,6 +100,10 @@
                         </a>
                     </div>
                 </div>
+                <a href="#mcp-management" class="nav-item" onclick="switchTab('mcp-management')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><rect width="20" height="8" x="2" y="2" rx="2"></rect><rect width="20" height="8" x="2" y="14" rx="2"></rect><line x1="6" x2="6.01" y1="6" y2="6"></line><line x1="6" x2="6.01" y1="18" y2="18"></line></svg>
+                    MCP 枢纽 (MCP Hub)
+                </a>
                 <a href="#tools" class="nav-item" onclick="switchTab('tools')">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
                     迷你工具 (Mini Tools)
@@ -826,6 +838,25 @@ experimental_bearer_token = "dummy"</pre>
                 <div id="dream-skin-root" class="dream-skin-root" aria-live="polite"></div>
             </section>
 
+            <!-- Command Apps Section -->
+            <section id="section-command-apps" class="tab-section" style="display: none;">
+                <div class="section-header">
+                    <div>
+                        <h2>命令行程序 (Command Apps)</h2>
+                        <p>管理需要命令行参数启动的本机桌面程序，支持自动扫描和手动路径兜底。</p>
+                    </div>
+                </div>
+                <div id="command-apps-root" class="command-apps-root" aria-live="polite"></div>
+            </section>
+            <section id="section-session-kanban" class="tab-section" style="display: none;">
+                <div class="section-header">
+                    <div>
+                        <h2>会话看板 (Session Kanban)</h2>
+                        <p>统一查看 Codex、Claude Desktop 和 Antigravity 会话，并将下一条消息排队到空闲后自动投递。</p>
+                    </div>
+                </div>
+                <div id="session-kanban-root" class="session-kanban-root" aria-live="polite"></div>
+            </section>
             <!-- NAT Traversal Section -->
             <section id="section-nat-traversal" class="tab-section" style="display: none;">
                 <div class="section-header">
@@ -845,6 +876,11 @@ experimental_bearer_token = "dummy"</pre>
                     </div>
                 </div>
                 <div id="remote-session-root" class="remote-session-root" aria-live="polite"></div>
+            </section>
+
+            <!-- MCP Management Section -->
+            <section id="section-mcp-management" class="tab-section" style="display: none;">
+                <div id="mcp-management-root" class="mcp-management-root" aria-live="polite"></div>
             </section>
 
         </main>
@@ -959,3 +995,5 @@ experimental_bearer_token = "dummy"</pre>
     <script src="/desktop/dist/panel.bundle.js?v=nt-frp-18"></script>
 </body>
 </html>
+
+

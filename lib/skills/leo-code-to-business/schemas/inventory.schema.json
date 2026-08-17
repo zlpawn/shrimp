@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "inventory.schema.json",
+  "title": "Repository Fact Inventory Item",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["id", "kind", "name", "classification", "source_location", "resolution_status", "mapped_node_ids"],
+  "properties": {
+    "id": {"type": "string", "minLength": 1},
+    "kind": {"type": "string", "minLength": 1},
+    "name": {"type": "string", "minLength": 1},
+    "classification": {"enum": ["business", "technical_support", "operations", "compensation_or_retry", "external_integration", "infrastructure", "unresolved"]},
+    "source_location": {"type": "object"},
+    "resolution_status": {"enum": ["resolved", "ambiguous", "unresolved", "excluded"]},
+    "mapped_node_ids": {"type": "array", "items": {"type": "string"}}
+  }
+}

@@ -17,7 +17,10 @@ import {
 import {
   deepSeekAutoContinueMaxAttempts,
   deepSeekAutoContinuePrompt,
+  resolveDeepSeekAutoContinueSettings,
+  evaluateDeepSeekAutoContinueCandidate,
   runDeepSeekAutoContinueLoop,
+  DEFAULT_DEEPSEEK_AUTO_CONTINUE_SETTINGS,
 } from "./lib/codex/deepseek-auto-continue.mjs";
 import { extractCompactionSummary } from "./lib/codex/compaction-helper.mjs";
 
@@ -64,6 +67,10 @@ import {
   ensureFreshCodexAuth,
   resolveCodexAuthPath,
 } from "./lib/codex/local-auth.mjs";
+import {
+  ensureFreshGrokAuth,
+  refreshGrokToken,
+} from "./lib/grok/subscription-auth.mjs";
 import {
   GatewayConfigError,
   buildClaudeCodeModelRoutes,
@@ -168,11 +175,26 @@ import { createDreamSkinService } from "./lib/dream-skin/application/service.mjs
 import { routeDreamSkinRequest } from "./lib/dream-skin/http/routes.mjs";
 import { resolveNatTraversalPaths } from "./lib/nat-traversal/paths.mjs";
 import { createNatTraversalService } from "./lib/nat-traversal/application/service.mjs";
+import { createCommandAppsService } from "./lib/command-apps/application/service.mjs";
+import { routeCommandAppsRequest } from "./lib/command-apps/http/routes.mjs";
+import { createCommandAppsSqliteStore } from "./lib/command-apps/infra/sqlite-store.mjs";
+import { createSessionKanbanStore } from "./lib/session-kanban/infra/sqlite-store.mjs";
+import { createSessionKanbanService } from "./lib/session-kanban/application/service.mjs";
+import { createSessionKanbanScheduler } from "./lib/session-kanban/application/scheduler.mjs";
+import { createCodexReader } from "./lib/session-kanban/infra/codex-reader.mjs";
+import { createClaudeReader } from "./lib/session-kanban/infra/claude-reader.mjs";
+import { createAntigravityReader } from "./lib/session-kanban/infra/antigravity-reader.mjs";
+import { createCliDispatchers } from "./lib/session-kanban/infra/cli-dispatchers.mjs";
+import { routeSessionKanbanRequest } from "./lib/session-kanban/http/routes.mjs";
 import { routeNatTraversalRequest } from "./lib/nat-traversal/http/routes.mjs";
 import { resolveRemoteSessionPaths } from "./lib/remote-session/paths.mjs";
 import { createRemoteSessionService } from "./lib/remote-session/application/service.mjs";
 import { routeRemoteSessionRequest } from "./lib/remote-session/http/routes.mjs";
 import { createFakeHostBackend } from "./lib/remote-session/host-attach/fake-host.mjs";
+import { resolveMcpPaths } from "./lib/mcp-management/paths.mjs";
+import { createMcpStore } from "./lib/mcp-management/store.mjs";
+import { createMcpManagementService } from "./lib/mcp-management/application/service.mjs";
+import { routeMcpManagementRequest } from "./lib/mcp-management/http/routes.mjs";
 
 loadDotEnv();
 enableNodeEnvProxy();
@@ -232,6 +254,8 @@ const OFFICIAL_CLAUDE_MODEL_IDS = new Set(OFFICIAL_CLAUDE_MODELS);
 let globalDreamSkinService = null;
 let globalNatTraversalService = null;
 let globalRemoteSessionService = null;
+let globalCommandAppsService = null;
+let globalMcpManagementService = null;
 
 function ensureNatTraversalService() {
   if (globalNatTraversalService) return globalNatTraversalService;
@@ -317,6 +341,54 @@ async function ensureRemoteSessionService() {
   return globalRemoteSessionService;
 }
 
+function ensureCommandAppsService() {
+  if (globalCommandAppsService) return globalCommandAppsService;
+  const configStore = createCommandAppsSqliteStore({
+    dbPath: process.env.COMMAND_APPS_DB_FILE || path.join(path.dirname(GATEWAY_CONFIG_FILE), "gateway.db"),
+    platform: process.platform,
+  });
+  globalCommandAppsService = createCommandAppsService({
+    configStore,
+    logger: console,
+  });
+  return globalCommandAppsService;
+}
+
+let globalSessionKanbanService = null;
+let globalSessionKanbanScheduler = null;
+function ensureSessionKanbanService() {
+  if (globalSessionKanbanService) return globalSessionKanbanService;
+  const store = createSessionKanbanStore({
+    dbPath: process.env.SESSION_KANBAN_DB_FILE || path.join(path.dirname(GATEWAY_CONFIG_FILE), "gateway.db"),
+  });
+  globalSessionKanbanService = createSessionKanbanService({
+    store,
+    readers: [
+      createCodexReader(),
+      createClaudeReader(),
+      createAntigravityReader(),
+    ],
+    dispatchers: createCliDispatchers(),
+  });
+  globalSessionKanbanScheduler = createSessionKanbanScheduler(globalSessionKanbanService, {
+    intervalMs: Number(process.env.SESSION_KANBAN_INTERVAL_MS || 30 * 1000),
+  });
+  globalSessionKanbanScheduler.start();
+  return globalSessionKanbanService;
+}
+
+function ensureMcpManagementService() {
+  if (globalMcpManagementService) return globalMcpManagementService;
+  const paths = resolveMcpPaths({
+    configFile: process.env.GATEWAY_CONFIG_FILE || "gateway.config.json",
+    secretsFile: process.env.MCP_SECRETS_FILE || "",
+  });
+  globalMcpManagementService = createMcpManagementService({
+    store: createMcpStore(paths),
+    logger: console,
+  });
+  return globalMcpManagementService;
+}
 // Dream Skin service is composed lazily on first route hit so gateway startup
 // stays fast and the service never imports runtime launcher/CDP modules.
 async function ensureDreamSkinService() {
@@ -1112,6 +1184,28 @@ async function route(req, res) {
     return;
   }
 
+  if (reqPath.startsWith("/v1/command-apps")) {
+    if (!checkLocalAuth(req, res)) return;
+    await routeCommandAppsRequest(req, res, context, reqPath, {
+      service: ensureCommandAppsService(),
+    });
+    return;
+  }
+  if (reqPath.startsWith("/v1/session-kanban")) {
+    if (!checkLocalAuth(req, res)) return;
+    await routeSessionKanbanRequest(req, res, reqPath, {
+      service: ensureSessionKanbanService(),
+    });
+    return;
+  }
+
+  if (reqPath.startsWith("/v1/mcp-management")) {
+    if (!checkLocalAuth(req, res)) return;
+    await routeMcpManagementRequest(req, res, context, reqPath, {
+      service: ensureMcpManagementService(),
+    });
+    return;
+  }
   if (reqPath.startsWith("/v1/nat-traversal")) {
     if (!checkLocalAuth(req, res)) return;
     await routeNatTraversalRequest(req, res, context, reqPath, {
@@ -2522,6 +2616,15 @@ if (reqPath === "/v1/config/secret" && req.method === "GET") {
         const body = JSON.parse((await readText(req)) || "{}");
         const result = await runSubscriptionAuthAction(providerId, action, {
           config: GATEWAY_CONFIG,
+          env: {
+            ...process.env,
+            GROK_PROXY: process.env.GROK_PROXY || buildProxyUrl(GATEWAY_CONFIG.server?.proxy || {}),
+          },
+          proxyUrl: configuredOutboundProxyUrl(
+            Object.values(GATEWAY_CONFIG.clients || {})
+              .flatMap((client) => client?.endpoints || [])
+              .find((endpoint) => endpoint?.type === "antigravity") || {},
+          ) || null,
           payload: body,
           save: body.save !== false,
         });
@@ -2547,6 +2650,141 @@ if (reqPath === "/v1/config/secret" && req.method === "GET") {
       }
       return;
     }
+  }
+
+  if (reqPath === "/v1/tools/deepseek-auto-continue" && req.method === "GET") {
+    if (!checkLocalAuth(req, res)) return;
+    const settings = resolveDeepSeekAutoContinueSettings({
+      config: GATEWAY_CONFIG,
+      env: process.env,
+    });
+    sendJson(res, 200, {
+      success: true,
+      settings,
+      defaults: DEFAULT_DEEPSEEK_AUTO_CONTINUE_SETTINGS,
+      source: {
+        config: GATEWAY_CONFIG?.tools?.deepseek_auto_continue || null,
+        env_overrides: {
+          DEEPSEEK_AUTO_CONTINUE_MAX_ATTEMPTS: process.env.DEEPSEEK_AUTO_CONTINUE_MAX_ATTEMPTS || null,
+          DEEPSEEK_AUTO_CONTINUE_PROMPT: process.env.DEEPSEEK_AUTO_CONTINUE_PROMPT || null,
+          DEEPSEEK_AUTO_CONTINUE_ENABLED: process.env.DEEPSEEK_AUTO_CONTINUE_ENABLED || null,
+          DEEPSEEK_AUTO_CONTINUE_REQUIRE_AGENT_CONTEXT: process.env.DEEPSEEK_AUTO_CONTINUE_REQUIRE_AGENT_CONTEXT || null,
+          DEEPSEEK_AUTO_CONTINUE_PRESERVE_STAGE_TEXT: process.env.DEEPSEEK_AUTO_CONTINUE_PRESERVE_STAGE_TEXT || null,
+        },
+      },
+    });
+    return;
+  }
+
+  if (reqPath === "/v1/tools/deepseek-auto-continue" && req.method === "POST") {
+    if (!checkLocalAuth(req, res)) return;
+    try {
+      const payload = JSON.parse(await readText(req));
+      const incoming = payload?.settings && typeof payload.settings === "object"
+        ? payload.settings
+        : payload;
+      const nextSettings = {
+        enabled: incoming?.enabled !== false,
+        max_attempts: Math.max(0, Math.min(3, Number(incoming?.max_attempts ?? 1) || 0)),
+        require_agent_context: incoming?.require_agent_context !== false,
+        preserve_stage_text: incoming?.preserve_stage_text !== false,
+        prompt: String(incoming?.prompt || DEFAULT_DEEPSEEK_AUTO_CONTINUE_SETTINGS.prompt).trim()
+          || DEFAULT_DEEPSEEK_AUTO_CONTINUE_SETTINGS.prompt,
+      };
+      const nextConfig = {
+        ...GATEWAY_CONFIG,
+        tools: {
+          ...(GATEWAY_CONFIG.tools || {}),
+          deepseek_auto_continue: nextSettings,
+        },
+      };
+      const result = saveGatewayState({
+        configPath: GATEWAY_CONFIG_FILE,
+        secretsPath: GATEWAY_SECRETS_FILE,
+        config: {
+          server: nextConfig.server,
+          clients: nextConfig.clients,
+          tools: nextConfig.tools,
+          dreamSkin: nextConfig.dreamSkin,
+          natTraversal: nextConfig.natTraversal,
+        },
+        officialCodexIds: OFFICIAL_CODEX_MODEL_IDS,
+      });
+      GATEWAY_CONFIG = result.config;
+      GATEWAY_SECRETS = result.secrets;
+      reloadGatewayConfig({ reloadFiles: false });
+      const settings = resolveDeepSeekAutoContinueSettings({
+        config: GATEWAY_CONFIG,
+        env: process.env,
+      });
+      logInfo("deepseek_auto_continue_settings_saved", {
+        config_changed: result.configChanged,
+        settings,
+      });
+      sendJson(res, 200, {
+        success: true,
+        settings,
+        config_changed: result.configChanged,
+      });
+    } catch (error) {
+      sendJson(res, 400, {
+        success: false,
+        error: error?.message || String(error),
+      });
+    }
+    return;
+  }
+
+  if (reqPath === "/v1/tools/deepseek-auto-continue/evaluate" && req.method === "POST") {
+    if (!checkLocalAuth(req, res)) return;
+    try {
+      const payload = JSON.parse(await readText(req));
+      const settings = resolveDeepSeekAutoContinueSettings({
+        config: {
+          tools: {
+            deepseek_auto_continue: payload?.settings || GATEWAY_CONFIG?.tools?.deepseek_auto_continue,
+          },
+        },
+        env: process.env,
+      });
+      const sampleText = String(payload?.text || "").trim();
+      const body = payload?.body && typeof payload.body === "object"
+        ? payload.body
+        : {
+          model: payload?.model || "DeepSeek-V4-Flash",
+          tools: payload?.has_tools === false ? [] : [{ type: "function", name: "shell_command" }],
+          input: [{ type: "message", role: "user", content: [{ type: "input_text", text: "agent task" }] }],
+        };
+      const response = payload?.response && typeof payload.response === "object"
+        ? payload.response
+        : {
+          status: "completed",
+          output_text: sampleText,
+          output: [{
+            type: "message",
+            role: "assistant",
+            content: [{ type: "output_text", text: sampleText }],
+          }],
+        };
+      const decision = evaluateDeepSeekAutoContinueCandidate({
+        model: payload?.model || body.model || "DeepSeek-V4-Flash",
+        provider: payload?.provider || { name: "deepseek", base_url: "https://api.deepseek.com" },
+        body,
+        response,
+        settings,
+      });
+      sendJson(res, 200, {
+        success: true,
+        settings,
+        decision,
+      });
+    } catch (error) {
+      sendJson(res, 400, {
+        success: false,
+        error: error?.message || String(error),
+      });
+    }
+    return;
   }
 
   if (reqPath === "/v1/config" && req.method === "GET") {
@@ -3964,6 +4202,11 @@ function extractAntigravityModelsFromLoadCodeAssist(raw) {
 }
 
 async function fetchOfficialGrokModels(endpoint = null) {
+  const authPath = resolveHomePath(endpoint?.auth_path) || GROK_AUTH_PATH;
+  const proxyUrl = configuredOutboundProxyUrl(endpoint || {});
+  try {
+    await ensureFreshGrokAuth({ authPath, proxyUrl, env: process.env });
+  } catch {}
   // Official Grok catalog from cli-chat-proxy, matching grok-build ModelsManager behavior.
   const base = String(endpoint?.base_url || process.env.GROK_MODELS_BASE_URL || GROK_DEFAULT_BASE_URL || "https://cli-chat-proxy.grok.com/v1")
     .replace(/\/+$/, "");
@@ -5556,13 +5799,9 @@ async function forwardResolvedCodexResponse({
         client_stream: Boolean(body.stream),
       });
       if (body.stream) {
-        streamFinalResponsesObject(clientRes, loop.response, requestedModel);
+        streamFinalResponsesObject(clientRes, loop.response, requestedModel, responseToolKinds);
       } else {
-        clientRes.writeHead(200, {
-          "Content-Type": "application/json; charset=utf-8",
-          "Access-Control-Allow-Origin": "*",
-        });
-        clientRes.end(JSON.stringify(loop.response));
+        sendResponsesObject(clientRes, loop.response, requestedModel, { stream: false }, responseToolKinds);
       }
       return;
     }
@@ -5685,13 +5924,9 @@ async function forwardResolvedCodexResponse({
         client_stream: Boolean(body.stream),
       });
       if (body.stream) {
-        streamFinalResponsesObject(clientRes, payload, requestedModel);
+        streamFinalResponsesObject(clientRes, payload, requestedModel, responseToolKinds);
       } else {
-        clientRes.writeHead(200, {
-          "Content-Type": "application/json; charset=utf-8",
-          "Access-Control-Allow-Origin": "*",
-        });
-        clientRes.end(JSON.stringify(payload));
+        sendResponsesObject(clientRes, payload, requestedModel, { stream: false }, responseToolKinds);
       }
       return;
     }
@@ -5783,7 +6018,7 @@ async function forwardResolvedCodexResponse({
     if (!loop.response) return;
 
     const continued = await maybeAutoContinueDeepSeekResponses({
-      body: withoutStreamFlag(body),
+      body: withoutStreamFlag(loop.body || body),
       response: loop.response,
       model: resolvedModel || requestedModel,
       provider: route.provider,
@@ -5822,7 +6057,7 @@ async function forwardResolvedCodexResponse({
     });
     sendResponsesObject(clientRes, continued.response, requestedModel, {
       stream: Boolean(body.stream),
-    });
+    }, responseToolKinds);
     return;
   }
 
@@ -5879,7 +6114,7 @@ async function forwardResolvedCodexResponse({
     });
     sendResponsesObject(clientRes, continued.response, requestedModel, {
       stream: Boolean(body.stream),
-    });
+    }, responseToolKinds);
     return;
   }
 
@@ -5920,6 +6155,28 @@ async function forwardResolvedCodexResponse({
   });
 
   if (body.stream) {
+    // If client requested custom tools (e.g. Codex desktop sandbox tools) and the provider
+    // is a 3rd-party Responses endpoint that only speaks standard function_call, collect
+    // and stream through streamFinalResponsesObject to map custom_tool_call properly.
+    if (route?.provider && !isOfficialCodexModel(requestedModel) && [...responseToolKinds.values()].some((k) => k === "custom")) {
+      const fetched = await fetchConfiguredResponsesObject({
+        provider: route.provider,
+        body: withoutStreamFlag(body),
+        resolvedModel,
+        requestedModel,
+        clientReq,
+        signal,
+        context,
+        route,
+      });
+      if (!fetched.ok) {
+        await sendUpstreamError(fetched.upstream, clientRes);
+        return;
+      }
+      sendResponsesObject(clientRes, fetched.response, requestedModel, { stream: true }, responseToolKinds);
+      return;
+    }
+
     await pipeResponsesUpstream(upstream, clientRes, {
       requestId: context.requestId,
       model: requestedModel,
@@ -6234,12 +6491,16 @@ async function maybeAutoContinueDeepSeekResponses({
     };
   }
 
-  const maxAttempts = deepSeekAutoContinueMaxAttempts();
-  if (maxAttempts <= 0 || !isDeepSeekResponsesModel(model, provider)) {
+  const settings = resolveDeepSeekAutoContinueSettings({
+    config: GATEWAY_CONFIG,
+    env: process.env,
+  });
+  if (!settings.enabled || settings.max_attempts <= 0 || !isDeepSeekResponsesModel(model, provider)) {
     return {
       response,
       attempts: 0,
       stopReason: "not_eligible",
+      settings,
     };
   }
 
@@ -6248,8 +6509,10 @@ async function maybeAutoContinueDeepSeekResponses({
     response,
     model,
     provider,
-    maxAttempts,
-    prompt: deepSeekAutoContinuePrompt(),
+    maxAttempts: settings.max_attempts,
+    prompt: settings.prompt,
+    requireAgentContext: settings.require_agent_context,
+    preserveStageText: settings.preserve_stage_text,
     fetchResponse,
     onContinue: (event) => logInfo("deepseek_auto_continue_attempt", {
       request_id: requestId,
@@ -6269,10 +6532,12 @@ async function maybeAutoContinueDeepSeekResponses({
       attempts: result.attempts,
       stop_reason: result.stopReason,
       decision_reason: result.decision?.reason || null,
+      require_agent_context: settings.require_agent_context,
+      preserve_stage_text: settings.preserve_stage_text,
     });
   }
 
-  return result;
+  return { ...result, settings };
 }
 
 async function fetchConfiguredResponsesObject({
@@ -6326,16 +6591,69 @@ async function fetchConfiguredResponsesObject({
   };
 }
 
-function sendResponsesObject(clientRes, response, requestedModel, { stream }) {
+function sendResponsesObject(clientRes, response, requestedModel, { stream }, toolKinds = new Map()) {
   if (stream) {
-    streamFinalResponsesObject(clientRes, response, requestedModel);
+    streamFinalResponsesObject(clientRes, response, requestedModel, toolKinds);
     return;
   }
+  const formattedResponse = convertResponsesOutputToolKinds(response, toolKinds);
   clientRes.writeHead(200, {
     "Content-Type": "application/json; charset=utf-8",
     "Access-Control-Allow-Origin": "*",
   });
-  clientRes.end(JSON.stringify(response));
+  clientRes.end(JSON.stringify(formattedResponse));
+}
+
+function convertResponsesOutputToolKinds(response, toolKinds = new Map()) {
+  if (!response || typeof response !== "object" || !Array.isArray(response.output)) {
+    return response;
+  }
+  const newOutput = response.output.map((item, index) => {
+    if (!item || typeof item !== "object") return item;
+    if (item.type === "function_call" || item.type === "custom_tool_call") {
+      const name = item.name || "";
+      const kind = toolKinds.get(name) || (item.type === "custom_tool_call" ? "custom" : "function");
+      const callId = item.call_id || item.id || `call_${Date.now()}_${index}`;
+      const rawArgs = typeof item.arguments === "string"
+        ? item.arguments
+        : (typeof item.input === "string" ? item.input : JSON.stringify(item.arguments ?? item.input ?? {}));
+
+      logInfo("responses_tool_call_json_mapped", {
+        tool: name,
+        kind,
+        raw_type: item.type,
+        call_id: callId,
+      });
+
+      if (kind === "custom") {
+        const normalized = normalizeCustomInput(rawArgs);
+        if (normalized.fallback) {
+          logInfo("custom_tool_arguments_fallback", {
+            model: response?.model || "custom-model",
+            tool: name,
+            arguments_length: rawArgs.length,
+            shape: normalized.shape,
+          });
+        }
+        return {
+          id: item.id || `fc_${callId}`,
+          type: "custom_tool_call",
+          call_id: callId,
+          name,
+          input: normalized.input,
+        };
+      }
+      return {
+        id: item.id || `fc_${callId}`,
+        type: "function_call",
+        call_id: callId,
+        name,
+        arguments: rawArgs,
+      };
+    }
+    return item;
+  });
+  return { ...response, output: newOutput };
 }
 
 function sanitizeProviderResponsesInput(body, provider = null) {
@@ -7197,7 +7515,13 @@ function nodeResToFetchLike(res) {
 
 async function fetchGrok(provider, endpointPath, body, signal) {
   const authPath = resolveHomePath(provider?.auth_path) || GROK_AUTH_PATH;
-  const authInfo = readGrokToken(authPath);
+  const proxyUrl = configuredOutboundProxyUrl(provider);
+  let authInfo;
+  try {
+    authInfo = await ensureFreshGrokAuth({ authPath, proxyUrl, env: process.env });
+  } catch {
+    authInfo = readGrokToken(authPath);
+  }
   const baseUrl = trimRight(provider?.base_url || GROK_DEFAULT_BASE_URL, "/");
   const model = body?.model || "";
   const headers = grokHeaders(provider, model, authInfo);
@@ -7210,7 +7534,6 @@ async function fetchGrok(provider, endpointPath, body, signal) {
   }
   const url = `${baseUrl}${endpointPath}`;
   const transport = new URL(url).protocol === "http:" ? http : https;
-  const proxyUrl = configuredOutboundProxyUrl(provider);
   const agent = grokProxyAgentFor(proxyUrl);
   await grokAcquire(provider, signal);
   let timedOut = false;
@@ -9767,7 +10090,7 @@ function responsesSseHeadersLocal() {
   };
 }
 
-function streamFinalResponsesObject(clientRes, response, requestedModel) {
+function streamFinalResponsesObject(clientRes, response, requestedModel, toolKinds = new Map()) {
   clientRes.writeHead(200, responsesSseHeadersLocal());
   const writer = new ResponsesWriter({
     model: requestedModel || response?.model || "custom-model",
@@ -9784,40 +10107,94 @@ function streamFinalResponsesObject(clientRes, response, requestedModel) {
       for (const item of response.output) {
         if (!item || typeof item !== "object") continue;
         if (item.type === "reasoning") {
-          const reasoningText = Array.isArray(item.summary)
-            ? item.summary.map((s) => s?.text || "").join("")
-            : (item.text || "");
-          if (reasoningText) writer.reasoningDelta(reasoningText);
+          let reasoningText = "";
+          if (Array.isArray(item.summary) && item.summary.length > 0) {
+            reasoningText = item.summary.map((s) => s?.text || "").join("");
+          } else if (Array.isArray(item.content) && item.content.length > 0) {
+            reasoningText = item.content
+              .filter((part) => part && typeof part === "object")
+              .map((part) => part.text || part.reasoning_text || "")
+              .join("");
+          } else if (typeof item.text === "string" && item.text) {
+            reasoningText = item.text;
+          } else if (typeof item.reasoning_content === "string" && item.reasoning_content) {
+            reasoningText = item.reasoning_content;
+          }
+          if (reasoningText) {
+            logInfo("responses_reasoning_extracted", {
+              model: requestedModel || "unknown",
+              length: reasoningText.length,
+              source: Array.isArray(item.summary) && item.summary.length > 0
+                ? "summary"
+                : Array.isArray(item.content) && item.content.length > 0
+                  ? "content"
+                  : "text",
+            });
+            writer.reasoningDelta(reasoningText);
+          }
         } else if (item.type === "message") {
           const text = Array.isArray(item.content)
             ? item.content
-              .filter((part) => part?.type === "output_text")
+              .filter((part) => part?.type === "output_text" || part?.type === "text")
               .map((part) => part.text || "")
               .join("")
             : (item.text || "");
           if (text) writer.textDelta(text);
         } else if (item.type === "function_call" || item.type === "custom_tool_call") {
-          const kind = item.type === "custom_tool_call" ? "custom" : "function";
-          const callId = item.call_id || item.id || `call_${Date.now()}_${toolIndex}`;
           const name = item.name || "";
-          const argsText = kind === "custom"
-            ? (typeof item.input === "string" ? item.input : JSON.stringify(item.input ?? {}))
-            : (typeof item.arguments === "string" ? item.arguments : JSON.stringify(item.arguments ?? {}));
-          
-          writer.functionArgumentsDelta({
-            index: toolIndex,
-            callId,
-            name,
-            delta: argsText,
+          const kind = toolKinds.get(name) || (item.type === "custom_tool_call" ? "custom" : "function");
+          const callId = item.call_id || item.id || `call_${Date.now()}_${toolIndex}`;
+          const rawArgs = typeof item.arguments === "string"
+            ? item.arguments
+            : (typeof item.input === "string" ? item.input : JSON.stringify(item.arguments ?? item.input ?? {}));
+
+          logInfo("responses_tool_call_stream_mapped", {
+            tool: name,
             kind,
+            raw_type: item.type,
+            call_id: callId,
           });
-          writer.finishFunction({
-            index: toolIndex,
-            callId,
-            name,
-            argumentsText: argsText,
-            kind,
-          });
+
+          if (kind === "custom") {
+            const normalized = normalizeCustomInput(rawArgs);
+            if (normalized.fallback) {
+              logInfo("custom_tool_arguments_fallback", {
+                model: requestedModel || "custom-model",
+                tool: name,
+                arguments_length: rawArgs.length,
+                shape: normalized.shape,
+              });
+            }
+            writer.functionArgumentsDelta({
+              index: toolIndex,
+              callId,
+              name,
+              delta: normalized.input,
+              kind,
+            });
+            writer.finishFunction({
+              index: toolIndex,
+              callId,
+              name,
+              argumentsText: rawArgs,
+              kind,
+            });
+          } else {
+            writer.functionArgumentsDelta({
+              index: toolIndex,
+              callId,
+              name,
+              delta: rawArgs,
+              kind,
+            });
+            writer.finishFunction({
+              index: toolIndex,
+              callId,
+              name,
+              argumentsText: rawArgs,
+              kind,
+            });
+          }
           toolIndex++;
         }
       }
@@ -9827,6 +10204,10 @@ function streamFinalResponsesObject(clientRes, response, requestedModel) {
     }
     writer.completed(response?.usage || {});
   } catch (error) {
+    logError("responses_stream_final_failed", {
+      model: requestedModel || "unknown",
+      error: error.message || error,
+    });
     writer.failed({
       code: error.code || "gateway_web_search_stream_error",
       message: error.message || "Failed to stream final response.",
@@ -11836,3 +12217,5 @@ async function readText(req) {
     req.on("error", reject);
   });
 }
+
+

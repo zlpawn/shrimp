@@ -1,4 +1,4 @@
-﻿import { test } from "node:test";
+import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
@@ -30,7 +30,7 @@ function tmpEnv() {
 }
 
 test("maskSecret keeps edges and hides middle", () => {
-  assert.equal(maskSecret("FAKESEC-aaaaaaaaaaaaaaaaaaaaaaaaxAAA", { keepStart: 7, keepEnd: 4 }), "FAKESEC-****xAAA");
+  assert.equal(maskSecret("FAKESEC-aaaaaaaaaaaaaaaaaaaaaaaaxAAA", { keepStart: 8, keepEnd: 4 }), "FAKESEC-****xAAA");
 });
 
 test("extracts concatenated GOCSPX secrets from binary-like text", () => {

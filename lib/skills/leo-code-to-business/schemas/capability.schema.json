@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"capability.schema.json","title":"Business Capability","allOf":[{"$ref":"common-node.schema.json"}]}

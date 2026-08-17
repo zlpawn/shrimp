@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "evidence.schema.json",
+  "title": "Current Repository Evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "source_kind", "repository_relative_path", "symbol", "start_line", "end_line", "content_sha256", "snapshot_id", "observation", "provider", "source_verified"],
+  "properties": {
+    "id": {"type": "string"},
+    "source_kind": {"type": "string"},
+    "repository_relative_path": {"type": "string"},
+    "symbol": {"type": "string"},
+    "start_line": {"type": "integer", "minimum": 0},
+    "end_line": {"type": "integer", "minimum": 0},
+    "content_sha256": {"type": "string"},
+    "snapshot_id": {"type": "string"},
+    "observation": {"type": "string"},
+    "provider": {"type": "string"},
+    "source_verified": {"type": "boolean"}
+  }
+}

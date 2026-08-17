@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "servers": {
+    "craft-mcp": {
+      "name": "craft-mcp",
+      "title": "craft-mcp",
+      "description": "从 OpenAI Codex 导入",
+      "enabled": false,
+      "transport": "remote",
+      "command": "",
+      "args": [],
+      "url": "https://mcp.craft.do/links/${key}/mcp",
+      "distribution": {
+        "codex": false,
+        "claude": false,
+        "claude_code": false,
+        "antigravity": false
+      }
+    }
+  },
+  "clientPaths": {
+    "codex": "",
+    "claude": "",
+    "claude_code": "",
+    "antigravity": ""
+  }
+}

@@ -41,13 +41,34 @@ let codexModelCatalogPath = "~/.codex/gateway-model-catalog.json";
 // Craft-style navigation: null = card list, {client,index} = detail editor
 let selectedEndpoint = null;
 let activeClient = 'code';
-let toolsView = 'cards'; // 'cards' | 'embedding' | 'classification-metrics' | 'antigravity-subscribe' | 'codex-subscribe' | 'video-kb'
+let toolsView = 'cards'; // 'cards' | 'embedding' | 'classification-metrics' | 'antigravity-subscribe' | 'codex-subscribe' | 'grok-subscribe' | 'video-kb' | 'deepseek-auto-continue'
 let codexAuthState = {
     loading: false,
     busyAction: '',
     error: '',
     message: '',
     status: null,
+};
+let grokAuthState = {
+    loading: false,
+    busyAction: '',
+    error: '',
+    message: '',
+    status: null,
+    usage: null,
+    usageLoading: false,
+};
+const subscriptionUsageState = {
+    codex: null,
+    antigravity: null,
+    loading: {
+        codex: false,
+        antigravity: false,
+    },
+    autoLoaded: {
+        codex: false,
+        antigravity: false,
+    },
 };
 let antigravityAuthState = {
     loading: false,
@@ -310,6 +331,371 @@ const BUILTIN_CLAUDE_OFFICIAL_MODELS = [
     'claude-haiku-4-5',
     'claude-haiku-4-0',
 ];
+
+
+const DEFAULT_DEEPSEEK_AUTO_CONTINUE_UI = {
+    enabled: true,
+    max_attempts: 1,
+    require_agent_context: true,
+    preserve_stage_text: true,
+    prompt: '继续执行未完成的任务，不要只做阶段性总结。如果还有下一步，请直接调用工具继续。',
+};
+
+function getDeepSeekAutoContinueConfig() {
+    config.tools = config.tools || {};
+    const current = config.tools.deepseek_auto_continue && typeof config.tools.deepseek_auto_continue === 'object'
+        ? config.tools.deepseek_auto_continue
+        : {};
+    config.tools.deepseek_auto_continue = {
+        enabled: current.enabled !== false,
+        max_attempts: Math.max(0, Math.min(3, Number(current.max_attempts ?? 1) || 0)),
+        require_agent_context: current.require_agent_context !== false,
+        preserve_stage_text: current.preserve_stage_text !== false,
+        prompt: String(current.prompt || DEFAULT_DEEPSEEK_AUTO_CONTINUE_UI.prompt).trim() || DEFAULT_DEEPSEEK_AUTO_CONTINUE_UI.prompt,
+    };
+    return config.tools.deepseek_auto_continue;
+}
+
+let deepseekAutoContinueState = {
+    loaded: false,
+    loading: false,
+    saving: false,
+    evaluating: false,
+    error: '',
+    message: '',
+    settings: { ...DEFAULT_DEEPSEEK_AUTO_CONTINUE_UI },
+    defaults: { ...DEFAULT_DEEPSEEK_AUTO_CONTINUE_UI },
+    env_overrides: {},
+    sampleText: 'Plan 3 完成（203 tests 全绿）。现在进入 Plan 4：运行时静态隔离。',
+    hasTools: true,
+    decision: null,
+};
+
+function readDeepSeekAutoContinueForm() {
+    const enabled = document.getElementById('dsac-enabled');
+    const maxAttempts = document.getElementById('dsac-max-attempts');
+    const requireAgent = document.getElementById('dsac-require-agent');
+    const preserveStage = document.getElementById('dsac-preserve-stage');
+    const prompt = document.getElementById('dsac-prompt');
+    const sample = document.getElementById('dsac-sample-text');
+    const hasTools = document.getElementById('dsac-has-tools');
+    return {
+        enabled: enabled ? enabled.checked : deepseekAutoContinueState.settings.enabled,
+        max_attempts: maxAttempts ? Math.max(0, Math.min(3, Number(maxAttempts.value || 0))) : deepseekAutoContinueState.settings.max_attempts,
+        require_agent_context: requireAgent ? requireAgent.checked : deepseekAutoContinueState.settings.require_agent_context,
+        preserve_stage_text: preserveStage ? preserveStage.checked : deepseekAutoContinueState.settings.preserve_stage_text,
+        prompt: prompt ? String(prompt.value || '').trim() : deepseekAutoContinueState.settings.prompt,
+        sampleText: sample ? String(sample.value || '') : deepseekAutoContinueState.sampleText,
+        hasTools: hasTools ? hasTools.checked : deepseekAutoContinueState.hasTools,
+    };
+}
+
+window.renderDeepSeekAutoContinueDetail = function() {
+    const cards = document.getElementById('tools-cards');
+    const detail = document.getElementById('tools-detail');
+    if (!cards || !detail) return;
+    cards.style.display = 'none';
+    toolsView = 'deepseek-auto-continue';
+    if (!deepseekAutoContinueState.loaded && !deepseekAutoContinueState.loading) {
+        loadDeepSeekAutoContinueSettings();
+    }
+
+    const st = deepseekAutoContinueState.settings || DEFAULT_DEEPSEEK_AUTO_CONTINUE_UI;
+    const decision = deepseekAutoContinueState.decision;
+    const env = deepseekAutoContinueState.env_overrides || {};
+    const envEntries = Object.entries(env).filter(([, v]) => v != null && String(v).trim() !== '');
+    const enabled = st.enabled !== false && Number(st.max_attempts || 0) > 0;
+    const statusBadge = enabled
+        ? '<span class="badge badge-key-configured">已启用</span>'
+        : '<span class="badge badge-key-missing">已关闭</span>';
+    const modeBadge = st.require_agent_context !== false
+        ? '<span class="badge">仅 agent/tool</span>'
+        : '<span class="badge">全部 DeepSeek 请求</span>';
+    const preserveBadge = st.preserve_stage_text !== false
+        ? '<span class="badge">保留阶段总结</span>'
+        : '<span class="badge">仅返回后续轮</span>';
+    const attemptsBadge = `<span class="badge">最多 ${escapeHtml(String(st.max_attempts ?? 1))} 次</span>`;
+    const busyText = deepseekAutoContinueState.loading
+        ? '加载中…'
+        : (deepseekAutoContinueState.saving
+            ? '保存中…'
+            : (deepseekAutoContinueState.evaluating ? '试判中…' : '配置可编辑'));
+
+    const decisionCard = decision ? `
+        <div class="node-card dsac-result-card ${decision.ok ? 'is-positive' : 'is-neutral'}" style="cursor:default; min-height:auto;">
+            <div class="node-card-top">
+                <div class="node-card-title-row">
+                    <div class="node-card-title">${decision.ok ? '会触发自动续写' : '不会触发自动续写'}</div>
+                    <span class="badge ${decision.ok ? 'badge-key-configured' : ''}">${escapeHtml(decision.reason || '')}</span>
+                </div>
+            </div>
+            <div class="node-card-meta">
+                <div class="node-card-row">
+                    <span>${decision.ok ? '网关会在本轮后再补一次 continue 请求' : '按当前设置，这段回复会直接返回给客户端'}</span>
+                </div>
+                ${decision.text ? `<div class="node-card-row"><span class="mono" title="${escapeHtml(String(decision.text))}">${escapeHtml(String(decision.text).slice(0, 220))}${String(decision.text).length > 220 ? '…' : ''}</span></div>` : ''}
+            </div>
+        </div>
+    ` : `
+        <div class="usage-guide" style="margin:0;">
+            <p style="margin:0;">填写一段 DeepSeek 纯文本回复，点「试判是否会续写」。不会真实请求模型，只做本地判定。</p>
+        </div>
+    `;
+
+    const envCard = envEntries.length ? `
+        <div class="form-group full">
+            <label>环境变量覆盖</label>
+            <div class="tags-list">
+                ${envEntries.map(([k, v]) => `<span class="tag"><code>${escapeHtml(k)}</code>=${escapeHtml(String(v))}</span>`).join('')}
+            </div>
+            <div class="usage-guide" style="margin:8px 0 0;">
+                <p style="margin:0;">环境变量优先级高于面板保存值，适合临时止血或调试。</p>
+            </div>
+        </div>
+    ` : '';
+
+    detail.innerHTML = `
+        <div class="detail-view dsac-detail">
+            <div class="detail-toolbar">
+                <div class="detail-toolbar-left">
+                    <button class="btn btn-sm" onclick="backToToolsCards()" title="返回迷你工具列表">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                        返回
+                    </button>
+                    <div>
+                        <div class="detail-title">DeepSeek 自动续写</div>
+                        <div class="detail-subtitle">
+                            安全模式 · 仅处理中途停住
+                            ${statusBadge}
+                        </div>
+                    </div>
+                </div>
+                <div class="detail-actions">
+                    <button class="btn btn-sm" onclick="loadDeepSeekAutoContinueSettings(true)" ${deepseekAutoContinueState.loading ? 'disabled' : ''}>刷新</button>
+                    <button class="btn btn-sm" onclick="resetDeepSeekAutoContinueSettings()" ${deepseekAutoContinueState.saving ? 'disabled' : ''}>恢复默认</button>
+                    <button class="btn btn-sm btn-primary" onclick="saveDeepSeekAutoContinueSettings()" ${deepseekAutoContinueState.saving ? 'disabled' : ''}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                        ${deepseekAutoContinueState.saving ? '保存中…' : '保存配置'}
+                    </button>
+                </div>
+            </div>
+
+            ${deepseekAutoContinueState.error ? `<div class="protocol-hint" role="alert" style="border-color: rgba(239,68,68,.35); background: rgba(239,68,68,.08);"><span>${escapeHtml(deepseekAutoContinueState.error)}</span></div>` : ''}
+            ${deepseekAutoContinueState.message ? `<div class="protocol-hint" role="status"><span>${escapeHtml(deepseekAutoContinueState.message)}</span></div>` : ''}
+
+            <div class="dsac-summary-grid">
+                <div class="node-card" style="cursor:default; min-height:auto;">
+                    <div class="node-card-top">
+                        <div class="node-card-title-row">
+                            <div class="node-card-title">当前生效策略</div>
+                            ${statusBadge}
+                        </div>
+                    </div>
+                    <div class="node-card-models">
+                        ${attemptsBadge}
+                        ${modeBadge}
+                        ${preserveBadge}
+                    </div>
+                    <div class="node-card-footer">
+                        <span>${escapeHtml(busyText)}</span>
+                        <span class="node-card-cta">DeepSeek 专用策略</span>
+                    </div>
+                </div>
+                <div class="node-card" style="cursor:default; min-height:auto;">
+                    <div class="node-card-top">
+                        <div class="node-card-title-row">
+                            <div class="node-card-title">适用场景</div>
+                            <span class="badge">DeepSeek Responses</span>
+                        </div>
+                    </div>
+                    <div class="node-card-meta">
+                        <div class="node-card-row"><span>agent/tool 任务中途只总结不调工具时，自动补一轮 continue</span></div>
+                        <div class="node-card-row"><span>普通问答默认不触发，避免误继续</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>基础配置</h3>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group full">
+                        <label>策略开关</label>
+                        <div class="capability-options dsac-capability-options">
+                            <label class="capability-option">
+                                <input class="capability-checkbox" id="dsac-enabled" type="checkbox" ${st.enabled ? 'checked' : ''}>
+                                <span>启用自动续写</span>
+                            </label>
+                            <label class="capability-option">
+                                <input class="capability-checkbox" id="dsac-require-agent" type="checkbox" ${st.require_agent_context ? 'checked' : ''}>
+                                <span>仅 agent/tool 场景</span>
+                            </label>
+                            <label class="capability-option">
+                                <input class="capability-checkbox" id="dsac-preserve-stage" type="checkbox" ${st.preserve_stage_text ? 'checked' : ''}>
+                                <span>保留阶段总结</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>最大续写次数（0-3）</label>
+                        <input id="dsac-max-attempts" class="mono dsac-max-attempts" type="number" min="0" max="3" value="${escapeHtml(String(st.max_attempts ?? 1))}">
+                    </div>
+                    <div class="form-group full">
+                        <label>续写提示词</label>
+                        <textarea id="dsac-prompt" class="mono dsac-textarea" rows="3">${escapeHtml(st.prompt || '')}</textarea>
+                        <div class="usage-guide" style="margin:0;">
+                            <p style="margin:0;">这是网关内部塞给模型的合成 user 消息，用来催它继续执行，而不是只做阶段总结。</p>
+                        </div>
+                    </div>
+
+                    ${envCard}
+                </div>
+            </div>
+
+            <div class="card" style="margin-top:16px;">
+                <div class="card-header">
+                    <h3>试判面板</h3>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group full">
+                        <label>模拟上下文</label>
+                        <div class="capability-options" style="grid-template-columns: 1fr;">
+                            <label class="capability-option">
+                                <input class="capability-checkbox" id="dsac-has-tools" type="checkbox" ${deepseekAutoContinueState.hasTools ? 'checked' : ''}>
+                                <span>请求带 tools / agent 上下文</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group full">
+                        <label>模型纯文本回复样本</label>
+                        <textarea id="dsac-sample-text" class="mono dsac-textarea" rows="5">${escapeHtml(deepseekAutoContinueState.sampleText || '')}</textarea>
+                    </div>
+                    <div class="form-group full">
+                        <div class="detail-actions" style="justify-content:flex-start;">
+                            <button class="btn btn-sm btn-primary" onclick="evaluateDeepSeekAutoContinueSample()" ${deepseekAutoContinueState.evaluating ? 'disabled' : ''}>
+                                ${deepseekAutoContinueState.evaluating ? '试判中…' : '试判是否会续写'}
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group full">
+                        <label>判定结果</label>
+                        ${decisionCard}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+};
+
+window.loadDeepSeekAutoContinueSettings = async function(force = false) {
+    if (deepseekAutoContinueState.loading) return;
+    deepseekAutoContinueState.loading = true;
+    deepseekAutoContinueState.error = '';
+    if (toolsView === 'deepseek-auto-continue') renderDeepSeekAutoContinueDetail();
+    try {
+        const res = await fetch('/v1/tools/deepseek-auto-continue');
+        const json = await res.json();
+        if (!res.ok || json?.success === false) throw new Error(json?.error || ('加载失败 (' + res.status + ')'));
+        deepseekAutoContinueState.settings = { ...DEFAULT_DEEPSEEK_AUTO_CONTINUE_UI, ...(json.settings || {}) };
+        deepseekAutoContinueState.defaults = { ...DEFAULT_DEEPSEEK_AUTO_CONTINUE_UI, ...(json.defaults || {}) };
+        deepseekAutoContinueState.env_overrides = json?.source?.env_overrides || {};
+        config.tools = config.tools || {};
+        config.tools.deepseek_auto_continue = { ...deepseekAutoContinueState.settings };
+        deepseekAutoContinueState.loaded = true;
+        deepseekAutoContinueState.message = force ? '已刷新生效配置' : '';
+    } catch (err) {
+        deepseekAutoContinueState.settings = { ...getDeepSeekAutoContinueConfig() };
+        deepseekAutoContinueState.loaded = true;
+        deepseekAutoContinueState.error = err.message || String(err);
+    } finally {
+        deepseekAutoContinueState.loading = false;
+        if (toolsView === 'deepseek-auto-continue') renderDeepSeekAutoContinueDetail();
+    }
+};
+
+window.saveDeepSeekAutoContinueSettings = async function() {
+    const form = readDeepSeekAutoContinueForm();
+    deepseekAutoContinueState.saving = true;
+    deepseekAutoContinueState.error = '';
+    deepseekAutoContinueState.message = '';
+    deepseekAutoContinueState.sampleText = form.sampleText;
+    deepseekAutoContinueState.hasTools = form.hasTools;
+    if (toolsView === 'deepseek-auto-continue') renderDeepSeekAutoContinueDetail();
+    try {
+        const settings = {
+            enabled: form.enabled,
+            max_attempts: form.max_attempts,
+            require_agent_context: form.require_agent_context,
+            preserve_stage_text: form.preserve_stage_text,
+            prompt: form.prompt || DEFAULT_DEEPSEEK_AUTO_CONTINUE_UI.prompt,
+        };
+        const res = await fetch('/v1/tools/deepseek-auto-continue', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ settings }),
+        });
+        const json = await res.json();
+        if (!res.ok || json?.success === false) throw new Error(json?.error || ('保存失败 (' + res.status + ')'));
+        deepseekAutoContinueState.settings = { ...DEFAULT_DEEPSEEK_AUTO_CONTINUE_UI, ...(json.settings || settings) };
+        config.tools = config.tools || {};
+        config.tools.deepseek_auto_continue = { ...deepseekAutoContinueState.settings };
+        deepseekAutoContinueState.message = '已保存 DeepSeek 自动续写配置';
+        showToast('DeepSeek 自动续写配置已保存', 'success');
+    } catch (err) {
+        deepseekAutoContinueState.error = err.message || String(err);
+        showToast('保存失败: ' + deepseekAutoContinueState.error, 'danger');
+    } finally {
+        deepseekAutoContinueState.saving = false;
+        if (toolsView === 'deepseek-auto-continue') renderDeepSeekAutoContinueDetail();
+    }
+};
+
+window.resetDeepSeekAutoContinueSettings = function() {
+    deepseekAutoContinueState.settings = { ...DEFAULT_DEEPSEEK_AUTO_CONTINUE_UI };
+    deepseekAutoContinueState.decision = null;
+    deepseekAutoContinueState.message = '已恢复默认值（尚未保存）';
+    renderDeepSeekAutoContinueDetail();
+};
+
+window.evaluateDeepSeekAutoContinueSample = async function() {
+    const form = readDeepSeekAutoContinueForm();
+    deepseekAutoContinueState.evaluating = true;
+    deepseekAutoContinueState.error = '';
+    deepseekAutoContinueState.sampleText = form.sampleText;
+    deepseekAutoContinueState.hasTools = form.hasTools;
+    deepseekAutoContinueState.settings = {
+        enabled: form.enabled,
+        max_attempts: form.max_attempts,
+        require_agent_context: form.require_agent_context,
+        preserve_stage_text: form.preserve_stage_text,
+        prompt: form.prompt || DEFAULT_DEEPSEEK_AUTO_CONTINUE_UI.prompt,
+    };
+    if (toolsView === 'deepseek-auto-continue') renderDeepSeekAutoContinueDetail();
+    try {
+        const res = await fetch('/v1/tools/deepseek-auto-continue/evaluate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                settings: deepseekAutoContinueState.settings,
+                text: form.sampleText,
+                has_tools: form.hasTools,
+                model: 'DeepSeek-V4-Flash',
+            }),
+        });
+        const json = await res.json();
+        if (!res.ok || json?.success === false) throw new Error(json?.error || ('试判失败 (' + res.status + ')'));
+        deepseekAutoContinueState.decision = json.decision || null;
+        if (json.settings) deepseekAutoContinueState.settings = { ...deepseekAutoContinueState.settings, ...json.settings };
+    } catch (err) {
+        deepseekAutoContinueState.error = err.message || String(err);
+        deepseekAutoContinueState.decision = null;
+    } finally {
+        deepseekAutoContinueState.evaluating = false;
+        if (toolsView === 'deepseek-auto-continue') renderDeepSeekAutoContinueDetail();
+    }
+};
 
 function getClaudeModelCatalogConfig() {
     config.tools = config.tools || {};
@@ -3763,7 +4149,7 @@ window.switchTab = function(tabId) {
 
     render();
 
-    if (tabId === 'dream-skin' || tabId === 'nat-traversal' || tabId === 'remote-session') {
+    if (['dream-skin', 'nat-traversal', 'remote-session', 'command-apps', 'session-kanban', 'mcp-management'].includes(tabId)) {
         try {
             runTabEnter(tabId);
         } catch (error) {
@@ -3815,8 +4201,8 @@ const toolGroupConfigs = [
     { title: '媒体生成', tools: ['image-gen', 'video-gen', 'tts-gen'] },
     { title: '向量化', tools: ['embedding'] },
     { title: '知识库', tools: ['video-kb'] },
-    { title: '订阅接入', tools: ['antigravity-subscribe', 'codex-subscribe'] },
-    { title: '模型配置', tools: ['claude-model-catalog'] },
+    { title: '订阅接入', tools: ['antigravity-subscribe', 'codex-subscribe', 'grok-subscribe'] },
+    { title: '模型配置', tools: ['claude-model-catalog', 'deepseek-auto-continue'] },
     { title: '联网搜索', tools: ['web-search'] },
     { title: '国学', tools: ['iching'] },
     { title: '其他', tools: ['classification-metrics'] },
@@ -3831,7 +4217,9 @@ function toolDefs() {
         'video-kb': { name: '视频知识库', desc: '输入视频 URL，自动下载、转录、向量化，存入 LanceDB 后可语义检索。', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="14" height="16" rx="2"></rect><path d="m22 8-6 4 6 4V8z"></path></svg>' },
         'antigravity-subscribe': { name: '接入 Antigravity 订阅', desc: '从本机提取 OAuth 凭据，登录 Google 订阅账号，让网关使用 Antigravity 的 Gemini 模型。', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M9 12l2 2 4-4"></path></svg>' },
         'codex-subscribe': { name: '接入 Codex 订阅', desc: '读取本机 Codex/ChatGPT 登录态，把官方模型做成可给 Claude Desktop / DeepTutor 使用的节点。', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M8 12h8"></path><path d="M12 8v8"></path></svg>' },
+        'grok-subscribe': { name: '接入 Grok 订阅', desc: '读取本机 Grok CLI 登录态，检测官方模型和订阅剩余用量。', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"></path><path d="M2 12h20"></path><path d="m4.9 4.9 14.2 14.2"></path><path d="M19.1 4.9 4.9 19.1"></path></svg>' },
         'claude-model-catalog': { name: 'Claude 模型列表', desc: '维护 Claude Desktop 映射原模型候选项：内置官方名 + 用户自定义。', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"></path><rect x="4" y="8" width="16" height="12" rx="2"></rect><path d="M2 14h2"></path><path d="M20 14h2"></path><path d="M15 13v2"></path><path d="M9 13v2"></path></svg>' },
+        'deepseek-auto-continue': { name: 'DeepSeek 自动续写', desc: '调节 DeepSeek agent 中途停住时的安全自动续写：开关、次数、仅 tool 场景、是否保留阶段总结，并支持样本文本试判。', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"></path><polyline points="21 3 21 9 15 9"></polyline><path d="M9 12h6"></path><path d="M12 9v6"></path></svg>' },
         'web-search': { name: '联网搜索', desc: '使用已配置的 web_search 节点，输入查询词、选择结果数量与时间范围，实时检索网页并查看本地搜索历史。', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20"></path><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>' },
         'iching': { name: '易经六十四卦', desc: '转动双圆环浏览六十四卦，查看完整卦辞、大象传、爻辞与小象传。', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="2" x2="12" y2="22"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>' },
         'classification-metrics': { name: '分类评估实验室', desc: '讲清 TP/FP/FN/TN，以及准确率、精准率、召回率，并用你的数据现场计算。', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>' },
@@ -3875,10 +4263,12 @@ window.openTool = function(toolId) {
     else if (toolId === 'tts-gen') renderTtsGenDetail();
     else if (toolId === 'web-search') renderWebSearchDetail();
     else if (toolId === 'claude-model-catalog') renderClaudeModelCatalogDetail();
+    else if (toolId === 'deepseek-auto-continue') renderDeepSeekAutoContinueDetail();
     else if (toolId === 'iching') renderIchingDetail();
     else if (toolId === 'classification-metrics') renderClassificationMetricsDetail();
     else if (toolId === 'antigravity-subscribe') renderAntigravitySubscribeDetail();
     else if (toolId === 'codex-subscribe') renderCodexSubscribeDetail();
+    else if (toolId === 'grok-subscribe') renderGrokSubscribeDetail();
     else if (toolId === 'video-kb') renderVideoKbDetail();
     else renderToolsDetail();
 };
@@ -4058,6 +4448,88 @@ function formatExpiresIn(seconds) {
     return s + ' 秒';
 }
 
+function formatUsageTime(value) {
+    if (!value) return '未知';
+    const date = typeof value === 'string' ? new Date(value) : new Date(Number(value) < 10_000_000_000 ? Number(value) * 1000 : Number(value));
+    return Number.isNaN(date.getTime()) ? '未知' : date.toLocaleString();
+}
+
+function formatSubscriptionUsage(usage: any) {
+    if (!usage) return '尚未获取';
+    if (usage.available === false) {
+        return usage?.error?.message || '不可用';
+    }
+    if (Array.isArray(usage.limits) && usage.limits.length) {
+        const visibleLimits = usage.limits.filter((l: any) => !l.group || l.group === 'gemini');
+        const targetLimits = visibleLimits.length ? visibleLimits : usage.limits;
+        const sorted = [...targetLimits].sort((a: any, b: any) => {
+            const order = (l: any) => (l.id === '5h' ? 0 : l.id === 'weekly' ? 1 : 2);
+            return order(a) - order(b);
+        });
+        return sorted.map((limit: any) => {
+            const percent = Number(limit.remaining_percent);
+            const value = Number.isFinite(percent) ? percent.toFixed(1).replace(/\.0$/, '') + '%' : '未知';
+            const rawLabel = limit.label || limit.id || '额度';
+            const label = rawLabel === '5h' ? '5 小时额度' : rawLabel === 'weekly' ? '周额度' : rawLabel;
+            const reset = limit.reset_after
+                ? ('，将在 ' + limit.reset_after + ' 后刷新')
+                : (limit.reset_hint ? ('，' + limit.reset_hint) : '');
+            return label + ' ' + value + reset;
+        }).join('；');
+    }
+    if (usage.remaining_credits !== null && usage.remaining_credits !== undefined && Number.isFinite(Number(usage.remaining_credits))) {
+        return '剩余 ' + usage.remaining_credits + ' credits';
+    }
+    if (Number.isFinite(Number(usage.remaining_percent))) {
+        const percent = Number(usage.remaining_percent);
+        const reset = usage.reset_hint
+            ? '，' + usage.reset_hint
+            : (usage.reset_at ? '，' + formatUsageTime(usage.reset_at) + ' 重置' : '');
+        return percent.toFixed(1).replace(/\.0$/, '') + '%' + reset;
+    }
+    return '已获取，但上游未提供剩余量';
+}
+
+function formatAntigravityUsageLimits(usage: any) {
+    if (!Array.isArray(usage?.limits) || !usage.limits.length) return escapeHtml(formatSubscriptionUsage(usage));
+    const visibleLimits = usage.limits.filter((limit: any) => !limit.group || limit.group === 'gemini');
+    const targetLimits = visibleLimits.length ? visibleLimits : usage.limits;
+    const sorted = [...targetLimits].sort((a: any, b: any) => {
+        const order = (l: any) => (l.id === '5h' ? 0 : l.id === 'weekly' ? 1 : 2);
+        return order(a) - order(b);
+    });
+    return sorted.map((limit: any) => {
+        const percent = Number(limit.remaining_percent);
+        const value = Number.isFinite(percent) ? percent.toFixed(1).replace(/\.0$/, '') + '%' : '未知';
+        const rawLabel = limit.label || limit.id || '额度';
+        const label = rawLabel === '5h' ? '5 小时额度' : rawLabel === 'weekly' ? '周额度' : rawLabel;
+        const reset = limit.reset_after
+            ? ('，将在 ' + limit.reset_after + ' 后刷新')
+            : (limit.reset_hint ? ('，' + limit.reset_hint) : '');
+        return '<div class="subauth-limit-line" style="line-height:1.45;">' + escapeHtml(label + ' ' + value + reset) + '</div>';
+    }).join('');
+}
+
+function subscriptionUsageHtml(usage: any, loading: boolean) {
+    if (loading) return '<span class="subauth-muted">获取订阅剩余用量中...</span>';
+    if (!usage) return '尚未获取';
+    if (usage.available === false) {
+        return '<span class="subauth-error">' + escapeHtml(usage?.error?.message || '不可用') + '</span>';
+    }
+    const updated = usage?.updated_at ? '<div class="subauth-muted" style="margin-top:4px;font-size:12px;">最近更新 ' + escapeHtml(new Date(usage.updated_at).toLocaleTimeString()) + '</div>' : '';
+    if (Array.isArray(usage.limits) && usage.limits.length) {
+        return formatAntigravityUsageLimits(usage) + updated;
+    }
+    return escapeHtml(formatSubscriptionUsage(usage)) + updated;
+}
+
+function subscriptionUsageText(usage, loading) {
+    if (loading) return '获取订阅剩余用量中...';
+    const value = formatSubscriptionUsage(usage);
+    const updated = usage?.updated_at ? '（最近更新 ' + new Date(usage.updated_at).toLocaleTimeString() + '）' : '';
+    return value + updated;
+}
+
 async function loadAntigravityAuthStatus() {
     antigravityAuthState.loading = true;
     antigravityAuthState.error = '';
@@ -4096,6 +4568,40 @@ async function loadCodexAuthStatus() {
     }
 }
 
+window.loadSubscriptionUsage = async function(provider) {
+    if (provider === 'grok') grokAuthState.usageLoading = true;
+    else subscriptionUsageState.loading[provider] = true;
+    try {
+        const res = await fetch('/v1/subscription-auth/' + encodeURIComponent(provider) + '/usage', { method: 'POST' });
+        const json = await res.json();
+        if (!res.ok || json.success === false) throw new Error(json?.error?.message || json?.error?.message || '获取用量失败');
+        const usage = json.available === undefined ? json.result : json;
+        if (provider === 'grok') grokAuthState.usage = usage;
+        else subscriptionUsageState[provider] = usage;
+    } catch (err) {
+        const failed = { available: false, error: { message: err.message || String(err) } };
+        if (provider === 'grok') grokAuthState.usage = failed;
+        else subscriptionUsageState[provider] = failed;
+    } finally {
+        if (provider === 'grok') grokAuthState.usageLoading = false;
+        else subscriptionUsageState.loading[provider] = false;
+        if (provider === 'grok') renderGrokSubscribeDetail(false);
+        else if (provider === 'codex') renderCodexSubscribeDetail(false);
+        else if (provider === 'antigravity') renderAntigravitySubscribeDetail(false);
+    }
+}
+
+function autoLoadUsage(provider, enabled, renderer) {
+    if (!enabled) return;
+    const grokNeedsLoad = provider === 'grok' && !grokAuthState.usage && !grokAuthState.usageLoading;
+    const providerNeedsLoad = provider !== 'grok'
+        && !subscriptionUsageState.autoLoaded[provider]
+        && !subscriptionUsageState.loading[provider];
+    if (!grokNeedsLoad && !providerNeedsLoad) return;
+    if (provider !== 'grok') subscriptionUsageState.autoLoaded[provider] = true;
+    loadSubscriptionUsage(provider);
+}
+
 window.renderCodexSubscribeDetail = function(autoLoad = true) {
     const cards = document.getElementById('tools-cards');
     const detail = document.getElementById('tools-detail');
@@ -4106,12 +4612,15 @@ window.renderCodexSubscribeDetail = function(autoLoad = true) {
     if (autoLoad && !codexAuthState.status && !codexAuthState.loading && !codexAuthState.error) {
         loadCodexAuthStatus();
     }
+    autoLoadUsage('codex', autoLoad);
 
     const s = codexAuthState.status;
     const busy = Boolean(codexAuthState.busyAction);
     const state = s?.state || (codexAuthState.loading ? 'loading' : 'unknown');
     const stateLabel = s?.state_label || (codexAuthState.loading ? '加载中' : '未知');
     const badgeClass = subauthBadgeClass(state);
+    const usage = subscriptionUsageState.codex;
+    const usageLoading = subscriptionUsageState.loading.codex;
     const nextSteps = (s?.next_steps || []).map((step) => '<li>' + escapeHtml(step) + '</li>').join('')
         || '<li>打开工具后会自动检查本机 Codex 登录态。</li>';
     const nodeHint = s?.nodes?.configured
@@ -4134,6 +4643,7 @@ window.renderCodexSubscribeDetail = function(autoLoad = true) {
         '      <div class="subauth-stat"><div class="subauth-stat-label">账号</div><div class="subauth-stat-value">' + escapeHtml(s?.token?.account_id || '未登录') + '</div></div>',
         '      <div class="subauth-stat"><div class="subauth-stat-label">Token 剩余</div><div class="subauth-stat-value">' + escapeHtml(formatExpiresIn(s?.token?.expires_in_seconds)) + '</div></div>',
         '      <div class="subauth-stat"><div class="subauth-stat-label">登录模式</div><div class="subauth-stat-value">' + escapeHtml(s?.token?.auth_mode || '未知') + '</div></div>',
+        '      <div class="subauth-stat"><div class="subauth-stat-label">订阅剩余用量</div><div class="subauth-stat-value">' + subscriptionUsageHtml(usage, usageLoading) + '</div></div>',
         '    </div>',
         codexAuthState.error ? ('    <div class="subauth-error">' + escapeHtml(codexAuthState.error) + '</div>') : '',
         codexAuthState.message ? ('    <div class="subauth-success">' + escapeHtml(codexAuthState.message) + '</div>') : '',
@@ -4148,6 +4658,7 @@ window.renderCodexSubscribeDetail = function(autoLoad = true) {
         '      <button class="btn" onclick="loadCodexAuthStatus()" ' + (busy ? 'disabled' : '') + '>刷新状态</button>',
         '      <button class="btn btn-primary" onclick="discoverCodexAuth()" ' + (busy ? 'disabled' : '') + '>' + (codexAuthState.busyAction === 'discover' ? '检测中...' : '检测本机登录态') + '</button>',
         '      <button class="btn" onclick="refreshCodexAuthToken()" ' + (busy ? 'disabled' : '') + '>' + (codexAuthState.busyAction === 'refresh' ? '刷新中...' : '尝试刷新 Token') + '</button>',
+        '      <button class="btn" onclick="loadSubscriptionUsage(\'codex\')" ' + (busy ? 'disabled' : '') + '>' + (usageLoading ? '获取中...' : '刷新剩余用量') + '</button>',
         '    </div>',
         '  </div>',
         '  <div class="subauth-panel">',
@@ -4220,6 +4731,102 @@ window.refreshCodexAuthToken = async function() {
     }
 };
 
+window.loadGrokAuthStatus = async function() {
+    grokAuthState.loading = true;
+    grokAuthState.error = '';
+    renderGrokSubscribeDetail(false);
+    try {
+        const res = await fetch('/v1/subscription-auth/grok/status');
+        const json = await res.json();
+        if (!res.ok) throw new Error(json?.error?.message || '加载状态失败');
+        grokAuthState.status = json;
+    } catch (err) {
+        grokAuthState.error = err.message || String(err);
+    } finally {
+        grokAuthState.loading = false;
+        renderGrokSubscribeDetail(false);
+    }
+}
+
+window.refreshGrokAuth = async function() {
+    grokAuthState.busyAction = 'refresh';
+    grokAuthState.error = '';
+    grokAuthState.message = '';
+    renderGrokSubscribeDetail(false);
+    try {
+        const res = await fetch('/v1/subscription-auth/grok/refresh', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({}),
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success) throw new Error(json?.error?.message || '刷新 Token 失败');
+        grokAuthState.message = 'Token 刷新成功！';
+        await loadGrokAuthStatus();
+    } catch (err) {
+        grokAuthState.error = err.message || String(err);
+    } finally {
+        grokAuthState.busyAction = '';
+        renderGrokSubscribeDetail(false);
+    }
+};
+
+window.renderGrokSubscribeDetail = function(autoLoad = true) {
+    const cards = document.getElementById('tools-cards');
+    const detail = document.getElementById('tools-detail');
+    if (!cards || !detail) return;
+    cards.style.display = 'none';
+    toolsView = 'grok-subscribe';
+    if (autoLoad && !grokAuthState.status && !grokAuthState.loading && !grokAuthState.error) {
+        loadGrokAuthStatus();
+    }
+    autoLoadUsage('grok', autoLoad);
+    const s = grokAuthState.status;
+    const busy = Boolean(grokAuthState.busyAction || grokAuthState.loading || grokAuthState.usageLoading);
+    const state = s?.state || (grokAuthState.loading ? 'loading' : 'unknown');
+    const stateLabel = s?.state_label || (grokAuthState.loading ? '加载中' : '未知');
+    const nextSteps = (s?.next_steps || [
+        '请先在本机运行 grok login 完成订阅登录。',
+        '登录后在 Claude Desktop / DeepTutor / Codex 节点页添加 Grok 订阅节点。',
+    ]).map((step) => '<li>' + escapeHtml(step) + '</li>').join('');
+    const nodeHint = s?.nodes?.configured
+        ? ('已检测到 ' + s.nodes.count + ' 个 Grok 订阅节点。')
+        : '尚未配置 type=grok 的节点。';
+    detail.innerHTML = [
+        '<button class="tools-detail-back" onclick="backToToolsCards()">返回工具列表</button>',
+        '<div class="subauth-layout">',
+        '  <div class="subauth-panel">',
+        '    <h3>接入 Grok 订阅</h3>',
+        '    <div class="subauth-status-grid">',
+        '      <div class="subauth-stat"><div class="subauth-stat-label">当前状态</div><div class="subauth-stat-value"><span class="subauth-badge ' + subauthBadgeClass(state) + '">' + escapeHtml(stateLabel) + '</span></div></div>',
+        '      <div class="subauth-stat"><div class="subauth-stat-label">账号</div><div class="subauth-stat-value">' + escapeHtml(s?.token?.account_id || '未登录') + '</div></div>',
+        '      <div class="subauth-stat"><div class="subauth-stat-label">Token 剩余</div><div class="subauth-stat-value">' + escapeHtml(formatExpiresIn(s?.token?.expires_in_seconds)) + '</div></div>',
+        '      <div class="subauth-stat"><div class="subauth-stat-label">订阅剩余用量</div><div class="subauth-stat-value">' + subscriptionUsageHtml(grokAuthState.usage, grokAuthState.usageLoading) + '</div></div>',
+        '    </div>',
+        grokAuthState.error ? ('<div class="subauth-error">' + escapeHtml(grokAuthState.error) + '</div>') : '',
+        grokAuthState.message ? ('<div class="subauth-success">' + escapeHtml(grokAuthState.message) + '</div>') : '',
+        '    <div class="subauth-help">',
+        '      <div>Auth 文件：<span class="subauth-path">' + escapeHtml(s?.auth_path || '~/.grok/auth.json') + '</span></div>',
+        '      <div style="margin-top:6px;">节点配置：' + escapeHtml(nodeHint) + '</div>',
+        '    </div>',
+        '    <div class="subauth-actions">',
+        '      <button class="btn" onclick="loadGrokAuthStatus()" ' + (busy ? 'disabled' : '') + '>刷新状态</button>',
+        '      <button class="btn btn-primary" onclick="refreshGrokAuth()" ' + (busy ? 'disabled' : '') + '>' + (grokAuthState.busyAction === 'refresh' ? '刷新中...' : '刷新 Token') + '</button>',
+        '      <button class="btn" onclick="loadSubscriptionUsage(\'grok\')" ' + (busy ? 'disabled' : '') + '>' + (grokAuthState.usageLoading ? '获取中...' : '刷新剩余用量') + '</button>',
+        '    </div>',
+        '  </div>',
+        '  <div class="subauth-panel">',
+        '    <h3>接下来做什么</h3>',
+        '    <ol class="subauth-steps">' + nextSteps + '</ol>',
+        '    <div class="subauth-help">',
+        '      <div><strong>真实上游协议</strong></div>',
+        '      <div class="subauth-muted" style="margin-top:6px;">Grok 订阅节点走 cli-chat-proxy.grok.com/v1，读取本机 ~/.grok/auth.json，不需要 API Key。支持基于 refresh_token 自动刷新。</div>',
+        '    </div>',
+        '  </div>',
+        '</div>',
+    ].join('');
+};
+
 
 window.renderAntigravitySubscribeDetail = function(autoLoad = true) {
     const cards = document.getElementById('tools-cards');
@@ -4231,6 +4838,7 @@ window.renderAntigravitySubscribeDetail = function(autoLoad = true) {
     if (autoLoad && !antigravityAuthState.status && !antigravityAuthState.loading && !antigravityAuthState.error) {
         loadAntigravityAuthStatus();
     }
+    autoLoadUsage('antigravity', autoLoad);
 
     const s = antigravityAuthState.status;
     const busy = Boolean(antigravityAuthState.busyAction);
@@ -4245,6 +4853,8 @@ window.renderAntigravitySubscribeDetail = function(autoLoad = true) {
     const installHint = s?.install?.detected
         ? ('已检测到：' + (s.install.install_root || ''))
         : '未检测到本机 Antigravity 安装，可手动填写 client_id / client_secret。';
+    const usage = subscriptionUsageState.antigravity;
+    const usageLoading = subscriptionUsageState.loading.antigravity;
 
     detail.innerHTML = [
         '<button class="tools-detail-back" onclick="backToToolsCards()">返回工具列表</button>',
@@ -4256,6 +4866,7 @@ window.renderAntigravitySubscribeDetail = function(autoLoad = true) {
         '      <div class="subauth-stat"><div class="subauth-stat-label">账号</div><div class="subauth-stat-value">' + escapeHtml(s?.token?.account_id || '未登录') + '</div></div>',
         '      <div class="subauth-stat"><div class="subauth-stat-label">Token 剩余</div><div class="subauth-stat-value">' + escapeHtml(formatExpiresIn(s?.token?.expires_in_seconds)) + '</div></div>',
         '      <div class="subauth-stat"><div class="subauth-stat-label">Client 凭据</div><div class="subauth-stat-value">' + (s?.client?.configured ? escapeHtml(s.client.client_id_masked || '已配置') : '未配置') + '</div></div>',
+        '      <div class="subauth-stat"><div class="subauth-stat-label">订阅剩余用量</div><div class="subauth-stat-value">' + subscriptionUsageHtml(usage, usageLoading) + '</div></div>',
         '    </div>',
         '    <div class="subauth-actions">',
         '      <button class="btn" onclick="loadAntigravityAuthStatus()" ' + (busy ? 'disabled' : '') + '>刷新状态</button>',
@@ -4263,6 +4874,7 @@ window.renderAntigravitySubscribeDetail = function(autoLoad = true) {
         '      <button class="btn btn-primary" onclick="loginAntigravitySubscription()" ' + (busy ? 'disabled' : '') + '>' + (antigravityAuthState.busyAction === 'login-start' ? '启动中...' : (antigravityAuthState.busyAction === 'login-wait' ? '等待授权中' : '一键登录')) + '</button>',
         (antigravityAuthState.busyAction === 'login-wait' ? '<button class="btn" onclick="cancelAntigravityLoginWait()">取消等待</button>' : ''),
         '      <button class="btn" onclick="toggleAntigravityManualForm()" ' + (busy ? 'disabled' : '') + '>手动填写</button>',
+        '      <button class="btn" onclick="loadSubscriptionUsage(\'antigravity\')" ' + (busy ? 'disabled' : '') + '>' + (usageLoading ? '获取中...' : '刷新剩余用量') + '</button>',
         '    </div>',
         antigravityAuthState.showManual ? (
           '<div class="subauth-form-row">' +
@@ -6102,7 +6714,7 @@ window.addEventListener('load', () => {
     const hash = window.location.hash.replace('#', '');
     const parts = hash.split('/');
     const tabId = parts[0];
-    const knownTabs = ['code','desktop','codex','deeptutor','analytics','proxy','sync','skills','install-history','tools','extensions','cli','cli-install-history','cli-sources','dream-skin','nat-traversal','remote-session'];
+    const knownTabs = ['code','desktop','codex','deeptutor','analytics','proxy','sync','skills','install-history','tools','extensions','cli','cli-install-history','cli-sources','dream-skin','nat-traversal','remote-session','command-apps','session-kanban','mcp-management'];
     if (knownTabs.includes(tabId) || isCustomClient(tabId)) {
         switchTab(tabId);
         // Restore sub-view for tools/extensions
@@ -7241,3 +7853,4 @@ document.addEventListener('keydown', (e) => {
         closeEndpointDetail();
     }
 });
+

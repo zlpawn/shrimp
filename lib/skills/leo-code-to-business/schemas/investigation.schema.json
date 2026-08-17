@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "investigation.schema.json",
+  "title": "Repository Investigation Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "question_or_node_id", "investigation_kind", "provider", "provider_version", "queries", "scope", "files_and_symbols_inspected", "candidate_results", "accepted_results", "rejected_results_and_reason", "truncated", "source_verified", "repository_snapshot", "status", "completed_at"],
+  "properties": {
+    "id": {"type": "string"},
+    "question_or_node_id": {"type": "string"},
+    "investigation_kind": {"enum": ["vocabulary_expansion", "entry_search", "forward_trace", "backward_trace", "alternate_entry_search", "rule_search", "contradiction_search", "source_verification"]},
+    "provider": {"type": "string"},
+    "provider_version": {"type": "string"},
+    "queries": {"type": "array", "minItems": 1},
+    "scope": {"type": "array"},
+    "files_and_symbols_inspected": {"type": "array", "minItems": 1},
+    "candidate_results": {"type": "array"},
+    "accepted_results": {"type": "array"},
+    "rejected_results_and_reason": {"type": "array"},
+    "truncated": {"type": "boolean"},
+    "source_verified": {"type": "boolean"},
+    "repository_snapshot": {"type": "string"},
+    "status": {"enum": ["completed", "partial", "blocked"]},
+    "completed_at": {"type": "string"}
+  }
+}

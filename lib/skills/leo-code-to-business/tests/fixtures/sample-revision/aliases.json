@@ -1,0 +1,14 @@
+[
+  {
+    "alias": "addWorkOrder",
+    "target_ids": [
+      "UC-create-work-order"
+    ]
+  },
+  {
+    "alias": "工单创建",
+    "target_ids": [
+      "UC-create-work-order"
+    ]
+  }
+]

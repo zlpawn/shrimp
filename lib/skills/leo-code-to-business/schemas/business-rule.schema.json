@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "business-rule.schema.json",
+  "title": "Business Rule",
+  "allOf": [{"$ref": "common-node.schema.json"}],
+  "type": "object",
+  "required": ["statement", "applies_when", "decision", "business_effect", "exceptions"],
+  "properties": {
+    "statement": {"type": "string", "minLength": 1},
+    "applies_when": {"type": "array"},
+    "decision": {"type": "array"},
+    "business_effect": {"type": "array"},
+    "exceptions": {"type": "array"}
+  }
+}

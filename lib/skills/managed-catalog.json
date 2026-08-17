@@ -1,7 +1,27 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-13T15:36:04.399Z",
+  "updatedAt": "2026-08-14T09:30:00.000Z",
   "skills": [
+    {
+      "id": "leo-code-to-business",
+      "name": "leo-code-to-business",
+      "title": "Leo 代码转业务知识",
+      "summary": "从当前代码、配置、测试、SQL 与 Git 证据中还原角色、业务用例族、流程、规则、状态、数据含义、异常、补偿和未知项，并生成 AI 可读知识与离线 HTML 站点。",
+      "category": "research",
+      "categoryLabel": "研究与知识",
+      "icon": "🧩",
+      "featured": false,
+      "tags": [
+        "business knowledge",
+        "code to business",
+        "业务知识",
+        "代码转业务",
+        "业务规则"
+      ],
+      "requiresDaemon": false,
+      "promoted": true,
+      "managed": true
+    },
     {
       "id": "leo-video-to-karpathy-wiki",
       "name": "leo-video-to-karpathy-wiki",

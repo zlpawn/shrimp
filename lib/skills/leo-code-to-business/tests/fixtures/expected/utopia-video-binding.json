@@ -1,0 +1,104 @@
+{
+  "scenario": "video-binding",
+  "minimum_confirmed_use_cases": 2,
+  "required_evidence": [
+    {
+      "id": "main-entry",
+      "path_contains": "VideoController.java",
+      "symbol_contains": "VideoController.relate"
+    },
+    {
+      "id": "normal-branch",
+      "path_contains": "VideoInfoServiceImpl.java",
+      "symbol_contains": "VideoInfoServiceImpl.relateConSite"
+    },
+    {
+      "id": "3d-branch",
+      "path_contains": "VideoInfoServiceImpl.java",
+      "symbol_contains": "VideoInfoServiceImpl.relate3dConSite"
+    },
+    {
+      "id": "folder-expansion",
+      "path_contains": "VideoInfoServiceImpl.java",
+      "symbol_contains": "VideoInfoServiceImpl.getRelatedVideoIdList"
+    },
+    {
+      "id": "binding-write",
+      "path_contains": "VideoInfoServiceImpl.java",
+      "symbol_contains": "VideoInfoServiceImpl.doRelate"
+    }
+  ],
+  "required_business_concepts": [
+    {
+      "id": "tenant-precedence",
+      "any_of": ["显式租户覆盖上下文租户", "explicit tenant overrides context tenant"]
+    },
+    {
+      "id": "tenant-inheritance",
+      "any_of": ["未显式传入时继承上下文租户", "otherwise inherit context tenant"]
+    },
+    {
+      "id": "dedup-key",
+      "any_of": ["projectId + acceptanceNode", "projectid+acceptancenode"]
+    },
+    {
+      "id": "rapid-repeat",
+      "any_of": ["快速重复操作会被拒绝", "rapid repeated operations are rejected"]
+    },
+    {
+      "id": "linjing-branch",
+      "any_of": ["LINJING 选择 3D 头戴分支", "LINJING selects the 3D/head-mounted branch"]
+    },
+    {
+      "id": "normal-branch",
+      "any_of": ["其他设备进入普通耳挂分支", "other device types select the normal/ear-mounted branch"]
+    },
+    {
+      "id": "folder-expansion",
+      "any_of": ["扩展到同文件夹全部视频", "expands to all videos in the same folders"]
+    },
+    {
+      "id": "binding-fields",
+      "any_of": ["写入项目、验收节点、地址、项目经理、检查员、操作人、关联状态和关联时间", "writes project, node, address, foreman, inspector, operator, status and time"]
+    },
+    {
+      "id": "index-sync",
+      "any_of": ["数据库更新后同步 ES", "database update is followed by ES"]
+    }
+  ],
+  "required_unknowns": [],
+  "required_family_members": [
+    {
+      "id": "normal-application-binding",
+      "any_of": ["普通应用绑定", "normal application binding"]
+    },
+    {
+      "id": "3d-binding",
+      "any_of": ["3D 绑定", "3d binding"]
+    },
+    {
+      "id": "uploaded-video-binding",
+      "any_of": ["已上传视频绑定", "uploaded-video binding"]
+    },
+    {
+      "id": "pending-upload-binding",
+      "any_of": ["待上传视频绑定", "pending-upload binding"]
+    },
+    {
+      "id": "wxon-binding",
+      "any_of": ["WXON 绑定", "wxon binding"]
+    },
+    {
+      "id": "precheck-status-check",
+      "any_of": ["绑定前检查与状态检查", "precheck/status check"]
+    },
+    {
+      "id": "unbind",
+      "any_of": ["视频解绑", "unbind"]
+    },
+    {
+      "id": "operational-relink",
+      "any_of": ["运维重新关联", "operational relink"]
+    }
+  ]
+}

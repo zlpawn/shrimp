@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"glossary.schema.json","title":"Business Glossary Term","allOf":[{"$ref":"common-node.schema.json"}]}

@@ -1,0 +1,28 @@
+{
+  "fixture": "ambiguous-java-repo",
+  "required_investigation_kinds": [
+    "vocabulary_expansion",
+    "entry_search",
+    "forward_trace",
+    "backward_trace",
+    "alternate_entry_search",
+    "rule_search",
+    "contradiction_search",
+    "source_verification"
+  ],
+  "confirmed_facts": [
+    "NormalBindingService writes a BOUND binding",
+    "NormalBindingService synchronizes the search index after the write",
+    "BindingRepairCommand is an alternate operational writer"
+  ],
+  "inferred_or_unknown": [
+    "Which BindingService implementation is selected at runtime",
+    "Whether supervisors are authorized to bind",
+    "Whether PreviewBindingService is active in production"
+  ],
+  "prohibited_claims": [
+    "All supervisors may bind",
+    "Search-index synchronization is unnecessary",
+    "BindingController always resolves to NormalBindingService"
+  ]
+}
