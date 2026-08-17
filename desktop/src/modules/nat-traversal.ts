@@ -730,8 +730,6 @@ async function testPeer(id: string): Promise<void> {
 (window as any).__ntInferDashboard = () => inferDashboardFromServerAddr();
 (window as any).__ntOpenDashboardProxy = async () => {
   try {
-    // Snapshot target first from current form, then quiet-save, then open.
-    // Never re-render this page as part of open — that was making the UI jump.
     const draftUrl =
       (document.getElementById("nt-dash-url") as HTMLInputElement | null)?.value?.trim() ||
       state.config?.frpsDashboard?.url ||
@@ -741,9 +739,19 @@ async function testPeer(id: string): Promise<void> {
       return;
     }
     const entry = buildDashboardProxyEntryPath(draftUrl);
-    // Open first while still in the user-gesture stack when possible.
-    openInNewTab(entry);
+
+    // 1. Open blank tab synchronously within user gesture stack to avoid popup blocker
+    const targetWin = window.open("about:blank", "_blank");
+
+    // 2. Save credentials to secrets on server first so reverse proxy has Basic Auth ready
     await save({ quietRender: true });
+
+    // 3. Navigate the opened tab to proxy entry with credentials already persisted
+    if (targetWin && !targetWin.closed) {
+      targetWin.location.href = entry;
+    } else {
+      openInNewTab(entry);
+    }
   } catch (error: any) {
     showToast(error?.message || String(error), "error");
   }

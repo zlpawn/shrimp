@@ -285,3 +285,26 @@ test("supervisor status adopts external frpc process", async () => {
   // so validate stop discovers external when pid file empty by temporary patch is out-of-scope.
   assert.ok(!fs.existsSync(pidPath));
 });
+
+test("isCrossPlatformMismatch detects Windows path on POSIX and Unix path on Windows", async () => {
+  const { isCrossPlatformMismatch } = await import("../../lib/nat-traversal/process/frpc-supervisor.mjs");
+  assert.equal(isCrossPlatformMismatch("D:\\frp\\frpc.toml", "darwin"), true);
+  assert.equal(isCrossPlatformMismatch("C:\\frp\\frpc.toml", "linux"), true);
+  assert.equal(isCrossPlatformMismatch("/Users/pa/frp/frpc.toml", "darwin"), false);
+  assert.equal(isCrossPlatformMismatch("/Users/pa/frp/frpc.toml", "win32"), true);
+  assert.equal(isCrossPlatformMismatch("D:\\frp\\frpc.toml", "win32"), false);
+});
+
+test("discoverRunningFrpcProcesses falls back across platforms when configPath has platform mismatch", () => {
+  const found = discoverRunningFrpcProcesses({
+    configPath: "D:\\frp\\frpc.toml",
+    platform: "darwin",
+    listProcessCommandLines: () => [
+      { pid: 1198, command: "/Users/pa/frp/frpc -c /Users/pa/frp/frpc.toml" },
+    ],
+  });
+  assert.equal(found.length, 1);
+  assert.equal(found[0].pid, 1198);
+  assert.equal(found[0].configPath, "/Users/pa/frp/frpc.toml");
+  assert.equal(found[0].binPath, "/Users/pa/frp/frpc");
+});
