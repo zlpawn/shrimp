@@ -31,11 +31,11 @@
 **Interfaces:**
 - Produces: `detectQuotaExhaustion({ error, stdout, stderr, now }) => { isQuotaError, vendorTag, vendorName, resumeAtMs, reason }`
 
-- [ ] **Step 1: 编写多厂商限额识别测试用例**
-- [ ] **Step 2: 运行测试验证失败**
-- [ ] **Step 3: 实现 `quota-detector.mjs` 逻辑（支持火山周限额、Claude 5h、智谱 1301/1302、DeepSeek 429/402、Grok、Antigravity gRPC 等）**
-- [ ] **Step 4: 运行测试验证全部通过**
-- [ ] **Step 5: 提交 Task 1 代码**
+- [x] **Step 1: 编写多厂商限额识别测试用例**
+- [x] **Step 2: 运行测试验证失败**
+- [x] **Step 3: 实现 `quota-detector.mjs` 逻辑（支持火山周限额、Claude 5h、智谱 1301/1302、DeepSeek 429/402、Grok、Antigravity gRPC 等）**
+- [x] **Step 4: 运行测试验证全部通过**
+- [x] **Step 5: 提交 Task 1 代码**
 
 ---
 
@@ -53,11 +53,11 @@
   - `markWaitingQuota(id, { notBeforeMs, vendorTag, error })`
   - `rescheduleSessionQueue(sessionId, { notBeforeMs, vendorTag, errorMsg })`
 
-- [ ] **Step 1: 编写存储层定时与改期测试用例**
-- [ ] **Step 2: 运行测试验证失败**
-- [ ] **Step 3: 修改 `sqlite-store.mjs`，执行 schema 自动迁移，实现新方法**
-- [ ] **Step 4: 运行测试验证全部通过**
-- [ ] **Step 5: 提交 Task 2 代码**
+- [x] **Step 1: 编写存储层定时与改期测试用例**
+- [x] **Step 2: 运行测试验证失败**
+- [x] **Step 3: 修改 `sqlite-store.mjs`，执行 schema 自动迁移，实现新方法**
+- [x] **Step 4: 运行测试验证全部通过**
+- [x] **Step 5: 提交 Task 2 代码**
 
 ---
 
@@ -71,11 +71,11 @@
 - Consumes: `detectQuotaExhaustion` from `quota-detector.mjs`, `store.rescheduleSessionQueue`
 - Produces: `service.dispatchReady()`, `service.updateSchedule(id, { scheduledAt })`
 
-- [ ] **Step 1: 编写服务层调度过滤与熔断测试用例**
-- [ ] **Step 2: 运行测试验证失败**
-- [ ] **Step 3: 修改 `service.mjs`，加入 `scheduled_at_ms <= now` 过滤与限额捕获熔断**
-- [ ] **Step 4: 运行测试验证全部通过**
-- [ ] **Step 5: 提交 Task 3 代码**
+- [x] **Step 1: 编写服务层调度过滤与熔断测试用例**
+- [x] **Step 2: 运行测试验证失败**
+- [x] **Step 3: 修改 `service.mjs`，加入 `scheduled_at_ms <= now` 过滤与限额捕获熔断**
+- [x] **Step 4: 运行测试验证全部通过**
+- [x] **Step 5: 提交 Task 3 代码**
 
 ---
 
@@ -91,11 +91,11 @@
   - `PATCH /v1/session-kanban/queue/:id/schedule`
   - `POST /v1/session-kanban/queue/:id/retry` (支持 `immediate`)
 
-- [ ] **Step 1: 在集成测试中增加定时与改期 API 验证**
-- [ ] **Step 2: 运行测试验证失败**
-- [ ] **Step 3: 修改 `routes.mjs` 支持相关路由**
-- [ ] **Step 4: 运行测试验证全部通过**
-- [ ] **Step 5: 提交 Task 4 代码**
+- [x] **Step 1: 在集成测试中增加定时与改期 API 验证**
+- [x] **Step 2: 运行测试验证失败**
+- [x] **Step 3: 修改 `routes.mjs` 支持相关路由**
+- [x] **Step 4: 运行测试验证全部通过**
+- [x] **Step 5: 提交 Task 4 代码**
 
 ---
 
@@ -105,11 +105,11 @@
 - Modify: `desktop/src/modules/session-kanban.ts`
 - Test: `tests/unit/session-kanban-panel.test.mjs`
 
-- [ ] **Step 1: 编写/更新前端面板渲染测试**
-- [ ] **Step 2: 运行测试验证**
-- [ ] **Step 3: 修改 `session-kanban.ts`（表单时机选择、抽屉时机选择、队列倒计时与厂商标签、改期交互）**
-- [ ] **Step 4: 编译打包 `npm run build:panel` 并运行测试**
-- [ ] **Step 5: 提交 Task 5 代码**
+- [x] **Step 1: 编写/更新前端面板渲染测试**
+- [x] **Step 2: 运行测试验证**
+- [x] **Step 3: 修改 `session-kanban.ts`（表单时机选择、抽屉时机选择、队列倒计时与厂商标签、改期交互）**
+- [x] **Step 4: 编译打包 `npm run build:panel` 并运行测试**
+- [x] **Step 5: 提交 Task 5 代码**
 
 ---
 
@@ -119,5 +119,5 @@
 - Run: `npm run test:session-kanban`
 - Run: `npm run build:panel`
 
-- [ ] **Step 1: 运行全量看板测试套件**
-- [ ] **Step 2: 验证无回归并提交最终更改**
+- [x] **Step 1: 运行全量看板测试套件**
+- [x] **Step 2: 验证无回归并提交最终更改**
