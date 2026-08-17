@@ -661,5 +661,75 @@
       "user_models": [],
       "disabled_builtin_models": []
     }
+  },
+  "natTraversal": {
+    "enabled": true,
+    "activeProvider": "frpc",
+    "frpc": {
+      "binPath": "",
+      "configPath": "D:\\frp\\frpc.toml",
+      "serverAddr": "39.105.19.237",
+      "serverPort": 7000,
+      "logLevel": "info",
+      "proxies": [
+        {
+          "name": "ssh-win11",
+          "type": "tcp",
+          "localIp": "127.0.0.1",
+          "localPort": 22,
+          "remotePort": 6005
+        }
+      ]
+    },
+    "frpsDashboard": {
+      "enabled": true,
+      "url": "http://39.105.19.237:7500/static/#/"
+    },
+    "peers": [
+      {
+        "id": "peer-office-win11",
+        "displayName": "mac-pa",
+        "ssh": {
+          "host": "",
+          "port": 22,
+          "user": "",
+          "identityFile": ""
+        },
+        "services": {
+          "gatewayApi": "127.0.0.1:6007"
+        }
+      }
+    ]
+  },
+  "remoteSession": {
+    "enabled": true,
+    "peers": [
+      {
+        "id": "peer-office-win11",
+        "name": "mac-pa",
+        "displayName": "mac-pa",
+        "transport": {
+          "type": "frp",
+          "frpProxyName": "ssh-pa-frp",
+          "host": "39.105.19.237",
+          "port": 6007
+        },
+        "auth": {
+          "type": "ssh",
+          "ssh": {
+            "username": "pa",
+            "authType": "password",
+            "password": "Pawn515325.",
+            "privateKeyPath": ""
+          },
+          "gatewayToken": ""
+        },
+        "services": {
+          "gatewayApi": "127.0.0.1:6007"
+        },
+        "status": "untested",
+        "lastCheck": null
+      }
+    ]
   }
 }

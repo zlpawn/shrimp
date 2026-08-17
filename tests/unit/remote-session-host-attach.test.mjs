@@ -226,3 +226,58 @@ test("probe reports structured result without throwing when process missing", as
   assert.equal(report.reason, "process_not_found");
   assert.equal(report.capabilities.processPresence, false);
 });
+
+test("local host can list and decide approvals over connect client", async () => {
+  let sentPrompt = "";
+  const mockConnect = {
+    getAllCascadeTrajectories: async () => ({ trajectorySummaries: {} }),
+    getCascadeTrajectory: async (cascadeId) => ({
+      trajectory: {
+        cascadeId,
+        steps: [
+          {
+            type: "PLANNER_RESPONSE",
+            status: "WAITING_FOR_USER_INPUT",
+            approvalId: "ap_123",
+            plannerResponse: { text: "Need permission to write config" },
+          },
+        ],
+      },
+    }),
+    sendUserCascadeMessage: async (req) => {
+      sentPrompt = req.items?.[0]?.text || "";
+      return { ok: true };
+    },
+  };
+
+  const host = createLocalHostBackend({
+    preferLiveConnect: true,
+    discoverConnectImpl: async () => ({
+      ok: true,
+      baseUrl: "https://127.0.0.1:9608",
+      csrfToken: "mock-csrf",
+    }),
+    connectClientFactory: () => mockConnect,
+    probe: async () => ({
+      running: true,
+      supported: false,
+      reason: "process_found_but_attach_surface_unconfirmed",
+    }),
+    logger: { warn() {}, log() {} },
+  });
+
+  await host.attach();
+  const pending = await host.listPendingApprovals("c_1");
+  assert.equal(pending.length, 1);
+  assert.equal(pending[0].approvalId, "ap_123");
+
+  const decided = await host.decideApproval({
+    conversationId: "c_1",
+    approvalId: "ap_123",
+    decision: "allow",
+    controllerPeerId: "ctrl_a",
+  });
+  assert.equal(decided.ok, true);
+  assert.equal(decided.decision, "allow");
+  assert.match(sentPrompt, /Approved:/);
+});

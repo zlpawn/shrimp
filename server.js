@@ -306,7 +306,7 @@ async function ensureRemoteSessionService() {
   globalRemoteSessionService = createRemoteSessionService({
     paths,
     configStore,
-    natTraversal: ensureNatTraversalService(),
+    natTraversal: await ensureNatTraversalService(),
     hostBackendFactory: async ({ peerId }) => {
       if (peerId === "fake-host") return fakeHost;
       if (peerId === "local-host") return localHost;

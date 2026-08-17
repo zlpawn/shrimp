@@ -14,6 +14,7 @@ import {
   parseFrpcConfigText,
   inferDashboardUrl,
 } from "../../lib/nat-traversal/index.mjs";
+import { createProviderRegistry } from "../../lib/nat-traversal/providers/registry.mjs";
 import { mapProxyPathToUpstream, buildDashboardProxyEntryPath } from "../../lib/nat-traversal/infra/dashboard-proxy.mjs";
 import { createFrpcSupervisor, discoverRunningFrpcProcesses } from "../../lib/nat-traversal/process/frpc-supervisor.mjs";
 
@@ -176,8 +177,18 @@ function makeNatService(initial = {}) {
     secretsFile: secretsPath,
   });
 
+  const providerRegistry = createProviderRegistry({
+    paths,
+    supervisorFactory: (opts) =>
+      createFrpcSupervisor({
+        ...opts,
+        listProcessCommandLines: () => [],
+      }),
+  });
+
   const service = createNatTraversalService({
     paths,
+    providerRegistry,
     configStore: {
       get: () => stored,
       save: (next) => {
@@ -273,6 +284,7 @@ test("frpc supervisor start/stop with fake binary", async () => {
     logPath,
     spawnImpl,
     isPidAliveImpl: (pid) => children.some((c) => c.pid === pid && !c.killed),
+    listProcessCommandLines: () => [],
   });
 
   const started = await supervisor.start();

@@ -5355,3 +5355,208 @@ input:focus, select:focus {
     width: 100%;
   }
 }
+
+/* Remote Session Multi-scenario & Peer Styles */
+.rs-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.rs-block {
+  padding: 20px;
+  background: var(--surface, #1e1e1e);
+  border: 1px solid var(--border-color, #333);
+  border-radius: 8px;
+}
+.rs-block-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.rs-block-head h2, .rs-block-head h3 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary, #f0f0f0);
+}
+.rs-help {
+  font-size: 12px;
+  color: var(--text-secondary, #888);
+  margin: 0;
+  line-height: 1.5;
+}
+.rs-help-warn {
+  color: var(--warning, #e9c46a);
+}
+.rs-inline-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.rs-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+.rs-col-2 {
+  grid-column: 1 / -1;
+}
+.rs-alert {
+  padding: 10px 14px;
+  background: rgba(230, 57, 70, 0.15);
+  border: 1px solid var(--danger, #e63946);
+  border-radius: 6px;
+  color: var(--danger, #e63946);
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+.rs-empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-secondary, #888);
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 6px;
+  border: 1px dashed var(--border-color, #333);
+}
+.rs-divider {
+  height: 1px;
+  background: var(--border-color, #333);
+  margin: 16px 0;
+}
+.rs-section-subtitle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent, #7c6ef0);
+  margin-bottom: 12px;
+}
+.rs-peer-selector-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.rs-scene-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.rs-scene-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--border-color, #333);
+  padding-bottom: 8px;
+}
+.rs-scene-tab {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary, #888);
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.rs-scene-tab:hover {
+  color: var(--text-primary, #fff);
+  background: var(--surface-hover, #252525);
+}
+.rs-scene-tab.is-active {
+  background: var(--accent, #7c6ef0);
+  color: #fff;
+}
+.rs-approval-highlight {
+  border-color: var(--danger, #e63946);
+  background: rgba(230, 57, 70, 0.08);
+}
+.rs-approval-body {
+  font-size: 13px;
+  color: var(--text-primary, #f0f0f0);
+}
+.rs-approval-body code {
+  background: var(--surface-hover, #252525);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+.rs-ssh-box {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 16px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #333);
+}
+.rs-ssh-label {
+  font-size: 12px;
+  color: var(--text-secondary, #888);
+  margin-bottom: 8px;
+}
+.rs-ssh-cmd {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #111;
+  padding: 8px 12px;
+  border-radius: 4px;
+}
+.rs-ssh-cmd code {
+  flex: 1;
+  color: #a8dadc;
+  font-family: monospace;
+  font-size: 13px;
+}
+.rs-event-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+.rs-event-item {
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color, #2a2a2a);
+  border-radius: 6px;
+  font-size: 13px;
+}
+.rs-event-item.is-approval {
+  border-color: var(--danger, #e63946);
+  background: rgba(230, 57, 70, 0.1);
+}
+.rs-event-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.rs-event-body {
+  color: var(--text-primary, #eee);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.rs-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.rs-modal-card {
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--surface, #1e1e1e);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
