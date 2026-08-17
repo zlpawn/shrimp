@@ -31,6 +31,8 @@ test("exports state contracts", () => {
   ]);
   assert.deepEqual(QUEUE_STATUSES, [
     "pending",
+    "scheduled",
+    "waiting_quota",
     "dispatching",
     "dispatched",
     "failed",
