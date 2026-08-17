@@ -12,12 +12,20 @@ import {
 
 const windowsPath = "C:\\Apps\\Antigravity\\Antigravity.exe";
 
-test("registry exposes the built-in Antigravity definition", () => {
-  const app = getCommandApp("antigravity");
-  assert.equal(app.displayName, "Antigravity");
-  assert.deepEqual(app.defaultArgs, ["--no-sandbox"]);
-  assert.deepEqual(app.supportedPlatforms, ["win32"]);
-  assert.equal(listCommandApps().length, 1);
+test("registry exposes built-in app definitions", () => {
+  const antigravity = getCommandApp("antigravity");
+  assert.equal(antigravity.displayName, "Antigravity");
+  assert.deepEqual(antigravity.defaultArgs, ["--no-sandbox"]);
+  assert.deepEqual(antigravity.supportedPlatforms, ["win32"]);
+
+  const shrimp = getCommandApp("shrimp");
+  assert.equal(shrimp.displayName, "Shrimp");
+  assert.equal(shrimp.type, "project");
+  assert.equal(shrimp.command, "npm run gateway:restart");
+  assert.deepEqual(shrimp.defaultArgs, ["run", "gateway:restart"]);
+  assert.deepEqual(shrimp.supportedPlatforms, ["win32", "darwin", "linux"]);
+
+  assert.equal(listCommandApps().length, 2);
 });
 
 test("normalizeCommandAppsConfig keeps only known app settings", () => {
@@ -27,7 +35,7 @@ test("normalizeCommandAppsConfig keeps only known app settings", () => {
       unknown: { executablePath: windowsPath },
     },
   }, { platform: "win32" });
-  assert.deepEqual(Object.keys(config.apps), ["antigravity"]);
+  assert.deepEqual(Object.keys(config.apps).sort(), ["antigravity", "shrimp"]);
   assert.equal(config.apps.antigravity.manuallyConfigured, false);
 });
 
@@ -135,6 +143,7 @@ import { routeCommandAppsRequest } from "../../lib/command-apps/http/routes.mjs"
 
 function createFixture() {
   const executable = "C:\\Apps\\Antigravity\\Antigravity.exe";
+  const shrimpPath = "C:\\Apps\\Shrimp";
   const saved = [];
   const configStore = {
     get() { return saved.at(-1) || { apps: {} }; },
@@ -146,10 +155,13 @@ function createFixture() {
   const service = createCommandAppsService({
     configStore,
     platform: "win32",
-    discovery: async () => ({
-      selected: { path: executable, strategy: "test" },
-      candidates: [{ path: executable, strategy: "test" }],
-    }),
+    discovery: async (app) => {
+      const p = app.id === "shrimp" ? shrimpPath : executable;
+      return {
+        selected: { path: p, strategy: "test" },
+        candidates: [{ path: p, strategy: "test" }],
+      };
+    },
     processStore,
     listProcesses: async () => [
       { pid: 4242, executablePath: executable },
@@ -157,9 +169,9 @@ function createFixture() {
     ],
     terminateProcess: async () => {},
     spawnProcess: (...args) => { spawnCalls.push(args); return child; },
-    fileExists: (value) => value === executable,
+    fileExists: (value) => value === executable || value === shrimpPath || value === path.join(shrimpPath, "package.json"),
   });
-  return { service, saved, spawnCalls, child, processStore, executable };
+  return { service, saved, spawnCalls, child, processStore, executable, shrimpPath };
 }
 
 test("service launch discovers, persists, and spawns Antigravity safely", async () => {
@@ -321,3 +333,130 @@ test("command apps sqlite store persists settings outside gateway config", () =>
   store.close();
   fs.rmSync(tmp, { recursive: true, force: true });
 });
+
+test("validateAppSettings validates project directory and package.json for Shrimp", () => {
+  const shrimp = getCommandApp("shrimp");
+  const projectDir = "C:\\Projects\\Shrimp";
+  const existingFiles = new Set([
+    projectDir,
+    path.join(projectDir, "package.json"),
+  ]);
+
+  const validated = validateAppSettings(shrimp, { executablePath: projectDir }, {
+    platform: "win32",
+    fileExists: (p) => existingFiles.has(p),
+  });
+  assert.equal(validated.executablePath, projectDir);
+  assert.deepEqual(validated.args, ["run", "gateway:restart"]);
+
+  // Non-existing directory throws
+  assert.throws(
+    () => validateAppSettings(shrimp, { executablePath: "C:\\Missing\\Shrimp" }, {
+      platform: "win32",
+      fileExists: () => false,
+    }),
+    CommandAppsError,
+  );
+
+  // Existing directory without package.json throws
+  assert.throws(
+    () => validateAppSettings(shrimp, { executablePath: projectDir }, {
+      platform: "win32",
+      fileExists: (p) => p === projectDir,
+    }),
+    CommandAppsError,
+  );
+});
+
+test("discovery locates Shrimp root dynamically by climbing ancestor directories", async () => {
+  const shrimp = getCommandApp("shrimp");
+  const mockRepoRoot = "D:\\code\\my-shrimp-fork";
+  const mockSubdir = path.join(mockRepoRoot, "lib", "command-apps", "infra");
+  const existingFiles = new Set([
+    mockRepoRoot,
+    mockSubdir,
+    path.join(mockRepoRoot, "package.json"),
+    path.join(mockRepoRoot, "scripts", "gateway.mjs"),
+  ]);
+
+  const result = await discoverCommandApp(shrimp, {
+    platform: "win32",
+    currentModuleDir: mockSubdir,
+    fileExists: (p) => existingFiles.has(p),
+    readJson: (p) => {
+      if (p === path.join(mockRepoRoot, "package.json")) {
+        return { name: "@wuhezhizhong/shrimp", scripts: { "gateway:restart": "node scripts/gateway.mjs restart" } };
+      }
+      return null;
+    },
+  });
+
+  assert.ok(result.selected);
+  assert.equal(result.selected.path, mockRepoRoot);
+  assert.equal(result.selected.strategy, "runtime-ancestor");
+});
+
+test("service launch runs npm run gateway:restart with hidden window and detached", async () => {
+  const shrimp = getCommandApp("shrimp");
+  const projectDir = "C:\\Projects\\Shrimp";
+  const saved = [];
+  const spawnCalls = [];
+  const child = { pid: 8888, unref() { this.unrefed = true; }, unrefed: false };
+  const service = createCommandAppsService({
+    configStore: {
+      get() { return saved.at(-1) || { apps: { shrimp: { executablePath: projectDir } } }; },
+      save(next) { saved.push(next); return next; },
+    },
+    platform: "win32",
+    spawnProcess: (...args) => { spawnCalls.push(args); return child; },
+    fileExists: () => true,
+    isPidAlive: () => true,
+  });
+
+  const status = await service.launch("shrimp");
+  assert.equal(status.app.id, "shrimp");
+  assert.equal(spawnCalls.length, 1);
+  assert.equal(spawnCalls[0][0], "npm.cmd");
+  assert.deepEqual(spawnCalls[0][1], ["run", "gateway:restart"]);
+  assert.equal(spawnCalls[0][2].cwd, projectDir);
+  assert.equal(spawnCalls[0][2].detached, true);
+  assert.equal(spawnCalls[0][2].stdio, "ignore");
+  assert.equal(spawnCalls[0][2].windowsHide, true);
+  assert.equal(child.unrefed, true);
+});
+
+test("service status for shrimp reads gateway.pid.json and checks liveness", async () => {
+  const projectDir = "C:\\Projects\\Shrimp";
+  const pidData = { pid: 1234, startedAt: "2026-08-17T12:00:00.000Z" };
+  const service = createCommandAppsService({
+    configStore: {
+      get() { return { apps: { shrimp: { executablePath: projectDir } } }; },
+      save() {},
+    },
+    platform: "darwin",
+    fileExists: (p) => p === path.join(projectDir, "gateway.pid.json") || p === projectDir,
+    readFile: () => JSON.stringify(pidData),
+    isPidAlive: (pid) => pid === 1234,
+  });
+
+  const status = await service.getStatus("shrimp");
+  assert.equal(status.app.id, "shrimp");
+  assert.equal(status.process.status, "running");
+  assert.equal(status.process.count, 1);
+  assert.equal(status.lastLaunchedAt, "2026-08-17T12:00:00.000Z");
+});
+
+test("routes handle /v1/command-apps/apps listing and shrimp restart", async () => {
+  const { fx, reqFor, res, responses } = createRouteFixture();
+  // Test listing all apps
+  await routeCommandAppsRequest(reqFor("GET", "/v1/command-apps/apps"), res, null, "/v1/command-apps/apps", { service: fx.service });
+  assert.equal(responses[0].status, 200);
+  const listBody = JSON.parse(responses[0].body);
+  assert.ok(Array.isArray(listBody.apps));
+  assert.equal(listBody.apps.length, 2);
+
+  // Test restart route
+  await routeCommandAppsRequest(reqFor("POST", "/v1/command-apps/apps/shrimp/restart"), res, null, "/v1/command-apps/apps/shrimp/restart", { service: fx.service });
+  assert.equal(responses[1].status, 200);
+});
+
