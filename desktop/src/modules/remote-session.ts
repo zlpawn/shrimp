@@ -633,15 +633,16 @@ function renderPeerModal(): string {
             <label class="form-group">
               <span>选择 FRP 对端 Proxy (已过滤本机)</span>
               <select id="modal-peer-frp-proxy" onchange="window.__rsModalSelectFrpProxy(this.value)">
-                <option value="">-- 请选择 FRP 代理 --</option>
-                ${availableRemoteFrpProxies
-                  .map(
-                    (px) =>
-                      `<option value="${escapeHtml(px.name)}" data-port="${px.remotePort}" ${
-                        p.transport?.frpProxyName === px.name ? "selected" : ""
-                      }>${escapeHtml(px.name)} [${escapeHtml(px.type.toUpperCase())}:${px.remotePort}] (${escapeHtml(px.status)})</option>`,
-                  )
-                  .join("")}
+                ${availableRemoteFrpProxies.length === 0
+                  ? `<option value="">(未发现可用的远端 FRP 代理)</option>`
+                  : availableRemoteFrpProxies
+                    .map(
+                      (px) =>
+                        `<option value="${escapeHtml(px.name)}" data-port="${px.remotePort}" ${
+                          (p.transport?.frpProxyName || availableRemoteFrpProxies[0]?.name) === px.name ? "selected" : ""
+                        }>${escapeHtml(px.name)} [${escapeHtml(px.type.toUpperCase())}:${px.remotePort}] (${escapeHtml(px.status)})</option>`,
+                    )
+                    .join("")}
               </select>
             </label>
           ` : ""}
@@ -1067,65 +1068,67 @@ function renderConversationModal(): string {
   const conv = state.chatData?.conversation || state.chatData;
   const messages = conv?.messages || [];
   const title = conv?.title || state.selectedConversationId || "会话详情";
+  const sessionId = state.selectedConversationId || "";
+
+  let contentHtml = "";
+  if (state.chatLoading) {
+    contentHtml = `<div class="session-kanban-empty">正在拉取远端会话完整记录与对话上下文...</div>`;
+  } else if (!messages || messages.length === 0) {
+    contentHtml = `<div class="session-kanban-empty">该会话暂无历史消息记录</div>`;
+  } else {
+    contentHtml = messages.map((m: any, idx: number) => {
+      const isUser = m.role === "user";
+      
+      const toolsHtml = m.tools && m.tools.length > 0 ? `
+        <details class="session-kanban-tools-details">
+          <summary class="session-kanban-tools-summary">
+            <span>🛠️ 调用了 <strong>${m.tools.length}</strong> 个工具 (${escapeHtml([...new Set(m.tools.map((t: any) => t.name))].slice(0, 3).join(", "))}${m.tools.length > 3 ? "..." : ""})</span>
+          </summary>
+          <div class="session-kanban-tools-content">
+            ${m.tools.map((tool: any) => `
+              <div class="session-kanban-tool-badge">
+                <div class="session-kanban-tool-row">
+                  <code class="session-kanban-tool-name">${escapeHtml(tool.name)}</code>
+                  ${tool.summary ? `<span class="session-kanban-tool-desc">${escapeHtml(tool.summary)}</span>` : ""}
+                </div>
+                ${tool.detail ? `<pre class="session-kanban-tool-code">${escapeHtml(tool.detail)}</pre>` : ""}
+              </div>
+            `).join("")}
+          </div>
+        </details>
+      ` : "";
+
+      return `
+        <div class="session-kanban-msg-item ${isUser ? "is-user" : "is-assistant"}">
+          <div class="session-kanban-msg-meta">
+            <strong>${isUser ? "👤 用户提问" : "🤖 Agent 回复"}</strong>
+            <time>${m.timestamp ? escapeHtml(m.timestamp) : ""}</time>
+          </div>
+          ${toolsHtml}
+          ${m.content ? `<div class="session-kanban-msg-content">${escapeHtml(m.content)}</div>` : ""}
+        </div>
+      `;
+    }).join("");
+  }
 
   return `
-    <div class="rs-modal-overlay" onclick="if(event.target===this) window.__rsCloseConversationModal()">
-      <div class="rs-modal-card card" style="max-width:850px; max-height:85vh; display:flex; flex-direction:column;">
-        <div class="rs-block-head" style="border-bottom:1px solid var(--border-color,#333); padding-bottom:12px; margin-bottom:12px;">
+    <div class="session-kanban-drawer-backdrop" onclick="window.__rsCloseConversationModal()">
+      <div class="session-kanban-drawer" onclick="event.stopPropagation()">
+        <div class="session-kanban-drawer-header">
           <div>
-            <h3 style="margin:0 0 4px 0;">💬 ${escapeHtml(title)}</h3>
-            <div style="display:flex; gap:8px; align-items:center; font-size:12px; color:var(--text-muted,#888);">
-              <span>会话 ID: <code style="user-select:all;">${escapeHtml(state.selectedConversationId)}</code></span>
-              <span>•</span>
-              <span>消息数: ${messages.length}</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="session-kanban-client">远端会话</span>
+              <h3>${escapeHtml(title)}</h3>
             </div>
+            <code class="session-kanban-id" title="复制对话内容" ondblclick="window.__rsCopyConversationContent()">${escapeHtml(sessionId)}</code>
           </div>
-          <div class="rs-inline-actions">
-            <button class="btn btn-sm" onclick="window.__rsCopyConversationContent()">📋 复制对话内容</button>
-            <button class="btn btn-sm" onclick="window.__rsCloseConversationModal()">✕ 关闭</button>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button class="btn btn-xs" type="button" onclick="window.__rsCopyConversationContent()">📋 复制内容</button>
+            <button class="session-kanban-modal-close" type="button" onclick="window.__rsCloseConversationModal()">×</button>
           </div>
         </div>
-
-        <div style="flex:1; overflow-y:auto; padding:8px 4px; display:flex; flex-direction:column; gap:12px;">
-          ${state.chatLoading ? `
-            <div style="text-align:center; padding:40px; color:var(--text-muted,#888);">
-              正在拉取远端会话完整记录与对话上下文...
-            </div>
-          ` : (
-            messages.length ? messages.map((m: any, idx: number) => {
-              const isUser = m.role === "user";
-              return `
-                <div style="display:flex; flex-direction:column; align-items:${isUser ? "flex-end" : "flex-start"}; margin-bottom:8px;">
-                  <div style="font-size:11px; margin-bottom:3px; color:var(--text-muted,#888); font-weight:600;">
-                    ${isUser ? "👤 用户 (User)" : "🤖 Antigravity AI (Assistant)"} ${m.timestamp ? "(" + escapeHtml(m.timestamp) + ")" : ""}
-                  </div>
-                  <div style="max-width:92%; border-radius:8px; padding:10px 14px; font-size:13px; line-height:1.5; ${
-                    isUser
-                      ? "background:var(--bg-card-hover, rgba(59, 130, 246, 0.15)); border:1px solid rgba(59, 130, 246, 0.3); color:var(--text-bright,#fff); white-space:pre-wrap;"
-                      : "background:var(--bg-input, rgba(255,255,255,0.05)); border:1px solid var(--border-color,#333); color:var(--text,#ddd); white-space:pre-wrap;"
-                  }">
-                    ${escapeHtml(m.content || "")}
-                    ${m.tools && m.tools.length ? `
-                      <div style="margin-top:8px; padding-top:8px; border-top:1px dashed rgba(255,255,255,0.1); font-size:12px;">
-                        <strong style="color:var(--warning,#f59e0b);">🛠️ 工具调用 (${m.tools.length}):</strong>
-                        <ul style="margin:4px 0 0 0; padding-left:18px;">
-                          ${m.tools.map((t: any) => `<li><code>${escapeHtml(t.name || "tool")}</code> ${t.summary ? " - " + escapeHtml(t.summary) : ""}</li>`).join("")}
-                        </ul>
-                      </div>
-                    ` : ""}
-                  </div>
-                </div>
-              `;
-            }).join("") : `
-              <div style="text-align:center; padding:30px; color:var(--text-muted,#888);">
-                该会话暂无历史消息记录
-              </div>
-            `
-          )}
-        </div>
-
-        <div style="border-top:1px solid var(--border-color,#333); padding-top:12px; margin-top:8px; display:flex; justify-content:flex-end;">
-          <button class="btn btn-primary btn-sm" onclick="window.__rsCloseConversationModal()">完成</button>
+        <div class="session-kanban-drawer-body">
+          ${contentHtml}
         </div>
       </div>
     </div>
@@ -1236,11 +1239,24 @@ function copyConversationContent(): void {
 (window as any).__rsFetchFrpProxies = () => { void fetchFrpProxies(); };
 
 (window as any).__rsOpenAddPeerModal = () => {
+  const available = state.frpProxies.filter((px) => !state.localFrpcProxyNames.has(px.name));
+  const hasFrp = available.length > 0;
+  const firstFrp = available[0];
   state.editingPeer = {
     id: `peer_${Date.now()}`,
-    name: "",
-    displayName: "",
-    transport: { type: "direct", frpProxyName: "", host: "", port: "" },
+    name: hasFrp ? firstFrp.name : "",
+    displayName: hasFrp ? firstFrp.name : "",
+    transport: hasFrp ? {
+      type: "frp",
+      frpProxyName: firstFrp.name,
+      host: state.frpServerHost || "39.105.19.237",
+      port: firstFrp.remotePort,
+    } : {
+      type: "direct",
+      frpProxyName: "",
+      host: "",
+      port: "",
+    },
     auth: { type: "ssh", ssh: { username: "", authType: "password", password: "" } },
   };
   state.showPasswordPlain = false;
@@ -1287,6 +1303,13 @@ function copyConversationContent(): void {
   if (!state.editingPeer) return;
   state.editingPeer.transport = state.editingPeer.transport || { type: val };
   state.editingPeer.transport.type = val;
+  if (val === "frp") {
+    const available = state.frpProxies.filter((px) => !state.localFrpcProxyNames.has(px.name));
+    if (available.length > 0 && !state.editingPeer.transport.frpProxyName) {
+      (window as any).__rsModalSelectFrpProxy(available[0].name);
+      return;
+    }
+  }
   render();
 };
 
@@ -1352,6 +1375,10 @@ function copyConversationContent(): void {
   };
 
   try {
+    await api("/v1/remote-session/config", {
+      method: "PUT",
+      body: JSON.stringify({ enabled: true }),
+    }).catch(() => {});
     await api("/v1/remote-session/peers", {
       method: "PUT",
       body: JSON.stringify({ peer: payload }),
