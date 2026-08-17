@@ -267,6 +267,7 @@ function renderEvents(): string {
         .reverse()
         .map((event) => {
           const text =
+            event.text ||
             event.summary ||
             event.hostEvent?.text ||
             event.hostEvent?.summary ||
