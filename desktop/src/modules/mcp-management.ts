@@ -38,6 +38,7 @@ type InRepoMcp = {
   args: string[];
   transport: "stdio" | "remote";
   path: string;
+  sampleEnv?: KeyValPair[];
 };
 
 type McpState = {
@@ -118,6 +119,22 @@ const MCP_TEMPLATES: McpTemplate[] = [
     transport: "stdio",
     command: "",
     argsList: [],
+  },
+  {
+    id: "in_repo_database_hub",
+    name: "database-hub",
+    category: "in_repo",
+    title: "🗄️ 多数据库大模型管理 (MySQL / Redis / SQLite)",
+    description: "自研多数据库 MCP，支持环境变量配置多个数据库连接并提供 NL2SQL 与表结构管理能力",
+    icon: "🗄️",
+    transport: "stdio",
+    command: "node",
+    argsList: ["./mcps/database-hub/index.mjs"],
+    envList: [
+      { key: "order_center", value: "mysql://root:123456@127.0.0.1:3306/orders_db" },
+      { key: "cache_redis", value: "redis://:auth123@127.0.0.1:6379/0" },
+      { key: "local_sqlite", value: "sqlite:///d:/data/app.db" },
+    ],
   },
   {
     id: "in_repo_node",
@@ -667,8 +684,26 @@ function renderDetail(): string {
             </div>
           </div>
 
+          ${inRepo.sampleEnv && inRepo.sampleEnv.length > 0 ? `
+          <div class="mcp-detail-section">
+            <div class="mcp-section-title">📋 环境变量配置示例 (支持配置多个数据库)</div>
+            <div style="margin-top: 6px; font-size: 12px; opacity: 0.85;">
+              以 <code>库名/别名</code> 作为 Key，以 <code>连接 URL</code> 作为 Value：
+            </div>
+            <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px;">
+              ${inRepo.sampleEnv.map((e) => `
+                <div style="display: flex; gap: 8px; align-items: baseline; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); padding: 6px 10px; border-radius: 6px; font-size: 12px;">
+                  <strong style="color: #60a5fa; font-family: monospace;">${escapeHtml(e.key)}</strong>
+                  <span style="opacity: 0.5;">=</span>
+                  <code style="word-break: break-all; opacity: 0.9;">${escapeHtml(e.value)}</code>
+                </div>
+              `).join("")}
+            </div>
+          </div>
+          ` : ""}
+
           <div class="mcp-detail-hint">
-            💡 点击右上角「✨ 立即配置并分发」按钮，即可一键将该自研 MCP 登记到网关并推送到各个客户端。
+            💡 点击右上角「✨ 立即配置并分发」按钮，即可一键将该自研 MCP 登记到网关（自动带入示例配置）并推送到各个客户端。
           </div>
         </div>
       `;
@@ -1240,7 +1275,7 @@ function applyInRepo(name: string): void {
     argsList: [...item.args],
     url: "",
     env: "",
-    envList: [],
+    envList: item.sampleEnv && item.sampleEnv.length > 0 ? structuredClone(item.sampleEnv) : [],
     headers: "",
     headersList: [],
     enabled: true,
@@ -1249,7 +1284,7 @@ function applyInRepo(name: string): void {
     claude_code: true,
     antigravity: true,
   };
-  showToast(`已自动载入自研 MCP「${item.name}」的配置与真实入口路径！`, "success");
+  showToast(`已自动载入自研 MCP「${item.name}」的配置与示例数据源！`, "success");
   render();
 }
 

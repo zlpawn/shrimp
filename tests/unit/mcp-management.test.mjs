@@ -409,3 +409,28 @@ test("frontend state declares path and secret draft fields used by the panel", (
   assert.match(source, /env: "",/);
   assert.match(source, /headers: "",/);
 });
+
+test("distribution expands relative mcps args to absolute paths for client configs", () => {
+  const root = makeRoot();
+  try {
+    const { service, clientPaths } = makeService(root, { claudeText: "{}" });
+    service.upsertServer({
+      name: "in_repo_db",
+      title: "DB Hub",
+      transport: "stdio",
+      command: "node",
+      args: ["./mcps/database-hub/index.mjs"],
+      distribution: { claude: true },
+      env: { order_db: "sqlite:///d:/data/app.db" },
+    });
+
+    service.apply({ targets: { claude: true } });
+    const parsed = JSON.parse(fs.readFileSync(clientPaths.claude, "utf8"));
+    const distributedArgs = parsed.mcpServers.in_repo_db.args;
+    const expectedAbsolute = path.resolve(root, "mcps/database-hub/index.mjs").replace(/\\/g, "/");
+    assert.deepEqual(distributedArgs, [expectedAbsolute]);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+

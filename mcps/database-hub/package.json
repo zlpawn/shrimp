@@ -1,0 +1,26 @@
+{
+  "name": "@shrimp/mcp-database-hub",
+  "version": "1.0.0",
+  "description": "Multi-database MCP server supporting MySQL, Redis, SQLite with environment variable configurations and schema/query tools for LLMs.",
+  "type": "module",
+  "main": "index.mjs",
+  "scripts": {
+    "start": "node index.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.6.0",
+    "mysql2": "^3.12.0",
+    "ioredis": "^5.4.2"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "mysql",
+    "redis",
+    "sqlite",
+    "llm",
+    "database"
+  ],
+  "license": "MIT"
+}
