@@ -396,7 +396,7 @@ test("discovery locates Shrimp root dynamically by climbing ancestor directories
   assert.equal(result.selected.strategy, "runtime-ancestor");
 });
 
-test("service launch runs npm run gateway:restart with hidden window and detached", async () => {
+test("service launch runs gateway script directly with hidden window and detached", async () => {
   const shrimp = getCommandApp("shrimp");
   const projectDir = "C:\\Projects\\Shrimp";
   const saved = [];
@@ -416,8 +416,8 @@ test("service launch runs npm run gateway:restart with hidden window and detache
   const status = await service.launch("shrimp");
   assert.equal(status.app.id, "shrimp");
   assert.equal(spawnCalls.length, 1);
-  assert.equal(spawnCalls[0][0], "npm.cmd");
-  assert.deepEqual(spawnCalls[0][1], ["run", "gateway:restart"]);
+  assert.equal(spawnCalls[0][0], process.execPath);
+  assert.deepEqual(spawnCalls[0][1], [path.join(projectDir, "scripts", "gateway.mjs"), "restart"]);
   assert.equal(spawnCalls[0][2].cwd, projectDir);
   assert.equal(spawnCalls[0][2].detached, true);
   assert.equal(spawnCalls[0][2].stdio, "ignore");
