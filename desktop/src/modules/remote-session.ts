@@ -256,6 +256,51 @@ function latestApprovalId(): string {
   return hit?.approvalId || hit?.hostEvent?.approvalId || "";
 }
 
+function getEventRoleMeta(event: any): {
+  roleClass: string;
+  roleBadgeHtml: string;
+  typeBadgeText: string;
+} {
+  const type = String(event.type || event.hostType || "").toLowerCase();
+  const isApproval = type === "approval_required" || Boolean(event.approvalId);
+  if (isApproval) {
+    return {
+      roleClass: "is-approval",
+      roleBadgeHtml: `<span class="badge rs-role-badge rs-role-approval">⚠️ 待审批拦截</span>`,
+      typeBadgeText: "approval",
+    };
+  }
+  if (
+    type.includes("user") ||
+    type.includes("prompt") ||
+    type === "user_input" ||
+    type === "prompt_dispatched"
+  ) {
+    return {
+      roleClass: "is-user",
+      roleBadgeHtml: `<span class="badge rs-role-badge rs-role-user">👤 用户 Prompt</span>`,
+      typeBadgeText: type,
+    };
+  }
+  if (
+    type.includes("assistant") ||
+    type.includes("planner") ||
+    type.includes("model") ||
+    type === "thinking"
+  ) {
+    return {
+      roleClass: "is-assistant",
+      roleBadgeHtml: `<span class="badge rs-role-badge rs-role-assistant">🤖 Agent 回复</span>`,
+      typeBadgeText: type,
+    };
+  }
+  return {
+    roleClass: "is-system",
+    roleBadgeHtml: `<span class="badge rs-role-badge rs-role-system">⚙️ 系统状态</span>`,
+    typeBadgeText: type || "event",
+  };
+}
+
 function renderEvents(): string {
   if (!state.events.length) {
     return `<div class="rs-empty">暂无事件。在下方输入 Prompt 发送后，实时编码与思考流将在此展示。</div>`;
@@ -273,14 +318,15 @@ function renderEvents(): string {
             event.hostEvent?.summary ||
             event.type ||
             "event";
-          const isApproval = event.type === "approval_required" || Boolean(event.approvalId);
+          const { roleClass, roleBadgeHtml, typeBadgeText } = getEventRoleMeta(event);
           return `
-            <div class="rs-event-item ${isApproval ? "is-approval" : ""}">
+            <div class="rs-event-item ${roleClass}">
               <div class="rs-event-meta">
                 <span class="badge">#${escapeHtml(String(event.seq || "-"))}</span>
-                <span class="badge ${isApproval ? "badge-key-missing" : ""} ${event.type === "assistant_text" ? "badge-default" : ""}">${escapeHtml(event.type || "event")}</span>
+                ${roleBadgeHtml}
+                <span class="badge" style="font-size:11px; opacity:0.75;">${escapeHtml(typeBadgeText)}</span>
                 ${event.approvalId ? `<span class="badge badge-key-missing">待审批 ${escapeHtml(event.approvalId)}</span>` : ""}
-                ${event.turnId ? `<span class="badge">${escapeHtml(event.turnId)}</span>` : ""}
+                ${event.turnId ? `<span class="badge" style="font-size:11px;">${escapeHtml(event.turnId)}</span>` : ""}
               </div>
               <div class="rs-event-body">${escapeHtml(String(text))}</div>
             </div>

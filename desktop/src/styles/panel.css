@@ -5525,10 +5525,50 @@ input:focus, select:focus {
   border: 1px solid var(--border-color, #2a2a2a);
   border-radius: 6px;
   font-size: 13px;
+  transition: all 0.2s ease;
+}
+.rs-event-item.is-user {
+  background: rgba(59, 130, 246, 0.06);
+  border-left: 3px solid #3b82f6;
+  border-color: rgba(59, 130, 246, 0.25);
+}
+.rs-event-item.is-assistant {
+  background: rgba(16, 185, 129, 0.06);
+  border-left: 3px solid #10b981;
+  border-color: rgba(16, 185, 129, 0.25);
 }
 .rs-event-item.is-approval {
-  border-color: var(--danger, #e63946);
-  background: rgba(230, 57, 70, 0.1);
+  background: rgba(245, 158, 11, 0.1);
+  border-left: 3px solid #f59e0b;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+.rs-event-item.is-system {
+  background: rgba(255, 255, 255, 0.02);
+  border-left: 3px solid #6b7280;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+.rs-role-badge.rs-role-user {
+  background: rgba(59, 130, 246, 0.2) !important;
+  color: #60a5fa !important;
+  border: 1px solid rgba(59, 130, 246, 0.4) !important;
+  font-weight: 600;
+}
+.rs-role-badge.rs-role-assistant {
+  background: rgba(16, 185, 129, 0.2) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(16, 185, 129, 0.4) !important;
+  font-weight: 600;
+}
+.rs-role-badge.rs-role-approval {
+  background: rgba(245, 158, 11, 0.25) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.5) !important;
+  font-weight: 600;
+}
+.rs-role-badge.rs-role-system {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #9ca3af !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
 }
 .rs-event-meta {
   display: flex;
