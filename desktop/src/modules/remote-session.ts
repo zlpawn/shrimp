@@ -118,12 +118,12 @@ type SessionEvent = {
 
 const OFFICIAL_MODELS_FALLBACK: AvailableModel[] = sortAntigravityModels([
   { id: "gemini-3.7-flash-high", name: "Gemini 3.7 Flash High (Fast)", isRecommended: true },
-  { id: "gemini-3.6-flash-medium", name: "Gemini 3.6 Flash Medium (Fast)" },
-  { id: "gemini-3.5-flash-medium", name: "Gemini 3.5 Flash Medium (Fast)" },
-  { id: "gemini-3.1-pro-low", name: "Gemini 3.1 Pro Low" },
+  { id: "gemini-3.6-flash-high", name: "Gemini 3.6 Flash High (Fast)" },
+  { id: "gemini-3.5-flash-high", name: "Gemini 3.5 Flash High (Fast)" },
+  { id: "gemini-3.1-pro-high", name: "Gemini 3.1 Pro High" },
   { id: "claude-sonnet-4-6-thinking", name: "Claude Sonnet 4.6 (Thinking)" },
   { id: "claude-opus-4-6-thinking", name: "Claude Opus 4.6 (Thinking)" },
-  { id: "gpt-oss-120b-medium", name: "GPT-OSS 120B (Medium)" },
+  { id: "gpt-oss-120b-high", name: "GPT-OSS 120B (High)" },
 ]);
 
 const state: {
