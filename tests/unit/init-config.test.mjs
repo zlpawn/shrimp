@@ -86,6 +86,16 @@ test("the packaged gateway config template contains no private endpoints or cred
       desktop: { endpoints: [] },
       codex: { endpoints: [] },
     },
+    dreamSkin: { codexAppPath: "" },
+    tools: {
+      deepseek_auto_continue: {
+        enabled: true,
+        max_attempts: 1,
+        require_agent_context: true,
+        preserve_stage_text: true,
+        prompt: "请立即直接调用工具执行下一步操作，禁止输出自然语言确认、开场白或阶段性总结。",
+      },
+    },
   });
 });
 

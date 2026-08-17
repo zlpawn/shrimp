@@ -338,7 +338,7 @@ const DEFAULT_DEEPSEEK_AUTO_CONTINUE_UI = {
     max_attempts: 1,
     require_agent_context: true,
     preserve_stage_text: true,
-    prompt: '继续执行未完成的任务，不要只做阶段性总结。如果还有下一步，请直接调用工具继续。',
+    prompt: '请立即直接调用工具执行下一步操作，禁止输出自然语言确认、开场白或阶段性总结。',
 };
 
 function getDeepSeekAutoContinueConfig() {
