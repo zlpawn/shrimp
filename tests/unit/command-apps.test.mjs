@@ -416,13 +416,31 @@ test("service launch runs gateway script directly with hidden window and detache
   const status = await service.launch("shrimp");
   assert.equal(status.app.id, "shrimp");
   assert.equal(spawnCalls.length, 1);
-  assert.equal(spawnCalls[0][0], process.execPath);
-  assert.deepEqual(spawnCalls[0][1], [path.join(projectDir, "scripts", "gateway.mjs"), "restart"]);
-  assert.equal(spawnCalls[0][2].cwd, projectDir);
+  assert.equal(spawnCalls[0][0], "powershell.exe");
+  assert.ok(spawnCalls[0][1].join(" ").includes("Start-Process"));
+  assert.ok(spawnCalls[0][1].join(" ").includes("-WindowStyle"));
   assert.equal(spawnCalls[0][2].detached, true);
   assert.equal(spawnCalls[0][2].stdio, "ignore");
   assert.equal(spawnCalls[0][2].windowsHide, true);
   assert.equal(child.unrefed, true);
+
+  // Posix / Darwin launch
+  const posixSpawnCalls = [];
+  const posixService = createCommandAppsService({
+    configStore: {
+      get() { return { apps: { shrimp: { executablePath: "/Users/dev/shrimp" } } }; },
+      save() {},
+    },
+    platform: "darwin",
+    spawnProcess: (...args) => { posixSpawnCalls.push(args); return child; },
+    fileExists: () => true,
+    isPidAlive: () => true,
+  });
+
+  await posixService.launch("shrimp");
+  assert.equal(posixSpawnCalls.length, 1);
+  assert.equal(posixSpawnCalls[0][0], process.execPath);
+  assert.deepEqual(posixSpawnCalls[0][1], [path.join("/Users/dev/shrimp", "scripts", "gateway.mjs"), "restart"]);
 });
 
 test("service status for shrimp reads gateway.pid.json and checks liveness", async () => {
