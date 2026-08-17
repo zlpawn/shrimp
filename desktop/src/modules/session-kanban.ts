@@ -8,6 +8,9 @@ type QueueItem = {
   message: string;
   status: string;
   error?: string;
+  scheduledAtMs?: number;
+  scheduledAt?: string | null;
+  vendorTag?: string;
   updatedAt: string;
 };
 
@@ -60,6 +63,8 @@ type SessionTranscript = {
   messages: ChatMessage[];
 };
 
+type ScheduleMode = "immediate" | "delay_30m" | "delay_1h" | "delay_3h" | "delay_5h" | "custom";
+
 const columns = [
   { id: "queued", title: "排队中", hint: "等待空闲后投递" },
   { id: "running", title: "运行中", hint: "90 秒内有活动" },
@@ -79,6 +84,8 @@ const state = {
   draft: "",
   clientFilter: "all",
   search: "",
+  scheduleMode: "immediate" as ScheduleMode,
+  scheduleCustomTime: "",
   pathsOpen: false,
   pathsLoading: false,
   pathsSaving: false,
@@ -88,6 +95,13 @@ const state = {
   chatSessionId: "",
   chatData: null as SessionTranscript | null,
   chatDraft: "",
+  chatScheduleMode: "immediate" as ScheduleMode,
+  chatScheduleCustomTime: "",
+  rescheduleOpen: false,
+  rescheduleId: "",
+  rescheduleMode: "immediate" as ScheduleMode,
+  rescheduleCustomTime: "",
+  rescheduleSaving: false,
 };
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -104,21 +118,59 @@ function root() {
   return document.getElementById("session-kanban-root");
 }
 
-function formatTime(value?: string) {
+function formatTime(value?: string | null) {
   if (!value) return "";
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "" : date.toLocaleString();
+}
+
+function formatCountdown(targetMs?: number, now = Date.now()) {
+  if (!targetMs || targetMs <= now) return "";
+  const diffSec = Math.floor((targetMs - now) / 1000);
+  if (diffSec < 60) return `约 ${diffSec} 秒后`;
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `约 ${diffMin} 分钟后`;
+  const diffHour = Math.floor(diffMin / 60);
+  const remMin = diffMin % 60;
+  if (diffHour < 24) return `约 ${diffHour} 小时${remMin > 0 ? ` ${remMin} 分` : ""}后`;
+  const diffDays = Math.floor(diffHour / 24);
+  return `约 ${diffDays} 天后`;
 }
 
 function shortSessionId(id: string) {
   return id.length > 10 ? id.slice(0, 8) + "…" : id;
 }
 
+function displayVendor(vendor?: string) {
+  if (!vendor) return "";
+  const map: Record<string, string> = {
+    volcengine: "火山引擎",
+    claude: "Claude",
+    zhipu: "智谱 AI",
+    deepseek: "DeepSeek",
+    grok: "Grok",
+    antigravity: "Antigravity",
+    codex: "Codex",
+    generic: "AI 供应商",
+  };
+  return map[vendor.toLowerCase()] || vendor;
+}
+
 function renderCard(session: BoardSession) {
   const selected = session.id === state.selectedSessionId ? " selected" : "";
+  const waitingQuotaItem = state.queue.find(
+    i => i.sessionId === session.id && i.status === "waiting_quota"
+  );
+  const quotaBadge = waitingQuotaItem
+    ? `<span class="session-kanban-status-badge waiting_quota" style="font-size: 9px; margin-top: 4px;">🛑 等待额度恢复</span>`
+    : "";
+
   return `
     <div class="session-kanban-card${selected}" onclick="window.__sessionKanbanSelect('${escapeHtml(session.id)}')">
-      <span class="session-kanban-client">${escapeHtml(displayClient(session.client))}</span>
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+        <span class="session-kanban-client">${escapeHtml(displayClient(session.client))}</span>
+        ${quotaBadge}
+      </div>
       <strong class="session-kanban-title" title="双击复制标题" ondblclick="event.stopPropagation(); window.__sessionKanbanCopyTitle('${escapeHtml(session.id)}')">${escapeHtml(session.title)}</strong>
       <code class="session-kanban-id" title="双击复制 ID" ondblclick="event.stopPropagation(); window.__sessionKanbanCopyId('${escapeHtml(session.id)}')">${escapeHtml(shortSessionId(session.id))}</code>
       <small>${escapeHtml(session.workspacePath || "global")}</small>
@@ -171,28 +223,164 @@ function renderTargetOptions() {
   `).join("");
 }
 
+function getSchedulePayload(mode: ScheduleMode, customTime: string) {
+  if (mode === "delay_30m") return { delayMinutes: 30 };
+  if (mode === "delay_1h") return { delayMinutes: 60 };
+  if (mode === "delay_3h") return { delayMinutes: 180 };
+  if (mode === "delay_5h") return { delayMinutes: 300 };
+  if (mode === "custom" && customTime) return { scheduledAt: customTime };
+  return { scheduledAtMs: 0 };
+}
+
+function renderTimingSelector(scope: "compose" | "chat" | "reschedule", currentMode: ScheduleMode, customTime: string) {
+  const modes: { id: ScheduleMode; label: string }[] = [
+    { id: "immediate", label: "⚡ 空闲即投" },
+    { id: "delay_30m", label: "⏱️ +30分" },
+    { id: "delay_1h", label: "⏱️ +1小时" },
+    { id: "delay_3h", label: "⏱️ +3小时" },
+    { id: "delay_5h", label: "⏱️ +5小时" },
+    { id: "custom", label: "📅 自定义时间" },
+  ];
+
+  return `
+    <div class="session-kanban-timing-row">
+      <div class="session-kanban-timing-segmented">
+        ${modes.map(m => `
+          <button
+            type="button"
+            class="${currentMode === m.id ? "active" : ""}"
+            onclick="window.__sessionKanbanSetScheduleMode('${scope}', '${m.id}')"
+          >${m.label}</button>
+        `).join("")}
+      </div>
+      ${currentMode === "custom" ? `
+        <div style="display: flex; align-items: center; gap: 6px; margin-top: 4px;">
+          <input
+            type="datetime-local"
+            class="session-kanban-schedule-input"
+            value="${escapeHtml(customTime)}"
+            onchange="window.__sessionKanbanUpdateScheduleCustom('${scope}', this.value)"
+          />
+          <small style="color: var(--text-secondary); font-size: 11px;">指定精准投递时刻</small>
+        </div>
+      ` : ""}
+    </div>
+  `;
+}
+
+function renderQueueStatusBadge(item: QueueItem) {
+  const countdown = formatCountdown(item.scheduledAtMs);
+  const timeText = item.scheduledAt ? formatTime(item.scheduledAt) : "";
+
+  if (item.status === "waiting_quota") {
+    const vendor = displayVendor(item.vendorTag);
+    const vendorLabel = vendor ? `[${vendor}] ` : "";
+    return `
+      <span class="session-kanban-status-badge waiting_quota" title="${escapeHtml(item.error || "")}">
+        🛑 ${escapeHtml(vendorLabel)}等待额度恢复 ${timeText ? `(预计 ${escapeHtml(timeText)}${countdown ? ` / ${escapeHtml(countdown)}` : ""})` : ""}
+      </span>
+    `;
+  }
+  if (item.status === "scheduled") {
+    return `
+      <span class="session-kanban-status-badge scheduled">
+        ⏳ 定时投递 (预计 ${escapeHtml(timeText)}${countdown ? ` / ${escapeHtml(countdown)}` : ""})
+      </span>
+    `;
+  }
+  if (item.status === "pending") {
+    return `<span class="session-kanban-status-badge">⏳ 排队中 (空闲即投)</span>`;
+  }
+  if (item.status === "dispatching") {
+    return `<span class="session-kanban-status-badge dispatching">⚡ 正在投递...</span>`;
+  }
+  if (item.status === "dispatched") {
+    return `<span class="session-kanban-status-badge dispatched">✓ 已投递</span>`;
+  }
+  if (item.status === "failed") {
+    return `<span class="session-kanban-status-badge failed" title="${escapeHtml(item.error || "")}">⚠ 投递失败</span>`;
+  }
+  if (item.status === "canceled") {
+    return `<span class="session-kanban-status-badge">✕ 已取消</span>`;
+  }
+  return `<span class="session-kanban-status-badge">${escapeHtml(item.status)}</span>`;
+}
+
 function renderQueue(item: QueueItem) {
   const session = state.sessions.find(s => s.id === item.sessionId);
   const sessionTitle = session?.title || "";
   const displayTitle = sessionTitle || item.sessionId;
-  const action = item.status === "failed" || item.status === "canceled"
-    ? `<button class="btn" onclick="window.__sessionKanbanRetry('${item.id}')">重试</button>`
-    : item.status === "pending"
-      ? `<button class="btn" onclick="window.__sessionKanbanCancel('${item.id}')">取消</button>`
-      : "";
+
+  const isWaitable = item.status === "pending" || item.status === "scheduled" || item.status === "waiting_quota";
+  const isFailed = item.status === "failed" || item.status === "canceled";
+
+  let actionsHtml = "";
+  if (isWaitable) {
+    actionsHtml = `
+      <button class="btn btn-xs" type="button" onclick="window.__sessionKanbanOpenReschedule('${item.id}')">✏️ 改期</button>
+      <button class="btn btn-xs" type="button" onclick="window.__sessionKanbanForceDispatch('${item.id}')">⚡ 立即投递</button>
+      <button class="btn btn-xs" type="button" onclick="window.__sessionKanbanCancel('${item.id}')">取消</button>
+    `;
+  } else if (isFailed) {
+    actionsHtml = `
+      <button class="btn btn-xs" type="button" onclick="window.__sessionKanbanRetry('${item.id}')">重试</button>
+      <button class="btn btn-xs" type="button" onclick="window.__sessionKanbanOpenReschedule('${item.id}')">✏️ 改期</button>
+    `;
+  }
+
   return `
     <div class="session-kanban-queue-row">
       <div>
-        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px;">
           <strong>${escapeHtml(displayTitle)}</strong>
           ${sessionTitle ? `<code class="session-kanban-id" title="双击复制 ID" ondblclick="event.stopPropagation(); window.__sessionKanbanCopyId('${escapeHtml(item.sessionId)}')">${escapeHtml(shortSessionId(item.sessionId))}</code>` : ""}
           <button class="btn btn-xs" type="button" onclick="window.__sessionKanbanOpenChat('${escapeHtml(item.sessionId)}')">💬 对话</button>
         </div>
         <p>${escapeHtml(item.message)}</p>
-        ${item.error ? `<small>${escapeHtml(item.error)}</small>` : ""}
+        ${item.error ? `<small style="display: block; margin-top: 4px;">${escapeHtml(item.error)}</small>` : ""}
       </div>
-      <span>${escapeHtml(item.status)}</span>
-      ${action}
+      <div>${renderQueueStatusBadge(item)}</div>
+      <div class="session-kanban-queue-actions">${actionsHtml}</div>
+    </div>
+  `;
+}
+
+function renderRescheduleModal() {
+  if (!state.rescheduleOpen) return "";
+  const item = state.queue.find(q => q.id === state.rescheduleId);
+  if (!item) return "";
+
+  const session = state.sessions.find(s => s.id === item.sessionId);
+  const sessionTitle = session?.title || item.sessionId;
+
+  return `
+    <div class="session-kanban-modal-backdrop" onclick="window.__sessionKanbanCloseReschedule(event)">
+      <div class="session-kanban-modal" onclick="event.stopPropagation()" style="max-width: 540px;">
+        <div class="session-kanban-modal-header">
+          <h3>修改待发消息计划投递时间</h3>
+          <button class="session-kanban-modal-close" type="button" onclick="window.__sessionKanbanCloseReschedule()">×</button>
+        </div>
+        <div class="session-kanban-modal-body">
+          <div>
+            <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 2px;">目标会话</label>
+            <strong>${escapeHtml(sessionTitle)}</strong>
+          </div>
+          <div>
+            <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 2px;">待发内容</label>
+            <p style="margin: 0; font-size: 13px; background: var(--input-bg); padding: 8px 10px; border-radius: 6px;">${escapeHtml(item.message)}</p>
+          </div>
+          <div>
+            <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 6px;">选择新的投递时机</label>
+            ${renderTimingSelector("reschedule", state.rescheduleMode, state.rescheduleCustomTime)}
+          </div>
+        </div>
+        <div class="session-kanban-modal-footer">
+          <button class="btn" type="button" onclick="window.__sessionKanbanCloseReschedule()">取消</button>
+          <div class="session-kanban-modal-footer-right">
+            <button class="btn btn-primary" type="button" onclick="window.__sessionKanbanSaveReschedule()">${state.rescheduleSaving ? "保存中…" : "确认修改"}</button>
+          </div>
+        </div>
+      </div>
     </div>
   `;
 }
@@ -338,6 +526,9 @@ function renderChatDrawer() {
             rows="2"
             placeholder="向当前会话输入新消息并投递..."
           >${escapeHtml(state.chatDraft)}</textarea>
+          <div style="margin-top: 4px; margin-bottom: 6px;">
+            ${renderTimingSelector("chat", state.chatScheduleMode, state.chatScheduleCustomTime)}
+          </div>
           <div class="session-kanban-drawer-actions">
             <button class="btn" type="button" onclick="window.__sessionKanbanChatEnqueue()">加入队列</button>
             <button class="btn btn-primary" type="button" onclick="window.__sessionKanbanChatDispatch()">立即投递</button>
@@ -365,6 +556,7 @@ function render() {
       </section>
     `;
   }).join("");
+
   el.innerHTML = `
     ${state.error ? `<div class="session-kanban-error">${escapeHtml(state.error)}</div>` : ""}
     <div class="session-kanban-toolbar">
@@ -401,21 +593,25 @@ function render() {
       </select>
       <label for="session-kanban-message">待发消息</label>
       <textarea id="session-kanban-message" rows="3" placeholder="会话空闲后自动投递">${escapeHtml(state.draft)}</textarea>
+      <div style="margin-top: 2px;">
+        <label style="display: block; margin-bottom: 4px;">投递时机与延时</label>
+        ${renderTimingSelector("compose", state.scheduleMode, state.scheduleCustomTime)}
+      </div>
       <div class="session-kanban-actions">
         <button class="btn btn-primary" type="submit">加入队列</button>
         <button class="btn" type="button" onclick="window.__sessionKanbanDispatch()">立即调度</button>
       </div>
       <div class="session-kanban-dispatch-hint">
-        <span><strong>加入队列</strong>：存入待发池，后台每 30 秒自动轮询，待会话空闲后全自动投递。</span>
-        <span><strong>立即调度</strong>：跳过 30 秒等待周期，立即向当前空闲的目标会话发起投递。</span>
+        <span><strong>加入队列</strong>：存入待发池，后台每 30 秒自动轮询，待会话空闲且到达计划时刻后全自动投递。</span>
+        <span><strong>立即调度</strong>：跳过 30 秒等待周期，立即向当前空闲且到期的目标会话发起投递。</span>
       </div>
     </form>
     <div class="session-kanban-queue">${state.queue.map(renderQueue).join("")}</div>
     ${renderPathsModal()}
     ${renderChatDrawer()}
+    ${renderRescheduleModal()}
   `;
 
-  // Auto scroll chat body if open
   if (state.chatOpen) {
     setTimeout(() => {
       const body = document.getElementById("session-kanban-chat-body");
@@ -483,6 +679,19 @@ function reloadChat() {
   if (state.chatSessionId) openChat(state.chatSessionId);
 }
 
+function setScheduleMode(scope: "compose" | "chat" | "reschedule", mode: ScheduleMode) {
+  if (scope === "compose") state.scheduleMode = mode;
+  if (scope === "chat") state.chatScheduleMode = mode;
+  if (scope === "reschedule") state.rescheduleMode = mode;
+  render();
+}
+
+function updateScheduleCustom(scope: "compose" | "chat" | "reschedule", value: string) {
+  if (scope === "compose") state.scheduleCustomTime = value;
+  if (scope === "chat") state.chatScheduleCustomTime = value;
+  if (scope === "reschedule") state.rescheduleCustomTime = value;
+}
+
 async function chatEnqueue() {
   const input = document.getElementById("session-kanban-chat-input") as HTMLTextAreaElement | null;
   const message = input?.value?.trim() || "";
@@ -491,10 +700,11 @@ async function chatEnqueue() {
     showToast("请输入消息", "danger");
     return;
   }
+  const schedulePayload = getSchedulePayload(state.chatScheduleMode, state.chatScheduleCustomTime);
   try {
     await api("/v1/session-kanban/queue", {
       method: "POST",
-      body: JSON.stringify({ sessionId, message }),
+      body: JSON.stringify({ sessionId, message, ...schedulePayload }),
     });
     if (input) input.value = "";
     state.chatDraft = "";
@@ -509,6 +719,66 @@ async function chatDispatch() {
   await chatEnqueue();
   await dispatchReady();
   setTimeout(() => reloadChat(), 1000);
+}
+
+function openReschedule(id: string) {
+  const item = state.queue.find(q => q.id === id);
+  if (!item) return;
+  state.rescheduleOpen = true;
+  state.rescheduleId = id;
+  state.rescheduleMode = item.scheduledAtMs ? "custom" : "immediate";
+  if (item.scheduledAt) {
+    try {
+      const dt = new Date(item.scheduledAt);
+      const iso = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+      state.rescheduleCustomTime = iso;
+    } catch {
+      state.rescheduleCustomTime = "";
+    }
+  } else {
+    state.rescheduleCustomTime = "";
+  }
+  render();
+}
+
+function closeReschedule(event?: Event) {
+  if (event && event.target !== event.currentTarget) return;
+  state.rescheduleOpen = false;
+  state.rescheduleId = "";
+  render();
+}
+
+async function saveReschedule() {
+  if (!state.rescheduleId) return;
+  state.rescheduleSaving = true;
+  render();
+  const schedulePayload = getSchedulePayload(state.rescheduleMode, state.rescheduleCustomTime);
+  try {
+    await api(`/v1/session-kanban/queue/${encodeURIComponent(state.rescheduleId)}/schedule`, {
+      method: "PATCH",
+      body: JSON.stringify(schedulePayload),
+    });
+    state.rescheduleOpen = false;
+    showToast("投递计划已更新", "success");
+    await load();
+  } catch (error: any) {
+    showToast(error?.message || "更新计划失败", "danger");
+  } finally {
+    state.rescheduleSaving = false;
+    render();
+  }
+}
+
+async function forceDispatch(id: string) {
+  try {
+    await api(`/v1/session-kanban/queue/${encodeURIComponent(id)}/schedule`, {
+      method: "PATCH",
+      body: JSON.stringify({ scheduledAtMs: 0 }),
+    });
+    await dispatchReady();
+  } catch (error: any) {
+    showToast(error?.message || "立即投递失败", "danger");
+  }
 }
 
 async function openPaths() {
@@ -596,10 +866,11 @@ async function submit(event: Event) {
     showToast("请选择会话并输入消息", "danger");
     return;
   }
+  const schedulePayload = getSchedulePayload(state.scheduleMode, state.scheduleCustomTime);
   try {
     await api("/v1/session-kanban/queue", {
       method: "POST",
-      body: JSON.stringify({ sessionId: target.value, message }),
+      body: JSON.stringify({ sessionId: target.value, message, ...schedulePayload }),
     });
     state.draft = "";
     showToast("已加入队列", "success");
@@ -620,7 +891,10 @@ async function cancel(id: string) {
 
 async function retry(id: string) {
   try {
-    await api(`/v1/session-kanban/queue/${encodeURIComponent(id)}/retry`, { method: "POST" });
+    await api(`/v1/session-kanban/queue/${encodeURIComponent(id)}/retry`, {
+      method: "POST",
+      body: JSON.stringify({ immediate: true }),
+    });
     await load();
   } catch (error: any) {
     showToast(error?.message || "重试失败", "danger");
@@ -656,6 +930,12 @@ async function dispatchReady() {
 (window as any).__sessionKanbanReloadChat = reloadChat;
 (window as any).__sessionKanbanChatEnqueue = chatEnqueue;
 (window as any).__sessionKanbanChatDispatch = chatDispatch;
+(window as any).__sessionKanbanSetScheduleMode = setScheduleMode;
+(window as any).__sessionKanbanUpdateScheduleCustom = updateScheduleCustom;
+(window as any).__sessionKanbanOpenReschedule = openReschedule;
+(window as any).__sessionKanbanCloseReschedule = closeReschedule;
+(window as any).__sessionKanbanSaveReschedule = saveReschedule;
+(window as any).__sessionKanbanForceDispatch = forceDispatch;
 
 document.addEventListener("input", event => {
   const target = event.target as HTMLElement | null;

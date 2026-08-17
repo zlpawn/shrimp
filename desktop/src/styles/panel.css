@@ -5705,8 +5705,22 @@ input:focus, select:focus {
 .session-kanban-queue-row { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--surface); padding: 10px 12px; }
 .session-kanban-queue-row p { font-size: 12px; margin: 0; }
 .session-kanban-queue-row small { color: var(--danger); }
+.session-kanban-queue-actions { display: flex; gap: 4px; align-items: center; }
 .session-kanban-empty, .session-kanban-error { color: var(--text-secondary); font-size: 13px; }
 .session-kanban-error { color: var(--danger); }
+
+.session-kanban-timing-row { display: flex; flex-direction: column; gap: 6px; }
+.session-kanban-timing-segmented { display: flex; background: var(--input-bg); border-radius: 6px; padding: 2px; gap: 2px; overflow-x: auto; border: 1px solid var(--border-color); }
+.session-kanban-timing-segmented button { border: none; background: transparent; padding: 4px 10px; font-size: 11px; font-weight: 500; border-radius: 4px; cursor: pointer; color: var(--text-secondary); white-space: nowrap; transition: all 0.15s ease; }
+.session-kanban-timing-segmented button:hover { color: var(--text-primary); }
+.session-kanban-timing-segmented button.active { background: var(--surface); color: var(--text-primary); box-shadow: 0 1px 3px rgba(0,0,0,.12); font-weight: 600; }
+.session-kanban-schedule-input { width: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--input-bg); color: var(--text-primary); font-family: var(--font-sans); font-size: 12px; padding: 4px 8px; }
+.session-kanban-status-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; background: rgba(112,128,162,.14); color: var(--text-secondary); white-space: nowrap; }
+.session-kanban-status-badge.scheduled { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+.session-kanban-status-badge.waiting_quota { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+.session-kanban-status-badge.dispatched { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+.session-kanban-status-badge.failed { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+.session-kanban-status-badge.dispatching { background: rgba(168, 85, 247, 0.15); color: #a855f7; }
 
 /* Session Kanban Paths Modal */
 .session-kanban-modal-backdrop {

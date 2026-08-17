@@ -132,3 +132,17 @@ test("panel renders chat drawer and full conversation stream", () => {
   assert.match(css, /\.session-kanban-msg-item\.is-user/);
   assert.match(css, /\.session-kanban-msg-item\.is-assistant/);
 });
+
+test("panel renders timing selectors and reschedule modal", () => {
+  const source = fs.readFileSync(path.join(root, "desktop/src/modules/session-kanban.ts"), "utf8");
+  const css = fs.readFileSync(path.join(root, "desktop/src/styles/panel.css"), "utf8");
+  assert.match(source, /renderTimingSelector/);
+  assert.match(source, /__sessionKanbanSetScheduleMode/);
+  assert.match(source, /__sessionKanbanOpenReschedule/);
+  assert.match(source, /__sessionKanbanForceDispatch/);
+  assert.match(source, /waiting_quota/);
+  assert.match(source, /formatCountdown/);
+  assert.match(css, /\.session-kanban-timing-segmented/);
+  assert.match(css, /\.session-kanban-status-badge\.waiting_quota/);
+  assert.match(css, /\.session-kanban-status-badge\.scheduled/);
+});
