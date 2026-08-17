@@ -2,6 +2,12 @@
 .env
 gateway.secrets.json
 mcp.secrets.json
+/remote-session.config.json
+/remote-session.secrets.json
+/remote-session/
+/nat-traversal.config.json
+/nat-traversal.secrets.json
+/nat-traversal/
 models.json
 cli-sources.json
 cli-install-history.json
