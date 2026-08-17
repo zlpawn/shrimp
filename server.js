@@ -172,8 +172,10 @@ import {
 } from "./lib/config/project-paths.mjs";
 import { resolveDreamSkinPaths } from "./lib/dream-skin/paths.mjs";
 import { createDreamSkinService } from "./lib/dream-skin/application/service.mjs";
-import { routeDreamSkinRequest } from "./lib/dream-skin/http/routes.mjs";
-import { resolveNatTraversalPaths } from "./lib/nat-traversal/paths.mjs";
+import {
+  resolveNatTraversalPaths,
+  createNatTraversalConfigStore,
+} from "./lib/nat-traversal/index.mjs";
 import { createNatTraversalService } from "./lib/nat-traversal/application/service.mjs";
 import { createCommandAppsService } from "./lib/command-apps/application/service.mjs";
 import { routeCommandAppsRequest } from "./lib/command-apps/http/routes.mjs";
@@ -187,7 +189,10 @@ import { createAntigravityReader } from "./lib/session-kanban/infra/antigravity-
 import { createCliDispatchers } from "./lib/session-kanban/infra/cli-dispatchers.mjs";
 import { routeSessionKanbanRequest } from "./lib/session-kanban/http/routes.mjs";
 import { routeNatTraversalRequest } from "./lib/nat-traversal/http/routes.mjs";
-import { resolveRemoteSessionPaths } from "./lib/remote-session/paths.mjs";
+import {
+  resolveRemoteSessionPaths,
+  createRemoteSessionConfigStore,
+} from "./lib/remote-session/index.mjs";
 import { createRemoteSessionService } from "./lib/remote-session/application/service.mjs";
 import { routeRemoteSessionRequest } from "./lib/remote-session/http/routes.mjs";
 import { createFakeHostBackend } from "./lib/remote-session/host-attach/fake-host.mjs";
@@ -259,29 +264,11 @@ let globalMcpManagementService = null;
 
 function ensureNatTraversalService() {
   if (globalNatTraversalService) return globalNatTraversalService;
-  const paths = resolveNatTraversalPaths({
-    configFile: process.env.GATEWAY_CONFIG_FILE || "gateway.config.json",
-    secretsFile: process.env.NAT_TRAVERSAL_SECRETS_FILE || "",
+  const paths = resolveNatTraversalPaths();
+  const configStore = createNatTraversalConfigStore({
+    configPath: paths.configPath,
+    legacyConfigPath: paths.legacyConfigPath,
   });
-  const configStore = {
-    get() {
-      return GATEWAY_CONFIG.natTraversal || {};
-    },
-    save(next) {
-      const result = saveGatewayState({
-        configPath: GATEWAY_CONFIG_FILE,
-        secretsPath: GATEWAY_SECRETS_FILE,
-        config: {
-          ...GATEWAY_CONFIG,
-          natTraversal: next,
-        },
-        officialCodexIds: OFFICIAL_CODEX_MODEL_IDS,
-      });
-      GATEWAY_CONFIG = result.config;
-      GATEWAY_SECRETS = result.secrets;
-      reloadGatewayConfig({ reloadFiles: false });
-    },
-  };
   globalNatTraversalService = createNatTraversalService({
     paths,
     configStore,
@@ -292,28 +279,12 @@ function ensureNatTraversalService() {
 
 async function ensureRemoteSessionService() {
   if (globalRemoteSessionService) return globalRemoteSessionService;
-  const paths = resolveRemoteSessionPaths({
-    configFile: process.env.GATEWAY_CONFIG_FILE || "gateway.config.json",
+  const paths = resolveRemoteSessionPaths();
+  const configStore = createRemoteSessionConfigStore({
+    configPath: paths.configPath,
+    secretsPath: paths.secretsPath,
+    legacyConfigPath: paths.legacyConfigPath,
   });
-  const configStore = {
-    get() {
-      return GATEWAY_CONFIG.remoteSession || {};
-    },
-    save(next) {
-      const result = saveGatewayState({
-        configPath: GATEWAY_CONFIG_FILE,
-        secretsPath: GATEWAY_SECRETS_FILE,
-        config: {
-          ...GATEWAY_CONFIG,
-          remoteSession: next,
-        },
-        officialCodexIds: OFFICIAL_CODEX_MODEL_IDS,
-      });
-      GATEWAY_CONFIG = result.config;
-      GATEWAY_SECRETS = result.secrets;
-      reloadGatewayConfig({ reloadFiles: false });
-    },
-  };
   // Phase 2:
   // - local-host uses partial real Host discovery (filesystem projects + dynamic endpoint)
   // - fake-host remains available for safe coding-loop demos

@@ -693,29 +693,5 @@
       "user_models": [],
       "disabled_builtin_models": []
     }
-  },
-  "natTraversal": {
-    "enabled": true,
-    "activeProvider": "frpc",
-    "frpc": {
-      "configPath": "/Users/pa/frp/frpc.toml",
-      "serverAddr": "39.105.19.237",
-      "serverPort": 7000,
-      "logLevel": "info",
-      "proxies": [
-        {
-          "name": "ssh-pa-frp",
-          "type": "tcp",
-          "localIp": "127.0.0.1",
-          "localPort": 22,
-          "remotePort": 6007
-        }
-      ]
-    },
-    "frpsDashboard": {
-      "enabled": true,
-      "url": "http://39.105.19.237:7500/static/#/"
-    },
-    "peers": []
   }
 }
