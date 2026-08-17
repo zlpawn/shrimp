@@ -87,10 +87,14 @@
             "claude-opus-5": "claude-opus-5",
             "claude-sonnet-4-5": "gpt-5.6-sol",
             "claude-haiku-4-5": "GLM-5.2",
-            "claude-haiku-4-0": "deepseek-v4-flash-ga"
+            "claude-haiku-4-0": "deepseek-v4-flash-ga",
+            "claude-opus-4-6-max": "GLM-5.3"
           },
           "capabilities": {
             "sanitize_dangling_tool_calls": true
+          },
+          "model_labels": {
+            "claude-opus-4-6-max": "glm-5.3"
           }
         },
         {
