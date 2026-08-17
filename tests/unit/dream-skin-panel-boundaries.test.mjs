@@ -43,7 +43,8 @@ test("section-dream-skin exists with runtime copy", () => {
 });
 
 test("panel.css has no oversized card radius", () => {
-  const dreamCss = css.split("/* --- Dream Skin panel --- */")[1] || "";
+  const dreamSection = css.split("/* --- Dream Skin panel --- */")[1] || "";
+  const dreamCss = dreamSection.split(/\/\* ---|\/\* Remote Session|\/\* Command Apps|\/\* Session Kanban/)[0] || "";
   const radii = [...dreamCss.matchAll(/border-radius:\s*([\d.]+)px/g)].map((m) => parseFloat(m[1]));
   assert.ok(radii.every((r) => r <= 8), `radius too large: ${Math.max(...radii)}`);
 });

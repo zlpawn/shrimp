@@ -25,8 +25,8 @@ test("server.js contains exactly one dream-skin prefix dispatch", () => {
 
 test("server.js imports dream-skin service and routes", () => {
   const source = fs.readFileSync("server.js", "utf8");
-  assert.match(source, /createDreamSkinService/);
-  assert.match(source, /routeDreamSkinRequest/);
+  assert.match(source, /import\s*\{[^}]*createDreamSkinService[^}]*\}\s*from/);
+  assert.match(source, /import\s*\{[^}]*routeDreamSkinRequest[^}]*\}\s*from/);
 });
 
 test("no request-controlled download URL surfaces in market routes", () => {

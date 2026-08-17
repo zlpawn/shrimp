@@ -172,6 +172,7 @@ import {
 } from "./lib/config/project-paths.mjs";
 import { resolveDreamSkinPaths } from "./lib/dream-skin/paths.mjs";
 import { createDreamSkinService } from "./lib/dream-skin/application/service.mjs";
+import { routeDreamSkinRequest } from "./lib/dream-skin/http/routes.mjs";
 import {
   resolveNatTraversalPaths,
   createNatTraversalConfigStore,

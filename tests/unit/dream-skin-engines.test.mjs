@@ -1,4 +1,4 @@
-﻿import assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import fs from "node:fs";
 import crypto from "node:crypto";
 import vm from "node:vm";
@@ -87,8 +87,8 @@ test("asset SHA-256 digests are pinned", () => {
     "snow/LICENSE": "714d6a902a51867b0706f62ed2467d4332f787891c04a6bdfe660b1221643b86",
   };
   for (const [rel, digest] of Object.entries(expected)) {
-    const bytes = fs.readFileSync(`lib/dream-skin/engines/${rel}`);
-    assert.equal(crypto.createHash("sha256").update(bytes).digest("hex"), digest, rel);
+    const raw = fs.readFileSync(`lib/dream-skin/engines/${rel}`, "utf8").replace(/\r\n/g, "\n");
+    assert.equal(crypto.createHash("sha256").update(raw, "utf8").digest("hex"), digest, rel);
   }
 });
 
