@@ -52,14 +52,20 @@ test("routes cancel retry and dispatch", async () => {
   const response = res();
   const service = {
     cancel: async id => ({ id, status: "canceled" }),
-    retry: async id => ({ id, status: "pending" }),
+    retry: async (id, body) => ({ id, status: "pending", immediate: body?.immediate }),
     dispatchReady: async () => ({ dispatched: 0, waiting: 0 }),
+    updateSchedule: async (id, body) => ({ id, status: "scheduled", scheduledAtMs: body.scheduledAtMs }),
   };
 
   await routeSessionKanbanRequest(req("POST", {}), res(), "/v1/session-kanban/nope", { service });
   await routeSessionKanbanRequest(req("POST", {}), response, "/v1/session-kanban/dispatch", { service });
   assert.equal(response.statusCode, 200);
   assert.deepEqual(response.body, { dispatched: 0, waiting: 0 });
+
+  const schedRes = res();
+  await routeSessionKanbanRequest(req("PATCH", { scheduledAtMs: 12345 }), schedRes, "/v1/session-kanban/queue/q1/schedule", { service });
+  assert.equal(schedRes.statusCode, 200);
+  assert.equal(schedRes.body.scheduledAtMs, 12345);
 });
 
 test("routes paths config get, update and reset", async () => {

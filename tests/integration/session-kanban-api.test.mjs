@@ -44,9 +44,25 @@ test("session kanban API queues and dispatches an idle session", async () => {
     }).then(r => r.json());
     assert.equal(queued.status, "pending");
 
+    const queuedFuture = await fetch(`http://127.0.0.1:${port}/v1/session-kanban/queue`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId: "s1", message: "Later", delayMinutes: 60 }),
+    }).then(r => r.json());
+    assert.equal(queuedFuture.status, "scheduled");
+    assert.ok(queuedFuture.scheduledAtMs > Date.now());
+
+    const updatedSchedule = await fetch(`http://127.0.0.1:${port}/v1/session-kanban/queue/${queuedFuture.id}/schedule`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ scheduledAtMs: 0 }),
+    }).then(r => r.json());
+    assert.equal(updatedSchedule.status, "pending");
+    assert.equal(updatedSchedule.scheduledAtMs, 0);
+
     const dispatch = await fetch(`http://127.0.0.1:${port}/v1/session-kanban/dispatch`, { method: "POST" }).then(r => r.json());
-    assert.equal(dispatch.dispatched, 1);
-    assert.equal(dispatched.length, 1);
+    assert.equal(dispatch.dispatched, 2);
+    assert.equal(dispatched.length, 2);
   } finally {
     server.close();
     store.close();
