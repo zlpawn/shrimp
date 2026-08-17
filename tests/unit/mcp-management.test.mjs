@@ -380,11 +380,16 @@ test("service state auto-detects in-repo custom MCPs under mcps/ directory", () 
     fs.mkdirSync(path.join(mcpsDir, "py_tool"), { recursive: true });
     fs.writeFileSync(path.join(mcpsDir, "py_tool", "server.py"), "# py mcp");
 
+    fs.mkdirSync(path.join(mcpsDir, "go_tool"), { recursive: true });
+    fs.writeFileSync(path.join(mcpsDir, "go_tool", "main.go"), "// go mcp");
+
     const { service } = makeService(root);
     const s = service.state();
     assert.ok(Array.isArray(s.inRepoMcps));
     const nodeFound = s.inRepoMcps.find((m) => m.name === "node_tool");
     const pyFound = s.inRepoMcps.find((m) => m.name === "py_tool");
+    const goFound = s.inRepoMcps.find((m) => m.name === "go_tool");
+
     assert.ok(nodeFound);
     assert.equal(nodeFound.lang, "node");
     assert.equal(nodeFound.command, "node");
@@ -394,6 +399,11 @@ test("service state auto-detects in-repo custom MCPs under mcps/ directory", () 
     assert.equal(pyFound.lang, "python");
     assert.equal(pyFound.command, "uv");
     assert.deepEqual(pyFound.args, ["run", "--directory", "./mcps/py_tool", "server.py"]);
+
+    assert.ok(goFound);
+    assert.equal(goFound.lang, "go");
+    assert.equal(goFound.command, "go");
+    assert.deepEqual(goFound.args, ["run", "./mcps/go_tool/main.go"]);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

@@ -62,6 +62,21 @@
 
 ---
 
+### 4. Go 自研 MCP (Go / Golang)
+
+- **推荐目录结构**：
+  ```text
+  mcps/my-go-tool/
+  ├── go.mod                # 声明模块与依赖 (如 github.com/mark3labs/mcp-go)
+  └── main.go               # 入口源码文件 (或 server.go)
+  ```
+- **网关自动探测规则**：
+  - 若存在 `go.mod`、`main.go`、`server.go`；
+  - 网关将自动识别为 **Go MCP**；
+  - 自动生成的启动命令为：`go run ./mcps/<mcp-name>/main.go`（或编译产物 `./app.exe`）。
+
+---
+
 ## 🛠️ 三、 新建自研 MCP 的标准工作流
 
 ### 给 AI 助手 / 开发者的操作指令：

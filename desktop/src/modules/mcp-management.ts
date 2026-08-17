@@ -31,7 +31,7 @@ type ClientMeta = {
 
 type InRepoMcp = {
   name: string;
-  lang: "node" | "python" | "java" | "custom";
+  lang: "node" | "python" | "java" | "go" | "custom";
   title: string;
   description: string;
   command: string;
@@ -168,6 +168,17 @@ const MCP_TEMPLATES: McpTemplate[] = [
     transport: "stdio",
     command: "java",
     argsList: ["-jar", "./mcps/java-tool/target/app.jar"],
+  },
+  {
+    id: "in_repo_go",
+    name: "go_custom_tool",
+    category: "in_repo",
+    title: "自研 Go MCP (项目源码 mcps/)",
+    description: "使用 go run 独立运行当前代码库 mcps/ 目录下的 Go 源码服务",
+    icon: "🦫",
+    transport: "stdio",
+    command: "go",
+    argsList: ["run", "./mcps/go-tool/main.go"],
   },
   {
     id: "npx_filesystem",
@@ -650,8 +661,8 @@ function renderDetail(): string {
   if (!server) {
     const inRepo = state.data?.inRepoMcps?.find((m) => m.name === state.selected);
     if (inRepo) {
-      const langIcon = inRepo.lang === "python" ? "🐍" : inRepo.lang === "node" ? "🟢" : inRepo.lang === "java" ? "☕" : "⚡";
-      const langText = inRepo.lang === "python" ? "Python FastMCP" : inRepo.lang === "node" ? "Node.js" : inRepo.lang === "java" ? "Java" : "自研";
+      const langIcon = inRepo.lang === "python" ? "🐍" : inRepo.lang === "node" ? "🟢" : inRepo.lang === "java" ? "☕" : inRepo.lang === "go" ? "🦫" : "⚡";
+      const langText = inRepo.lang === "python" ? "Python FastMCP" : inRepo.lang === "node" ? "Node.js" : inRepo.lang === "java" ? "Java" : inRepo.lang === "go" ? "Go" : "自研";
       return `
         <div class="mcp-detail">
           <div class="mcp-detail-head">
