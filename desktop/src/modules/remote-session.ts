@@ -3,6 +3,23 @@ import { showToast } from "../core/ui";
 import { escapeHtml } from "../core/dom";
 
 export function sortAntigravityModels<T extends { id?: string; name?: string; label?: string }>(models: T[] = []): T[] {
+  const filtered = models.filter((m) => {
+    const name = (m.name || m.label || m.id || "").toLowerCase();
+    if (name.includes("medium") || name.includes("low")) {
+      const hasHigh = models.some((other) => {
+        const otherName = (other.name || other.label || other.id || "").toLowerCase();
+        if (!otherName.includes("high")) return false;
+        if (name.includes("3.7") && otherName.includes("3.7")) return true;
+        if (name.includes("3.6") && otherName.includes("3.6")) return true;
+        if (name.includes("3.5") && otherName.includes("3.5")) return true;
+        if (name.includes("3.1") && otherName.includes("3.1")) return true;
+        return false;
+      });
+      if (hasHigh) return false;
+    }
+    return true;
+  });
+
   function getScore(m: T) {
     const name = (m.name || m.label || m.id || "").toLowerCase();
     if (name.includes("gemini")) {
@@ -29,7 +46,7 @@ export function sortAntigravityModels<T extends { id?: string; name?: string; la
     }
     return 100;
   }
-  return [...models].sort((a, b) => getScore(b) - getScore(a));
+  return [...filtered].sort((a, b) => getScore(b) - getScore(a));
 }
 
 
