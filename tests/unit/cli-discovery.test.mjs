@@ -1,4 +1,4 @@
-﻿import assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync, chmodSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -352,3 +352,55 @@ test("user can pin CLIs as favorites into recommended view", async () => {
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("scanInRepoClis discovers custom in-repo CLIs across multiple languages", () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), "shrimp-inrepo-cli-test-"));
+  try {
+    const clisDir = path.join(root, "clis");
+    mkdirSync(clisDir, { recursive: true });
+
+    // Java JBang CLI
+    mkdirSync(path.join(clisDir, "demo-java-cli"), { recursive: true });
+    writeFileSync(path.join(clisDir, "demo-java-cli", "App.java"), "public class App {}");
+    writeFileSync(path.join(clisDir, "demo-java-cli", "README.md"), "# Demo Java\n\n这是一个用于测试的 Java JBang CLI 工具");
+
+    // Python uv CLI
+    mkdirSync(path.join(clisDir, "demo-py-cli"), { recursive: true });
+    writeFileSync(path.join(clisDir, "demo-py-cli", "cli.py"), "print('py')");
+
+    // Node.js CLI
+    mkdirSync(path.join(clisDir, "demo-node-cli"), { recursive: true });
+    writeFileSync(path.join(clisDir, "demo-node-cli", "index.mjs"), "console.log('node')");
+
+    // Go CLI
+    mkdirSync(path.join(clisDir, "demo-go-cli"), { recursive: true });
+    writeFileSync(path.join(clisDir, "demo-go-cli", "main.go"), "package main\nfunc main(){}");
+
+    const list = __test__.scanInRepoClis(root);
+    assert.equal(list.length, 4);
+
+    const java = list.find((c) => c.name === "demo-java-cli");
+    assert.ok(java);
+    assert.equal(java.lang, "java");
+    assert.equal(java.command, "jbang");
+    assert.match(java.description, /Java JBang/);
+
+    const py = list.find((c) => c.name === "demo-py-cli");
+    assert.ok(py);
+    assert.equal(py.lang, "python");
+    assert.equal(py.command, "uv");
+
+    const node = list.find((c) => c.name === "demo-node-cli");
+    assert.ok(node);
+    assert.equal(node.lang, "node");
+    assert.equal(node.command, "node");
+
+    const go = list.find((c) => c.name === "demo-go-cli");
+    assert.ok(go);
+    assert.equal(go.lang, "go");
+    assert.equal(go.command, "go");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+

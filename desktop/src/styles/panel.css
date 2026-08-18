@@ -5777,8 +5777,7 @@ input:focus, select:focus {
   padding: 14px 20px; border-top: 1px solid var(--border-color);
 }
 .session-kanban-modal-footer-right { display: flex; gap: 8px; }
-@media (max-width: 1500px) { .session-kanban-board { grid-template-columns: repeat(3, minmax(190px, 1fr)); } }
-@media (max-width: 900px) { .session-kanban-board { grid-template-columns: repeat(2, minmax(190px, 1fr)); } .session-kanban-toolbar { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .session-kanban-toolbar { grid-template-columns: 1fr; } }
 
 
 /* Chat Drawer & Tools */

@@ -753,6 +753,20 @@ experimental_bearer_token = "dummy"</pre>
                     <p>网关扫描 PATH（及 Windows 常见安装目录）中的可执行文件。默认只显示「推荐」CLI（系统规则自动挑出的常用工具）。Git/MinGW 等工具链内部二进制会被硬过滤。若某个工具不在推荐里，请切到「全部」点「设为常用」固定进来；推荐列表里只对你手动固定的项显示「取消常用」。</p>
                 </div>
 
+                <!-- 🚀 本地自研 CLI 专区 -->
+                <div id="cli-inrepo-section" style="margin-bottom: 24px; display: none;">
+                    <div class="mcp-section-label-row" style="margin-bottom: 10px;">
+                        <span class="mcp-section-label">🚀 本地自研 / 网关托管 CLI</span>
+                        <span class="mcp-badge-counter" id="cli-inrepo-counter">0</span>
+                    </div>
+                    <div id="cli-inrepo-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px;"></div>
+                </div>
+
+                <!-- 💻 系统全局 CLI 专区 -->
+                <div class="mcp-section-label-row" id="cli-system-section-label" style="margin-bottom: 10px; display: none;">
+                    <span class="mcp-section-label">💻 系统全局 CLI (PATH 扫描)</span>
+                </div>
+
                 <div class="skills-toolbar">
                     <input id="cli-search-input" class="skills-search" type="search" placeholder="搜索 CLI 名称..." oninput="onCliSearchInput(this.value)" />
                     <div class="cli-view-toggle" id="cli-view-toggle" role="group" aria-label="CLI 视图切换">

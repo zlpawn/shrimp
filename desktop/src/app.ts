@@ -2299,7 +2299,7 @@ window.deleteInstallRecord = async function(id) {
     } catch (err) { showToast('删除失败: ' + err.message, 'danger'); }
 };
 // ===== Preset CLI: discovery + install history (mirrors skills) =====
-let cliLibraryState = { loaded: false, loading: false, query: "", view: "recommended", items: [], stats: { total: 0, installed: 0, recommended: 0, other: 0, shown: 0, view: "recommended" } };
+let cliLibraryState = { loaded: false, loading: false, query: "", view: "recommended", items: [], inRepoClis: [], stats: { total: 0, installed: 0, recommended: 0, other: 0, shown: 0, view: "recommended" } };
 let cliSearchTimer = null;
 let cliIgnoredState = [];
 let cliFavoriteState = [];
@@ -2370,6 +2370,7 @@ async function refreshCliLibrary(force) {
         const data = await res.json();
         if (!data.success) throw new Error(data.error || '失败');
         cliLibraryState.items = data.items || [];
+        cliLibraryState.inRepoClis = data.inRepoClis || [];
         cliLibraryState.stats = data.stats || { total: 0, installed: 0, recommended: 0, other: 0, shown: cliLibraryState.items.length, view: cliLibraryState.view };
         if (cliLibraryState.stats.view) cliLibraryState.view = cliLibraryState.stats.view;
         cliLibraryState.loaded = true;
@@ -2399,8 +2400,13 @@ function onCliSearchInput(value) {
 }
 
 function renderCliLibrary() {
+    const inRepoSection = document.getElementById('cli-inrepo-section');
+    const inRepoList = document.getElementById('cli-inrepo-list');
+    const inRepoCounter = document.getElementById('cli-inrepo-counter');
+    const systemLabel = document.getElementById('cli-system-section-label');
     const host = document.getElementById('cli-list');
     if (!host) return;
+
     const chip = document.getElementById('cli-stats-chip');
     const stats = cliLibraryState.stats || {};
     const recommended = stats.recommended != null ? stats.recommended : 0;
@@ -2417,6 +2423,42 @@ function renderCliLibrary() {
         const active = btn.getAttribute('data-view') === (cliLibraryState.view || 'recommended');
         btn.classList.toggle('is-active', active);
     });
+
+    // 1. 渲染本地自研 CLI
+    const inRepoClis = cliLibraryState.inRepoClis || [];
+    if (inRepoSection && inRepoList) {
+        if (inRepoClis.length > 0) {
+            inRepoSection.style.display = 'block';
+            if (systemLabel) systemLabel.style.display = 'flex';
+            if (inRepoCounter) inRepoCounter.textContent = String(inRepoClis.length);
+
+            inRepoList.innerHTML = inRepoClis.map(function(item) {
+                const langIcon = item.lang === 'java' ? '☕' : item.lang === 'python' ? '🐍' : item.lang === 'node' ? '🟢' : item.lang === 'go' ? '⚡' : item.lang === 'powershell' ? '🟦' : item.lang === 'shell' ? '🐚' : '🛠️';
+                const langLabel = item.langLabel || (item.lang === 'java' ? 'Java JBang' : item.lang === 'python' ? 'Python (uv)' : item.lang === 'node' ? 'Node.js' : item.lang === 'go' ? 'Go' : '自研');
+                const fullCmd = item.fullCommand || (item.command + ' ' + item.path);
+
+                return '<div class="mcp-card" style="cursor:default;padding:12px 14px;background:var(--surface);display:flex;flex-direction:column;gap:8px;">' +
+                    '<div class="mcp-card-head">' +
+                    '<div class="mcp-card-title">' + langIcon + ' ' + escapeHtml(item.name) + '</div>' +
+                    '<span class="mcp-badge mcp-badge-inrepo">' + escapeHtml(langLabel) + '</span>' +
+                    '</div>' +
+                    '<div class="mcp-card-desc" style="font-size:12px;color:var(--text-secondary);line-height:1.4;">' + escapeHtml(item.description || item.title) + '</div>' +
+                    '<div class="install-record-cmd" style="margin:2px 0;font-size:11px;background:var(--input-bg);padding:6px 8px;border-radius:4px;border:1px solid var(--border-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="' + escapeHtml(fullCmd) + ' --help">' +
+                    '$ ' + escapeHtml(fullCmd) + ' --help' +
+                    '</div>' +
+                    '<div class="mcp-card-meta" style="margin-top:auto;padding-top:6px;border-top:1px dashed var(--border-color);display:flex;justify-content:space-between;align-items:center;font-size:11px;">' +
+                    '<span class="mcp-card-status"><span class="dot-on"></span> 源码已就绪</span>' +
+                    '<span style="color:var(--text-secondary);">入口: <code>' + escapeHtml(item.path) + '</code></span>' +
+                    '</div>' +
+                    '</div>';
+            }).join('');
+        } else {
+            inRepoSection.style.display = 'none';
+            if (systemLabel) systemLabel.style.display = 'none';
+        }
+    }
+
+    // 2. 渲染系统全局 CLI
     const items = cliLibraryState.items || [];
     if (!items.length) {
         const emptyHint = (cliLibraryState.view || 'recommended') === 'recommended'
@@ -2425,6 +2467,7 @@ function renderCliLibrary() {
         host.innerHTML = '<div class="skill-detail-empty">' + emptyHint + '</div>';
         return;
     }
+
     host.innerHTML = items.map(function(item) {
         const version = item.version ? escapeHtml(item.version) : '<span style=\"color:var(--text-secondary);\">-</span>';
         const pathLine = item.path ? escapeHtml(item.path) : '<span style=\"color:var(--text-secondary);\">未在 PATH 中找到</span>';
@@ -2437,10 +2480,6 @@ function renderCliLibrary() {
         const favoritePill = favorite
             ? ' <span class=\"skill-pill\" style=\"background:rgba(245,158,11,0.14);color:#d97706;\">常用</span>'
             : '';
-        // Pin button:
-        // - recommended view: only show for already-pinned items ("取消常用")
-        // - all view: show "设为常用" / "取消常用"
-        // Auto-recommended items already in 推荐 do not need a redundant pin action.
         const showFavoriteBtn = favorite || (cliLibraryState.view || 'recommended') === 'all';
         const favoriteBtn = !showFavoriteBtn ? '' : (
             '<button class=\"btn\" style=\"padding:4px 10px;font-size:12px;' + (favorite ? 'color:#d97706;' : '') + '" title="' + (favorite ? '取消常用，恢复自动推荐规则' : '设为常用，固定进入推荐列表') + '" onclick="toggleCliFavorite(' + String.fromCharCode(39) + escapeHtml(item.name) + String.fromCharCode(39) + ')">' + (favorite ? '取消常用' : '设为常用') + '</button>'
