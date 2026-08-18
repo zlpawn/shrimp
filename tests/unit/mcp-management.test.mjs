@@ -7,6 +7,7 @@ import { createMcpStore } from "../../lib/mcp-management/store.mjs";
 import { createMcpManagementService } from "../../lib/mcp-management/application/service.mjs";
 import { codexAdapter } from "../../lib/mcp-management/clients/codex.mjs";
 import { createJsonClientAdapter } from "../../lib/mcp-management/clients/json-client.mjs";
+import { listClientAdapters } from "../../lib/mcp-management/clients/registry.mjs";
 import { McpManagementError } from "../../lib/mcp-management/domain/errors.mjs";
 
 function makeRoot() {
@@ -212,7 +213,10 @@ test("apply verifies managed values instead of only JSON object shape", () => {
     service.upsertServer(remoteServer("safe", { claude: true }));
     service.apply({ targets: { claude: true } });
     const parsed = JSON.parse(fs.readFileSync(path.join(root, "claude.json"), "utf8"));
-    assert.equal(parsed.mcpServers.safe.url, "https://example.test/mcp");
+    assert.deepEqual(
+      parsed.managedMcpServers.find((server) => server.name === "safe"),
+      { name: "safe", transport: "http", url: "https://example.test/mcp" },
+    );
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -222,7 +226,7 @@ test("adapters refuse to replace a divergent manually configured server", () => 
   const root = makeRoot();
   try {
     const { service } = makeService(root, {
-      claudeText: "{\"mcpServers\":{\"safe\":{\"url\":\"https://manual.example/mcp\"}}}",
+      claudeText: "{\"managedMcpServers\":[{\"name\":\"safe\",\"transport\":\"http\",\"url\":\"https://manual.example/mcp\"}]}",
     });
     service.upsertServer(remoteServer("safe", { claude: true }));
     assert.throws(
@@ -327,8 +331,8 @@ test("single server preview and apply only affects the specified server", () => 
     const applyA = service.apply({ targets: { claude: true }, serverName: "server_a" });
     assert.equal(applyA.serverName, "server_a");
     const parsed = JSON.parse(fs.readFileSync(clientPaths.claude, "utf8"));
-    assert.ok(parsed.mcpServers.server_a);
-    assert.equal(parsed.mcpServers.server_b, undefined);
+    assert.ok(parsed.managedMcpServers.find((server) => server.name === "server_a"));
+    assert.equal(parsed.managedMcpServers.find((server) => server.name === "server_b"), undefined);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -362,7 +366,7 @@ test("remote server url placeholder interpolation dynamically merges secret vari
     service.apply({ targets: { claude: true }, serverName: "remote_api" });
     const parsed = JSON.parse(fs.readFileSync(clientPaths.claude, "utf8"));
     assert.equal(
-      parsed.mcpServers.remote_api.url,
+      parsed.managedMcpServers.find((server) => server.name === "remote_api").url,
       "https://mcp.example.com/sse?api_key=secret-token-12345&tenant=team-alpha",
     );
   } finally {
@@ -409,6 +413,66 @@ test("service state auto-detects in-repo custom MCPs under mcps/ directory", () 
   }
 });
 
+test("service state ignores empty in-repo MCP directories", () => {
+  const root = makeRoot();
+  try {
+    fs.mkdirSync(path.join(root, "mcps", "empty_tool"), { recursive: true });
+    const { service } = makeService(root);
+    const state = service.state();
+    assert.equal(state.inRepoMcps.find((m) => m.name === "empty_tool"), undefined);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("macOS Claude Desktop resolves and merges the active configLibrary entry", () => {
+  const home = makeRoot();
+  const configLibrary = path.join(home, "Library", "Application Support", "Claude-3p", "configLibrary");
+  fs.mkdirSync(configLibrary, { recursive: true });
+  const activeId = "d44c7741-dd3a-480c-905b-9de502807ced";
+  fs.writeFileSync(path.join(configLibrary, "_meta.json"), JSON.stringify({
+    appliedId: activeId,
+    entries: [{ id: activeId, name: "Default" }],
+  }));
+  fs.writeFileSync(path.join(configLibrary, activeId + ".json"), JSON.stringify({
+    inferenceProvider: "gateway",
+    managedMcpServers: [
+      { name: "craft-mcp", transport: "http", url: "https://mcp.craft.do/links/demo/mcp" },
+    ],
+  }));
+
+  try {
+    const claude = listClientAdapters().find((adapter) => adapter.id === "claude");
+    const targetPath = claude.defaultPath(home, "darwin");
+    assert.equal(targetPath, path.join(configLibrary, activeId + ".json"));
+
+    const scanned = claude.scan(fs.readFileSync(targetPath, "utf8"));
+    assert.equal(scanned.get("craft-mcp").url, "https://mcp.craft.do/links/demo/mcp");
+
+    const merged = claude.merge(fs.readFileSync(targetPath, "utf8"), [{
+      name: "database-hub",
+      transport: "stdio",
+      command: "node",
+      args: ["/absolute/mcps/database-hub/index.mjs"],
+      env: { local_sqlite: "sqlite:///tmp/app.db" },
+    }]);
+    const parsed = JSON.parse(merged);
+    assert.equal(parsed.inferenceProvider, "gateway");
+    assert.deepEqual(parsed.managedMcpServers, [
+      { name: "craft-mcp", transport: "http", url: "https://mcp.craft.do/links/demo/mcp" },
+      {
+        name: "database-hub",
+        transport: "stdio",
+        command: "node",
+        args: ["/absolute/mcps/database-hub/index.mjs"],
+        env: { local_sqlite: "sqlite:///tmp/app.db" },
+      },
+    ]);
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+});
+
 test("frontend state declares path and secret draft fields used by the panel", () => {
   const source = fs.readFileSync(
     new URL("../../desktop/src/modules/mcp-management.ts", import.meta.url),
@@ -436,11 +500,10 @@ test("distribution expands relative mcps args to absolute paths for client confi
 
     service.apply({ targets: { claude: true } });
     const parsed = JSON.parse(fs.readFileSync(clientPaths.claude, "utf8"));
-    const distributedArgs = parsed.mcpServers.in_repo_db.args;
+    const distributedArgs = parsed.managedMcpServers.find((server) => server.name === "in_repo_db").args;
     const expectedAbsolute = path.resolve(root, "mcps/database-hub/index.mjs").replace(/\\/g, "/");
     assert.deepEqual(distributedArgs, [expectedAbsolute]);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
-

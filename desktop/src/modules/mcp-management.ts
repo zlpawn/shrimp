@@ -619,7 +619,7 @@ function renderEditor(): string {
             <label class="mcp-toggle-card">
               <div class="mcp-toggle-label">
                 <span class="mcp-toggle-title">Claude Desktop</span>
-                <span class="mcp-toggle-desc">写入 claude_desktop_config.json</span>
+                <span class="mcp-toggle-desc">写入 Claude-3p managedMcpServers</span>
               </div>
               <input type="checkbox" id="mcp-edit-claude" class="mcp-toggle-input" ${d.claude ? "checked" : ""} onchange="window.__mcpToggleDraft('claude', this.checked)" />
               <span class="mcp-toggle-track"><span class="mcp-toggle-thumb"></span></span>
