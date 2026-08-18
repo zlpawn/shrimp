@@ -21,14 +21,17 @@ Both projections must carry the same canonical revision hash.
 
 1. Begin with actors, goals, decisions, outcomes, and business lifecycle. Do not begin with classes.
 2. Current source, SQL, schema, and active configuration outrank documents and Git history.
-3. A route list or controller-service-repository trace is not business knowledge by itself.
-4. Follow behavior forward to mutations, external effects, outcomes, failures, and recovery.
-5. Trace backward from important writes, states, external calls, events, and terminal outcomes.
-6. Search alternate entries and build use-case families. One controller is rarely the whole behavior.
-7. Every confirmed claim must resolve to evidence from the frozen current repository snapshot.
-8. Missing business dimensions become searched unknowns. Never silently omit or guess them.
-9. Keep document claims, historical explanations, inferences, conflicts, and current behavior distinct.
-10. Do not generate AI or HTML projections before canonical artifacts pass validation.
+3. Always run `scripts/discover_entrypoints.py` to capture the entire repository entrypoint denominator. Never manually cherry-pick or omit entries.
+4. Acceptance benchmark fixtures are regression calibration tests, never the boundary of repository discovery.
+5. For large multi-module repositories, process knowledge extraction in Capability Waves (Domain-by-Domain) to avoid context exhaustion.
+6. A route list or controller-service-repository trace is not business knowledge by itself.
+7. Follow behavior forward to mutations, external effects, outcomes, failures, and recovery.
+8. Trace backward from important writes, states, external calls, events, and terminal outcomes.
+9. Search alternate entries and build use-case families. One controller is rarely the whole behavior.
+10. Every confirmed claim must resolve to evidence from the frozen current repository snapshot.
+11. Missing business dimensions become searched unknowns. Never silently omit or guess them.
+12. Keep document claims, historical explanations, inferences, conflicts, and current behavior distinct.
+13. Do not generate AI or HTML projections before canonical artifacts pass validation.
 
 ## Modes
 
@@ -63,6 +66,8 @@ Always read:
 Read [business-discovery.md](references/business-discovery.md) before semantic reconstruction.
 
 ### 3. Run Independent Discovery Passes
+
+Run `scripts/discover_entrypoints.py --repo <repo-root> --output <run-dir>/inventory.jsonl` to establish the complete repository inventory denominator.
 
 Record exact queries, scope, inspected files/symbols, candidates, rejected results, truncation, and
 follow-up decisions for:

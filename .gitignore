@@ -45,6 +45,8 @@ dist/
 Thumbs.db
 .idea/
 .vscode/
+__pycache__/
+*.py[cod]
 
 # Local inspection scratch space
 _inspect_repo/
