@@ -277,6 +277,52 @@ test("service status reports platform support accurately", async () => {
   assert.equal(status.app.supported, true);
 });
 
+test("service listApps on darwin returns supported=false for antigravity without throwing", async () => {
+  const service = createCommandAppsService({
+    configStore: { get: () => ({}), save() {} },
+    platform: "darwin",
+    listProcesses: async () => [],
+  });
+  const list = await service.listApps();
+  const antigravity = list.find((item) => item.app.id === "antigravity");
+  assert.ok(antigravity);
+  assert.equal(antigravity.app.supported, false);
+  assert.equal(antigravity.configured, false);
+  assert.equal(antigravity.process.status, "stopped");
+
+  const shrimp = list.find((item) => item.app.id === "shrimp");
+  assert.ok(shrimp);
+  assert.equal(shrimp.app.supported, true);
+});
+
+test("service listApps isolates individual app errors without breaking other apps", async () => {
+  const service = createCommandAppsService({
+    configStore: {
+      get: () => ({ apps: {} }),
+      save() {},
+    },
+    platform: "win32",
+    discovery: async (app) => {
+      if (app.id === "antigravity") throw new Error("Disk read failed");
+      return { selected: { path: "C:\\Projects\\Shrimp" } };
+    },
+    fileExists: () => true,
+  });
+
+  const list = await service.listApps();
+  assert.equal(list.length, 2);
+
+  const antigravity = list.find((item) => item.app.id === "antigravity");
+  assert.ok(antigravity);
+  assert.equal(antigravity.process.status, "error");
+  assert.equal(antigravity.error, "Disk read failed");
+
+  const shrimp = list.find((item) => item.app.id === "shrimp");
+  assert.ok(shrimp);
+  assert.equal(shrimp.app.id, "shrimp");
+  assert.equal(shrimp.configured, true);
+});
+
 test("status auto-discovers and persists an unconfigured executable", async () => {
   const executable = "C:\\Apps\\Antigravity\\Antigravity.exe";
   const saved = [];

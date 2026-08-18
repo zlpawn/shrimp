@@ -5894,6 +5894,8 @@ input:focus, select:focus {
 .command-apps-status.is-running { color: #16a34a; border-color: rgba(34, 197, 94, 0.38); background: rgba(34, 197, 94, 0.1); }
 .command-apps-status.is-stopped { color: var(--text-secondary); }
 .command-apps-status.is-neutral { color: #d97706; border-color: rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.1); }
+.command-apps-status.is-error { color: #ef4444; border-color: rgba(239, 68, 68, 0.35); background: rgba(239, 68, 68, 0.1); }
+.command-apps-card.is-card-error { border-color: rgba(239, 68, 68, 0.3); }
 .command-apps-meta { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(180px, 0.8fr); gap: 14px; margin: 0; }
 .command-apps-meta > div { min-width: 0; padding: 12px; border: 1px solid var(--border-color); border-radius: 10px; background: var(--input-bg, rgba(127, 127, 127, 0.04)); }
 .command-apps-meta dt { margin-bottom: 6px; color: var(--text-secondary); font-size: 11px; letter-spacing: 0.02em; }
