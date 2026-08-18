@@ -66,6 +66,32 @@
     "desktop": {
       "endpoints": [
         {
+          "id": "ep_11d5e024-d847-4a20-bbbf-f929557bd41c",
+          "name": "智谱",
+          "type": "anthropic",
+          "base_url": "https://open.bigmodel.cn/api/anthropic",
+          "auth": "bearer",
+          "models": [],
+          "model_mapping": {
+            "claude-opus-4-7": "GLM-5.3",
+            "claude-opus-4-6": "GLM-5.2"
+          },
+          "capabilities": {
+            "input_modalities": [
+              "text",
+              "image"
+            ],
+            "reasoning": true,
+            "tools": true,
+            "sanitize_dangling_tool_calls": true
+          },
+          "is_default": false,
+          "model_labels": {
+            "claude-opus-4-7": "glm-5.3-zp",
+            "claude-opus-4-6": "glm-5.2-zp"
+          }
+        },
+        {
           "id": "ep_7c7373fc-bba6-4732-bf0d-ffeea1b4a486",
           "name": "huoshan-agentplan",
           "type": "anthropic",
