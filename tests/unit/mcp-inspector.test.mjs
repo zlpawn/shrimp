@@ -1,12 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { EventEmitter } from "node:events";
 import { createInspectorManager } from "../../lib/mcp-management/infra/inspector-manager.mjs";
-import { createInspectorProxy } from "../../lib/mcp-management/infra/inspector-proxy.mjs";
 import { createMcpStore } from "../../lib/mcp-management/store.mjs";
 import { createMcpManagementService } from "../../lib/mcp-management/application/service.mjs";
 import { routeMcpManagementRequest } from "../../lib/mcp-management/http/routes.mjs";
@@ -30,7 +28,7 @@ test("InspectorManager - lifecycle start, status, list, and stop", async () => {
     spawnedEnv = opts.env;
     // Simulate inspector ready output
     setTimeout(() => {
-      fakeChild.stdout.emit("data", Buffer.from("MCP Inspector is running on http://localhost:5999\n"));
+      fakeChild.stdout.emit("data", Buffer.from("MCP Inspector Web is up and running at:\n   http://localhost:5999\n"));
     }, 10);
     return fakeChild;
   };
@@ -58,7 +56,7 @@ test("InspectorManager - lifecycle start, status, list, and stop", async () => {
   assert.equal(startRes.serverName, "test-db");
   assert.equal(startRes.running, true);
   assert.equal(startRes.port, 5999);
-  assert.equal(startRes.url, "/v1/mcp-management/inspector-proxy/test-db/");
+  assert.equal(startRes.url, "http://127.0.0.1:5999/");
 
   assert.ok(spawnedArgs.includes("@modelcontextprotocol/inspector"));
   assert.ok(spawnedArgs.includes("node"));
@@ -86,96 +84,6 @@ test("InspectorManager - lifecycle start, status, list, and stop", async () => {
   assert.equal(stAfter.running, false);
 });
 
-test("InspectorProxy - returns 404 page when instance is not running", async () => {
-  const manager = createInspectorManager();
-  const proxy = createInspectorProxy({ inspectorManager: manager });
-
-  let statusCode = 0;
-  let headers = {};
-  let body = "";
-
-  const req = { method: "GET", url: "/v1/mcp-management/inspector-proxy/not-running/" };
-  const res = {
-    writeHead(code, h) {
-      statusCode = code;
-      headers = h;
-    },
-    end(data) {
-      body += data || "";
-    },
-  };
-
-  await proxy.handle(req, res, "not-running", "/");
-  assert.equal(statusCode, 404);
-  assert.ok(body.includes("MCP Inspector 未启动"));
-  assert.ok(body.includes("not-running"));
-});
-
-test("InspectorProxy - proxies HTML and injects base href and path rewrites", async () => {
-  // Create a mock upstream HTTP server
-  const upstreamServer = http.createServer((req, res) => {
-    if (req.url === "/" || req.url === "/index.html") {
-      res.writeHead(200, { "Content-Type": "text/html" });
-      res.end(`<!DOCTYPE html><html><head><title>Inspector</title></head><body><script src="/assets/main.js"></script><a href="/sse">SSE</a></body></html>`);
-    } else if (req.url === "/assets/main.js") {
-      res.writeHead(200, { "Content-Type": "application/javascript" });
-      res.end('console.log("inspector js");');
-    } else {
-      res.writeHead(404);
-      res.end();
-    }
-  });
-
-  await new Promise((resolve) => upstreamServer.listen(0, "127.0.0.1", resolve));
-  const upstreamPort = upstreamServer.address().port;
-
-  try {
-    const fakeManager = {
-      getInstance(name) {
-        if (name === "my-mcp") return { port: upstreamPort, serverName: "my-mcp" };
-        return null;
-      },
-    };
-
-    const proxy = createInspectorProxy({ inspectorManager: fakeManager });
-
-    // Test HTML request
-    let statusCode = 0;
-    let headers = {};
-    let body = "";
-
-    const req = { method: "GET", url: "/v1/mcp-management/inspector-proxy/my-mcp/", headers: {} };
-    const res = {
-      writeHead(code, h) {
-        statusCode = code;
-        headers = h;
-      },
-      end(data) {
-        body += data || "";
-      },
-    };
-
-    await proxy.handle(req, res, "my-mcp", "/");
-    assert.equal(statusCode, 200);
-    assert.ok(body.includes('<base href="/v1/mcp-management/inspector-proxy/my-mcp/">'));
-    assert.ok(body.includes('src="/v1/mcp-management/inspector-proxy/my-mcp/assets/main.js"'));
-
-    // Test asset request
-    let assetCode = 0;
-    let assetBody = "";
-    const assetReq = { method: "GET", url: "/v1/mcp-management/inspector-proxy/my-mcp/assets/main.js", headers: {} };
-    const assetRes = new EventEmitter();
-    assetRes.writeHead = (code) => { assetCode = code; };
-    assetRes.write = (chunk) => { assetBody += chunk; return true; };
-    assetRes.end = (chunk) => { if (chunk) assetBody += chunk; };
-
-    await proxy.handle(assetReq, assetRes, "my-mcp", "/assets/main.js");
-    assert.equal(assetCode, 200);
-    assert.ok(assetBody.includes('console.log("inspector js");'));
-  } finally {
-    await new Promise((resolve) => upstreamServer.close(resolve));
-  }
-});
 
 test("Inspector Routes - start, status, stop, and state dispatch", async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "shrimp-mcp-routes-test-"));
@@ -206,7 +114,7 @@ test("Inspector Routes - start, status, stop, and state dispatch", async () => {
     fakeChild.kill = (sig) => { fakeChild.emit("exit", 0, sig); };
 
     const mockSpawn = () => {
-      setTimeout(() => fakeChild.stdout.emit("data", Buffer.from("running on http://127.0.0.1:6111\n")), 10);
+      setTimeout(() => fakeChild.stdout.emit("data", Buffer.from("MCP Inspector Web is up and running at:\n   http://127.0.0.1:6111\n")), 10);
       return fakeChild;
     };
 
@@ -288,4 +196,110 @@ test("Inspector Routes - start, status, stop, and state dispatch", async () => {
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
+});
+
+test("InspectorManager - timeout terminates and forgets the child", async () => {
+  const killSignals = [];
+  const fakeChild = new EventEmitter();
+  fakeChild.pid = 4321;
+  fakeChild.stdout = new EventEmitter();
+  fakeChild.stderr = new EventEmitter();
+  fakeChild.kill = (signal) => killSignals.push(signal);
+
+  const manager = createInspectorManager({
+    spawnImpl: () => {
+      setTimeout(() => {
+        fakeChild.stdout.emit("data", Buffer.from("stdout message\n"));
+        fakeChild.stderr.emit("data", Buffer.from("stderr message\n"));
+      }, 0);
+      return fakeChild;
+    },
+    findPortImpl: async () => 6222,
+    startupTimeoutMs: 20,
+    pollIntervalMs: 10,
+  });
+
+  await assert.rejects(
+    () => manager.start("slow-mcp", { command: "node", args: ["./slow.mjs"] }),
+    (error) => {
+      assert.match(error.message, /Inspector 启动超时/);
+      assert.match(error.message, /stdout message/);
+      assert.match(error.message, /stderr message/);
+      return true;
+    },
+  );
+
+  assert.deepEqual(killSignals, ["SIGTERM"]);
+  assert.equal(manager.status("slow-mcp").running, false);
+  assert.deepEqual(manager.listRunning(), []);
+});
+
+test("InspectorManager - uses Inspector's HTTP transport for MCP URLs ending in /mcp", async () => {
+  let actualArgs = [];
+  const fakeChild = new EventEmitter();
+  fakeChild.pid = 4322;
+  fakeChild.stdout = new EventEmitter();
+  fakeChild.stderr = new EventEmitter();
+  fakeChild.kill = () => {};
+
+  const manager = createInspectorManager({
+    spawnImpl: (cmd, args) => {
+      actualArgs = args;
+      fakeChild.stdout.emit("data", Buffer.from("MCP Inspector Web is up and running at:\n"));
+      setTimeout(() => fakeChild.emit("exit", 0), 0);
+      return fakeChild;
+    },
+    findPortImpl: async () => 6333,
+  });
+
+  await assert.rejects(
+    () => manager.start("remote-mcp", { transport: "remote", url: "https://mcp.example.test/link/mcp" }),
+    /Inspector 启动异常已退出/,
+  );
+  assert.ok(actualArgs.includes("http"));
+  assert.ok(actualArgs.includes("https://mcp.example.test/link/mcp"));
+});
+
+test("Inspector start receives the selected server's interpolated URL", async () => {
+  let startedServer = null;
+  const fakeManager = {
+    start: async (name, server) => {
+      startedServer = server;
+      return { serverName: name, running: true, port: 6444, url: "http://127.0.0.1:6444/" };
+    },
+    stop: async () => {},
+    status: () => ({ running: false }),
+    listRunning: () => [],
+    getInstance: () => null,
+  };
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "shrimp-inspector-url-test-"));
+  const store = createMcpStore({
+    configPath: path.join(root, "mcp.config.json"),
+    secretsPath: path.join(root, "mcp.secrets.json"),
+  });
+  const configText = JSON.stringify({
+    version: 1,
+    servers: {
+      "secret-remote": {
+        name: "secret-remote",
+        enabled: true,
+        transport: "remote",
+        url: "https://mcp.example.test/link/" + "${token}/mcp",
+      },
+    },
+    clientPaths: {},
+  });
+  fs.writeFileSync(store.configPath, configText);
+  fs.writeFileSync(store.secretsPath, JSON.stringify({
+    variables: { token: "secret-token" },
+    servers: {},
+  }));
+  const service = createMcpManagementService({
+    store,
+    home: "/tmp",
+    inspectorManager: fakeManager,
+  });
+
+  await service.startInspector("secret-remote");
+  assert.equal(startedServer.url, "https://mcp.example.test/link/secret-token/mcp");
 });

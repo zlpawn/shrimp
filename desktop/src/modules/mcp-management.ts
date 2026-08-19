@@ -251,6 +251,13 @@ function isInspectorRunning(serverName: string): boolean {
   return Boolean(state.data?.runningInspectors?.some((i) => i.serverName === serverName));
 }
 
+function runningInspectorUrl(serverName: string): string {
+  const inspector = state.data?.runningInspectors?.find((i) => i.serverName === serverName);
+  if (inspector?.url && /^https?:\/\/127\.0\.0\.1:\d+\/$/.test(inspector.url)) return inspector.url;
+  if (inspector?.port) return `http://127.0.0.1:${inspector.port}/`;
+  return "";
+}
+
 function clientLabel(id: string): string {
   if (id === "codex") return "OpenAI Codex";
   if (id === "claude") return "Claude Desktop";
@@ -1720,7 +1727,10 @@ async function startInspector(serverName: string): Promise<void> {
       `/v1/mcp-management/inspector/${encodeURIComponent(name)}/start`,
       { method: "POST" },
     );
-    const targetUrl = res.url || `/v1/mcp-management/inspector-proxy/${encodeURIComponent(name)}/`;
+    const targetUrl = res.url || "";
+    if (!/^https?:\/\/127\.0\.0\.1:\d+\/$/.test(targetUrl)) {
+      throw new Error("Inspector 返回了无效的本地地址");
+    }
     showToast(`MCP Inspector 调试控制台已就绪，正在打开...`, "success");
     window.open(targetUrl, "_blank");
     await load();
@@ -1747,7 +1757,12 @@ async function stopInspector(serverName: string): Promise<void> {
 function openInspector(serverName: string): void {
   const name = String(serverName || "").trim();
   if (!name) return;
-  window.open(`/v1/mcp-management/inspector-proxy/${encodeURIComponent(name)}/`, "_blank");
+  const targetUrl = runningInspectorUrl(name);
+  if (!targetUrl) {
+    showToast(`「${name}」的 Inspector 已停止，请重新启动调试`, "error");
+    return;
+  }
+  window.open(targetUrl, "_blank");
 }
 
 (window as unknown as Record<string, unknown>).__mcpRescan = () => { void rescan(); };

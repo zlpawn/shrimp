@@ -5,7 +5,7 @@
       "name": "craft-mcp",
       "title": "craft-mcp",
       "description": "从 OpenAI Codex 导入",
-      "enabled": false,
+      "enabled": true,
       "transport": "remote",
       "command": "",
       "args": [],
