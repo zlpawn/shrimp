@@ -41,6 +41,13 @@ type InRepoMcp = {
   sampleEnv?: KeyValPair[];
 };
 
+type RunningInspector = {
+  serverName: string;
+  port: number;
+  url: string;
+  startedAt: number;
+};
+
 type McpState = {
   config: {
     servers?: Record<string, McpServer>;
@@ -50,6 +57,7 @@ type McpState = {
   clients?: ClientScan[];
   presentIn?: Record<string, Record<string, boolean>>;
   inRepoMcps?: InRepoMcp[];
+  runningInspectors?: RunningInspector[];
   clientsMeta?: ClientMeta[];
 };
 
@@ -239,6 +247,10 @@ function selected(): McpServer | null {
   return state.data?.config?.servers?.[state.selected] || null;
 }
 
+function isInspectorRunning(serverName: string): boolean {
+  return Boolean(state.data?.runningInspectors?.some((i) => i.serverName === serverName));
+}
+
 function clientLabel(id: string): string {
   if (id === "codex") return "OpenAI Codex";
   if (id === "claude") return "Claude Desktop";
@@ -297,14 +309,21 @@ function renderClientList(): string {
 
     const serverItems = client.servers.map((s) => {
       const isManaged = Boolean(managedServers[s.name]);
+      const isDebugging = isInspectorRunning(s.name);
       return `
         <div class="mcp-detected-item">
           <div class="mcp-detected-name-row">
             <code class="mcp-detected-name">${escapeHtml(s.name)}</code>
-            ${isManaged
-              ? `<span class="mcp-tag-managed" title="该 MCP 已在网关集中托管">✅ 已托管</span>`
-              : `<button type="button" class="btn btn-xs btn-import" onclick="window.__mcpImportServer('${escapeHtml(client.client)}', '${escapeHtml(s.name)}')" title="将「${escapeHtml(s.name)}」导入为网关托管 MCP，方便统一管理和跨客户端分发">📥 导入托管</button>`
-            }
+            <div style="display: flex; gap: 4px; align-items: center;">
+              ${isDebugging
+                ? `<button type="button" class="btn btn-xs" style="border: 1px solid #22c55e; color: #22c55e;" onclick="window.__mcpOpenInspector('${escapeHtml(s.name)}')" title="打开 Inspector 调试控制台">🌐 调试中</button>`
+                : `<button type="button" class="btn btn-xs" onclick="window.__mcpStartInspector('${escapeHtml(s.name)}')" title="在 Inspector 中调试「${escapeHtml(s.name)}」">🔍 调试</button>`
+              }
+              ${isManaged
+                ? `<span class="mcp-tag-managed" title="该 MCP 已在网关集中托管">✅ 已托管</span>`
+                : `<button type="button" class="btn btn-xs btn-import" onclick="window.__mcpImportServer('${escapeHtml(client.client)}', '${escapeHtml(s.name)}')" title="将「${escapeHtml(s.name)}」导入为网关托管 MCP，方便统一管理和跨客户端分发">📥 导入托管</button>`
+              }
+            </div>
           </div>
         </div>
       `;
@@ -381,6 +400,8 @@ function renderServerCards(): string {
 
       if (configured) {
         const disabled = configured.enabled === false ? " disabled" : "";
+        const isDebugging = isInspectorRunning(item.name);
+        const debugTag = isDebugging ? `<span class="mcp-badge" style="background: rgba(34, 197, 94, 0.2); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.4); cursor: pointer;" onclick="event.stopPropagation(); window.__mcpOpenInspector('${escapeHtml(item.name)}')" title="点击打开 Inspector 调试控制台">⚡ 调试中</span>` : "";
         const dist = configured.distribution || {};
         const clients = [
           dist.codex ? "Codex" : "",
@@ -393,7 +414,10 @@ function renderServerCards(): string {
           <article class="mcp-card${active}${disabled}" onclick="window.__mcpSelect('${escapeHtml(item.name)}')">
             <div class="mcp-card-head">
               <div class="mcp-card-title">${langIcon} ${escapeHtml(configured.title || item.name)}</div>
-              <span class="mcp-badge mcp-badge-inrepo">${langText}</span>
+              <div style="display: flex; gap: 4px; align-items: center;">
+                ${debugTag}
+                <span class="mcp-badge mcp-badge-inrepo">${langText}</span>
+              </div>
             </div>
             <div class="mcp-card-desc">${escapeHtml(configured.description || item.description)}</div>
             <div class="mcp-card-meta">
@@ -404,11 +428,17 @@ function renderServerCards(): string {
         `;
       }
 
+      const isDebugging = isInspectorRunning(item.name);
+      const debugTag = isDebugging ? `<span class="mcp-badge" style="background: rgba(34, 197, 94, 0.2); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.4); cursor: pointer;" onclick="event.stopPropagation(); window.__mcpOpenInspector('${escapeHtml(item.name)}')" title="点击打开 Inspector 调试控制台">⚡ 调试中</span>` : "";
+
       return `
         <article class="mcp-card mcp-card-unconfigured${active}" onclick="window.__mcpApplyInRepo('${escapeHtml(item.name)}')" title="点击一键配置分发客户端">
           <div class="mcp-card-head">
             <div class="mcp-card-title">${langIcon} ${escapeHtml(item.name)}</div>
-            <span class="mcp-badge mcp-badge-inrepo">${langText}</span>
+            <div style="display: flex; gap: 4px; align-items: center;">
+              ${debugTag}
+              <span class="mcp-badge mcp-badge-inrepo">${langText}</span>
+            </div>
           </div>
           <div class="mcp-card-desc">源码路径：<code>${escapeHtml(item.path)}</code></div>
           <div class="mcp-card-meta">
@@ -432,6 +462,8 @@ function renderServerCards(): string {
       const active = ((server.name === state.selected && !state.editing) || (state.editing && state.draft.name === server.name)) ? " active" : "";
       const transport = server.transport === "stdio" ? "STDIO" : "HTTP";
       const disabled = server.enabled === false ? " disabled" : "";
+      const isDebugging = isInspectorRunning(server.name);
+      const debugTag = isDebugging ? `<span class="mcp-badge" style="background: rgba(34, 197, 94, 0.2); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.4); cursor: pointer;" onclick="event.stopPropagation(); window.__mcpOpenInspector('${escapeHtml(server.name)}')" title="点击打开 Inspector 调试控制台">⚡ 调试中</span>` : "";
       const dist = server.distribution || {};
       const clients = [
         dist.codex ? "Codex" : "",
@@ -444,7 +476,10 @@ function renderServerCards(): string {
         <article class="mcp-card${active}${disabled}" onclick="window.__mcpSelect('${escapeHtml(server.name)}')">
           <div class="mcp-card-head">
             <div class="mcp-card-title">${escapeHtml(server.title || server.name)}</div>
-            <span class="mcp-badge mcp-badge-${server.transport || "stdio"}">${transport}</span>
+            <div style="display: flex; gap: 4px; align-items: center;">
+              ${debugTag}
+              <span class="mcp-badge mcp-badge-${server.transport || "stdio"}">${transport}</span>
+            </div>
           </div>
           ${server.description ? `<div class="mcp-card-desc">${escapeHtml(server.description)}</div>` : ""}
           <div class="mcp-card-meta">
@@ -671,6 +706,11 @@ function renderDetail(): string {
               <code class="mcp-name-badge">${escapeHtml(inRepo.name)}</code>
             </div>
             <div class="mcp-actions">
+              ${isInspectorRunning(inRepo.name)
+                ? `<button class="btn btn-sm" style="border: 1px solid #22c55e; color: #22c55e;" onclick="window.__mcpOpenInspector('${escapeHtml(inRepo.name)}')">🌐 打开 Inspector</button>
+                   <button class="btn btn-sm btn-danger" onclick="window.__mcpStopInspector('${escapeHtml(inRepo.name)}')">🛑 停止调试</button>`
+                : `<button class="btn btn-sm" onclick="window.__mcpStartInspector('${escapeHtml(inRepo.name)}')">🔍 启动 Inspector 调试</button>`
+              }
               <button class="btn btn-sm btn-primary" onclick="window.__mcpApplyInRepo('${escapeHtml(inRepo.name)}')">
                 ✨ 立即配置并分发
               </button>
@@ -760,6 +800,11 @@ function renderDetail(): string {
           <code class="mcp-name-badge">${escapeHtml(server.name)}</code>
         </div>
         <div class="mcp-actions">
+          ${isInspectorRunning(server.name)
+            ? `<button class="btn btn-sm" style="border: 1px solid #22c55e; color: #22c55e;" onclick="window.__mcpOpenInspector('${escapeHtml(server.name)}')">🌐 打开 Inspector</button>
+               <button class="btn btn-sm btn-danger" onclick="window.__mcpStopInspector('${escapeHtml(server.name)}')">🛑 停止调试</button>`
+            : `<button class="btn btn-sm" onclick="window.__mcpStartInspector('${escapeHtml(server.name)}')">🔍 启动 Inspector 调试</button>`
+          }
           <button class="btn btn-sm" onclick="window.__mcpPreviewServer('${escapeHtml(server.name)}')" title="预览当前这一个 MCP 生成的各客户端配置片段">
             📄 预览片段
           </button>
@@ -1666,6 +1711,45 @@ async function confirmApply(): Promise<void> {
   }
 }
 
+async function startInspector(serverName: string): Promise<void> {
+  const name = String(serverName || "").trim();
+  if (!name) return;
+  showToast(`正在启动「${name}」MCP Inspector 调试进程...`, "info");
+  try {
+    const res = await api<{ ok?: boolean; url?: string; port?: number; running?: boolean }>(
+      `/v1/mcp-management/inspector/${encodeURIComponent(name)}/start`,
+      { method: "POST" },
+    );
+    const targetUrl = res.url || `/v1/mcp-management/inspector-proxy/${encodeURIComponent(name)}/`;
+    showToast(`MCP Inspector 调试控制台已就绪，正在打开...`, "success");
+    window.open(targetUrl, "_blank");
+    await load();
+  } catch (err) {
+    showToast(`启动 Inspector 失败: ${(err as Error)?.message || String(err)}`, "error");
+  }
+}
+
+async function stopInspector(serverName: string): Promise<void> {
+  const name = String(serverName || "").trim();
+  if (!name) return;
+  try {
+    await api<{ ok?: boolean; running?: boolean }>(
+      `/v1/mcp-management/inspector/${encodeURIComponent(name)}/stop`,
+      { method: "POST" },
+    );
+    showToast(`已停止「${name}」MCP Inspector 调试进程`, "success");
+    await load();
+  } catch (err) {
+    showToast(`停止 Inspector 失败: ${(err as Error)?.message || String(err)}`, "error");
+  }
+}
+
+function openInspector(serverName: string): void {
+  const name = String(serverName || "").trim();
+  if (!name) return;
+  window.open(`/v1/mcp-management/inspector-proxy/${encodeURIComponent(name)}/`, "_blank");
+}
+
 (window as unknown as Record<string, unknown>).__mcpRescan = () => { void rescan(); };
 (window as unknown as Record<string, unknown>).__mcpNew = newServer;
 (window as unknown as Record<string, unknown>).__mcpImportServer = importServer;
@@ -1699,6 +1783,9 @@ async function confirmApply(): Promise<void> {
 (window as unknown as Record<string, unknown>).__mcpEditPath = editPath;
 (window as unknown as Record<string, unknown>).__mcpCancelPath = cancelPath;
 (window as unknown as Record<string, unknown>).__mcpSavePath = (client: string) => { void savePath(client); };
+(window as unknown as Record<string, unknown>).__mcpStartInspector = (name: string) => { void startInspector(name); };
+(window as unknown as Record<string, unknown>).__mcpStopInspector = (name: string) => { void stopInspector(name); };
+(window as unknown as Record<string, unknown>).__mcpOpenInspector = (name: string) => { openInspector(name); };
 
 registerTab("mcp-management", {
   onEnter: () => { void load(); },

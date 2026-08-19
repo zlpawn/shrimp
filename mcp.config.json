@@ -16,6 +16,24 @@
         "claude_code": false,
         "antigravity": false
       }
+    },
+    "database-hub": {
+      "name": "database-hub",
+      "title": "database-hub (多数据库 MCP)",
+      "description": "支持 MySQL / Redis / SQLite 的多数据源连接、NL2SQL 查询与表结构管理 MCP",
+      "enabled": true,
+      "transport": "stdio",
+      "command": "node",
+      "args": [
+        "./mcps/database-hub/index.mjs"
+      ],
+      "url": "",
+      "distribution": {
+        "codex": false,
+        "claude": false,
+        "claude_code": false,
+        "antigravity": false
+      }
     }
   },
   "clientPaths": {
