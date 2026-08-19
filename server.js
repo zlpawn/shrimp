@@ -5658,6 +5658,12 @@ async function forwardResolvedCodexResponse({
     logInfo("grok_responses_response", { request_id: context.requestId, status: upstream.status, backend });
     if (body.stream) {
       if (backend === "responses") {
+        if ([...responseToolKinds.values()].some((k) => k === "custom")) {
+          if (await grokSendErrorIfNotOk(upstream, clientRes)) return;
+          const response = await collectResponsesStream(upstream.body, requestedModel);
+          streamFinalResponsesObject(clientRes, response, requestedModel, responseToolKinds);
+          return;
+        }
         // Grok forces stream:true even for non-stream clients; only the client
         // stream path needs terminal synthesis here.
         await pipeResponsesUpstream(upstream, clientRes, {
@@ -5682,8 +5688,7 @@ async function forwardResolvedCodexResponse({
             model: requestedModel,
             toolKinds: chatRequest.toolKinds,
           });
-      clientRes.writeHead(200, { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "*" });
-      clientRes.end(JSON.stringify(response));
+      sendResponsesObject(clientRes, response, requestedModel, { stream: false }, responseToolKinds);
     }
     return;
   }

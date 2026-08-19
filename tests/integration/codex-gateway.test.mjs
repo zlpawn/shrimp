@@ -1440,3 +1440,74 @@ test("Grok Responses premature SSE close synthesizes response.failed", async (t)
   assert.match(streamText, /"code":"upstream_stream_closed"/);
   assert.doesNotMatch(streamText, /event: response\.completed/);
 });
+
+test("Grok Responses maps function_call to custom_tool_call when custom tools are present", async (t) => {
+  let capturedRequest = null;
+  const upstream = http.createServer((request, response) => {
+    let raw = "";
+    request.setEncoding("utf8");
+    request.on("data", (chunk) => {
+      raw += chunk;
+    });
+    request.on("end", () => {
+      capturedRequest = {
+        headers: request.headers,
+        body: JSON.parse(raw),
+      };
+      response.writeHead(200, { "content-type": "text/event-stream" });
+      response.write(
+        'event: response.created\ndata: {"type":"response.created","response":{"id":"resp_grok_tool","status":"in_progress"}}\n\n',
+      );
+      response.write(
+        'event: response.output_item.added\ndata: {"type":"response.output_item.added","output_index":0,"item":{"id":"fc_1","type":"function_call","name":"exec","call_id":"call_123","arguments":""}}\n\n',
+      );
+      response.write(
+        'event: response.function_call_arguments.delta\ndata: {"type":"response.function_call_arguments.delta","output_index":0,"item_id":"fc_1","delta":"{\\"input\\":\\"cat SKILL.md\\"}"}\n\n',
+      );
+      response.write(
+        'event: response.function_call_arguments.done\ndata: {"type":"response.function_call_arguments.done","output_index":0,"item_id":"fc_1","arguments":"{\\"input\\":\\"cat SKILL.md\\"}"}\n\n',
+      );
+      response.write(
+        'event: response.output_item.done\ndata: {"type":"response.output_item.done","output_index":0,"item":{"id":"fc_1","type":"function_call","name":"exec","call_id":"call_123","arguments":"{\\"input\\":\\"cat SKILL.md\\"}"}}\n\n',
+      );
+      response.write(
+        'event: response.completed\ndata: {"type":"response.completed","response":{"id":"resp_grok_tool","status":"completed"}}\n\n',
+      );
+      response.end();
+    });
+  });
+  const upstreamPort = await listen(upstream);
+  t.after(() => closeServer(upstream));
+
+  const { gatewayPort } = await startMatrixGateway(t, {
+    providerType: "grok",
+    upstreamPort,
+    publicModel: "grok-4.6",
+    upstreamModel: "grok-4.6",
+    grokAuth: true,
+  });
+
+  const response = await codexRequest(gatewayPort, {
+    model: "grok-4.6",
+    input: "Run skill",
+    stream: true,
+    tools: [
+      {
+        type: "custom",
+        name: "exec",
+        description: "Run command",
+      },
+    ],
+  });
+  const streamText = await response.text();
+
+  assert.equal(response.status, 200, streamText);
+  assert.equal(capturedRequest?.body?.tools?.[0]?.type, "function");
+  assert.equal(capturedRequest?.body?.tools?.[0]?.name, "exec");
+  assert.match(streamText, /"type":"custom_tool_call"/);
+  assert.match(streamText, /"input":"cat SKILL\.md"/);
+  assert.match(streamText, /event: response\.custom_tool_call_input\.delta/);
+  assert.match(streamText, /event: response\.custom_tool_call_input\.done/);
+  assert.match(streamText, /event: response\.completed/);
+});
+
