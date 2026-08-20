@@ -704,3 +704,13 @@ test("panel mounts shared clip player", async () => {
   assert.match(ts, /clipPlayerOpen/);
   assert.match(css, /clip-player-bar/);
 });
+
+test("iching detail loads clip anchors for judgment and lines", async () => {
+  const src = await readFile(path.join(ROOT, "desktop", "src", "modules", "iching.ts"), "utf8");
+  assert.match(src, /iching-up/);
+  assert.match(src, /clip-anchors/);
+  assert.match(src, /object_type/);
+  assert.match(src, /hexagram/);
+  assert.match(src, /clipPlayerOpen/);
+  assert.match(src, /iching-explain-card/);
+});

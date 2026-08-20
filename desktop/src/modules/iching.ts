@@ -1206,6 +1206,7 @@ function renderDetail(h: IchingHexagram): string {
       <div class="iching-detail-section">
         <h3>\u5366\u8F9E</h3>
         <p class="iching-classic-text">${h.judgment}</p>
+        <div class="iching-explain" data-object-type="hexagram" data-object-id="${h.name}"></div>
       </div>
 
       <div class="iching-detail-section">
@@ -1222,6 +1223,7 @@ function renderDetail(h: IchingHexagram): string {
               <div class="iching-line-content">
                 <p class="iching-classic-text iching-line-text">${line.text}</p>
                 ${line.commentary ? `<p class="iching-classic-text iching-line-commentary">${line.commentary}</p>` : ""}
+                <div class="iching-explain" data-object-type="line" data-object-id="${h.name}/${line.position}"></div>
               </div>
             </div>
           `).join("")}
@@ -1369,6 +1371,75 @@ function playPageTransition(detail: HTMLElement, html: string, enterClass: strin
   }, 160);
 }
 
+function formatClipRange(start: number, end: number): string {
+  const fmt = (seconds: number) => {
+    const m = Math.floor(Math.max(0, seconds) / 60);
+    const s = Math.floor(Math.max(0, seconds) % 60);
+    return `${m}:${String(s).padStart(2, "0")}`;
+  };
+  return `${fmt(start)}–${fmt(end)}`;
+}
+
+async function fetchClipAnchors(objectType: string, objectId: string): Promise<any[]> {
+  const params = new URLSearchParams({
+    collection: "iching-up",
+    object_type: objectType,
+    object_id: objectId,
+    for_display: "1",
+  });
+  try {
+    const res = await fetch(`/v1/clip-anchors?${params.toString()}`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data?.anchors) ? data.anchors : [];
+  } catch {
+    return [];
+  }
+}
+
+function renderExplainCards(target: Element, anchors: any[], title: string): void {
+  if (!anchors.length) {
+    target.innerHTML = "";
+    return;
+  }
+  target.innerHTML = anchors.map((anchor, index) => `
+    <div class="iching-explain-card">
+      <div class="iching-explain-range">${formatClipRange(Number(anchor.start_seconds), Number(anchor.end_seconds))}</div>
+      <div class="iching-explain-quote">${anchor.quote || "讲解片段"}</div>
+      <button type="button" class="btn iching-explain-play" data-idx="${index}">播放这一段</button>
+    </div>
+  `).join("");
+  target.querySelectorAll(".iching-explain-play").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const idx = Number((btn as HTMLElement).dataset.idx || 0);
+      const anchor = anchors[idx];
+      if (!anchor) return;
+      const open = (window as any).clipPlayerOpen;
+      if (typeof open !== "function") return;
+      open({
+        video_id: anchor.video_id,
+        start_seconds: Number(anchor.start_seconds),
+        end_seconds: Number(anchor.end_seconds),
+        title,
+        quote: anchor.quote || "",
+        source_url: anchor.source_url || "",
+      });
+    });
+  });
+}
+
+async function loadHexagramExplanations(hexagram: IchingHexagram): Promise<void> {
+  const slots = Array.from(document.querySelectorAll(".iching-explain"));
+  for (const slot of slots) {
+    const objectType = slot.getAttribute("data-object-type") || "";
+    const objectId = slot.getAttribute("data-object-id") || "";
+    if (!objectType || !objectId) continue;
+    const anchors = await fetchClipAnchors(objectType, objectId);
+    const title = objectType === "line" ? objectId.replace("/", " ") : `${hexagram.name} 卦辞`;
+    renderExplainCards(slot, anchors, title);
+  }
+}
+
 function openHexagramDetail(hexagram: IchingHexagram): void {
   const detail = document.getElementById("tools-detail");
   if (!detail) return;
@@ -1377,6 +1448,7 @@ function openHexagramDetail(hexagram: IchingHexagram): void {
     document.querySelector(".content-area")?.scrollTo({ top: 0, behavior: prefersReducedMotion() ? "auto" : "smooth" });
     pulseClass(document.querySelector(".iching-detail-symbol"), "is-flip-in", 700);
     pulseClass(document.querySelector(".iching-detail-layout"), "is-detail-reveal", 700);
+    void loadHexagramExplanations(hexagram);
   });
 }
 
