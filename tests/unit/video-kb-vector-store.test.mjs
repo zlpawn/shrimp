@@ -208,3 +208,52 @@ test("vector-store: search can filter by collection", async () => {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("vector-store: old tables without collection still search and accept new writes", async () => {
+  const dir = tmpDir();
+  try {
+    const mockEmbed = async () => [1, 0, 0];
+    const lancedb = (await import("@lancedb/lancedb")).default || await import("@lancedb/lancedb");
+    const db = await lancedb.connect(dir);
+    await db.createTable("video_kb", [{
+      chunk_id: "old-1",
+      video_id: "old-v",
+      video_url: "https://example.com/old",
+      video_title: "Old Video",
+      chunk_index: 0,
+      start_seconds: 0,
+      end_seconds: 10,
+      text: "qian hexagram from old schema",
+      segment_ids: ["s1"],
+      language: "zh",
+      created_at: Date.now(),
+      vector: [1, 0, 0],
+    }]);
+
+    const store = createVectorStore({ dbPath: dir, embeddingFn: mockEmbed });
+    const all = await store.search("qian", { topK: 5 });
+    assert.equal(all.length, 1);
+    assert.equal(all[0].video_id, "old-v");
+    assert.equal(all[0].collection, "default");
+
+    const filtered = await store.search("qian", { topK: 5, collection: "default" });
+    assert.equal(filtered.length, 1);
+
+    const written = await store.upsertChunks([{
+      chunk_id: "new-1",
+      video_id: "new-v",
+      collection: "iching-up",
+      text: "qian hexagram new write",
+      start_seconds: 0,
+      end_seconds: 8,
+      vector: [1, 0, 0],
+    }], { dim: 3 });
+    assert.equal(written.ok, true);
+
+    const iching = await store.search("qian", { topK: 5, collection: "iching-up" });
+    assert.equal(iching.length, 1);
+    assert.equal(iching[0].video_id, "new-v");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
