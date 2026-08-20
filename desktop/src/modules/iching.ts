@@ -1240,6 +1240,7 @@ export function renderIchingDetail(): void {
   const detail = document.getElementById("tools-detail");
   if (!cards || !detail) return;
   cards.style.display = "none";
+  detail.classList.remove("iching-page-leave", "iching-page-enter", "iching-page-enter-detail", "iching-page-enter-ring");
 
   stopInertia();
   upperState = blankState();
@@ -1406,11 +1407,25 @@ async function fetchClipAnchors(objectType: string, objectId: string): Promise<a
   }
 }
 
+function explainEmptyCopy(target: Element): string {
+  return target.getAttribute("data-object-type") === "line"
+    ? "暂无这一爻的讲解切片"
+    : "暂无已确认的讲解切片。有切片后会显示时间范围和播放按钮。";
+}
+
+function renderExplainState(target: Element, kind: "loading" | "empty" | "error", message: string): void {
+  const compact = kind !== "loading" && (target.getAttribute("data-object-type") || "") === "line";
+  target.setAttribute("data-state", kind);
+  const cls = compact ? "iching-explain-empty is-compact" : "iching-explain-empty";
+  target.innerHTML = `<div class="${cls}">${escapeHtml(message)}</div>`;
+}
+
 function renderExplainCards(target: Element, anchors: any[], title: string): void {
   if (!anchors.length) {
-    target.innerHTML = "";
+    renderExplainState(target, "empty", explainEmptyCopy(target));
     return;
   }
+  target.setAttribute("data-state", "ready");
   target.innerHTML = anchors.map((anchor, index) => `
     <div class="iching-explain-card">
       <div class="iching-explain-range">${formatClipRange(Number(anchor.start_seconds), Number(anchor.end_seconds))}</div>
@@ -1443,9 +1458,14 @@ async function loadHexagramExplanations(hexagram: IchingHexagram): Promise<void>
     const objectType = slot.getAttribute("data-object-type") || "";
     const objectId = slot.getAttribute("data-object-id") || "";
     if (!objectType || !objectId) continue;
-    const anchors = await fetchClipAnchors(objectType, objectId);
-    const title = objectType === "line" ? objectId.replace("/", " ") : `${hexagram.name} 卦辞`;
-    renderExplainCards(slot, anchors, title);
+    renderExplainState(slot, "loading", "正在查找讲解切片…");
+    try {
+      const anchors = await fetchClipAnchors(objectType, objectId);
+      const title = objectType === "line" ? objectId.replace("/", " ") : `${hexagram.name} 卦辞`;
+      renderExplainCards(slot, anchors, title);
+    } catch {
+      renderExplainState(slot, "error", "讲解切片暂时读不到");
+    }
   }
 }
 
@@ -1478,6 +1498,7 @@ function openHexagramDetail(hexagram: IchingHexagram): void {
     renderIchingDetail();
     const d = document.getElementById("tools-detail");
     if (!d) return;
+    d.classList.remove("iching-page-leave");
     d.classList.add("iching-page-enter", "iching-page-enter-ring");
     pulseClass(document.querySelector(".iching-ring-svg"), "is-settle-pulse", 650);
     pulseClass(document.querySelector(".iching-dock"), "is-settle-pulse", 650);
@@ -1486,3 +1507,4 @@ function openHexagramDetail(hexagram: IchingHexagram): void {
     }, 520);
   }, 160);
 };
+

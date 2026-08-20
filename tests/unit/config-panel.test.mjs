@@ -707,12 +707,16 @@ test("panel mounts shared clip player", async () => {
 
 test("iching detail loads clip anchors for judgment and lines", async () => {
   const src = await readFile(path.join(ROOT, "desktop", "src", "modules", "iching.ts"), "utf8");
+  const css = await readFile(path.join(ROOT, "desktop", "src", "styles", "panel.css"), "utf8");
   assert.match(src, /iching-up/);
   assert.match(src, /clip-anchors/);
   assert.match(src, /object_type/);
   assert.match(src, /hexagram/);
   assert.match(src, /clipPlayerOpen/);
   assert.match(src, /iching-explain-card/);
+  assert.match(src, /暂无已确认的讲解切片/);
+  assert.match(src, /暂无这一爻的讲解切片/);
+  assert.match(css, /iching-explain-empty/);
 });
 
 test("clip player and iching explanation cards escape untrusted text", async () => {

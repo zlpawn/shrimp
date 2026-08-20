@@ -6123,3 +6123,20 @@ input:focus, select:focus {
   color: var(--text-secondary);
   font-family: var(--iching-serif);
 }
+.iching-explain-empty {
+  padding: 8px 10px;
+  border: 1px dashed var(--iching-ring-border);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.iching-explain-empty.is-compact {
+  padding: 4px 0;
+  border: none;
+  font-size: 12px;
+  opacity: 0.78;
+}
+.iching-explain[data-state="loading"] .iching-explain-empty {
+  border-style: dotted;
+}
