@@ -4541,11 +4541,60 @@ input:focus, select:focus {
   filter: drop-shadow(0 0 8px var(--iching-glow-soft));
 }
 .iching-label-group {
-  pointer-events: none;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.iching-label-hit {
+  pointer-events: all;
 }
 
-.iching-slot.is-hot {
+ .iching-slot.is-hot {
   filter: drop-shadow(0 0 8px var(--iching-glow-soft));
+}
+.iching-slot.is-related {
+  filter: drop-shadow(0 0 7px var(--iching-glow-soft));
+  opacity: 1;
+}
+.iching-slot.is-pure {
+  filter: drop-shadow(0 0 10px var(--iching-glow-strong));
+}
+.iching-slot.is-dim {
+  opacity: 0.22;
+}
+.iching-bagua-ring {
+  pointer-events: auto;
+}
+.iching-bagua-cell {
+  cursor: pointer;
+}
+.iching-bagua-name {
+  font-size: 9px;
+  fill: var(--iching-label);
+  font-family: var(--iching-serif);
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: var(--iching-disc-edge);
+  stroke-width: 2.4;
+  pointer-events: none;
+}
+.iching-bagua-cell.is-active .iching-bagua-name {
+  fill: var(--iching-label-hot);
+  font-size: 11px;
+}
+.iching-bagua-dir {
+  font-size: 7px;
+  fill: var(--iching-label);
+  font-family: var(--iching-serif);
+  font-weight: 600;
+  opacity: 0.78;
+  paint-order: stroke;
+  stroke: var(--iching-disc-edge);
+  stroke-width: 1.8;
+  pointer-events: none;
+}
+.iching-bagua-cell.is-active .iching-bagua-dir {
+  fill: var(--iching-label-hot);
+  opacity: 1;
 }
 
 .iching-dock {
@@ -4820,6 +4869,25 @@ input:focus, select:focus {
   filter: drop-shadow(0 0 14px rgba(0, 240, 255, 1));
 }
 
+.iching-main[data-skin="cyber"] .iching-bagua-name {
+  fill: rgba(230, 252, 255, 0.88);
+  stroke: rgba(1, 4, 10, 0.92);
+  filter: drop-shadow(0 0 5px rgba(0, 240, 255, 0.55));
+}
+.iching-main[data-skin="cyber"] .iching-bagua-cell.is-active .iching-bagua-name {
+  fill: #ffffff;
+  filter: drop-shadow(0 0 10px rgba(0, 240, 255, 1));
+}
+.iching-main[data-skin="cyber"] .iching-bagua-dir {
+  fill: rgba(186, 240, 255, 0.78);
+  stroke: rgba(1, 4, 10, 0.92);
+}
+.iching-main[data-skin="cyber"] .iching-bagua-cell.is-active .iching-bagua-dir {
+  fill: #ffffff;
+}
+.iching-main[data-skin="cyber"] .iching-slot.is-dim {
+  opacity: 0.16;
+}
 .iching-main[data-skin="cyber"] .iching-glyph-symbol {
   font-size: 12px;
   fill: rgba(170, 235, 255, 0.5);
@@ -5054,6 +5122,21 @@ input:focus, select:focus {
   font-family: var(--iching-serif);
   letter-spacing: 0.04em;
   margin-bottom: 6px;
+}
+.iching-detail-pinyin {
+  display: inline;
+  margin-left: 0.28em;
+  font-size: 0.62em;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  font-family: var(--iching-serif);
+  font-style: italic;
+  vertical-align: baseline;
+}
+.iching-detail-meta .iching-detail-pinyin {
+  margin-left: 0.18em;
+  font-size: 0.92em;
 }
 .iching-detail-meta {
   font-size: 14px;

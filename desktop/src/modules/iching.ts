@@ -34,6 +34,30 @@ function prefersReducedMotion(): boolean {
 
 
 
+const TRIGRAM_NATURE: Record<string, string> = {
+  "\u4E7E": "\u5929", // 乾 天
+  "\u5151": "\u6CFD", // 兑 泽
+  "\u79BB": "\u706B", // 离 火
+  "\u9707": "\u96F7", // 震 雷
+  "\u5DFD": "\u98CE", // 巽 风
+  "\u574E": "\u6C34", // 坎 水
+  "\u826E": "\u5C71", // 艮 山
+  "\u5764": "\u5730", // 坤 地
+};
+
+/** Later Heaven (Wen Wang) compass, drawn with map orientation: north at top. */
+const BAGUA_ORDER = ["\u574E", "\u826E", "\u9707", "\u5DFD", "\u79BB", "\u5764", "\u5151", "\u4E7E"];
+const BAGUA_DIRECTION: Record<string, string> = {
+  "\u79BB": "\u5357",     // 离 南
+  "\u5764": "\u897F\u5357", // 坤 西南
+  "\u5151": "\u897F",     // 兑 西
+  "\u4E7E": "\u897F\u5317", // 乾 西北
+  "\u574E": "\u5317",     // 坎 北
+  "\u826E": "\u4E1C\u5317", // 艮 东北
+  "\u9707": "\u4E1C",     // 震 东
+  "\u5DFD": "\u4E1C\u5357", // 巽 东南
+};
+
 const TRIGRAM_GLYPH: Record<string, string> = {
   "\u4E7E": "\u2630", // 乾 ☰
   "\u5151": "\u2631", // 兑 ☱
@@ -117,6 +141,11 @@ const PINYIN_TONED: Record<string, string> = {
   "\u672A\u6D4E": "W\u00E8i J\u00EC",  // 未济
 };
 
+function formatPinyinName(name: string): string {
+  if (PINYIN_TONED[name]) return PINYIN_TONED[name];
+  return name;
+}
+
 function formatPinyin(h: IchingHexagram): string {
   if (PINYIN_TONED[h.name]) return PINYIN_TONED[h.name];
   // Fallback for unexpected data: title-case the slug without tones.
@@ -147,7 +176,9 @@ const R_OUTER_INNER = 228;
 const R_INNER = 212;
 const R_INNER_INNER = 118;
 const LABEL_R = 348;
-const HUB_R = 56;
+const HUB_R = 34;
+const BAGUA_INNER = 52;
+const BAGUA_OUTER = 104;
 const N = 64;
 const SLOT = 360 / N;
 const VIEW_PAD = 120;
@@ -309,9 +340,9 @@ function trigramStamp(trigram: string, maxWidth: number, hot: boolean): string {
 }
 
 /** Multi-char hexagram names stack vertically along the radial axis. */
-function verticalLabel(name: string, x: number, y: number, angle: number, hot: boolean): string {
+function verticalLabel(h: IchingHexagram, x: number, y: number, angle: number, hot: boolean): string {
   const cls = hot ? "iching-label is-hot" : "iching-label";
-  const chars = Array.from(name);
+  const chars = Array.from(h.name);
   const cyber = visualSkin === "cyber";
   const step = hot ? (cyber ? 16 : 20) : (cyber ? 10 : 12);
   const start = -((chars.length - 1) * step) / 2;
@@ -319,8 +350,11 @@ function verticalLabel(name: string, x: number, y: number, angle: number, hot: b
   for (let i = 0; i < chars.length; i++) {
     texts += `<text class="${cls}" x="0" y="${(start + i * step).toFixed(1)}" text-anchor="middle" dominant-baseline="middle">${chars[i]}</text>`;
   }
+  const hitH = Math.max(chars.length * step + 14, 28);
+  const hitW = hot ? (cyber ? 28 : 32) : (cyber ? 22 : 24);
+  const hit = `<rect class="iching-label-hit" x="${(-hitW / 2).toFixed(1)}" y="${(-hitH / 2).toFixed(1)}" width="${hitW.toFixed(1)}" height="${hitH.toFixed(1)}" rx="6" fill="transparent" pointer-events="all"/>`;
   // Local +Y is radial-out after parent placement rotate(angle).
-  return `<g class="iching-label-group" transform="translate(${x.toFixed(2)} ${y.toFixed(2)}) rotate(${angle})">${texts}</g>`;
+  return `<g class="iching-label-group" data-hex="${h.number}" transform="translate(${x.toFixed(2)} ${y.toFixed(2)}) rotate(${angle})" role="button" tabindex="0" aria-label="查看第${h.number}卦 ${h.name}">${hit}${texts}</g>`;
 }
 
 // --- Disk construction ---
@@ -556,12 +590,21 @@ function buildPlate(isUpper: boolean): string {
     const rad = ((angle - 90) * Math.PI) / 180;
     const cx = midR * Math.cos(rad);
     const cy = midR * Math.sin(rad);
-    const hot = i === activeIdx;
+    const related = selectedBagua !== null && trigram === selectedBagua;
+    const pure = related && h.upperTrigram === selectedBagua && h.lowerTrigram === selectedBagua;
+    const hot = selectedBagua === null && i === activeIdx;
 
     // Stamp on plate: translate to sector, rotate so local +Y is radial-out.
     // Parent plate uses rotate(θ 0 0): true self-rotation around disk center.
-    marks += `<g class="iching-slot${hot ? " is-hot" : ""}" transform="translate(${cx.toFixed(2)} ${cy.toFixed(2)}) rotate(${angle})">`;
-    if (hot) {
+    const slotClass = [
+      "iching-slot",
+      hot ? "is-hot" : "",
+      related ? "is-related" : "",
+      pure ? "is-pure" : "",
+      selectedBagua && !related ? "is-dim" : "",
+    ].filter(Boolean).join(" ");
+    marks += `<g class="${slotClass}" transform="translate(${cx.toFixed(2)} ${cy.toFixed(2)}) rotate(${angle})">`;
+    if (hot || related) {
       const bw = Math.min(maxYaoW * 0.9, 28);
       const bh = 32;
       if (visualSkin === "cyber") {
@@ -571,14 +614,14 @@ function buildPlate(isUpper: boolean): string {
         marks += `<rect x="${(-bw / 2).toFixed(1)}" y="${(-bh / 2).toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="4" fill="var(--iching-hot-fill)" stroke="var(--iching-glow)" stroke-width="1.3"/>`;
       }
     }
-    marks += trigramStamp(trigram, maxYaoW, hot);
+    marks += trigramStamp(trigram, maxYaoW, hot || related);
     marks += `</g>`;
 
     if (isUpper) {
       const lx = LABEL_R * Math.cos(rad);
       const ly = LABEL_R * Math.sin(rad);
       // Two-char names stack vertically, fixed on the plate.
-      marks += verticalLabel(h.name, lx, ly, angle, hot);
+      marks += verticalLabel(h, lx, ly, angle, hot || related);
     }
   }
 
@@ -590,8 +633,56 @@ function buildPlate(isUpper: boolean): string {
   );
 }
 
+function baguaWedgePath(index: number, inner: number, outer: number): string {
+  const start = (index * 45 - 22.5 - 90) * Math.PI / 180;
+  const end = ((index + 1) * 45 - 22.5 - 90) * Math.PI / 180;
+  const x1 = inner * Math.cos(start);
+  const y1 = inner * Math.sin(start);
+  const x2 = outer * Math.cos(start);
+  const y2 = outer * Math.sin(start);
+  const x3 = outer * Math.cos(end);
+  const y3 = outer * Math.sin(end);
+  const x4 = inner * Math.cos(end);
+  const y4 = inner * Math.sin(end);
+  return `M ${x1.toFixed(2)} ${y1.toFixed(2)} L ${x2.toFixed(2)} ${y2.toFixed(2)} A ${outer} ${outer} 0 0 1 ${x3.toFixed(2)} ${y3.toFixed(2)} L ${x4.toFixed(2)} ${y4.toFixed(2)} A ${inner} ${inner} 0 0 0 ${x1.toFixed(2)} ${y1.toFixed(2)} Z`;
+}
+
+function buildBaguaRing(): string {
+  const mid = (BAGUA_INNER + BAGUA_OUTER) / 2;
+  const cyber = visualSkin === "cyber";
+  let marks = `
+    <circle cx="0" cy="0" r="${(BAGUA_INNER + BAGUA_OUTER) / 2}" fill="none" stroke="${cyber ? "rgba(0,180,255,0.10)" : "var(--iching-ring-bg)"}" stroke-width="${BAGUA_OUTER - BAGUA_INNER}"/>
+    <circle cx="0" cy="0" r="${BAGUA_OUTER}" fill="none" stroke="${cyber ? "rgba(120,230,255,0.28)" : "var(--iching-ring-border)"}" stroke-width="${cyber ? 1.1 : 1.2}"/>
+    <circle cx="0" cy="0" r="${BAGUA_INNER}" fill="none" stroke="${cyber ? "rgba(120,230,255,0.22)" : "var(--iching-ring-border)"}" stroke-width="${cyber ? 0.9 : 1.1}"/>`;
+  for (let i = 0; i < BAGUA_ORDER.length; i++) {
+    const name = BAGUA_ORDER[i];
+    const angle = i * 45;
+    const rad = ((angle - 90) * Math.PI) / 180;
+    const cx = mid * Math.cos(rad);
+    const cy = mid * Math.sin(rad);
+    const active = selectedBagua === name;
+    const cls = active ? "iching-bagua-cell is-active" : "iching-bagua-cell";
+    const fill = active
+      ? (cyber ? "rgba(0,240,255,0.14)" : "var(--iching-hot-fill)")
+      : "transparent";
+    const stroke = active
+      ? (cyber ? "rgba(0,240,255,0.85)" : "var(--iching-glow)")
+      : (cyber ? "rgba(0,240,255,0.16)" : "var(--iching-divider)");
+    const direction = BAGUA_DIRECTION[name] || "";
+    const nature = TRIGRAM_NATURE[name] || "";
+    marks += `<g class="${cls}" data-bagua="${name}" transform="translate(0 0)" role="button" tabindex="0" aria-label="${direction} ${name} ${nature}">`;
+    marks += `<path d="${baguaWedgePath(i, BAGUA_INNER, BAGUA_OUTER)}" fill="${fill}" stroke="${stroke}" stroke-width="${active ? 1.4 : 0.6}" pointer-events="all"/>`;
+    marks += `<g transform="translate(${cx.toFixed(2)} ${cy.toFixed(2)}) rotate(${angle})">`;
+    marks += `<g transform="translate(0 -6)">${trigramStamp(name, 18, active)}</g>`;
+    marks += `<text class="iching-bagua-name" x="0" y="10" text-anchor="middle" dominant-baseline="middle">${name}</text>`;
+    marks += `<text class="iching-bagua-dir" x="0" y="20" text-anchor="middle" dominant-baseline="middle">${direction}</text>`;
+    marks += `</g></g>`;
+  }
+  return `<g class="iching-bagua-ring">${marks}</g>`;
+}
+
 function buildHub(): string {
-  const r = visualSkin === "cyber" ? HUB_R + 6 : HUB_R + 26;
+  const r = HUB_R;
   const half = r / 2;
   // Eye radius ~10% of disk radius.
   const eye = Math.max(4.5, r * 0.1);
@@ -649,6 +740,7 @@ function renderRingSVG(): string {
     buildBackground() +
     buildPlate(true) +
     buildPlate(false) +
+    buildBaguaRing() +
     buildHub() +
     topMarker;
   const vb = -(R_OUTER + VIEW_PAD);
@@ -673,8 +765,12 @@ function pointerAngle(evt: PointerEvent, svg: SVGSVGElement): number {
 function hitPlate(svgDist: number): "upper" | "lower" | null {
   // Outer plate includes label rim so users can grab near names too.
   if (svgDist >= R_OUTER_INNER - 8 && svgDist <= LABEL_R + 24) return "upper";
-  if (svgDist >= R_INNER_INNER - 18 && svgDist <= R_INNER + 10) return "lower";
+  if (svgDist >= R_INNER_INNER - 8 && svgDist <= R_INNER + 10) return "lower";
   return null;
+}
+
+function hitBagua(svgDist: number): boolean {
+  return svgDist >= BAGUA_INNER - 4 && svgDist <= BAGUA_OUTER + 8;
 }
 
 /**
@@ -684,14 +780,18 @@ function hitPlate(svgDist: number): "upper" | "lower" | null {
 function paintPlates(svg: SVGSVGElement) {
   const upper = svg.querySelector<SVGGElement>('.iching-ring[data-ring="upper"]');
   const lower = svg.querySelector<SVGGElement>('.iching-ring[data-ring="lower"]');
+  const bagua = svg.querySelector<SVGGElement>('.iching-bagua-ring');
   // Replace whole plates to refresh hot stamps. Keep hub/pointer untouched.
   // Important: do NOT paint full 6-yao hexagram glyphs here — outer/inner plates are 3-yao only.
   const tmp = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  tmp.innerHTML = buildPlate(true) + buildPlate(false);
+  tmp.innerHTML = buildPlate(true) + buildPlate(false) + buildBaguaRing();
   const newUpper = tmp.querySelector<SVGGElement>('.iching-ring[data-ring="upper"]');
   const newLower = tmp.querySelector<SVGGElement>('.iching-ring[data-ring="lower"]');
+  const newBagua = tmp.querySelector<SVGGElement>('.iching-bagua-ring');
   if (upper && newUpper) upper.replaceWith(newUpper);
   if (lower && newLower) lower.replaceWith(newLower);
+  if (bagua && newBagua) bagua.replaceWith(newBagua);
+  else if (!bagua && newBagua) svg.appendChild(newBagua);
   // Cleanup any leftover decorative glyph belt from previous builds.
   svg.querySelectorAll(".iching-glyph-ring").forEach((el) => el.remove());
 }
@@ -709,6 +809,7 @@ let lastDisplayKey = "";
 let wasResting = true;
 /** Visual comparison skin: classic | cyber */
 let visualSkin: "classic" | "cyber" = "classic";
+let selectedBagua: string | null = null;
 
 function currentDisplayKey(h: IchingHexagram | undefined): string {
   return h ? `${h.number}:${h.name}:${h.upperTrigram}:${h.lowerTrigram}` : "";
@@ -740,15 +841,29 @@ function triggerSettlePulse(reason: "settle" | "reset" | "enter" = "settle"): vo
   }
 }
 
+function formatBaguaHint(name: string): string {
+  const nature = TRIGRAM_NATURE[name] || "";
+  const glyph = trigramGlyph(name);
+  const pinyin = formatPinyinName(name);
+  const count = HEXAGRAMS.filter((h) => h.upperTrigram === name || h.lowerTrigram === name).length;
+  const direction = BAGUA_DIRECTION[name] || "";
+  return `\u516B\u5366\u00B7${direction} ${name}${glyph}  ${pinyin}  ${nature}  \u00B7  ${count}\u5366`;
+}
+
 function updateDisplay(options?: { animate?: boolean }): void {
   const current = currentHexagram();
   const name = document.getElementById("iching-current-name");
   const sub = document.getElementById("iching-current-sub");
-  const key = currentDisplayKey(current);
+  const key = currentDisplayKey(current) + (selectedBagua ? `|bagua:${selectedBagua}` : "");
   const changed = key !== lastDisplayKey;
 
-  if (name) name.textContent = current ? formatDockTitle(current) : "\u7EC4\u5408\u65E0\u6548";
-  if (sub) sub.textContent = current ? formatDockSub(current) : "";
+  if (selectedBagua) {
+    if (name) name.textContent = formatBaguaHint(selectedBagua);
+    if (sub) sub.textContent = current ? formatDockSub(current) : "";
+  } else {
+    if (name) name.textContent = current ? formatDockTitle(current) : "\u7EC4\u5408\u65E0\u6548";
+    if (sub) sub.textContent = current ? formatDockSub(current) : "";
+  }
 
   if (changed) {
     lastDisplayKey = key;
@@ -788,7 +903,7 @@ function refreshVisual(forcePaint = false) {
   // Important: outer-ring linked motion often keeps the same hexagram, so we
   // must NOT require the hexagram identity to change.
   const resting = platesAreResting();
-  if (resting && !wasResting) {
+  if (resting && !wasResting && selectedBagua === null) {
     // Wait one frame so freshly painted hot slots exist in the DOM.
     requestAnimationFrame(() => triggerSettlePulse("settle"));
   }
@@ -839,10 +954,41 @@ function stopInertia() {
   }
 }
 
+function labelFromEvent(evt: Event): HTMLElement | null {
+  const target = evt.target;
+  if (!(target instanceof Element)) return null;
+  return target.closest(".iching-label-group");
+}
+
+function baguaFromEvent(evt: Event): HTMLElement | null {
+  const target = evt.target;
+  if (!(target instanceof Element)) return null;
+  return target.closest(".iching-bagua-cell");
+}
+
+function toggleBagua(name: string | null): void {
+  selectedBagua = selectedBagua === name ? null : name;
+  lastPaintSlotU = -1;
+  lastPaintSlotL = -1;
+  refreshVisual(true);
+}
+
+function hexagramFromLabel(label: Element | null): IchingHexagram | undefined {
+  if (!label) return undefined;
+  const raw = label.getAttribute("data-hex");
+  const number = raw ? Number(raw) : NaN;
+  if (!Number.isInteger(number)) return undefined;
+  return HEXAGRAMS.find((item) => item.number === number);
+}
+
 function setupDrag(container: HTMLElement) {
   const svg = container.querySelector<SVGSVGElement>(".iching-ring-svg");
   if (!svg) return;
   let activeState: RingState | null = null;
+  let pendingLabel: HTMLElement | null = null;
+  let pointerStartX = 0;
+  let pointerStartY = 0;
+  let pointerMoved = false;
 
   svg.addEventListener("pointerdown", (evt) => {
     const rect = svg.getBoundingClientRect();
@@ -853,6 +999,18 @@ function setupDrag(container: HTMLElement) {
     // Use unscaled geometry for hit-testing: getBoundingClientRect already includes CSS scale.
     const scale = ((R_OUTER + VIEW_PAD) * 2) / Math.max(rect.width, 1);
     const svgDist = Math.sqrt(dx * dx + dy * dy) * scale;
+
+    pendingLabel = labelFromEvent(evt);
+    pointerStartX = evt.clientX;
+    pointerStartY = evt.clientY;
+    pointerMoved = false;
+
+    if (hitBagua(svgDist) || baguaFromEvent(evt)) {
+      const cell = baguaFromEvent(evt);
+      const name = cell?.getAttribute("data-bagua") || "";
+      if (name) toggleBagua(name);
+      return;
+    }
 
     const kind = hitPlate(svgDist);
     if (!kind) return;
@@ -877,6 +1035,11 @@ function setupDrag(container: HTMLElement) {
   svg.addEventListener("pointermove", (evt) => {
     if (!activeState || !activeState.dragging || !dragKind) return;
     if (activePointerId !== null && evt.pointerId !== activePointerId) return;
+
+    if (!pointerMoved) {
+      const moved = Math.hypot(evt.clientX - pointerStartX, evt.clientY - pointerStartY);
+      if (moved > 6) pointerMoved = true;
+    }
 
     const angle = pointerAngle(evt, svg);
     const delta = shortestDelta(activeState.lastAngle, angle);
@@ -910,20 +1073,37 @@ function setupDrag(container: HTMLElement) {
     if (!activeState || !dragKind) return;
     if (activePointerId !== null && evt.pointerId !== activePointerId) return;
 
+    const label = pendingLabel;
+    const openedFromLabel = Boolean(label) && !pointerMoved && evt.type === "pointerup";
+
     if (dragKind === "upper") {
       upperState.dragging = false;
       lowerState.dragging = false;
-      upperState.velocity *= 1.12;
-      lowerState.velocity *= 1.12;
+      if (openedFromLabel) {
+        upperState.velocity = 0;
+        lowerState.velocity = 0;
+      } else {
+        upperState.velocity *= 1.12;
+        lowerState.velocity *= 1.12;
+      }
     } else {
       activeState.dragging = false;
-      activeState.velocity *= 1.12;
+      activeState.velocity = openedFromLabel ? 0 : activeState.velocity * 1.12;
     }
 
     activeState = null;
     dragKind = null;
     activePointerId = null;
+    pendingLabel = null;
     try { svg.releasePointerCapture(evt.pointerId); } catch { /* */ }
+
+    if (openedFromLabel) {
+      const hexagram = hexagramFromLabel(label);
+      if (hexagram) {
+        openHexagramDetail(hexagram);
+        return;
+      }
+    }
     startInertia();
   };
 
@@ -948,6 +1128,11 @@ function setupDrag(container: HTMLElement) {
 
 function animateReset() {
   stopInertia();
+  if (selectedBagua) {
+    selectedBagua = null;
+    lastPaintSlotU = -1;
+    lastPaintSlotL = -1;
+  }
   const startU = shortestDelta(0, upperState.rotation);
   const startL = shortestDelta(0, lowerState.rotation);
   upperState.rotation = startU;
@@ -1013,8 +1198,8 @@ function renderDetail(h: IchingHexagram): string {
           ${yaoSvg}
         </svg>
         <div class="iching-detail-title">
-          <h2>${h.symbol} ${h.name}</h2>
-          <p class="iching-detail-meta">\u7B2C${h.number}\u5366 \u00B7 ${h.upperTrigram}\u4E0A${h.lowerTrigram}\u4E0B</p>
+          <h2>${h.symbol} ${h.name} <span class="iching-detail-pinyin">${formatPinyin(h)}</span></h2>
+          <p class="iching-detail-meta">\u7B2C${h.number}\u5366 \u00B7 ${h.upperTrigram}\u4E0A <span class="iching-detail-pinyin">${formatPinyinName(h.upperTrigram)}</span> \u00B7 ${h.lowerTrigram}\u4E0B <span class="iching-detail-pinyin">${formatPinyinName(h.lowerTrigram)}</span></p>
         </div>
       </div>
 
@@ -1057,6 +1242,7 @@ export function renderIchingDetail(): void {
   stopInertia();
   upperState = blankState();
   lowerState = blankState();
+  selectedBagua = null;
   dragKind = null;
   activePointerId = null;
   if (zoomRAF !== null) { cancelAnimationFrame(zoomRAF); zoomRAF = null; }
@@ -1183,17 +1369,21 @@ function playPageTransition(detail: HTMLElement, html: string, enterClass: strin
   }, 160);
 }
 
-(window as any).ichingViewDetail = function (): void {
-  const current = currentHexagram();
-  if (!current) return;
+function openHexagramDetail(hexagram: IchingHexagram): void {
   const detail = document.getElementById("tools-detail");
   if (!detail) return;
   stopInertia();
-  playPageTransition(detail, renderDetail(current), "iching-page-enter-detail", () => {
+  playPageTransition(detail, renderDetail(hexagram), "iching-page-enter-detail", () => {
     document.querySelector(".content-area")?.scrollTo({ top: 0, behavior: prefersReducedMotion() ? "auto" : "smooth" });
     pulseClass(document.querySelector(".iching-detail-symbol"), "is-flip-in", 700);
     pulseClass(document.querySelector(".iching-detail-layout"), "is-detail-reveal", 700);
   });
+}
+
+(window as any).ichingViewDetail = function (): void {
+  const current = currentHexagram();
+  if (!current) return;
+  openHexagramDetail(current);
 };
 
 (window as any).ichingBackToRing = function (): void {
