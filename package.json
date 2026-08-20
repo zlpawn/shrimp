@@ -7,9 +7,7 @@
   "author": "Shrimp contributors",
   "type": "module",
   "bin": {
-    "shrimp": "bin/shrimp.js",
-    "bcli": "bin/bcli.js",
-    "browser-mcp": "bin/browser-mcp.js"
+    "shrimp": "bin/shrimp.js"
   },
   "files": [
     "bin",
@@ -47,7 +45,7 @@
   "scripts": {
     "init": "node scripts/init-config.mjs",
     "start": "node server.js",
-    "check": "node --check server.js && node --check scripts/gateway.mjs && node --check scripts/init-config.mjs && node --check bin/shrimp.js",
+    "check": "node --check server.js && node --check scripts/gateway.mjs && node --check scripts/init-config.mjs && node --check bin/shrimp.js && node --check clis/leo-lantern/index.mjs && node --check mcps/leo-lantern/index.mjs && node --check clis/leo-lantern/lib/cli.mjs && node --check clis/leo-lantern/lib/server.mjs && node --check mcps/leo-lantern/lib/mcp-server.mjs && node --check mcps/leo-lantern/lib/server.mjs",
     "doctor": "node scripts/doctor.mjs",
     "validate:config": "node scripts/validate-config.mjs",
     "codex:catalog": "node scripts/codex-catalog.mjs",
@@ -58,7 +56,6 @@
     "test:adapters": "node --test tests/integration/basic-routes.test.mjs tests/integration/protocol-adapters.test.mjs",
     "test:cli": "node --test tests/unit/gateway-service.test.mjs tests/unit/init-config.test.mjs tests/unit/package-release.test.mjs tests/unit/config-panel.test.mjs tests/unit/session-sync.test.mjs tests/integration/gateway-cli.integration.test.mjs && node --test tests/unit/clis/shrimp/*.test.mjs tests/integration/shrimp-cli.integration.test.mjs",
     "test:sync": "node --test tests/unit/session-sync.test.mjs",
-    "test:browser-bridge": "node --test tests/unit/browser-bridge-*.test.mjs",
     "sync:status": "node bin/shrimp.js sync status",
     "sync:install-skill": "node bin/shrimp.js sync install-skill",
     "test:codex:unit": "node --test tests/unit/gateway-config-store.test.mjs tests/unit/vision-fallback.test.mjs tests/unit/claude-code-settings.test.mjs tests/unit/codex-model-catalog.test.mjs tests/unit/codex-chat-request-adapter.test.mjs tests/unit/codex-responses-writer.test.mjs tests/unit/codex-chat-response-adapter.test.mjs tests/unit/codex-responses-passthrough.test.mjs tests/unit/codex-official-models.test.mjs tests/unit/codex-hosted-tools-inject.test.mjs tests/unit/web-search.test.mjs",
@@ -80,7 +77,8 @@
     "test:dream-skin": "node --test tests/unit/dream-skin-*.test.mjs tests/integration/dream-skin-api.test.mjs",
     "dream-skin:validate-engines": "node lib/dream-skin/index.mjs validate-engines",
     "test:remote-session": "node --test tests/unit/remote-session-*.test.mjs tests/integration/remote-session-api.test.mjs",
-    "smoke:remote-session": "node scripts/remote-session-smoke.mjs --mode fake"
+    "smoke:remote-session": "node scripts/remote-session-smoke.mjs --mode fake",
+    "test:leo-lantern": "node --test --test-concurrency=1 clis/leo-lantern/tests/*.test.mjs mcps/leo-lantern/tests/*.test.mjs"
   },
   "engines": {
     "node": ">=18"

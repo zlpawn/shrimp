@@ -1,11 +1,11 @@
 import readline from "node:readline";
-import { BridgeServer } from "./server.mjs";
+import { LanternServer } from "./server.mjs";
 import { COMMAND_TYPES, DEFAULT_BRIDGE_PORT } from "./protocol.mjs";
 
 export const MCP_TOOLS = [
   {
     name: "browser_health",
-    description: "Check whether the Browser Bridge and Chrome extension are connected and online.",
+    description: "Check whether Leo Lantern and the Chrome extension are connected and online.",
     inputSchema: {
       type: "object",
       properties: {},
@@ -13,7 +13,7 @@ export const MCP_TOOLS = [
   },
   {
     name: "browser_doctor",
-    description: "Get detailed diagnostic information for the Browser Bridge and Chrome extension.",
+    description: "Get detailed diagnostic information for Leo Lantern and the Chrome extension.",
     inputSchema: {
       type: "object",
       properties: {},
@@ -120,11 +120,11 @@ export const MCP_TOOLS = [
   },
 ];
 
-export class BrowserMcpServer {
+export class LanternMcpServer {
   constructor(options = {}) {
-    this.port = options.port || Number(process.env.BROWSER_BRIDGE_PORT || DEFAULT_BRIDGE_PORT);
+    this.port = options.port || Number(process.env.LEO_LANTERN_PORT || DEFAULT_BRIDGE_PORT);
     this.host = options.host || "127.0.0.1";
-    this.bridge = options.bridge || new BridgeServer({ port: this.port, host: this.host });
+    this.bridge = options.bridge || new LanternServer({ port: this.port, host: this.host });
     this.ownBridge = !options.bridge;
     this.rl = null;
   }
@@ -183,7 +183,7 @@ export class BrowserMcpServer {
           protocolVersion: "2024-11-05",
           capabilities: { tools: {} },
           serverInfo: {
-            name: "shrimp-browser-bridge",
+            name: "leo-lantern",
             version: "1.0.0",
           },
         },

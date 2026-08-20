@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Leo Browser Bridge",
+  "name": "Leo cookie.txt Locally",
   "version": "1.2.0",
   "description": "Export cookies and empower AI Agents (MCP/CLI) to interact with real Chrome.",
   "permissions": [
@@ -27,7 +27,7 @@
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Leo Browser Bridge",
+    "default_title": "Leo cookie.txt Locally",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
@@ -38,5 +38,31 @@
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
-  }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "icons/icon128.png"
+      ],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ]
+    }
+  ]
 }

@@ -1,7 +1,12 @@
 const DEFAULT_BRIDGE_URL = "http://127.0.0.1:19527";
 const DEFAULT_GATEWAY_URL = "http://127.0.0.1:8788";
 const HEARTBEAT_INTERVAL_MS = 25_000;
-const CLAIM_INTERVAL_MS = 2_000;
+const POLL_WAIT_MS = 25_000;
+const OFFLINE_BACKOFF_MS = 1_000;
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 async function getTargetUrls() {
   const result = await chrome.storage.local.get(["gatewayUrl", "bridgeUrl"]);
@@ -32,7 +37,7 @@ async function registerTo(url) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         id: chrome.runtime.id,
-        name: "Leo Browser Bridge",
+        name: "Leo cookie.txt Locally",
         version: chrome.runtime.getManifest().version,
         capabilities: ["cookies", "tabs", "dom", "cdp"],
       }),
@@ -46,7 +51,7 @@ async function registerTo(url) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: chrome.runtime.id,
-          name: "Leo Browser Bridge",
+          name: "Leo cookie.txt Locally",
           version: chrome.runtime.getManifest().version,
           capabilities: ["cookies", "tabs", "dom", "cdp"],
         }),
@@ -80,49 +85,62 @@ async function sendHeartbeats() {
   }
 }
 
-let claimInFlight = false;
-
-async function claimAndExecute() {
-  if (claimInFlight) return;
-  claimInFlight = true;
+async function pollForCommand(url, waitMs) {
   try {
-    const urls = await getTargetUrls();
-    for (const url of urls) {
-      try {
-        let task = null;
-        // Try bridge poll endpoint first
-        const pollResp = await fetch(`${url}/ext/poll?waitMs=1000`);
-        if (pollResp.ok) {
-          const data = await pollResp.json();
-          if (data.cmd) task = data.cmd;
-        }
+    const pollResp = await fetch(`${url}/ext/poll?waitMs=${waitMs}`);
+    if (pollResp.ok) {
+      const data = await pollResp.json();
+      return { online: true, cmd: data.cmd || (Array.isArray(data.tasks) ? data.tasks[0] : null) || null };
+    }
+  } catch {}
 
-        // Fallback to gateway task claim endpoint if no cmd from poll
-        if (!task) {
-          const claimResp = await fetch(`${url}/v1/extension-tasks/claim`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              extension_id: chrome.runtime.id,
-              capabilities: ["cookies", "tabs", "dom", "cdp"],
-              limit: 1,
-            }),
-          });
-          if (claimResp.ok) {
-            const data = await claimResp.json();
-            if (data.tasks && data.tasks[0]) task = data.tasks[0];
-          }
-        }
+  try {
+    const claimResp = await fetch(`${url}/v1/extension-tasks/claim`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        extension_id: chrome.runtime.id,
+        capabilities: ["cookies", "tabs", "dom", "cdp"],
+        limit: 1,
+      }),
+    });
+    if (claimResp.ok) {
+      const data = await claimResp.json();
+      return { online: true, cmd: data.tasks && data.tasks[0] ? data.tasks[0] : null };
+    }
+  } catch {}
 
-        if (task) {
-          await runTask(url, task);
-        }
-      } catch {
-        // silent fallback to next url
+  return { online: false, cmd: null };
+}
+
+let pollLoopRunning = false;
+
+async function startPollLoop() {
+  if (pollLoopRunning) return;
+  pollLoopRunning = true;
+  try {
+    while (pollLoopRunning) {
+      const urls = await getTargetUrls();
+      const results = await Promise.all(
+        urls.map(async (url) => {
+          const polled = await pollForCommand(url, POLL_WAIT_MS);
+          return { url, ...polled };
+        })
+      );
+
+      const matched = results.find((entry) => entry.cmd);
+      if (matched) {
+        await runTask(matched.url, matched.cmd);
+        continue;
+      }
+
+      const sawOnlineServer = results.some((entry) => entry.online);
+      if (!sawOnlineServer) {
+        await sleep(OFFLINE_BACKOFF_MS);
       }
     }
   } finally {
-    claimInFlight = false;
+    pollLoopRunning = false;
   }
 }
 
@@ -265,15 +283,35 @@ async function runTask(url, task) {
       result = { evalResult: res[0]?.result };
     } else if (type === "cdp.screenshot") {
       const tabId = await getActiveTabId(params.tabId);
+      const fullPage = Boolean(params.fullPage);
       await chrome.debugger.attach({ tabId }, "1.3");
       try {
         await chrome.debugger.sendCommand({ tabId }, "Page.enable");
+        if (fullPage) {
+          const metrics = await chrome.debugger.sendCommand({ tabId }, "Page.getLayoutMetrics");
+          const width = Math.ceil(metrics.contentSize?.width || metrics.cssContentSize?.width || 0);
+          const height = Math.ceil(metrics.contentSize?.height || metrics.cssContentSize?.height || 0);
+          if (width && height) {
+            await chrome.debugger.sendCommand({ tabId }, "Emulation.setDeviceMetricsOverride", {
+              mobile: false,
+              width,
+              height,
+              deviceScaleFactor: 1,
+            });
+          }
+        }
         const shot = await chrome.debugger.sendCommand({ tabId }, "Page.captureScreenshot", {
           format: "png",
           fromSurface: true,
+          captureBeyondViewport: fullPage,
         });
-        result = { data: shot.data, mimeType: "image/png" };
+        result = { data: shot.data, mimeType: "image/png", fullPage };
       } finally {
+        if (fullPage) {
+          try {
+            await chrome.debugger.sendCommand({ tabId }, "Emulation.clearDeviceMetricsOverride");
+          } catch {}
+        }
         await chrome.debugger.detach({ tabId });
       }
     } else {
@@ -292,6 +330,7 @@ async function init() {
   for (const url of urls) {
     await registerTo(url);
   }
+  startPollLoop();
 }
 
 // Keep-alive with alarms
@@ -299,10 +338,9 @@ chrome.alarms.create("bridge_heartbeat", { periodInMinutes: 0.4 });
 chrome.alarms.create("bridge_claim", { periodInMinutes: 0.1 });
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === "bridge_heartbeat") sendHeartbeats();
-  if (alarm.name === "bridge_claim" || alarm.name === "bridge_heartbeat") claimAndExecute();
+  if (alarm.name === "bridge_claim" || alarm.name === "bridge_heartbeat") startPollLoop();
 });
 
-setInterval(claimAndExecute, CLAIM_INTERVAL_MS);
 setInterval(sendHeartbeats, HEARTBEAT_INTERVAL_MS);
 
 chrome.runtime.onInstalled.addListener(init);
@@ -310,6 +348,51 @@ chrome.runtime.onStartup.addListener(init);
 init();
 
 // Support external messages from gateway page
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg && msg.action === "exportCookies") {
+    const domain = msg.domain || "";
+    const gatewayUrl = (msg.gatewayUrl || DEFAULT_GATEWAY_URL).replace(/\/$/, "");
+    chrome.cookies.getAll({ domain }, async (cookies) => {
+      if (chrome.runtime.lastError) {
+        sendResponse({ ok: false, error: chrome.runtime.lastError.message });
+        return;
+      }
+      if (!cookies || cookies.length === 0) {
+        sendResponse({ ok: false, error: "未找到该域名的 cookie" });
+        return;
+      }
+      try {
+        const resp = await fetch(`${gatewayUrl}/v1/cookies/import`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            domain,
+            cookies: cookies.map((c) => ({
+              domain: c.domain,
+              path: c.path,
+              name: c.name,
+              value: c.value,
+              secure: c.secure,
+              httponly: c.httpOnly,
+              expires: c.expirationDate || 0,
+            })),
+          }),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (resp.ok) {
+          sendResponse({ ok: true, count: data.count, file_path: data.file_path });
+        } else {
+          sendResponse({ ok: false, error: data.error?.message || "导出失败" });
+        }
+      } catch {
+        sendResponse({ ok: false, error: "无法连接到网关，请检查Shrimp 服务地址" });
+      }
+    });
+    return true;
+  }
+  return false;
+});
+
 chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
   if (msg && (msg.action === "syncGatewayUrl" || msg.type === "SET_GATEWAY_URL")) {
     const gatewayUrl = msg.gatewayUrl || msg.url;

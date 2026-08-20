@@ -11,6 +11,7 @@ function sendJson(res, statusCode, data) {
   const json = JSON.stringify(data);
   res.writeHead(statusCode, {
     "Content-Type": "application/json; charset=utf-8",
+    Connection: "close",
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
@@ -42,10 +43,10 @@ function parseJsonBody(req) {
   });
 }
 
-export class BridgeServer {
+export class LanternServer {
   constructor(options = {}) {
-    this.port = Number(options.port || process.env.BROWSER_BRIDGE_PORT || DEFAULT_BRIDGE_PORT);
-    this.host = options.host || process.env.BROWSER_BRIDGE_HOST || DEFAULT_BRIDGE_HOST;
+    this.port = Number(options.port || process.env.LEO_LANTERN_PORT || DEFAULT_BRIDGE_PORT);
+    this.host = options.host || process.env.LEO_LANTERN_HOST || DEFAULT_BRIDGE_HOST;
     this.server = null;
     this.extension = null;
     this.pendingCommands = new Map(); // id -> { resolve, reject, timer, cmd }
@@ -213,11 +214,17 @@ export class BridgeServer {
         reject(err);
       });
 
+      server.keepAliveTimeout = 1;
+      server.headersTimeout = 5000;
       server.listen(this.port, this.host, () => {
         this.server = server;
         resolve(this.port);
       });
     });
+  }
+
+  async dispatchCommand(type, params = {}, timeoutMs = DEFAULT_COMMAND_TIMEOUT_MS) {
+    return this.dispatch(type, params, timeoutMs);
   }
 
   async dispatch(type, params = {}, timeoutMs = DEFAULT_COMMAND_TIMEOUT_MS) {
@@ -254,7 +261,7 @@ export class BridgeServer {
     // Clear all pending commands
     for (const [id, pending] of this.pendingCommands.entries()) {
       clearTimeout(pending.timer);
-      pending.reject(new Error("BridgeServer stopped"));
+      pending.reject(new Error("LanternServer stopped"));
     }
     this.pendingCommands.clear();
     this.commandQueue = [];
@@ -268,8 +275,15 @@ export class BridgeServer {
 
     if (this.server) {
       return new Promise((resolve, reject) => {
-        this.server.close((err) => {
-          this.server = null;
+        const server = this.server;
+        this.server = null;
+        if (typeof server.closeIdleConnections === "function") {
+          server.closeIdleConnections();
+        }
+        if (typeof server.closeAllConnections === "function") {
+          server.closeAllConnections();
+        }
+        server.close((err) => {
           if (err) reject(err);
           else resolve();
         });

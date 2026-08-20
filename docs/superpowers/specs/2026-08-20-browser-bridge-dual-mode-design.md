@@ -1,4 +1,4 @@
-# Browser Bridge Dual Mode (MCP + CLI) 架构与实现全景设计规范
+# Leo Lantern Dual Mode (MCP + CLI) 架构与实现全景设计规范
 
 > **文档定位**：本规范是“真实 Chrome 浏览器附着与自动化控制”的完整工程蓝图。任何大模型（LLM）或工程师依据本文档中的架构图、数据契约、通信协议与边界算法，即可 100% 独立开发并复现该系统，无需依赖额外的隐性上下文。
 
@@ -21,7 +21,7 @@ AI Agent（如 Cursor, Claude Code, Codex, Antigravity）在执行日常开发�
 ### 1.3 核心目标
 * **双模式调用（Dual-Mode）**：
   * **MCP 模式**：通过标准 Stdio JSON-RPC 提供原生 Tool Call（供 Cursor / Claude Code 等直接调用）；
-  * **CLI 模式**：提供免安装、开箱即用的命令行工具（`bcli`），供终端用户或 Shell 脚本使用。
+  * **CLI 模式**：提供免安装、开箱即用的命令行工具（`leo-lantern`），供终端用户或 Shell 脚本使用。
 * **零外部依赖（Zero-Dependency）**：
   * 服务端纯使用 **Node.js 标准库**（`node:http`, `node:readline`, `node:crypto`, `node:events`），无需 `npm install` 任何重型运行时。
 * **脱离网关、独立运行（Standalone & Decoupled）**：
@@ -40,12 +40,12 @@ AI Agent（如 Cursor, Claude Code, Codex, Antigravity）在执行日常开发�
 │             模式 A: CLI 模式          │             模式 B: MCP 模式              │
 │    (终端开发者 / Shell 脚本 / CI)      │    (Cursor / Claude Code / Codex / IDE)  │
 │                                      │                                          │
-│     $ bcli click --text "登录"        │       AI 触发 Tool Call:                 │
-│     $ bcli screenshot --out shot.png │       `browser_click({ text: "登录" })`    │
+│     $ leo-lantern click --text "登录"        │       AI 触发 Tool Call:                 │
+│     $ leo-lantern screenshot --out shot.png │       `browser_click({ text: "登录" })`    │
 │                  │                   │                    │                     │
 │                  ▼                   │                    ▼                     │
 │          [ CLI 参数解析器 ]            │          [ MCP Stdio 协议转换器 ]         │
-│          (bin/bcli.js)               │          (bin/browser-mcp.js)            │
+│          (clis/leo-lantern/index.mjs)               │          (mcps/leo-lantern/index.mjs)            │
 └──────────────────┬───────────────────┴────────────────────┬─────────────────────┘
                    │                                        │
                    │ (HTTP JSON-RPC: POST /cmd)             │ (进程内直接调度 / HTTP)
@@ -119,7 +119,7 @@ Bridge Server 默认监听在 `http://127.0.0.1:19527`。
       "online": true,
       "info": {
         "id": "abcdefghijklmnop",
-        "name": "Leo Browser Bridge",
+        "name": "Leo Leo Lantern",
         "version": "1.2.0",
         "capabilities": ["cookies", "tabs", "dom", "cdp"]
       },
@@ -167,7 +167,7 @@ Bridge Server 默认监听在 `http://127.0.0.1:19527`。
   ```json
   {
     "id": "chrome-extension-id",
-    "name": "Leo Browser Bridge",
+    "name": "Leo Leo Lantern",
     "version": "1.2.0",
     "capabilities": ["cookies", "tabs", "dom", "cdp"]
   }
@@ -221,34 +221,34 @@ MCP Server 遵循 Model Context Protocol 标准，通过 `stdio` 暴露以下 11
 
 ---
 
-## 5. CLI 命令行规范（`bcli`）
+## 5. CLI 命令行规范（`leo-lantern`）
 
-CLI 客户端封装在 `bin/bcli.js`（基于 `lib/browser-bridge/cli.mjs`）：
+CLI 客户端封装在 clis/leo-lantern/index.mjs（基于 clis/leo-lantern/lib/cli.mjs）：
 
 ```bash
 # 1. 状态自检
-bcli health
-bcli doctor
+leo-lantern health
+leo-lantern doctor
 
 # 2. 标签页管理
-bcli tabs
-bcli new-tab https://github.com
-bcli goto https://github.com/trending --tabId 1024
-bcli close-tab 1024
+leo-lantern tabs
+leo-lantern new-tab https://github.com
+leo-lantern goto https://github.com/trending --tabId 1024
+leo-lantern close-tab 1024
 
 # 3. DOM 交互与填写
-bcli click --text "Sign In"
-bcli click --selector "#submit-btn"
-bcli fill --selector "#username" --val "my_account"
+leo-lantern click --text "Sign In"
+leo-lantern click --selector "#submit-btn"
+leo-lantern fill --selector "#username" --val "my_account"
 
 # 4. 页面提取、执行与截图
-bcli snapshot
-bcli eval "document.title"
-bcli screenshot --out ./page.png
-bcli cookies --domain github.com
+leo-lantern snapshot
+leo-lantern eval "document.title"
+leo-lantern screenshot --out ./page.png
+leo-lantern cookies --domain github.com
 
 # 5. 独立前台启动 Bridge 服务
-bcli server --port 19527
+leo-lantern server --port 19527
 ```
 
 ---
@@ -259,7 +259,7 @@ bcli server --port 19527
 ```json
 {
   "manifest_version": 3,
-  "name": "Leo Browser Bridge",
+  "name": "Leo Leo Lantern",
   "version": "1.2.0",
   "description": "Export cookies and empower AI Agents (MCP/CLI) to interact with real Chrome.",
   "permissions": [
@@ -366,26 +366,31 @@ async function captureCdpScreenshot(tabId) {
 
 ```text
 .
-├── bin/
-│   ├── bcli.js                           # CLI 命令行可执行入口
-│   └── browser-mcp.js                    # MCP Server 可执行入口
-├── lib/
-│   └── browser-bridge/
-│       ├── protocol.mjs                  # 协议常量、默认端口、命令枚举
-│       ├── server.mjs                    # Bridge Server 核心中枢（长轮询、队列与健康检测）
-│       ├── cli.mjs                       # CLI 参数解析器与命令执行分发器
-│       └── mcp-server.mjs                # Stdio JSON-RPC MCP 服务实现（内置自启 Bridge）
+├── clis/
+│   └── leo-lantern/                      # 独立 CLI 子工程
+│       ├── index.mjs                     # CLI 入口
+│       └── lib/
+│           ├── protocol.mjs
+│           ├── server.mjs
+│           └── cli.mjs
+├── mcps/
+│   └── leo-lantern/                      # 独立 MCP 子工程
+│       ├── index.mjs                     # MCP 入口
+│       └── lib/
+│           ├── protocol.mjs
+│           ├── server.mjs
+│           └── mcp-server.mjs
 ├── extensions/
 │   └── leo-cookie-txt-locally/           # Chrome 扩展源码 (Manifest V3)
 │       ├── manifest.json                 # 权限配置 (debugger, scripting, tabs, cookies 等)
 │       ├── background.js                 # Service Worker (保活、长轮询、DOM/CDP 执行引擎)
 │       ├── popup.html / popup.js         # 扩展弹窗 UI
 │       └── icons/                        # 扩展图标 (16/48/128)
-├── tests/
-│   └── unit/
-│       ├── browser-bridge-server.test.mjs # Bridge 中枢单元测试
-│       ├── browser-bridge-cli.test.mjs    # CLI 模块单元测试
-│       └── browser-bridge-mcp.test.mjs    # MCP 服务单元测试
+├── clis/leo-lantern/tests/
+│   ├── server.test.mjs
+│   └── cli.test.mjs
+├── mcps/leo-lantern/tests/
+│   └── mcp.test.mjs
 └── docs/
     └── superpowers/
         └── specs/
@@ -398,21 +403,21 @@ async function captureCdpScreenshot(tabId) {
 
 开发完成后，可通过以下自动化测试矩阵进行全量回归：
 
-1. **Bridge Server 核心测试** (`tests/unit/browser-bridge-server.test.mjs`):
+1. **Bridge Server 核心测试** (`clis/leo-lantern/tests/server.test.mjs`):
    * `start / stop` 生命周期；
    * `/health` 与 `/doctor` 状态自检；
    * `/ext/hello` 注册与 `lastSeen` 心跳更新；
    * `dispatch()` 任务下发 -> `/ext/poll` 立即捕获 -> `/ext/result` 回传完成的完整闭环；
    * 指令超时 TTL 自动清理机制。
-2. **CLI 客户端测试** (`tests/unit/browser-bridge-cli.test.mjs`):
+2. **CLI 客户端测试** (`clis/leo-lantern/tests/cli.test.mjs`):
    * 命令行参数（`--flag`, positional）解析正确性；
-   * `bcli health` 与 `bcli doctor` 输出格式验证。
-3. **MCP 服务测试** (`tests/unit/browser-bridge-mcp.test.mjs`):
+   * `leo-lantern health` 与 `leo-lantern doctor` 输出格式验证。
+3. **MCP 服务测试** (`mcps/leo-lantern/tests/mcp.test.mjs`):
    * JSON-RPC 2.0 `initialize` 与 `ping` 响应；
    * `tools/list` 输出包含 11 个标准浏览器工具；
    * `tools/call` 调用 `browser_health` 等工具的执行回包。
 4. **运行全量测试命令**：
    ```bash
    npm run check
-   npm run test:browser-bridge
+   npm run test:leo-lantern
    ```

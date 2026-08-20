@@ -1,7 +1,7 @@
 import http from "node:http";
 import fs from "node:fs/promises";
 import { DEFAULT_BRIDGE_PORT, DEFAULT_BRIDGE_HOST, COMMAND_TYPES } from "./protocol.mjs";
-import { BridgeServer } from "./server.mjs";
+import { LanternServer } from "./server.mjs";
 
 export function parseCliArgs(args = []) {
   const command = args[0] || "help";
@@ -28,8 +28,8 @@ export function parseCliArgs(args = []) {
 }
 
 async function requestBridge(path, method = "GET", data = null, options = {}) {
-  const port = options.port || Number(process.env.BROWSER_BRIDGE_PORT || DEFAULT_BRIDGE_PORT);
-  const host = options.host || process.env.BROWSER_BRIDGE_HOST || DEFAULT_BRIDGE_HOST;
+  const port = options.port || Number(process.env.LEO_LANTERN_PORT || DEFAULT_BRIDGE_PORT);
+  const host = options.host || process.env.LEO_LANTERN_HOST || DEFAULT_BRIDGE_HOST;
 
   return new Promise((resolve, reject) => {
     const postData = data ? JSON.stringify(data) : null;
@@ -39,8 +39,10 @@ async function requestBridge(path, method = "GET", data = null, options = {}) {
         port,
         path,
         method,
+        agent: false,
         headers: {
           "Content-Type": "application/json",
+          Connection: "close",
           ...(postData ? { "Content-Length": Buffer.byteLength(postData) } : {}),
         },
       },
@@ -66,7 +68,7 @@ async function requestBridge(path, method = "GET", data = null, options = {}) {
       if (err.code === "ECONNREFUSED") {
         reject(
           new Error(
-            `Could not connect to Browser Bridge at http://${host}:${port}. Is the bridge or MCP server running?`
+            `Could not connect to Leo Lantern at http://${host}:${port}. Is leo-lantern or the MCP server running?`
           )
         );
       } else {
@@ -147,7 +149,13 @@ export async function executeCommand(command, params = {}, positional = [], opti
     }
 
     case "screenshot": {
-      const res = await requestBridge("/cmd", "POST", { type: COMMAND_TYPES.CDP_SCREENSHOT, params }, options);
+      const fullPage = params.fullPage === true || params.fullPage === "true" || params.fullPage === "1";
+      const res = await requestBridge(
+        "/cmd",
+        "POST",
+        { type: COMMAND_TYPES.CDP_SCREENSHOT, params: { ...params, fullPage } },
+        options
+      );
       const outPath = params.out || params.output;
       if (outPath && res.result?.data) {
         const buf = Buffer.from(res.result.data, "base64");
@@ -165,9 +173,9 @@ export async function executeCommand(command, params = {}, positional = [], opti
 
     case "server":
     case "start-server": {
-      const server = new BridgeServer(options);
+      const server = new LanternServer(options);
       await server.start();
-      console.log(`Browser Bridge server listening on http://${server.host}:${server.port}`);
+      console.log(`Leo Lantern server listening on http://${server.host}:${server.port}`);
       // Return server instance
       return { ok: true, server };
     }
@@ -177,7 +185,7 @@ export async function executeCommand(command, params = {}, positional = [], opti
       return {
         ok: true,
         help: `
-Usage: bcli <command> [options]
+Usage: leo-lantern <command> [options]
 
 Commands:
   health                         Check bridge and extension status
@@ -192,7 +200,7 @@ Commands:
   eval <script>                  Evaluate JavaScript in page context
   screenshot [--out FILE]        Capture tab screenshot
   cookies --domain DOMAIN        Extract cookies for domain
-  server [--port N]              Start standalone bridge server
+  server [--port N]              Start standalone Leo Lantern server
 `.trim(),
       };
     }
