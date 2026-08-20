@@ -3538,7 +3538,29 @@ async function routeVideoKbRequest(req, res, context, reqPath) {
       ".srt": "text/plain; charset=utf-8",
     };
     const contentType = mimeTypes[ext] || "application/octet-stream";
-    res.writeHead(200, { "Content-Type": contentType, "Content-Length": stats.size, "Cache-Control": "no-store" });
+    const range = String(req.headers.range || "");
+    const match = range.match(/^bytes=(\d*)-(\d*)$/);
+    if (match) {
+      const size = stats.size;
+      const start = match[1] ? Number(match[1]) : 0;
+      const end = match[2] ? Number(match[2]) : size - 1;
+      if (start > end || start >= size) {
+        res.writeHead(416, { "Content-Range": `bytes */${size}` });
+        res.end();
+        return;
+      }
+      const chunkEnd = Math.min(end, size - 1);
+      res.writeHead(206, {
+        "Content-Type": contentType,
+        "Content-Length": chunkEnd - start + 1,
+        "Content-Range": `bytes ${start}-${chunkEnd}/${size}`,
+        "Accept-Ranges": "bytes",
+        "Cache-Control": "no-store",
+      });
+      fs.createReadStream(filePath, { start, end: chunkEnd }).pipe(res);
+      return;
+    }
+    res.writeHead(200, { "Content-Type": contentType, "Content-Length": stats.size, "Accept-Ranges": "bytes", "Cache-Control": "no-store" });
     fs.createReadStream(filePath).pipe(res);
     return;
   }
