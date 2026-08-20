@@ -689,3 +689,9 @@ test("video kb ingest form includes collection field", async () => {
   assert.match(src, /collection:/);
   assert.match(src, /iching-up/);
 });
+
+test("server exposes clip-anchor routes", async () => {
+  const src = await readFile(path.join(ROOT, "server.js"), "utf8");
+  assert.match(src, /\/v1\/clip-anchors/);
+  assert.match(src, /for_display/);
+});

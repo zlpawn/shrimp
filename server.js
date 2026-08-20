@@ -108,6 +108,7 @@ import { createVectorStore } from "./lib/video-kb/vector-store.mjs";
 import { runVideoKbPipeline, getPipelineNodes, resolveSelectedSteps, validateSelectedSteps, getDefaultSelectedSteps } from "./lib/video-kb/pipeline.mjs";
 import { videoKbHandler } from "./lib/video-kb/handler.mjs";
 import { createMetaStore, normalizeCollection } from "./lib/video-kb/meta-store.mjs";
+import { routeClipAnchorRequest } from "./lib/video-kb/clip-anchor-routes.mjs";
 import { generateVideoSummary } from "./lib/video-kb/summarizer.mjs";
 import { detectAgentReach, getDoctorReport, getDoctorSnapshot, getInstalledChannels, invalidateDoctorCache } from "./lib/content-reach/detector.mjs";
 import { fetchContent } from "./lib/content-reach/fetcher.mjs";
@@ -1198,6 +1199,17 @@ async function route(req, res) {
     if (!checkLocalAuth(req, res)) return;
     await routeAgentReachRequest(req, res, context, reqPath);
     return;
+  }
+
+  if (reqPath.startsWith("/v1/clip-anchors")) { // GET supports for_display=1
+    if (!checkLocalAuth(req, res)) return;
+    const handled = await routeClipAnchorRequest(req, res, {
+      url,
+      readText,
+      sendJson,
+      mediaDataDir,
+    });
+    if (handled) return;
   }
 
   if (reqPath.startsWith("/v1/video-kb")) {
