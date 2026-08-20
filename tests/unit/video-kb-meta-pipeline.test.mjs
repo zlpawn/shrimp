@@ -51,6 +51,53 @@ test("meta-store: upsert/list/update title and summary", () => {
   }
 });
 
+test("meta-store: collection defaults and list filter", () => {
+  const dir = tmpDir("video-meta-col-");
+  const dbPath = path.join(dir, "meta.sqlite");
+  try {
+    const store = createMetaStore({ dbPath });
+    const created = store.upsertVideo({
+      video_id: "v1",
+      video_url: "https://example.com/v1",
+      source_title: "plain",
+    });
+    assert.equal(created.collection, "default");
+
+    store.upsertVideo({
+      video_id: "v2",
+      video_url: "https://example.com/v2",
+      source_title: "iching",
+      collection: "iching-up",
+    });
+    const iching = store.listVideos({ collection: "iching-up" });
+    assert.equal(iching.length, 1);
+    assert.equal(iching[0].video_id, "v2");
+    assert.equal(store.listVideos().length, 2);
+
+    const moved = store.updateCollection("v1", "iching-up");
+    assert.equal(moved.collection, "iching-up");
+    assert.equal(store.listVideos({ collection: "iching-up" }).length, 2);
+    store.close();
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("meta-store: reject invalid collection id", () => {
+  const dir = tmpDir("video-meta-bad-");
+  const dbPath = path.join(dir, "meta.sqlite");
+  try {
+    const store = createMetaStore({ dbPath });
+    assert.throws(
+      () => store.upsertVideo({ video_id: "v1", collection: "I Ching" }),
+      /collection/,
+    );
+    store.close();
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("pipeline: default steps and validation", () => {
   const defaults = getDefaultSelectedSteps();
   assert.ok(defaults.includes("fetch_info"));
