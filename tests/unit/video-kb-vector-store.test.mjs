@@ -168,3 +168,43 @@ test("vector-store: getVideo returns chunks sorted by index", async () => {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("vector-store: search can filter by collection", async () => {
+  const dir = tmpDir();
+  try {
+    const mockEmbed = async (text) => {
+      if (text.includes("qian")) return [1, 0, 0];
+      return [0, 1, 0];
+    };
+    const store = createVectorStore({ dbPath: dir, embeddingFn: mockEmbed });
+    await store.upsertChunks([
+      {
+        chunk_id: "c1",
+        video_id: "v1",
+        collection: "iching-up",
+        text: "qian hexagram intro",
+        start_seconds: 10,
+        end_seconds: 20,
+        vector: [1, 0, 0],
+      },
+      {
+        chunk_id: "c2",
+        video_id: "v2",
+        collection: "other-course",
+        text: "qian mentioned in passing",
+        start_seconds: 0,
+        end_seconds: 8,
+        vector: [1, 0, 0],
+      },
+    ], { dim: 3 });
+
+    const all = await store.search("qian", { topK: 5 });
+    assert.equal(all.length, 2);
+    const filtered = await store.search("qian", { topK: 5, collection: "iching-up" });
+    assert.equal(filtered.length, 1);
+    assert.equal(filtered[0].video_id, "v1");
+    assert.equal(filtered[0].collection, "iching-up");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
