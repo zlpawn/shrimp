@@ -98,3 +98,49 @@ test("clip-anchors: display query hides mentions and low confidence", () => {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("clip-anchors: unique clip is upserted instead of duplicated", () => {
+  const dir = tmpDir();
+  try {
+    const store = createClipAnchorStore({ dbPath: path.join(dir, "meta.sqlite") });
+    const first = store.upsertAnchor({
+      id: "a-old",
+      collection: "iching-up",
+      object_type: "hexagram",
+      object_id: "谦",
+      video_id: "v1",
+      start_seconds: 12,
+      end_seconds: 40,
+      quote: "first",
+      role: "primary",
+      confidence: 0.9,
+      source: "model",
+    });
+    const second = store.upsertAnchor({
+      id: "a-new",
+      collection: "iching-up",
+      object_type: "hexagram",
+      object_id: "谦",
+      video_id: "v1",
+      start_seconds: 12,
+      end_seconds: 40,
+      quote: "updated quote",
+      role: "primary",
+      confidence: 0.95,
+      confirmed: 1,
+      source: "manual",
+    });
+    assert.equal(second.id, first.id);
+    assert.equal(second.quote, "updated quote");
+    assert.equal(second.confirmed, 1);
+    const listed = store.listAnchors({
+      collection: "iching-up",
+      object_type: "hexagram",
+      object_id: "谦",
+    });
+    assert.equal(listed.length, 1);
+    store.close();
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

@@ -1,3 +1,12 @@
+function escapeHtml(value: string): string {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function clipPlayerRoot(): HTMLElement | null {
   return document.getElementById("clip-player-root");
 }
@@ -54,14 +63,14 @@ export function clipPlayerOpen(input: {
   const clip = normalizeClipPlayback(input);
   if (!clip.ok) return;
   const fallback = clip.source_url
-    ? `<a class="clip-player-fallback" href="${clip.source_url}" target="_blank" rel="noreferrer">打开原链接</a>`
+    ? `<a class="clip-player-fallback" href="${escapeHtml(clip.source_url)}" target="_blank" rel="noreferrer">打开原链接</a>`
     : "";
   root.innerHTML = `
     <div class="clip-player-bar">
       <div class="clip-player-meta">
-        <div class="clip-player-title">${clip.title || "视频片段"}</div>
+        <div class="clip-player-title">${escapeHtml(clip.title || "视频片段")}</div>
         <div class="clip-player-range">${fmtTime(clip.start_seconds)} – ${fmtTime(clip.end_seconds)}</div>
-        ${clip.quote ? `<div class="clip-player-quote">${clip.quote}</div>` : ""}
+        ${clip.quote ? `<div class="clip-player-quote">${escapeHtml(clip.quote)}</div>` : ""}
         <div class="clip-player-status" id="clip-player-status"></div>
         ${fallback}
       </div>

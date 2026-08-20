@@ -714,3 +714,13 @@ test("iching detail loads clip anchors for judgment and lines", async () => {
   assert.match(src, /clipPlayerOpen/);
   assert.match(src, /iching-explain-card/);
 });
+
+test("clip player and iching explanation cards escape untrusted text", async () => {
+  const player = await readFile(path.join(ROOT, "desktop", "src", "modules", "clip-player.ts"), "utf8");
+  const iching = await readFile(path.join(ROOT, "desktop", "src", "modules", "iching.ts"), "utf8");
+  assert.match(player, /function escapeHtml/);
+  assert.match(player, /escapeHtml\(clip\.title/);
+  assert.match(player, /escapeHtml\(clip\.quote/);
+  assert.match(iching, /function escapeHtml/);
+  assert.match(iching, /escapeHtml\(anchor\.quote/);
+});

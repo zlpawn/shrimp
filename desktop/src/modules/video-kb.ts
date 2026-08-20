@@ -1350,8 +1350,8 @@ async function loadVideoList(): Promise<void> {
   if (!panel) return;
   panel.innerHTML = `<div class="video-kb-empty">加载中...</div>`;
 
-  const collection = (document.getElementById("vk-search-collection") as HTMLInputElement)?.value?.trim()
-    || (document.getElementById("vk-collection") as HTMLInputElement)?.value?.trim()
+  const collection = (document.getElementById("vk-collection") as HTMLInputElement)?.value?.trim()
+    || (document.getElementById("vk-search-collection") as HTMLInputElement)?.value?.trim()
     || "";
   const data = await apiGet<{ videos: VideoInfo[] }>("/v1/video-kb/videos" + (collection ? `?collection=${encodeURIComponent(collection)}` : ""));
   if (!data) return;

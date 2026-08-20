@@ -3233,10 +3233,8 @@ async function routeVideoKbRequest(req, res, context, reqPath) {
       const metaStore = createMetaStore({ dbPath: metaDbPath });
       const vectorStore = createVectorStore({ dbPath: lanceDbPath });
       const collection = String(url.searchParams.get("collection") || "").trim();
-      const [metaVideos, vectorVideos] = await Promise.all([
-        Promise.resolve(collection ? metaStore.listVideos({ collection }) : metaStore.listVideos()),
-        vectorStore.listVideos().catch(() => []),
-      ]);
+      const metaVideos = collection ? metaStore.listVideos({ collection }) : metaStore.listVideos();
+      const vectorVideos = collection ? [] : await vectorStore.listVideos().catch(() => []);
       metaStore.close();
       sendJson(res, 200, { videos: mergeVideoLists(metaVideos, vectorVideos) });
     } catch (err) {

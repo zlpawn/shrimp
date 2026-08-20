@@ -1371,6 +1371,15 @@ function playPageTransition(detail: HTMLElement, html: string, enterClass: strin
   }, 160);
 }
 
+function escapeHtml(value: string): string {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function formatClipRange(start: number, end: number): string {
   const fmt = (seconds: number) => {
     const m = Math.floor(Math.max(0, seconds) / 60);
@@ -1405,7 +1414,7 @@ function renderExplainCards(target: Element, anchors: any[], title: string): voi
   target.innerHTML = anchors.map((anchor, index) => `
     <div class="iching-explain-card">
       <div class="iching-explain-range">${formatClipRange(Number(anchor.start_seconds), Number(anchor.end_seconds))}</div>
-      <div class="iching-explain-quote">${anchor.quote || "讲解片段"}</div>
+      <div class="iching-explain-quote">${escapeHtml(anchor.quote || "讲解片段")}</div>
       <button type="button" class="btn iching-explain-play" data-idx="${index}">播放这一段</button>
     </div>
   `).join("");
