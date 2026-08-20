@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { createVectorStore } from "../../lib/video-kb/vector-store.mjs";
+import { createVectorStore, ensureLanceColumns } from "../../lib/video-kb/vector-store.mjs";
 
 function tmpDir() {
   return mkdtempSync(path.join(os.tmpdir(), "lancedb-"));
@@ -256,4 +256,23 @@ test("vector-store: old tables without collection still search and accept new wr
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test("vector-store: ensureLanceColumns adds only missing columns", async () => {
+  const added = [];
+  const table = {
+    async schema() {
+      return { fields: [{ name: "chunk_id" }, { name: "video_id" }] };
+    },
+    async addColumns(cols) {
+      added.push(...cols.map((col) => col.name));
+    },
+  };
+  const names = await ensureLanceColumns(table, [
+    { name: "collection", valueSql: "'default'" },
+    { name: "video_id", valueSql: "''" },
+    { name: "source", valueSql: "'manual'" },
+  ]);
+  assert.deepEqual(names, ["collection", "source"]);
+  assert.deepEqual(added, ["collection", "source"]);
 });
