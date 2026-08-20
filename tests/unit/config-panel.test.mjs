@@ -682,3 +682,10 @@ test("command apps module renders complete action states", async () => {
   assert.match(source, /当前系统暂不支持/);
   assert.match(source, /escapeHtml/);
 });
+
+test("video kb ingest form includes collection field", async () => {
+  const src = await readFile(path.join(ROOT, "desktop", "src", "modules", "video-kb.ts"), "utf8");
+  assert.match(src, /vk-collection/);
+  assert.match(src, /collection:/);
+  assert.match(src, /iching-up/);
+});

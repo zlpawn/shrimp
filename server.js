@@ -107,7 +107,7 @@ import { chunkTranscript } from "./lib/video-kb/chunker.mjs";
 import { createVectorStore } from "./lib/video-kb/vector-store.mjs";
 import { runVideoKbPipeline, getPipelineNodes, resolveSelectedSteps, validateSelectedSteps, getDefaultSelectedSteps } from "./lib/video-kb/pipeline.mjs";
 import { videoKbHandler } from "./lib/video-kb/handler.mjs";
-import { createMetaStore } from "./lib/video-kb/meta-store.mjs";
+import { createMetaStore, normalizeCollection } from "./lib/video-kb/meta-store.mjs";
 import { generateVideoSummary } from "./lib/video-kb/summarizer.mjs";
 import { detectAgentReach, getDoctorReport, getDoctorSnapshot, getInstalledChannels, invalidateDoctorCache } from "./lib/content-reach/detector.mjs";
 import { fetchContent } from "./lib/content-reach/fetcher.mjs";
@@ -3182,6 +3182,7 @@ async function routeVideoKbRequest(req, res, context, reqPath) {
       summaryEndpointId: body.summary_endpoint_id || null,
       summaryModel: body.summary_model || null,
       displayTitle: body.display_title || body.title || null,
+      collection: body.collection || "default",
       chunkStrategy: body.chunk_strategy || "time-window",
       chunkTargetSeconds: body.chunk_target_seconds,
       chunkMaxSeconds: body.chunk_max_seconds,
@@ -3195,6 +3196,11 @@ async function routeVideoKbRequest(req, res, context, reqPath) {
     };
     const issues = validateSelectedSteps(selectedSteps, payload);
     if (!payload.url) issues.unshift("Missing 'url'");
+    try {
+      payload.collection = normalizeCollection(payload.collection);
+    } catch (err) {
+      issues.unshift(err instanceof Error ? err.message : String(err));
+    }
     if (issues.length) {
       sendJson(res, 400, { error: { type: "invalid_request_error", message: issues.join("；") } });
       return;
@@ -3214,8 +3220,9 @@ async function routeVideoKbRequest(req, res, context, reqPath) {
       const { lanceDbPath, metaDbPath } = videoKbPaths();
       const metaStore = createMetaStore({ dbPath: metaDbPath });
       const vectorStore = createVectorStore({ dbPath: lanceDbPath });
+      const collection = String(url.searchParams.get("collection") || "").trim();
       const [metaVideos, vectorVideos] = await Promise.all([
-        Promise.resolve(metaStore.listVideos()),
+        Promise.resolve(collection ? metaStore.listVideos({ collection }) : metaStore.listVideos()),
         vectorStore.listVideos().catch(() => []),
       ]);
       metaStore.close();
@@ -3303,6 +3310,9 @@ async function routeVideoKbRequest(req, res, context, reqPath) {
         meta = metaStore.updateTitle(videoId, body.display_title || body.title);
         const vectorStore = createVectorStore({ dbPath: lanceDbPath });
         await vectorStore.updateVideoTitle(videoId, meta.display_title);
+      }
+      if (Object.prototype.hasOwnProperty.call(body, "collection")) {
+        meta = metaStore.updateCollection(videoId, body.collection);
       }
       if (body.summary_short || body.summary_full || body.key_points || body.topics) {
         meta = metaStore.updateSummary(videoId, {
@@ -3468,15 +3478,17 @@ async function routeVideoKbRequest(req, res, context, reqPath) {
     const endpointId = body.embedding_endpoint_id;
     const topK = Math.min(Number(body.top_k) || 5, 50);
     const videoId = body.video_id || null;
+    const collection = body.collection || null;
     try {
       const dataDir = mediaDataDir();
       const lanceDbPath = path.join(dataDir, "video-kb", "lancedb");
       const embeddingFn = createGatewayEmbeddingFn(endpointId);
       const store = createVectorStore({ dbPath: lanceDbPath, embeddingFn });
-      const results = await store.search(query, { topK, videoId });
+      const results = await store.search(query, { topK, videoId, collection });
       sendJson(res, 200, { results, count: results.length });
     } catch (err) {
-      sendJson(res, 500, { error: { type: "search_failed", message: err instanceof Error ? err.message : String(err) } });
+      console.error("[video-kb] search failed:", err instanceof Error ? err.message : String(err));
+      sendJson(res, 200, { results: [], count: 0, error: err instanceof Error ? err.message : String(err) });
     }
     return;
   }

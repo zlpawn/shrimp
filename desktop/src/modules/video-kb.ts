@@ -232,6 +232,16 @@ function fmtTime(seconds: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+
+function restoreLastCollection(): void {
+  try {
+    const last = localStorage.getItem("video-kb:last-collection") || "";
+    const input = document.getElementById("vk-collection") as HTMLInputElement | null;
+    if (input && last) input.value = last;
+    const search = document.getElementById("vk-search-collection") as HTMLInputElement | null;
+    if (search && last) search.value = last;
+  } catch { /* ignore */ }
+}
 export function renderVideoKbDetail(): void {
   const cards = document.getElementById("tools-cards");
   const detail = document.getElementById("tools-detail");
@@ -259,6 +269,7 @@ export function renderVideoKbDetail(): void {
   loadToolsData();
   loadBrowsers();
   loadCookieFiles();
+  restoreLastCollection();
 }
 
 function importPanelHTML(): string {
@@ -272,6 +283,11 @@ function importPanelHTML(): string {
       <div class="form-group full" style="margin-bottom:16px">
         <label>显示标题（可选）</label>
         <input type="text" id="vk-display-title" placeholder="留空则使用源站标题">
+      </div>
+      <div class="form-group full" style="margin-bottom:16px">
+        <label>集合 collection</label>
+        <input type="text" id="vk-collection" placeholder="iching-up">
+        <div class="video-kb-status">同一系列视频用同一个 ID，例如 iching-up。留空则写入 default。</div>
       </div>
       <div class="form-group" style="margin-bottom:16px">
         <label>Cookie 文件</label>
@@ -428,6 +444,10 @@ function searchPanelHTML(): string {
       <div class="form-group full" style="margin-bottom:16px">
         <label>搜索内容</label>
         <input type="text" id="vk-search-query" placeholder="输入要检索的内容..." onkeydown="if(event.key==='Enter')window.videoKbSearch()">
+      </div>
+      <div class="form-group full" style="margin-bottom:16px">
+        <label>集合（可选）</label>
+        <input type="text" id="vk-search-collection" placeholder="iching-up，留空则搜索全部">
       </div>
       <div class="video-kb-form-grid">
         <div class="form-group">
@@ -1135,10 +1155,15 @@ function updateModelGuide(): void {
   if (selectedSteps.includes("vectorize") && !embeddingEndpointId) { alert("已勾选向量化入库，请配置 Embedding 节点"); return; }
 
   const displayTitle = (document.getElementById("vk-display-title") as HTMLInputElement)?.value?.trim() || "";
+  const collection = (document.getElementById("vk-collection") as HTMLInputElement)?.value?.trim() || "";
+  if (collection) {
+    try { localStorage.setItem("video-kb:last-collection", collection); } catch { /* ignore */ }
+  }
 
   const result = await apiPost<{ task_id: string; error?: { message?: string } }>("/v1/video-kb/ingest", {
     url,
     display_title: displayTitle || null,
+    collection: collection || "default",
     cookie_file: cookieFile || null,
     whisper_tool: whisperTool || null,
     whisper_model: whisperModel || null,
@@ -1279,8 +1304,12 @@ function renderTaskComplete(task: TaskInfo): void {
   const resultsDiv = document.getElementById("vk-search-results");
   if (resultsDiv) resultsDiv.innerHTML = `<div class="video-kb-empty">搜索中...</div>`;
 
+  const collection = (document.getElementById("vk-search-collection") as HTMLInputElement)?.value?.trim() || "";
   const result = await apiPost<{ results: SearchResult[] }>("/v1/video-kb/search", {
-    query, embedding_endpoint_id: embeddingEndpointId, top_k: topK,
+    query,
+    embedding_endpoint_id: embeddingEndpointId,
+    top_k: topK,
+    collection: collection || undefined,
   });
 
   if (!result || !result.results) {
@@ -1321,7 +1350,10 @@ async function loadVideoList(): Promise<void> {
   if (!panel) return;
   panel.innerHTML = `<div class="video-kb-empty">加载中...</div>`;
 
-  const data = await apiGet<{ videos: VideoInfo[] }>("/v1/video-kb/videos");
+  const collection = (document.getElementById("vk-search-collection") as HTMLInputElement)?.value?.trim()
+    || (document.getElementById("vk-collection") as HTMLInputElement)?.value?.trim()
+    || "";
+  const data = await apiGet<{ videos: VideoInfo[] }>("/v1/video-kb/videos" + (collection ? `?collection=${encodeURIComponent(collection)}` : ""));
   if (!data) return;
 
   if (data.videos.length === 0) {
