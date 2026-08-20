@@ -695,3 +695,12 @@ test("server exposes clip-anchor routes", async () => {
   assert.match(src, /\/v1\/clip-anchors/);
   assert.match(src, /for_display/);
 });
+
+test("panel mounts shared clip player", async () => {
+  const html = await readFile(path.join(ROOT, "desktop", "index.html"), "utf8");
+  const ts = await readFile(path.join(ROOT, "desktop", "src", "modules", "clip-player.ts"), "utf8");
+  const css = await readFile(path.join(ROOT, "desktop", "src", "styles", "panel.css"), "utf8");
+  assert.match(html, /id="clip-player-root"/);
+  assert.match(ts, /clipPlayerOpen/);
+  assert.match(css, /clip-player-bar/);
+});

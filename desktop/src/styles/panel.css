@@ -6057,3 +6057,47 @@ input:focus, select:focus {
 .dsac-detail .dsac-result-card.is-neutral {
     border-color: var(--border-color);
 }
+
+.clip-player-bar {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 40;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
+}
+.clip-player-meta {
+  flex: 1;
+  min-width: 0;
+}
+.clip-player-title {
+  font-weight: 700;
+}
+.clip-player-range,
+.clip-player-quote,
+.clip-player-status {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin-top: 4px;
+}
+.clip-player-video {
+  width: 280px;
+  max-width: 36vw;
+  height: 158px;
+  background: #000;
+  border-radius: var(--radius-md);
+}
+.clip-player-close {
+  flex-shrink: 0;
+}
+.clip-player-fallback {
+  display: inline-block;
+  margin-top: 6px;
+}
