@@ -28,23 +28,62 @@ export const MCP_TOOLS = [
     },
   },
   {
+    name: "browser_start_task",
+    description: "Start or reuse the active Agent task. Defaults to an independent background window.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "Task title" },
+        color: { type: "string", description: "Tab group color" },
+        sameWindow: { type: "boolean", description: "Keep task in the current window" },
+        focus: { type: "boolean", description: "Focus the task window" },
+      },
+    },
+  },
+  {
+    name: "browser_claim_tab",
+    description: "Claim an explicit tab ID into the active Agent task group.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tabId: { type: "number", description: "Exact Chrome tab ID to claim" },
+        focus: { type: "boolean", description: "Focus the claimed tab" },
+        sameWindow: { type: "boolean", description: "Override task window strategy for this claim" },
+      },
+      required: ["tabId"],
+    },
+  },
+  {
+    name: "browser_end_task",
+    description: "End the active Agent task. Optionally dissolve the Agent-owned group.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        closeGroup: { type: "boolean", description: "Dissolve the Agent task group" },
+      },
+    },
+  },
+  {
     name: "browser_new_tab",
-    description: "Open a new tab with the specified URL in the user's Chrome browser.",
+    description: "Navigate the claimed task tab, or create the first/forced task tab.",
     inputSchema: {
       type: "object",
       properties: {
         url: { type: "string", description: "URL to open (e.g. https://example.com)" },
+        force: { type: "boolean", description: "Create an additional tab instead of reusing claimed tab" },
+        focus: { type: "boolean", description: "Focus the tab/window" },
       },
     },
   },
   {
     name: "browser_goto",
-    description: "Navigate an existing or active browser tab to a URL.",
+    description: "Navigate the claimed task tab, or a task-owned tab ID.",
     inputSchema: {
       type: "object",
       properties: {
         url: { type: "string", description: "Target URL" },
-        tabId: { type: "number", description: "Optional specific tab ID (defaults to active tab)" },
+        tabId: { type: "number", description: "Optional task-owned tab ID" },
+        focus: { type: "boolean", description: "Focus the tab/window" },
       },
       required: ["url"],
     },
@@ -269,7 +308,34 @@ export class LanternMcpServer {
             pendingCommands: this.bridge.pendingCommands.size,
           },
           extension: this.bridge.extension,
+          task: this.bridge.taskSummary || null,
         };
+      }
+
+      case "browser_start_task": {
+        return await this.bridge.dispatch(COMMAND_TYPES.TASK_START, {
+          title: args.title,
+          color: args.color,
+          sameWindow: Boolean(args.sameWindow),
+          focus: Boolean(args.focus),
+        });
+      }
+
+      case "browser_claim_tab": {
+        if (args.tabId === undefined || args.tabId === null) {
+          throw new Error("Argument 'tabId' is required for browser_claim_tab");
+        }
+        return await this.bridge.dispatch(COMMAND_TYPES.TABS_CLAIM, {
+          tabId: args.tabId,
+          focus: Boolean(args.focus),
+          sameWindow: args.sameWindow,
+        });
+      }
+
+      case "browser_end_task": {
+        return await this.bridge.dispatch(COMMAND_TYPES.TASK_END, {
+          closeGroup: Boolean(args.closeGroup),
+        });
       }
 
       case "browser_open_tabs": {
@@ -277,12 +343,19 @@ export class LanternMcpServer {
       }
 
       case "browser_new_tab": {
-        return await this.bridge.dispatch(COMMAND_TYPES.TABS_NEW, { url: args.url || "about:blank" });
+        return await this.bridge.dispatch(COMMAND_TYPES.TABS_NEW, {
+          url: args.url || "about:blank",
+          force: Boolean(args.force),
+          focus: Boolean(args.focus),
+        });
       }
 
       case "browser_goto": {
         if (!args.url) throw new Error("Argument 'url' is required");
-        return await this.bridge.dispatch(COMMAND_TYPES.TABS_GOTO, args);
+        return await this.bridge.dispatch(COMMAND_TYPES.TABS_GOTO, {
+          ...args,
+          focus: Boolean(args.focus),
+        });
       }
 
       case "browser_click": {

@@ -81,6 +81,10 @@ async function requestBridge(path, method = "GET", data = null, options = {}) {
   });
 }
 
+function asBool(value) {
+  return value === true || value === "true" || value === "1" || value === "yes";
+}
+
 export async function executeCommand(command, params = {}, positional = [], options = {}) {
   switch (command) {
     case "health": {
@@ -96,15 +100,93 @@ export async function executeCommand(command, params = {}, positional = [], opti
       return await requestBridge("/cmd", "POST", { type: COMMAND_TYPES.TABS_LIST, params }, options);
     }
 
+    case "start-task": {
+      const sameWindow = asBool(params["same-window"] ?? params.sameWindow);
+      const focus = asBool(params.focus);
+      return await requestBridge(
+        "/cmd",
+        "POST",
+        {
+          type: COMMAND_TYPES.TASK_START,
+          params: {
+            title: params.title || positional[0],
+            color: params.color,
+            sameWindow,
+            focus,
+          },
+        },
+        options
+      );
+    }
+
+    case "claim": {
+      const tabId = params.tabId || positional[0];
+      if (!tabId) throw new Error("--tabId is required for 'claim'");
+      return await requestBridge(
+        "/cmd",
+        "POST",
+        {
+          type: COMMAND_TYPES.TABS_CLAIM,
+          params: {
+            tabId,
+            focus: asBool(params.focus),
+            sameWindow: params["same-window"] !== undefined || params.sameWindow !== undefined
+              ? asBool(params["same-window"] ?? params.sameWindow)
+              : undefined,
+          },
+        },
+        options
+      );
+    }
+
+    case "end-task": {
+      return await requestBridge(
+        "/cmd",
+        "POST",
+        {
+          type: COMMAND_TYPES.TASK_END,
+          params: {
+            closeGroup: asBool(params["close-group"] ?? params.closeGroup),
+          },
+        },
+        options
+      );
+    }
+
     case "new-tab": {
       const url = params.url || positional[0] || "about:blank";
-      return await requestBridge("/cmd", "POST", { type: COMMAND_TYPES.TABS_NEW, params: { ...params, url } }, options);
+      return await requestBridge(
+        "/cmd",
+        "POST",
+        {
+          type: COMMAND_TYPES.TABS_NEW,
+          params: {
+            ...params,
+            url,
+            force: asBool(params.force),
+            focus: asBool(params.focus),
+          },
+        },
+        options
+      );
     }
 
     case "goto": {
       const url = params.url || positional[0];
       if (!url) throw new Error("Missing URL for 'goto'");
-      return await requestBridge("/cmd", "POST", { type: COMMAND_TYPES.TABS_GOTO, params: { ...params, url } }, options);
+      return await requestBridge(
+        "/cmd",
+        "POST",
+        {
+          type: COMMAND_TYPES.TABS_GOTO,
+          params: {
+            ...params,
+            url,
+            focus: asBool(params.focus),
+          },
+        },
+        options
+      );
     }
 
     case "close-tab": {
@@ -190,9 +272,12 @@ Usage: leo-lantern <command> [options]
 Commands:
   health                         Check bridge and extension status
   doctor                         Diagnostic report
+  start-task [--title T]         Start or reuse Agent task (background window)
+  claim --tabId ID               Claim explicit tab into Agent task group
+  end-task [--close-group]       End active Agent task
   tabs                           List open browser tabs
-  new-tab <url>                  Open a new tab
-  goto <url> [--tabId ID]        Navigate active or specified tab
+  new-tab <url> [--force]        Navigate claimed tab (or create first/forced tab)
+  goto <url> [--tabId ID]        Navigate claimed or task-owned tab
   close-tab <tabId>              Close specified tab
   click [--text T] [--sel S]     Click element by text or selector
   fill --sel S --val V           Fill text into form input

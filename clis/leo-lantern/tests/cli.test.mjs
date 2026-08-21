@@ -101,3 +101,75 @@ test("CLI: click command posts to /cmd", async () => {
     await bridge.stop();
   }
 });
+
+test("CLI: maps start-task/claim/end-task and force new-tab flags", async () => {
+  const bridge = new LanternServer({ port: 0 });
+  await bridge.start();
+  try {
+    await postJson(`http://127.0.0.1:${bridge.port}/ext/hello`, { id: "cli-task-ext" });
+
+    const pollStart = getJson(`http://127.0.0.1:${bridge.port}/ext/poll?waitMs=5000`);
+    const startPromise = executeCommand(
+      "start-task",
+      { title: "deploy", "same-window": "false", focus: "0" },
+      [],
+      { port: bridge.port }
+    );
+    const startPoll = await pollStart;
+    assert.equal(startPoll.body.cmd.type, "task.start");
+    assert.equal(startPoll.body.cmd.params.title, "deploy");
+    assert.equal(startPoll.body.cmd.params.sameWindow, false);
+    await postJson(`http://127.0.0.1:${bridge.port}/ext/result`, {
+      id: startPoll.body.cmd.id,
+      ok: true,
+      result: { started: true, task: { taskId: "task_1", title: "deploy" } },
+    });
+    const started = await startPromise;
+    assert.equal(started.ok, true);
+
+    const pollClaim = getJson(`http://127.0.0.1:${bridge.port}/ext/poll?waitMs=5000`);
+    const claimPromise = executeCommand("claim", { tabId: "99", focus: "1" }, [], { port: bridge.port });
+    const claimPoll = await pollClaim;
+    assert.equal(claimPoll.body.cmd.type, "tabs.claim");
+    assert.equal(claimPoll.body.cmd.params.tabId, "99");
+    assert.equal(claimPoll.body.cmd.params.focus, true);
+    await postJson(`http://127.0.0.1:${bridge.port}/ext/result`, {
+      id: claimPoll.body.cmd.id,
+      ok: true,
+      result: { claimed: true, task: { taskId: "task_1", claimedTabId: 99 } },
+    });
+    await claimPromise;
+
+    const pollNew = getJson(`http://127.0.0.1:${bridge.port}/ext/poll?waitMs=5000`);
+    const newPromise = executeCommand(
+      "new-tab",
+      { force: "true", focus: "0" },
+      ["https://example.com"],
+      { port: bridge.port }
+    );
+    const newPoll = await pollNew;
+    assert.equal(newPoll.body.cmd.type, "tabs.new");
+    assert.equal(newPoll.body.cmd.params.url, "https://example.com");
+    assert.equal(newPoll.body.cmd.params.force, true);
+    await postJson(`http://127.0.0.1:${bridge.port}/ext/result`, {
+      id: newPoll.body.cmd.id,
+      ok: true,
+      result: { id: 100, forced: true },
+    });
+    await newPromise;
+
+    const pollEnd = getJson(`http://127.0.0.1:${bridge.port}/ext/poll?waitMs=5000`);
+    const endPromise = executeCommand("end-task", { "close-group": "1" }, [], { port: bridge.port });
+    const endPoll = await pollEnd;
+    assert.equal(endPoll.body.cmd.type, "task.end");
+    assert.equal(endPoll.body.cmd.params.closeGroup, true);
+    await postJson(`http://127.0.0.1:${bridge.port}/ext/result`, {
+      id: endPoll.body.cmd.id,
+      ok: true,
+      result: { ended: true, task: null },
+    });
+    await endPromise;
+  } finally {
+    await bridge.stop();
+  }
+});
