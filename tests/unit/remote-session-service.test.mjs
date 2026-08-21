@@ -316,6 +316,17 @@ test("SSH subscribeEvents keeps polling remote trajectory events", async () => {
   assert.ok(calls.length >= 2, "SSH subscription should poll trajectory more than once");
 });
 
+test("buildCascadeConfig includes declarative planner mixins", async () => {
+  const { buildCascadeConfig } = await import(
+    "../../lib/remote-session/host-attach/language-server-connect.mjs"
+  );
+  const config = buildCascadeConfig({
+    requestedModel: { model: "MODEL_PLACEHOLDER_M298" },
+  });
+  assert.equal(config.plannerConfig.declarativeMixinConfig.promptSections.length > 0, true);
+  assert.ok(config.plannerConfig.planModel);
+});
+
 test("enabling remote session requires nat traversal", async () => {
   const { service } = makeService({ natEnabled: false, enabled: false });
   await assert.rejects(
