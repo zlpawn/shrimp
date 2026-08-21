@@ -202,3 +202,52 @@ test("LanternServer: does not advertise CORS for browser pages", async () => {
     assert.equal(options.headers["access-control-allow-origin"], undefined);
   });
 });
+
+test("LanternServer: caches task summary from hello and result for doctor", async () => {
+  await withBridge(async (bridge, BASE) => {
+    await postJson(`${BASE}/ext/hello`, {
+      id: "ext-task",
+      task: {
+        taskId: "task_hello",
+        title: "from-hello",
+        color: "blue",
+        groupId: null,
+        windowId: 11,
+        claimedTabId: null,
+        sameWindow: false,
+        updatedAt: 1,
+      },
+    });
+    let doctor = await getJson(`${BASE}/doctor`);
+    assert.equal(doctor.body.task.taskId, "task_hello");
+    assert.equal(doctor.body.task.title, "from-hello");
+
+    const pollPromise = getJson(`${BASE}/ext/poll?waitMs=5000`);
+    const dispatchPromise = bridge.dispatchCommand("task.start", { title: "from-result" }, 5000);
+    const pollRes = await pollPromise;
+    await postJson(`${BASE}/ext/result`, {
+      id: pollRes.body.cmd.id,
+      ok: true,
+      result: {
+        started: true,
+        task: {
+          taskId: "task_result",
+          title: "from-result",
+          color: "green",
+          groupId: 3,
+          windowId: 11,
+          claimedTabId: 9,
+          sameWindow: false,
+          updatedAt: 2,
+        },
+      },
+    });
+    const result = await dispatchPromise;
+    assert.equal(result.task.taskId, "task_result");
+
+    doctor = await getJson(`${BASE}/doctor`);
+    assert.equal(doctor.body.task.taskId, "task_result");
+    assert.equal(doctor.body.task.claimedTabId, 9);
+    assert.equal(bridge.taskSummary.title, "from-result");
+  });
+});

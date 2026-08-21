@@ -46,9 +46,14 @@ export class LanternServer {
     this.host = options.host || process.env.LEO_LANTERN_HOST || DEFAULT_BRIDGE_HOST;
     this.server = null;
     this.extension = null;
+    this.taskSummary = null;
     this.pendingCommands = new Map(); // id -> { resolve, reject, timer, cmd }
     this.commandQueue = []; // array of { id, type, params }
     this.waitingPolls = []; // array of { res, timer }
+  }
+
+  setTaskSummary(task) {
+    this.taskSummary = task && typeof task === "object" ? task : null;
   }
 
   isExtensionOnline() {
@@ -93,6 +98,7 @@ export class LanternServer {
                 info: this.extension,
                 lastSeenAgoMs: this.extension?.lastSeen ? now - this.extension.lastSeen : null,
               },
+              task: this.taskSummary,
             });
           }
 
@@ -119,6 +125,9 @@ export class LanternServer {
               capabilities: body.capabilities || ["cookies", "tabs", "dom", "cdp"],
               lastSeen: Date.now(),
             };
+            if (Object.prototype.hasOwnProperty.call(body, "task")) {
+              this.setTaskSummary(body.task);
+            }
             return sendJson(res, 200, { ok: true, status: "registered" });
           }
 
@@ -182,6 +191,12 @@ export class LanternServer {
             const pending = this.pendingCommands.get(cmdId);
             this.pendingCommands.delete(cmdId);
             clearTimeout(pending.timer);
+
+            if (Object.prototype.hasOwnProperty.call(body, "task")) {
+              this.setTaskSummary(body.task);
+            } else if (body.result && Object.prototype.hasOwnProperty.call(body.result, "task")) {
+              this.setTaskSummary(body.result.task);
+            }
 
             if (body.ok === false || body.error) {
               pending.reject(new Error(body.error?.message || body.error || "Command execution failed"));
