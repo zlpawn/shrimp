@@ -1,7 +1,31 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-14T09:30:00.000Z",
+  "updatedAt": "2026-08-21T00:16:00.000Z",
   "skills": [
+    {
+      "id": "leo-live-runner",
+      "name": "leo-live-runner",
+      "title": "Leo 动态热补丁与执行引擎",
+      "summary": "在已引入 leo-live-runner-spring-boot-starter 的 Spring Boot 应用中生成、校验并执行动态 Java 热补丁代码或动态 RESTful API。支持线上紧急数据订正、无重启执行 SQL、调用现有 Spring Bean、多方法二级路由以及 @Transactional 原生事务回滚。执行前必须主动提示用户输入目标服务域名。",
+      "category": "development",
+      "categoryLabel": "开发工程",
+      "icon": "⚡",
+      "featured": true,
+      "tags": [
+        "live-runner",
+        "hotfix",
+        "spring-boot",
+        "dynamic-code",
+        "data-fix",
+        "transaction",
+        "热补丁",
+        "动态代码",
+        "数据修复"
+      ],
+      "requiresDaemon": false,
+      "promoted": true,
+      "managed": true
+    },
     {
       "id": "leo-code-to-business",
       "name": "leo-code-to-business",
