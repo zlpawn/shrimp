@@ -122,23 +122,25 @@ Params:
 Behavior:
 
 - If an active task exists, reuse it and refresh title/color only when provided.
-- If idle, create Agent-owned task group state.
-- Default window strategy: independent background window.
-- `--same-window` / `sameWindow=true` keeps work in the current window.
+- If idle, create Agent-owned task state and ensure the target window exists.
+- Default window strategy: create or reuse an independent background window immediately on start.
+- `--same-window` / `sameWindow=true` keeps work in the current window and does not create a new window.
+- Task group may be created lazily on first claimed/new tab if Chrome requires a tab before grouping, but the chosen window strategy is fixed at start.
 - Never adopt or rename an existing user work group as the task group.
 
 ### `tabs.claim`
 
 Params:
 
-- `tabId?: number|string`
+- `tabId: number|string` (required)
 - `focus?: boolean` default `false`
 - `sameWindow?: boolean` default inherits active task / start defaults
 
 Behavior:
 
-- Prefer explicit `tabId`.
-- Do not claim the user's current active tab by default.
+- `tabId` is required.
+- Claiming the user's current active tab is never inferred; the caller must pass that tab's id explicitly.
+- If no active task exists, fail and ask the caller to `task.start` first.
 - Detach the target tab from any existing user group, then place it into the Agent task group.
 - Update `claimedTabId` and task summary.
 
@@ -152,8 +154,9 @@ Params:
 
 Behavior:
 
-- Automation tabs belong to a task context.
+- Requires an active task. If idle, fail and ask the caller to `task.start` first.
 - If `claimedTabId` exists and `force` is false, navigate that tab to `url`.
+- If there is an active task but no `claimedTabId`, create one tab in the task window/group and claim it.
 - Only `force=true` creates an additional tab in the task group.
 - Default remains unfocused / background.
 
@@ -167,6 +170,7 @@ Params:
 
 Behavior:
 
+- Requires an active task. If idle, fail and ask the caller to `task.start` first.
 - Navigate the claimed tab by default.
 - If a specific `tabId` is provided, navigate that tab only when it belongs to the active task context; do not silently operate on arbitrary user tabs outside task rules.
 
