@@ -1,4 +1,26 @@
 import { createMultiUrlPollLoop } from "./poll-loop.mjs";
+import {
+  assertClaimParams,
+  assertActiveTask,
+  decideNewTabAction,
+  decideGotoAction,
+  shouldReuseActiveTask,
+} from "./task-policy.mjs";
+import {
+  createEmptyTaskState,
+  toBridgeTaskSummary,
+  validateTaskState,
+  upsertActiveTask,
+  clearActiveTask,
+} from "./task-state.mjs";
+import {
+  pickTaskColor,
+  listChromeIds,
+  ensureTaskWindow,
+  ensureTaskGroup,
+  moveTabToTaskGroup,
+  createOrNavigateTaskTab,
+} from "./task-chrome.mjs";
 const DEFAULT_BRIDGE_URL = "http://127.0.0.1:19527";
 const DEFAULT_GATEWAY_URL = "http://127.0.0.1:8788";
 const HEARTBEAT_INTERVAL_MS = 25_000;
@@ -7,6 +29,35 @@ const OFFLINE_BACKOFF_MS = 1_000;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+const TASK_STATE_KEY = "leoLanternTaskState";
+let taskState = createEmptyTaskState();
+
+async function loadTaskState() {
+  const stored = await chrome.storage.session.get(TASK_STATE_KEY);
+  const raw = stored?.[TASK_STATE_KEY];
+  const chromeIds = await listChromeIds();
+  taskState = validateTaskState(raw || createEmptyTaskState(), chromeIds);
+  await chrome.storage.session.set({ [TASK_STATE_KEY]: taskState });
+  return taskState;
+}
+
+async function saveTaskState(next) {
+  taskState = next;
+  await chrome.storage.session.set({ [TASK_STATE_KEY]: taskState });
+  return taskState;
+}
+
+function currentTaskSummary() {
+  return toBridgeTaskSummary(taskState);
+}
+
+async function withTaskSummary(result = {}) {
+  return {
+    ...result,
+    task: currentTaskSummary(),
+  };
 }
 
 async function getTargetUrls() {
@@ -40,7 +91,8 @@ async function registerTo(url) {
         id: chrome.runtime.id,
         name: "Leo cookie.txt Locally",
         version: chrome.runtime.getManifest().version,
-        capabilities: ["cookies", "tabs", "dom", "cdp"],
+        capabilities: ["cookies", "tabs", "dom", "cdp", "tasks"],
+        task: currentTaskSummary(),
       }),
     });
     if (resp.ok) return true;
@@ -54,7 +106,7 @@ async function registerTo(url) {
           id: chrome.runtime.id,
           name: "Leo cookie.txt Locally",
           version: chrome.runtime.getManifest().version,
-          capabilities: ["cookies", "tabs", "dom", "cdp"],
+          capabilities: ["cookies", "tabs", "dom", "cdp", "tasks"],
         }),
       });
       return true;
@@ -72,7 +124,7 @@ async function sendHeartbeats() {
       await fetch(`${url}/ext/heartbeat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: chrome.runtime.id }),
+        body: JSON.stringify({ id: chrome.runtime.id, task: currentTaskSummary() }),
       });
     } catch {
       try {
@@ -104,7 +156,7 @@ async function pollForCommand(url, waitMs, signal) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         extension_id: chrome.runtime.id,
-        capabilities: ["cookies", "tabs", "dom", "cdp"],
+        capabilities: ["cookies", "tabs", "dom", "cdp", "tasks"],
         limit: 1,
       }),
     });
@@ -140,6 +192,7 @@ async function reportResult(url, taskId, ok, result, error) {
     error: error ? (typeof error === "string" ? error : error.message) : undefined,
     cookies: result?.cookies || (Array.isArray(result) ? result : undefined),
     extension_id: chrome.runtime.id,
+    task: result?.task !== undefined ? result.task : currentTaskSummary(),
   };
 
   try {
@@ -183,13 +236,144 @@ async function runTask(url, task) {
         active: t.active,
         windowId: t.windowId,
       }));
+    } else if (type === "task.start") {
+      const sameWindow = Boolean(params.sameWindow);
+      const focus = Boolean(params.focus);
+      const color = pickTaskColor(params.color);
+      const title = params.title || (taskState.activeTask?.title) || "Agent Task";
+      if (shouldReuseActiveTask(taskState)) {
+        const patch = {};
+        if (params.title) patch.title = params.title;
+        if (params.color) patch.color = color;
+        if (params.sameWindow !== undefined) patch.sameWindow = sameWindow;
+        await saveTaskState(upsertActiveTask(taskState, patch));
+      } else {
+        const windowId = await ensureTaskWindow({ sameWindow, focus });
+        await saveTaskState(
+          upsertActiveTask(createEmptyTaskState(), {
+            title,
+            color,
+            sameWindow,
+            windowId,
+          })
+        );
+      }
+      result = await withTaskSummary({ started: true, reused: shouldReuseActiveTask(taskState) });
+    } else if (type === "task.end") {
+      assertActiveTask(taskState);
+      const closeGroup = Boolean(params.closeGroup);
+      const groupId = taskState.activeTask?.groupId;
+      if (closeGroup && groupId != null) {
+        try {
+          const tabs = await chrome.tabs.query({ groupId });
+          const tabIds = tabs.map((tab) => tab.id).filter((id) => id != null);
+          if (tabIds.length) await chrome.tabs.ungroup(tabIds);
+        } catch {}
+      }
+      await saveTaskState(clearActiveTask(taskState));
+      result = await withTaskSummary({ ended: true, closedGroup: closeGroup });
+    } else if (type === "tabs.claim") {
+      assertActiveTask(taskState);
+      const { tabId } = assertClaimParams(params);
+      const focus = Boolean(params.focus);
+      const sameWindow =
+        params.sameWindow !== undefined ? Boolean(params.sameWindow) : Boolean(taskState.activeTask.sameWindow);
+      const windowId = await ensureTaskWindow({
+        sameWindow,
+        focus,
+        windowId: taskState.activeTask.windowId,
+      });
+      const moved = await moveTabToTaskGroup({
+        tabId,
+        groupId: taskState.activeTask.groupId,
+        windowId,
+        focus,
+      });
+      let groupId = moved.groupId;
+      groupId = await ensureTaskGroup({
+        windowId: moved.windowId,
+        title: taskState.activeTask.title,
+        color: taskState.activeTask.color,
+        groupId,
+        tabIds: [tabId],
+      });
+      await saveTaskState(
+        upsertActiveTask(taskState, {
+          windowId: moved.windowId,
+          groupId,
+          claimedTabId: tabId,
+          sameWindow,
+        })
+      );
+      result = await withTaskSummary({ claimed: true, tabId, groupId, windowId: moved.windowId });
     } else if (type === "tabs.new") {
-      const created = await chrome.tabs.create({ url: params.url || "about:blank", active: true });
-      result = { id: created.id, url: created.url, title: created.title };
+      assertActiveTask(taskState);
+      const force = params.force === true || params.force === "true" || params.force === "1";
+      const focus = Boolean(params.focus);
+      const action = decideNewTabAction({
+        hasActiveTask: true,
+        hasClaimedTab: taskState.activeTask.claimedTabId != null,
+        force,
+      });
+      if (action === "reject-no-task") throw new Error("No active task. Run task.start first.");
+      const windowId = await ensureTaskWindow({
+        sameWindow: Boolean(taskState.activeTask.sameWindow),
+        focus,
+        windowId: taskState.activeTask.windowId,
+      });
+      const navigated = await createOrNavigateTaskTab({
+        url: params.url || "about:blank",
+        action,
+        claimedTabId: taskState.activeTask.claimedTabId,
+        windowId,
+        groupId: taskState.activeTask.groupId,
+        focus,
+      });
+      const groupId = await ensureTaskGroup({
+        windowId: navigated.windowId,
+        title: taskState.activeTask.title,
+        color: taskState.activeTask.color,
+        groupId: navigated.groupId,
+        tabIds: [navigated.tabId],
+      });
+      await saveTaskState(
+        upsertActiveTask(taskState, {
+          windowId: navigated.windowId,
+          groupId,
+          claimedTabId:
+            action === "create-force" ? taskState.activeTask.claimedTabId : navigated.tabId,
+        })
+      );
+      result = await withTaskSummary({
+        id: navigated.tabId,
+        url: params.url || "about:blank",
+        reused: Boolean(navigated.reused),
+        forced: action === "create-force",
+      });
     } else if (type === "tabs.goto") {
-      const tabId = await getActiveTabId(params.tabId);
-      const updated = await chrome.tabs.update(tabId, { url: params.url });
-      result = { id: updated.id, url: updated.url, title: updated.title };
+      assertActiveTask(taskState);
+      const focus = Boolean(params.focus);
+      const action = decideGotoAction({
+        hasActiveTask: true,
+        hasClaimedTab: taskState.activeTask.claimedTabId != null,
+        tabId: params.tabId ?? null,
+      });
+      if (action === "reject-no-task") throw new Error("No active task. Run task.start first.");
+      if (action === "reject-no-claimed-tab") throw new Error("No claimed tab. Run tabs.new or tabs.claim first.");
+      let tabId;
+      if (action === "navigate-explicit") {
+        tabId = Number(params.tabId);
+        const tab = await chrome.tabs.get(tabId);
+        if (!tab) throw new Error(`Tab not found: ${tabId}`);
+        if (taskState.activeTask.groupId != null && tab.groupId !== taskState.activeTask.groupId) {
+          throw new Error(`Tab ${tabId} is outside the active task group`);
+        }
+      } else {
+        tabId = Number(taskState.activeTask.claimedTabId);
+      }
+      const updated = await chrome.tabs.update(tabId, { url: params.url, active: Boolean(focus) });
+      if (focus) await chrome.windows.update(updated.windowId, { focused: true });
+      result = await withTaskSummary({ id: updated.id, url: updated.url, title: updated.title });
     } else if (type === "tabs.close") {
       const tabId = Number(params.tabId);
       await chrome.tabs.remove(tabId);
@@ -314,6 +498,7 @@ async function runTask(url, task) {
 
 // Register on load/startup
 async function init() {
+  await loadTaskState();
   const urls = await getTargetUrls();
   for (const url of urls) {
     await registerTo(url);
