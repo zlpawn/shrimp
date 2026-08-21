@@ -56,6 +56,28 @@ test("CLI: parseCliArgs parses commands, flags, and positionals", () => {
 
   const parsed3 = parseCliArgs(["help"]);
   assert.equal(parsed3.command, "help");
+
+  // Boolean flags with positionals
+  const parsed4 = parseCliArgs(["new-tab", "--force", "https://example.com"]);
+  assert.equal(parsed4.command, "new-tab");
+  assert.equal(parsed4.params.force, true);
+  assert.deepEqual(parsed4.positional, ["https://example.com"]);
+
+  const parsed5 = parseCliArgs(["claim", "--focus", "123"]);
+  assert.equal(parsed5.command, "claim");
+  assert.equal(parsed5.params.focus, true);
+  assert.deepEqual(parsed5.positional, ["123"]);
+
+  const parsed6 = parseCliArgs(["start-task", "--same-window", "My Task"]);
+  assert.equal(parsed6.command, "start-task");
+  assert.equal(parsed6.params["same-window"], true);
+  assert.deepEqual(parsed6.positional, ["My Task"]);
+
+  // Key=Value syntax
+  const parsed7 = parseCliArgs(["goto", "--url=https://github.com", "--focus"]);
+  assert.equal(parsed7.command, "goto");
+  assert.equal(parsed7.params.url, "https://github.com");
+  assert.equal(parsed7.params.focus, true);
 });
 
 test("CLI: executeCommand help, health, and doctor", async () => {

@@ -116,10 +116,10 @@ test("MCP: tools/call browser_health and browser_doctor", async () => {
 });
 
 
-test("MCP: browser_health is false when bridge port is already in use", async () => {
+test("MCP: browser_health is false when occupied by a non-bridge server", async () => {
   const blocker = http.createServer((_req, res) => {
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ ok: true, bridge: true }));
+    res.writeHead(500, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ ok: false, error: "not a bridge" }));
   });
   await new Promise((resolve) => blocker.listen(0, "127.0.0.1", resolve));
   const occupiedPort = blocker.address().port;
@@ -143,6 +143,30 @@ test("MCP: browser_health is false when bridge port is already in use", async ()
     await new Promise((resolve, reject) => {
       blocker.close((err) => (err ? reject(err) : resolve()));
     });
+  }
+});
+
+test("MCP: delegates to remote bridge when bridge port is already running a live bridge", async () => {
+  const liveBridge = new LanternServer({ port: 0 });
+  await liveBridge.start();
+  const mcp = new LanternMcpServer({ port: liveBridge.port, stdio: false });
+  try {
+    await mcp.start();
+    const healthRes = await mcp.handleJsonRpc({
+      jsonrpc: "2.0",
+      id: 5,
+      method: "tools/call",
+      params: {
+        name: "browser_health",
+        arguments: {},
+      },
+    });
+    const parsedHealth = JSON.parse(healthRes.result.content[0].text);
+    assert.equal(parsedHealth.bridgeOnline, true);
+    assert.equal(parsedHealth.port, liveBridge.port);
+  } finally {
+    await mcp.stop();
+    await liveBridge.stop();
   }
 });
 

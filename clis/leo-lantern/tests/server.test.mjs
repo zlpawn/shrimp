@@ -251,3 +251,58 @@ test("LanternServer: caches task summary from hello and result for doctor", asyn
     assert.equal(bridge.taskSummary.title, "from-result");
   });
 });
+
+test("LanternServer: POST /v1/extension-tasks/claim acts as poll endpoint", async () => {
+  await withBridge(async (bridge, BASE) => {
+    await postJson(`${BASE}/ext/hello`, { id: "ext-claim-post" });
+
+    const pollPromise = postJson(`${BASE}/v1/extension-tasks/claim`, {
+      extension_id: "ext-claim-post",
+      capabilities: ["cookies", "tabs"],
+    });
+
+    const dispatchPromise = bridge.dispatchCommand("dom.click", { text: "OK" }, 5000);
+    const pollRes = await pollPromise;
+    assert.equal(pollRes.status, 200);
+    assert.ok(pollRes.body.cmd);
+    assert.equal(pollRes.body.cmd.type, "dom.click");
+
+    await postJson(`${BASE}/ext/result`, {
+      id: pollRes.body.cmd.id,
+      ok: true,
+      result: { clicked: true },
+    });
+    const result = await dispatchPromise;
+    assert.deepEqual(result, { clicked: true });
+  });
+});
+
+test("LanternServer: aborted long-poll connection cleans up and subsequent command goes to active poll", async () => {
+  await withBridge(async (bridge, BASE) => {
+    await postJson(`${BASE}/ext/hello`, { id: "ext-abort-test" });
+
+    // Start a poll request and immediately abort/destroy it
+    const req = http.get(`${BASE}/ext/poll?waitMs=10000`, { agent: false });
+    req.on("error", () => {});
+    await new Promise((r) => setTimeout(r, 20));
+    req.destroy();
+    await new Promise((r) => setTimeout(r, 20));
+
+    // Active new poll
+    const activePollPromise = getJson(`${BASE}/ext/poll?waitMs=5000`);
+    const dispatchPromise = bridge.dispatchCommand("dom.content", { maxChars: 100 }, 5000);
+
+    const activePoll = await activePollPromise;
+    assert.equal(activePoll.status, 200);
+    assert.equal(activePoll.body.cmd.type, "dom.content");
+
+    await postJson(`${BASE}/ext/result`, {
+      id: activePoll.body.cmd.id,
+      ok: true,
+      result: { title: "Test", text: "Hello" },
+    });
+
+    const result = await dispatchPromise;
+    assert.equal(result.title, "Test");
+  });
+});

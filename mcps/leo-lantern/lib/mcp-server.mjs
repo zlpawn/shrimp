@@ -1,6 +1,7 @@
+import http from "node:http";
 import readline from "node:readline";
 import { LanternServer } from "./server.mjs";
-import { COMMAND_TYPES, DEFAULT_BRIDGE_PORT } from "./protocol.mjs";
+import { COMMAND_TYPES, DEFAULT_BRIDGE_PORT, DEFAULT_BRIDGE_HOST } from "./protocol.mjs";
 
 export const MCP_TOOLS = [
   {
@@ -257,15 +258,78 @@ export class LanternMcpServer {
     if (this.ownBridge) {
       try {
         await this.bridge.start();
+        this.remoteBridge = false;
       } catch (err) {
-        // Keep stdio alive if another local process already bound the port,
-        // but do not pretend this process owns a live bridge.
-        if (err.code !== "EADDRINUSE") {
+        // If another local process already bound the port, forward commands to remote bridge
+        if (err.code === "EADDRINUSE") {
+          this.remoteBridge = true;
+        } else {
           throw err;
         }
       }
+    } else {
+      this.remoteBridge = false;
     }
     if (this.enableStdio) this.setupStdio();
+  }
+
+  async requestRemoteBridge(path, method = "GET", data = null) {
+    return new Promise((resolve, reject) => {
+      const postData = data ? JSON.stringify(data) : null;
+      const req = http.request(
+        {
+          hostname: this.host,
+          port: this.port,
+          path,
+          method,
+          agent: false,
+          headers: {
+            "Content-Type": "application/json",
+            Connection: "close",
+            ...(postData ? { "Content-Length": Buffer.byteLength(postData) } : {}),
+          },
+        },
+        (res) => {
+          let body = "";
+          res.on("data", (chunk) => (body += chunk));
+          res.on("end", () => {
+            try {
+              const parsed = body ? JSON.parse(body) : {};
+              if (res.statusCode >= 400) {
+                reject(new Error(parsed.error?.message || parsed.error || `HTTP ${res.statusCode}`));
+              } else {
+                resolve(parsed);
+              }
+            } catch (err) {
+              reject(new Error(`Failed to parse bridge response: ${body}`));
+            }
+          });
+        }
+      );
+
+      req.on("error", (err) => {
+        if (err.code === "ECONNREFUSED") {
+          reject(
+            new Error(
+              `Could not connect to Leo Lantern at http://${this.host}:${this.port}. Is the bridge server running?`
+            )
+          );
+        } else {
+          reject(err);
+        }
+      });
+
+      if (postData) req.write(postData);
+      req.end();
+    });
+  }
+
+  async dispatch(type, params = {}) {
+    if (this.remoteBridge) {
+      const resp = await this.requestRemoteBridge("/cmd", "POST", { type, params });
+      return resp.result !== undefined ? resp.result : resp;
+    }
+    return await this.bridge.dispatch(type, params);
   }
 
   setupStdio() {
@@ -370,6 +434,22 @@ export class LanternMcpServer {
   async callTool(name, args = {}) {
     switch (name) {
       case "browser_health": {
+        if (this.remoteBridge) {
+          try {
+            const remote = await this.requestRemoteBridge("/health", "GET");
+            return {
+              bridgeOnline: Boolean(remote.bridge || remote.ok),
+              extensionOnline: Boolean(remote.extensionOnline),
+              port: this.port,
+            };
+          } catch {
+            return {
+              bridgeOnline: false,
+              extensionOnline: false,
+              port: this.port,
+            };
+          }
+        }
         const bridgeOnline = this.isBridgeOnline();
         return {
           bridgeOnline,
@@ -379,6 +459,17 @@ export class LanternMcpServer {
       }
 
       case "browser_doctor": {
+        if (this.remoteBridge) {
+          try {
+            return await this.requestRemoteBridge("/doctor", "GET");
+          } catch (err) {
+            return {
+              bridge: { online: false, port: this.port, error: err.message },
+              extension: { online: false },
+              task: null,
+            };
+          }
+        }
         const bridgeOnline = this.isBridgeOnline();
         return {
           bridge: {
@@ -393,7 +484,7 @@ export class LanternMcpServer {
       }
 
       case "browser_start_task": {
-        return await this.bridge.dispatch(COMMAND_TYPES.TASK_START, {
+        return await this.dispatch(COMMAND_TYPES.TASK_START, {
           title: args.title,
           color: args.color,
           sameWindow: Boolean(args.sameWindow),
@@ -405,7 +496,7 @@ export class LanternMcpServer {
         if (args.tabId === undefined || args.tabId === null) {
           throw new Error("Argument 'tabId' is required for browser_claim_tab");
         }
-        return await this.bridge.dispatch(COMMAND_TYPES.TABS_CLAIM, {
+        return await this.dispatch(COMMAND_TYPES.TABS_CLAIM, {
           tabId: args.tabId,
           focus: Boolean(args.focus),
           sameWindow: args.sameWindow,
@@ -413,17 +504,17 @@ export class LanternMcpServer {
       }
 
       case "browser_end_task": {
-        return await this.bridge.dispatch(COMMAND_TYPES.TASK_END, {
+        return await this.dispatch(COMMAND_TYPES.TASK_END, {
           closeGroup: Boolean(args.closeGroup),
         });
       }
 
       case "browser_open_tabs": {
-        return await this.bridge.dispatch(COMMAND_TYPES.TABS_LIST, args);
+        return await this.dispatch(COMMAND_TYPES.TABS_LIST, args);
       }
 
       case "browser_new_tab": {
-        return await this.bridge.dispatch(COMMAND_TYPES.TABS_NEW, {
+        return await this.dispatch(COMMAND_TYPES.TABS_NEW, {
           url: args.url || "about:blank",
           force: Boolean(args.force),
           focus: Boolean(args.focus),
@@ -432,7 +523,7 @@ export class LanternMcpServer {
 
       case "browser_goto": {
         if (!args.url) throw new Error("Argument 'url' is required");
-        return await this.bridge.dispatch(COMMAND_TYPES.TABS_GOTO, {
+        return await this.dispatch(COMMAND_TYPES.TABS_GOTO, {
           ...args,
           focus: Boolean(args.focus),
         });
@@ -442,40 +533,40 @@ export class LanternMcpServer {
         if (!args.text && !args.selector) {
           throw new Error("Either 'text' or 'selector' is required for browser_wait");
         }
-        return await this.bridge.dispatch(COMMAND_TYPES.DOM_WAIT, args);
+        return await this.dispatch(COMMAND_TYPES.DOM_WAIT, args);
       }
 
       case "browser_content": {
-        return await this.bridge.dispatch(COMMAND_TYPES.DOM_CONTENT, args);
+        return await this.dispatch(COMMAND_TYPES.DOM_CONTENT, args);
       }
 
       case "browser_press": {
         if (!args.key) throw new Error("Argument 'key' is required for browser_press");
-        return await this.bridge.dispatch(COMMAND_TYPES.DOM_PRESS, args);
+        return await this.dispatch(COMMAND_TYPES.DOM_PRESS, args);
       }
 
       case "browser_reload": {
-        return await this.bridge.dispatch(COMMAND_TYPES.TABS_RELOAD, {
+        return await this.dispatch(COMMAND_TYPES.TABS_RELOAD, {
           bypassCache: Boolean(args.bypassCache),
           tabId: args.tabId,
         });
       }
 
       case "browser_net_start": {
-        return await this.bridge.dispatch(COMMAND_TYPES.CDP_NET_START, {
+        return await this.dispatch(COMMAND_TYPES.CDP_NET_START, {
           tabId: args.tabId,
         });
       }
 
       case "browser_net_get": {
-        return await this.bridge.dispatch(COMMAND_TYPES.CDP_NET_GET, {
+        return await this.dispatch(COMMAND_TYPES.CDP_NET_GET, {
           grep: args.grep,
           tabId: args.tabId,
         });
       }
 
       case "browser_net_stop": {
-        return await this.bridge.dispatch(COMMAND_TYPES.CDP_NET_STOP, {
+        return await this.dispatch(COMMAND_TYPES.CDP_NET_STOP, {
           grep: args.grep,
           tabId: args.tabId,
         });
@@ -485,32 +576,32 @@ export class LanternMcpServer {
         if (!args.text && !args.selector) {
           throw new Error("Either 'text' or 'selector' must be provided for browser_click");
         }
-        return await this.bridge.dispatch(COMMAND_TYPES.DOM_CLICK, args);
+        return await this.dispatch(COMMAND_TYPES.DOM_CLICK, args);
       }
 
       case "browser_fill": {
         if (!args.selector || args.value === undefined) {
           throw new Error("Both 'selector' and 'value' are required for browser_fill");
         }
-        return await this.bridge.dispatch(COMMAND_TYPES.DOM_FILL, args);
+        return await this.dispatch(COMMAND_TYPES.DOM_FILL, args);
       }
 
       case "browser_snapshot": {
-        return await this.bridge.dispatch(COMMAND_TYPES.DOM_SNAPSHOT, args);
+        return await this.dispatch(COMMAND_TYPES.DOM_SNAPSHOT, args);
       }
 
       case "browser_eval": {
         if (!args.script) throw new Error("Argument 'script' is required for browser_eval");
-        return await this.bridge.dispatch(COMMAND_TYPES.PAGE_EVAL, args);
+        return await this.dispatch(COMMAND_TYPES.PAGE_EVAL, args);
       }
 
       case "browser_screenshot": {
-        return await this.bridge.dispatch(COMMAND_TYPES.CDP_SCREENSHOT, args);
+        return await this.dispatch(COMMAND_TYPES.CDP_SCREENSHOT, args);
       }
 
       case "browser_cookies": {
         if (!args.domain) throw new Error("Argument 'domain' is required for browser_cookies");
-        return await this.bridge.dispatch(COMMAND_TYPES.COOKIES_EXPORT, args);
+        return await this.dispatch(COMMAND_TYPES.COOKIES_EXPORT, args);
       }
 
       default:

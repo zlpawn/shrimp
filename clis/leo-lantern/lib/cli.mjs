@@ -3,6 +3,25 @@ import fs from "node:fs/promises";
 import { DEFAULT_BRIDGE_PORT, DEFAULT_BRIDGE_HOST, COMMAND_TYPES } from "./protocol.mjs";
 import { LanternServer } from "./server.mjs";
 
+const BOOLEAN_FLAGS = new Set([
+  "same-window",
+  "samewindow",
+  "focus",
+  "force",
+  "close-group",
+  "closegroup",
+  "bypass-cache",
+  "bypasscache",
+  "full-page",
+  "fullpage",
+  "help",
+  "doctor",
+  "health",
+  "server",
+  "no-exit",
+  "noexit",
+]);
+
 export function parseCliArgs(args = []) {
   const command = args[0] || "help";
   const params = {};
@@ -11,13 +30,26 @@ export function parseCliArgs(args = []) {
   for (let i = 1; i < args.length; i++) {
     const arg = args[i];
     if (arg.startsWith("--")) {
-      const key = arg.slice(2);
-      const next = args[i + 1];
-      if (next && !next.startsWith("--")) {
-        params[key] = next;
-        i++;
+      const raw = arg.slice(2);
+      const eqIdx = raw.indexOf("=");
+      if (eqIdx !== -1) {
+        const key = raw.slice(0, eqIdx);
+        const val = raw.slice(eqIdx + 1);
+        params[key] = val;
       } else {
-        params[key] = true;
+        const key = raw;
+        const normalizedKey = key.toLowerCase().replace(/_/g, "-");
+        if (BOOLEAN_FLAGS.has(normalizedKey)) {
+          params[key] = true;
+        } else {
+          const next = args[i + 1];
+          if (next !== undefined && !next.startsWith("--")) {
+            params[key] = next;
+            i++;
+          } else {
+            params[key] = true;
+          }
+        }
       }
     } else {
       positional.push(arg);

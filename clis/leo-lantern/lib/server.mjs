@@ -140,7 +140,11 @@ export class LanternServer {
             return sendJson(res, 200, { ok: true });
           }
 
-          if (req.method === "GET" && (pathname === "/ext/poll" || pathname === "/v1/extension-tasks/claim")) {
+          const isPollRequest =
+            (req.method === "GET" && pathname === "/ext/poll") ||
+            ((req.method === "GET" || req.method === "POST") && pathname === "/v1/extension-tasks/claim");
+
+          if (isPollRequest) {
             if (this.extension) {
               this.extension.lastSeen = Date.now();
             }
@@ -156,11 +160,24 @@ export class LanternServer {
               30_000
             );
 
-            const pollEntry = { res, timer: null };
-            pollEntry.timer = setTimeout(() => {
+            const pollEntry = { req, res, timer: null };
+            const cleanup = () => {
+              if (pollEntry.timer) {
+                clearTimeout(pollEntry.timer);
+                pollEntry.timer = null;
+              }
               const idx = this.waitingPolls.indexOf(pollEntry);
               if (idx !== -1) {
                 this.waitingPolls.splice(idx, 1);
+              }
+            };
+
+            req.on("close", cleanup);
+            res.on("close", cleanup);
+
+            pollEntry.timer = setTimeout(() => {
+              cleanup();
+              if (!res.writableEnded && !res.destroyed) {
                 sendJson(res, 200, { ok: true, cmd: null, tasks: [] });
               }
             }, waitMs);
@@ -253,11 +270,26 @@ export class LanternServer {
       this.pendingCommands.set(id, { resolve, reject, timer, cmd });
 
       // Deliver immediately to waiting long-poll if available
-      if (this.waitingPolls.length > 0) {
+      let delivered = false;
+      while (this.waitingPolls.length > 0) {
         const pollEntry = this.waitingPolls.shift();
-        clearTimeout(pollEntry.timer);
-        sendJson(pollEntry.res, 200, { ok: true, cmd, tasks: [cmd] });
-      } else {
+        if (pollEntry.timer) {
+          clearTimeout(pollEntry.timer);
+          pollEntry.timer = null;
+        }
+        if (pollEntry.res.writableEnded || pollEntry.res.destroyed || (pollEntry.req && pollEntry.req.destroyed)) {
+          continue;
+        }
+        try {
+          sendJson(pollEntry.res, 200, { ok: true, cmd, tasks: [cmd] });
+          delivered = true;
+          break;
+        } catch {
+          continue;
+        }
+      }
+
+      if (!delivered) {
         this.commandQueue.push(cmd);
       }
     });

@@ -72,15 +72,23 @@ async function withTaskSummary(result = {}) {
   };
 }
 
-function requireTaskTabId(params = {}) {
+async function requireTaskTabId(params = {}) {
   const task = assertActiveTask(taskState);
   if (params.tabId != null) {
     const tabId = Number(params.tabId);
     const claimed = task.claimedTabId != null ? Number(task.claimedTabId) : null;
-    if (tabId !== claimed) {
-      throw new Error(`Tab ${tabId} is outside the active task context`);
+    if (tabId === claimed) {
+      return tabId;
     }
-    return tabId;
+    if (task.groupId != null) {
+      try {
+        const tab = await chrome.tabs.get(tabId);
+        if (tab && tab.groupId === task.groupId) {
+          return tabId;
+        }
+      } catch {}
+    }
+    throw new Error(`Tab ${tabId} is outside the active task context`);
   }
   if (task.claimedTabId == null) {
     throw new Error("No claimed tab. Run tabs.new or tabs.claim first.");
@@ -124,23 +132,35 @@ chrome.debugger.onEvent.addListener(async (source, method, params) => {
   const session = getNetworkSession();
   if (!session || source.tabId !== session.tabId || !params?.requestId) return;
   if (method === "Network.requestWillBeSent") {
-    await saveNetworkSession(
-      upsertNetworkEntry(session, {
-        requestId: params.requestId,
-        method: params.request?.method,
-        url: params.request?.url,
-        type: params.type,
-        timestamp: params.timestamp,
-      })
-    );
+    const currentSession = getNetworkSession() || session;
+    const updatedSession = upsertNetworkEntry(currentSession, {
+      requestId: params.requestId,
+      method: params.request?.method,
+      url: params.request?.url,
+      type: params.type,
+      timestamp: params.timestamp,
+    });
+    if (taskState.activeTask) {
+      taskState.activeTask.extensions = {
+        ...(taskState.activeTask.extensions || {}),
+        network: updatedSession,
+      };
+    }
+    await saveNetworkSession(updatedSession);
   } else if (method === "Network.responseReceived") {
-    await saveNetworkSession(
-      upsertNetworkEntry(session, {
-        requestId: params.requestId,
-        status: params.response?.status,
-        mimeType: params.response?.mimeType,
-      })
-    );
+    const currentSession = getNetworkSession() || session;
+    const updatedSession = upsertNetworkEntry(currentSession, {
+      requestId: params.requestId,
+      status: params.response?.status,
+      mimeType: params.response?.mimeType,
+    });
+    if (taskState.activeTask) {
+      taskState.activeTask.extensions = {
+        ...(taskState.activeTask.extensions || {}),
+        network: updatedSession,
+      };
+    }
+    await saveNetworkSession(updatedSession);
   }
 });
 
@@ -325,7 +345,8 @@ async function runTask(url, task) {
       const focus = Boolean(params.focus);
       const color = pickTaskColor(params.color);
       const title = params.title || (taskState.activeTask?.title) || "Agent Task";
-      if (shouldReuseActiveTask(taskState)) {
+      const wasReused = shouldReuseActiveTask(taskState);
+      if (wasReused) {
         const patch = {};
         if (params.title) patch.title = params.title;
         if (params.color) patch.color = color;
@@ -342,7 +363,7 @@ async function runTask(url, task) {
           })
         );
       }
-      result = await withTaskSummary({ started: true, reused: shouldReuseActiveTask(taskState) });
+      result = await withTaskSummary({ started: true, reused: wasReused });
     } else if (type === "task.end") {
       assertActiveTask(taskState);
       const closeGroup = Boolean(params.closeGroup);
@@ -464,11 +485,11 @@ async function runTask(url, task) {
       await chrome.tabs.remove(tabId);
       result = { closed: true, tabId };
     } else if (type === "tabs.reload") {
-      const tabId = requireTaskTabId(params);
+      const tabId = await requireTaskTabId(params);
       await chrome.tabs.reload(tabId, { bypassCache: Boolean(params.bypassCache) });
       result = await withTaskSummary({ reloaded: true, tabId });
     } else if (type === "dom.click") {
-      const tabId = requireTaskTabId(params);
+      const tabId = await requireTaskTabId(params);
       const res = await chrome.scripting.executeScript({
         target: { tabId },
         func: (sel, text) => {
@@ -491,7 +512,7 @@ async function runTask(url, task) {
       }
       result = res[0]?.result || { clicked: true };
     } else if (type === "dom.fill") {
-      const tabId = requireTaskTabId(params);
+      const tabId = await requireTaskTabId(params);
       const res = await chrome.scripting.executeScript({
         target: { tabId },
         func: (sel, val) => {
@@ -510,7 +531,7 @@ async function runTask(url, task) {
       }
       result = res[0]?.result || { filled: true };
     } else if (type === "dom.snapshot") {
-      const tabId = requireTaskTabId(params);
+      const tabId = await requireTaskTabId(params);
       const res = await chrome.scripting.executeScript({
         target: { tabId },
         func: () => {
@@ -533,7 +554,7 @@ async function runTask(url, task) {
       });
       result = res[0]?.result || {};
     } else if (type === "page.eval") {
-      const tabId = requireTaskTabId(params);
+      const tabId = await requireTaskTabId(params);
       const res = await chrome.scripting.executeScript({
         target: { tabId },
         func: (code) => {
@@ -543,19 +564,25 @@ async function runTask(url, task) {
       });
       result = { evalResult: res[0]?.result };
     } else if (type === "dom.wait") {
-      const tabId = requireTaskTabId(params);
+      const tabId = await requireTaskTabId(params);
       const wait = assertWaitParams(params);
       const started = Date.now();
       for (;;) {
-        const res = await chrome.scripting.executeScript({
-          target: { tabId },
-          func: (text, selector) => ({
-            text: document.body?.innerText || "",
-            selectorFound: Boolean(selector && document.querySelector(selector)),
-          }),
-          args: [wait.text || null, wait.selector || null],
-        });
-        const page = res[0]?.result || {};
+        let page = {};
+        try {
+          const res = await chrome.scripting.executeScript({
+            target: { tabId },
+            func: (text, selector) => ({
+              text: document.body?.innerText || "",
+              selectorFound: Boolean(selector && document.querySelector(selector)),
+            }),
+            args: [wait.text || null, wait.selector || null],
+          });
+          page = res?.[0]?.result || {};
+        } catch {
+          // Page might be navigating or loading; ignore transient execution errors
+          page = {};
+        }
         if (contentMatches({ haystack: page.text, text: wait.text, selectorFound: page.selectorFound })) {
           result = await withTaskSummary({ waited: true, matched: wait.text || wait.selector, tabId });
           break;
@@ -566,7 +593,7 @@ async function runTask(url, task) {
         await sleep(Math.min(250, Math.max(25, wait.timeoutMs - (Date.now() - started))));
       }
     } else if (type === "dom.content") {
-      const tabId = requireTaskTabId(params);
+      const tabId = await requireTaskTabId(params);
       const res = await chrome.scripting.executeScript({
         target: { tabId },
         func: (maxChars) => ({
@@ -578,7 +605,7 @@ async function runTask(url, task) {
       });
       result = await withTaskSummary(summarizeContent({ ...(res[0]?.result || {}), maxChars: Number(params.maxChars || 4000) }));
     } else if (type === "dom.press") {
-      const tabId = requireTaskTabId(params);
+      const tabId = await requireTaskTabId(params);
       const key = normalizePressKey(params.key);
       const res = await chrome.scripting.executeScript({
         target: { tabId },
@@ -596,9 +623,13 @@ async function runTask(url, task) {
       if (res?.[0]?.result?.ok === false) throw new Error(res[0].result.error);
       result = await withTaskSummary({ pressed: true, key, selector: params.selector || null });
     } else if (type === "cdp.screenshot") {
-      const tabId = requireTaskTabId(params);
+      const tabId = await requireTaskTabId(params);
       const fullPage = Boolean(params.fullPage);
-      await chrome.debugger.attach({ tabId }, "1.3");
+      const networkSession = getNetworkSession();
+      const alreadyAttached = networkSession?.tabId === tabId && networkSession?.stoppedAt == null;
+      if (!alreadyAttached) {
+        await chrome.debugger.attach({ tabId }, "1.3");
+      }
       try {
         await chrome.debugger.sendCommand({ tabId }, "Page.enable");
         if (fullPage) {
@@ -626,13 +657,17 @@ async function runTask(url, task) {
             await chrome.debugger.sendCommand({ tabId }, "Emulation.clearDeviceMetricsOverride");
           } catch {}
         }
-        await chrome.debugger.detach({ tabId });
+        if (!alreadyAttached) {
+          try {
+            await chrome.debugger.detach({ tabId });
+          } catch {}
+        }
       }
     } else if (type === "cdp.net-start") {
       if (getNetworkSession()) {
         await stopNetworkCapture({ detach: false });
       }
-      const tabId = requireTaskTabId(params);
+      const tabId = await requireTaskTabId(params);
       await chrome.debugger.attach({ tabId }, "1.3");
       await chrome.debugger.sendCommand({ tabId }, "Network.enable");
       const session = createNetworkSession({ tabId });
