@@ -273,6 +273,49 @@ test("live local host session can dispatch with explicit model and stream host e
   assert.ok(calls.some((call) => call[0] === "subscribe"));
 });
 
+test("SSH subscribeEvents keeps polling remote trajectory events", async () => {
+  const calls = [];
+  const { createSshHostBackend } = await import(
+    "../../lib/remote-session/host-attach/ssh-host.mjs"
+  );
+  const host = createSshHostBackend({
+    peer: {
+      id: "ssh-peer",
+      transport: { host: "example.test", port: 22 },
+      auth: { ssh: { username: "tester" } },
+    },
+    logger: { warn() {}, log() {} },
+    runRemoteNodeScriptImpl: async (script, options) => {
+      calls.push({ script, options });
+      const step = {
+        type: calls.length === 1
+          ? "CORTEX_STEP_TYPE_PLANNER_RESPONSE"
+          : "CORTEX_STEP_TYPE_PLANNER_RESPONSE",
+        plannerResponse: { response: "hello" },
+      };
+      return JSON.stringify({
+        status: calls.length === 1
+          ? "CASCADE_RUN_STATUS_RUNNING"
+          : "CASCADE_RUN_STATUS_IDLE",
+        trajectory: { cascadeId: "cascade-ssh", steps: [step] },
+      });
+    },
+  });
+
+  const seen = [];
+  for await (const event of await host.subscribeEvents({
+    conversationId: "cascade-ssh",
+    cursor: 0,
+    intervalMs: 1,
+    timeoutMs: 10,
+  })) {
+    seen.push(event);
+  }
+
+  assert.ok(seen.some((event) => event.type === "assistant_text"));
+  assert.ok(calls.length >= 2, "SSH subscription should poll trajectory more than once");
+});
+
 test("enabling remote session requires nat traversal", async () => {
   const { service } = makeService({ natEnabled: false, enabled: false });
   await assert.rejects(

@@ -133,6 +133,11 @@ type SessionEvent = {
   hostEvent?: any;
 };
 
+type StreamState = {
+  sessionId: string;
+  source: EventSource | null;
+};
+
 const OFFICIAL_MODELS_FALLBACK: AvailableModel[] = sortAntigravityModels([
   { id: "gemini-3.7-flash-high", name: "Gemini 3.7 Flash High (Fast)", isRecommended: true },
   { id: "gemini-3.6-flash-high", name: "Gemini 3.6 Flash High (Fast)" },
@@ -168,6 +173,7 @@ const state: {
   showPeerModal: boolean;
   showPeersDrawer: boolean;
   showPasswordPlain: boolean;
+  stream: StreamState;
 } = {
   view: "catalog",
   loading: false,
@@ -193,6 +199,7 @@ const state: {
   showPeerModal: false,
   showPeersDrawer: false,
   showPasswordPlain: false,
+  stream: { sessionId: "", source: null },
 };
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -335,6 +342,41 @@ function renderEvents(): string {
         .join("")}
     </div>
   `;
+}
+
+function closeEventStream(): void {
+  state.stream.source?.close();
+  state.stream = { sessionId: "", source: null };
+}
+
+function syncEventStream(): void {
+  if (!state.activeSessionId) {
+    closeEventStream();
+    return;
+  }
+  if (state.stream.sessionId === state.activeSessionId && state.stream.source) return;
+
+  closeEventStream();
+  const source = new EventSource(
+    `/v1/remote-session/sessions/${encodeURIComponent(state.activeSessionId)}/events/stream?cursor=0&includeHostEvents=true`,
+  );
+  source.addEventListener("session_event", (event) => {
+    try {
+      const record = JSON.parse((event as MessageEvent).data) as SessionEvent;
+      const index = state.events.findIndex((item) => item.seq === record.seq);
+      if (index >= 0) state.events[index] = record;
+      else state.events.push(record);
+      state.events.sort((a, b) => Number(a.seq || 0) - Number(b.seq || 0));
+      render();
+    } catch {
+      // Ignore malformed server events; the next refresh can restore state.
+    }
+  });
+  source.onerror = () => {
+    closeEventStream();
+    showToast("实时事件流连接中断，稍后刷新可重连", "error");
+  };
+  state.stream = { sessionId: state.activeSessionId, source };
 }
 
 // 1. 卡片首页 (Card Catalog)
@@ -844,6 +886,7 @@ async function reload(): Promise<void> {
     if (state.activeSessionId) {
       await refreshEvents(false);
     }
+    syncEventStream();
   } catch (error: any) {
     state.error = error?.message || String(error);
   } finally {
@@ -935,6 +978,7 @@ async function openSession(): Promise<void> {
     state.activeSessionId = data.session?.id || "";
     showToast("会话已建立: " + state.activeSessionId, "success");
     await reload();
+    syncEventStream();
   } catch (error: any) {
     state.error = error?.message || String(error);
     showToast(state.error, "error");
@@ -951,6 +995,7 @@ async function refreshEvents(showMsg = true): Promise<void> {
       "/events?cursor=0",
   );
   state.events = data.events || [];
+  syncEventStream();
   if (showMsg) showToast(`已刷新 ${state.events.length} 条事件`, "info");
 }
 
@@ -1116,6 +1161,7 @@ async function endSession(): Promise<void> {
     );
     showToast("会话已结束", "success");
     state.activeSessionId = "";
+    closeEventStream();
     state.events = [];
     await reload();
   } catch (error: any) {
@@ -1290,6 +1336,7 @@ function copyConversationContent(): void {
     void openSession();
   } else {
     state.activeSessionId = "";
+    closeEventStream();
     state.events = [];
     render();
   }
@@ -1460,5 +1507,8 @@ function copyConversationContent(): void {
 registerTab("remote-session", {
   onEnter: () => {
     void reload();
+  },
+  onLeave: () => {
+    closeEventStream();
   },
 });
