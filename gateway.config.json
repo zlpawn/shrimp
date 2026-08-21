@@ -245,6 +245,18 @@
     "codex": {
       "endpoints": [
         {
+          "id": "ep_1357acd3-0f1f-4151-bf10-38a550fec3a4",
+          "name": "基元律动",
+          "type": "openai-chat",
+          "base_url": "https://tokenrhythm.studio/v1",
+          "auth": "bearer",
+          "models": [],
+          "model_mapping": {
+            "deepseek-v4-pro-jiyuan": "deepseek-v4-pro",
+            "glm-5.2-jiyuan": "glm-5.2"
+          }
+        },
+        {
           "id": "ep_f3e23095-9ff5-4e7f-86ef-5119d32d5d21",
           "name": "智谱",
           "type": "openai-responses",
