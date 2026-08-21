@@ -19,4 +19,5 @@ export const COMMAND_TYPES = {
   PAGE_EVAL: "page.eval",
   CDP_SCREENSHOT: "cdp.screenshot",
   COOKIES_EXPORT: "cookies.export",
+  TABS_RELOAD: "tabs.reload",
 };
