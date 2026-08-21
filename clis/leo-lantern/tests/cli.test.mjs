@@ -173,3 +173,35 @@ test("CLI: maps start-task/claim/end-task and force new-tab flags", async () => 
     await bridge.stop();
   }
 });
+
+test("CLI: maps page-drive and network commands", async () => {
+  const bridge = new LanternServer({ port: 0 });
+  await bridge.start();
+  const cases = [
+    ["wait", { text: "Ready", "timeout-ms": "123", tabId: "9" }, [], "dom.wait", { text: "Ready", timeoutMs: "123", tabId: "9" }],
+    ["content", { "max-chars": "55", tabId: "9" }, [], "dom.content", { maxChars: "55", tabId: "9" }],
+    ["press", { selector: "#q" }, ["Enter"], "dom.press", { key: "Enter", selector: "#q" }],
+    ["reload", { "bypass-cache": "1", tabId: "9" }, [], "tabs.reload", { bypassCache: true, tabId: "9" }],
+    ["net-start", { tabId: "9" }, [], "cdp.net-start", { tabId: "9" }],
+    ["net-get", { grep: "/api/", tabId: "9" }, [], "cdp.net-get", { grep: "/api/", tabId: "9" }],
+    ["net-stop", { grep: "deploy", tabId: "9" }, [], "cdp.net-stop", { grep: "deploy", tabId: "9" }],
+  ];
+  try {
+    await postJson(`http://127.0.0.1:${bridge.port}/ext/hello`, { id: "page-drive-ext" });
+    for (const [command, params, positional, expectedType, expectedParams] of cases) {
+      const pollPromise = getJson(`http://127.0.0.1:${bridge.port}/ext/poll?waitMs=5000`);
+      const callPromise = executeCommand(command, params, positional, { port: bridge.port });
+      const poll = await pollPromise;
+      assert.equal(poll.body.cmd.type, expectedType);
+      assert.deepEqual(poll.body.cmd.params, expectedParams);
+      await postJson(`http://127.0.0.1:${bridge.port}/ext/result`, {
+        id: poll.body.cmd.id,
+        ok: true,
+        result: { ok: true },
+      });
+      await callPromise;
+    }
+  } finally {
+    await bridge.stop();
+  }
+});

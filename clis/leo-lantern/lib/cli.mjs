@@ -220,6 +220,71 @@ export async function executeCommand(command, params = {}, positional = [], opti
       );
     }
 
+    case "reload": {
+      return await requestBridge(
+        "/cmd",
+        "POST",
+        {
+          type: COMMAND_TYPES.TABS_RELOAD,
+          params: {
+            bypassCache: asBool(params.bypassCache ?? params["bypass-cache"]),
+            tabId: params.tabId,
+          },
+        },
+        options
+      );
+    }
+
+    case "wait": {
+      return await requestBridge(
+        "/cmd",
+        "POST",
+        {
+          type: COMMAND_TYPES.DOM_WAIT,
+          params: {
+            text: params.text || positional[0],
+            selector: params.selector || params.sel,
+            timeoutMs: params.timeoutMs || params["timeout-ms"],
+            tabId: params.tabId,
+          },
+        },
+        options
+      );
+    }
+
+    case "content": {
+      return await requestBridge(
+        "/cmd",
+        "POST",
+        {
+          type: COMMAND_TYPES.DOM_CONTENT,
+          params: {
+            maxChars: params.maxChars || params["max-chars"],
+            tabId: params.tabId,
+          },
+        },
+        options
+      );
+    }
+
+    case "press": {
+      const key = params.key || positional[0];
+      if (!key) throw new Error("Key argument required for 'press'");
+      return await requestBridge(
+        "/cmd",
+        "POST",
+        {
+          type: COMMAND_TYPES.DOM_PRESS,
+          params: {
+            key,
+            selector: params.selector || params.sel,
+            tabId: params.tabId,
+          },
+        },
+        options
+      );
+    }
+
     case "snapshot": {
       return await requestBridge("/cmd", "POST", { type: COMMAND_TYPES.DOM_SNAPSHOT, params }, options);
     }
@@ -245,6 +310,33 @@ export async function executeCommand(command, params = {}, positional = [], opti
         return { ok: true, savedTo: outPath, sizeBytes: buf.length };
       }
       return res;
+    }
+
+    case "net-start": {
+      return await requestBridge(
+        "/cmd",
+        "POST",
+        { type: COMMAND_TYPES.CDP_NET_START, params: { tabId: params.tabId } },
+        options
+      );
+    }
+
+    case "net-get": {
+      return await requestBridge(
+        "/cmd",
+        "POST",
+        { type: COMMAND_TYPES.CDP_NET_GET, params: { grep: params.grep, tabId: params.tabId } },
+        options
+      );
+    }
+
+    case "net-stop": {
+      return await requestBridge(
+        "/cmd",
+        "POST",
+        { type: COMMAND_TYPES.CDP_NET_STOP, params: { grep: params.grep, tabId: params.tabId } },
+        options
+      );
     }
 
     case "cookies": {
@@ -281,9 +373,14 @@ Commands:
   close-tab <tabId>              Close specified tab
   click [--text T] [--sel S]     Click element by text or selector
   fill --sel S --val V           Fill text into form input
+  wait [--text T | --sel S]      Wait for task page content
+  content [--max-chars N]        Read compact task page content
+  press <key> [--sel S]          Dispatch a key event
+  reload [--bypass-cache]        Reload claimed task tab
   snapshot [--tabId ID]          Get interactive DOM elements tree
   eval <script>                  Evaluate JavaScript in page context
   screenshot [--out FILE]        Capture tab screenshot
+  net-start / net-get / net-stop Capture task tab XHR/fetch APIs
   cookies --domain DOMAIN        Extract cookies for domain
   server [--port N]              Start standalone Leo Lantern server
 `.trim(),

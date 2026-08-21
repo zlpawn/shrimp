@@ -89,6 +89,86 @@ export const MCP_TOOLS = [
     },
   },
   {
+    name: "browser_wait",
+    description: "Wait until the active task tab contains text or a selector match.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        text: { type: "string", description: "Visible text to wait for" },
+        selector: { type: "string", description: "CSS selector to wait for" },
+        timeoutMs: { type: "number", description: "Timeout in milliseconds" },
+        tabId: { type: "number", description: "Optional task-owned tab ID" },
+      },
+    },
+  },
+  {
+    name: "browser_content",
+    description: "Read a compact title/URL/body-text summary from the active task tab.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        maxChars: { type: "number", description: "Maximum body text characters" },
+        tabId: { type: "number", description: "Optional task-owned tab ID" },
+      },
+    },
+  },
+  {
+    name: "browser_press",
+    description: "Dispatch a keyboard event to the task page or a selected element.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        key: { type: "string", description: "Key name such as Enter or Escape" },
+        selector: { type: "string", description: "Optional target selector" },
+        tabId: { type: "number", description: "Optional task-owned tab ID" },
+      },
+      required: ["key"],
+    },
+  },
+  {
+    name: "browser_reload",
+    description: "Reload the active task tab, optionally bypassing cache.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        bypassCache: { type: "boolean", description: "Bypass browser cache" },
+        tabId: { type: "number", description: "Optional task-owned tab ID" },
+      },
+    },
+  },
+  {
+    name: "browser_net_start",
+    description: "Start CDP request capture for the active task tab.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tabId: { type: "number", description: "Optional task-owned tab ID" },
+      },
+    },
+  },
+  {
+    name: "browser_net_get",
+    description: "Read captured task-tab requests without stopping capture.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        grep: { type: "string", description: "Case-insensitive URL/method/status filter" },
+        tabId: { type: "number", description: "Optional task-owned tab ID" },
+      },
+    },
+  },
+  {
+    name: "browser_net_stop",
+    description: "Stop task-tab request capture and return final requests.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        grep: { type: "string", description: "Case-insensitive URL/method/status filter" },
+        tabId: { type: "number", description: "Optional task-owned tab ID" },
+      },
+    },
+  },
+  {
     name: "browser_click",
     description: "Click an interactive element in the browser tab by visible text or CSS selector.",
     inputSchema: {
@@ -355,6 +435,49 @@ export class LanternMcpServer {
         return await this.bridge.dispatch(COMMAND_TYPES.TABS_GOTO, {
           ...args,
           focus: Boolean(args.focus),
+        });
+      }
+
+      case "browser_wait": {
+        if (!args.text && !args.selector) {
+          throw new Error("Either 'text' or 'selector' is required for browser_wait");
+        }
+        return await this.bridge.dispatch(COMMAND_TYPES.DOM_WAIT, args);
+      }
+
+      case "browser_content": {
+        return await this.bridge.dispatch(COMMAND_TYPES.DOM_CONTENT, args);
+      }
+
+      case "browser_press": {
+        if (!args.key) throw new Error("Argument 'key' is required for browser_press");
+        return await this.bridge.dispatch(COMMAND_TYPES.DOM_PRESS, args);
+      }
+
+      case "browser_reload": {
+        return await this.bridge.dispatch(COMMAND_TYPES.TABS_RELOAD, {
+          bypassCache: Boolean(args.bypassCache),
+          tabId: args.tabId,
+        });
+      }
+
+      case "browser_net_start": {
+        return await this.bridge.dispatch(COMMAND_TYPES.CDP_NET_START, {
+          tabId: args.tabId,
+        });
+      }
+
+      case "browser_net_get": {
+        return await this.bridge.dispatch(COMMAND_TYPES.CDP_NET_GET, {
+          grep: args.grep,
+          tabId: args.tabId,
+        });
+      }
+
+      case "browser_net_stop": {
+        return await this.bridge.dispatch(COMMAND_TYPES.CDP_NET_STOP, {
+          grep: args.grep,
+          tabId: args.tabId,
         });
       }
 

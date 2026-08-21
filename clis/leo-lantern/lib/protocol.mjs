@@ -20,4 +20,10 @@ export const COMMAND_TYPES = {
   CDP_SCREENSHOT: "cdp.screenshot",
   COOKIES_EXPORT: "cookies.export",
   TABS_RELOAD: "tabs.reload",
+  DOM_WAIT: "dom.wait",
+  DOM_CONTENT: "dom.content",
+  DOM_PRESS: "dom.press",
+  CDP_NET_START: "cdp.net-start",
+  CDP_NET_GET: "cdp.net-get",
+  CDP_NET_STOP: "cdp.net-stop",
 };

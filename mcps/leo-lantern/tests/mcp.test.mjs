@@ -18,6 +18,13 @@ const REQUIRED_TOOLS = [
   "browser_end_task",
   "browser_open_tabs",
   "browser_new_tab",
+  "browser_wait",
+  "browser_content",
+  "browser_press",
+  "browser_reload",
+  "browser_net_start",
+  "browser_net_get",
+  "browser_net_stop",
   "browser_goto",
   "browser_click",
   "browser_fill",
@@ -225,5 +232,41 @@ test("MCP: browser_start_task / claim / end_task map to bridge commands", async 
     });
     const doctor = JSON.parse(doctorRes.result.content[0].text);
     assert.equal(doctor.task.taskId, "task_mcp");
+  });
+});
+
+test("MCP: browser_wait and network tools map to bridge commands", async () => {
+  await withMcp(async (mcp, bridge) => {
+    const mapping = [
+      ["browser_wait", { text: "Ready", timeoutMs: 12 }, "dom.wait", { text: "Ready", timeoutMs: 12 }],
+      ["browser_content", { maxChars: 8 }, "dom.content", { maxChars: 8 }],
+      ["browser_press", { key: "Enter" }, "dom.press", { key: "Enter" }],
+      ["browser_reload", { bypassCache: true }, "tabs.reload", { bypassCache: true }],
+      ["browser_net_start", {}, "cdp.net-start", {}],
+      ["browser_net_get", { grep: "api" }, "cdp.net-get", { grep: "api" }],
+      ["browser_net_stop", { grep: "deploy" }, "cdp.net-stop", { grep: "deploy" }],
+    ];
+    await new Promise((resolve, reject) => {
+      const req = http.request({ hostname: "127.0.0.1", port: bridge.port, path: "/ext/hello", method: "POST", agent: false, headers: { "Content-Type": "application/json", Connection: "close" } }, (res) => { res.resume(); res.on("end", resolve); });
+      req.on("error", reject); req.end(JSON.stringify({ id: "mcp-page-drive" }));
+    });
+    for (const [tool, args, expectedType, expectedParams] of mapping) {
+      const pollPromise = new Promise((resolve, reject) => {
+        http.get(`http://127.0.0.1:${bridge.port}/ext/poll?waitMs=5000`, { agent: false, headers: { Connection: "close" } }, (res) => {
+          let body = "";
+          res.on("data", (chunk) => (body += chunk));
+          res.on("end", () => resolve(JSON.parse(body)));
+        }).on("error", reject);
+      });
+      const call = mcp.handleJsonRpc({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: tool, arguments: args } });
+      const poll = await pollPromise;
+      assert.equal(poll.cmd.type, expectedType);
+      assert.deepEqual(poll.cmd.params, expectedParams);
+      await new Promise((resolve, reject) => {
+        const req = http.request({ hostname: "127.0.0.1", port: bridge.port, path: "/ext/result", method: "POST", agent: false, headers: { "Content-Type": "application/json", Connection: "close" } }, (res) => { res.resume(); res.on("end", resolve); });
+        req.on("error", reject); req.end(JSON.stringify({ id: poll.cmd.id, ok: true, result: { ok: true } }));
+      });
+      await call;
+    }
   });
 });
