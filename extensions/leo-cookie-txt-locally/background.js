@@ -346,6 +346,7 @@ async function runTask(url, task) {
     } else if (type === "task.end") {
       assertActiveTask(taskState);
       const closeGroup = Boolean(params.closeGroup);
+      await stopNetworkCapture();
       const groupId = taskState.activeTask?.groupId;
       if (closeGroup && groupId != null) {
         try {
@@ -467,7 +468,7 @@ async function runTask(url, task) {
       await chrome.tabs.reload(tabId, { bypassCache: Boolean(params.bypassCache) });
       result = await withTaskSummary({ reloaded: true, tabId });
     } else if (type === "dom.click") {
-      const tabId = await getActiveTabId(params.tabId);
+      const tabId = requireTaskTabId(params);
       const res = await chrome.scripting.executeScript({
         target: { tabId },
         func: (sel, text) => {
@@ -490,7 +491,7 @@ async function runTask(url, task) {
       }
       result = res[0]?.result || { clicked: true };
     } else if (type === "dom.fill") {
-      const tabId = await getActiveTabId(params.tabId);
+      const tabId = requireTaskTabId(params);
       const res = await chrome.scripting.executeScript({
         target: { tabId },
         func: (sel, val) => {
@@ -509,7 +510,7 @@ async function runTask(url, task) {
       }
       result = res[0]?.result || { filled: true };
     } else if (type === "dom.snapshot") {
-      const tabId = await getActiveTabId(params.tabId);
+      const tabId = requireTaskTabId(params);
       const res = await chrome.scripting.executeScript({
         target: { tabId },
         func: () => {
@@ -532,7 +533,7 @@ async function runTask(url, task) {
       });
       result = res[0]?.result || {};
     } else if (type === "page.eval") {
-      const tabId = await getActiveTabId(params.tabId);
+      const tabId = requireTaskTabId(params);
       const res = await chrome.scripting.executeScript({
         target: { tabId },
         func: (code) => {
@@ -595,7 +596,7 @@ async function runTask(url, task) {
       if (res?.[0]?.result?.ok === false) throw new Error(res[0].result.error);
       result = await withTaskSummary({ pressed: true, key, selector: params.selector || null });
     } else if (type === "cdp.screenshot") {
-      const tabId = await getActiveTabId(params.tabId);
+      const tabId = requireTaskTabId(params);
       const fullPage = Boolean(params.fullPage);
       await chrome.debugger.attach({ tabId }, "1.3");
       try {
