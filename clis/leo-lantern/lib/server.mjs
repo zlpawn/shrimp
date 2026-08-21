@@ -12,9 +12,6 @@ function sendJson(res, statusCode, data) {
   res.writeHead(statusCode, {
     "Content-Type": "application/json; charset=utf-8",
     Connection: "close",
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
   });
   res.end(json);
 }
@@ -45,7 +42,7 @@ function parseJsonBody(req) {
 
 export class LanternServer {
   constructor(options = {}) {
-    this.port = Number(options.port || process.env.LEO_LANTERN_PORT || DEFAULT_BRIDGE_PORT);
+    this.port = Number(options.port ?? process.env.LEO_LANTERN_PORT ?? DEFAULT_BRIDGE_PORT);
     this.host = options.host || process.env.LEO_LANTERN_HOST || DEFAULT_BRIDGE_HOST;
     this.server = null;
     this.extension = null;
@@ -64,16 +61,6 @@ export class LanternServer {
 
     return new Promise((resolve, reject) => {
       const server = http.createServer(async (req, res) => {
-        if (req.method === "OPTIONS") {
-          res.writeHead(204, {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type",
-          });
-          res.end();
-          return;
-        }
-
         try {
           const url = new URL(req.url, `http://${req.headers.host || "127.0.0.1"}`);
           const pathname = url.pathname;
@@ -218,6 +205,10 @@ export class LanternServer {
       server.headersTimeout = 5000;
       server.listen(this.port, this.host, () => {
         this.server = server;
+        const address = server.address();
+        if (address && typeof address.port === "number") {
+          this.port = address.port;
+        }
         resolve(this.port);
       });
     });

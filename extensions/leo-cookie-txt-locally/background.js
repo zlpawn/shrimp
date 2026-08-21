@@ -1,3 +1,4 @@
+import { createMultiUrlPollLoop } from "./poll-loop.mjs";
 const DEFAULT_BRIDGE_URL = "http://127.0.0.1:19527";
 const DEFAULT_GATEWAY_URL = "http://127.0.0.1:8788";
 const HEARTBEAT_INTERVAL_MS = 25_000;
@@ -85,18 +86,21 @@ async function sendHeartbeats() {
   }
 }
 
-async function pollForCommand(url, waitMs) {
+async function pollForCommand(url, waitMs, signal) {
   try {
-    const pollResp = await fetch(`${url}/ext/poll?waitMs=${waitMs}`);
+    const pollResp = await fetch(`${url}/ext/poll?waitMs=${waitMs}`, { signal });
     if (pollResp.ok) {
       const data = await pollResp.json();
       return { online: true, cmd: data.cmd || (Array.isArray(data.tasks) ? data.tasks[0] : null) || null };
     }
-  } catch {}
+  } catch (err) {
+    if (err?.name === "AbortError") throw err;
+  }
 
   try {
     const claimResp = await fetch(`${url}/v1/extension-tasks/claim`, {
       method: "POST",
+      signal,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         extension_id: chrome.runtime.id,
@@ -108,40 +112,24 @@ async function pollForCommand(url, waitMs) {
       const data = await claimResp.json();
       return { online: true, cmd: data.tasks && data.tasks[0] ? data.tasks[0] : null };
     }
-  } catch {}
+  } catch (err) {
+    if (err?.name === "AbortError") throw err;
+  }
 
   return { online: false, cmd: null };
 }
 
-let pollLoopRunning = false;
+const pollLoop = createMultiUrlPollLoop({
+  pollForCommand,
+  runTask: (url, cmd) => runTask(url, cmd),
+  sleep,
+  waitMs: POLL_WAIT_MS,
+  offlineBackoffMs: OFFLINE_BACKOFF_MS,
+});
 
 async function startPollLoop() {
-  if (pollLoopRunning) return;
-  pollLoopRunning = true;
-  try {
-    while (pollLoopRunning) {
-      const urls = await getTargetUrls();
-      const results = await Promise.all(
-        urls.map(async (url) => {
-          const polled = await pollForCommand(url, POLL_WAIT_MS);
-          return { url, ...polled };
-        })
-      );
-
-      const matched = results.find((entry) => entry.cmd);
-      if (matched) {
-        await runTask(matched.url, matched.cmd);
-        continue;
-      }
-
-      const sawOnlineServer = results.some((entry) => entry.online);
-      if (!sawOnlineServer) {
-        await sleep(OFFLINE_BACKOFF_MS);
-      }
-    }
-  } finally {
-    pollLoopRunning = false;
-  }
+  const urls = await getTargetUrls();
+  pollLoop.start(urls);
 }
 
 async function reportResult(url, taskId, ok, result, error) {

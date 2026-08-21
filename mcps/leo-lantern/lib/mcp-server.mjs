@@ -126,7 +126,12 @@ export class LanternMcpServer {
     this.host = options.host || "127.0.0.1";
     this.bridge = options.bridge || new LanternServer({ port: this.port, host: this.host });
     this.ownBridge = !options.bridge;
+    this.enableStdio = options.stdio !== false;
     this.rl = null;
+  }
+
+  isBridgeOnline() {
+    return Boolean(this.bridge?.server);
   }
 
   async start() {
@@ -134,13 +139,14 @@ export class LanternMcpServer {
       try {
         await this.bridge.start();
       } catch (err) {
-        // If port is already in use (e.g. another bridge or gateway instance), that's fine
+        // Keep stdio alive if another local process already bound the port,
+        // but do not pretend this process owns a live bridge.
         if (err.code !== "EADDRINUSE") {
           throw err;
         }
       }
     }
-    this.setupStdio();
+    if (this.enableStdio) this.setupStdio();
   }
 
   setupStdio() {
@@ -245,18 +251,21 @@ export class LanternMcpServer {
   async callTool(name, args = {}) {
     switch (name) {
       case "browser_health": {
+        const bridgeOnline = this.isBridgeOnline();
         return {
-          bridgeOnline: true,
-          extensionOnline: this.bridge.isExtensionOnline(),
+          bridgeOnline,
+          extensionOnline: bridgeOnline && this.bridge.isExtensionOnline(),
           port: this.port,
         };
       }
 
       case "browser_doctor": {
+        const bridgeOnline = this.isBridgeOnline();
         return {
           bridge: {
+            online: bridgeOnline,
             port: this.port,
-            extensionOnline: this.bridge.isExtensionOnline(),
+            extensionOnline: bridgeOnline && this.bridge.isExtensionOnline(),
             pendingCommands: this.bridge.pendingCommands.size,
           },
           extension: this.bridge.extension,

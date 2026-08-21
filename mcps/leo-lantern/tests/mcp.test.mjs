@@ -2,8 +2,14 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { LanternMcpServer, MCP_TOOLS } from "../lib/mcp-server.mjs";
 import { LanternServer } from "../lib/server.mjs";
+import http from "node:http";
+import { LanternServer as CliLanternServer } from "../../../clis/leo-lantern/lib/server.mjs";
+import {
+  COMMAND_TYPES as CliCommandTypes,
+  DEFAULT_BRIDGE_PORT as CliDefaultPort,
+} from "../../../clis/leo-lantern/lib/protocol.mjs";
+import { COMMAND_TYPES, DEFAULT_BRIDGE_PORT } from "../lib/protocol.mjs";
 
-const TEST_PORT = 8788;
 const REQUIRED_TOOLS = [
   "browser_health",
   "browser_doctor",
@@ -19,9 +25,9 @@ const REQUIRED_TOOLS = [
 ];
 
 async function withMcp(fn) {
-  const bridge = new LanternServer({ port: TEST_PORT });
-  const mcp = new LanternMcpServer({ bridge, port: TEST_PORT });
+  const bridge = new LanternServer({ port: 0 });
   await bridge.start();
+  const mcp = new LanternMcpServer({ bridge, port: bridge.port });
   try {
     return await fn(mcp, bridge);
   } finally {
@@ -83,7 +89,7 @@ test("MCP: tools/call browser_health and browser_doctor", async () => {
     assert.equal(healthRes.id, 2);
     const parsedHealth = JSON.parse(healthRes.result.content[0].text);
     assert.equal(parsedHealth.bridgeOnline, true);
-    assert.equal(parsedHealth.port, TEST_PORT);
+    assert.equal(parsedHealth.port, mcp.port);
 
     const doctorRes = await mcp.handleJsonRpc({
       jsonrpc: "2.0",
@@ -95,6 +101,44 @@ test("MCP: tools/call browser_health and browser_doctor", async () => {
       },
     });
     const parsedDoctor = JSON.parse(doctorRes.result.content[0].text);
-    assert.equal(parsedDoctor.bridge.port, TEST_PORT);
+    assert.equal(parsedDoctor.bridge.port, mcp.port);
   });
+});
+
+
+test("MCP: browser_health is false when bridge port is already in use", async () => {
+  const blocker = http.createServer((_req, res) => {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ ok: true, bridge: true }));
+  });
+  await new Promise((resolve) => blocker.listen(0, "127.0.0.1", resolve));
+  const occupiedPort = blocker.address().port;
+  const mcp = new LanternMcpServer({ port: occupiedPort, stdio: false });
+  try {
+    await mcp.start();
+    const healthRes = await mcp.handleJsonRpc({
+      jsonrpc: "2.0",
+      id: 4,
+      method: "tools/call",
+      params: {
+        name: "browser_health",
+        arguments: {},
+      },
+    });
+    const parsedHealth = JSON.parse(healthRes.result.content[0].text);
+    assert.equal(parsedHealth.bridgeOnline, false);
+    assert.equal(parsedHealth.port, mcp.port);
+  } finally {
+    await mcp.stop();
+    await new Promise((resolve, reject) => {
+      blocker.close((err) => (err ? reject(err) : resolve()));
+    });
+  }
+});
+
+
+test("MCP and CLI share one LanternServer implementation", () => {
+  assert.equal(LanternServer, CliLanternServer);
+  assert.equal(DEFAULT_BRIDGE_PORT, CliDefaultPort);
+  assert.equal(COMMAND_TYPES.DOM_CLICK, CliCommandTypes.DOM_CLICK);
 });

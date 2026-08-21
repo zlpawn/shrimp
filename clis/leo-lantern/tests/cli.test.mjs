@@ -4,8 +4,6 @@ import http from "node:http";
 import { parseCliArgs, executeCommand } from "../lib/cli.mjs";
 import { LanternServer } from "../lib/server.mjs";
 
-const TEST_PORT = 8788;
-
 function postJson(url, data) {
   return new Promise((resolve, reject) => {
     const u = new URL(url);
@@ -60,38 +58,38 @@ test("CLI: parseCliArgs parses commands, flags, and positionals", () => {
   assert.equal(parsed3.command, "help");
 });
 
-test("CLI: executeCommand help, health, and doctor on 8788", async () => {
+test("CLI: executeCommand help, health, and doctor", async () => {
   const helpResult = await executeCommand("help");
   assert.ok(helpResult.help.includes("Usage: leo-lantern"));
   assert.ok(helpResult.help.includes("screenshot"));
   assert.ok(helpResult.help.includes("cookies"));
 
-  const bridge = new LanternServer({ port: TEST_PORT });
+  const bridge = new LanternServer({ port: 0 });
   await bridge.start();
   try {
-    const healthResult = await executeCommand("health", {}, [], { port: TEST_PORT });
+    const healthResult = await executeCommand("health", {}, [], { port: bridge.port });
     assert.equal(healthResult.ok, true);
     assert.equal(healthResult.bridge, true);
-    assert.equal(healthResult.port, TEST_PORT);
+    assert.equal(healthResult.port, bridge.port);
 
-    const doctorResult = await executeCommand("doctor", {}, [], { port: TEST_PORT });
+    const doctorResult = await executeCommand("doctor", {}, [], { port: bridge.port });
     assert.equal(doctorResult.ok, true);
-    assert.equal(doctorResult.bridge.port, TEST_PORT);
+    assert.equal(doctorResult.bridge.port, bridge.port);
   } finally {
     await bridge.stop();
   }
 });
 
-test("CLI: click command posts to /cmd on 8788", async () => {
-  const bridge = new LanternServer({ port: TEST_PORT });
+test("CLI: click command posts to /cmd", async () => {
+  const bridge = new LanternServer({ port: 0 });
   await bridge.start();
   try {
-    await postJson(`http://127.0.0.1:${TEST_PORT}/ext/hello`, { id: "cli-ext" });
-    const pollPromise = getJson(`http://127.0.0.1:${TEST_PORT}/ext/poll?waitMs=5000`);
-    const clickPromise = executeCommand("click", { text: "登录" }, [], { port: TEST_PORT });
+    await postJson(`http://127.0.0.1:${bridge.port}/ext/hello`, { id: "cli-ext" });
+    const pollPromise = getJson(`http://127.0.0.1:${bridge.port}/ext/poll?waitMs=5000`);
+    const clickPromise = executeCommand("click", { text: "登录" }, [], { port: bridge.port });
     const poll = await pollPromise;
     assert.equal(poll.body.cmd.type, "dom.click");
-    await postJson(`http://127.0.0.1:${TEST_PORT}/ext/result`, {
+    await postJson(`http://127.0.0.1:${bridge.port}/ext/result`, {
       id: poll.body.cmd.id,
       ok: true,
       result: { clicked: true, tag: "button", text: "登录" },

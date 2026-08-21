@@ -3,9 +3,6 @@ import assert from "node:assert/strict";
 import http from "node:http";
 import { LanternServer } from "../lib/server.mjs";
 
-const TEST_PORT = 8788;
-const BASE = `http://127.0.0.1:${TEST_PORT}`;
-
 function postJson(url, data) {
   return new Promise((resolve, reject) => {
     const u = new URL(url);
@@ -46,23 +43,27 @@ function getJson(url) {
   });
 }
 
+function baseUrl(bridge) {
+  return `http://127.0.0.1:${bridge.port}`;
+}
+
 async function withBridge(fn) {
-  const bridge = new LanternServer({ port: TEST_PORT });
+  const bridge = new LanternServer({ port: 0 });
   await bridge.start();
   try {
-    return await fn(bridge);
+    return await fn(bridge, baseUrl(bridge));
   } finally {
     await bridge.stop();
   }
 }
 
 test("LanternServer: start, health, hello, doctor, and stop", async () => {
-  await withBridge(async () => {
+  await withBridge(async (bridge, BASE) => {
     const health1 = await getJson(`${BASE}/health`);
     assert.equal(health1.status, 200);
     assert.equal(health1.body.ok, true);
     assert.equal(health1.body.bridge, true);
-    assert.equal(health1.body.port, TEST_PORT);
+    assert.equal(health1.body.port, bridge.port);
     assert.equal(health1.body.extensionOnline, false);
 
     const hello = await postJson(`${BASE}/ext/hello`, {
@@ -80,14 +81,14 @@ test("LanternServer: start, health, hello, doctor, and stop", async () => {
     const doctor = await getJson(`${BASE}/doctor`);
     assert.equal(doctor.status, 200);
     assert.equal(doctor.body.ok, true);
-    assert.equal(doctor.body.bridge.port, TEST_PORT);
+    assert.equal(doctor.body.bridge.port, bridge.port);
     assert.equal(doctor.body.extension.online, true);
     assert.equal(doctor.body.extension.info.id, "test-ext-id");
   });
 });
 
 test("LanternServer: command dispatch, long-poll and result resolution", async () => {
-  await withBridge(async (bridge) => {
+  await withBridge(async (bridge, BASE) => {
     await postJson(`${BASE}/ext/hello`, { id: "ext-1" });
 
     const pollPromise = getJson(`${BASE}/ext/poll?waitMs=5000`);
@@ -112,7 +113,7 @@ test("LanternServer: command dispatch, long-poll and result resolution", async (
 });
 
 test("LanternServer: POST /cmd waits for extension result", async () => {
-  await withBridge(async () => {
+  await withBridge(async (_bridge, BASE) => {
     await postJson(`${BASE}/ext/hello`, { id: "ext-cmd" });
 
     const pollPromise = getJson(`${BASE}/ext/poll?waitMs=5000`);
@@ -138,7 +139,7 @@ test("LanternServer: POST /cmd waits for extension result", async () => {
 });
 
 test("LanternServer: command timeout TTL cleans pending commands", async () => {
-  await withBridge(async (bridge) => {
+  await withBridge(async (bridge, BASE) => {
     await postJson(`${BASE}/ext/hello`, { id: "ext-timeout" });
     await assert.rejects(
       () => bridge.dispatchCommand("dom.click", { text: "missing" }, 50),
@@ -150,7 +151,7 @@ test("LanternServer: command timeout TTL cleans pending commands", async () => {
 });
 
 test("LanternServer: heartbeat updates lastSeen", async () => {
-  await withBridge(async () => {
+  await withBridge(async (_bridge, BASE) => {
     await postJson(`${BASE}/ext/hello`, { id: "ext-hb", name: "Leo cookie.txt Locally" });
     const before = await getJson(`${BASE}/health`);
     await new Promise((resolve) => setTimeout(resolve, 20));
@@ -160,5 +161,44 @@ test("LanternServer: heartbeat updates lastSeen", async () => {
     assert.equal(after.body.extensionOnline, true);
     assert.ok(after.body.lastSeenMs >= 0);
     assert.ok(after.body.lastSeenMs <= before.body.lastSeenMs + 1000);
+  });
+});
+
+test("LanternServer: does not advertise CORS for browser pages", async () => {
+  await withBridge(async (_bridge, BASE) => {
+    const headers = await new Promise((resolve, reject) => {
+      const req = http.get(`${BASE}/health`, { agent: false, headers: { Connection: "close" } }, (res) => {
+        res.resume();
+        res.on("end", () => resolve(res.headers));
+      });
+      req.on("error", reject);
+    });
+    assert.equal(headers["access-control-allow-origin"], undefined);
+    assert.equal(headers["access-control-allow-methods"], undefined);
+    assert.equal(headers["access-control-allow-headers"], undefined);
+
+    const options = await new Promise((resolve, reject) => {
+      const req = http.request(
+        `${BASE}/cmd`,
+        {
+          method: "OPTIONS",
+          agent: false,
+          headers: {
+            Origin: "https://evil.example",
+            "Access-Control-Request-Method": "POST",
+            Connection: "close",
+          },
+        },
+        (res) => {
+          let body = "";
+          res.on("data", (chunk) => (body += chunk));
+          res.on("end", () => resolve({ status: res.statusCode, headers: res.headers, body }));
+        }
+      );
+      req.on("error", reject);
+      req.end();
+    });
+    assert.notEqual(options.status, 204);
+    assert.equal(options.headers["access-control-allow-origin"], undefined);
   });
 });
