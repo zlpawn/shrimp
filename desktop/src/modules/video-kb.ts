@@ -143,6 +143,7 @@ interface VideoInfo {
   key_points?: string[];
   topics?: string[];
   steps_done?: string[];
+  collection?: string;
   created_at: number;
   updated_at?: number;
 }
@@ -170,6 +171,54 @@ const DEFAULT_PIPELINE_STEPS = [
   "chunk",
   "vectorize",
 ];
+
+const VIDEO_KB_COLLECTIONS = [
+  {
+    id: "default",
+    label: "通用资料",
+    hint: "还没归类的视频先放这里，之后可以再改到具体用途。",
+  },
+  {
+    id: "iching-up",
+    label: "易经讲解",
+    hint: "给六十四卦详情页用的讲解视频。导入后，确认过的片段才会出现在对应卦辞/爻辞下。",
+  },
+] as const;
+
+const DEFAULT_COLLECTION_ID = VIDEO_KB_COLLECTIONS[0].id;
+
+type VideoKbCollectionId = typeof VIDEO_KB_COLLECTIONS[number]["id"];
+
+function knownCollectionId(value: string | null | undefined): VideoKbCollectionId {
+  const id = String(value || "").trim();
+  return VIDEO_KB_COLLECTIONS.some((item) => item.id === id) ? id as VideoKbCollectionId : DEFAULT_COLLECTION_ID;
+}
+
+function collectionHint(id: string): string {
+  return VIDEO_KB_COLLECTIONS.find((item) => item.id === id)?.hint || VIDEO_KB_COLLECTIONS[0].hint;
+}
+
+function collectionLabel(id: string): string {
+  return VIDEO_KB_COLLECTIONS.find((item) => item.id === id)?.label || "未分类";
+}
+
+function collectionSelectHTML(selectId: string, selectedId: string, includeAll = false): string {
+  const current = includeAll ? selectedId : knownCollectionId(selectedId);
+  const options = [
+    ...(includeAll ? [`<option value="" ${current ? "" : "selected"}>全部用途</option>`] : []),
+    ...VIDEO_KB_COLLECTIONS.map((item) => `
+      <option value="${esc(item.id)}" ${item.id === current ? "selected" : ""}>${esc(item.label)}</option>
+    `),
+  ].join("");
+  const hintId = `${selectId}-hint`;
+  const hint = includeAll && !current ? "先看全部已导入视频，也可以按用途收窄。" : collectionHint(current);
+  return `
+    <select id="${selectId}" onchange="window.videoKbOnCollectionChange('${selectId}')">
+      ${options}
+    </select>
+    <div id="${hintId}" class="video-kb-status">${esc(hint)}</div>
+  `;
+}
 
 const PIPELINE_STEP_HINTS: Record<string, string> = {
   fetch_info: "解析标题、时长与源站元数据",
@@ -233,14 +282,29 @@ function fmtTime(seconds: number): string {
 }
 
 
+function selectedCollection(selectId: string, allowEmpty = false): string {
+  const sel = document.getElementById(selectId) as HTMLSelectElement | null;
+  const value = sel?.value?.trim() || "";
+  if (!value) return allowEmpty ? "" : DEFAULT_COLLECTION_ID;
+  return knownCollectionId(value);
+}
+
+function persistCollection(id: string): void {
+  try { localStorage.setItem("video-kb:last-collection", knownCollectionId(id)); } catch { /* ignore */ }
+}
+
 function restoreLastCollection(): void {
-  try {
-    const last = localStorage.getItem("video-kb:last-collection") || "";
-    const input = document.getElementById("vk-collection") as HTMLInputElement | null;
-    if (input && last) input.value = last;
-    const search = document.getElementById("vk-search-collection") as HTMLInputElement | null;
-    if (search && last) search.value = last;
-  } catch { /* ignore */ }
+  let last = DEFAULT_COLLECTION_ID;
+  try { last = knownCollectionId(localStorage.getItem("video-kb:last-collection")); } catch { /* ignore */ }
+  const ingest = document.getElementById("vk-collection") as HTMLSelectElement | null;
+  if (ingest) ingest.value = last;
+  const search = document.getElementById("vk-search-collection") as HTMLSelectElement | null;
+  if (search) search.value = last;
+  const assets = document.getElementById("vk-assets-collection") as HTMLSelectElement | null;
+  if (assets) assets.value = last;
+  (window as any).videoKbOnCollectionChange("vk-collection");
+  (window as any).videoKbOnCollectionChange("vk-search-collection");
+  (window as any).videoKbOnCollectionChange("vk-assets-collection");
 }
 export function renderVideoKbDetail(): void {
   const cards = document.getElementById("tools-cards");
@@ -285,9 +349,8 @@ function importPanelHTML(): string {
         <input type="text" id="vk-display-title" placeholder="留空则使用源站标题">
       </div>
       <div class="form-group full" style="margin-bottom:16px">
-        <label>集合 collection</label>
-        <input type="text" id="vk-collection" placeholder="iching-up">
-        <div class="video-kb-status">同一系列视频用同一个 ID，例如 iching-up。留空则写入 default。</div>
+        <label>用途</label>
+        ${collectionSelectHTML("vk-collection", DEFAULT_COLLECTION_ID)}
       </div>
       <div class="form-group" style="margin-bottom:16px">
         <label>Cookie 文件</label>
@@ -446,8 +509,8 @@ function searchPanelHTML(): string {
         <input type="text" id="vk-search-query" placeholder="输入要检索的内容..." onkeydown="if(event.key==='Enter')window.videoKbSearch()">
       </div>
       <div class="form-group full" style="margin-bottom:16px">
-        <label>集合（可选）</label>
-        <input type="text" id="vk-search-collection" placeholder="iching-up，留空则搜索全部">
+        <label>检索范围</label>
+        ${collectionSelectHTML("vk-search-collection", "", true)}
       </div>
       <div class="video-kb-form-grid">
         <div class="form-group">
@@ -1155,15 +1218,13 @@ function updateModelGuide(): void {
   if (selectedSteps.includes("vectorize") && !embeddingEndpointId) { alert("已勾选向量化入库，请配置 Embedding 节点"); return; }
 
   const displayTitle = (document.getElementById("vk-display-title") as HTMLInputElement)?.value?.trim() || "";
-  const collection = (document.getElementById("vk-collection") as HTMLInputElement)?.value?.trim() || "";
-  if (collection) {
-    try { localStorage.setItem("video-kb:last-collection", collection); } catch { /* ignore */ }
-  }
+  const collection = selectedCollection("vk-collection");
+  persistCollection(collection);
 
   const result = await apiPost<{ task_id: string; error?: { message?: string } }>("/v1/video-kb/ingest", {
     url,
     display_title: displayTitle || null,
-    collection: collection || "default",
+    collection,
     cookie_file: cookieFile || null,
     whisper_tool: whisperTool || null,
     whisper_model: whisperModel || null,
@@ -1304,7 +1365,7 @@ function renderTaskComplete(task: TaskInfo): void {
   const resultsDiv = document.getElementById("vk-search-results");
   if (resultsDiv) resultsDiv.innerHTML = `<div class="video-kb-empty">搜索中...</div>`;
 
-  const collection = (document.getElementById("vk-search-collection") as HTMLInputElement)?.value?.trim() || "";
+  const collection = selectedCollection("vk-search-collection", true);
   const result = await apiPost<{ results: SearchResult[] }>("/v1/video-kb/search", {
     query,
     embedding_endpoint_id: embeddingEndpointId,
@@ -1345,23 +1406,50 @@ function renderTaskComplete(task: TaskInfo): void {
   if (tab === "assets") loadVideoList();
 };
 
+(window as any).videoKbOnCollectionChange = function (selectId: string): void {
+  const sel = document.getElementById(selectId) as HTMLSelectElement | null;
+  const hint = document.getElementById(`${selectId}-hint`);
+  if (!sel || !hint) return;
+  const value = sel.value.trim();
+  if (!value) {
+    hint.textContent = "先看全部已导入视频，也可以按用途收窄。";
+    return;
+  }
+  hint.textContent = collectionHint(value);
+  persistCollection(value);
+  if (selectId === "vk-assets-collection") loadVideoList();
+};
+
 async function loadVideoList(): Promise<void> {
   const panel = document.getElementById("video-kb-panel-assets");
   if (!panel) return;
-  panel.innerHTML = `<div class="video-kb-empty">加载中...</div>`;
+  const existing = document.getElementById("vk-assets-collection") as HTMLSelectElement | null;
+  const last = (() => {
+    try { return knownCollectionId(localStorage.getItem("video-kb:last-collection")); } catch { return DEFAULT_COLLECTION_ID; }
+  })();
+  const collection = existing ? selectedCollection("vk-assets-collection", true) : last;
+  panel.innerHTML = `
+    <div class="video-kb-card">
+      <div class="video-kb-card-title">已导入视频</div>
+      <div class="form-group full" style="margin-bottom:16px">
+        <label>查看范围</label>
+        ${collectionSelectHTML("vk-assets-collection", collection, true)}
+      </div>
+      <div id="vk-assets-list" class="video-kb-empty">加载中...</div>
+    </div>
+  `;
+  const list = document.getElementById("vk-assets-list");
+  if (!list) return;
 
-  const collection = (document.getElementById("vk-collection") as HTMLInputElement)?.value?.trim()
-    || (document.getElementById("vk-search-collection") as HTMLInputElement)?.value?.trim()
-    || "";
   const data = await apiGet<{ videos: VideoInfo[] }>("/v1/video-kb/videos" + (collection ? `?collection=${encodeURIComponent(collection)}` : ""));
   if (!data) return;
 
   if (data.videos.length === 0) {
-    panel.innerHTML = `<div class="video-kb-empty">暂无已索引视频</div>`;
+    list.innerHTML = `<div class="video-kb-empty">这个范围内还没有视频</div>`;
     return;
   }
 
-  panel.innerHTML = data.videos.map((v) => {
+  list.innerHTML = data.videos.map((v) => {
     const title = v.display_title || v.video_title || "untitled";
     const source = v.source_title && v.source_title !== title ? `<div class="video-kb-asset-source">原标题: ${esc(v.source_title)}</div>` : "";
     const summary = v.summary_short
@@ -1377,7 +1465,7 @@ async function loadVideoList(): Promise<void> {
         ${source}
         ${summary}
         <div class="video-kb-asset-meta">
-          ${v.chunk_count || 0} 分块 | ${durationLabel} | ${esc(v.language || "-")} | ${new Date(v.updated_at || v.created_at).toLocaleDateString()}<br>
+          ${esc(collectionLabel(v.collection || ""))} | ${v.chunk_count || 0} 分块 | ${durationLabel} | ${esc(v.language || "-")} | ${new Date(v.updated_at || v.created_at).toLocaleDateString()}<br>
           <a href="${esc(v.video_url)}" target="_blank">${esc(v.video_url)}</a>
         </div>
       </div>

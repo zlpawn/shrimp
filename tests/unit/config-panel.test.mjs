@@ -688,6 +688,11 @@ test("video kb ingest form includes collection field", async () => {
   assert.match(src, /vk-collection/);
   assert.match(src, /collection:/);
   assert.match(src, /iching-up/);
+  assert.match(src, /VIDEO_KB_COLLECTIONS/);
+  assert.match(src, /<select id="\$\{selectId\}"/);
+  assert.match(src, /易经讲解/);
+  assert.match(src, /通用资料/);
+  assert.doesNotMatch(src, /placeholder="iching-up"/);
 });
 
 test("server exposes clip-anchor routes", async () => {
