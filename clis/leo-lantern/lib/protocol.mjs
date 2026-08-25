@@ -56,6 +56,8 @@ export const COMMAND_TYPES = {
   TASK_END: "task.end",
   DOM_CLICK: "dom.click",
   DOM_FILL: "dom.fill",
+  DOM_STATE: "dom.state",
+  DOM_FIND: "dom.find",
   DOM_SNAPSHOT: "dom.snapshot",
   PAGE_EVAL: "page.eval",
   CDP_SCREENSHOT: "cdp.screenshot",

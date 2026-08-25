@@ -26,6 +26,8 @@ const REQUIRED_TOOLS = [
   "browser_net_get",
   "browser_net_stop",
   "browser_goto",
+  "browser_state",
+  "browser_find",
   "browser_click",
   "browser_fill",
   "browser_snapshot",
@@ -367,6 +369,13 @@ test("MCP: browser_start_task / claim / end_task map to bridge commands", async 
 test("MCP: browser_wait and network tools map to bridge commands", async () => {
   await withMcp(async (mcp, bridge) => {
     const mapping = [
+      ["browser_state", { tabId: 9 }, "dom.state", { tabId: 9 }],
+      [
+        "browser_find",
+        { target: { kind: "semantic", role: "button", name: "Sign in" }, tabId: 9 },
+        "dom.find",
+        { target: { kind: "semantic", role: "button", name: "Sign in" }, tabId: 9 },
+      ],
       ["browser_wait", { text: "Ready", timeoutMs: 12 }, "dom.wait", { text: "Ready", timeoutMs: 12 }],
       ["browser_content", { maxChars: 8 }, "dom.content", { maxChars: 8 }],
       ["browser_press", { key: "Enter" }, "dom.press", { key: "Enter" }],

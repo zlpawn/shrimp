@@ -276,6 +276,37 @@ export function resolveRef(document, registry, target) {
   return { element: replacement, ref: target.ref, generation: registry.generation, matchLevel: "reidentified" };
 }
 
+export function findTargetSnapshot(document, registry, target) {
+  if (target.kind === "ref") {
+    throw lanternError("unsupported_target", "Find accepts CSS or semantic targets, not refs");
+  }
+  const allMatches = findTargets(document, registry, target);
+  const matches = allMatches.slice(0, STATE_LIMIT);
+  return {
+    generation: registry.generation,
+    matches_n: allMatches.length,
+    elements: matches.map((element) => {
+      const ref = refFor(registry, element, () => fingerprintElement(element, document));
+      const values = semanticValues(element, document);
+      return {
+        ref,
+        tag: element.tagName.toLowerCase(),
+        role: values.role || undefined,
+        name: values.name || undefined,
+        text: values.text || undefined,
+        visible: true,
+        disabled: isDisabled(element),
+      };
+    }),
+  };
+}
+
+globalThis.__leoLanternElementTargets = {
+  ensureDocumentRegistry,
+  collectState,
+  findTargetSnapshot,
+};
+
 export function collectState(document, registry) {
   const candidates = semanticCandidates(document).filter(isVisible).slice(0, STATE_LIMIT);
   const elements = candidates.map((element) => {

@@ -34,6 +34,7 @@ import {
   normalizePressKey,
 } from "./page-drive.mjs";
 import { createCdpSessionManager } from "./cdp-session.mjs";
+import { normalizeTarget } from "./element-target.mjs";
 const DEFAULT_BRIDGE_URL = "http://127.0.0.1:19527";
 const DEFAULT_GATEWAY_URL = "http://127.0.0.1:8788";
 const HEARTBEAT_INTERVAL_MS = 25_000;
@@ -241,6 +242,48 @@ const commandQueue = createCommandQueue({
   execute: (task) => executeTask(task),
   report: (url, taskId, envelope) => reportResult(url, taskId, envelope),
 });
+
+async function executeDocumentTargetTask(type, params = {}) {
+  const tabId = await requireTaskTabId(params);
+  const target = type === "dom.state" ? null : normalizeTarget(params);
+  const res = await chrome.scripting.executeScript({
+    target: { tabId },
+    world: "ISOLATED",
+    func: (mode, normalizedTarget, resourceUrl) => {
+      const script = document.createElement("script");
+      script.type = "module";
+      script.src = resourceUrl;
+      script.dataset.leoLanternMode = mode;
+      if (normalizedTarget) script.dataset.leoLanternTarget = JSON.stringify(normalizedTarget);
+      const promise = new Promise((resolve, reject) => {
+        script.addEventListener("load", () => {
+          try {
+            const api = window.__leoLanternElementTargets;
+            if (!api) throw new Error("Lantern target module failed to initialize");
+            const registry = api.ensureDocumentRegistry(window);
+            const result = mode === "state"
+              ? api.collectState(document, registry)
+              : api.findTargetSnapshot(document, registry, JSON.parse(script.dataset.leoLanternTarget));
+            resolve(result);
+          } catch (error) {
+            reject(error);
+          }
+        });
+        script.addEventListener("error", () => reject(new Error("Failed to load Lantern target module")));
+      });
+      document.documentElement.appendChild(script);
+      return promise.finally(() => script.remove());
+    },
+    args: [
+      type === "dom.state" ? "state" : "find",
+      target,
+      chrome.runtime.getURL("/element-target.mjs"),
+    ],
+  });
+  const result = res?.[0]?.result;
+  if (result instanceof Error) throw result;
+  return result;
+}
 
 async function executeTask(task) {
   const type = task.type;
@@ -453,6 +496,8 @@ async function executeTask(task) {
         throw new Error(res[0].result.error);
       }
       result = res[0]?.result || { filled: true };
+    } else if (type === "dom.state" || type === "dom.find") {
+      result = await executeDocumentTargetTask(type, params);
     } else if (type === "dom.snapshot") {
       const tabId = await requireTaskTabId(params);
       const res = await chrome.scripting.executeScript({

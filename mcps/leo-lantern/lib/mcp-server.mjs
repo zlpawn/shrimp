@@ -184,6 +184,31 @@ export const MCP_TOOLS = [
     },
   },
   {
+    name: "browser_state",
+    description: "Return a bounded stable-target snapshot of interactive elements in the task tab.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        tabId: { type: "number", description: "Optional specific task-owned tab ID" },
+      },
+    },
+  },
+  {
+    name: "browser_find",
+    description: "Find task-tab elements by CSS or semantic target and allocate stable refs.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        target: {
+          type: "object",
+          description: "Discriminated target: ref, CSS, or semantic",
+        },
+        tabId: { type: "number", description: "Optional specific task-owned tab ID" },
+      },
+      required: ["target"],
+    },
+  },
+  {
     name: "browser_click",
     description: "Click an interactive element in the browser tab by visible text or CSS selector.",
     inputSchema: {
@@ -614,6 +639,15 @@ export class LanternMcpServer {
           grep: args.grep,
           tabId: args.tabId,
         });
+      }
+
+      case "browser_state": {
+        return await this.dispatch(COMMAND_TYPES.DOM_STATE, args);
+      }
+
+      case "browser_find": {
+        if (!args.target) throw new Error("Argument 'target' is required for browser_find");
+        return await this.dispatch(COMMAND_TYPES.DOM_FIND, args);
       }
 
       case "browser_click": {

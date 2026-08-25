@@ -5,6 +5,7 @@ import {
   ensureDocumentRegistry,
   findTargets,
   fingerprintElement,
+  findTargetSnapshot,
   normalizeTarget,
   resolveRef,
 } from "../../../extensions/leo-cookie-txt-locally/element-target.mjs";
@@ -286,6 +287,44 @@ test("a missing registry creates a new generation and fails old refs closed", ()
   const first = ensureDocumentRegistry({}, { generation: "gen-1" });
   const second = ensureDocumentRegistry({}, {});
   assert.notEqual(first.generation, second.generation);
+});
+
+test("find target snapshots return bounded refs and match counts", () => {
+  const elements = Array.from({ length: 202 }, (_, index) => {
+    const element = new FakeElement("button", { id: `find-${index + 1}` });
+    element.textContent = `Find ${index + 1}`;
+    return element;
+  });
+  const document = fixtureDocument(elements);
+  const registry = ensureDocumentRegistry({}, { generation: "gen-1" });
+
+  const result = findTargetSnapshot(
+    document,
+    registry,
+    normalizeTarget({ target: { kind: "semantic", role: "button" } })
+  );
+  assert.equal(result.generation, "gen-1");
+  assert.equal(result.matches_n, 202);
+  assert.equal(result.elements.length, 200);
+  assert.equal(result.elements[0].ref, 1);
+  assert.equal(result.elements.at(-1).ref, 200);
+
+  const empty = findTargetSnapshot(
+    document,
+    registry,
+    normalizeTarget({ target: { kind: "css", selector: "input" } })
+  );
+  assert.deepEqual(empty, { generation: "gen-1", matches_n: 0, elements: [] });
+
+  assert.throws(
+    () =>
+      findTargetSnapshot(
+        document,
+        registry,
+normalizeTarget({ target: { kind: "ref", ref: 999, generation: "gen-1" } })
+      ),
+    (err) => err.code === "unsupported_target"
+  );
 });
 
 function registeredButton(registry, id = "login", name = "Sign in", generation = "gen-1") {

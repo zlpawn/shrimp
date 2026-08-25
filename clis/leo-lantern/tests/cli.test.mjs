@@ -349,6 +349,14 @@ test("CLI: maps page-drive and network commands", async () => {
   const bridge = new LanternServer({ port: 0 });
   await bridge.start();
   const cases = [
+    ["state", { tabId: "9" }, [], "dom.state", { tabId: "9" }],
+    [
+      "find",
+      { target: { kind: "css", selector: "button.primary" }, tabId: "9" },
+      [],
+      "dom.find",
+      { target: { kind: "css", selector: "button.primary" }, tabId: "9" },
+    ],
     ["wait", { text: "Ready", "timeout-ms": "123", tabId: "9" }, [], "dom.wait", { text: "Ready", timeoutMs: 123, tabId: "9" }],
     ["content", { "max-chars": "55", tabId: "9" }, [], "dom.content", { maxChars: "55", tabId: "9" }],
     ["press", { selector: "#q" }, ["Enter"], "dom.press", { key: "Enter", selector: "#q" }],

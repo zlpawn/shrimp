@@ -306,6 +306,24 @@ export async function executeCommand(command, params = {}, positional = [], opti
       );
     }
 
+    case "state": {
+      return await requestBridge(
+        "/cmd",
+        "POST",
+        { type: COMMAND_TYPES.DOM_STATE, params: definedParams({ tabId: params.tabId }) },
+        options
+      );
+    }
+
+    case "find": {
+      return await requestBridge(
+        "/cmd",
+        "POST",
+        { type: COMMAND_TYPES.DOM_FIND, params: definedParams({ target: params.target, tabId: params.tabId }) },
+        options
+      );
+    }
+
     case "wait": {
       const timeoutMs = params.timeoutMs !== undefined ? Number(params.timeoutMs) : undefined;
       return await requestBridge(

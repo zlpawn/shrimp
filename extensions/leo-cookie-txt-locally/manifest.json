@@ -58,6 +58,7 @@
   "web_accessible_resources": [
     {
       "resources": [
+        "element-target.mjs",
         "icons/icon128.png"
       ],
       "matches": [
