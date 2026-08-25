@@ -1,3 +1,5 @@
+import { reconcileTaskRelationships, resolveTaskTab } from "./task-target.mjs";
+
 const COLORS = ["blue", "green", "red", "yellow", "pink", "purple", "cyan", "orange"];
 
 export function pickTaskColor(preferred) {
@@ -8,12 +10,81 @@ export function pickTaskColor(preferred) {
 export async function listChromeIds(api = chrome) {
   const tabs = await api.tabs.query({});
   const windows = await api.windows.getAll({});
-  const groupIds = [...new Set(tabs.map((tab) => tab.groupId).filter((id) => Number.isFinite(id) && id >= 0))];
+  const groupsById = new Map();
+  for (const tab of tabs) {
+    if (Number.isFinite(tab.groupId) && tab.groupId >= 0 && !groupsById.has(tab.groupId)) {
+      groupsById.set(tab.groupId, { id: tab.groupId, windowId: tab.windowId });
+    }
+  }
   return {
+    tabs,
+    windows,
+    groups: [...groupsById.values()],
     tabIds: tabs.map((tab) => tab.id),
     windowIds: windows.map((win) => win.id),
-    groupIds,
+    groupIds: [...groupsById.keys()],
   };
+}
+
+export async function resolveChromeTaskTab(
+  { task, explicitTabId = null, allowMissingClaim = false } = {},
+  api = chrome
+) {
+  const chromeIds = await listChromeIds(api);
+  return resolveTaskTab({
+    task,
+    explicitTabId,
+    allowMissingClaim,
+    live: {
+      tabsById: new Map(chromeIds.tabs.map((tab) => [Number(tab.id), tab])),
+      windowsById: new Map(chromeIds.windows.map((win) => [Number(win.id), win])),
+      groupsById: new Map(chromeIds.groups.map((group) => [Number(group.id), group])),
+    },
+  });
+}
+
+export async function ensureRecoverableTaskResources(task, { focus = false } = {}, api = chrome) {
+  const chromeIds = await listChromeIds(api);
+  const reconciled = reconcileTaskRelationships(task, {
+    tabsById: new Map(chromeIds.tabs.map((tab) => [Number(tab.id), tab])),
+    windowsById: new Map(chromeIds.windows.map((win) => [Number(win.id), win])),
+    groupsById: new Map(chromeIds.groups.map((group) => [Number(group.id), group])),
+  });
+  const windowId = await ensureTaskWindow(
+    {
+      sameWindow: Boolean(reconciled.sameWindow),
+      focus,
+      windowId: reconciled.windowId,
+    },
+    api
+  );
+  return { ...reconciled, windowId };
+}
+
+export async function navigateTaskTab(
+  { task, explicitTabId = null, url, focus = false } = {},
+  api = chrome
+) {
+  const resolved = await resolveChromeTaskTab({ task, explicitTabId }, api);
+  const updated = await api.tabs.update(resolved.tabId, {
+    url,
+    active: Boolean(focus),
+  });
+  if (focus) await api.windows.update(updated.windowId, { focused: true });
+  return { tab: updated, task: resolved.task };
+}
+
+export async function closeTaskTab({ task, explicitTabId = null } = {}, api = chrome) {
+  const resolved = await resolveChromeTaskTab({ task, explicitTabId }, api);
+  await api.tabs.remove(resolved.tabId);
+  const nextTask = {
+    ...resolved.task,
+    claimedTabId:
+      Number(resolved.task.claimedTabId) === Number(resolved.tabId)
+        ? null
+        : resolved.task.claimedTabId,
+  };
+  return { tabId: resolved.tabId, task: nextTask };
 }
 
 export async function ensureTaskWindow({ sameWindow = false, focus = false, windowId = null } = {}, api = chrome) {
@@ -119,9 +190,15 @@ export async function createOrNavigateTaskTab({
 } = {}, api = chrome) {
   if (action === "navigate-claimed") {
     if (claimedTabId == null) throw new Error("No claimed tab to navigate");
-    const updated = await api.tabs.update(claimedTabId, { url, active: Boolean(focus) });
-    if (focus) await api.windows.update(updated.windowId, { focused: true });
-    return { tabId: updated.id, windowId: updated.windowId, groupId, reused: true };
+    try {
+      await api.tabs.get(claimedTabId);
+      const updated = await api.tabs.update(claimedTabId, { url, active: Boolean(focus) });
+      if (focus) await api.windows.update(updated.windowId, { focused: true });
+      return { tabId: updated.id, windowId: updated.windowId, groupId, reused: true };
+    } catch {
+      action = "create-first";
+      claimedTabId = null;
+    }
   }
 
   const created = await api.tabs.create({

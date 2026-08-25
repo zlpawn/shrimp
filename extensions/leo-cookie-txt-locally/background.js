@@ -3,7 +3,6 @@ import {
   assertClaimParams,
   assertActiveTask,
   decideNewTabAction,
-  decideGotoAction,
   shouldReuseActiveTask,
 } from "./task-policy.mjs";
 import {
@@ -20,6 +19,10 @@ import {
   ensureTaskGroup,
   moveTabToTaskGroup,
   createOrNavigateTaskTab,
+  ensureRecoverableTaskResources,
+  resolveChromeTaskTab,
+  navigateTaskTab,
+  closeTaskTab,
 } from "./task-chrome.mjs";
 import {
   assertWaitParams,
@@ -74,26 +77,18 @@ async function withTaskSummary(result = {}) {
 
 async function requireTaskTabId(params = {}) {
   const task = assertActiveTask(taskState);
-  if (params.tabId != null) {
-    const tabId = Number(params.tabId);
-    const claimed = task.claimedTabId != null ? Number(task.claimedTabId) : null;
-    if (tabId === claimed) {
-      return tabId;
-    }
-    if (task.groupId != null) {
-      try {
-        const tab = await chrome.tabs.get(tabId);
-        if (tab && tab.groupId === task.groupId) {
-          return tabId;
-        }
-      } catch {}
-    }
-    throw new Error(`Tab ${tabId} is outside the active task context`);
+  const resolved = await resolveChromeTaskTab({
+    task,
+    explicitTabId: params.tabId ?? null,
+  });
+  if (
+    resolved.task.windowId !== task.windowId ||
+    resolved.task.groupId !== task.groupId ||
+    resolved.task.claimedTabId !== task.claimedTabId
+  ) {
+    await saveTaskState({ ...taskState, activeTask: resolved.task });
   }
-  if (task.claimedTabId == null) {
-    throw new Error("No claimed tab. Run tabs.new or tabs.claim first.");
-  }
-  return Number(task.claimedTabId);
+  return resolved.tabId;
 }
 
 function getNetworkSession() {
@@ -350,8 +345,13 @@ async function runTask(url, task) {
         const patch = {};
         if (params.title) patch.title = params.title;
         if (params.color) patch.color = color;
-        if (params.sameWindow !== undefined) patch.sameWindow = sameWindow;
-        await saveTaskState(upsertActiveTask(taskState, patch));
+        const patched = upsertActiveTask(taskState, patch);
+        const recovered = await ensureRecoverableTaskResources(
+          patched.activeTask,
+          { focus },
+          chrome
+        );
+        await saveTaskState({ ...patched, activeTask: recovered });
       } else {
         const windowId = await ensureTaskWindow({ sameWindow, focus });
         await saveTaskState(
@@ -413,26 +413,31 @@ async function runTask(url, task) {
       );
       result = await withTaskSummary({ claimed: true, tabId, groupId, windowId: moved.windowId });
     } else if (type === "tabs.new") {
-      assertActiveTask(taskState);
       const force = params.force === true || params.force === "true" || params.force === "1";
       const focus = Boolean(params.focus);
+      const recovered = await ensureRecoverableTaskResources(
+        assertActiveTask(taskState),
+        { focus },
+        chrome
+      );
+      await saveTaskState({ ...taskState, activeTask: recovered });
       const action = decideNewTabAction({
         hasActiveTask: true,
-        hasClaimedTab: taskState.activeTask.claimedTabId != null,
+        hasClaimedTab: recovered.claimedTabId != null,
         force,
       });
       if (action === "reject-no-task") throw new Error("No active task. Run task.start first.");
       const windowId = await ensureTaskWindow({
-        sameWindow: Boolean(taskState.activeTask.sameWindow),
+        sameWindow: Boolean(recovered.sameWindow),
         focus,
-        windowId: taskState.activeTask.windowId,
+        windowId: recovered.windowId,
       });
       const navigated = await createOrNavigateTaskTab({
         url: params.url || "about:blank",
         action,
-        claimedTabId: taskState.activeTask.claimedTabId,
+        claimedTabId: recovered.claimedTabId,
         windowId,
-        groupId: taskState.activeTask.groupId,
+        groupId: recovered.groupId,
         focus,
       });
       const groupId = await ensureTaskGroup({
@@ -457,33 +462,23 @@ async function runTask(url, task) {
         forced: action === "create-force",
       });
     } else if (type === "tabs.goto") {
-      assertActiveTask(taskState);
       const focus = Boolean(params.focus);
-      const action = decideGotoAction({
-        hasActiveTask: true,
-        hasClaimedTab: taskState.activeTask.claimedTabId != null,
-        tabId: params.tabId ?? null,
+      const navigated = await navigateTaskTab({
+        task: assertActiveTask(taskState),
+        explicitTabId: params.tabId ?? null,
+        url: params.url,
+        focus,
       });
-      if (action === "reject-no-task") throw new Error("No active task. Run task.start first.");
-      if (action === "reject-no-claimed-tab") throw new Error("No claimed tab. Run tabs.new or tabs.claim first.");
-      let tabId;
-      if (action === "navigate-explicit") {
-        tabId = Number(params.tabId);
-        const tab = await chrome.tabs.get(tabId);
-        if (!tab) throw new Error(`Tab not found: ${tabId}`);
-        if (taskState.activeTask.groupId != null && tab.groupId !== taskState.activeTask.groupId) {
-          throw new Error(`Tab ${tabId} is outside the active task group`);
-        }
-      } else {
-        tabId = Number(taskState.activeTask.claimedTabId);
-      }
-      const updated = await chrome.tabs.update(tabId, { url: params.url, active: Boolean(focus) });
-      if (focus) await chrome.windows.update(updated.windowId, { focused: true });
+      await saveTaskState({ ...taskState, activeTask: navigated.task });
+      const updated = navigated.tab;
       result = await withTaskSummary({ id: updated.id, url: updated.url, title: updated.title });
     } else if (type === "tabs.close") {
-      const tabId = Number(params.tabId);
-      await chrome.tabs.remove(tabId);
-      result = { closed: true, tabId };
+      const closed = await closeTaskTab({
+        task: assertActiveTask(taskState),
+        explicitTabId: params.tabId ?? null,
+      });
+      await saveTaskState({ ...taskState, activeTask: closed.task });
+      result = await withTaskSummary({ closed: true, tabId: closed.tabId });
     } else if (type === "tabs.reload") {
       const tabId = await requireTaskTabId(params);
       await chrome.tabs.reload(tabId, { bypassCache: Boolean(params.bypassCache) });
