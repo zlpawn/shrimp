@@ -15,6 +15,9 @@ import uuid
 from pathlib import Path
 from typing import Any
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import business_contract as contract
+
 
 SCHEMA_VERSION = "1.0"
 DEFAULT_EXCLUSIONS = [
@@ -81,11 +84,22 @@ def git_metadata(repo_root: Path) -> dict[str, Any]:
             "branch": None,
             "head_sha": None,
             "base_sha": None,
+            "root_commit_shas": [],
             "is_detached": False,
             "status_porcelain": [],
         }
 
     head = run_git(repo_root, "rev-parse", "HEAD")
+    root_commit_shas = sorted(
+        line
+        for line in run_git(
+            repo_root,
+            "rev-list",
+            "--max-parents=0",
+            "--all",
+        ).splitlines()
+        if line
+    )
     branch = run_git(repo_root, "symbolic-ref", "--short", "-q", "HEAD", check=False)
     upstream = run_git(
         repo_root,
@@ -120,6 +134,7 @@ def git_metadata(repo_root: Path) -> dict[str, Any]:
         "branch": branch or None,
         "head_sha": head,
         "base_sha": base_sha,
+        "root_commit_shas": root_commit_shas,
         "is_detached": not bool(branch),
         "status_porcelain": entries,
     }
@@ -229,6 +244,14 @@ def capture_snapshot(
     exclusion_patterns = normalized_exclusions(exclusions)
     git = git_metadata(root)
     files, diagnostics = iter_repository_files(root, exclusion_patterns)
+    lineage_file_map = {
+        path: {"sha256": metadata["sha256"], "size": metadata["size"]}
+        for path, metadata in files.items()
+    }
+    lineage_id = contract.repository_lineage_id(
+        git["root_commit_shas"],
+        lineage_file_map,
+    )
     snapshot: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
         "snapshot_id": "",
@@ -236,6 +259,7 @@ def capture_snapshot(
         "repository_root": str(Path(repo_root).expanduser()),
         "canonical_root": str(root),
         "git": git,
+        "repository_lineage_id": lineage_id,
         "working_tree_dirty": bool(git["status_porcelain"]),
         "files": files,
         "exclusions": exclusion_patterns,
@@ -316,6 +340,8 @@ def compare_snapshot(
         != after.get("snapshot_sha256"),
         "git_head_changed": before.get("git", {}).get("head_sha")
         != after.get("git", {}).get("head_sha"),
+        "repository_lineage_changed": before.get("repository_lineage_id")
+        != after.get("repository_lineage_id"),
         "working_tree_dirty": after.get("working_tree_dirty", False),
         "added": added,
         "modified": modified,

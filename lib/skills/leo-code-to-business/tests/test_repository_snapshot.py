@@ -52,6 +52,67 @@ class RepositorySnapshotTests(unittest.TestCase):
         self.assertIn("src/Order.java", first["files"])
         self.assertNotIn(".git/HEAD", first["files"])
 
+    def test_git_lineage_matches_across_two_worktrees(self):
+        primary = snapshot.capture_snapshot(self.repo, exclusions=[])
+        detached = Path(self.temp.name) / "detached"
+        subprocess.run(
+            [
+                "git",
+                "-C",
+                str(self.repo),
+                "worktree",
+                "add",
+                "--detach",
+                str(detached),
+                "HEAD",
+            ],
+            check=True,
+            capture_output=True,
+        )
+
+        secondary = snapshot.capture_snapshot(detached, exclusions=[])
+
+        self.assertEqual(
+            primary["git"]["root_commit_shas"],
+            secondary["git"]["root_commit_shas"],
+        )
+        self.assertEqual(
+            primary["repository_lineage_id"],
+            secondary["repository_lineage_id"],
+        )
+
+    def test_non_git_lineage_uses_content_not_absolute_path_or_mtime(self):
+        first_root = Path(self.temp.name) / "plain-a"
+        second_root = Path(self.temp.name) / "plain-b"
+        first_root.mkdir()
+        second_root.mkdir()
+        (first_root / "a.txt").write_text("one", encoding="utf-8")
+        (second_root / "a.txt").write_text("one", encoding="utf-8")
+
+        first = snapshot.capture_snapshot(first_root, exclusions=[])
+        second = snapshot.capture_snapshot(second_root, exclusions=[])
+
+        self.assertEqual(first["repository_lineage_id"], second["repository_lineage_id"])
+
+    def test_head_change_preserves_lineage_and_compare_reports_it_separately(self):
+        before = snapshot.capture_snapshot(self.repo, exclusions=[])
+        (self.repo / "src" / "Order.java").write_text(
+            "class Order { int version = 2; }\n",
+            encoding="utf-8",
+        )
+        subprocess.run(["git", "-C", str(self.repo), "add", "."], check=True)
+        subprocess.run(
+            ["git", "-C", str(self.repo), "commit", "-qm", "second"],
+            check=True,
+        )
+
+        after = snapshot.capture_snapshot(self.repo, exclusions=[])
+        diff = snapshot.compare_snapshot(before, after)
+
+        self.assertEqual(before["repository_lineage_id"], after["repository_lineage_id"])
+        self.assertTrue(diff["git_head_changed"])
+        self.assertFalse(diff["repository_lineage_changed"])
+
     def test_dirty_file_changes_snapshot_without_head_change(self):
         before = snapshot.capture_snapshot(self.repo, exclusions=[])
         (self.repo / "src" / "Order.java").write_text(
