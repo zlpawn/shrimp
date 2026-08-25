@@ -158,6 +158,20 @@ contribute candidates and contradictions but cannot replace current-source verif
 frameworks, scopes and file counts inspected, supported signal kinds, findings, ambiguous or
 unsupported constructs, truncation, and diagnostics.
 
+Each `discovery-observations.jsonl` record has:
+
+```text
+id, adapter_id, adapter_version, snapshot_id, detected_languages,
+claimed_scopes, inspected_file_count, supported_signal_kinds,
+discovered_signal_ids, rejected_findings[locator, reason],
+unsupported_constructs, truncated, status, diagnostics
+```
+
+Every inventory record's `discovered_by` contains one or more observation IDs. For every completed
+observation, `discovered_signal_ids` must resolve one-to-one to inventory IDs. Conversely, every
+inventory ID must be named by at least one observation. Rejected raw findings remain in the
+observation with a reason and do not enter the inventory denominator.
+
 Missing adapter support produces `partial`; it must never produce a misleadingly small successful
 inventory.
 
@@ -190,6 +204,7 @@ revisions/<revision-id>/
 ├── glossary.json, aliases.json, relationships.jsonl
 ├── investigations.jsonl, evidence.jsonl, conflicts.jsonl, unknowns.jsonl
 ├── git-commits.jsonl, git-change-facts.jsonl
+├── historical-claims.jsonl
 ├── business-evolution-events.jsonl, lineage-links.jsonl
 ├── omission-audit.json, semantic-review.json
 ├── coverage.json
@@ -221,8 +236,9 @@ critical objects and questions but may never restrict discovery.
 Every possible business use case is recorded in `use-case-candidates.jsonl` before synthesis:
 
 ```text
-id, title, candidate_basis_signal_ids, candidate_status,
-resolved_use_case_id, resolved_family_id, structural_importance,
+id, semantic_key, title, candidate_basis_signal_ids, candidate_status,
+resolved_use_case_id, resolved_family_id, duplicate_of_candidate_id,
+variant_of_candidate_id, supports_candidate_id, structural_importance,
 business_priority, resolution_reason, investigation_ids, snapshot_id
 ```
 
@@ -237,6 +253,64 @@ Candidate status is exactly one of:
 
 Candidate conservation is mandatory. Every disposition requires a target or evidence-linked reason.
 Critical and high candidates may not remain unresolved in a `passed` revision.
+
+Target rules are normative:
+
+- `confirmed` requires `resolved_use_case_id`;
+- `variant` requires `resolved_family_id` and either `resolved_use_case_id` or
+  `variant_of_candidate_id`;
+- `supporting_behavior` requires `supports_candidate_id` or `resolved_use_case_id`;
+- `duplicate` requires `duplicate_of_candidate_id`;
+- `excluded` requires an evidence-linked `resolution_reason`;
+- `unresolved` requires completed investigations plus the remaining uncertainty.
+
+Every inventory signal must either appear in at least one candidate's
+`candidate_basis_signal_ids`, or carry a non-candidate disposition:
+
+```text
+non_candidate_status = technical_support | infrastructure | duplicate_signal |
+                       excluded_scope | searched_non_business
+non_candidate_reason
+non_candidate_evidence_ids
+```
+
+No signal may disappear between discovery, inventory normalization, and candidate creation.
+
+### 9.1 Stable IDs
+
+Signal IDs are deterministic:
+
+```text
+SIG-<first-20-hex-of-sha256(adapter namespace + signal kind +
+canonical repository-relative locator + normalized framework identity)>
+```
+
+Candidate `semantic_key` is a normalized tuple of provisional actor class, business object, goal,
+terminal outcome, and channel class. Unknown tuple parts use the literal `?`. Candidate IDs are:
+
+```text
+UCC-<first-20-hex-of-sha256(repository identity + semantic_key +
+sorted candidate_basis_signal_ids)>
+```
+
+Snapshot IDs, model wording, timestamps, and array order are excluded. When later investigation
+merges candidates, original IDs remain as `duplicate` or `supporting_behavior` records rather than
+being deleted. Migration and cross-model tests use these formulas.
+
+### 9.2 End-to-End Conservation Example
+
+```text
+OBS-java-spring-01.discovered_signal_ids = [SIG-order-cancel-route]
+SIG-order-cancel-route.discovered_by = [OBS-java-spring-01]
+SIG-order-cancel-route → UCC-order-cancel via candidate_basis_signal_ids
+UCC-order-cancel.candidate_status = confirmed
+UCC-order-cancel.resolved_use_case_id = UC-order-cancel
+UC-order-cancel → CAP-order-management and FAM-order-lifecycle
+coverage.trigger_entry_conservation includes SIG-order-cancel-route
+site-view-model.use_case_catalog includes UC-order-cancel
+```
+
+Deleting any link in this chain causes a named Guard error.
 
 ## 10. Use-Case Family Closure
 
@@ -345,11 +419,25 @@ confidence
 `grouping_status` is `confirmed_group`, `probable_group`, `independent_commit`, or
 `grouping_unknown`.
 
-### 12.6 Commit Claim Verification
+### 12.6 Historical Claims and Verification
 
-A declared commit statement is `verified`, `partially_verified`, `misleading`, `contradicted`, or
-`unverifiable`. This is diagnostic and appears to ordinary readers only inside expanded technical
-history evidence.
+`historical-claims.jsonl` is the authoritative ledger for statements from commits, issues, PRs,
+ADRs, documents, comments, and tests. Each record contains:
+
+```text
+id, source_kind, source_locator, source_revision, observed_at,
+statement, subject_node_ids, verification_status,
+supporting_evidence_ids, contradicting_evidence_ids, snapshot_scope
+```
+
+`source_kind` is `commit_message`, `issue`, `pull_request`, `adr`, `document`, `comment`, or
+`test_claim`. `source_locator` is a commit SHA or stable repository/external locator. Claims are
+immutable observations of what a source said; later verification updates occur in a new revision.
+
+Evolution `declared_claim_ids` must resolve to this ledger. A claim's verification status is
+`verified`, `partially_verified`, `misleading`, `contradicted`, or `unverifiable`.
+This status is diagnostic and appears to ordinary readers only inside expanded technical history
+evidence.
 
 ### 12.7 Lineage
 
@@ -395,7 +483,15 @@ current_effectiveness_checks
 history_unknown_visibility
 ```
 
-A revision is `passed` only when:
+A revision has three statuses:
+
+```text
+current_coverage_status = passed | partial | blocked
+history_coverage_status = passed | partial | blocked | not_requested
+aggregate_status = passed | partial | blocked
+```
+
+Current behavior is `passed` only when:
 
 1. all detected languages have an adapter or explicit excluded scope;
 2. mandatory signal ledgers conserve their denominators;
@@ -407,13 +503,60 @@ A revision is `passed` only when:
 8. reverse writers and alternate entries were checked for significant effects;
 9. independent omission audit has no unresolved critical or high finding;
 10. current facts have verified current-source evidence;
-11. confirmed history facts have before-and-after evidence independent of commit messages;
-12. reason claims obey their evidence status;
-13. canonical, AI, view-model, and HTML hashes match their contracts;
-14. semantic review meets the frozen business-first rubric.
+11. canonical, AI, view-model, and HTML hashes match their contracts;
+12. semantic review meets the frozen business-first rubric.
+
+History is `passed` only when its requested history scope is fully indexed, every selected
+deep-analysis commit has a final classification, confirmed change facts have before-and-after
+evidence independent of commit messages, reason claims obey their status, current effectiveness is
+checked, and history unknowns remain visible.
+
+Aggregate precedence is deterministic:
+
+```text
+blocked if current is blocked, or requested history is blocked
+partial if current is partial, or requested history is partial
+passed if current is passed and history is passed or not_requested
+```
+
+`current.json` stores all three fields. Its compatibility `coverage_status` equals
+`aggregate_status`. Query mode may still answer current questions from a revision whose history is
+partial, but must disclose the history limitation. Current claims are stale only from current
+snapshot/evidence changes, never merely because history is incomplete.
+
+`blocked` is reserved for broken snapshot or artifact integrity, unreadable required source scope,
+or an impossible mandatory denominator. Ordinary unresolved knowledge, unsupported optional history,
+or incomplete investigation is `partial`.
 
 Current and history coverage have separate statuses. Incomplete history must not make current
 knowledge appear stale; rich history must not hide incomplete current knowledge.
+
+### 13.1 Canonical and Projection Hash Contract
+
+Canonical files are the schema-ordered set of semantic JSON/JSONL artifacts in the revision,
+including inventory, observations, candidates, current knowledge, investigations, evidence,
+historical claims, commit index, change facts, evolution, lineage, audit, semantic review inputs,
+coverage, and change impact. They exclude `manifest.json`, `ai-context.md`, `site-view-model.json`,
+`site/index.html`, generated timestamps, and all projection hashes.
+
+Before hashing, JSON object keys are lexicographically sorted; canonical record collections are
+sorted by stable ID; Unicode is normalized to NFC; strings otherwise retain exact content; numbers
+use JSON canonical decimal form; and serialization uses UTF-8 without insignificant whitespace.
+
+Hash sequence is acyclic:
+
+```text
+canonical_revision_sha256 = sha256(canonical semantic bundle)
+ai_sha256 = sha256(ai-context.md bytes containing canonical hash)
+view_model_sha256 = sha256(site-view-model.json bytes containing canonical hash, but no self hash)
+html_sha256 = sha256(index.html bytes containing canonical and view-model hashes)
+manifest records all four hashes and is not part of any of them
+```
+
+The full per-collection view-model sort tuples are defined in the view-model schema. Null ranks after
+known values, absent optional text normalizes to empty text only for sorting, enum ranks use schema
+order, and stable ID is the final tie breaker. HTML consumes already ordered arrays and performs no
+semantic sorting.
 
 ## 14. Independent Omission Audit
 
@@ -592,13 +735,30 @@ denominators. Projections regenerate only after canonical validation.
 
 Version 1 revisions remain immutable and readable. Version 2 does not rewrite them.
 
-A migration command may import v1 nodes and evidence into v2 staging, but the result remains
-`partial` until it completes new discovery, candidate creation, family closure, coverage,
-view-model generation, and omission audit.
+A migration command first detects schema version from `manifest.schema_version`. Missing version is
+treated as v1 only when the complete v1 required-file set validates; otherwise migration is blocked.
+
+Migration creates a new v2 staging run and applies this normative mapping:
+
+- preserve all valid v1 node, evidence, inventory, investigation, unknown, conflict, and relationship
+  IDs and their lifecycle/claim statuses;
+- copy source artifacts without editing the immutable v1 revision;
+- set imported records' `migrated_from_revision` metadata;
+- create discovery observations that explicitly mark the imported v1 inventory as legacy input;
+- do not fabricate candidates, non-candidate dispositions, family closure, history, or omission audit;
+- add missing v2 artifacts as empty, schema-valid staging ledgers whose coverage is incomplete;
+- retain valid relationship endpoints; reject migration if a preserved endpoint is missing;
+- recompute the new v2 canonical hash using the v2 hash contract only after mapped artifacts validate.
+
+The result remains `partial` until it completes new repository discovery, candidate creation,
+signal-to-candidate conservation, family closure, v2 coverage, view-model generation, and omission
+audit.
 
 V1 `passed` cannot be carried forward automatically because its denominators are not equivalent.
 `current.json` retains `ai_path` and `html_path` for compatibility while adding schema and projection
-metadata.
+metadata. The existing v1 pointer remains active until the new v2 revision publishes atomically;
+v1 readers continue using `ai_path` and `html_path`, while v2 readers also inspect schema and the
+three coverage statuses.
 
 ## 19. Practical Validation Strategy
 
@@ -650,6 +810,15 @@ Use at least:
 Tests record exact snapshot IDs, use external temporary workspaces, and never modify analyzed
 repositories.
 
+The Java acceptance baseline is pinned to commit
+`c6893715d0d52477849595e7ed7c8c5ec276f322`, materialized in a detached temporary worktree. If the
+repository or commit is unavailable, the tagged `real-repository` suite is skipped with a named
+diagnostic; portable unit and synthetic acceptance remain mandatory.
+
+The Node/TypeScript acceptance baseline is a repository-owned frozen fixture derived from the
+gateway's route, handler, job, database-write, and external-call patterns. A local gateway snapshot
+may be run as an additional practice audit, but mutable `main` is not a release oracle.
+
 For the Java repository, validate work-order creation, the full video-binding family, one use case
 found primarily through reverse writers, one repair/retry path, and a stratified Git sample with
 meaningful, generic, merge, refactor, and revert-like commits.
@@ -662,6 +831,24 @@ view-model structure, and semantic-review scores.
 
 Model prose may vary. Denominators, stable IDs, required sections, unresolved omissions, and HTML
 structure must not.
+
+Cross-model acceptance uses the same frozen source snapshot and adapter versions. It passes only
+when:
+
+- discovery observation and inventory ID sets are identical;
+- critical/high candidate ID recall is 100% against the union after adjudication;
+- neither run has an unresolved critical/high candidate absent from the other run's ledger;
+- confirmed and variant candidate dispositions agree for all critical/high candidates;
+- family-member sets agree for critical/high families;
+- normalized view-model structural paths and section IDs are identical;
+- each independent semantic review meets the same frozen minimum rubric.
+
+Differences in prose, E1/E2 confidence, normal/low candidate grouping, or inferred history do not
+fail the deterministic gate when they remain visible for adjudication.
+
+The real-repository and cross-model suites are separately tagged and may be slower. Ordinary CI runs
+portable deterministic, synthetic, mutation, and projection tests; release acceptance runs all
+available tagged suites.
 
 ## 20. Baseline Evidence Collected
 
