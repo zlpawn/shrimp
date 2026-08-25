@@ -198,6 +198,7 @@ revisions/<revision-id>/
 ├── inventory.jsonl
 ├── discovery-observations.jsonl
 ├── use-case-candidates.jsonl
+├── legacy-signal-aliases.jsonl
 ├── capabilities.json, actors.json, use-case-families.json
 ├── use-cases.jsonl, business-rules.jsonl, workflows.jsonl
 ├── state-machines.json, domain-events.jsonl, entities.json
@@ -222,7 +223,7 @@ Every inventory signal records:
 ```text
 id, signal_class, kind, name, source_location, discovered_by,
 structural_importance, classification, resolution_status,
-mapped_node_ids, resolution_reason, snapshot_id
+mapped_node_ids, resolution_reason, snapshot_id, id_scheme
 ```
 
 `signal_class` is `trigger_entry`, `mutation_anchor`, `state_anchor`,
@@ -236,7 +237,7 @@ critical objects and questions but may never restrict discovery.
 Every possible business use case is recorded in `use-case-candidates.jsonl` before synthesis:
 
 ```text
-id, semantic_key, title, candidate_basis_signal_ids, candidate_status,
+id, seed_signal_id, semantic_key, title, candidate_basis_signal_ids, candidate_status,
 resolved_use_case_id, resolved_family_id, duplicate_of_candidate_id,
 variant_of_candidate_id, supports_candidate_id, structural_importance,
 business_priority, resolution_reason, investigation_ids, snapshot_id
@@ -276,26 +277,40 @@ non_candidate_evidence_ids
 
 No signal may disappear between discovery, inventory normalization, and candidate creation.
 
-### 9.1 Stable IDs
+### 9.1 Stable IDs and Candidate Seeding
 
-Signal IDs are deterministic:
+New v2 signal IDs are deterministic:
 
 ```text
 SIG-<first-20-hex-of-sha256(adapter namespace + signal kind +
 canonical repository-relative locator + normalized framework identity)>
 ```
 
-Candidate `semantic_key` is a normalized tuple of provisional actor class, business object, goal,
-terminal outcome, and channel class. Unknown tuple parts use the literal `?`. Candidate IDs are:
+`repository_lineage_id` is the hash of the sorted Git root commit SHAs. For non-Git materialization,
+it is the hash of the frozen repository file map excluding the output workspace. It is independent
+of absolute paths and temporary worktrees and is recorded in the repository snapshot.
+
+Candidate creation is seed-based rather than model-identity-based:
+
+- every critical/high signal that is not deterministically infrastructure creates one seed
+  candidate before semantic analysis;
+- normal/low signals create a seed candidate unless they already have a deterministic
+  non-candidate disposition;
+- a seed candidate's immutable `seed_signal_id` is the signal that created it;
+- later signals may be appended to `candidate_basis_signal_ids` but never alter candidate identity;
+- semantic consolidation marks seed candidates as confirmed, variant, supporting, duplicate,
+  excluded, or unresolved; records are never deleted.
+
+Candidate IDs are:
 
 ```text
-UCC-<first-20-hex-of-sha256(repository identity + semantic_key +
-sorted candidate_basis_signal_ids)>
+UCC-<first-20-hex-of-sha256(repository_lineage_id + seed_signal_id)>
 ```
 
-Snapshot IDs, model wording, timestamps, and array order are excluded. When later investigation
-merges candidates, original IDs remain as `duplicate` or `supporting_behavior` records rather than
-being deleted. Migration and cross-model tests use these formulas.
+`semantic_key` is mutable retrieval and comparison metadata, not identity input. Snapshot IDs,
+model wording, timestamps, later provenance, and array order cannot change an ID. Cross-model
+candidate ID equality is therefore tested on the deterministic seed set, while models may differ in
+normal/low dispositions subject to adjudication.
 
 ### 9.2 End-to-End Conservation Example
 
@@ -533,11 +548,26 @@ knowledge appear stale; rich history must not hide incomplete current knowledge.
 
 ### 13.1 Canonical and Projection Hash Contract
 
-Canonical files are the schema-ordered set of semantic JSON/JSONL artifacts in the revision,
-including inventory, observations, candidates, current knowledge, investigations, evidence,
-historical claims, commit index, change facts, evolution, lineage, audit, semantic review inputs,
-coverage, and change impact. They exclude `manifest.json`, `ai-context.md`, `site-view-model.json`,
-`site/index.html`, generated timestamps, and all projection hashes.
+The canonical semantic hash includes only these schema-validated semantic artifacts:
+
+```text
+inventory.jsonl
+discovery-observations.jsonl
+use-case-candidates.jsonl
+legacy-signal-aliases.jsonl
+capabilities.json, actors.json, use-case-families.json, use-cases.jsonl
+business-rules.jsonl, workflows.jsonl, state-machines.json, domain-events.jsonl
+entities.json, glossary.json, aliases.json, relationships.jsonl
+investigations.jsonl, evidence.jsonl, conflicts.jsonl, unknowns.jsonl
+git-commits.jsonl, git-change-facts.jsonl, historical-claims.jsonl
+business-evolution-events.jsonl, lineage-links.jsonl
+change-impact.json semantic inputs only
+```
+
+It excludes `manifest.json`, `coverage.json`, `omission-audit.json`, `semantic-review.json`,
+`ai-context.md`, `site-view-model.json`, `site/index.html`, generated timestamps, validation results,
+release statuses, and projection hashes. `change-impact.json` has separate `semantic_inputs` and
+`validation_results`; only `semantic_inputs` is hashed.
 
 Before hashing, JSON object keys are lexicographically sorted; canonical record collections are
 sorted by stable ID; Unicode is normalized to NFC; strings otherwise retain exact content; numbers
@@ -547,10 +577,12 @@ Hash sequence is acyclic:
 
 ```text
 canonical_revision_sha256 = sha256(canonical semantic bundle)
+omission audit and semantic review validate the canonical hash but are not hash inputs
+coverage.json records semantic and publication validation results and is not a hash input
 ai_sha256 = sha256(ai-context.md bytes containing canonical hash)
 view_model_sha256 = sha256(site-view-model.json bytes containing canonical hash, but no self hash)
 html_sha256 = sha256(index.html bytes containing canonical and view-model hashes)
-manifest records all four hashes and is not part of any of them
+manifest records all four hashes, review hashes, and statuses and is not part of any hash
 ```
 
 The full per-collection view-model sort tuples are defined in the view-model schema. Null ranks after
@@ -740,8 +772,12 @@ treated as v1 only when the complete v1 required-file set validates; otherwise m
 
 Migration creates a new v2 staging run and applies this normative mapping:
 
-- preserve all valid v1 node, evidence, inventory, investigation, unknown, conflict, and relationship
-  IDs and their lifecycle/claim statuses;
+- preserve all valid v1 node, evidence, investigation, unknown, conflict, and relationship IDs and
+  their lifecycle/claim statuses;
+- preserve v1 inventory IDs with `id_scheme = legacy_v1`; do not relabel them as v2 `SIG-*` IDs;
+- create a deterministic `legacy-signal-aliases.jsonl` mapping each legacy inventory ID to a new
+  `SIG-*` ID only when a current v2 adapter rediscovers the same locator; until then the legacy ID
+  remains valid but cannot satisfy new-adapter coverage by itself;
 - copy source artifacts without editing the immutable v1 revision;
 - set imported records' `migrated_from_revision` metadata;
 - create discovery observations that explicitly mark the imported v1 inventory as legacy input;
@@ -749,6 +785,9 @@ Migration creates a new v2 staging run and applies this normative mapping:
 - add missing v2 artifacts as empty, schema-valid staging ledgers whose coverage is incomplete;
 - retain valid relationship endpoints; reject migration if a preserved endpoint is missing;
 - recompute the new v2 canonical hash using the v2 hash contract only after mapped artifacts validate.
+
+The v2 signal formula applies to `id_scheme = v2` records. Migration stability tests require legacy
+IDs and aliases to remain deterministic and require all newly discovered signals to use v2 IDs.
 
 The result remains `partial` until it completes new repository discovery, candidate creation,
 signal-to-candidate conservation, family closure, v2 coverage, view-model generation, and omission
@@ -800,7 +839,12 @@ Tests prove:
 
 ### 19.4 Real Repository Practice
 
-Use at least:
+The repository must vendor a small pinned Git bundle under test fixtures. The bundle is a real Git
+repository with multiple commits and covers misleading messages, rename-only refactors, rule
+changes, multi-commit evolution, revert, and unknown reason. This `real-git-fixture` suite is
+mandatory, cannot be skipped, and validates actual Git traversal rather than mocked commit data.
+
+Extended practice uses:
 
 1. `/Users/pa/project/JZ/utopia-scs-recorder` for Java/Spring, known scenarios, alternate entries,
    repair paths, external integrations, and long Git history;
@@ -810,10 +854,12 @@ Use at least:
 Tests record exact snapshot IDs, use external temporary workspaces, and never modify analyzed
 repositories.
 
-The Java acceptance baseline is pinned to commit
+The Java extended acceptance baseline is pinned to commit
 `c6893715d0d52477849595e7ed7c8c5ec276f322`, materialized in a detached temporary worktree. If the
-repository or commit is unavailable, the tagged `real-repository` suite is skipped with a named
-diagnostic; portable unit and synthetic acceptance remain mandatory.
+repository or commit is unavailable during ordinary CI, the tagged `extended-real-repository` suite
+is skipped with a named diagnostic. A v2 release candidate cannot be declared fully accepted until
+this suite has run successfully at least once for that candidate and its snapshot/result artifact is
+stored with the release evidence.
 
 The Node/TypeScript acceptance baseline is a repository-owned frozen fixture derived from the
 gateway's route, handler, job, database-write, and external-call patterns. A local gateway snapshot
@@ -846,9 +892,10 @@ when:
 Differences in prose, E1/E2 confidence, normal/low candidate grouping, or inferred history do not
 fail the deterministic gate when they remain visible for adjudication.
 
-The real-repository and cross-model suites are separately tagged and may be slower. Ordinary CI runs
-portable deterministic, synthetic, mutation, and projection tests; release acceptance runs all
-available tagged suites.
+The extended-real-repository and cross-model suites are separately tagged and may be slower.
+Ordinary CI runs portable deterministic, synthetic, mutation, projection, and mandatory
+real-git-fixture tests. Release acceptance additionally requires successful extended Java and
+cross-model result artifacts for the candidate.
 
 ## 20. Baseline Evidence Collected
 
