@@ -35,6 +35,7 @@ import {
 } from "./page-drive.mjs";
 import { createCdpSessionManager } from "./cdp-session.mjs";
 import { normalizeTarget } from "./element-target.mjs";
+import { clickTarget, fillTarget } from "./interaction.mjs";
 const DEFAULT_BRIDGE_URL = "http://127.0.0.1:19527";
 const DEFAULT_GATEWAY_URL = "http://127.0.0.1:8788";
 const HEARTBEAT_INTERVAL_MS = 25_000;
@@ -246,24 +247,36 @@ const commandQueue = createCommandQueue({
 async function executeDocumentTargetTask(type, params = {}) {
   const tabId = await requireTaskTabId(params);
   const target = type === "dom.state" ? null : normalizeTarget(params);
+  const fillValue = type === "dom.fill" ? String(params.value ?? "") : null;
   const res = await chrome.scripting.executeScript({
     target: { tabId },
     world: "ISOLATED",
-    func: (mode, normalizedTarget, resourceUrl) => {
+    func: (mode, normalizedTarget, resourceUrl, value) => {
       const script = document.createElement("script");
       script.type = "module";
       script.src = resourceUrl;
       script.dataset.leoLanternMode = mode;
       if (normalizedTarget) script.dataset.leoLanternTarget = JSON.stringify(normalizedTarget);
+      if (value !== null) script.dataset.leoLanternValue = JSON.stringify(value);
       const promise = new Promise((resolve, reject) => {
         script.addEventListener("load", () => {
           try {
             const api = window.__leoLanternElementTargets;
             if (!api) throw new Error("Lantern target module failed to initialize");
             const registry = api.ensureDocumentRegistry(window);
+            const normalizedTarget = script.dataset.leoLanternTarget
+              ? JSON.parse(script.dataset.leoLanternTarget)
+              : null;
+            const value = script.dataset.leoLanternValue
+              ? JSON.parse(script.dataset.leoLanternValue)
+              : null;
             const result = mode === "state"
               ? api.collectState(document, registry)
-              : api.findTargetSnapshot(document, registry, JSON.parse(script.dataset.leoLanternTarget));
+              : mode === "find"
+                ? api.findTargetSnapshot(document, registry, normalizedTarget)
+                : mode === "click"
+                  ? api.clickTarget(document, registry, normalizedTarget)
+                  : api.fillTarget(document, registry, normalizedTarget, value);
             resolve(result);
           } catch (error) {
             reject(error);
@@ -275,9 +288,10 @@ async function executeDocumentTargetTask(type, params = {}) {
       return promise.finally(() => script.remove());
     },
     args: [
-      type === "dom.state" ? "state" : "find",
+      type === "dom.state" ? "state" : type === "dom.find" ? "find" : type === "dom.click" ? "click" : "fill",
       target,
       chrome.runtime.getURL("/element-target.mjs"),
+      fillValue,
     ],
   });
   const result = res?.[0]?.result;
@@ -455,47 +469,9 @@ async function executeTask(task) {
       await chrome.tabs.reload(tabId, { bypassCache: Boolean(params.bypassCache) });
       result = await withTaskSummary({ reloaded: true, tabId });
     } else if (type === "dom.click") {
-      const tabId = await requireTaskTabId(params);
-      const res = await chrome.scripting.executeScript({
-        target: { tabId },
-        func: (sel, text) => {
-          let el = null;
-          if (sel) el = document.querySelector(sel);
-          if (!el && text) {
-            const lower = text.toLowerCase();
-            const elements = Array.from(document.querySelectorAll("button, a, input[type='button'], input[type='submit'], [role='button'], span, div, p"));
-            el = elements.find((e) => e.innerText && e.innerText.trim().toLowerCase().includes(lower));
-          }
-          if (!el) return { ok: false, error: `Element not found for click (selector: ${sel}, text: ${text})` };
-          el.scrollIntoView({ behavior: "instant", block: "center" });
-          el.click();
-          return { ok: true, tag: el.tagName.toLowerCase(), text: el.innerText?.slice(0, 100) };
-        },
-        args: [params.selector || null, params.text || null],
-      });
-      if (res && res[0]?.result?.ok === false) {
-        throw new Error(res[0].result.error);
-      }
-      result = res[0]?.result || { clicked: true };
+      result = await executeDocumentTargetTask(type, params);
     } else if (type === "dom.fill") {
-      const tabId = await requireTaskTabId(params);
-      const res = await chrome.scripting.executeScript({
-        target: { tabId },
-        func: (sel, val) => {
-          const el = document.querySelector(sel);
-          if (!el) return { ok: false, error: `Input element not found for selector: ${sel}` };
-          el.focus();
-          el.value = val;
-          el.dispatchEvent(new Event("input", { bubbles: true }));
-          el.dispatchEvent(new Event("change", { bubbles: true }));
-          return { ok: true, selector: sel, value: val };
-        },
-        args: [params.selector, String(params.value)],
-      });
-      if (res && res[0]?.result?.ok === false) {
-        throw new Error(res[0].result.error);
-      }
-      result = res[0]?.result || { filled: true };
+      result = await executeDocumentTargetTask(type, params);
     } else if (type === "dom.state" || type === "dom.find") {
       result = await executeDocumentTargetTask(type, params);
     } else if (type === "dom.snapshot") {

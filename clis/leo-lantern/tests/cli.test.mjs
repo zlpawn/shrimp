@@ -273,6 +273,33 @@ test("CLI: click command posts to /cmd", async () => {
   }
 });
 
+test("CLI: target-aware click and fill preserve the target union", async () => {
+  const bridge = new LanternServer({ port: 0 });
+  await bridge.start();
+  const cases = [
+    ["click", { target: { kind: "ref", ref: 12, generation: "gen-1" }, tabId: "9" }],
+    ["fill", { target: { kind: "semantic", role: "textbox", name: "Email" }, value: "x", tabId: "9" }],
+  ];
+  try {
+    await postJson(`http://127.0.0.1:${bridge.port}/ext/hello`, { id: "cli-target-ext" });
+    for (const [command, params] of cases) {
+      const pollPromise = getJson(`http://127.0.0.1:${bridge.port}/ext/poll?waitMs=5000`);
+      const callPromise = executeCommand(command, params, [], { port: bridge.port });
+      const poll = await pollPromise;
+      assert.equal(poll.body.cmd.type, command === "click" ? "dom.click" : "dom.fill");
+      assert.deepEqual(poll.body.cmd.params, params);
+      await postJson(`http://127.0.0.1:${bridge.port}/ext/result`, {
+        id: poll.body.cmd.id,
+        ok: true,
+        result: { matches_n: 1 },
+      });
+      await callPromise;
+    }
+  } finally {
+    await bridge.stop();
+  }
+});
+
 test("CLI: maps start-task/claim/end-task and force new-tab flags", async () => {
   const bridge = new LanternServer({ port: 0 });
   await bridge.start();

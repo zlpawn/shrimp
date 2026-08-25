@@ -267,9 +267,10 @@ export async function executeCommand(command, params = {}, positional = [], opti
     }
 
     case "click": {
-      const text = params.text || positional[0];
+      const hasTarget = Boolean(params.target);
+      const text = params.text || (!hasTarget ? positional[0] : undefined);
       const selector = params.selector || params.sel;
-      if (!text && !selector) throw new Error("Either --text or --selector is required for 'click'");
+      if (!hasTarget && !text && !selector) throw new Error("A target is required for 'click'");
       return await requestBridge(
         "/cmd",
         "POST",
@@ -281,7 +282,7 @@ export async function executeCommand(command, params = {}, positional = [], opti
     case "fill": {
       const selector = params.selector || params.sel;
       const value = params.val !== undefined ? params.val : params.value !== undefined ? params.value : positional[0];
-      if (!selector) throw new Error("--selector is required for 'fill'");
+      if (!selector && !params.target) throw new Error("A target is required for 'fill'");
       if (value === undefined) throw new Error("--val or value is required for 'fill'");
       return await requestBridge(
         "/cmd",

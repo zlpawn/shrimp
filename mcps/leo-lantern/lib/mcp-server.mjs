@@ -216,6 +216,7 @@ export const MCP_TOOLS = [
       properties: {
         text: { type: "string", description: "Visible text of the button, link, or element to click" },
         selector: { type: "string", description: "CSS selector of the element to click" },
+        target: { type: "object", description: "Discriminated ref, CSS, or semantic target" },
         tabId: { type: "number", description: "Optional specific tab ID" },
       },
     },
@@ -227,6 +228,7 @@ export const MCP_TOOLS = [
       type: "object",
       properties: {
         selector: { type: "string", description: "CSS selector for the input field" },
+        target: { type: "object", description: "Discriminated ref, CSS, or semantic target" },
         value: { type: "string", description: "Text value to fill into the input" },
         tabId: { type: "number", description: "Optional specific tab ID" },
       },
@@ -651,14 +653,14 @@ export class LanternMcpServer {
       }
 
       case "browser_click": {
-        if (!args.text && !args.selector) {
+        if (!args.text && !args.selector && !args.target) {
           throw new Error("Either 'text' or 'selector' must be provided for browser_click");
         }
         return await this.dispatch(COMMAND_TYPES.DOM_CLICK, args);
       }
 
       case "browser_fill": {
-        if (!args.selector || args.value === undefined) {
+        if ((!args.selector && !args.target) || args.value === undefined) {
           throw new Error("Both 'selector' and 'value' are required for browser_fill");
         }
         return await this.dispatch(COMMAND_TYPES.DOM_FILL, args);

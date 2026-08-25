@@ -44,7 +44,7 @@ function matchesText(expected, actual, target) {
   return target.match === "contains" ? actualText.includes(expectedText) : actualText === expectedText;
 }
 
-function isVisible(element) {
+export function isVisible(element) {
   for (let current = element; current; ) {
     if (current.hidden || current.getAttribute?.("hidden") != null) return false;
     if (current.getAttribute?.("aria-hidden") === "true") return false;
@@ -131,7 +131,7 @@ function semanticCandidates(document) {
   });
 }
 
-function isDisabled(element) {
+export function isDisabled(element) {
   return Boolean(element.disabled || element.getAttribute?.("aria-disabled") === "true");
 }
 
@@ -305,6 +305,11 @@ globalThis.__leoLanternElementTargets = {
   ensureDocumentRegistry,
   collectState,
   findTargetSnapshot,
+  findTargets,
+  fingerprintElement,
+  resolveRef,
+  isVisible,
+  isDisabled,
 };
 
 export function collectState(document, registry) {
