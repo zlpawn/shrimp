@@ -1,0 +1,283 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {
+  collectState,
+  ensureDocumentRegistry,
+  findTargets,
+  normalizeTarget,
+} from "../../../extensions/leo-cookie-txt-locally/element-target.mjs";
+
+class FakeElement {
+  constructor(tag, attributes = {}, children = []) {
+    this.tagName = tag.toUpperCase();
+    this.attributes = new Map(Object.entries(attributes));
+    this.children = children;
+    this.parentNode = null;
+    this.isConnected = true;
+    this.disabled = false;
+  }
+
+  get id() {
+    return this.attributes.get("id") || "";
+  }
+
+  getAttribute(name) {
+    return this.attributes.has(name) ? this.attributes.get(name) : null;
+  }
+
+  getBoundingClientRect() {
+    return { width: 100, height: 30 };
+  }
+}
+
+function fixtureDocument(elements) {
+  const body = new FakeElement("body", {}, elements);
+  for (const element of elements) element.parentNode = body;
+  return {
+    title: "Example",
+    URL: "https://example.com/page",
+    body,
+    selectors: new Set(),
+    querySelectorAll(selector) {
+      if (this.selectors.has(selector)) throw new Error("invalid selector");
+      if (selector === "*") return [body, ...elements];
+      if (selector === "label") return elements.filter((element) => element.tagName === "LABEL");
+      const tag = selector.split(/[.[]/, 1)[0];
+      const isAttributeSelector = tag.startsWith("[");
+      if (isAttributeSelector) {
+        return elements.filter((element) =>
+          ["role", "aria-label", "aria-labelledby", "data-testid"].some(
+            (name) => element.getAttribute(name) != null
+          )
+        );
+      }
+      return elements.filter(
+        (element) =>
+          element.parentNode === body &&
+          element.tagName === tag.toUpperCase()
+      );
+    },
+  };
+}
+
+test("target schema accepts one normalized ref form", () => {
+  assert.deepEqual(normalizeTarget({ target: { kind: "ref", ref: "12", generation: "gen-1" } }), {
+    kind: "ref",
+    ref: 12,
+    generation: "gen-1",
+  });
+});
+
+test("ref targets require a positive integer and generation", () => {
+  assert.throws(
+    () => normalizeTarget({ target: { kind: "ref", ref: 1.5, generation: "gen-1" } }),
+    (err) => err.code === "invalid_target"
+  );
+  assert.throws(
+    () => normalizeTarget({ target: { kind: "ref", ref: 12 } }),
+    (err) => err.code === "invalid_target"
+  );
+});
+
+test("CSS targets require a selector", () => {
+  assert.deepEqual(normalizeTarget({ target: { kind: "css", selector: "button.primary" } }), {
+    kind: "css",
+    selector: "button.primary",
+  });
+  assert.throws(
+    () => normalizeTarget({ target: { kind: "css", selector: "" } }),
+    (err) => err.code === "invalid_target"
+  );
+});
+
+test("semantic targets combine fields and default text matching to exact", () => {
+  assert.deepEqual(
+    normalizeTarget({
+      target: { kind: "semantic", role: "button", text: " Sign   In ", caseSensitive: true },
+    }),
+    { kind: "semantic", role: "button", text: "Sign In", caseSensitive: true, match: "exact" }
+  );
+  assert.deepEqual(
+    normalizeTarget({ target: { kind: "semantic", label: "Email", match: "contains" } }),
+    { kind: "semantic", label: "Email", match: "contains", caseSensitive: false }
+  );
+  assert.throws(
+    () => normalizeTarget({ target: { kind: "semantic", caseSensitive: true } }),
+    (err) => err.code === "invalid_target"
+  );
+});
+
+test("legacy selector and text translate only without competing target forms", () => {
+  assert.deepEqual(normalizeTarget({ selector: "#submit" }), {
+    kind: "css",
+    selector: "#submit",
+  });
+  assert.deepEqual(normalizeTarget({ text: "Sign in" }), {
+    kind: "semantic",
+    text: "Sign in",
+    match: "contains",
+    caseSensitive: false,
+  });
+  assert.throws(
+    () => normalizeTarget({ target: { kind: "css", selector: "#x" }, text: "Sign in" }),
+    (err) => err.code === "invalid_target"
+  );
+  assert.throws(
+    () => normalizeTarget({ selector: "#x", text: "Sign in" }),
+    (err) => err.code === "invalid_target"
+  );
+  assert.throws(() => normalizeTarget({}), (err) => err.code === "invalid_target");
+});
+
+test("semantic matching applies implicit roles, accessible names, labels, and AND fields", () => {
+  const button = new FakeElement(
+    "button",
+    { id: "login", "data-testid": "submit", type: "submit" },
+    [new FakeElement("span", {}, [])]
+  );
+  button.textContent = " Sign   In ";
+  const link = new FakeElement("a", { href: "/next", "aria-label": "Next page" });
+  const input = new FakeElement("input", { id: "email", type: "text", name: "email" });
+  const label = new FakeElement("label", { for: "email" });
+  label.textContent = "Email address";
+  const hidden = new FakeElement("button", { hidden: "hidden" });
+  hidden.textContent = "Hidden";
+  const document = fixtureDocument([button, link, input, label, hidden]);
+
+  const refs = new Map();
+  const reverse = new WeakMap();
+  const registry = { generation: "gen-1", nextRef: 1, refs, reverse };
+
+  const buttonMatches = findTargets(document, registry, normalizeTarget({
+    target: { kind: "semantic", role: "button", name: "sign in", testId: "submit" },
+  }));
+  assert.deepEqual(buttonMatches, [button]);
+
+  const inputMatches = findTargets(document, registry, normalizeTarget({
+    target: { kind: "semantic", role: "textbox", label: "email address" },
+  }));
+  assert.deepEqual(inputMatches, [input]);
+
+  const containsMatches = findTargets(document, registry, normalizeTarget({
+    target: { kind: "semantic", name: "next", match: "contains" },
+  }));
+  assert.deepEqual(containsMatches, [link]);
+
+  const noMatches = findTargets(document, registry, normalizeTarget({
+    target: { kind: "semantic", name: "hidden" },
+  }));
+  assert.deepEqual(noMatches, []);
+});
+
+test("state allocates deterministic bounded refs in one document generation", () => {
+  const elements = Array.from({ length: 205 }, (_, index) => {
+    const element = new FakeElement("button", { id: `button-${index + 1}` });
+    element.textContent = `Button ${index + 1}`;
+    return element;
+  });
+  const document = fixtureDocument(elements);
+  const registry = ensureDocumentRegistry({});
+
+  const state = collectState(document, registry);
+  assert.equal(state.url, "https://example.com/page");
+  assert.equal(state.title, "Example");
+  assert.equal(typeof registry.generation, "string");
+  assert.equal(state.generation, registry.generation);
+  assert.equal(state.elements.length, 200);
+  assert.deepEqual(
+    state.elements.map((element) => element.ref),
+    Array.from({ length: 200 }, (_, index) => index + 1)
+  );
+  assert.deepEqual(state.elements.at(-1), {
+    ref: 200,
+    tag: "button",
+    role: "button",
+    name: "Button 200",
+    text: "Button 200",
+    visible: true,
+    disabled: false,
+  });
+  assert.equal(registry.nextRef, 201);
+
+  const again = collectState(document, registry);
+  assert.deepEqual(
+    again.elements.map((element) => element.ref),
+    state.elements.map((element) => element.ref)
+  );
+  assert.equal(registry.nextRef, 201);
+});
+
+test("registry reuses same-document refs and evicts the least-recently-used record", () => {
+  const first = new FakeElement("button", { id: "first" });
+  first.textContent = "First";
+  const second = new FakeElement("button", { id: "second" });
+  second.textContent = "Second";
+  const document = fixtureDocument([first, second]);
+  const registry = ensureDocumentRegistry({}, { generation: "gen-1", capacity: 2 });
+
+  assert.equal(registry.generation, "gen-1");
+  collectState(document, registry);
+  assert.equal(registry.reverse.get(first), 1);
+  assert.equal(registry.reverse.get(second), 2);
+
+  const third = new FakeElement("button", { id: "third" });
+  third.textContent = "Third";
+  document.body.children.push(third);
+  third.parentNode = document.body;
+  const find = findTargets(
+    document,
+    registry,
+    normalizeTarget({ target: { kind: "css", selector: "button" } })
+  );
+  assert.deepEqual(find, [first, second, third]);
+
+  collectState(document, registry);
+  assert.equal(registry.refs.size, 2);
+  assert.equal(registry.refs.has(1), false);
+  assert.equal(registry.reverse.get(first), undefined);
+  assert.deepEqual([...registry.refs.keys()], [2, 3]);
+});
+
+test("find allocates refs and returns successful zero-match cardinality", () => {
+  const first = new FakeElement("button", { id: "first" });
+  first.textContent = "First";
+  const document = fixtureDocument([first]);
+  const registry = ensureDocumentRegistry({}, { generation: "gen-1" });
+
+  const state = collectState(document, registry);
+  assert.equal(state.generation, "gen-1");
+
+  const find = findTargets(
+    document,
+    registry,
+    normalizeTarget({ target: { kind: "css", selector: "input" } })
+  );
+  assert.deepEqual(find, []);
+
+  const semantic = findTargets(
+    document,
+    registry,
+    normalizeTarget({ target: { kind: "semantic", name: "missing" } })
+  );
+  assert.deepEqual(semantic, []);
+});
+
+test("CSS syntax errors use the structured invalid selector code", () => {
+  const document = fixtureDocument([]);
+  document.selectors.add("button[");
+  assert.throws(
+    () =>
+      findTargets(
+        document,
+        ensureDocumentRegistry({}, { generation: "gen-1" }),
+        normalizeTarget({ target: { kind: "css", selector: "button[" } })
+      ),
+    (err) => err.code === "invalid_selector"
+  );
+});
+
+test("a missing registry creates a new generation and fails old refs closed", () => {
+  const first = ensureDocumentRegistry({}, { generation: "gen-1" });
+  const second = ensureDocumentRegistry({}, {});
+  assert.notEqual(first.generation, second.generation);
+});
