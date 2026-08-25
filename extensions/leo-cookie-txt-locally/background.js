@@ -1,4 +1,5 @@
 import { createMultiUrlPollLoop } from "./poll-loop.mjs";
+import { heartbeatTarget, registerTarget } from "./bridge-sync.mjs";
 import {
   assertClaimParams,
   assertActiveTask,
@@ -182,58 +183,20 @@ async function getActiveTabId(preferredTabId) {
 }
 
 async function registerTo(url) {
-  try {
-    const resp = await fetch(`${url}/ext/hello`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: chrome.runtime.id,
-        name: "Leo cookie.txt Locally",
-        version: chrome.runtime.getManifest().version,
-        capabilities: ["cookies", "tabs", "dom", "cdp", "tasks"],
-        task: currentTaskSummary(),
-      }),
-    });
-    if (resp.ok) return true;
-  } catch {
-    // try fallback gateway register format
-    try {
-      await fetch(`${url}/v1/extensions/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: chrome.runtime.id,
-          name: "Leo cookie.txt Locally",
-          version: chrome.runtime.getManifest().version,
-          capabilities: ["cookies", "tabs", "dom", "cdp", "tasks"],
-        }),
-      });
-      return true;
-    } catch {
-      return false;
-    }
-  }
-  return false;
+  const result = await registerTarget(url, {
+    id: chrome.runtime.id,
+    name: "Leo cookie.txt Locally",
+    version: chrome.runtime.getManifest().version,
+    capabilities: ["cookies", "tabs", "dom", "cdp", "tasks"],
+    task: currentTaskSummary(),
+  });
+  return result.online;
 }
 
 async function sendHeartbeats() {
   const urls = await getTargetUrls();
   for (const url of urls) {
-    try {
-      await fetch(`${url}/ext/heartbeat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: chrome.runtime.id, task: currentTaskSummary() }),
-      });
-    } catch {
-      try {
-        await fetch(`${url}/v1/extensions/heartbeat`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: chrome.runtime.id }),
-        });
-      } catch {}
-    }
+    await heartbeatTarget(url, { id: chrome.runtime.id, task: currentTaskSummary() });
   }
 }
 

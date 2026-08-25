@@ -132,10 +132,14 @@ export class LanternServer {
           }
 
           if (req.method === "POST" && pathname === "/ext/heartbeat") {
+            const body = await parseJsonBody(req);
             if (this.extension) {
               this.extension.lastSeen = Date.now();
             } else {
-              this.extension = { id: "unknown", lastSeen: Date.now() };
+              this.extension = { id: body.id || "unknown", lastSeen: Date.now() };
+            }
+            if (Object.prototype.hasOwnProperty.call(body, "task")) {
+              this.setTaskSummary(body.task);
             }
             return sendJson(res, 200, { ok: true });
           }

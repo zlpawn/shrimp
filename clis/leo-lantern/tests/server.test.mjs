@@ -164,6 +164,32 @@ test("LanternServer: heartbeat updates lastSeen", async () => {
   });
 });
 
+test("LanternServer: heartbeat restores and clears the cached task summary", async () => {
+  await withBridge(async (_bridge, BASE) => {
+    await postJson(`${BASE}/ext/hello`, { id: "ext-hb-task" });
+    await postJson(`${BASE}/ext/heartbeat`, {
+      id: "ext-hb-task",
+      task: {
+        taskId: "task_from_heartbeat",
+        title: "active after restart",
+        sameWindow: false,
+        windowId: 12,
+        groupId: 13,
+        claimedTabId: 14,
+        updatedAt: 15,
+      },
+    });
+
+    let doctor = await getJson(`${BASE}/doctor`);
+    assert.equal(doctor.body.task.taskId, "task_from_heartbeat");
+    assert.equal(doctor.body.task.claimedTabId, 14);
+
+    await postJson(`${BASE}/ext/heartbeat`, { id: "ext-hb-task", task: null });
+    doctor = await getJson(`${BASE}/doctor`);
+    assert.equal(doctor.body.task, null);
+  });
+});
+
 test("LanternServer: does not advertise CORS for browser pages", async () => {
   await withBridge(async (_bridge, BASE) => {
     const headers = await new Promise((resolve, reject) => {
