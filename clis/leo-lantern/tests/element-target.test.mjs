@@ -385,6 +385,29 @@ test("fingerprint resolution fails closed for stale generations and evicted refs
   );
 });
 
+test("a connected original below identity threshold does not switch to a replacement", () => {
+  const registry = ensureDocumentRegistry({}, { generation: "gen-1" });
+  const original = registeredButton(registry);
+  original.element.attributes.delete("id");
+  original.element.attributes.delete("name");
+  original.element.attributes.delete("data-testid");
+  original.element.textContent = "Completely different";
+
+  const replacement = new FakeElement("button", {
+    id: "login",
+    name: "login",
+    "data-testid": "login",
+  });
+  replacement.textContent = "Sign in";
+  original.document.body.children.push(replacement);
+  replacement.parentNode = original.document.body;
+
+  assert.throws(
+    () => resolveRef(original.document, registry, original.target),
+    (err) => err.code === "stale_ref_node"
+  );
+});
+
 test("fingerprints reject hard conflicts and weak or ambiguous candidates", () => {
   const registry = ensureDocumentRegistry({}, { generation: "gen-1" });
   const original = registeredButton(registry);

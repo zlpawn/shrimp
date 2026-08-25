@@ -254,6 +254,7 @@ export function resolveRef(document, registry, target) {
         return { element: original, ref: target.ref, generation: registry.generation, matchLevel: "stable" };
       }
     }
+    throw lanternError("stale_ref_node", "Target ref identity is no longer sufficient");
   }
 
   const scored = candidates
