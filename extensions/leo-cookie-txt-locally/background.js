@@ -1,5 +1,6 @@
 import { createMultiUrlPollLoop } from "./poll-loop.mjs";
 import { createCommandQueue } from "./command-queue.mjs";
+import { shouldStopNetworkCapture } from "./background-lifecycle.mjs";
 import { heartbeatTarget, registerTarget } from "./bridge-sync.mjs";
 import {
   assertClaimParams,
@@ -291,8 +292,9 @@ async function executeTask(task) {
     } else if (type === "task.end") {
       assertActiveTask(taskState);
       const closeGroup = Boolean(params.closeGroup);
-      if (getNetworkSession()?.stoppedAt == null) {
-        await cdpSession.stop({ tabId: getNetworkSession().tabId });
+      const networkSession = getNetworkSession();
+      if (shouldStopNetworkCapture(networkSession)) {
+        await cdpSession.stop({ tabId: networkSession.tabId });
       }
       const groupId = taskState.activeTask?.groupId;
       if (closeGroup && groupId != null) {

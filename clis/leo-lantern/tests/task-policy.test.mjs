@@ -49,6 +49,9 @@ test("goto policy requires active task and claimed tab by default", () => {
 test("active task helpers", () => {
   assert.equal(shouldReuseActiveTask({ activeTask: null }), false);
   assert.equal(shouldReuseActiveTask({ activeTask: { taskId: "t1" } }), true);
-  assert.throws(() => assertActiveTask({ activeTask: null }), /No active task/);
+  assert.throws(
+    () => assertActiveTask({ activeTask: null }),
+    (err) => err.code === "no_active_task" && /No active task/.test(err.message)
+  );
   assert.equal(assertActiveTask({ activeTask: { taskId: "t1" } }).taskId, "t1");
 });

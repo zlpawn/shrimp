@@ -1,3 +1,5 @@
+import { lanternError } from "./errors.mjs";
+
 export function assertClaimParams(params = {}) {
   const raw = params.tabId;
   if (raw === undefined || raw === null || raw === "") {
@@ -12,7 +14,7 @@ export function assertClaimParams(params = {}) {
 
 export function assertActiveTask(state) {
   if (!state?.activeTask) {
-    throw new Error("No active task. Run task.start first.");
+    throw lanternError("no_active_task", "No active task. Run task.start first.");
   }
   return state.activeTask;
 }

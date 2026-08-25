@@ -112,6 +112,29 @@ test("missing window clears Chrome IDs while preserving task strategy", () => {
   );
 });
 
+test("missing task window takes precedence over explicit tab lookup errors", () => {
+  const task = {
+    taskId: "missing-window-priority",
+    sameWindow: false,
+    windowId: 50,
+    groupId: 60,
+    claimedTabId: 70,
+  };
+  assert.throws(
+    () => resolveTaskTab({ task, explicitTabId: 999, live: liveState() }),
+    (err) => err.code === "task_window_missing"
+  );
+  assert.throws(
+    () =>
+      resolveTaskTab({
+        task,
+        explicitTabId: 80,
+        live: liveState({ tabs: [{ id: 80, windowId: 51, groupId: -1 }], windows: [{ id: 51 }] }),
+      }),
+    (err) => err.code === "task_window_missing"
+  );
+});
+
 test("a group ID is invalid when no live group tab connects it to the task window", () => {
   const task = reconcileTaskRelationships(
     { taskId: "task_group", sameWindow: true, windowId: 6, groupId: 60, claimedTabId: 61 },

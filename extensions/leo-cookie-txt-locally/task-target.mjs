@@ -71,6 +71,10 @@ export function resolveTaskTab({ task, explicitTabId = null, live, allowMissingC
   const reconciled = reconcileTaskRelationships(task, live);
   const requestedTabId = numericId(explicitTabId);
 
+  if (reconciled.windowId == null) {
+    throw lanternError("task_window_missing", "The active task window is unavailable");
+  }
+
   if (explicitTabId !== null && explicitTabId !== undefined) {
     if (requestedTabId == null) throw lanternError("invalid_request", `Invalid tab ID: ${explicitTabId}`);
     const tab = getTab(live, requestedTabId);
@@ -81,9 +85,6 @@ export function resolveTaskTab({ task, explicitTabId = null, live, allowMissingC
     return { tabId: requestedTabId, task: reconciled };
   }
 
-  if (reconciled.windowId == null) {
-    throw lanternError("task_window_missing", "The active task window is unavailable");
-  }
   if (reconciled.claimedTabId == null) {
     if (allowMissingClaim) return { tabId: null, task: reconciled };
     throw lanternError("no_claimed_tab", "No task tab is currently claimed");

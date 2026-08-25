@@ -76,7 +76,27 @@ function chromeApi({ tabs = [], windows = [] } = {}) {
       },
       async update() {},
     },
+    tabGroups: {
+      async update(groupId, patch) {
+        const groupIsLive = [...liveTabs.values()].some((tab) => tab.groupId === groupId);
+        if (!groupIsLive) throw new Error(`No group with id: ${groupId}`);
+        calls.push(["tabGroups.update", groupId, patch]);
+        return { id: groupId, ...patch };
+      },
+    },
   };
+}
+
+function chromeApiWithUpdateFailure() {
+  const api = chromeApi({
+    windows: [{ id: 9 }],
+    tabs: [{ id: 19, windowId: 9, groupId: 29, url: "https://before.example" }],
+  });
+  api.tabs.update = async (tabId, patch) => {
+    api.calls.push(["tabs.update", Number(tabId), patch]);
+    throw new Error("navigation blocked");
+  };
+  return api;
 }
 
 test("stale claimed tab is replaced instead of navigated", async () => {
@@ -99,6 +119,25 @@ test("stale claimed tab is replaced instead of navigated", async () => {
     "tabs.create",
     { windowId: 4, url: "https://example.com", active: false },
   ]);
+});
+
+test("a non-missing navigation failure does not create a replacement tab", async () => {
+  const api = chromeApiWithUpdateFailure();
+  await assert.rejects(
+    () =>
+      createOrNavigateTaskTab(
+        {
+          url: "https://example.com",
+          action: "navigate-claimed",
+          claimedTabId: 19,
+          windowId: 9,
+          groupId: 29,
+        },
+        api
+      ),
+    /navigation blocked/
+  );
+  assert.equal(api.calls.some(([name]) => name === "tabs.create"), false);
 });
 
 test("Chrome task resolver rejects an existing tab before callers mutate it", async () => {
@@ -187,7 +226,7 @@ test("close rejects an outside tab and clears the claim after a valid close", as
   assert.deepEqual(api.calls.at(-1), ["tabs.remove", 16]);
 });
 
-test("missing dedicated task window is recreated without changing strategy", async () => {
+test("missing dedicated task window is recreated with a grouped claimed tab", async () => {
   const api = chromeApi();
   const recovered = await ensureRecoverableTaskResources(
     {
@@ -203,15 +242,15 @@ test("missing dedicated task window is recreated without changing strategy", asy
 
   assert.equal(recovered.sameWindow, false);
   assert.equal(recovered.windowId, 300);
-  assert.equal(recovered.groupId, null);
-  assert.equal(recovered.claimedTabId, null);
+  assert.equal(recovered.groupId, 200);
+  assert.equal(recovered.claimedTabId, 100);
   assert.deepEqual(api.calls[0], [
     "windows.create",
     { focused: false, type: "normal", url: "about:blank" },
   ]);
 });
 
-test("missing shared task window selects current window without claiming user tabs", async () => {
+test("missing shared task window creates a new grouped claim without claiming user tabs", async () => {
   const api = chromeApi({
     windows: [{ id: 8 }],
     tabs: [{ id: 18, windowId: 8, groupId: -1 }],
@@ -230,7 +269,77 @@ test("missing shared task window selects current window without claiming user ta
 
   assert.equal(recovered.sameWindow, true);
   assert.equal(recovered.windowId, 8);
-  assert.equal(recovered.groupId, null);
-  assert.equal(recovered.claimedTabId, null);
-  assert.equal(api.calls.some(([name]) => name === "tabs.group"), false);
+  assert.equal(recovered.groupId, 200);
+  assert.equal(recovered.claimedTabId, 100);
+  assert.deepEqual(api.calls.find(([name]) => name === "tabs.group"), [
+    "tabs.group",
+    200,
+    { windowId: 8 },
+    [100],
+  ]);
+  assert.equal(api.calls.some(([name, , , tabIds]) => name === "tabs.group" && tabIds?.includes(18)), false);
+});
+
+test("missing claim in a live task group is recreated and claimed", async () => {
+  const api = chromeApi({
+    windows: [{ id: 10 }],
+    tabs: [{ id: 20, windowId: 10, groupId: 30 }],
+  });
+  const recovered = await ensureRecoverableTaskResources(
+    {
+      taskId: "missing-claim",
+      sameWindow: true,
+      windowId: 10,
+      groupId: 30,
+      claimedTabId: null,
+      title: "Task",
+      color: "blue",
+    },
+    {},
+    api
+  );
+  assert.equal(recovered.windowId, 10);
+  assert.equal(recovered.groupId, 30);
+  assert.equal(recovered.claimedTabId, 100);
+  assert.deepEqual(api.calls.find(([name]) => name === "tabGroups.update"), [
+    "tabGroups.update",
+    30,
+    { title: "Task", color: "blue", collapsed: false },
+  ]);
+});
+
+test("missing group in a dedicated task window is recreated around the live claim", async () => {
+  const api = chromeApi({
+    windows: [{ id: 12 }],
+    tabs: [{ id: 13, windowId: 12, groupId: -1 }],
+  });
+  const recovered = await ensureRecoverableTaskResources(
+    {
+      taskId: "missing-group",
+      sameWindow: false,
+      windowId: 12,
+      groupId: 45,
+      claimedTabId: 13,
+      title: "Task",
+      color: "blue",
+    },
+    {},
+    api
+  );
+
+  assert.equal(recovered.windowId, 12);
+  assert.equal(recovered.groupId, 200);
+  assert.equal(recovered.claimedTabId, 13);
+  assert.equal(api.calls.some(([name]) => name === "tabs.create"), false);
+  assert.deepEqual(api.calls.find(([name]) => name === "tabs.group"), [
+    "tabs.group",
+    200,
+    { windowId: 12 },
+    [13],
+  ]);
+  assert.deepEqual(api.calls.find(([name]) => name === "tabGroups.update"), [
+    "tabGroups.update",
+    200,
+    { title: "Task", color: "blue", collapsed: false },
+  ]);
 });

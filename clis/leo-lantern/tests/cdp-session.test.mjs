@@ -143,6 +143,20 @@ test("stop detaches Lantern-owned debugger and returns bounded entries", async (
   ]);
 });
 
+test("stop clears active ownership when Network.disable fails but detach succeeds", async () => {
+  const debuggerApi = fakeDebugger({ failCommand: "Network.disable" });
+  const { manager, persisted } = managerFixture({ debuggerApi });
+  await manager.start({ tabId: 18 });
+
+  await assert.rejects(() => manager.stop({ tabId: 18 }), (err) => err.code === "debugger_attach_failed");
+  assert.throws(() => manager.get({ tabId: 18 }), (err) => err.code === "capture_not_active");
+  assert.equal(persisted.at(-1).stoppedAt, 100);
+  assert.deepEqual(debuggerApi.calls.slice(-2), [
+    ["command", 18, "Network.disable"],
+    ["detach", 18],
+  ]);
+});
+
 test("network events update runtime memory without persisting every event", async () => {
   const { manager, persisted } = managerFixture();
   await manager.start({ tabId: 17 });
@@ -200,6 +214,33 @@ test("MV3 recovery detaches and clears a recorded tab that is no longer task-own
   assert.equal(recovered, null);
   assert.deepEqual(debuggerApi.calls, [["getTargets"], ["detach", 16]]);
   assert.equal(persisted.at(-1), null);
+});
+
+test("MV3 recovery reports detach failure and preserves durable ownership for retry", async () => {
+  const debuggerApi = fakeDebugger({ targets: [{ tabId: 19, attached: true }] });
+  debuggerApi.detach = async (source) => {
+    debuggerApi.calls.push(["detach", source.tabId]);
+    throw new Error("detach denied");
+  };
+  const { manager, persisted } = managerFixture({
+    debuggerApi,
+    validateTab: async () => {
+      throw Object.assign(new Error("outside"), { code: "tab_outside_task" });
+    },
+  });
+  const durable = {
+    tabId: 19,
+    attachedByLantern: true,
+    startedAt: 1,
+    stoppedAt: null,
+    entryCount: 2,
+  };
+
+  await assert.rejects(
+    () => manager.reconcile(durable),
+    (err) => err.code === "debugger_attach_failed" && /detach denied/.test(err.message)
+  );
+  assert.equal(persisted.length, 0);
 });
 
 test("debugger detach event clears active capture ownership", async () => {

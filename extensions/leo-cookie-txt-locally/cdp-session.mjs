@@ -112,10 +112,11 @@ export function createCdpSessionManager({
   async function stop({ tabId = null, grep = "" } = {}) {
     const session = requireSession(tabId);
     const entries = filterNetworkEntries(getNetworkEntries(runtimeBuffer), grep).map(toNetworkSummary);
+    let lifecycleError = null;
     try {
       await detachOwned(session);
     } catch (error) {
-      throw lanternError("debugger_attach_failed", error?.message || "Failed to stop network capture");
+      lifecycleError = error;
     }
     const stopped = {
       ...session,
@@ -124,7 +125,17 @@ export function createCdpSessionManager({
     };
     activeSession = null;
     runtimeBuffer = createNetworkBuffer(entryLimit);
-    await persist(stopped);
+    try {
+      await persist(stopped);
+    } catch (error) {
+      lifecycleError ||= error;
+    }
+    if (lifecycleError) {
+      throw lanternError(
+        "debugger_attach_failed",
+        lifecycleError?.message || "Failed to stop network capture"
+      );
+    }
     return { stopped: true, ...stopped, entries };
   }
 
@@ -169,7 +180,12 @@ export function createCdpSessionManager({
       if (target?.attached && durableSession.attachedByLantern) {
         try {
           await debuggerApi.detach({ tabId: Number(durableSession.tabId) });
-        } catch {}
+        } catch (error) {
+          throw lanternError(
+            "debugger_attach_failed",
+            error?.message || "Failed to detach stale network capture"
+          );
+        }
       }
       activeSession = null;
       runtimeBuffer = createNetworkBuffer(entryLimit);

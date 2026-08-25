@@ -58,7 +58,33 @@ export async function ensureRecoverableTaskResources(task, { focus = false } = {
     },
     api
   );
-  return { ...reconciled, windowId };
+  let claimedTabId = reconciled.claimedTabId;
+  if (claimedTabId == null) {
+    const created = await api.tabs.create({
+      windowId,
+      url: "about:blank",
+      active: Boolean(focus),
+    });
+    claimedTabId = created.id;
+  }
+
+  const nextGroupId = await ensureTaskGroup(
+    {
+      windowId,
+      title: task.title,
+      color: task.color,
+      groupId: reconciled.groupId,
+      tabIds: [claimedTabId],
+    },
+    api
+  );
+
+  return {
+    ...reconciled,
+    windowId,
+    groupId: nextGroupId,
+    claimedTabId,
+  };
 }
 
 export async function navigateTaskTab(
@@ -192,12 +218,15 @@ export async function createOrNavigateTaskTab({
     if (claimedTabId == null) throw new Error("No claimed tab to navigate");
     try {
       await api.tabs.get(claimedTabId);
+    } catch (error) {
+      if (!/No tab with id/i.test(String(error?.message || error))) throw error;
+      action = "create-first";
+      claimedTabId = null;
+    }
+    if (action === "navigate-claimed") {
       const updated = await api.tabs.update(claimedTabId, { url, active: Boolean(focus) });
       if (focus) await api.windows.update(updated.windowId, { focused: true });
       return { tabId: updated.id, windowId: updated.windowId, groupId, reused: true };
-    } catch {
-      action = "create-first";
-      claimedTabId = null;
     }
   }
 
