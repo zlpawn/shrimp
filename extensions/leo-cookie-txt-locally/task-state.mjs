@@ -1,3 +1,5 @@
+import { reconcileTaskRelationships } from "./task-target.mjs";
+
 export function createEmptyTaskState() {
   return {
     version: 1,
@@ -30,6 +32,19 @@ export function validateTaskState(state, chromeIds = {}) {
     activeTask: state?.activeTask ? { ...state.activeTask } : null,
   };
   if (!next.activeTask) return next;
+
+  if (Array.isArray(chromeIds.tabs) || Array.isArray(chromeIds.windows) || Array.isArray(chromeIds.groups)) {
+    const tabs = chromeIds.tabs || [];
+    const windows = chromeIds.windows || [];
+    const groups = chromeIds.groups || [];
+    next.activeTask = reconcileTaskRelationships(next.activeTask, {
+      tabsById: new Map(tabs.map((tab) => [Number(tab.id), tab])),
+      windowsById: new Map(windows.map((win) => [Number(win.id), win])),
+      groupsById: new Map(groups.map((group) => [Number(group.id), group])),
+    });
+    next.activeTask.updatedAt = Date.now();
+    return next;
+  }
 
   const tabIds = new Set((chromeIds.tabIds || []).map(Number));
   const groupIds = new Set((chromeIds.groupIds || []).map(Number));

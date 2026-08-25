@@ -37,6 +37,21 @@ test("upsert reuses one active task and summary exposes stable fields", () => {
   });
 });
 
+test("upsert preserves established same-window strategy when the field is omitted", () => {
+  const first = upsertActiveTask(createEmptyTaskState(), {
+    sameWindow: true,
+    windowId: 7,
+    groupId: 70,
+    claimedTabId: 71,
+  }, 1000);
+  const second = upsertActiveTask(first, { title: "renamed" }, 2000);
+
+  assert.equal(second.activeTask.sameWindow, true);
+  assert.equal(second.activeTask.windowId, 7);
+  assert.equal(second.activeTask.groupId, 70);
+  assert.equal(second.activeTask.claimedTabId, 71);
+});
+
 test("validate clears invalid chrome ids and clearActiveTask resets state", () => {
   const state = upsertActiveTask(createEmptyTaskState(), {
     title: "keep",
@@ -54,4 +69,45 @@ test("validate clears invalid chrome ids and clearActiveTask resets state", () =
   assert.equal(validated.activeTask.claimedTabId, null);
   assert.equal(clearActiveTask(validated).activeTask, null);
   assert.equal(toBridgeTaskSummary(clearActiveTask(validated)), null);
+});
+
+test("validate applies relationship-aware recovery for a missing dedicated group", () => {
+  const state = upsertActiveTask(createEmptyTaskState(), {
+    title: "recover",
+    sameWindow: false,
+    groupId: 10,
+    windowId: 20,
+    claimedTabId: 30,
+  }, 1000);
+
+  const validated = validateTaskState(state, {
+    tabs: [{ id: 30, windowId: 20, groupId: -1 }],
+    windows: [{ id: 20 }],
+    groups: [],
+  });
+
+  assert.equal(validated.activeTask.windowId, 20);
+  assert.equal(validated.activeTask.groupId, null);
+  assert.equal(validated.activeTask.claimedTabId, 30);
+  assert.equal(validated.activeTask.sameWindow, false);
+});
+
+test("validate clears a shared-window claim when its task group relationship is gone", () => {
+  const state = upsertActiveTask(createEmptyTaskState(), {
+    sameWindow: true,
+    groupId: 11,
+    windowId: 21,
+    claimedTabId: 31,
+  }, 1000);
+
+  const validated = validateTaskState(state, {
+    tabs: [{ id: 31, windowId: 21, groupId: -1 }],
+    windows: [{ id: 21 }],
+    groups: [],
+  });
+
+  assert.equal(validated.activeTask.windowId, 21);
+  assert.equal(validated.activeTask.groupId, null);
+  assert.equal(validated.activeTask.claimedTabId, null);
+  assert.equal(validated.activeTask.sameWindow, true);
 });
