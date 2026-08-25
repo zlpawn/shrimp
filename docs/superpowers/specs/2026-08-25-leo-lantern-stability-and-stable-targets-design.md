@@ -206,6 +206,31 @@ All commands migrated in Phase 1 and all new Phase 2 commands return failures as
 
 Phase 1 codes are `invalid_request`, `no_active_task`, `task_window_missing`, `tab_not_found`, `tab_outside_task`, `no_claimed_tab`, `capture_not_active`, `capture_tab_mismatch`, `debugger_attach_failed`, `bridge_unavailable`, and `command_timeout`.
 
+Phase 1 conditions map in this precedence order:
+
+| Condition | Code |
+| --- | --- |
+| Missing/malformed command type or parameters | `invalid_request` |
+| No active task | `no_active_task` |
+| Active task requires an existing target, but its window is missing | `task_window_missing` |
+| Explicit tab ID does not exist | `tab_not_found` |
+| Explicit/live tab exists but fails the ownership predicate | `tab_outside_task` |
+| No explicit tab and no valid claim exists | `no_claimed_tab` |
+| `net-get` / `net-stop` with no active capture | `capture_not_active` |
+| Explicit network tab differs from the active capture tab | `capture_tab_mismatch` |
+| CDP attach, enable, persistence, recovery, or detach lifecycle operation fails | `debugger_attach_failed` |
+| Bridge identity or transport is unavailable | `bridge_unavailable` |
+| Bridge command deadline expires | `command_timeout` |
+
+The wire shapes are fixed:
+
+- Extension result post: `{ "id": "c1", "ok": false, "error": { "code": "...", "message": "..." } }`.
+- Bridge command HTTP response: status `400` for `invalid_request`, `504` for `command_timeout`, `503` for `bridge_unavailable`, and `422` for an extension command failure; the JSON body is `{ "ok": false, "error": { ... } }` with the original object unchanged.
+- CLI failure: print `{ "ok": false, "error": { ... } }` as JSON to stderr, print nothing to stdout, and set process exit code `1`.
+- MCP tool failure: return a successful JSON-RPC `tools/call` response whose result is `{ "isError": true, "content": [{ "type": "text", "text": "<JSON encoded {ok:false,error:{...}}>" }], "structuredContent": { "ok": false, "error": { ... } } }`.
+
+Adapters may attach the error object to an internal `Error` as `err.lanternError`, but must never reconstruct the outward payload from `Error.message`.
+
 ## Phase 2: Stable Target Protocol MVP
 
 ### 1. Target Model
@@ -220,7 +245,7 @@ Interaction targets use a discriminated union:
 
 Exactly one target object is accepted. `ref` must be a positive integer and must be accompanied by the opaque document `generation` string returned by `state` or `find`. A semantic target must contain at least one of `role`, `name`, `text`, `label`, or `testId`; all supplied fields are combined with AND. `role` and `testId` are exact fields. `name`, `text`, and `label` use `match: "exact" | "contains"` with `exact` as the default. String comparison trims and collapses Unicode whitespace and is case-insensitive unless `caseSensitive: true`.
 
-Legacy top-level `selector` or `text` is translated to one CSS or semantic target only when no `target` object or other legacy target field is present. Supplying multiple target forms fails `invalid_target`; there is no implicit priority order.
+Legacy top-level `selector` or `text` is translated to one CSS or semantic target only when no `target` object or other legacy target field is present. Legacy `text` specifically becomes `{ "kind": "semantic", "text": value, "match": "contains" }` to preserve the historical visible-text substring behavior. Supplying multiple target forms fails `invalid_target`; there is no implicit priority order.
 
 Semantic locator fields supported in this MVP:
 
@@ -267,7 +292,9 @@ The extension returns:
 
 Refs are scoped to a tab and document generation. The caller must submit both fields for a ref action. A top-level navigation creates a new generation and invalidates old refs. Numeric IDs may be reused only in a different generation. The snapshot is bounded to the first 200 visible interactive or semantically important elements in deterministic DOM order.
 
-Each top-level document owns an extension-isolated-world registry at `globalThis.__leoLanternTargets`. It contains a random generation token, a `WeakMap<Node, number>`, and a `Map<number, Node>` for the document lifetime. `state`, `find`, `click`, and `fill` all consult this registry. Top-level navigation destroys the isolated world and therefore the registry; the next command creates a new token. An MV3 worker restart does not recreate a live document registry, so refs remain valid when the isolated world survives. Extension reload or registry loss creates a new token, making old generations fail closed.
+Each top-level document owns an extension-isolated-world registry at `globalThis.__leoLanternTargets`. It contains a random generation token, a `WeakMap<Node, number>`, and an access-ordered `Map<number, RefRecord>`. A `RefRecord` stores the compact fingerprint and a `WeakRef<Node>` when supported; the fallback stores a strong node reference only until LRU eviction. The registry holds at most 1,000 records. Every allocation or resolution touches the record; allocation evicts the least-recently-used record before inserting record 1,001 and removes its reverse WeakMap entry when the node remains reachable. An evicted or collected ref returns `stale_ref_node` unless unique reidentification succeeds from its still-present record; eviction removes the record and therefore cannot reidentify.
+
+`state`, `find`, `click`, and `fill` all consult this registry. Top-level navigation destroys the isolated world and therefore the registry; the next command creates a new token. An MV3 worker restart does not recreate a live document registry, so refs remain valid when the isolated world survives. Extension reload or registry loss creates a new token, making old generations fail closed.
 
 ### 3. Find
 
@@ -285,11 +312,19 @@ Each ref stores a compact fingerprint:
 - normalized visible text prefix
 - ordinal among equivalent candidates
 
-Resolution returns one of:
+Fingerprint resolution is deterministic:
 
-- `exact`: the original live node still matches the fingerprint;
-- `stable`: strong identity fields match and only soft fields changed;
-- `reidentified`: the original node disappeared and exactly one replacement matches the fingerprint;
+1. Normalize all strings with the same whitespace/case rules as semantic matching.
+2. Hard-reject candidates whose tag differs, or whose present stable `id`, `data-testid`, `name`, or normalized absolute `href` conflicts with the stored non-empty value.
+3. Score remaining candidates: matching `id` +100, `data-testid` +80, `name` +50, `href` +40, role +20, accessible name +20, visible-text prefix +10, and equivalent-candidate ordinal +5.
+4. A candidate is acceptable only with score at least 40, or score at least 30 when both role and accessible name match.
+5. Reidentification succeeds only when exactly one candidate has the highest acceptable score and it exceeds the next-best acceptable score by at least 10. Otherwise return `reidentification_ambiguous`; if no candidate is acceptable, return `stale_ref_node`.
+
+Resolution returns one of these mutually exclusive levels:
+
+- `exact`: the registry's original live node is connected and all stored non-empty fingerprint fields still match;
+- `stable`: the registry's original live node is connected, passes the hard-reject rules, and meets the acceptable score, but one or more soft fields (`role`, accessible name, text prefix, or ordinal) changed;
+- `reidentified`: the original node is missing/disconnected and exactly one replacement passes the score and margin rules;
 - error: no safe unique match exists.
 
 `exact` means the registry still contains the original Node and its fingerprint is compatible. Reidentification runs only within the same submitted generation. The MVP does not attempt cross-navigation or cross-frame reidentification.
@@ -303,13 +338,17 @@ Success envelopes include:
 ```json
 {
   "clicked": true,
-  "target": "12",
+  "target": { "kind": "ref", "ref": 12, "generation": "4d0f..." },
+  "ref": 12,
+  "generation": "4d0f...",
   "matches_n": 1,
   "match_level": "exact"
 }
 ```
 
-`fill` supports `input`, `textarea`, and `contenteditable`. It verifies the resulting live value/text and returns `filled`, `verified`, `actual`, `matches_n`, and `match_level`.
+Every successful locator action allocates or touches a ref for the matched node, so ref, CSS, and semantic actions share one envelope. `target` echoes the normalized discriminated-union request, `ref` is always an integer, and `generation` is always returned. For CSS and semantic targets, `match_level` is `located`; for ref targets it is `exact`, `stable`, or `reidentified`.
+
+`fill` supports `input`, `textarea`, and `contenteditable`. Its success envelope replaces `clicked` with `filled: true` and additionally returns `verified: true`, `actual`, `target`, `ref`, `generation`, `matches_n: 1`, and the same `match_level` rules. Verification failure returns `fill_verification_failed` and does not emit a success envelope.
 
 ### 6. Target Error Codes and Precedence
 
@@ -376,11 +415,12 @@ Phase 1 regression coverage includes:
 Phase 2 coverage includes:
 
 - bounded state snapshots allocate deterministic refs;
+- the 1,000-record LRU bound evicts old refs, detached nodes are not kept alive when `WeakRef` is available, and cumulative `find` calls cannot grow the registry without bound;
 - CSS and semantic find return match counts and refs;
 - refs resolve as exact, stable, or uniquely reidentified;
 - cross-tab and cross-generation ref use fails closed, while same-document refs survive a worker restart;
 - ambiguous selectors and semantic locators fail without acting;
-- click returns the structured match envelope;
+- ref, CSS, and semantic click/fill return their specified structured match envelopes, including integer `ref`, `generation`, echoed normalized target, and locator `match_level: located`;
 - fill updates and verifies input, textarea, and contenteditable values;
 - all target operations remain limited to a validated task-owned tab;
 - CLI and MCP expose the same protocol fields and the complete Phase 2 error-code matrix.
