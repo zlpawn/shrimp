@@ -1,20 +1,52 @@
-export function createNetworkSession({ tabId, startedAt = Date.now() } = {}) {
-  if (!tabId) throw new Error("network capture requires tabId");
+export function createNetworkBuffer(limit = 1_000) {
   return {
-    tabId: Number(tabId),
-    startedAt,
-    entries: [],
+    limit: Math.max(1, Number(limit) || 1_000),
+    entriesById: new Map(),
   };
 }
 
-export function upsertNetworkEntry(session, entry) {
-  if (!session) throw new Error("network session missing");
-  const next = { ...session, entries: [...(session.entries || [])] };
-  const requestId = entry.requestId;
-  const idx = next.entries.findIndex((item) => item.requestId === requestId);
-  if (idx >= 0) next.entries[idx] = { ...next.entries[idx], ...entry };
-  else next.entries.push(entry);
-  return next;
+export function createNetworkSession({
+  tabId,
+  startedAt = Date.now(),
+  attachedByLantern = false,
+  stoppedAt = null,
+  entryCount = 0,
+  recovered = false,
+  entriesLost = false,
+} = {}) {
+  if (!tabId) throw new Error("network capture requires tabId");
+  return {
+    tabId: Number(tabId),
+    attachedByLantern: Boolean(attachedByLantern),
+    startedAt,
+    stoppedAt,
+    entryCount: Number(entryCount) || 0,
+    recovered: Boolean(recovered),
+    entriesLost: Boolean(entriesLost),
+  };
+}
+
+export function upsertNetworkEntry(buffer, entry) {
+  if (!buffer?.entriesById || !(buffer.entriesById instanceof Map)) {
+    throw new Error("network buffer missing");
+  }
+  const requestId = String(entry?.requestId || "");
+  if (!requestId) throw new Error("network entry requires requestId");
+  const current = buffer.entriesById.get(requestId);
+  if (current) {
+    buffer.entriesById.set(requestId, { ...current, ...entry, requestId });
+    return buffer;
+  }
+  while (buffer.entriesById.size >= buffer.limit) {
+    buffer.entriesById.delete(buffer.entriesById.keys().next().value);
+  }
+  buffer.entriesById.set(requestId, { ...entry, requestId });
+  return buffer;
+}
+
+export function getNetworkEntries(buffer) {
+  if (!buffer?.entriesById || !(buffer.entriesById instanceof Map)) return [];
+  return [...buffer.entriesById.values()];
 }
 
 export function filterNetworkEntries(entries = [], grep = "") {

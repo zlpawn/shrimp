@@ -32,12 +32,7 @@ import {
   summarizeContent,
   normalizePressKey,
 } from "./page-drive.mjs";
-import {
-  createNetworkSession,
-  upsertNetworkEntry,
-  filterNetworkEntries,
-  toNetworkSummary,
-} from "./network-capture.mjs";
+import { createCdpSessionManager } from "./cdp-session.mjs";
 const DEFAULT_BRIDGE_URL = "http://127.0.0.1:19527";
 const DEFAULT_GATEWAY_URL = "http://127.0.0.1:8788";
 const HEARTBEAT_INTERVAL_MS = 25_000;
@@ -109,56 +104,18 @@ async function saveNetworkSession(session) {
   );
 }
 
-async function stopNetworkCapture({ detach = true } = {}) {
-  const session = getNetworkSession();
-  if (!session) return null;
-  try {
-    await chrome.debugger.sendCommand({ tabId: session.tabId }, "Network.disable");
-  } catch {}
-  if (detach) {
-    try {
-      await chrome.debugger.detach({ tabId: session.tabId });
-    } catch {}
-  }
-  const stopped = { ...session, stoppedAt: Date.now() };
-  await saveNetworkSession(stopped);
-  return stopped;
-}
+const cdpSession = createCdpSessionManager({
+  debuggerApi: chrome.debugger,
+  validateTab: (tabId) => requireTaskTabId({ tabId }),
+  persist: (session) => saveNetworkSession(session),
+});
 
-chrome.debugger.onEvent.addListener(async (source, method, params) => {
-  const session = getNetworkSession();
-  if (!session || source.tabId !== session.tabId || !params?.requestId) return;
-  if (method === "Network.requestWillBeSent") {
-    const currentSession = getNetworkSession() || session;
-    const updatedSession = upsertNetworkEntry(currentSession, {
-      requestId: params.requestId,
-      method: params.request?.method,
-      url: params.request?.url,
-      type: params.type,
-      timestamp: params.timestamp,
-    });
-    if (taskState.activeTask) {
-      taskState.activeTask.extensions = {
-        ...(taskState.activeTask.extensions || {}),
-        network: updatedSession,
-      };
-    }
-    await saveNetworkSession(updatedSession);
-  } else if (method === "Network.responseReceived") {
-    const currentSession = getNetworkSession() || session;
-    const updatedSession = upsertNetworkEntry(currentSession, {
-      requestId: params.requestId,
-      status: params.response?.status,
-      mimeType: params.response?.mimeType,
-    });
-    if (taskState.activeTask) {
-      taskState.activeTask.extensions = {
-        ...(taskState.activeTask.extensions || {}),
-        network: updatedSession,
-      };
-    }
-    await saveNetworkSession(updatedSession);
-  }
+chrome.debugger.onEvent.addListener((source, method, params) => {
+  cdpSession.handleNetworkEvent(source, method, params);
+});
+
+chrome.debugger.onDetach.addListener((source) => {
+  cdpSession.handleDetach(source).catch(() => undefined);
 });
 
 async function getTargetUrls() {
@@ -334,7 +291,9 @@ async function executeTask(task) {
     } else if (type === "task.end") {
       assertActiveTask(taskState);
       const closeGroup = Boolean(params.closeGroup);
-      await stopNetworkCapture();
+      if (getNetworkSession()?.stoppedAt == null) {
+        await cdpSession.stop({ tabId: getNetworkSession().tabId });
+      }
       const groupId = taskState.activeTask?.groupId;
       if (closeGroup && groupId != null) {
         try {
@@ -626,32 +585,12 @@ async function executeTask(task) {
         }
       }
     } else if (type === "cdp.net-start") {
-      if (getNetworkSession()) {
-        await stopNetworkCapture({ detach: false });
-      }
-      const tabId = await requireTaskTabId(params);
-      await chrome.debugger.attach({ tabId }, "1.3");
-      await chrome.debugger.sendCommand({ tabId }, "Network.enable");
-      const session = createNetworkSession({ tabId });
-      await saveNetworkSession(session);
-      result = await withTaskSummary({ started: true, tabId, entries: 0 });
+      const session = await cdpSession.start({ tabId: params.tabId });
+      result = await withTaskSummary({ started: true, tabId: session.tabId, entries: 0 });
     } else if (type === "cdp.net-get") {
-      const session = getNetworkSession();
-      if (!session) throw new Error("Network capture is not running");
-      const entries = filterNetworkEntries(session.entries, params.grep);
-      result = await withTaskSummary({
-        running: session.stoppedAt == null,
-        entries: entries.map(toNetworkSummary),
-      });
+      result = await withTaskSummary(cdpSession.get({ tabId: params.tabId, grep: params.grep }));
     } else if (type === "cdp.net-stop") {
-      const running = getNetworkSession();
-      if (!running) throw new Error("Network capture is not running");
-      const session = await stopNetworkCapture();
-      const entries = filterNetworkEntries(session?.entries || [], params.grep);
-      result = await withTaskSummary({
-        stopped: true,
-        entries: entries.map(toNetworkSummary),
-      });
+      result = await withTaskSummary(await cdpSession.stop({ tabId: params.tabId, grep: params.grep }));
     } else {
       throw new Error(`Unsupported task type: ${type}`);
     }
@@ -662,6 +601,7 @@ async function executeTask(task) {
 // Register on load/startup
 async function init() {
   await loadTaskState();
+  await cdpSession.reconcile(getNetworkSession());
   const urls = await getTargetUrls();
   for (const url of urls) {
     await registerTo(url);
