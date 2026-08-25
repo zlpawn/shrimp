@@ -44,6 +44,14 @@ class TestDiscoverEntrypoints(unittest.TestCase):
                 "unknown",
             ])
 
+    def test_compatibility_wrapper_keeps_legacy_fact_ids(self):
+        repo_path = self.fixtures_dir / "ambiguous-java-repo"
+
+        entries = discover_entrypoints.discover_all_entrypoints(repo_path)
+
+        self.assertTrue(all(entry["id"].startswith("FACT-") for entry in entries))
+        self.assertTrue(all("signal_class" not in entry for entry in entries))
+
 
 if __name__ == "__main__":
     unittest.main()

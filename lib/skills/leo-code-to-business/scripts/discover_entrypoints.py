@@ -14,6 +14,11 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import repository_snapshot
+from discovery import core
+import discover_repository_signals
+
 
 def extract_java_entries(repo_root: Path) -> List[Dict[str, Any]]:
     """Scans Java source files for HTTP endpoints, Controllers, Scheduled jobs, Commands, and MQ listeners."""
@@ -207,13 +212,82 @@ def extract_java_entries(repo_root: Path) -> List[Dict[str, Any]]:
 
 
 def discover_all_entrypoints(repo_root: Path) -> List[Dict[str, Any]]:
-    """Discovers all entrypoints across supported project types in repository."""
-    entries: List[Dict[str, Any]] = []
-
-    if list(repo_root.glob("**/*.java")):
-        entries.extend(extract_java_entries(repo_root))
-
+    """Discover trigger entries through the v2 orchestrator and emit v1 records."""
+    root = Path(repo_root).resolve()
+    snapshot = repository_snapshot.capture_snapshot(root)
+    adapters: list[core.DiscoveryAdapter] = []
+    legacy_adapter: LegacyJavaEntrypointAdapter | None = None
+    if list(root.glob("**/*.java")):
+        legacy_adapter = LegacyJavaEntrypointAdapter(root)
+        adapters.append(legacy_adapter)
+    result = discover_repository_signals.run_discovery(
+        root,
+        snapshot,
+        adapters=adapters,
+    )
+    if legacy_adapter is None:
+        return []
+    entries: list[dict[str, Any]] = []
+    for signal in result["inventory"]:
+        if signal["signal_class"] != "trigger_entry":
+            continue
+        locator = _finding_locator(signal["source_location"])
+        legacy = legacy_adapter.legacy_by_locator[locator]
+        entries.append(dict(legacy))
     return entries
+
+
+def _finding_locator(source_location: dict[str, Any]) -> str:
+    return f"{source_location['path']}:{source_location.get('symbol', '')}"
+
+
+class LegacyJavaEntrypointAdapter:
+    """Temporary adapter retaining the v1 Java scanner until Task 5."""
+
+    adapter_id = "legacy-java-entrypoints"
+    adapter_version = "1.0"
+    claimed_languages = {"java"}
+    claimed_frameworks = {"spring", "plain-java"}
+    supported_signal_kinds = {
+        "http_entry",
+        "scheduled_job",
+        "event_consumer",
+        "command_entry",
+    }
+
+    def __init__(self, repo_root: Path):
+        self.repo_root = repo_root
+        entries = extract_java_entries(repo_root)
+        self.legacy_by_locator = {
+            _finding_locator(entry["source_location"]): entry for entry in entries
+        }
+
+    def discover(self, context: core.DiscoveryContext) -> core.AdapterResult:
+        findings = []
+        for locator, entry in self.legacy_by_locator.items():
+            importance = (
+                "high"
+                if entry["classification"] in {"business", "compensation_or_retry"}
+                else "normal"
+            )
+            findings.append(
+                core.RawFinding(
+                    signal_class="trigger_entry",
+                    kind=entry["kind"],
+                    locator=locator,
+                    name=entry["name"],
+                    source_location=entry["source_location"],
+                    framework_identity=entry["name"],
+                    structural_importance=importance,
+                    classification=entry["classification"],
+                )
+            )
+        return core.AdapterResult(
+            findings=findings,
+            rejected=[],
+            unsupported_constructs=[],
+            truncated=False,
+        )
 
 
 def main() -> int:
