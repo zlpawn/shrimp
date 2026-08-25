@@ -17,6 +17,11 @@
     "known_omitted_candidates": []
     ,"stable_key": "work-order-create"
     ,"reverse_writer_investigation_ids": ["INV-backward", "INV-alternate"]
+    ,"closure_matrix": {
+      "create": {"web": {"status": "confirmed", "reason": "POST /work-orders is verified."}},
+      "repair": {"operations": {"status": "searched_not_found", "reason": "No repair entry was found."}},
+      "cancel": {"operations": {"status": "not_applicable", "reason": "This family covers creation only."}}
+    }
     ,"applicability_matrix": [
       {"action": "create", "channel": "web", "status": "confirmed", "reason": "POST /work-orders is verified in current source."},
       {"action": "repair", "channel": "operations", "status": "searched_not_found", "reason": "Backward and alternate-entry searches found no repair entry."},

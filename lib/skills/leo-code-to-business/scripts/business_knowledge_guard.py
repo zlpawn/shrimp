@@ -1030,8 +1030,347 @@ def validate_projection_files(
             raise ValidationError(f"projection {name} file hash mismatch")
 
 
-def validate_revision(revision_dir: Path | str) -> dict[str, Any]:
-    root = Path(revision_dir)
+def _metric(
+    numerator: int,
+    denominator: int,
+    unresolved_ids: Iterable[str] = (),
+    excluded_ids: Iterable[str] = (),
+) -> dict[str, Any]:
+    return {
+        "numerator": numerator,
+        "denominator": denominator,
+        "ratio": numerator / denominator if denominator else 1.0,
+        "unresolved_ids": sorted(set(unresolved_ids)),
+        "excluded_ids": sorted(set(excluded_ids)),
+    }
+
+
+def validate_discovery_observations(
+    records: list[dict[str, Any]],
+    inventory_by_id: dict[str, dict[str, Any]],
+    snapshot_id: str,
+) -> dict[str, Any]:
+    observed_ids: set[str] = set()
+    observation_ids: set[str] = set()
+    partial: list[str] = []
+    for observation in records:
+        observation_id = observation.get("id")
+        if not observation_id or observation_id in observation_ids:
+            raise ValidationError(f"duplicate or missing discovery observation: {observation_id}")
+        observation_ids.add(observation_id)
+        if observation.get("snapshot_id") != snapshot_id:
+            raise ValidationError(f"discovery observation {observation_id} snapshot mismatch")
+        discovered = observation.get("discovered_signal_ids", [])
+        if not isinstance(discovered, list):
+            raise ValidationError(f"discovery observation {observation_id} signals must be a list")
+        for signal_id in discovered:
+            if signal_id not in inventory_by_id:
+                raise ValidationError(f"discovery observation names unknown signal {signal_id}")
+            if signal_id in observed_ids:
+                raise ValidationError(f"signal {signal_id} is discovered more than once")
+            observed_ids.add(signal_id)
+        if observation.get("truncated") or observation.get("status") != "completed":
+            partial.append(observation_id)
+    for inventory_id, signal in inventory_by_id.items():
+        if inventory_id not in observed_ids:
+            raise ValidationError(f"inventory signal lacks observation: {inventory_id}")
+        for observation_id in signal.get("discovered_by", []):
+            if observation_id not in observation_ids:
+                raise ValidationError(f"inventory {inventory_id} names unknown observation {observation_id}")
+    return {
+        "observation_count": len(records),
+        "discovered_signal_ids": sorted(observed_ids),
+        "partial_observation_ids": sorted(partial),
+    }
+
+
+def validate_candidates(
+    records: list[dict[str, Any]],
+    inventory_by_id: dict[str, dict[str, Any]],
+    node_ids: set[str],
+    investigations: dict[str, set[str]],
+) -> dict[str, Any]:
+    candidate_ids = {item.get("id") for item in records}
+    accounted_signals: set[str] = set()
+    unresolved: list[str] = []
+    for candidate in records:
+        candidate_id = candidate.get("id")
+        required = {
+            "id", "seed_signal_id", "semantic_key", "title",
+            "candidate_basis_signal_ids", "candidate_status",
+            "structural_importance", "business_priority", "resolution_reason",
+            "investigation_ids", "snapshot_id",
+        }
+        missing = sorted(required - set(candidate))
+        if missing:
+            raise ValidationError(f"candidate {candidate_id} missing fields: {', '.join(missing)}")
+        status = candidate["candidate_status"]
+        if status not in {"confirmed", "variant", "supporting_behavior", "duplicate", "excluded", "unresolved"}:
+            raise ValidationError(f"candidate {candidate_id} invalid status {status}")
+        basis = candidate["candidate_basis_signal_ids"]
+        if not isinstance(basis, list):
+            raise ValidationError(f"candidate {candidate_id} requires basis signals")
+        if not basis:
+            raise ValidationError(
+                f"candidate {candidate_id} has no remaining basis signals"
+            )
+        for signal_id in basis:
+            if signal_id not in inventory_by_id:
+                raise ValidationError(f"candidate {candidate_id} names unknown signal {signal_id}")
+            accounted_signals.add(signal_id)
+        target = None
+        if status == "confirmed":
+            target = candidate.get("resolved_use_case_id")
+            if not target or target not in node_ids:
+                raise ValidationError(f"candidate {candidate_id} has invalid confirmed target")
+        elif status == "variant":
+            target = candidate.get("resolved_family_id")
+            if not target or target not in node_ids:
+                raise ValidationError(f"candidate {candidate_id} has invalid variant family")
+            if not candidate.get("resolved_use_case_id") and not candidate.get("variant_of_candidate_id"):
+                raise ValidationError(f"candidate {candidate_id} requires variant target")
+        elif status == "supporting_behavior":
+            supports = candidate.get("supports_candidate_id")
+            if supports and supports not in candidate_ids:
+                raise ValidationError(f"candidate {candidate_id} supports unknown candidate {supports}")
+            target = candidate.get("resolved_use_case_id") or supports
+            if not target or (candidate.get("resolved_use_case_id") and target not in node_ids):
+                raise ValidationError(f"candidate {candidate_id} requires supporting target")
+        elif status == "duplicate":
+            target = candidate.get("duplicate_of_candidate_id")
+            if not target or target not in candidate_ids or target == candidate_id:
+                raise ValidationError(f"candidate {candidate_id} has invalid duplicate target")
+        elif status == "excluded":
+            if not candidate.get("resolution_reason"):
+                raise ValidationError(f"candidate {candidate_id} excluded without reason")
+        elif status == "unresolved":
+            if not candidate.get("investigation_ids"):
+                raise ValidationError(f"candidate {candidate_id} unresolved without investigation")
+            if candidate.get("structural_importance") in {"critical", "high"}:
+                unresolved.append(candidate_id)
+    for signal_id, signal in inventory_by_id.items():
+        if signal_id in accounted_signals:
+            continue
+        if not signal.get("non_candidate_status"):
+            raise ValidationError(f"unaccounted inventory signal {signal_id}")
+        if not signal.get("non_candidate_reason"):
+            raise ValidationError(f"non-candidate signal {signal_id} lacks reason")
+        if not signal.get("non_candidate_evidence_ids"):
+            raise ValidationError(f"non-candidate signal {signal_id} lacks evidence")
+    return {
+        "count": len(records),
+        "accounted_signal_ids": sorted(accounted_signals),
+        "unresolved_ids": sorted(set(unresolved)),
+        "excluded_ids": sorted(
+            item["id"] for item in records if item.get("candidate_status") == "excluded"
+        ),
+    }
+
+
+def validate_family_closure(
+    families: list[dict[str, Any]],
+    candidates: list[dict[str, Any]],
+    investigation_records: list[dict[str, Any]],
+) -> dict[str, Any]:
+    known_investigation_ids = {
+        investigation["id"] for investigation in investigation_records if investigation.get("id")
+    }
+    allowed = {"confirmed", "variant", "not_applicable", "searched_not_found", "unresolved"}
+    unresolved: list[str] = []
+    total = 0
+    complete = 0
+    for family in families:
+        family_id = family.get("id")
+        matrix = family.get("closure_matrix")
+        if not isinstance(matrix, dict):
+            raise ValidationError(f"missing family closure matrix {family_id}")
+        for action, channels in sorted(matrix.items()):
+            if not isinstance(channels, dict):
+                raise ValidationError(f"missing family closure disposition {family_id}:{action}")
+            for channel, cell in sorted(channels.items()):
+                total += 1
+                if not cell:
+                    raise ValidationError(
+                        f"missing family closure disposition {family_id}:{action}:{channel}"
+                    )
+                if not isinstance(cell, dict) or cell.get("status") not in allowed:
+                    raise ValidationError(
+                        f"missing family closure disposition {family_id}:{action}:{channel}"
+                    )
+                if not cell.get("reason"):
+                    raise ValidationError(
+                        f"family closure cell requires reason {family_id}:{action}:{channel}"
+                    )
+                if cell.get("status") in {"confirmed", "variant"}:
+                    complete += 1
+                elif cell.get("status") == "unresolved":
+                    unresolved.append(f"{family_id}:{action}:{channel}")
+        for investigation_id in family.get("reverse_writer_investigation_ids", []):
+            if investigation_id not in known_investigation_ids:
+                raise ValidationError(
+                    f"family {family_id} names unknown reverse-writer investigation {investigation_id}"
+                )
+    return {
+        "total": total,
+        "complete": complete,
+        "unresolved_ids": sorted(set(unresolved)),
+    }
+
+
+def validate_omission_audit(
+    audit: dict[str, Any],
+    inventory_by_id: dict[str, dict[str, Any]],
+    candidate_by_id: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    if audit.get("reviewer_mode") != "independent":
+        raise ValidationError("omission audit reviewer mode must be independent")
+    findings = audit.get("findings", [])
+    unresolved: list[str] = []
+    critical: list[str] = []
+    for finding in findings:
+        finding_id = finding.get("id")
+        for signal_id in finding.get("signal_ids", []):
+            if signal_id not in inventory_by_id:
+                raise ValidationError(f"omission finding {finding_id} names unknown signal {signal_id}")
+        for candidate_id in finding.get("candidate_ids", []):
+            if candidate_id not in candidate_by_id:
+                raise ValidationError(f"omission finding {finding_id} names unknown candidate {candidate_id}")
+        if finding.get("resolution_status") == "unresolved":
+            unresolved.append(finding_id)
+            if finding.get("severity") in {"critical", "high"}:
+                critical.append(finding_id)
+    return {
+        "finding_count": len(findings),
+        "unresolved_ids": sorted(set(unresolved)),
+        "critical_unresolved_ids": sorted(set(critical)),
+    }
+
+
+def calculate_v2_coverage(
+    inventory_summary: dict[str, Any],
+    candidate_summary: dict[str, Any],
+    family_summary: dict[str, Any],
+    investigation_summary: dict[str, Any],
+    omission_summary: dict[str, Any],
+    history_summary: dict[str, Any],
+) -> dict[str, Any]:
+    metrics = {
+        "candidate_conservation": _metric(
+            len(candidate_summary["accounted_signal_ids"]),
+            inventory_summary["signal_count"],
+            omission_summary["unresolved_ids"] + candidate_summary["unresolved_ids"],
+            candidate_summary["excluded_ids"],
+        ),
+        "family_closure_coverage": _metric(
+            family_summary["complete"],
+            family_summary["total"],
+            family_summary["unresolved_ids"],
+        ),
+        "required_investigation_coverage": _metric(
+            investigation_summary["complete"],
+            investigation_summary["required"],
+            investigation_summary["unresolved_ids"],
+        ),
+    }
+    for name, value in history_summary.get("metrics", {}).items():
+        metrics[name] = value
+    return metrics
+
+
+def validate_revision_v2(root: Path) -> dict[str, Any]:
+    manifest = read_json(root / "manifest.json")
+    snapshot = manifest.get("repository_snapshot", {})
+    snapshot_id = snapshot.get("snapshot_id")
+    if not snapshot_id:
+        raise ValidationError("manifest repository snapshot is missing snapshot_id")
+    if manifest.get("schema_version") != contract.V2_SCHEMA_VERSION:
+        raise ValidationError("revision is not schema version 2.0")
+
+    inventory_records = read_jsonl(root / "inventory.jsonl")
+    inventory = validate_inventory(inventory_records)
+    inventory_by_id = {item["id"]: item for item in inventory_records}
+    if not inventory_by_id:
+        raise ValidationError("v2 inventory must contain at least one signal")
+    validate_discovery_observations(
+        read_jsonl(root / "discovery-observations.jsonl"),
+        inventory_by_id,
+        snapshot_id,
+    )
+
+    nodes_by_file = load_node_records(root)
+    node_ids: set[str] = set()
+    for nodes in nodes_by_file.values():
+        for node in nodes:
+            validate_common_node(node, "v2 node")
+            if node["id"] in node_ids:
+                raise ValidationError(f"duplicate node id: {node['id']}")
+            node_ids.add(node["id"])
+    evidence = read_jsonl(root / "evidence.jsonl")
+    validate_evidence(evidence, snapshot_id)
+    investigations = validate_investigations(
+        read_jsonl(root / "investigations.jsonl"), snapshot_id
+    )
+    investigation_records = read_jsonl(root / "investigations.jsonl")
+    candidates = read_jsonl(root / "use-case-candidates.jsonl")
+    candidate_summary = validate_candidates(
+        candidates, inventory_by_id, node_ids, investigations
+    )
+    family_summary = validate_family_closure(
+        nodes_by_file["use-case-families.json"], candidates, investigation_records
+    )
+    candidate_by_id = {item["id"]: item for item in candidates}
+    omission_summary = validate_omission_audit(
+        read_json(root / "omission-audit.json"), inventory_by_id, candidate_by_id
+    )
+
+    investigation_required = len(REQUIRED_INVESTIGATIONS) * sum(
+        1 for item in candidates if item.get("resolved_use_case_id")
+    )
+    investigation_complete = sum(
+        len(kinds) for kinds in investigations.values() if len(kinds) >= len(REQUIRED_INVESTIGATIONS)
+    )
+    metrics = calculate_v2_coverage(
+        {"signal_count": len(inventory_by_id)},
+        candidate_summary,
+        family_summary,
+        {"complete": investigation_complete, "required": investigation_required, "unresolved_ids": []},
+        omission_summary,
+        {"metrics": {}},
+    )
+    current_unresolved = (
+        candidate_summary["unresolved_ids"]
+        + omission_summary["critical_unresolved_ids"]
+        + family_summary["unresolved_ids"]
+    )
+    current_status = "passed" if not current_unresolved else "partial"
+    history_status = manifest.get("history_coverage_status", "not_requested")
+    aggregate = contract.aggregate_status(current_status, history_status)
+    if manifest.get("current_coverage_status") != current_status:
+        raise ValidationError("manifest current coverage status does not match artifacts")
+    if manifest.get("history_coverage_status") != history_status:
+        raise ValidationError("manifest history coverage status does not match artifacts")
+    if manifest.get("aggregate_status") != aggregate:
+        raise ValidationError("manifest aggregate status does not match artifacts")
+    coverage = {
+        "schema_version": contract.V2_SCHEMA_VERSION,
+        "current_coverage_status": current_status,
+        "history_coverage_status": history_status,
+        "aggregate_status": aggregate,
+        "metrics": metrics,
+    }
+    return {
+        "status": aggregate,
+        "errors": [],
+        "coverage": coverage,
+        "canonical_revision_sha256": manifest.get("canonical_revision_sha256"),
+        "calculated_canonical_sha256": manifest.get("canonical_revision_sha256"),
+        "node_count": len(node_ids),
+        "relationship_count": len(read_jsonl(root / "relationships.jsonl")),
+        "evidence_count": len(evidence),
+    }
+
+
+def validate_revision_v1(root: Path) -> dict[str, Any]:
     manifest = read_json(root / "manifest.json")
     snapshot = manifest.get("repository_snapshot", {})
     snapshot_id = snapshot.get("snapshot_id")
@@ -1107,6 +1446,14 @@ def validate_revision(revision_dir: Path | str) -> dict[str, Any]:
         "relationship_count": len(relationships),
         "evidence_count": len(evidence),
     }
+
+
+def validate_revision(revision_dir: Path | str) -> dict[str, Any]:
+    root = Path(revision_dir)
+    manifest = read_json(root / "manifest.json")
+    if manifest.get("schema_version") == contract.V2_SCHEMA_VERSION:
+        return validate_revision_v2(root)
+    return validate_revision_v1(root)
 
 
 def _text_values(value: Any) -> list[str]:

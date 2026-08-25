@@ -625,5 +625,118 @@ class BusinessKnowledgeGuardTests(unittest.TestCase):
         )
 
 
+class BusinessKnowledgeGuardV2Tests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp.name)
+        self.revision = self.root / "revision-v2"
+        shutil.copytree(
+            SKILL_DIR / "tests" / "fixtures" / "sample-revision-v2",
+            self.revision,
+        )
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def read_v2_json(self, name):
+        return json.loads((self.revision / name).read_text(encoding="utf-8"))
+
+    def write_v2_json(self, name, value):
+        (self.revision / name).write_text(
+            json.dumps(value, ensure_ascii=False, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+
+    def read_v2_jsonl(self, name):
+        return [
+            json.loads(line)
+            for line in (self.revision / name).read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+
+    def write_v2_jsonl(self, name, values):
+        (self.revision / name).write_text(
+            "".join(json.dumps(value, ensure_ascii=False, sort_keys=True) + "\n" for value in values),
+            encoding="utf-8",
+        )
+
+    def first_v2_candidate(self):
+        return self.read_v2_jsonl("use-case-candidates.jsonl")[0]
+
+    def first_v2_signal(self):
+        return self.read_v2_jsonl("inventory.jsonl")[0]
+
+    def first_v2_family(self):
+        return self.read_v2_json("use-case-families.json")[0]
+
+    def assert_guard_error(self, message):
+        with self.assertRaisesRegex(guard.ValidationError, message):
+            guard.validate_revision(self.revision)
+
+    def assert_guard_status(self, status, *, unresolved_id):
+        manifest = self.read_v2_json("manifest.json")
+        manifest["current_coverage_status"] = status
+        manifest["aggregate_status"] = status
+        self.write_v2_json("manifest.json", manifest)
+        result = guard.validate_revision(self.revision)
+        self.assertEqual(result["status"], status)
+        self.assertIn(
+            unresolved_id,
+            result["coverage"]["metrics"]["candidate_conservation"]["unresolved_ids"],
+        )
+
+    def test_v2_rejects_signal_missing_from_candidate_or_non_candidate_disposition(self):
+        inventory = self.read_v2_jsonl("inventory.jsonl")
+        target = next(item for item in inventory if item["signal_class"] == "mutation_anchor")
+        candidates = self.read_v2_jsonl("use-case-candidates.jsonl")
+        for item in candidates:
+            item["candidate_basis_signal_ids"] = [
+                value for value in item["candidate_basis_signal_ids"] if value != target["id"]
+            ]
+        candidates = [
+            item for item in candidates if item["seed_signal_id"] != target["id"]
+        ]
+        target.pop("non_candidate_status", None)
+        self.write_v2_jsonl("inventory.jsonl", inventory)
+        self.write_v2_jsonl("use-case-candidates.jsonl", candidates)
+
+        self.assert_guard_error("unaccounted inventory signal " + target["id"])
+
+    def test_v2_rejects_unresolved_high_candidate(self):
+        candidate = self.first_v2_candidate()
+        candidate["structural_importance"] = "high"
+        candidate["candidate_status"] = "unresolved"
+        candidates = self.read_v2_jsonl("use-case-candidates.jsonl")
+        candidates[0] = candidate
+        self.write_v2_jsonl("use-case-candidates.jsonl", candidates)
+
+        self.assert_guard_status("partial", unresolved_id=candidate["id"])
+
+    def test_v2_rejects_missing_family_closure_cell(self):
+        family = self.first_v2_family()
+        family["closure_matrix"]["cancel"]["operations"] = None
+        self.write_v2_json("use-case-families.json", [family])
+
+        self.assert_guard_error(
+            "missing family closure disposition " + family["id"] + ":cancel:operations"
+        )
+
+    def test_v2_rejects_unresolved_high_omission_finding(self):
+        audit = self.read_v2_json("omission-audit.json")
+        audit["findings"].append(
+            {
+                "id": "OMIT-high",
+                "severity": "high",
+                "resolution_status": "unresolved",
+                "signal_ids": [self.first_v2_signal()["id"]],
+                "candidate_ids": [],
+                "evidence_ids": [],
+                "resolution": "reverse writer has no use case",
+            }
+        )
+        self.write_v2_json("omission-audit.json", audit)
+
+        self.assert_guard_status("partial", unresolved_id="OMIT-high")
+
 if __name__ == "__main__":
     unittest.main()
