@@ -323,7 +323,7 @@ Fingerprint resolution is deterministic:
 Resolution returns one of these mutually exclusive levels:
 
 - `exact`: the registry's original live node is connected and all stored non-empty fingerprint fields still match;
-- `stable`: the registry's original live node is connected, passes the hard-reject rules, and meets the acceptable score, but one or more soft fields (`role`, accessible name, text prefix, or ordinal) changed;
+- `stable`: the registry's original live node is connected, passes the hard-reject rules, meets the acceptable score, and does not satisfy `exact`; this includes removal of a previously stored stable attribute when the remaining identity is still sufficient, as well as changes to soft fields (`role`, accessible name, text prefix, or ordinal);
 - `reidentified`: the original node is missing/disconnected and exactly one replacement passes the score and margin rules;
 - error: no safe unique match exists.
 
@@ -418,6 +418,7 @@ Phase 2 coverage includes:
 - the 1,000-record LRU bound evicts old refs, detached nodes are not kept alive when `WeakRef` is available, and cumulative `find` calls cannot grow the registry without bound;
 - CSS and semantic find return match counts and refs;
 - refs resolve as exact, stable, or uniquely reidentified;
+- a connected original node that loses a stored stable attribute but retains sufficient remaining identity resolves uniquely as `stable`;
 - cross-tab and cross-generation ref use fails closed, while same-document refs survive a worker restart;
 - ambiguous selectors and semantic locators fail without acting;
 - ref, CSS, and semantic click/fill return their specified structured match envelopes, including integer `ref`, `generation`, echoed normalized target, and locator `match_level: located`;
