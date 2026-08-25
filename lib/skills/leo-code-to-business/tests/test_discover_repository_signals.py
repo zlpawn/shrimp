@@ -10,6 +10,7 @@ sys.path.insert(0, str(SCRIPTS_DIR))
 
 from discovery import core
 import discover_repository_signals
+import repository_snapshot
 
 
 class FakeAdapter:
@@ -66,6 +67,7 @@ class DiscoverRepositorySignalsTests(unittest.TestCase):
                 "src/A.java": {"sha256": "source", "size": 25},
             },
         }
+        self.fixtures = Path(__file__).resolve().parent / "fixtures"
 
     def tearDown(self):
         self.temp.cleanup()
@@ -158,6 +160,61 @@ class DiscoverRepositorySignalsTests(unittest.TestCase):
                 "discovery-summary.json",
             },
         )
+
+    def test_java_adapter_discovers_routes_writes_states_effects_events_and_repair(self):
+        repo = self.fixtures / "multi-signal-java-repo"
+        captured = repository_snapshot.capture_snapshot(repo)
+
+        result = discover_repository_signals.run_discovery(repo, captured)
+        kinds = {item["kind"] for item in result["inventory"]}
+
+        self.assertTrue({
+            "http_entry",
+            "persistence_write",
+            "state_write",
+            "external_call",
+            "event_producer",
+            "event_consumer",
+            "scheduled_job",
+            "repair_entry",
+        }.issubset(kinds), kinds)
+        self.assertEqual(
+            result["summary"]["language_adapter_coverage"]["java"],
+            "covered",
+        )
+
+    def test_java_event_listener_is_not_dropped_from_observation(self):
+        repo = self.fixtures / "multi-signal-java-repo"
+        result = discover_repository_signals.run_discovery(
+            repo,
+            repository_snapshot.capture_snapshot(repo),
+        )
+        listener = next(
+            item for item in result["inventory"] if item["kind"] == "event_consumer"
+        )
+        observation = next(
+            item
+            for item in result["observations"]
+            if item["id"] == listener["discovered_by"][0]
+        )
+
+        self.assertIn(listener["id"], observation["discovered_signal_ids"])
+
+    def test_java_payment_state_and_repair_signals_are_high_importance(self):
+        repo = self.fixtures / "multi-signal-java-repo"
+        result = discover_repository_signals.run_discovery(
+            repo,
+            repository_snapshot.capture_snapshot(repo),
+        )
+        important = {
+            item["kind"]: item["structural_importance"]
+            for item in result["inventory"]
+            if item["kind"] in {"external_call", "state_write", "repair_entry"}
+        }
+
+        self.assertEqual(important["external_call"], "high")
+        self.assertEqual(important["state_write"], "high")
+        self.assertEqual(important["repair_entry"], "high")
 
 
 if __name__ == "__main__":

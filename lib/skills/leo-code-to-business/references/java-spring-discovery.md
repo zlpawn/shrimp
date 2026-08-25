@@ -55,3 +55,19 @@ runtime-created routes become explicit limitations when unresolved.
 ## Gate
 
 Framework component discovery is inventory, not business meaning.
+
+## Deterministic Adapter Coverage
+
+The `java-spring` adapter emits investigation candidates for:
+
+- class- and method-level Spring MVC mappings;
+- Spring events and Kafka, Rabbit, or RocketMQ listeners;
+- scheduled jobs plus separately visible repair, retry, reconciliation, and compensation entries;
+- repository, mapper, DAO, annotation SQL, XML mapper, and SQL-file writes;
+- status setters and update-wrapper state writes;
+- Feign mappings, client/gateway/SDK invocations, and payment/refund calls;
+- application-event and producer calls.
+
+These are structural signals, not confirmed use cases. Custom composed annotations, AOP-only
+behavior, reflection, runtime-selected beans, dynamic SQL, and generated source are recorded as
+unsupported constructs or investigation limits until current runtime evidence resolves them.
