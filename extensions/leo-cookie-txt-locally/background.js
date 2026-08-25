@@ -35,7 +35,6 @@ import {
 } from "./page-drive.mjs";
 import { createCdpSessionManager } from "./cdp-session.mjs";
 import { normalizeTarget } from "./element-target.mjs";
-import { clickTarget, fillTarget } from "./interaction.mjs";
 const DEFAULT_BRIDGE_URL = "http://127.0.0.1:19527";
 const DEFAULT_GATEWAY_URL = "http://127.0.0.1:8788";
 const HEARTBEAT_INTERVAL_MS = 25_000;
@@ -251,46 +250,18 @@ async function executeDocumentTargetTask(type, params = {}) {
   const res = await chrome.scripting.executeScript({
     target: { tabId },
     world: "ISOLATED",
-    func: (mode, normalizedTarget, resourceUrl, value) => {
-      const script = document.createElement("script");
-      script.type = "module";
-      script.src = resourceUrl;
-      script.dataset.leoLanternMode = mode;
-      if (normalizedTarget) script.dataset.leoLanternTarget = JSON.stringify(normalizedTarget);
-      if (value !== null) script.dataset.leoLanternValue = JSON.stringify(value);
-      const promise = new Promise((resolve, reject) => {
-        script.addEventListener("load", () => {
-          try {
-            const api = window.__leoLanternElementTargets;
-            if (!api) throw new Error("Lantern target module failed to initialize");
-            const registry = api.ensureDocumentRegistry(window);
-            const normalizedTarget = script.dataset.leoLanternTarget
-              ? JSON.parse(script.dataset.leoLanternTarget)
-              : null;
-            const value = script.dataset.leoLanternValue
-              ? JSON.parse(script.dataset.leoLanternValue)
-              : null;
-            const result = mode === "state"
-              ? api.collectState(document, registry)
-              : mode === "find"
-                ? api.findTargetSnapshot(document, registry, normalizedTarget)
-                : mode === "click"
-                  ? api.clickTarget(document, registry, normalizedTarget)
-                  : api.fillTarget(document, registry, normalizedTarget, value);
-            resolve(result);
-          } catch (error) {
-            reject(error);
-          }
-        });
-        script.addEventListener("error", () => reject(new Error("Failed to load Lantern target module")));
-      });
-      document.documentElement.appendChild(script);
-      return promise.finally(() => script.remove());
+    func: async (mode, normalizedTarget, value) => {
+      const api = await import(chrome.runtime.getURL("/element-target.mjs"));
+      const interaction = await import(chrome.runtime.getURL("/interaction.mjs"));
+      const registry = api.ensureDocumentRegistry(globalThis);
+      if (mode === "state") return api.collectState(document, registry);
+      if (mode === "find") return api.findTargetSnapshot(document, registry, normalizedTarget);
+      if (mode === "click") return interaction.clickTarget(document, registry, normalizedTarget);
+      return interaction.fillTarget(document, registry, normalizedTarget, value);
     },
     args: [
       type === "dom.state" ? "state" : type === "dom.find" ? "find" : type === "dom.click" ? "click" : "fill",
       target,
-      chrome.runtime.getURL("/element-target.mjs"),
       fillValue,
     ],
   });

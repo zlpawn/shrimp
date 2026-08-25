@@ -346,6 +346,14 @@ test("fingerprint refs resolve exact stable and uniquely reidentified nodes", ()
   assert.equal(stable.matchLevel, "stable");
   assert.equal(stable.element, exact.element);
 
+  const softChanged = new FakeElement("button", { id: "login", name: "login", "data-testid": "login", role: "link" });
+  softChanged.textContent = "Sign in";
+  const softDocument = fixtureDocument([softChanged]);
+  const softRegistry = ensureDocumentRegistry({}, { generation: "gen-1" });
+  const soft = registeredButton(softRegistry);
+  soft.element.attributes.set("role", "link");
+  assert.equal(resolveRef(softDocument, softRegistry, soft.target).matchLevel, "stable");
+
   exact.element.parentNode = null;
   exact.element.isConnected = false;
   const replacement = new FakeElement("button", { id: "login", name: "login", "data-testid": "login" });

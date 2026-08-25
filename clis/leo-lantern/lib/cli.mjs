@@ -48,7 +48,15 @@ const PARAM_ALIASES = new Map([
 export function normalizeCliParams(params = {}) {
   const normalized = {};
   for (const [key, value] of Object.entries(params)) {
-    normalized[PARAM_ALIASES.get(key) || key] = value;
+    let normalizedValue = value;
+    if (key === "target") {
+      try {
+        normalizedValue = typeof value === "string" ? JSON.parse(value) : value;
+      } catch {
+        throw new Error("--target must be a JSON object");
+      }
+    }
+    normalized[PARAM_ALIASES.get(key) || key] = normalizedValue;
   }
   return normalized;
 }

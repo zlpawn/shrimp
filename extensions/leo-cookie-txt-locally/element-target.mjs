@@ -198,6 +198,10 @@ function allCompatibleFieldsMatch(stored, current) {
     (!stored.testId || stored.testId === current.testId) &&
     (!stored.name || stored.name === current.name) &&
     (!stored.href || stored.href === current.href)
+    && stored.role === current.role
+    && stored.accessibleName === current.accessibleName
+    && stored.textPrefix === current.textPrefix
+    && stored.ordinal === current.ordinal
   );
 }
 
@@ -301,16 +305,6 @@ export function findTargetSnapshot(document, registry, target) {
   };
 }
 
-globalThis.__leoLanternElementTargets = {
-  ensureDocumentRegistry,
-  collectState,
-  findTargetSnapshot,
-  findTargets,
-  fingerprintElement,
-  resolveRef,
-  isVisible,
-  isDisabled,
-};
 
 export function collectState(document, registry) {
   const candidates = semanticCandidates(document).filter(isVisible).slice(0, STATE_LIMIT);
