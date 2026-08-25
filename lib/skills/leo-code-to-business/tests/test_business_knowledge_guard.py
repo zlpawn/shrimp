@@ -738,5 +738,56 @@ class BusinessKnowledgeGuardV2Tests(unittest.TestCase):
 
         self.assert_guard_status("partial", unresolved_id="OMIT-high")
 
+    def test_v2_canonical_hash_ignores_coverage_review_and_projection_changes(self):
+        before = guard.canonical_revision_sha256_v2(self.revision)
+        self.write_v2_json("coverage.json", {"changed": True})
+        self.write_v2_json("semantic-review.json", {"changed": True})
+        (self.revision / "ai-context.md").write_text("changed", encoding="utf-8")
+        (self.revision / "site-view-model.json").write_text("changed", encoding="utf-8")
+        (self.revision / "site" / "index.html").write_text("changed", encoding="utf-8")
+
+        after = guard.canonical_revision_sha256_v2(self.revision)
+
+        self.assertEqual(before, after)
+
+    def test_v2_canonical_hash_changes_for_semantic_history_fact(self):
+        before = guard.canonical_revision_sha256_v2(self.revision)
+        facts = self.read_v2_jsonl("git-change-facts.jsonl")
+        facts[0]["after_summary"] = "different verified behavior"
+        self.write_v2_jsonl("git-change-facts.jsonl", facts)
+
+        self.assertNotEqual(before, guard.canonical_revision_sha256_v2(self.revision))
+
+    def test_partial_history_does_not_stale_current_claims(self):
+        manifest = self.read_v2_json("manifest.json")
+        manifest["history_coverage_status"] = "partial"
+        manifest["aggregate_status"] = "partial"
+        manifest["coverage_status"] = "partial"
+        self.write_v2_json("manifest.json", manifest)
+        coverage = self.read_v2_json("coverage.json")
+        coverage["history_coverage_status"] = "partial"
+        coverage["aggregate_status"] = "partial"
+        self.write_v2_json("coverage.json", coverage)
+
+        result = guard.validate_revision(self.revision)
+
+        self.assertEqual(result["coverage"]["current_coverage_status"], "passed")
+        self.assertEqual(result["coverage"]["history_coverage_status"], "partial")
+        self.assertEqual(result["coverage"]["aggregate_status"], "partial")
+
+    def test_v2_publication_pointer_preserves_three_statuses(self):
+        workspace = self.root / "workspace"
+        manifest = self.read_v2_json("manifest.json")
+        manifest["canonical_revision_sha256"] = guard.canonical_revision_sha256_v2(self.revision)
+        self.write_v2_json("manifest.json", manifest)
+
+        current = guard.publish_revision(self.revision, workspace)
+
+        self.assertEqual(current["schema_version"], "2.0")
+        self.assertEqual(current["current_coverage_status"], "passed")
+        self.assertEqual(current["history_coverage_status"], "passed")
+        self.assertEqual(current["aggregate_status"], "passed")
+        self.assertEqual(current["coverage_status"], "passed")
+
 if __name__ == "__main__":
     unittest.main()

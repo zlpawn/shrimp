@@ -964,6 +964,30 @@ def canonical_revision_sha256(revision_dir: Path) -> str:
     return canonical_sha256(payload)
 
 
+def semantic_change_impact_payload(change_impact: dict[str, Any]) -> dict[str, Any]:
+    if change_impact.get("schema_version") == contract.V2_SCHEMA_VERSION:
+        payload = change_impact.get("semantic_inputs")
+        if not isinstance(payload, dict):
+            raise ValidationError("v2 change-impact semantic_inputs must be an object")
+        return payload
+    return change_impact
+
+
+def canonical_revision_sha256_v2(revision_dir: Path) -> str:
+    payload: dict[str, Any] = {}
+    for name, kind in contract.V2_CANONICAL_FILE_KINDS.items():
+        path = revision_dir / name
+        if not path.is_file():
+            raise ValidationError(f"v2 semantic artifact is missing: {name}")
+        if kind == "jsonl":
+            payload[name] = read_jsonl(path)
+        elif kind == "semantic_json":
+            payload[name] = semantic_change_impact_payload(read_json(path))
+        else:
+            payload[name] = read_json(path)
+    return contract.canonical_sha256(payload, sort_records=True)
+
+
 def validate_semantic_review(
     review: dict[str, Any],
     canonical_hash: str,
@@ -1766,7 +1790,9 @@ def publish_revision(
     shutil.copytree(staging, temporary)
     os.replace(temporary, target)
     current = {
-        "schema_version": SCHEMA_VERSION,
+        "schema_version": read_json(target / "manifest.json").get(
+            "schema_version", contract.V1_SCHEMA_VERSION
+        ),
         "revision_id": revision_id,
         "status": validation["status"],
         "snapshot_sha256": read_json(target / "manifest.json")["repository_snapshot"].get(
@@ -1776,6 +1802,21 @@ def publish_revision(
         "ai_path": f"revisions/{revision_id}/ai-context.md",
         "html_path": f"revisions/{revision_id}/site/index.html",
     }
+    if current["schema_version"] == contract.V2_SCHEMA_VERSION:
+        current.update(
+            {
+                "current_coverage_status": validation["coverage"][
+                    "current_coverage_status"
+                ],
+                "history_coverage_status": validation["coverage"][
+                    "history_coverage_status"
+                ],
+                "aggregate_status": validation["coverage"]["aggregate_status"],
+                "coverage_status": validation["coverage"]["aggregate_status"],
+            }
+        )
+    else:
+        current["coverage_status"] = validation["status"]
     write_json_atomic(workspace / "current.json", current)
     return current
 
