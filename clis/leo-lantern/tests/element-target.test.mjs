@@ -4,7 +4,9 @@ import {
   collectState,
   ensureDocumentRegistry,
   findTargets,
+  fingerprintElement,
   normalizeTarget,
+  resolveRef,
 } from "../../../extensions/leo-cookie-txt-locally/element-target.mjs";
 
 class FakeElement {
@@ -27,6 +29,10 @@ class FakeElement {
 
   getBoundingClientRect() {
     return { width: 100, height: 30 };
+  }
+
+  get href() {
+    return this.attributes.get("href") || "";
   }
 }
 
@@ -280,4 +286,107 @@ test("a missing registry creates a new generation and fails old refs closed", ()
   const first = ensureDocumentRegistry({}, { generation: "gen-1" });
   const second = ensureDocumentRegistry({}, {});
   assert.notEqual(first.generation, second.generation);
+});
+
+function registeredButton(registry, id = "login", name = "Sign in", generation = "gen-1") {
+  const element = new FakeElement("button", { id, name: id, "data-testid": id });
+  element.textContent = name;
+  const document = fixtureDocument([element]);
+  const ref = collectState(document, registry).elements[0].ref;
+  return { element, document, ref, target: { kind: "ref", ref, generation } };
+}
+
+test("fingerprint refs resolve exact stable and uniquely reidentified nodes", () => {
+  const registry = ensureDocumentRegistry({}, { generation: "gen-1" });
+  const exact = registeredButton(registry);
+  assert.deepEqual(resolveRef(exact.document, registry, exact.target).matchLevel, "exact");
+
+  exact.element.attributes.delete("id");
+  exact.element.attributes.delete("name");
+  const stable = resolveRef(exact.document, registry, exact.target);
+  assert.equal(stable.matchLevel, "stable");
+  assert.equal(stable.element, exact.element);
+
+  exact.element.parentNode = null;
+  exact.element.isConnected = false;
+  const replacement = new FakeElement("button", { id: "login", name: "login", "data-testid": "login" });
+  replacement.textContent = "Sign in";
+  exact.document.body.children.push(replacement);
+  replacement.parentNode = exact.document.body;
+  const reidentified = resolveRef(exact.document, registry, exact.target);
+  assert.equal(reidentified.matchLevel, "reidentified");
+  assert.equal(reidentified.element, replacement);
+});
+
+test("fingerprint resolution fails closed for stale generations and evicted refs", () => {
+  const registry = ensureDocumentRegistry({}, { generation: "gen-1", capacity: 1 });
+  const first = registeredButton(registry);
+  assert.throws(
+    () => resolveRef(first.document, registry, { ...first.target, generation: "old" }),
+    (err) => err.code === "stale_ref_generation"
+  );
+
+  const replacement = new FakeElement("button", { id: "next" });
+  const second = new FakeElement("button", { id: "second" });
+  first.document.body.children.push(replacement, second);
+  replacement.parentNode = first.document.body;
+  second.parentNode = first.document.body;
+  collectState(first.document, registry);
+  assert.throws(
+    () => resolveRef(first.document, registry, first.target),
+    (err) => err.code === "stale_ref_node"
+  );
+});
+
+test("fingerprints reject hard conflicts and weak or ambiguous candidates", () => {
+  const registry = ensureDocumentRegistry({}, { generation: "gen-1" });
+  const original = registeredButton(registry);
+  original.element.parentNode = null;
+  original.element.isConnected = false;
+
+  const hardConflict = new FakeElement("a", { id: "login", href: "/x" });
+  const weak = new FakeElement("button");
+  const firstTwin = new FakeElement("button", { id: "twin", role: "button" });
+  const secondTwin = new FakeElement("button", { id: "twin", role: "button" });
+  for (const element of [hardConflict, weak, firstTwin, secondTwin]) {
+    original.document.body.children.push(element);
+    element.parentNode = original.document.body;
+  }
+  hardConflict.attributes.set("id", "other");
+
+  assert.throws(
+    () => resolveRef(original.document, registry, original.target),
+    (err) => err.code === "stale_ref_node"
+  );
+
+  firstTwin.attributes.delete("id");
+  secondTwin.attributes.delete("id");
+  firstTwin.textContent = "Sign in";
+  secondTwin.textContent = "Sign in";
+  assert.throws(
+    () => resolveRef(original.document, registry, original.target),
+    (err) => err.code === "reidentification_ambiguous"
+  );
+});
+
+test("fingerprint element stores compact normalized identity fields", () => {
+  const element = new FakeElement("a", {
+    id: "link",
+    name: "link",
+    "data-testid": "link",
+    href: "/next",
+  });
+  element.textContent = "  Next   Page ";
+  const document = fixtureDocument([element]);
+  assert.deepEqual(fingerprintElement(element, document), {
+    tag: "a",
+    id: "link",
+    testId: "link",
+    name: "link",
+    href: "/next",
+    role: "link",
+    accessibleName: "Next Page",
+    textPrefix: "Next Page",
+    ordinal: 0,
+  });
 });

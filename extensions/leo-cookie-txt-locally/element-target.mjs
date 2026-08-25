@@ -175,10 +175,111 @@ function refFor(registry, element, fingerprintFactory) {
   return touchRegistry(registry, ref, fingerprintFactory(element), element);
 }
 
+export function fingerprintElement(element, document) {
+  const tag = element.tagName.toLowerCase();
+  const ordinal = semanticCandidates(document).findIndex((candidate) => candidate === element);
+  const values = semanticValues(element, document);
+  return {
+    tag,
+    id: normalizeText(element.id),
+    testId: values.testId,
+    name: normalizeText(element.getAttribute?.("name") || ""),
+    href: tag === "a" ? normalizeText(element.href) : "",
+    role: values.role,
+    accessibleName: values.name,
+    textPrefix: values.text.slice(0, 80),
+    ordinal: ordinal >= 0 ? ordinal : 0,
+  };
+}
+
+function allCompatibleFieldsMatch(stored, current) {
+  return (
+    (!stored.id || stored.id === current.id) &&
+    (!stored.testId || stored.testId === current.testId) &&
+    (!stored.name || stored.name === current.name) &&
+    (!stored.href || stored.href === current.href)
+  );
+}
+
+function hardRejects(stored, current) {
+  return (
+    stored.tag !== current.tag ||
+    Boolean(stored.id && current.id && stored.id !== current.id) ||
+    Boolean(stored.testId && current.testId && stored.testId !== current.testId) ||
+    Boolean(stored.name && current.name && stored.name !== current.name) ||
+    Boolean(stored.href && current.href && stored.href !== current.href)
+  );
+}
+
+function scoreCandidate(stored, current) {
+  let score = 0;
+  if (stored.id && stored.id === current.id) score += 100;
+  if (stored.testId && stored.testId === current.testId) score += 80;
+  if (stored.name && stored.name === current.name) score += 50;
+  if (stored.href && stored.href === current.href) score += 40;
+  if (stored.role && stored.role === current.role) score += 20;
+  if (stored.accessibleName && stored.accessibleName === current.accessibleName) score += 20;
+  if (stored.textPrefix && stored.textPrefix === current.textPrefix) score += 10;
+  if (stored.ordinal === current.ordinal) score += 5;
+  return score;
+}
+
+function isAcceptable(score, stored, current) {
+  const roleAndName = stored.role && stored.accessibleName && stored.role === current.role && stored.accessibleName === current.accessibleName;
+  return score >= 40 || (score >= 30 && roleAndName);
+}
+
+export function resolveRef(document, registry, target) {
+  if (target.generation !== registry.generation) {
+    throw lanternError("stale_ref_generation", "Target ref belongs to a different document generation");
+  }
+  const record = registry.refs.get(target.ref);
+  if (!record) throw lanternError("stale_ref_node", "Target ref is no longer registered");
+  registry.refs.delete(target.ref);
+  registry.refs.set(target.ref, record);
+  const original = record.weak?.deref?.() || record.node || null;
+  const candidates = semanticCandidates(document).filter((element) => element.isConnected !== false);
+  if (original?.isConnected === true) {
+    const current = fingerprintElement(original, document);
+    if (allCompatibleFieldsMatch(record.fingerprint, current)) {
+      return { element: original, ref: target.ref, generation: registry.generation, matchLevel: "exact" };
+    }
+    if (!hardRejects(record.fingerprint, current)) {
+      const score = scoreCandidate(record.fingerprint, current);
+      if (isAcceptable(score, record.fingerprint, current)) {
+        return { element: original, ref: target.ref, generation: registry.generation, matchLevel: "stable" };
+      }
+    }
+  }
+
+  const scored = candidates
+    .filter((element) => element !== original)
+    .map((element) => ({ element, fingerprint: fingerprintElement(element, document) }))
+    .filter(({ fingerprint }) => !hardRejects(record.fingerprint, fingerprint))
+    .map(({ element, fingerprint }) => ({
+      element,
+      fingerprint,
+      score: scoreCandidate(record.fingerprint, fingerprint),
+    }))
+    .filter(({ score, fingerprint }) => isAcceptable(score, record.fingerprint, fingerprint));
+  if (!scored.length) throw lanternError("stale_ref_node", "Target ref cannot be safely restored");
+  scored.sort((a, b) => b.score - a.score);
+  if (scored.length > 1 && scored[0].score - scored[1].score < 10) {
+    throw lanternError("reidentification_ambiguous", "Target ref matches multiple replacements");
+  }
+  const replacement = scored[0].element;
+  if (original) registry.reverse.delete(original);
+  registry.reverse.set(replacement, target.ref);
+  record.fingerprint = fingerprintElement(replacement, document);
+  record.weak = WeakRef ? new WeakRef(replacement) : undefined;
+  record.node = WeakRef ? undefined : replacement;
+  return { element: replacement, ref: target.ref, generation: registry.generation, matchLevel: "reidentified" };
+}
+
 export function collectState(document, registry) {
   const candidates = semanticCandidates(document).filter(isVisible).slice(0, STATE_LIMIT);
   const elements = candidates.map((element) => {
-    const ref = refFor(registry, element, () => semanticValues(element, document));
+    const ref = refFor(registry, element, () => fingerprintElement(element, document));
     const values = semanticValues(element, document);
     return {
       ref,
