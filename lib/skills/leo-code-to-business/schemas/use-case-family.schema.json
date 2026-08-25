@@ -8,6 +8,9 @@
   "properties": {
     "shared_goal": {"type": "string"},
     "differentiating_dimensions": {"type": "array"},
-    "known_omitted_candidates": {"type": "array"}
+    "known_omitted_candidates": {"type": "array"},
+    "stable_key": {"type": "string"},
+    "applicability_matrix": {"type": "array"},
+    "reverse_writer_investigation_ids": {"type": "array", "items": {"type": "string"}}
   }
 }

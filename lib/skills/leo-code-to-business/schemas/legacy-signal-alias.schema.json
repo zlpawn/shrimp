@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"legacy-signal-alias.schema.json","type":"object","additionalProperties":false,"required":["legacy_inventory_id","v2_signal_id","match_basis"],"properties":{"legacy_inventory_id":{"type":"string"},"v2_signal_id":{"type":"string"},"match_basis":{"const":"canonical_locator_and_kind"}}}

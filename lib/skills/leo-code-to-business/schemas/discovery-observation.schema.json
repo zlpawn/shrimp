@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "discovery-observation.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "adapter_id", "adapter_version", "snapshot_id", "detected_languages", "claimed_scopes", "inspected_file_count", "supported_signal_kinds", "discovered_signal_ids", "rejected_findings", "unsupported_constructs", "truncated", "status", "diagnostics"],
+  "properties": {
+    "id": {"type": "string"}, "adapter_id": {"type": "string"}, "adapter_version": {"type": "string"}, "snapshot_id": {"type": "string"},
+    "detected_languages": {"type": "array", "items": {"type": "string"}}, "claimed_scopes": {"type": "array", "items": {"type": "string"}},
+    "inspected_file_count": {"type": "integer", "minimum": 0}, "supported_signal_kinds": {"type": "array", "items": {"type": "string"}},
+    "discovered_signal_ids": {"type": "array", "items": {"type": "string"}},
+    "rejected_findings": {"type": "array", "items": {"type": "object", "required": ["locator", "reason"]}},
+    "unsupported_constructs": {"type": "array", "items": {"type": "string"}}, "truncated": {"type": "boolean"},
+    "status": {"enum": ["completed", "partial", "failed"]}, "diagnostics": {"type": "array", "items": {"type": "string"}}
+  }
+}

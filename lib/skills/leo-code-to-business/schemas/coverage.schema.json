@@ -2,15 +2,33 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "coverage.schema.json",
   "title": "Business Knowledge Coverage",
-  "type": "object",
-  "required": ["entry_classification", "business_entry_mapping", "required_investigations", "rule_evidence", "anchor_mapping", "scenario_coverage", "projection_integrity"],
-  "properties": {
-    "entry_classification": {"type": "number", "minimum": 0, "maximum": 1},
-    "business_entry_mapping": {"type": "number", "minimum": 0, "maximum": 1},
-    "required_investigations": {"type": "number", "minimum": 0, "maximum": 1},
-    "rule_evidence": {"type": "number", "minimum": 0, "maximum": 1},
-    "anchor_mapping": {"type": "number", "minimum": 0, "maximum": 1},
-    "scenario_coverage": {"type": "number", "minimum": 0, "maximum": 1},
-    "projection_integrity": {"type": "number", "minimum": 0, "maximum": 1}
-  }
+  "oneOf": [
+    {"type": "object", "required": ["entry_classification", "business_entry_mapping", "required_investigations", "rule_evidence", "anchor_mapping", "scenario_coverage", "projection_integrity"]},
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "current_coverage_status", "history_coverage_status", "aggregate_status", "metrics"],
+      "properties": {
+        "schema_version": {"const": "2.0"},
+        "current_coverage_status": {"enum": ["passed", "partial", "blocked"]},
+        "history_coverage_status": {"enum": ["passed", "partial", "blocked", "not_requested"]},
+        "aggregate_status": {"enum": ["passed", "partial", "blocked"]},
+        "metrics": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["numerator", "denominator", "ratio", "unresolved_ids", "excluded_ids"],
+            "properties": {
+              "numerator": {"type": "integer", "minimum": 0},
+              "denominator": {"type": "integer", "minimum": 0},
+              "ratio": {"type": "number", "minimum": 0, "maximum": 1},
+              "unresolved_ids": {"type": "array", "items": {"type": "string"}},
+              "excluded_ids": {"type": "array", "items": {"type": "string"}}
+            }
+          }
+        }
+      }
+    }
+  ]
 }

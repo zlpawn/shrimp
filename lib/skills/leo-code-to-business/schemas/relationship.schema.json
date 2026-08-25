@@ -8,7 +8,7 @@
   "properties": {
     "id": {"type": "string", "minLength": 1},
     "from_id": {"type": "string", "minLength": 1},
-    "type": {"enum": ["contains", "initiates", "participates_in", "variant_of", "uses_rule", "reads", "writes", "transitions", "emits", "consumes", "calls_external", "fails_to", "compensates", "has_unknown", "conflicts_with", "evidenced_by"]},
+    "type": {"enum": ["contains", "initiates", "participates_in", "variant_of", "uses_rule", "reads", "writes", "transitions", "emits", "consumes", "calls_external", "fails_to", "compensates", "has_unknown", "conflicts_with", "evidenced_by", "derived_from_candidate", "evolved_by", "precedes", "succeeds", "possible_predecessor", "possible_successor", "declares", "observes_change", "affects"]},
     "to_id": {"type": "string", "minLength": 1},
     "claim_status": {"enum": ["confirmed", "inferred", "document_claim", "historical", "conflicted", "unknown"]},
     "lifecycle_status": {"enum": ["active", "conditional", "stale", "invalidated", "expired"]},

@@ -1,0 +1,22 @@
+{
+  "schema_version": "2.0",
+  "run_id": "RUN-v2-sample",
+  "mode": "build",
+  "status": "passed",
+  "repository_snapshot": {
+    "snapshot_id": "SNAP-sample",
+    "snapshot_sha256": "snapshot-sample",
+    "canonical_root": "/tmp/sample-repo",
+    "repository_lineage_id": "REPO-sample-lineage",
+    "git": {"branch": "main", "head_sha": "abc123", "root_commit_shas": ["root123"]},
+    "working_tree_dirty": false
+  },
+  "repository_lineage_id": "REPO-sample-lineage",
+  "canonical_revision_sha256": null,
+  "projection_hashes": {},
+  "provider_observations": [{"adapter_id": "java-spring", "adapter_version": "2.0", "status": "completed"}],
+  "current_coverage_status": "passed",
+  "history_coverage_status": "passed",
+  "aggregate_status": "passed",
+  "coverage_status": "passed"
+}

@@ -1,0 +1,16 @@
+{
+  "view_schema_version": "2.0",
+  "canonical_revision_sha256": null,
+  "overview": {"title": "施工整改工单业务知识", "status": "passed"},
+  "capability_tree": [{"id": "CAP-work-order", "title": "工单管理"}],
+  "use_case_catalog": [{"id": "UC-create-work-order", "title": "创建施工整改工单"}],
+  "use_case_details": [{"id": "UC-create-work-order", "sections": []}],
+  "workflow_views": [{"id": "WF-create-work-order", "title": "工单创建流程"}],
+  "state_views": [],
+  "rule_catalog": [{"id": "BR-create-work-order-type", "title": "整改工单使用固定类型"}],
+  "effect_catalog": [{"id": "UC-create-work-order#external_effects", "title": "创建外部待办工单"}],
+  "actor_permission_views": [{"id": "ACT-inspector", "permission_state": "searched_not_found"}],
+  "evolution_views": [{"id": "EVOL-work-order-type", "current_effectiveness": "active"}],
+  "gap_views": [{"id": "UNK-work-order-permission", "empty_state": "searched_not_found"}],
+  "coverage_dashboard": {"current": "passed", "history": "passed", "aggregate": "passed"}
+}

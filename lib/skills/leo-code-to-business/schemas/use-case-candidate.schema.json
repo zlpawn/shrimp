@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "use-case-candidate.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "seed_signal_id", "semantic_key", "title", "candidate_basis_signal_ids", "candidate_status", "structural_importance", "business_priority", "resolution_reason", "investigation_ids", "snapshot_id"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^UCC-"}, "seed_signal_id": {"type": "string", "pattern": "^SIG-"}, "semantic_key": {"type": "string"}, "title": {"type": "string"},
+    "candidate_basis_signal_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "candidate_status": {"enum": ["confirmed", "variant", "supporting_behavior", "duplicate", "excluded", "unresolved"]},
+    "resolved_use_case_id": {"type": ["string", "null"]}, "resolved_family_id": {"type": ["string", "null"]}, "duplicate_of_candidate_id": {"type": ["string", "null"]},
+    "variant_of_candidate_id": {"type": ["string", "null"]}, "supports_candidate_id": {"type": ["string", "null"]},
+    "structural_importance": {"enum": ["critical", "high", "normal", "low"]}, "business_priority": {"enum": ["critical", "high", "normal", "low", "unknown"]},
+    "resolution_reason": {"type": "string"}, "investigation_ids": {"type": "array", "items": {"type": "string"}}, "snapshot_id": {"type": "string"}
+  }
+}

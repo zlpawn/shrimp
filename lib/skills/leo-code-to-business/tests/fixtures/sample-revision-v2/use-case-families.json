@@ -1,0 +1,26 @@
+[
+  {
+    "id": "UCF-work-order",
+    "title": "创建整改工单",
+    "summary": "通过不同业务入口创建施工整改待办。",
+    "claim_status": "confirmed",
+    "lifecycle_status": "active",
+    "confidence": "E3",
+    "source_snapshot": "SNAP-sample",
+    "semantic_revision": 1,
+    "created_at": "2026-08-14T00:00:00Z",
+    "updated_at": "2026-08-14T00:00:00Z",
+    "shared_goal": "将施工问题转为可跟踪的整改任务",
+    "differentiating_dimensions": [
+      "entry channel"
+    ],
+    "known_omitted_candidates": []
+    ,"stable_key": "work-order-create"
+    ,"reverse_writer_investigation_ids": ["INV-backward", "INV-alternate"]
+    ,"applicability_matrix": [
+      {"action": "create", "channel": "web", "status": "confirmed", "reason": "POST /work-orders is verified in current source."},
+      {"action": "repair", "channel": "operations", "status": "searched_not_found", "reason": "Backward and alternate-entry searches found no repair entry."},
+      {"action": "cancel", "channel": "web", "status": "not_applicable", "reason": "This family models creation only."}
+    ]
+  }
+]

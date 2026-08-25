@@ -1,0 +1,8 @@
+{"claim_status":"confirmed","from_id":"CAP-work-order","id":"REL-cap-use-case","lifecycle_status":"active","to_id":"UC-create-work-order","type":"contains"}
+{"claim_status":"confirmed","from_id":"ACT-inspector","id":"REL-actor-use-case","lifecycle_status":"active","to_id":"UC-create-work-order","type":"participates_in"}
+{"claim_status":"confirmed","from_id":"UC-create-work-order","id":"REL-family","lifecycle_status":"active","to_id":"UCF-work-order","type":"variant_of"}
+{"claim_status":"confirmed","from_id":"UC-create-work-order","id":"REL-rule","lifecycle_status":"active","to_id":"BR-create-work-order-type","type":"uses_rule"}
+{"claim_status":"confirmed","from_id":"UC-create-work-order","id":"REL-use-case-evidence","lifecycle_status":"active","to_id":"EV-create-work-order-source","type":"evidenced_by"}
+{"claim_status":"confirmed","from_id":"BR-create-work-order-type","id":"REL-rule-evidence","lifecycle_status":"active","to_id":"EV-create-work-order-rule","type":"evidenced_by"}
+{"claim_status":"unknown","from_id":"UC-create-work-order#permissions","id":"REL-permission-unknown","lifecycle_status":"active","to_id":"UNK-work-order-permission","type":"has_unknown"}
+{"claim_status":"confirmed","from_id":"UNK-work-order-permission","id":"REL-unknown-evidence","lifecycle_status":"active","to_id":"EV-search-permission","type":"evidenced_by"}
