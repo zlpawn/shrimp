@@ -15,6 +15,9 @@ import uuid
 from pathlib import Path
 from typing import Any, Iterable
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import business_contract as contract
+
 
 SCHEMA_VERSION = "1.0"
 CLAIM_STATUSES = {
@@ -70,16 +73,7 @@ NODE_FILES = {
     "conflicts.jsonl": "jsonl",
     "unknowns.jsonl": "jsonl",
 }
-CANONICAL_FILES = [
-    "inventory.jsonl",
-    *NODE_FILES.keys(),
-    "aliases.json",
-    "relationships.jsonl",
-    "investigations.jsonl",
-    "evidence.jsonl",
-    "coverage.json",
-    "change-impact.json",
-]
+CANONICAL_FILES = list(contract.V1_CANONICAL_FILES)
 IMPACT_BIDIRECTIONAL_RELATIONSHIPS = {
     "contains",
     "participates_in",
@@ -518,16 +512,11 @@ def review_is_stale(
 
 
 def canonical_bytes(value: Any) -> bytes:
-    return json.dumps(
-        value,
-        ensure_ascii=False,
-        sort_keys=True,
-        separators=(",", ":"),
-    ).encode("utf-8")
+    return contract.canonical_json_bytes(value)
 
 
 def canonical_sha256(value: Any) -> str:
-    return hashlib.sha256(canonical_bytes(value)).hexdigest()
+    return contract.canonical_sha256(value)
 
 
 def read_json(path: Path) -> Any:
