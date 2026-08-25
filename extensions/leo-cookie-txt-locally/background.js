@@ -1,4 +1,5 @@
 import { createMultiUrlPollLoop } from "./poll-loop.mjs";
+import { createCommandQueue } from "./command-queue.mjs";
 import { heartbeatTarget, registerTarget } from "./bridge-sync.mjs";
 import {
   assertClaimParams,
@@ -235,7 +236,7 @@ async function pollForCommand(url, waitMs, signal) {
 
 const pollLoop = createMultiUrlPollLoop({
   pollForCommand,
-  runTask: (url, cmd) => runTask(url, cmd),
+  runTask: (url, cmd) => commandQueue.submit(url, cmd),
   sleep,
   waitMs: POLL_WAIT_MS,
   offlineBackoffMs: OFFLINE_BACKOFF_MS,
@@ -243,15 +244,16 @@ const pollLoop = createMultiUrlPollLoop({
 
 async function startPollLoop() {
   const urls = await getTargetUrls();
-  pollLoop.start(urls);
+  pollLoop.reconcile(urls);
 }
 
-async function reportResult(url, taskId, ok, result, error) {
+async function reportResult(url, taskId, envelope) {
+  const { ok, result, error } = envelope;
   const payload = {
     id: taskId,
     ok,
     result,
-    error: error ? (typeof error === "string" ? error : error.message) : undefined,
+    error,
     cookies: result?.cookies || (Array.isArray(result) ? result : undefined),
     extension_id: chrome.runtime.id,
     task: result?.task !== undefined ? result.task : currentTaskSummary(),
@@ -277,13 +279,15 @@ async function reportResult(url, taskId, ok, result, error) {
   } catch {}
 }
 
-async function runTask(url, task) {
-  const taskId = task.id;
+const commandQueue = createCommandQueue({
+  execute: (task) => executeTask(task),
+  report: (url, taskId, envelope) => reportResult(url, taskId, envelope),
+});
+
+async function executeTask(task) {
   const type = task.type;
   const params = task.params || task.payload || {};
-
-  try {
-    let result = null;
+  let result = null;
 
     if (type === "cookies.export" || type === "cookies.get") {
       const domain = params.domain || "";
@@ -652,10 +656,7 @@ async function runTask(url, task) {
       throw new Error(`Unsupported task type: ${type}`);
     }
 
-    await reportResult(url, taskId, true, result, null);
-  } catch (err) {
-    await reportResult(url, taskId, false, null, err);
-  }
+  return result;
 }
 
 // Register on load/startup

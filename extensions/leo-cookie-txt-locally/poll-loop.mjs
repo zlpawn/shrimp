@@ -34,8 +34,10 @@ export function createMultiUrlPollLoop({
         }
       }
     } finally {
-      activeUrls.delete(url);
-      controllers.delete(url);
+      if (controllers.get(url) === controller) {
+        activeUrls.delete(url);
+        controllers.delete(url);
+      }
     }
   }
 
@@ -45,12 +47,26 @@ export function createMultiUrlPollLoop({
     }
   }
 
+  function stopUrl(url) {
+    activeUrls.delete(url);
+    const controller = controllers.get(url);
+    if (controller) {
+      controllers.delete(url);
+      controller.abort();
+    }
+  }
+
+  function reconcile(urls = []) {
+    const desired = new Set(urls);
+    for (const url of [...activeUrls]) {
+      if (!desired.has(url)) stopUrl(url);
+    }
+    start(desired);
+  }
+
   function stop() {
     for (const url of [...activeUrls]) {
-      activeUrls.delete(url);
-    }
-    for (const controller of controllers.values()) {
-      controller.abort();
+      stopUrl(url);
     }
   }
 
@@ -58,5 +74,5 @@ export function createMultiUrlPollLoop({
     return activeUrls.has(url);
   }
 
-  return { start, stop, isPolling };
+  return { start, stopUrl, reconcile, stop, isPolling };
 }
