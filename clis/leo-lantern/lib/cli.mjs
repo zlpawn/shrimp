@@ -1,6 +1,12 @@
 import http from "node:http";
 import fs from "node:fs/promises";
-import { DEFAULT_BRIDGE_PORT, DEFAULT_BRIDGE_HOST, COMMAND_TYPES } from "./protocol.mjs";
+import {
+  DEFAULT_BRIDGE_PORT,
+  DEFAULT_BRIDGE_HOST,
+  COMMAND_TYPES,
+  normalizeProtocolError,
+  protocolError,
+} from "./protocol.mjs";
 import { LanternServer } from "./server.mjs";
 
 const BOOLEAN_FLAGS = new Set([
@@ -21,6 +27,35 @@ const BOOLEAN_FLAGS = new Set([
   "no-exit",
   "noexit",
 ]);
+
+const PARAM_ALIASES = new Map([
+  ["full-page", "fullPage"],
+  ["fullpage", "fullPage"],
+  ["fullPage", "fullPage"],
+  ["bypass-cache", "bypassCache"],
+  ["bypasscache", "bypassCache"],
+  ["bypassCache", "bypassCache"],
+  ["same-window", "sameWindow"],
+  ["samewindow", "sameWindow"],
+  ["sameWindow", "sameWindow"],
+  ["close-group", "closeGroup"],
+  ["closegroup", "closeGroup"],
+  ["closeGroup", "closeGroup"],
+  ["timeout-ms", "timeoutMs"],
+  ["timeoutMs", "timeoutMs"],
+]);
+
+export function normalizeCliParams(params = {}) {
+  const normalized = {};
+  for (const [key, value] of Object.entries(params)) {
+    normalized[PARAM_ALIASES.get(key) || key] = value;
+  }
+  return normalized;
+}
+
+function definedParams(params) {
+  return Object.fromEntries(Object.entries(params).filter(([, value]) => value !== undefined));
+}
 
 export function parseCliArgs(args = []) {
   const command = args[0] || "help";
@@ -85,7 +120,10 @@ async function requestBridge(path, method = "GET", data = null, options = {}) {
           try {
             const parsed = body ? JSON.parse(body) : {};
             if (res.statusCode >= 400) {
-              reject(new Error(parsed.error?.message || parsed.error || `HTTP ${res.statusCode}`));
+              reject(protocolError(parsed.error || {
+                code: "bridge_unavailable",
+                message: `HTTP ${res.statusCode}`,
+              }));
             } else {
               resolve(parsed);
             }
@@ -99,9 +137,10 @@ async function requestBridge(path, method = "GET", data = null, options = {}) {
     req.on("error", (err) => {
       if (err.code === "ECONNREFUSED") {
         reject(
-          new Error(
-            `Could not connect to Leo Lantern at http://${host}:${port}. Is leo-lantern or the MCP server running?`
-          )
+          protocolError({
+            code: "bridge_unavailable",
+            message: `Could not connect to Leo Lantern at http://${host}:${port}. Is leo-lantern or the MCP server running?`,
+          })
         );
       } else {
         reject(err);
@@ -117,7 +156,12 @@ function asBool(value) {
   return value === true || value === "true" || value === "1" || value === "yes";
 }
 
+export function formatCliError(error) {
+  return { ok: false, error: normalizeProtocolError(error) };
+}
+
 export async function executeCommand(command, params = {}, positional = [], options = {}) {
+  params = normalizeCliParams(params);
   switch (command) {
     case "health": {
       return await requestBridge("/health", "GET", null, options);
@@ -133,19 +177,17 @@ export async function executeCommand(command, params = {}, positional = [], opti
     }
 
     case "start-task": {
-      const sameWindow = asBool(params["same-window"] ?? params.sameWindow);
-      const focus = asBool(params.focus);
       return await requestBridge(
         "/cmd",
         "POST",
         {
           type: COMMAND_TYPES.TASK_START,
-          params: {
+          params: definedParams({
             title: params.title || positional[0],
             color: params.color,
-            sameWindow,
-            focus,
-          },
+            sameWindow: params.sameWindow !== undefined ? asBool(params.sameWindow) : undefined,
+            focus: params.focus !== undefined ? asBool(params.focus) : undefined,
+          }),
         },
         options
       );
@@ -159,13 +201,11 @@ export async function executeCommand(command, params = {}, positional = [], opti
         "POST",
         {
           type: COMMAND_TYPES.TABS_CLAIM,
-          params: {
+          params: definedParams({
             tabId,
-            focus: asBool(params.focus),
-            sameWindow: params["same-window"] !== undefined || params.sameWindow !== undefined
-              ? asBool(params["same-window"] ?? params.sameWindow)
-              : undefined,
-          },
+            focus: params.focus !== undefined ? asBool(params.focus) : undefined,
+            sameWindow: params.sameWindow !== undefined ? asBool(params.sameWindow) : undefined,
+          }),
         },
         options
       );
@@ -177,9 +217,9 @@ export async function executeCommand(command, params = {}, positional = [], opti
         "POST",
         {
           type: COMMAND_TYPES.TASK_END,
-          params: {
-            closeGroup: asBool(params["close-group"] ?? params.closeGroup),
-          },
+          params: definedParams({
+            closeGroup: params.closeGroup !== undefined ? asBool(params.closeGroup) : undefined,
+          }),
         },
         options
       );
@@ -192,12 +232,11 @@ export async function executeCommand(command, params = {}, positional = [], opti
         "POST",
         {
           type: COMMAND_TYPES.TABS_NEW,
-          params: {
-            ...params,
+          params: definedParams({
             url,
-            force: asBool(params.force),
-            focus: asBool(params.focus),
-          },
+            force: params.force !== undefined ? asBool(params.force) : undefined,
+            focus: params.focus !== undefined ? asBool(params.focus) : undefined,
+          }),
         },
         options
       );
@@ -211,11 +250,11 @@ export async function executeCommand(command, params = {}, positional = [], opti
         "POST",
         {
           type: COMMAND_TYPES.TABS_GOTO,
-          params: {
-            ...params,
+          params: definedParams({
+            tabId: params.tabId,
             url,
-            focus: asBool(params.focus),
-          },
+            focus: params.focus !== undefined ? asBool(params.focus) : undefined,
+          }),
         },
         options
       );
@@ -258,27 +297,29 @@ export async function executeCommand(command, params = {}, positional = [], opti
         "POST",
         {
           type: COMMAND_TYPES.TABS_RELOAD,
-          params: {
-            bypassCache: asBool(params.bypassCache ?? params["bypass-cache"]),
+          params: definedParams({
+            bypassCache: params.bypassCache !== undefined ? asBool(params.bypassCache) : undefined,
             tabId: params.tabId,
-          },
+          }),
         },
         options
       );
     }
 
     case "wait": {
+      const timeoutMs = params.timeoutMs !== undefined ? Number(params.timeoutMs) : undefined;
       return await requestBridge(
         "/cmd",
         "POST",
         {
           type: COMMAND_TYPES.DOM_WAIT,
-          params: {
+          params: definedParams({
             text: params.text || positional[0],
             selector: params.selector || params.sel,
-            timeoutMs: params.timeoutMs || params["timeout-ms"],
+            timeoutMs,
             tabId: params.tabId,
-          },
+          }),
+          ...(timeoutMs !== undefined ? { timeoutMs: timeoutMs + 2_000 } : {}),
         },
         options
       );
@@ -328,11 +369,14 @@ export async function executeCommand(command, params = {}, positional = [], opti
     }
 
     case "screenshot": {
-      const fullPage = params.fullPage === true || params.fullPage === "true" || params.fullPage === "1";
+      const fullPage = params.fullPage !== undefined ? asBool(params.fullPage) : undefined;
       const res = await requestBridge(
         "/cmd",
         "POST",
-        { type: COMMAND_TYPES.CDP_SCREENSHOT, params: { ...params, fullPage } },
+        {
+          type: COMMAND_TYPES.CDP_SCREENSHOT,
+          params: definedParams({ tabId: params.tabId, fullPage }),
+        },
         options
       );
       const outPath = params.out || params.output;
@@ -379,7 +423,11 @@ export async function executeCommand(command, params = {}, positional = [], opti
 
     case "server":
     case "start-server": {
-      const server = new LanternServer(options);
+      const server = new LanternServer({
+        ...options,
+        host: params.host ?? options.host,
+        port: params.port !== undefined ? Number(params.port) : options.port,
+      });
       await server.start();
       console.log(`Leo Lantern server listening on http://${server.host}:${server.port}`);
       // Return server instance
@@ -432,7 +480,7 @@ export async function runCli(argv = process.argv.slice(2), options = {}) {
     }
     return result;
   } catch (err) {
-    console.error(JSON.stringify({ ok: false, error: err.message }, null, 2));
+    console.error(JSON.stringify(formatCliError(err), null, 2));
     if (!options.noExit) {
       process.exit(1);
     }

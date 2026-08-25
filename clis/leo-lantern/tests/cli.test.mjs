@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
-import { parseCliArgs, executeCommand } from "../lib/cli.mjs";
+import { parseCliArgs, executeCommand, formatCliError, normalizeCliParams } from "../lib/cli.mjs";
 import { LanternServer } from "../lib/server.mjs";
 
 function postJson(url, data) {
@@ -78,6 +78,155 @@ test("CLI: parseCliArgs parses commands, flags, and positionals", () => {
   assert.equal(parsed7.command, "goto");
   assert.equal(parsed7.params.url, "https://github.com");
   assert.equal(parsed7.params.focus, true);
+});
+
+test("CLI: canonicalizes documented kebab, camel, and lowercase aliases", () => {
+  const cases = [
+    [["screenshot", "--full-page"], { fullPage: true }],
+    [["screenshot", "--fullPage"], { fullPage: true }],
+    [["reload", "--bypass-cache"], { bypassCache: true }],
+    [["reload", "--bypassCache"], { bypassCache: true }],
+    [["reload", "--bypasscache"], { bypassCache: true }],
+    [["start-task", "--same-window"], { sameWindow: true }],
+    [["start-task", "--sameWindow"], { sameWindow: true }],
+    [["start-task", "--samewindow"], { sameWindow: true }],
+    [["end-task", "--close-group"], { closeGroup: true }],
+    [["end-task", "--closeGroup"], { closeGroup: true }],
+    [["end-task", "--closegroup"], { closeGroup: true }],
+    [["wait", "--timeout-ms", "123"], { timeoutMs: "123" }],
+    [["wait", "--timeoutMs", "123"], { timeoutMs: "123" }],
+  ];
+
+  for (const [argv, expected] of cases) {
+    const parsed = parseCliArgs(argv);
+    assert.deepEqual(normalizeCliParams(parsed.params), expected, argv.join(" "));
+  }
+});
+
+test("CLI: screenshot full-page alias reaches the protocol as true", async () => {
+  const bridge = new LanternServer({ port: 0 });
+  await bridge.start();
+  try {
+    await postJson(`http://127.0.0.1:${bridge.port}/ext/hello`, { id: "cli-shot-ext" });
+    const pollPromise = getJson(`http://127.0.0.1:${bridge.port}/ext/poll?waitMs=5000`);
+    const parsed = parseCliArgs(["screenshot", "--full-page"]);
+    const callPromise = executeCommand(parsed.command, parsed.params, parsed.positional, { port: bridge.port });
+    const poll = await pollPromise;
+    assert.deepEqual(poll.body.cmd.params, { fullPage: true });
+    await postJson(`http://127.0.0.1:${bridge.port}/ext/result`, {
+      id: poll.body.cmd.id,
+      ok: true,
+      result: { data: "", fullPage: true },
+    });
+    await callPromise;
+  } finally {
+    await bridge.stop();
+  }
+});
+
+test("CLI: omitted optional booleans stay omitted while explicit false is preserved", async () => {
+  const bridge = new LanternServer({ port: 0 });
+  await bridge.start();
+  try {
+    await postJson(`http://127.0.0.1:${bridge.port}/ext/hello`, { id: "cli-omitted-ext" });
+    for (const [params, expected] of [
+      [{ title: "omit" }, { title: "omit" }],
+      [{ title: "false", sameWindow: "false", focus: "false" }, { title: "false", sameWindow: false, focus: false }],
+    ]) {
+      const pollPromise = getJson(`http://127.0.0.1:${bridge.port}/ext/poll?waitMs=5000`);
+      const callPromise = executeCommand("start-task", params, [], { port: bridge.port });
+      const poll = await pollPromise;
+      assert.deepEqual(poll.body.cmd.params, expected);
+      await postJson(`http://127.0.0.1:${bridge.port}/ext/result`, {
+        id: poll.body.cmd.id,
+        ok: true,
+        result: { started: true },
+      });
+      await callPromise;
+    }
+  } finally {
+    await bridge.stop();
+  }
+});
+
+test("CLI: new-tab and goto do not synthesize omitted force or focus flags", async () => {
+  const bridge = new LanternServer({ port: 0 });
+  await bridge.start();
+  try {
+    await postJson(`http://127.0.0.1:${bridge.port}/ext/hello`, { id: "cli-nav-omitted" });
+    for (const [command, positional, expected] of [
+      ["new-tab", ["https://example.com"], { url: "https://example.com" }],
+      ["goto", ["https://example.com/next"], { url: "https://example.com/next" }],
+    ]) {
+      const pollPromise = getJson(`http://127.0.0.1:${bridge.port}/ext/poll?waitMs=5000`);
+      const callPromise = executeCommand(command, {}, positional, { port: bridge.port });
+      const poll = await pollPromise;
+      assert.deepEqual(poll.body.cmd.params, expected);
+      await postJson(`http://127.0.0.1:${bridge.port}/ext/result`, {
+        id: poll.body.cmd.id,
+        ok: true,
+        result: { ok: true },
+      });
+      await callPromise;
+    }
+  } finally {
+    await bridge.stop();
+  }
+});
+
+test("CLI: wait sends requested timeout plus transport allowance to the Bridge", async () => {
+  let receivedBody;
+  const server = http.createServer((req, res) => {
+    let body = "";
+    req.on("data", (chunk) => (body += chunk));
+    req.on("end", () => {
+      receivedBody = JSON.parse(body);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, result: { waited: true } }));
+    });
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  try {
+    await executeCommand("wait", { text: "Ready", timeoutMs: "30000" }, [], {
+      port: server.address().port,
+    });
+    assert.equal(receivedBody.params.timeoutMs, 30000);
+    assert.equal(receivedBody.timeoutMs, 32000);
+  } finally {
+    await new Promise((resolve, reject) => server.close((err) => (err ? reject(err) : resolve())));
+  }
+});
+
+test("CLI: server command uses parsed host and port parameters", async () => {
+  const result = await executeCommand(
+    "server",
+    { host: "127.0.0.1", port: "0" },
+    [],
+    { host: "0.0.0.0", port: 1 }
+  );
+  try {
+    assert.equal(result.server.host, "127.0.0.1");
+    assert.notEqual(result.server.port, 1);
+  } finally {
+    await result.server.stop();
+  }
+});
+
+test("CLI: structured Lantern errors retain code, message, and candidates", () => {
+  const error = new Error("outside");
+  error.lanternError = {
+    code: "tab_outside_task",
+    message: "outside",
+    candidates: [{ tabId: 2 }],
+  };
+  assert.deepEqual(formatCliError(error), {
+    ok: false,
+    error: {
+      code: "tab_outside_task",
+      message: "outside",
+      candidates: [{ tabId: 2 }],
+    },
+  });
 });
 
 test("CLI: executeCommand help, health, and doctor", async () => {
@@ -200,7 +349,7 @@ test("CLI: maps page-drive and network commands", async () => {
   const bridge = new LanternServer({ port: 0 });
   await bridge.start();
   const cases = [
-    ["wait", { text: "Ready", "timeout-ms": "123", tabId: "9" }, [], "dom.wait", { text: "Ready", timeoutMs: "123", tabId: "9" }],
+    ["wait", { text: "Ready", "timeout-ms": "123", tabId: "9" }, [], "dom.wait", { text: "Ready", timeoutMs: 123, tabId: "9" }],
     ["content", { "max-chars": "55", tabId: "9" }, [], "dom.content", { maxChars: "55", tabId: "9" }],
     ["press", { selector: "#q" }, ["Enter"], "dom.press", { key: "Enter", selector: "#q" }],
     ["reload", { "bypass-cache": "1", tabId: "9" }, [], "tabs.reload", { bypassCache: true, tabId: "9" }],

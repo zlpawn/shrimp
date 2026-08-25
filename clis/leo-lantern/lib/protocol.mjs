@@ -3,6 +3,47 @@ export const DEFAULT_BRIDGE_HOST = "127.0.0.1";
 export const DEFAULT_COMMAND_TIMEOUT_MS = 25000;
 export const DEFAULT_POLL_TIMEOUT_MS = 25000;
 
+export class LanternProtocolError extends Error {
+  constructor(error = {}, fallbackCode = "invalid_request") {
+    const payload = normalizeProtocolError(error, fallbackCode);
+    super(payload.message);
+    this.name = "LanternProtocolError";
+    this.code = payload.code;
+    this.lanternError = payload;
+  }
+}
+
+export function normalizeProtocolError(error, fallbackCode = "invalid_request") {
+  if (error?.lanternError?.code && error?.lanternError?.message) {
+    return { ...error.lanternError };
+  }
+  if (error && typeof error === "object" && error.code && error.message) {
+    return {
+      code: String(error.code),
+      message: String(error.message),
+      ...(error.candidates !== undefined ? { candidates: error.candidates } : {}),
+    };
+  }
+  return {
+    code: fallbackCode,
+    message: typeof error === "string" ? error : String(error?.message || "Lantern command failed"),
+  };
+}
+
+export function protocolError(error, fallbackCode = "invalid_request") {
+  return error instanceof LanternProtocolError
+    ? error
+    : new LanternProtocolError(error, fallbackCode);
+}
+
+export function protocolErrorStatus(error) {
+  const code = normalizeProtocolError(error).code;
+  if (code === "invalid_request") return 400;
+  if (code === "command_timeout") return 504;
+  if (code === "bridge_unavailable") return 503;
+  return 422;
+}
+
 export const COMMAND_TYPES = {
   HEALTH: "health",
   DOCTOR: "doctor",

@@ -146,6 +146,111 @@ test("MCP: browser_health is false when occupied by a non-bridge server", async 
   }
 });
 
+test("MCP: generic ok health response is not accepted as Lantern identity", async () => {
+  const blocker = http.createServer((_req, res) => {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ ok: true }));
+  });
+  await new Promise((resolve) => blocker.listen(0, "127.0.0.1", resolve));
+  const mcp = new LanternMcpServer({ port: blocker.address().port, stdio: false });
+  try {
+    await mcp.start();
+    const health = await mcp.callTool("browser_health", {});
+    assert.equal(health.bridgeOnline, false);
+    await assert.rejects(
+      () => mcp.callTool("browser_open_tabs", {}),
+      (err) => err.lanternError?.code === "bridge_unavailable"
+    );
+  } finally {
+    await mcp.stop();
+    await new Promise((resolve, reject) => blocker.close((err) => (err ? reject(err) : resolve())));
+  }
+});
+
+test("MCP: omitted optional booleans stay omitted and explicit false is preserved", async () => {
+  const calls = [];
+  const bridge = {
+    server: {},
+    pendingCommands: new Map(),
+    extension: null,
+    taskSummary: null,
+    isExtensionOnline: () => true,
+    dispatch: async (type, params, timeoutMs) => {
+      calls.push({ type, params, timeoutMs });
+      return { ok: true };
+    },
+  };
+  const mcp = new LanternMcpServer({ bridge, stdio: false });
+  await mcp.callTool("browser_start_task", { title: "omit" });
+  await mcp.callTool("browser_start_task", { title: "false", sameWindow: false, focus: false });
+  await mcp.callTool("browser_reload", {});
+  await mcp.callTool("browser_claim_tab", { tabId: 9 });
+  await mcp.callTool("browser_end_task", {});
+  await mcp.callTool("browser_new_tab", { url: "https://example.com" });
+  await mcp.callTool("browser_goto", { url: "https://example.com/next" });
+
+  assert.deepEqual(calls[0].params, { title: "omit" });
+  assert.deepEqual(calls[1].params, { title: "false", sameWindow: false, focus: false });
+  assert.deepEqual(calls[2].params, {});
+  assert.deepEqual(calls[3].params, { tabId: 9 });
+  assert.deepEqual(calls[4].params, {});
+  assert.deepEqual(calls[5].params, { url: "https://example.com" });
+  assert.deepEqual(calls[6].params, { url: "https://example.com/next" });
+});
+
+test("MCP: browser_wait gives the Bridge a two-second transport allowance", async () => {
+  const calls = [];
+  const bridge = {
+    server: {},
+    pendingCommands: new Map(),
+    extension: null,
+    taskSummary: null,
+    isExtensionOnline: () => true,
+    dispatch: async (type, params, timeoutMs) => {
+      calls.push({ type, params, timeoutMs });
+      return { waited: true };
+    },
+  };
+  const mcp = new LanternMcpServer({ bridge, stdio: false });
+  await mcp.callTool("browser_wait", { text: "Ready", timeoutMs: 30_000 });
+  assert.deepEqual(calls[0], {
+    type: "dom.wait",
+    params: { text: "Ready", timeoutMs: 30_000 },
+    timeoutMs: 32_000,
+  });
+});
+
+test("MCP: structured Lantern failure uses isError text and structuredContent", async () => {
+  const payload = {
+    code: "tab_outside_task",
+    message: "outside",
+    candidates: [{ tabId: 2 }],
+  };
+  const bridge = {
+    server: {},
+    pendingCommands: new Map(),
+    extension: null,
+    taskSummary: null,
+    isExtensionOnline: () => true,
+    dispatch: async () => {
+      const error = new Error(payload.message);
+      error.lanternError = payload;
+      throw error;
+    },
+  };
+  const mcp = new LanternMcpServer({ bridge, stdio: false });
+  const response = await mcp.handleJsonRpc({
+    jsonrpc: "2.0",
+    id: 99,
+    method: "tools/call",
+    params: { name: "browser_open_tabs", arguments: {} },
+  });
+
+  assert.equal(response.result.isError, true);
+  assert.deepEqual(response.result.structuredContent, { ok: false, error: payload });
+  assert.deepEqual(JSON.parse(response.result.content[0].text), { ok: false, error: payload });
+});
+
 test("MCP: delegates to remote bridge when bridge port is already running a live bridge", async () => {
   const liveBridge = new LanternServer({ port: 0 });
   await liveBridge.start();

@@ -63,6 +63,7 @@ test("LanternServer: start, health, hello, doctor, and stop", async () => {
     assert.equal(health1.status, 200);
     assert.equal(health1.body.ok, true);
     assert.equal(health1.body.bridge, true);
+    assert.equal(health1.body.service, "leo-lantern");
     assert.equal(health1.body.port, bridge.port);
     assert.equal(health1.body.extensionOnline, false);
 
@@ -84,6 +85,39 @@ test("LanternServer: start, health, hello, doctor, and stop", async () => {
     assert.equal(doctor.body.bridge.port, bridge.port);
     assert.equal(doctor.body.extension.online, true);
     assert.equal(doctor.body.extension.info.id, "test-ext-id");
+  });
+});
+
+test("LanternServer: extension failure preserves structured error through POST /cmd", async () => {
+  await withBridge(async (_bridge, BASE) => {
+    await postJson(`${BASE}/ext/hello`, { id: "ext-error" });
+    const pollPromise = getJson(`${BASE}/ext/poll?waitMs=5000`);
+    const cmdPromise = postJson(`${BASE}/cmd`, {
+      type: "tabs.goto",
+      params: { tabId: 9, url: "https://example.com" },
+      timeoutMs: 5000,
+    });
+    const poll = await pollPromise;
+    await postJson(`${BASE}/ext/result`, {
+      id: poll.body.cmd.id,
+      ok: false,
+      error: {
+        code: "tab_outside_task",
+        message: "Tab 9 is outside the active task",
+        candidates: [{ tabId: 10 }],
+      },
+    });
+
+    const response = await cmdPromise;
+    assert.equal(response.status, 422);
+    assert.deepEqual(response.body, {
+      ok: false,
+      error: {
+        code: "tab_outside_task",
+        message: "Tab 9 is outside the active task",
+        candidates: [{ tabId: 10 }],
+      },
+    });
   });
 });
 

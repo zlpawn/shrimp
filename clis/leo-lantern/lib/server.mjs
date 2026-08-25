@@ -5,6 +5,9 @@ import {
   DEFAULT_BRIDGE_HOST,
   DEFAULT_COMMAND_TIMEOUT_MS,
   DEFAULT_POLL_TIMEOUT_MS,
+  normalizeProtocolError,
+  protocolError,
+  protocolErrorStatus,
 } from "./protocol.mjs";
 
 function sendJson(res, statusCode, data) {
@@ -76,6 +79,7 @@ export class LanternServer {
             return sendJson(res, 200, {
               ok: true,
               bridge: true,
+              service: "leo-lantern",
               port: this.port,
               extensionOnline: this.isExtensionOnline(),
               lastSeenMs,
@@ -106,13 +110,17 @@ export class LanternServer {
             const body = await parseJsonBody(req);
             const { type, params = {}, timeoutMs } = body;
             if (!type) {
-              return sendJson(res, 400, { ok: false, error: "Missing required parameter 'type'" });
+              return sendJson(res, 400, {
+                ok: false,
+                error: { code: "invalid_request", message: "Missing required parameter 'type'" },
+              });
             }
             try {
               const result = await this.dispatch(type, params, timeoutMs);
               return sendJson(res, 200, { ok: true, result });
             } catch (err) {
-              return sendJson(res, 500, { ok: false, error: err.message });
+              const error = normalizeProtocolError(err);
+              return sendJson(res, protocolErrorStatus(error), { ok: false, error });
             }
           }
 
@@ -220,7 +228,10 @@ export class LanternServer {
             }
 
             if (body.ok === false || body.error) {
-              pending.reject(new Error(body.error?.message || body.error || "Command execution failed"));
+              pending.reject(protocolError(body.error || {
+                code: "invalid_request",
+                message: "Command execution failed",
+              }));
             } else {
               pending.resolve(body.result !== undefined ? body.result : body);
             }
@@ -257,7 +268,10 @@ export class LanternServer {
   async dispatch(type, params = {}, timeoutMs = DEFAULT_COMMAND_TIMEOUT_MS) {
     if (!this.isExtensionOnline() && this.waitingPolls.length === 0) {
       // If extension never registered or is stale, throw friendly error
-      throw new Error("Chrome extension is offline. Please ensure the extension is loaded in Chrome.");
+      throw protocolError({
+        code: "bridge_unavailable",
+        message: "Chrome extension is offline. Please ensure the extension is loaded in Chrome.",
+      });
     }
 
     const id = `cmd_${randomUUID().slice(0, 8)}`;
@@ -268,7 +282,10 @@ export class LanternServer {
         this.pendingCommands.delete(id);
         const qIdx = this.commandQueue.findIndex((c) => c.id === id);
         if (qIdx !== -1) this.commandQueue.splice(qIdx, 1);
-        reject(new Error(`Command '${type}' (${id}) timed out after ${timeoutMs}ms`));
+        reject(protocolError({
+          code: "command_timeout",
+          message: `Command '${type}' (${id}) timed out after ${timeoutMs}ms`,
+        }));
       }, timeoutMs);
 
       this.pendingCommands.set(id, { resolve, reject, timer, cmd });

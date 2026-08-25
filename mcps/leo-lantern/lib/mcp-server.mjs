@@ -1,7 +1,21 @@
 import http from "node:http";
 import readline from "node:readline";
 import { LanternServer } from "./server.mjs";
-import { COMMAND_TYPES, DEFAULT_BRIDGE_PORT, DEFAULT_BRIDGE_HOST } from "./protocol.mjs";
+import {
+  COMMAND_TYPES,
+  DEFAULT_BRIDGE_PORT,
+  DEFAULT_BRIDGE_HOST,
+  normalizeProtocolError,
+  protocolError,
+} from "./protocol.mjs";
+
+function definedParams(params) {
+  return Object.fromEntries(Object.entries(params).filter(([, value]) => value !== undefined));
+}
+
+function isLanternHealth(value) {
+  return value?.ok === true && value?.bridge === true && value?.service === "leo-lantern";
+}
 
 export const MCP_TOOLS = [
   {
@@ -248,6 +262,7 @@ export class LanternMcpServer {
     this.ownBridge = !options.bridge;
     this.enableStdio = options.stdio !== false;
     this.rl = null;
+    this.remoteUnavailable = false;
   }
 
   isBridgeOnline() {
@@ -262,7 +277,14 @@ export class LanternMcpServer {
       } catch (err) {
         // If another local process already bound the port, forward commands to remote bridge
         if (err.code === "EADDRINUSE") {
-          this.remoteBridge = true;
+          try {
+            const health = await this.requestRemoteBridge("/health", "GET");
+            this.remoteBridge = isLanternHealth(health);
+            this.remoteUnavailable = !this.remoteBridge;
+          } catch {
+            this.remoteBridge = false;
+            this.remoteUnavailable = true;
+          }
         } else {
           throw err;
         }
@@ -296,7 +318,10 @@ export class LanternMcpServer {
             try {
               const parsed = body ? JSON.parse(body) : {};
               if (res.statusCode >= 400) {
-                reject(new Error(parsed.error?.message || parsed.error || `HTTP ${res.statusCode}`));
+                reject(protocolError(parsed.error || {
+                  code: "bridge_unavailable",
+                  message: `HTTP ${res.statusCode}`,
+                }));
               } else {
                 resolve(parsed);
               }
@@ -310,9 +335,10 @@ export class LanternMcpServer {
       req.on("error", (err) => {
         if (err.code === "ECONNREFUSED") {
           reject(
-            new Error(
-              `Could not connect to Leo Lantern at http://${this.host}:${this.port}. Is the bridge server running?`
-            )
+            protocolError({
+              code: "bridge_unavailable",
+              message: `Could not connect to Leo Lantern at http://${this.host}:${this.port}. Is the bridge server running?`,
+            })
           );
         } else {
           reject(err);
@@ -324,12 +350,22 @@ export class LanternMcpServer {
     });
   }
 
-  async dispatch(type, params = {}) {
+  async dispatch(type, params = {}, timeoutMs) {
+    if (this.remoteUnavailable) {
+      throw protocolError({
+        code: "bridge_unavailable",
+        message: `Port ${this.port} is occupied by a service that is not Leo Lantern`,
+      });
+    }
     if (this.remoteBridge) {
-      const resp = await this.requestRemoteBridge("/cmd", "POST", { type, params });
+      const resp = await this.requestRemoteBridge(
+        "/cmd",
+        "POST",
+        definedParams({ type, params, timeoutMs })
+      );
       return resp.result !== undefined ? resp.result : resp;
     }
-    return await this.bridge.dispatch(type, params);
+    return await this.bridge.dispatch(type, params, timeoutMs);
   }
 
   setupStdio() {
@@ -413,12 +449,14 @@ export class LanternMcpServer {
           },
         };
       } catch (err) {
+        const failure = { ok: false, error: normalizeProtocolError(err) };
         return {
           jsonrpc: "2.0",
           id,
           result: {
             isError: true,
-            content: [{ type: "text", text: `Error: ${err.message}` }],
+            content: [{ type: "text", text: JSON.stringify(failure) }],
+            structuredContent: failure,
           },
         };
       }
@@ -438,7 +476,7 @@ export class LanternMcpServer {
           try {
             const remote = await this.requestRemoteBridge("/health", "GET");
             return {
-              bridgeOnline: Boolean(remote.bridge || remote.ok),
+              bridgeOnline: isLanternHealth(remote),
               extensionOnline: Boolean(remote.extensionOnline),
               port: this.port,
             };
@@ -485,10 +523,12 @@ export class LanternMcpServer {
 
       case "browser_start_task": {
         return await this.dispatch(COMMAND_TYPES.TASK_START, {
-          title: args.title,
-          color: args.color,
-          sameWindow: Boolean(args.sameWindow),
-          focus: Boolean(args.focus),
+          ...definedParams({
+            title: args.title,
+            color: args.color,
+            sameWindow: args.sameWindow,
+            focus: args.focus,
+          }),
         });
       }
 
@@ -496,16 +536,16 @@ export class LanternMcpServer {
         if (args.tabId === undefined || args.tabId === null) {
           throw new Error("Argument 'tabId' is required for browser_claim_tab");
         }
-        return await this.dispatch(COMMAND_TYPES.TABS_CLAIM, {
+        return await this.dispatch(COMMAND_TYPES.TABS_CLAIM, definedParams({
           tabId: args.tabId,
-          focus: Boolean(args.focus),
+          focus: args.focus,
           sameWindow: args.sameWindow,
-        });
+        }));
       }
 
       case "browser_end_task": {
         return await this.dispatch(COMMAND_TYPES.TASK_END, {
-          closeGroup: Boolean(args.closeGroup),
+          ...definedParams({ closeGroup: args.closeGroup }),
         });
       }
 
@@ -514,26 +554,31 @@ export class LanternMcpServer {
       }
 
       case "browser_new_tab": {
-        return await this.dispatch(COMMAND_TYPES.TABS_NEW, {
+        return await this.dispatch(COMMAND_TYPES.TABS_NEW, definedParams({
           url: args.url || "about:blank",
-          force: Boolean(args.force),
-          focus: Boolean(args.focus),
-        });
+          force: args.force,
+          focus: args.focus,
+        }));
       }
 
       case "browser_goto": {
         if (!args.url) throw new Error("Argument 'url' is required");
-        return await this.dispatch(COMMAND_TYPES.TABS_GOTO, {
+        return await this.dispatch(COMMAND_TYPES.TABS_GOTO, definedParams({
           ...args,
-          focus: Boolean(args.focus),
-        });
+          focus: args.focus,
+        }));
       }
 
       case "browser_wait": {
         if (!args.text && !args.selector) {
           throw new Error("Either 'text' or 'selector' is required for browser_wait");
         }
-        return await this.dispatch(COMMAND_TYPES.DOM_WAIT, args);
+        const timeoutMs = args.timeoutMs !== undefined ? Number(args.timeoutMs) : undefined;
+        return await this.dispatch(
+          COMMAND_TYPES.DOM_WAIT,
+          definedParams({ ...args, timeoutMs }),
+          timeoutMs !== undefined ? timeoutMs + 2_000 : undefined
+        );
       }
 
       case "browser_content": {
@@ -547,8 +592,7 @@ export class LanternMcpServer {
 
       case "browser_reload": {
         return await this.dispatch(COMMAND_TYPES.TABS_RELOAD, {
-          bypassCache: Boolean(args.bypassCache),
-          tabId: args.tabId,
+          ...definedParams({ bypassCache: args.bypassCache, tabId: args.tabId }),
         });
       }
 
