@@ -1,0 +1,9 @@
+{
+  "name": "node-typescript-business-signals",
+  "type": "module",
+  "dependencies": {
+    "commander": "1.0.0",
+    "express": "1.0.0",
+    "node-cron": "1.0.0"
+  }
+}

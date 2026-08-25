@@ -77,3 +77,16 @@ do not choose the most plausible implementation silently.
 A confirmed use case needs all eight investigation kinds. A remembered, inferred, or tool-returned
 relationship is not confirmed until current source verification is complete against the frozen
 snapshot.
+
+## Node and TypeScript Discovery Coverage
+
+The `node-typescript` adapter scans `.js`, `.cjs`, `.mjs`, `.jsx`, `.ts`, and `.tsx` source while
+excluding build output and vendored dependencies. It emits candidates for common Express-style and
+server-route HTTP declarations, direct Node `createServer` handlers, ORM/database writes, fetch and
+HTTP client calls, event producers and consumers, schedules, CLI commands, and repair/retry entries.
+
+Package metadata and imports are discovery hints, not proof of runtime activation. Dynamic route
+construction, computed event names, unknown decorator frameworks, generated clients, and runtime
+registration remain explicit unsupported constructs. Any detected language without an applicable
+adapter makes discovery coverage `partial`; an empty inventory is never treated as successful
+coverage merely because no adapter ran.

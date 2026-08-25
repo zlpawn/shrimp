@@ -216,6 +216,44 @@ class DiscoverRepositorySignalsTests(unittest.TestCase):
         self.assertEqual(important["state_write"], "high")
         self.assertEqual(important["repair_entry"], "high")
 
+    def test_node_adapter_prevents_false_empty_success(self):
+        repo = self.fixtures / "node-typescript-repo"
+
+        result = discover_repository_signals.run_discovery(
+            repo,
+            repository_snapshot.capture_snapshot(repo),
+        )
+
+        self.assertEqual(
+            result["summary"]["language_adapter_coverage"]["typescript"],
+            "covered",
+        )
+        self.assertGreaterEqual(len(result["inventory"]), 7)
+
+    def test_node_adapter_discovers_reverse_effect_anchors(self):
+        repo = self.fixtures / "node-typescript-repo"
+        result = discover_repository_signals.run_discovery(
+            repo,
+            repository_snapshot.capture_snapshot(repo),
+        )
+        signal_classes = {item["signal_class"] for item in result["inventory"]}
+        kinds = {item["kind"] for item in result["inventory"]}
+
+        self.assertIn("mutation_anchor", signal_classes)
+        self.assertIn("external_effect_anchor", signal_classes)
+        self.assertIn("event_anchor", signal_classes)
+        self.assertTrue({
+            "http_entry",
+            "server_handler",
+            "persistence_write",
+            "external_call",
+            "event_producer",
+            "event_consumer",
+            "scheduled_job",
+            "command_entry",
+            "repair_entry",
+        }.issubset(kinds), kinds)
+
 
 if __name__ == "__main__":
     unittest.main()
