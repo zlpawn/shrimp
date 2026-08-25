@@ -29,6 +29,28 @@ A Chrome/Edge/Brave extension that exports cookies from the browser to the Shrim
 
 The extension claims tasks every ~2s while registered. The gateway page does not need to stay open.
 
+## Agent task isolation and stable targets
+
+Agent browser commands run inside a claimed tab or tab group. The extension reconciles windows, groups, and claims on startup and repeated `task.start`; it never adopts unrelated user tabs as task-owned.
+
+Protocol consumers can call `dom.state` for a bounded snapshot of up to 200 interactive elements. Each element gets an integer `ref` and a document-scoped opaque `generation`.
+
+`dom.find` accepts one CSS or semantic target and returns up to 200 allocated refs. Its response includes the full `matches_n`; zero matches are successful.
+
+Actions accept exactly one target form:
+
+```json
+{ "kind": "ref", "ref": 12, "generation": "4d0f..." }
+{ "kind": "css", "selector": "button.primary" }
+{ "kind": "semantic", "role": "button", "name": "Sign in", "match": "exact", "caseSensitive": false }
+```
+
+Semantic fields combine with AND. Supported fields are `role`, `name`, `text`, `label`, and `testId`. Legacy top-level `selector` maps to CSS; legacy `text` maps to a contains semantic match only when no competing target form is supplied.
+
+Ref actions return `match_level: exact | stable | reidentified`. A top-level navigation destroys the document registry and old generation; an extension reload creates a new generation. Old refs fail closed rather than operating on an unrelated element.
+
+Structured target errors use stable codes such as `invalid_target`, `stale_ref_generation`, `stale_ref_node`, `reidentification_ambiguous`, `invalid_selector`, `selector_not_found`, `selector_ambiguous`, `semantic_not_found`, `semantic_ambiguous`, `unsupported_target`, `target_disabled`, and `fill_verification_failed`.
+
 ### Via popup (Path B)
 1. Navigate to the website you want to export cookies from (e.g. bilibili.com).
 2. Click the extension icon in the toolbar.
