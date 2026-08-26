@@ -80,6 +80,9 @@ Replace the canonical-view navigation with five business-oriented destinations:
 
 Lifecycle, effects, actors, permissions and evolution remain represented, but are placed inside the
 relevant use-case or analysis sections instead of appearing as equal top-level navigation items.
+“Key rules” and “Open questions” are deterministic cross-scenario aggregate sections. Their entries
+link to the relevant use-case detail when a relationship is available; scenario-local rule and gap
+sections remain the authoritative detailed reading surface.
 
 ### 4.3 Overview
 
@@ -258,6 +261,20 @@ Tests verify that:
 - unknown coverage is stated and unsupported completeness is not implied;
 - stable IDs and file routing remain available for drill-down;
 - the document stays compact and does not become a full canonical dump.
+
+“Compact” retains the existing projection limit: generated `ai-context.md` remains below 8,000
+characters for the representative fixture and contains summaries rather than serialized canonical
+record bodies.
+
+### 7.2.1 Compatibility Regression
+
+Regression tests also verify that:
+
+- `site-view-model.json` keeps view schema `2.0`, all fixed view IDs and the exact existing use-case
+  section order;
+- shuffled canonical records still produce byte-identical view-model and HTML output;
+- `task_context.py` continues returning its existing top-level fields and retrieval metadata for the
+  representative fixture.
 
 ### 7.3 Existing Gates
 
