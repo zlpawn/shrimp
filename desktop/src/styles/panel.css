@@ -7057,25 +7057,109 @@ input:focus, select:focus {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 10px;
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
-.trend-intel-platform-checkbox {
+.trend-intel-platform-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  cursor: pointer;
-  color: var(--text-primary);
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  transition: border-color var(--transition-fast), background var(--transition-fast);
 }
 
-.trend-intel-switch-label {
+.trend-intel-platform-item:hover {
+  border-color: var(--text-secondary);
+}
+
+.trend-intel-platform-item.active {
+  border-color: rgba(99, 102, 241, 0.35);
+  background: var(--surface);
+}
+
+.trend-intel-platform-info {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 13px;
   font-weight: 500;
+  color: var(--text-primary);
+}
+
+.platform-icon {
+  font-size: 15px;
+}
+
+.trend-intel-switch-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13.5px;
+  font-weight: 500;
   cursor: pointer;
+  padding: 4px 0;
+  color: var(--text-primary);
+}
+
+.trend-intel-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.trend-intel-switch input[type="checkbox"] {
+  position: absolute;
+  width: 1px !important;
+  height: 1px !important;
+  opacity: 0;
+  pointer-events: none;
+  margin: 0;
+}
+
+.trend-intel-switch-track {
+  position: relative;
+  display: inline-block;
+  width: 34px;
+  height: 20px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--surface-hover, rgba(0, 0, 0, 0.08));
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.trend-intel-switch-track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  transition: transform var(--transition-fast), background var(--transition-fast);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.trend-intel-switch input:checked + .trend-intel-switch-track {
+  background: var(--brand-primary, #6366f1);
+  border-color: var(--brand-primary, #6366f1);
+}
+
+.trend-intel-switch input:checked + .trend-intel-switch-track::after {
+  background: #ffffff;
+  transform: translateX(14px);
+}
+
+.trend-intel-switch input:focus-visible + .trend-intel-switch-track {
+  outline: 2px solid var(--brand-primary, #6366f1);
+  outline-offset: 2px;
 }
 
 .trend-intel-topics-list {

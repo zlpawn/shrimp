@@ -1095,11 +1095,14 @@ function renderSettingsView(): string {
           <div class="form-grid">
             <div class="form-group full">
               <label class="trend-intel-switch-label">
-                <input 
-                  type="checkbox" 
-                  ${d.scheduler.enabled ? "checked" : ""} 
-                  onchange="window.__trendIntelUpdateDraft('scheduler.enabled', this.checked)" />
-                <span>启用后台定时监控抓取与自动简报调度</span>
+                <span class="trend-intel-switch">
+                  <input 
+                    type="checkbox" 
+                    ${d.scheduler.enabled ? "checked" : ""} 
+                    onchange="window.__trendIntelUpdateDraft('scheduler.enabled', this.checked)" />
+                  <span class="trend-intel-switch-track" aria-hidden="true"></span>
+                </span>
+                <span class="trend-intel-switch-text">启用后台定时监控抓取与自动简报调度</span>
               </label>
             </div>
             <div class="form-group">
@@ -1135,13 +1138,19 @@ function renderSettingsView(): string {
             ${platforms.map(([id, info]) => {
               const checked = d.platforms?.[id] !== false;
               return `
-                <label class="trend-intel-platform-checkbox">
-                  <input 
-                    type="checkbox" 
-                    ${checked ? "checked" : ""} 
-                    onchange="window.__trendIntelUpdateDraft('platforms.${id}', this.checked)" />
-                  <span>${info.icon} ${escapeHtml(info.name)}</span>
-                </label>
+                <div class="trend-intel-platform-item ${checked ? "active" : ""}">
+                  <div class="trend-intel-platform-info">
+                    <span class="platform-icon">${info.icon}</span>
+                    <span class="platform-name">${escapeHtml(info.name)}</span>
+                  </div>
+                  <label class="trend-intel-switch" title="启用/停用 ${escapeHtml(info.name)}">
+                    <input 
+                      type="checkbox" 
+                      ${checked ? "checked" : ""} 
+                      onchange="window.__trendIntelUpdateDraft('platforms.${id}', this.checked)" />
+                    <span class="trend-intel-switch-track" aria-hidden="true"></span>
+                  </label>
+                </div>
               `;
             }).join("")}
           </div>
@@ -1176,12 +1185,13 @@ function renderSettingsView(): string {
                     value="${escapeHtml(topic.name || "")}" 
                     placeholder="赛道名称 (如: 人工智能与前沿科技)" 
                     onchange="window.__trendIntelUpdateTopic(${idx}, 'name', this.value)" />
-                  <label class="trend-intel-topic-enable-switch">
+                  <label class="trend-intel-switch" title="启用/停用该赛道" style="display:inline-flex; align-items:center; gap:6px;">
                     <input 
                       type="checkbox" 
                       ${topic.enabled !== false ? "checked" : ""} 
                       onchange="window.__trendIntelUpdateTopic(${idx}, 'enabled', this.checked)" />
-                    <span>启用</span>
+                    <span class="trend-intel-switch-track" aria-hidden="true"></span>
+                    <span style="font-size:12px; color:var(--text-secondary); font-weight:500;">启用</span>
                   </label>
                   <button class="btn btn-xs text-danger" onclick="window.__trendIntelRemoveFocusTopic(${idx})" title="删除赛道">
                     🗑️ 删除
