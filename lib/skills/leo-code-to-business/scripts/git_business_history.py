@@ -295,13 +295,38 @@ def group_evolution_events(
 ) -> list[dict[str, Any]]:
     events: list[dict[str, Any]] = []
     commit_by_id = {commit["id"]: commit for commit in commits}
+    commit_position = {commit["id"]: index for index, commit in enumerate(commits)}
     business_facts = [fact for fact in facts if fact["fact_type"] != "symbol_renamed"]
     for fact in business_facts:
         commit = commit_by_id.get(fact["commit_id"], {})
         sha = commit.get("sha", "")
+        grouped = None
+        for prior in reversed(events):
+            prior_commit = commit_by_id.get(prior["commit_ids"][-1], {})
+            if (
+                prior_commit.get("sha") in commit.get("parents", [])
+                and prior["change_type"] == fact["fact_type"]
+                and prior["after_summary"] == fact["before_summary"]
+                and fact["after_summary"] != prior["before_summary"]
+            ):
+                grouped = prior
+                break
+        if grouped is not None:
+            grouped["after_summary"] = fact["after_summary"]
+            grouped["business_effects"] = [fact["after_summary"]]
+            grouped["declared_claim_ids"].extend(
+                claim["id"] for claim in claims if claim["source_locator"] == sha
+            )
+            grouped["change_fact_ids"].append(fact["id"])
+            grouped["commit_ids"].append(fact["commit_id"])
+            grouped["affected_node_ids"] = sorted(
+                set(grouped["affected_node_ids"]) | set(fact["affected_node_ids"])
+            )
+            grouped["grouping_status"] = "confirmed_group"
+            continue
         title = (
             "Tighten cancellation rule"
-            if "manual" in fact["after_summary"]
+            if "manual" in fact["after_summary"] and "manual" not in fact["before_summary"]
             else "Relax cancellation rule"
         )
         events.append(
@@ -326,29 +351,17 @@ def group_evolution_events(
         )
     # Mark a prior condition event reverted when a later direct child restores its before summary.
     for event in events:
-        commit = commit_by_id.get(event["commit_ids"][0], {})
-        for later in commits:
-            if later.get("commit_time", "") <= commit.get("commit_time", ""):
-                continue
-            for later_fact in facts:
-                if (
-                    later_fact["commit_id"] == later["id"]
-                    and later_fact["fact_type"] == event["change_type"]
-                    and later_fact["before_summary"] == event["after_summary"]
-                    and later_fact["after_summary"] == event["before_summary"]
-                ):
-                    event["current_effectiveness"] = "reverted"
-    for event in events:
-        event["current_effectiveness"] = check_current_effectiveness(event)
+        event_position = commit_position.get(event["commit_ids"][0], -1)
         for later_event in events:
             if later_event is event:
                 continue
-            if (
-                later_event["introduced_at"] >= event["introduced_at"]
-                and later_event["before_summary"] == event["after_summary"]
+            later_position = commit_position.get(later_event["commit_ids"][0], -1)
+            if later_position > event_position and (
+                later_event["before_summary"] == event["after_summary"]
                 and later_event["after_summary"] == event["before_summary"]
             ):
                 event["current_effectiveness"] = "reverted"
+                later_event["current_effectiveness"] = "historical_only"
     return sorted(events, key=lambda item: (item["introduced_at"], item["id"]))
 
 

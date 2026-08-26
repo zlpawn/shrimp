@@ -1,8 +1,30 @@
 {
   "schema_version": "2.0",
-  "commit_count": 0,
-  "business_event_ids": [],
-  "reverted_event_ids": [],
-  "claim_verification": {},
-  "diagnostics": []
+  "commit_count": 6,
+  "commits": [
+    {"sha": "95a696278c1f4a0de6e3fef6d99043af6f4b6c68", "parents": [], "subject": "initial order cancellation rule"},
+    {"sha": "34363395a81618ff8602f14037a88b0962ec6026", "parents": ["95a696278c1f4a0de6e3fef6d99043af6f4b6c68"], "subject": "feat: add refund"},
+    {"sha": "b2e5bd9dd10f913736448be5bcf7d934d1c29e74", "parents": ["34363395a81618ff8602f14037a88b0962ec6026"], "subject": "fix"},
+    {"sha": "b0961a4d6ec3a332c28e2f0ffa1dddcebbd4c884", "parents": ["b2e5bd9dd10f913736448be5bcf7d934d1c29e74"], "subject": "complete rule change"},
+    {"sha": "0e46c45254266e0b12481609e1941d7d76b42609", "parents": ["b0961a4d6ec3a332c28e2f0ffa1dddcebbd4c884"], "subject": "revert"},
+    {"sha": "69700205181633f00bca06fd6a96d35a91e34bd9", "parents": ["0e46c45254266e0b12481609e1941d7d76b42609"], "subject": "document history claim whose business reason remains unknown"}
+  ],
+  "fact_types": ["condition_changed", "symbol_renamed"],
+  "business_event_ids": [
+    "EVOL-19631bece8658745dae0",
+    "EVOL-9ad9837640cefc00ae91"
+  ],
+  "reverted_event_ids": ["EVOL-19631bece8658745dae0"],
+  "claim_verification": {
+    "HCLAIM-52395e99de39ea370e06": "unverifiable",
+    "HCLAIM-63dcbd7a986f20e5a50d": "unverifiable",
+    "HCLAIM-98e3129b696e91889668": "unverifiable",
+    "HCLAIM-a52c7c2cee431ded2b93": "unverifiable",
+    "HCLAIM-a7d02409a6148911819f": "unverifiable",
+    "HCLAIM-d05594330357b3086c9d": "unverifiable"
+  },
+  "event_effectiveness": {
+    "EVOL-19631bece8658745dae0": "reverted",
+    "EVOL-9ad9837640cefc00ae91": "historical_only"
+  }
 }

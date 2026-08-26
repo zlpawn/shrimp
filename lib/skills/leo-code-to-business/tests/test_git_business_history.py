@@ -230,6 +230,43 @@ class GitBusinessHistoryTests(unittest.TestCase):
 
         self.assertEqual(prior["current_effectiveness"], "reverted")
 
+    def test_direct_followup_changes_are_grouped_and_full_revert_marks_group_reverted(self):
+        repo = self.make_git_repo()
+        initial = (
+            "class OrderCancellation {\n"
+            "  boolean canCancel(String status) {\n"
+            "    // PREPARING orders may be cancelled\n"
+            "    return status.equals(\"PREPARING\");\n"
+            "  }\n"
+            "}\n"
+        )
+        manual = initial.replace(
+            "PREPARING orders may be cancelled",
+            "PREPARING orders require manual cancellation",
+        )
+        audited = manual.replace(
+            "PREPARING orders require manual cancellation",
+            "PREPARING orders require manual cancellation and audit",
+        )
+        self.commit(repo, "initial", {"src/OrderCancellationRule.java": initial})
+        self.commit(repo, "fix", {"src/OrderCancellationRule.java": manual})
+        self.commit(repo, "complete rule change", {"src/OrderCancellationRule.java": audited})
+        self.commit(repo, "revert", {"src/OrderCancellationRule.java": initial})
+        commits = git_history.index_commits(repo)
+        facts = [fact for commit in commits for fact in git_history.extract_change_facts(repo, commit)]
+        claims = [git_history.extract_historical_claim(commit) for commit in commits]
+
+        events = git_history.group_evolution_events(commits, facts, claims, [])
+
+        self.assertEqual(len(events), 2)
+        changed = next(item for item in events if item["before_summary"] == "PREPARING orders may be cancelled")
+        revert = next(item for item in events if item["after_summary"] == "PREPARING orders may be cancelled")
+        self.assertEqual(changed["after_summary"], "PREPARING orders require manual cancellation and audit")
+        self.assertEqual(changed["grouping_status"], "confirmed_group")
+        self.assertEqual(len(changed["commit_ids"]), 2)
+        self.assertEqual(changed["current_effectiveness"], "reverted")
+        self.assertEqual(revert["current_effectiveness"], "historical_only")
+
 
 if __name__ == "__main__":
     unittest.main()
