@@ -60,6 +60,7 @@ codeg-*
 images/
 videos/
 web_search/
+output/
 
 
 # Local 8788 test gateway instance
