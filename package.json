@@ -77,7 +77,9 @@
     "test:dream-skin": "node --test tests/unit/dream-skin-*.test.mjs tests/integration/dream-skin-api.test.mjs",
     "dream-skin:validate-engines": "node lib/dream-skin/index.mjs validate-engines",
     "test:remote-session": "node --test tests/unit/remote-session-*.test.mjs tests/integration/remote-session-api.test.mjs",
-    "smoke:remote-session": "node scripts/remote-session-smoke.mjs --mode fake"
+    "smoke:remote-session": "node scripts/remote-session-smoke.mjs --mode fake",
+    "test:trend-intel": "node --test tests/unit/trend-intel-*.test.mjs tests/integration/trend-intel-*.test.mjs",
+    "test": "npm run test:trend-intel"
   },
   "engines": {
     "node": ">=18"
