@@ -162,7 +162,10 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const msg = data?.error?.message || `HTTP ${res.status}`;
-    throw new Error(msg);
+    const err: any = new Error(msg);
+    err.status = res.status;
+    err.data = data;
+    throw err;
   }
   return data as T;
 }
@@ -184,7 +187,7 @@ export async function loadBrief(date?: string): Promise<void> {
     const data = await apiFetch<DailyBrief>(`/v1/trend-intel/brief?date=${encodeURIComponent(targetDate)}`);
     state.brief = data;
   } catch (err: any) {
-    if (err?.message && err.message.includes("404")) {
+    if (err?.status === 404 || (err?.message && (err.message.includes("404") || err.message.includes("not found") || err.message.includes("Not found") || err.message.includes("No brief")))) {
       state.brief = null;
     } else {
       state.brief = null;
