@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { addEndpoint } from "../../../../lib/clis/shrimp/domain/endpoint-service.mjs";
-import { addClient, copyClient, getClient, removeClient } from "../../../../lib/clis/shrimp/domain/client-service.mjs";
+import { addClient, copyClient, getClient, listClients, removeClient, renameClient } from "../../../../lib/clis/shrimp/domain/client-service.mjs";
 
 async function tempState() {
   const dir = await mkdtemp(path.join(os.tmpdir(), "shrimp-copy-"));
@@ -181,4 +181,85 @@ test("addClient defaults to anthropic protocol for empty creates", async (t) => 
   t.after(() => rm(ctx.dir, { recursive: true, force: true }));
   const result = addClient({ ...ctx, client: "p-default" });
   assert.equal(result.protocol, "anthropic");
+});
+
+test("addClient persists displayName on the client group", async (t) => {
+  const ctx = await tempState();
+  t.after(() => rm(ctx.dir, { recursive: true, force: true }));
+  const result = addClient({ ...ctx, client: "my-agent", displayName: "My Custom Agent" });
+  assert.equal(result.created, true);
+  assert.equal(result.display_name, "My Custom Agent");
+  const target = getClient({ ...ctx, client: "my-agent" });
+  assert.equal(target.display_name, "My Custom Agent");
+
+  const { readFileSync } = await import("node:fs");
+  const saved = JSON.parse(readFileSync(ctx.configPath, "utf8"));
+  assert.equal(saved.clients["my-agent"].display_name, "My Custom Agent");
+});
+
+test("addClient falls back display_name to client when displayName is omitted", async (t) => {
+  const ctx = await tempState();
+  t.after(() => rm(ctx.dir, { recursive: true, force: true }));
+  const result = addClient({ ...ctx, client: "plain-agent" });
+  assert.equal(result.display_name, "plain-agent");
+  const target = getClient({ ...ctx, client: "plain-agent" });
+  assert.equal(target.display_name, "plain-agent");
+});
+
+test("listClients and getClient include display_name", async (t) => {
+  const ctx = await tempState();
+  t.after(() => rm(ctx.dir, { recursive: true, force: true }));
+  addClient({ ...ctx, client: "agent-1", displayName: "Agent One" });
+  const list = listClients(ctx);
+  const item = list.items.find((x) => x.client === "agent-1");
+  assert.ok(item);
+  assert.equal(item.display_name, "Agent One");
+
+  // Built-in clients without explicit display_name fall back to their client name
+  const codeItem = list.items.find((x) => x.client === "code");
+  assert.ok(codeItem);
+  assert.equal(codeItem.display_name, "code");
+  const codeClient = getClient({ ...ctx, client: "code" });
+  assert.equal(codeClient.display_name, "code");
+});
+
+test("renameClient updates display_name and saves config", async (t) => {
+  const ctx = await tempState();
+  t.after(() => rm(ctx.dir, { recursive: true, force: true }));
+  addClient({ ...ctx, client: "custom-agent", displayName: "Original Name" });
+  const result = renameClient({ ...ctx, client: "custom-agent", displayName: "Updated Name" });
+  assert.equal(result.client, "custom-agent");
+  assert.equal(result.display_name, "Updated Name");
+
+  const target = getClient({ ...ctx, client: "custom-agent" });
+  assert.equal(target.display_name, "Updated Name");
+
+  const { readFileSync } = await import("node:fs");
+  const saved = JSON.parse(readFileSync(ctx.configPath, "utf8"));
+  assert.equal(saved.clients["custom-agent"].display_name, "Updated Name");
+});
+
+test("renameClient rejects built-in clients", async (t) => {
+  const ctx = await tempState();
+  t.after(() => rm(ctx.dir, { recursive: true, force: true }));
+  for (const builtin of ["code", "desktop", "codex", "deeptutor"]) {
+    assert.throws(
+      () => renameClient({ ...ctx, client: builtin, displayName: "New Name" }),
+      (err) => err?.code === "builtin_client" || /built-in/i.test(err?.message),
+    );
+  }
+});
+
+test("renameClient rejects non-existent client or invalid displayName", async (t) => {
+  const ctx = await tempState();
+  t.after(() => rm(ctx.dir, { recursive: true, force: true }));
+  assert.throws(
+    () => renameClient({ ...ctx, client: "nonexistent", displayName: "New Name" }),
+    (err) => err?.code === "client_not_found",
+  );
+  addClient({ ...ctx, client: "valid-agent" });
+  assert.throws(
+    () => renameClient({ ...ctx, client: "valid-agent", displayName: "   " }),
+    (err) => err?.code === "missing_fields",
+  );
 });

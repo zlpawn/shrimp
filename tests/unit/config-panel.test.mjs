@@ -479,7 +479,8 @@ test("agent-node create/remove UI is present and wired", async () => {
   assert.match(html, /openClientCreateModal/);
   // Create modal with both modes.
   assert.match(html, /id="client-create-modal"/);
-  assert.match(html, /id="client-create-name"/);
+  assert.match(html, /id="client-create-display-name"/);
+  assert.match(html, /id="client-create-slug"/);
   assert.match(html, /client-create-mode-empty/);
   assert.match(html, /client-create-mode-copy/);
   assert.match(html, /client-create-copy-config/);
@@ -489,11 +490,13 @@ test("agent-node create/remove UI is present and wired", async () => {
   assert.match(html, /id="custom-clients-container"/);
   assert.match(html, /renderCustomClientNav/);
   assert.match(html, /renderCustomClientSections/);
+  assert.match(html, /renameCustomClient/);
   assert.match(html, /removeCustomClient/);
   // Built-in clients are protected from removal.
   assert.match(html, /const BUILTIN_CLIENTS = \['code', 'desktop', 'codex', 'deeptutor'\]/);
   assert.match(html, /slugifyClientName/);
   assert.match(html, /\/v1\/config\/add-client/);
+  assert.match(html, /\/v1\/config\/rename-client/);
   assert.match(html, /\/v1\/config\/remove-client/);
 });
 
@@ -733,3 +736,182 @@ test("clip player and iching explanation cards escape untrusted text", async () 
   assert.match(iching, /function escapeHtml/);
   assert.match(iching, /escapeHtml\(anchor\.quote/);
 });
+
+test("clientDisplayName resolves custom display_name, fallback to slug, and built-in names", async () => {
+  const src = await readFile(path.join(ROOT, "desktop", "src", "app.ts"), "utf8");
+
+  const displayNamesMatch = src.match(/const CLIENT_DISPLAY_NAMES = \{[\s\S]*?\};/)?.[0];
+  const resolverMatch = src.match(/function clientDisplayName\(client\)\s*\{[\s\S]*?\n\}/)?.[0];
+
+  assert.ok(displayNamesMatch, "CLIENT_DISPLAY_NAMES definition found");
+  assert.ok(resolverMatch, "clientDisplayName function found");
+
+  const config = {
+    clients: {
+      code: { endpoints: [] },
+      desktop: { endpoints: [] },
+      codex: { endpoints: [] },
+      deeptutor: { endpoints: [] },
+      "custom-agent": { display_name: "我的智能体", endpoints: [] },
+      "fallback-agent": { endpoints: [] },
+      "empty-name-agent": { display_name: "   ", endpoints: [] },
+    },
+  };
+
+  const context = {
+    config,
+    CLIENT_DISPLAY_NAMES: undefined,
+    clientDisplayName: undefined,
+  };
+
+  vm.runInNewContext(`${displayNamesMatch}\n${resolverMatch}\n`, context);
+
+  // 1. Custom with display_name
+  assert.equal(context.clientDisplayName("custom-agent"), "我的智能体");
+
+  // 2. Custom fallback to slug (key) when display_name is missing or whitespace
+  assert.equal(context.clientDisplayName("fallback-agent"), "fallback-agent");
+  assert.equal(context.clientDisplayName("empty-name-agent"), "empty-name-agent");
+  assert.equal(context.clientDisplayName("non-existent"), "non-existent");
+
+  // 3. Built-in clients
+  assert.equal(context.clientDisplayName("code"), "Claude Code");
+  assert.equal(context.clientDisplayName("desktop"), "Claude Desktop");
+  assert.equal(context.clientDisplayName("codex"), "Codex");
+  assert.equal(context.clientDisplayName("deeptutor"), "DeepTutor");
+
+  // Edge cases
+  assert.equal(context.clientDisplayName(""), "");
+  assert.equal(context.clientDisplayName(null), "");
+  assert.equal(context.clientDisplayName(undefined), "");
+});
+
+test("custom agent nav and sections use clientDisplayName for titles and slug for routing", async () => {
+  const html = await readSources();
+
+  // renderCustomClientNav checks
+  assert.match(
+    html,
+    /<span class="nav-item-name">\$\{escapeHtml\(clientDisplayName\(name\)\)\}<\/span>/,
+  );
+  assert.match(
+    html,
+    /<a href="#\$\{escapeHtml\(name\)\}" class="nav-item nav-item-custom" onclick="switchTab\('\$\{escapeHtml\(name\)\}'\)">/,
+  );
+
+  // renderCustomClientSections checks
+  assert.match(
+    html,
+    /<h2>\$\{escapeHtml\(clientDisplayName\(client\)\)\} 代理<\/h2>/,
+  );
+  assert.match(
+    html,
+    /接入协议：\$\{escapeHtml\(protocolLabel\(protocol\)\)\} · 路由标识 <code>\/\$\{escapeHtml\(client\)\}\/<\/code>/,
+  );
+  assert.match(
+    html,
+    /<p>\$\{escapeHtml\(clientDisplayName\(client\)\)\} 走 \$\{escapeHtml\(protocolLabel\(protocol\)\)\} 协议。把下面的地址填入客户端作为 API 入口：<\/p>/,
+  );
+  assert.match(
+    html,
+    /<p>\$\{escapeHtml\(clientDisplayName\(client\)\)\} 尚未配置任何节点。<\/p>/,
+  );
+  assert.match(
+    html,
+    /大语言模型 base_url：http:\/\/<span class="cfg-host">127\.0\.0\.1<\/span>:<span class="cfg-port">8787<\/span>\/\$\{escapeHtml\(client\)\}\//,
+  );
+});
+
+test("create client modal contains distinct display-name and slug fields with helper hints", async () => {
+  const html = await readFile(path.join(ROOT, "desktop", "index.html"), "utf8");
+  assert.match(html, /id="client-create-modal"[\s\S]*?<h3 class="skill-modal-title">新建代理节点<\/h3>\s*<div class="skill-modal-body"/);
+  assert.match(html, /id="client-create-display-name"/);
+  assert.match(html, /id="client-create-slug"/);
+  assert.match(html, /for="client-create-display-name">显示名称<\/label>/);
+  assert.match(html, /for="client-create-slug">路由标识 \(Slug\)<\/label>/);
+  assert.match(html, /placeholder="例如：我的工作助手 或 Work Buddy"/);
+  assert.match(html, /placeholder="例如：work-buddy"/);
+  assert.match(html, /maxlength="60"/);
+  assert.match(html, /maxlength="40"/);
+  assert.match(html, /显示名称用于界面展示|用于界面展示/);
+  assert.match(html, /http:\/\/127\.0\.0\.1:8787\/\{slug\}\/|http:\/\/127\.0\.0\.1:8787\//);
+});
+
+test("display name input updates slug unless slug was manually edited", async () => {
+  const ts = await readFile(path.join(ROOT, "desktop", "src", "app.ts"), "utf8");
+  assert.match(ts, /let clientCreateSlugManualEdited = false/);
+  assert.match(ts, /function onClientCreateDisplayNameInput/);
+  assert.match(ts, /function onClientCreateSlugInput/);
+  assert.match(ts, /onClientCreateDisplayNameInput/);
+  assert.match(ts, /onClientCreateSlugInput/);
+
+  // Test linkage logic in vm
+  const context = {
+    clientCreateSlugManualEdited: false,
+    slugInputVal: "",
+    slugifyClientName: (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""),
+    document: {
+      getElementById: (id) => {
+        if (id === "client-create-slug") {
+          return {
+            get value() { return context.slugInputVal; },
+            set value(v) { context.slugInputVal = v; },
+          };
+        }
+        return null;
+      },
+    },
+  };
+
+  const code = `
+    function onClientCreateDisplayNameInput(val) {
+        if (!clientCreateSlugManualEdited) {
+            const slugInput = document.getElementById('client-create-slug');
+            if (slugInput) {
+                slugInput.value = slugifyClientName(val);
+            }
+        }
+    }
+    function onClientCreateSlugInput(val) {
+        clientCreateSlugManualEdited = true;
+    }
+  `;
+  vm.runInNewContext(code, context);
+
+  // When not manually edited, display name input updates slug
+  context.onClientCreateDisplayNameInput("My Bot 123");
+  assert.equal(context.slugInputVal, "my-bot-123");
+
+  // User manually edits slug
+  context.onClientCreateSlugInput("custom-slug");
+  context.slugInputVal = "custom-slug";
+  assert.equal(context.clientCreateSlugManualEdited, true);
+
+  // Subsequent display name input does NOT overwrite manual slug
+  context.onClientCreateDisplayNameInput("Another Bot");
+  assert.equal(context.slugInputVal, "custom-slug");
+});
+
+test("submitCreateClient sends client, displayName, protocol, and copy options", async () => {
+  const ts = await readFile(path.join(ROOT, "desktop", "src", "app.ts"), "utf8");
+  assert.match(ts, /submitCreateClient/);
+  assert.match(ts, /client-create-display-name/);
+  assert.match(ts, /client-create-slug/);
+  assert.match(ts, /displayName:\s*displayName\s*\|\|\s*client/);
+  assert.match(ts, /\/v1\/config\/add-client/);
+});
+
+test("custom client section header includes rename button and renameCustomClient action", async () => {
+  const html = await readSources();
+  assert.match(html, /renameCustomClient\('\$\{escapeHtml\(client\)\}'\)/);
+  assert.match(html, /重命名/);
+  assert.match(html, /window\.renameCustomClient\s*=\s*async function/);
+  assert.match(html, /\/v1\/config\/rename-client/);
+  assert.match(html, /displayName:\s*trimmed/);
+});
+
+test("removeCustomClient confirmation prompt displays both display name and slug", async () => {
+  const ts = await readFile(path.join(ROOT, "desktop", "src", "app.ts"), "utf8");
+  assert.match(ts, /确定删除代理节点「\$\{clientDisplayName\(client\)\}\s*\(\$\{client\}\)」/);
+});
+

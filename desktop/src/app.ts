@@ -318,6 +318,10 @@ function isCustomClient(name) {
 function clientDisplayName(client) {
     const key = String(client || '').trim();
     if (!key) return '';
+    const customName = config.clients?.[key]?.display_name;
+    if (customName && typeof customName === 'string' && customName.trim()) {
+        return customName.trim();
+    }
     return CLIENT_DISPLAY_NAMES[key] || key;
 }
 
@@ -1022,24 +1026,43 @@ function slugifyClientName(value) {
 }
 
 let clientCreateOpen = false;
+let clientCreateSlugManualEdited = false;
 
 window.openClientCreateModal = function(event) {
     event?.preventDefault?.();
     clientCreateOpen = true;
     const overlay = document.getElementById('client-create-modal');
-    overlay.classList.add('open');
-    const nameInput = document.getElementById('client-create-name');
-    nameInput.value = '';
+    overlay?.classList.add('open');
+    const displayNameInput = document.getElementById('client-create-display-name') as HTMLInputElement | null;
+    const slugInput = document.getElementById('client-create-slug') as HTMLInputElement | null;
+    if (displayNameInput) displayNameInput.value = '';
+    if (slugInput) slugInput.value = '';
+    clientCreateSlugManualEdited = false;
     // Pre-select empty mode and refresh the source dropdown.
     setClientCreateMode('empty');
     refreshClientCreateSources();
     // Reset the radio explicitly in case the DOM retained a prior selection.
-    const emptyRadio = document.querySelector('input[name="client-create-mode"][value="empty"]');
+    const emptyRadio = document.querySelector('input[name="client-create-mode"][value="empty"]') as HTMLInputElement | null;
     if (emptyRadio) emptyRadio.checked = true;
     // Default protocol follows the copy source when one is selected.
     syncClientCreateProtocol();
-    setTimeout(() => nameInput.focus(), 0);
+    setTimeout(() => displayNameInput?.focus(), 0);
 };
+
+function onClientCreateDisplayNameInput(val: string) {
+    if (!clientCreateSlugManualEdited) {
+        const slugInput = document.getElementById('client-create-slug') as HTMLInputElement | null;
+        if (slugInput) {
+            slugInput.value = slugifyClientName(val);
+        }
+    }
+}
+window.onClientCreateDisplayNameInput = onClientCreateDisplayNameInput;
+
+function onClientCreateSlugInput(_val?: string) {
+    clientCreateSlugManualEdited = true;
+}
+window.onClientCreateSlugInput = onClientCreateSlugInput;
 
 // Keep the protocol picker in sync with the chosen source: codex/deeptutor
 // imply OpenAI-compatible, everything else Anthropic.
@@ -1083,30 +1106,34 @@ function refreshClientCreateSources() {
     const select = document.getElementById('client-create-source');
     if (!select) return;
     const names = Object.keys(config.clients || {});
-    select.innerHTML = names.map(name =>
-        `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`
-    ).join('');
+    select.innerHTML = names.map(name => {
+        const label = clientDisplayName(name);
+        const text = (label && label !== name) ? `${label} (${name})` : name;
+        return `<option value="${escapeHtml(name)}">${escapeHtml(text)}</option>`;
+    }).join('');
 }
 
 window.submitCreateClient = async function() {
-    const nameInput = document.getElementById('client-create-name');
-    const rawName = nameInput ? nameInput.value : '';
-    const client = slugifyClientName(rawName);
-    if (!client) { showToast('请填写有效的节点标识（字母、数字、连字符）', 'error'); return; }
+    const displayNameInput = document.getElementById('client-create-display-name');
+    const slugInput = document.getElementById('client-create-slug');
+    const displayName = (displayNameInput ? displayNameInput.value : '').trim();
+    const rawSlug = (slugInput ? slugInput.value : '').trim() || displayName;
+    const client = slugifyClientName(rawSlug);
+    if (!client) { showToast('请填写有效的路由标识（字母、数字、连字符）', 'error'); return; }
     const modeRadio = document.querySelector('input[name="client-create-mode"]:checked');
     const useCopy = modeRadio && modeRadio.value === 'copy';
     const copyFrom = useCopy ? (document.getElementById('client-create-source')?.value || '') : '';
     if (useCopy && !copyFrom) { showToast('请选择复制来源', 'error'); return; }
-    if (useCopy && copyFrom === client) { showToast('复制来源不能和节点标识相同', 'error'); return; }
+    if (useCopy && copyFrom === client) { showToast('复制来源不能和路由标识相同', 'error'); return; }
 
     const okBtn = document.getElementById('client-create-ok');
     const original = okBtn ? okBtn.innerHTML : '';
     if (okBtn) { okBtn.disabled = true; okBtn.innerHTML = '创建中...'; }
     try {
         const protocol = document.getElementById('client-create-protocol')?.value || 'anthropic';
-    const body = useCopy
-            ? { client, copyFrom, mode: 'replace', protocol }
-            : { client, protocol };
+        const body = useCopy
+            ? { client, displayName: displayName || client, copyFrom, mode: 'replace', protocol }
+            : { client, displayName: displayName || client, protocol };
         const res = await fetch('/v1/config/add-client', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1120,7 +1147,8 @@ window.submitCreateClient = async function() {
         await loadConfig();
         window.closeClientCreateModal();
         switchTab('custom-clients');
-        showToast(`已创建代理节点「${client}」`, 'success');
+        const finalDisplayName = displayName || client;
+        showToast(`已创建代理节点「${finalDisplayName}」`, 'success');
     } catch (e) {
         showToast('创建代理节点失败：网络错误', 'error');
     } finally {
@@ -1128,11 +1156,44 @@ window.submitCreateClient = async function() {
     }
 };
 
+window.renameCustomClient = async function(client: string) {
+    if (!isCustomClient(client)) return;
+    const currentName = config.clients?.[client]?.display_name || client;
+    const input = prompt(`请输入代理「${clientDisplayName(client)}」的新显示名称：`, currentName);
+    if (input === null) return;
+    const trimmed = input.trim();
+    if (!trimmed) {
+        showToast('显示名称不能为空', 'error');
+        return;
+    }
+    if (trimmed.length > 60) {
+        showToast('显示名称最多 60 个字符', 'error');
+        return;
+    }
+    try {
+        const res = await fetch('/v1/config/rename-client', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ client, displayName: trimmed }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) {
+            showToast(data.error || '重命名代理失败', 'error');
+            return;
+        }
+        if (config.clients?.[client]) {
+            config.clients[client].display_name = trimmed;
+        }
+        render();
+        showToast(`已将代理重命名为「${trimmed}」`, 'success');
+    } catch (e) {
+        showToast('重命名代理失败：网络错误', 'error');
+    }
+};
+
 window.removeCustomClient = async function(client) {
     if (!isCustomClient(client)) return;
-    if (!confirm(`确定删除代理节点「${client}」吗？
-
-该代理组下的所有节点配置和密钥都会被移除，此操作不可撤销。`)) return;
+    if (!confirm(`确定删除代理节点「${clientDisplayName(client)} (${client})」吗？\n\n该代理组下的所有节点配置和密钥都会被移除，此操作不可撤销。`)) return;
     try {
         const res = await fetch('/v1/config/remove-client', {
             method: 'POST',
@@ -1149,7 +1210,7 @@ window.removeCustomClient = async function(client) {
         }
         await loadConfig();
         render();
-        showToast(`已删除代理节点「${client}」`, 'success');
+        showToast(`已删除代理节点「${clientDisplayName(client)} (${client})」`, 'success');
     } catch (e) {
         showToast('删除代理节点失败：网络错误', 'error');
     }
@@ -1164,7 +1225,7 @@ function renderCustomClientNav() {
     container.innerHTML = names.map(name => `
         <a href="#${escapeHtml(name)}" class="nav-item nav-item-custom" onclick="switchTab('${escapeHtml(name)}')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px; flex-shrink: 0;"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-            <span class="nav-item-name">${escapeHtml(name)}</span>
+            <span class="nav-item-name">${escapeHtml(clientDisplayName(name))}</span>
             <span class="nav-item-badge">自定义</span>
         </a>
     `).join('');
@@ -1196,8 +1257,8 @@ function renderCustomClientSections() {
         const header = `
             <div class="section-header custom-client-section-header" id="custom-client-block-${escapeHtml(client)}">
                 <div>
-                    <h2>${escapeHtml(client)} 代理</h2>
-                    <p>接入协议：${escapeHtml(protocolLabel(protocol))} · 路由前缀 <code>/${escapeHtml(client)}/</code></p>
+                    <h2>${escapeHtml(clientDisplayName(client))} 代理</h2>
+                    <p>接入协议：${escapeHtml(protocolLabel(protocol))} · 路由标识 <code>/${escapeHtml(client)}/</code></p>
                 </div>
                 <div class="section-header-actions">
                     <select class="custom-client-protocol-select" title="切换接入协议" onchange="setCustomClientProtocol('${escapeHtml(client)}', this.value)">
@@ -1220,6 +1281,10 @@ function renderCustomClientSections() {
                         </button>
                         <div class="add-node-popover" role="menu" data-client="${escapeHtml(client)}"></div>
                     </div>
+                    <button class="btn btn-sm" title="重命名此代理" onclick="renameCustomClient('${escapeHtml(client)}')" aria-label="重命名此代理">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                        重命名
+                    </button>
                     <button class="btn btn-sm btn-danger" title="删除此代理节点" onclick="removeCustomClient('${escapeHtml(client)}')" aria-label="删除此代理节点">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                         删除代理节点
@@ -1248,7 +1313,7 @@ function renderCustomClientSections() {
         const guide = showGuide ? `
             <div class="usage-guide">
                 <h3>🚀 如何连接此网关？</h3>
-                <p>${escapeHtml(client)} 走 ${escapeHtml(protocolLabel(protocol))} 协议。把下面的地址填入客户端作为 API 入口：</p>
+                <p>${escapeHtml(clientDisplayName(client))} 走 ${escapeHtml(protocolLabel(protocol))} 协议。把下面的地址填入客户端作为 API 入口：</p>
                 <div style="display:flex; flex-direction:column; gap:8px; margin-top: 10px;">
                     ${chatSnippet}
                     ${embeddingSnippet}
@@ -1265,7 +1330,7 @@ function renderCustomClientSections() {
             body = guide + `
                 <div id="${gridId}" class="node-groups">
                     <div class="empty-state">
-                        <p>${escapeHtml(client)} 尚未配置任何节点。</p>
+                        <p>${escapeHtml(clientDisplayName(client))} 尚未配置任何节点。</p>
                         <button class="btn" onclick="addEndpoint('${escapeHtml(client)}')">创建第一个节点</button>
                     </div>
                 </div>
@@ -7836,9 +7901,21 @@ document.addEventListener('DOMContentLoaded', () => {
     if (clientCreateSource) {
         clientCreateSource.addEventListener('change', syncClientCreateProtocol);
     }
-    const createNameInput = document.getElementById('client-create-name');
-    if (createNameInput) {
-        createNameInput.addEventListener('keydown', (e) => {
+    const createDisplayNameInput = document.getElementById('client-create-display-name');
+    if (createDisplayNameInput) {
+        createDisplayNameInput.addEventListener('input', (e) => {
+            onClientCreateDisplayNameInput((e.target as HTMLInputElement).value);
+        });
+        createDisplayNameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); submitCreateClient(); }
+        });
+    }
+    const createSlugInput = document.getElementById('client-create-slug');
+    if (createSlugInput) {
+        createSlugInput.addEventListener('input', (e) => {
+            onClientCreateSlugInput((e.target as HTMLInputElement).value);
+        });
+        createSlugInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') { e.preventDefault(); submitCreateClient(); }
         });
     }
