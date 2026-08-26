@@ -1,6 +1,6 @@
 # Leo Code to Business: Business Flow Semantic Quality Design
 
-> Status: approved direction, pending written-spec review
+> Status: independently reviewed, pending user approval
 > Date: 2026-08-26
 > Skill: `leo-code-to-business`
 > Managed source: `lib/skills/leo-code-to-business`
@@ -145,6 +145,16 @@ fail the `main_flow` semantic gate.
 The validation error reports exact canonical addresses and reason codes so the analyst can revise
 the canonical knowledge instead of debugging a generic score failure.
 
+Validation exposes the complete deterministic list at:
+
+```text
+validation.business_flow_diagnostics
+```
+
+The returned `coverage` object includes a `business_flow_semantic_quality` metric whose unresolved
+IDs are the affected flow-step addresses. These are validation results, not new canonical
+artifacts, so they do not change the canonical hash by themselves.
+
 ## 6. Coverage and Publication Behavior
 
 The existing schema remains unchanged. Flow diagnostics become an input to current semantic
@@ -158,6 +168,11 @@ coverage:
 
 Publication may persist an exact `partial` revision for inspection, but it cannot claim `passed`.
 The HTML and AI projections continue to display canonical text faithfully.
+
+An "unresolved" high-severity diagnostic means the current canonical statement still produces that
+diagnostic during validation. There is no suppression list, ignore annotation, or manual waiver.
+The analyst resolves it by improving the canonical business statement or moving the technical fact
+to its correct dimension while preserving evidence.
 
 ## 7. Independent Semantic Review
 
@@ -287,4 +302,3 @@ The target acceptance must show that:
 6. Verify the Antigravity symlink resolves to the synchronized skill.
 7. Reconstruct and publish the target project's next immutable revision.
 8. Open the new HTML projection and compare the affected flow with its technical evidence.
-
