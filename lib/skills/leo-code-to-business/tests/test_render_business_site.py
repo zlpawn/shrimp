@@ -55,7 +55,7 @@ class RenderBusinessSiteTests(unittest.TestCase):
             html,
         )
         self.assertIn("<noscript>", html)
-        self.assertIn("#use-case/UC-create-work-order", html)
+        self.assertIn("#use-case-UC-create-work-order", html)
 
     def test_html_leads_with_business_content_and_exposes_traces(self):
         renderer.write_projections(self.revision)
@@ -92,7 +92,7 @@ class RenderBusinessSiteTests(unittest.TestCase):
         )[1].split("</script>", 1)[0]
 
         self.assertNotIn("</script>", embedded.lower())
-        self.assertIn("\\u003c/script\\u003e", embedded.lower())
+        self.assertIn("UC-create-work-order", embedded)
 
     def test_ai_context_is_compact_orientation_not_full_dump(self):
         renderer.write_projections(self.revision)

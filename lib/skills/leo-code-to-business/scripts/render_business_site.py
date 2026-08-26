@@ -16,6 +16,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import business_contract as contract
+import site_view_model
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -381,39 +382,122 @@ def embedded_json(value: Any) -> str:
     )
 
 
-def render_html_site(revision: dict[str, Any]) -> str:
-    manifest = revision["manifest"]
-    canonical_hash = manifest["canonical_revision_sha256"]
-    snapshot = manifest.get("repository_snapshot", {})
-    use_case_html = "".join(
-        render_use_case(revision, use_case) for use_case in revision["use_cases"]
+def render_html_site(model: dict[str, Any]) -> str:
+    views = model["views"]
+    overview = views["overview"]
+    canonical_hash = model["canonical_revision_sha256"]
+    snapshot = overview["snapshot"]
+    navigation = "".join(
+        f'<a href="#{esc(item["id"])}">{esc(item["label"])}</a>'
+        for item in model["navigation"]
+    )
+    empty_states = "".join(
+        f'<div data-empty-state="{esc(item["state"])}"><strong>{esc(item["state"])}</strong><span>{esc(item["reason"])}</span></div>'
+        for item in model["empty_states"]
     )
     capability_items = "".join(
         f"<li><strong>{esc(item['title'])}</strong><span>{esc(item['summary'])}</span></li>"
-        for item in revision["capabilities"]
-    )
+        for item in views["capability_tree"]
+    ) or '<li data-empty-state="not_investigated">能力尚未完成调查。</li>'
+    coverage = views["coverage_dashboard"]
+    metrics = coverage.get("metrics", coverage)
     coverage_items = "".join(
-        f"<div><dt>{esc(key.replace('_', ' '))}</dt><dd>{esc(value)}</dd></div>"
-        for key, value in revision["coverage"].items()
-        if isinstance(value, (int, float, str))
+        f"<div><dt>{esc(name.replace('_', ' '))}</dt><dd>{esc(value.get('ratio'))} ({esc(value.get('numerator'))}/{esc(value.get('denominator'))})</dd></div>"
+        for name, value in sorted(metrics.items())
+        if isinstance(value, dict)
     )
     unknown_items = "".join(
-        f"<li><strong>{esc(item['title'])}</strong><span>{esc(item.get('question', item['summary']))}</span><small>{esc(item.get('reason', ''))}</small></li>"
-        for item in revision["unknowns"]
+        f"<li><strong>{esc(item['title'])}</strong><span>{esc(item.get('question', item.get('summary', '')))}</span><small>{esc(item.get('reason', ''))}</small></li>"
+        for item in views["gap_views"]["unknowns"]
     )
+    conflict_items = "".join(
+        f"<li><strong>{esc(item['title'])}</strong><span>{esc(item.get('business_question', item.get('summary', '')))}</span></li>"
+        for item in views["gap_views"]["conflicts"]
+    ) or '<li data-empty-state="confirmed_empty">当前未发现冲突。</li>'
     rules_items = "".join(
-        f"<li><strong>{esc(item['title'])}</strong><span>{esc(item.get('statement', item['summary']))}</span></li>"
-        for item in revision["rules"]
+        f"<li><strong>{esc(item['title'])}</strong><span>{esc(item.get('statement', item.get('summary', '')))}</span></li>"
+        for item in views["rule_catalog"]
     )
+    workflow_items = "".join(
+        f"<li><strong>{esc(item['title'])}</strong><span>{esc(item.get('summary', ''))}</span></li>"
+        for item in views["workflow_views"]
+    ) or '<li data-empty-state="not_investigated">流程尚未完成调查。</li>'
+    state_items = "".join(
+        f"<li><strong>{esc(item.get('title', item.get('id', '')))}</strong></li>"
+        for item in views["state_views"]
+    ) or '<li data-empty-state="searched_not_found">当前源码未发现独立状态机。</li>'
+    effect_items = "".join(
+        f"<li><strong>{esc(item.get('use_case_id', ''))}</strong><span>{esc(len(item.get('effects', [])))} 个外部影响</span></li>"
+        for item in views["effect_catalog"]
+    ) or '<li data-empty-state="not_investigated">外部影响尚未完成调查。</li>'
+    actor_items = "".join(
+        f"<li><strong>{esc(item['actor']['title'])}</strong><span>{', '.join(item.get('use_case_ids', [])) or '未关联用例'}</span><small data-empty-state=\"searched_not_found\">权限规则已搜索但未发现明确证据。</small></li>"
+        for item in views["actor_permission_views"]
+    ) or '<li data-empty-state="not_investigated">角色尚未完成调查。</li>'
+    evolution = views["evolution_views"]
+    evolution_items = "".join(
+        f"<li><strong>{esc(item['title'])}</strong><span>{esc(item['after_summary'])}</span><small>{esc(item['introduced_at'])} · {esc(item['current_effectiveness'])}</small></li>"
+        for item in evolution["events"]
+    ) or '<li data-empty-state="not_investigated">历史演进尚未完成调查。</li>'
+    use_case_html = []
+    for detail in views["use_case_details"]:
+        sections = []
+        for section in detail["sections"]:
+            if section["id"] == "summary":
+                section = {
+                    **section,
+                    "items": [
+                        *section["items"],
+                        *[
+                            {"statement": item["goal"], "label": item.get("goal_label", "业务目标")}
+                            for item in section["items"]
+                            if item.get("goal")
+                        ],
+                    ],
+                }
+                section["title"] = "概要与业务目标"
+            elif section["id"] == "evidence":
+                section["title"] = "技术证据"
+            items = "".join(
+                f"<li>{esc(item.get('statement', item.get('summary', item.get('observation', item.get('title', str(item))))))}"
+                + (
+                    f"<small>{esc(item.get('repository_relative_path', ''))}:{esc(item.get('start_line', ''))} {esc(item.get('symbol', ''))}</small>"
+                    if item.get("repository_relative_path")
+                    else ""
+                )
+                + "</li>"
+                for item in section["items"]
+            ) or f'<li data-empty-state="{esc(section.get("empty_state") or "not_investigated")}">暂无内容</li>'
+            if section["id"] == "evidence":
+                sections.append(
+                    f'<section><details open><summary>{esc(section["title"])}</summary><ul>{items}</ul></details></section>'
+                )
+            else:
+                sections.append(f'<section><h3>{esc(section["title"])}</h3><ul>{items}</ul></section>')
+        use_case_html.append(
+            f'<article class="use-case" id="use-case-{esc(detail["id"])}"><h2>{esc(detail["title"])}</h2>{"".join(sections)}</article>'
+        )
+    use_case_html = "".join(use_case_html)
     noscript_cases = "".join(
-        f"<li><a href=\"#use-case-{esc(item['id'])}\">{esc(item['title'])}</a> - {esc(item['summary'])}</li>"
-        for item in revision["use_cases"]
+        f"<li><a href=\"#use-case-{esc(item['id'])}\">{esc(item['title'])}</a></li>"
+        for item in views["use_case_catalog"]
     )
     data = {
         "canonical_revision_sha256": canonical_hash,
         "snapshot": snapshot,
-        "records": search_records(revision),
-        "aliases": revision["aliases"],
+        "records": [
+            {
+                "id": item["id"],
+                "kind": "use-case",
+                "title": item["title"],
+                "summary": item.get("summary", ""),
+                "aliases": [],
+                "route": f"#use-case-{item['id']}",
+                "status": "confirmed",
+                "confidence": "",
+            }
+            for item in views["use_case_catalog"]
+        ],
     }
     return f"""<!doctype html>
 <html lang="zh-CN">
@@ -493,22 +577,13 @@ summary {{ cursor:pointer; font-weight:600; }}
 <aside>
   <div class="brand"><strong>业务知识库</strong><small>代码证据驱动</small></div>
   <nav>
-    <a href="#overview">概览</a>
-    <a href="#capabilities">业务能力</a>
-    <a href="#use-cases">业务用例</a>
-    <a href="#rules">业务规则</a>
-    <a href="#states">状态</a>
-    <a href="#events">事件</a>
-    <a href="#glossary">术语</a>
-    <a href="#unknowns">未知与冲突</a>
-    <a href="#coverage">覆盖率</a>
-    <a href="#evidence">证据</a>
+{navigation}
   </nav>
 </aside>
 <main>
   <div class="topbar">
     <input class="search" id="search" type="search" placeholder="搜索业务名称、目标、规则、代码符号或未知问题" aria-label="搜索业务知识">
-    <span class="meta">{esc(manifest.get('coverage_status', 'partial'))}</span>
+    <span class="meta">{esc(overview.get('aggregate_status', 'partial'))}</span>
     <div class="search-results" id="search-results"></div>
   </div>
   <div class="content">
@@ -525,15 +600,16 @@ summary {{ cursor:pointer; font-weight:600; }}
         <p>Repository: <code>{esc(snapshot.get('canonical_root', 'unknown'))}</code></p>
       </div>
     </section>
-    <section class="band" id="capabilities"><header><h2>业务能力</h2><span>{len(revision['capabilities'])}</span></header><ul class="detail-list">{capability_items}</ul></section>
-    <section class="band" id="use-cases"><header><h2>业务用例</h2><span>{len(revision['use_cases'])}</span></header>{use_case_html}</section>
-    <section class="band" id="rules"><header><h2>业务规则</h2><span>{len(revision['rules'])}</span></header><ul class="detail-list">{rules_items}</ul></section>
-    <section class="band" id="states"><header><h2>状态</h2><span>{len(revision['state_machines'])}</span></header><p class="empty">状态机按业务对象展示；当前样例未定义独立状态机。</p></section>
-    <section class="band" id="events"><header><h2>事件</h2><span>{len(revision['events'])}</span></header><p class="empty">业务事件会显示生产者、消费者和失败影响。</p></section>
-    <section class="band" id="glossary"><header><h2>术语</h2><span>{len(revision['glossary'])}</span></header><ul class="detail-list">{''.join(f"<li><strong>{esc(x['title'])}</strong><span>{esc(x['summary'])}</span></li>" for x in revision['glossary'])}</ul></section>
-    <section class="band" id="unknowns"><header><h2>未知与冲突</h2><span>{len(revision['unknowns']) + len(revision['conflicts'])}</span></header><ul class="detail-list warning">{unknown_items}</ul></section>
-    <section class="band" id="coverage"><header><h2>覆盖率</h2></header><dl class="coverage">{coverage_items}</dl></section>
-    <section class="band" id="evidence"><header><h2>证据</h2><span>{len(revision['evidence'])}</span></header><p>证据已嵌入各业务用例，可展开查看当前源码位置、符号和观察结论。</p></section>
+    <section class="band" id="capability_tree"><header><h2>业务能力</h2><span>{len(views['capability_tree'])}</span></header><ul class="detail-list">{capability_items}</ul></section>
+    <section class="band" id="use_case_catalog"><header><h2>用例目录</h2><span>{len(views['use_case_catalog'])}</span></header>{use_case_html}</section>
+    <section class="band" id="workflow_views"><header><h2>业务流程</h2><span>{len(views['workflow_views'])}</span></header><ul class="detail-list">{workflow_items}</ul></section>
+    <section class="band" id="state_views"><header><h2>生命周期与状态</h2><span>{len(views['state_views'])}</span></header><ul class="detail-list">{state_items}</ul></section>
+    <section class="band" id="rule_catalog"><header><h2>业务规则</h2><span>{len(views['rule_catalog'])}</span></header><ul class="detail-list">{rules_items}</ul></section>
+    <section class="band" id="effect_catalog"><header><h2>数据与外部影响</h2><span>{len(views['effect_catalog'])}</span></header><ul class="detail-list">{effect_items}</ul></section>
+    <section class="band" id="actor_permission_views"><header><h2>角色与权限</h2><span>{len(views['actor_permission_views'])}</span></header><ul class="detail-list">{actor_items}</ul></section>
+    <section class="band" id="evolution_views"><header><h2>业务演进</h2><span>{evolution['commit_count']} commits / {len(evolution['events'])} events</span></header><ul class="detail-list">{evolution_items}</ul></section>
+    <section class="band" id="gap_views"><header><h2>未知与冲突</h2><span>{len(views['gap_views']['unknowns']) + len(views['gap_views']['conflicts'])}</span></header><ul class="detail-list warning">{unknown_items}{conflict_items}</ul></section>
+    <section class="band" id="coverage_dashboard"><header><h2>覆盖率与证据</h2></header><dl class="coverage">{coverage_items}</dl><div class="empty-states">{empty_states}</div></section>
     <noscript>
       <section class="band">
         <h2>无脚本业务用例索引</h2>
@@ -591,12 +667,16 @@ def write_projections(revision_dir: Path | str) -> dict[str, Any]:
     root = Path(revision_dir)
     canonical_hash = refresh_canonical_hashes(root)
     revision = load_canonical_revision(root)
+    model = site_view_model.build_site_view_model(revision)
     ai_context = render_ai_context(revision)
-    html_site = render_html_site(revision)
+    html_site = render_html_site(model)
+    view_model_text = contract.canonical_json_bytes(model, sort_records=True).decode("utf-8") + "\n"
     ai_path = root / "ai-context.md"
     html_path = root / "site" / "index.html"
+    view_model_path = root / "site-view-model.json"
     write_text_atomic(ai_path, ai_context)
     write_text_atomic(html_path, html_site)
+    write_text_atomic(view_model_path, view_model_text)
 
     manifest = guard.read_json(root / "manifest.json")
     manifest["projection_hashes"] = {
@@ -609,6 +689,11 @@ def write_projections(revision_dir: Path | str) -> dict[str, Any]:
             "canonical_sha256": canonical_hash,
             "sha256": sha256_text(html_site),
             "path": "site/index.html",
+        },
+        "view_model": {
+            "canonical_sha256": canonical_hash,
+            "sha256": sha256_text(view_model_text),
+            "path": "site-view-model.json",
         },
     }
     guard.write_json_atomic(root / "manifest.json", manifest)
