@@ -122,6 +122,12 @@ verified current-source evidence
 all eight required investigation kinds
 ```
 
+The `main_flow` must describe participant actions or business events, ordered business stages,
+business-facing decisions, and a visible result or handoff. Source identifiers and implementation order,
+persistence operations, field inventories, queues, caches, indexes, and middleware cannot substitute
+for those stages. Preserve those verified facts in decisions, rules, permissions, data/state
+changes, external effects, observability, and evidence.
+
 Preconditions, decisions, state/data/external effects, failures, compensation, permissions, and
 observability require either substantive values or a `has_unknown` relationship from the exact
 dimension address to a searched unknown.

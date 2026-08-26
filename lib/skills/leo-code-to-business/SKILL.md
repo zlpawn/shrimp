@@ -13,6 +13,10 @@ evidence; business meaning is the product. Publish compact `ai-context.md` and d
 
 - Start with actors, goals, decisions, lifecycle, outcomes, and business-visible effects—not
   packages or classes.
+- A confirmed `main_flow` must be understandable without source-code knowledge: describe
+  participant actions or business events, ordered business stages, business-facing decisions, and
+  a visible outcome or handoff. Move identifiers, storage operations, middleware, and field writes
+  to rules, effects, data/state changes, or evidence.
 - Current source, SQL, schema, and active configuration outrank tests, documents, Git history, and
   inference.
 - Use both forward trace and backward trace. Search alternate entries, use-case families, reverse

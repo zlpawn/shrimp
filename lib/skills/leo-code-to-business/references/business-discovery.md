@@ -22,6 +22,27 @@ For each use case answer:
 - Which variants and related paths share the same goal?
 - What remains unknown or conflicted after completed searches?
 
+## Business Flow Construction
+
+Build `main_flow` from a participant action or business event, ordered business stages,
+business-facing decisions, and a visible outcome or handoff. A reader must understand how the
+scenario operates without expanding source evidence.
+
+Do not use implementation order as the flow. Move technical facts to the dimension that preserves
+their business meaning:
+
+- tenant or ownership precedence belongs in permissions or decision points;
+- duplicate keys and timing windows belong in business rules and rejection conditions;
+- internal enums belong in evidence while their business category and consequence belong in
+  decision points;
+- field writes belong in data and state changes;
+- database, queue, cache, index, and middleware actions belong in external effects, observability,
+  or implementation evidence.
+
+A technical term may remain when it is established product language and the statement still names
+the participant, business object, decision, or visible effect. Never invent a business translation
+that current evidence does not support.
+
 ## Use-Case Family Search
 
 Group by shared business goal and lifecycle, not package layout. Search alternate channels,

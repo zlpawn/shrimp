@@ -196,6 +196,31 @@ class BusinessKnowledgeGuardTests(unittest.TestCase):
         ]:
             self.assertIn(phrase, text)
 
+    def test_business_flow_contract_is_explicit(self):
+        skill = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+        discovery = (
+            SKILL_DIR / "references" / "business-discovery.md"
+        ).read_text(encoding="utf-8")
+        model = (
+            SKILL_DIR / "references" / "business-knowledge-model.md"
+        ).read_text(encoding="utf-8")
+        coverage = (
+            SKILL_DIR / "references" / "coverage-and-completion.md"
+        ).read_text(encoding="utf-8")
+        evidence = (
+            SKILL_DIR / "references" / "evidence-and-confidence.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("understandable without source-code knowledge", skill)
+        self.assertIn("participant action or business event", discovery)
+        self.assertIn("visible outcome or handoff", discovery)
+        self.assertIn("implementation order", model)
+        self.assertIn("business_flow_semantic_quality", coverage)
+        self.assertIn(
+            "must not substitute implementation order",
+            evidence,
+        )
+
     def test_inventory_requires_exactly_one_classification(self):
         inventory = self.read_jsonl("inventory.jsonl")
         inventory[0]["classification"] = None

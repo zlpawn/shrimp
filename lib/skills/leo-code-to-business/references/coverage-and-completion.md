@@ -60,6 +60,11 @@ Confirmed use cases need actor, goal, trigger, main flow, success outcome, and e
 required dimension needs substantive knowledge or a searched unknown attached to its exact canonical
 address.
 
+Track `business_flow_semantic_quality` over confirmed use cases. Its unresolved IDs are exact
+`<use-case-id>#main_flow/<local-id>` addresses with high-severity technical-narration diagnostics.
+Any unresolved address prevents current coverage from passing, but does not block canonical
+integrity or publication as an exact partial revision.
+
 ## Semantic Review
 
 Score 0-2:

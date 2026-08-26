@@ -76,6 +76,9 @@ The independent omission audit receives the frozen inventory, candidates, famili
 knowledge but not the producing analysis narrative. It names missing signals, writers, family
 members, and dimensions with severity. The independent semantic review receives canonical artifacts
 and rubric, not expected answers or source access. Review hashes must match the canonical revision.
+For `main_flow`, the reviewer must not substitute implementation order, identifiers, storage
+writes, middleware, or field inventories for participant action, business stages, decisions, and
+visible outcomes. A flow that requires source-code knowledge to interpret scores at most 1.
 
 ## Freshness
 
