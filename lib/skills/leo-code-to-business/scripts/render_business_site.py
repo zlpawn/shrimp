@@ -382,104 +382,213 @@ def embedded_json(value: Any) -> str:
     )
 
 
+def section_by_id(detail: dict[str, Any], section_id: str) -> dict[str, Any]:
+    for section in detail.get("sections", []):
+        if section.get("id") == section_id:
+            return section
+    return {"id": section_id, "items": [], "empty_state": "not_investigated"}
+
+
+def section_items(detail: dict[str, Any], *section_ids: str) -> list[dict[str, Any]]:
+    items: list[dict[str, Any]] = []
+    for section_id in section_ids:
+        for item in section_by_id(detail, section_id).get("items", []):
+            items.append(dict(item) if isinstance(item, dict) else {"statement": str(item)})
+    return items
+
+
+def item_text(item: dict[str, Any]) -> str:
+    return str(
+        item.get("statement")
+        or item.get("question")
+        or item.get("summary")
+        or item.get("observation")
+        or item.get("title")
+        or ""
+    )
+
+
+def render_statement_list(
+    items: list[dict[str, Any]],
+    *,
+    ordered: bool = False,
+    empty_state: str = "not_investigated",
+    empty_text: str = "当前尚未整理出明确内容。",
+) -> str:
+    if not items:
+        return f'<p class="empty" data-empty-state="{esc(empty_state)}">{esc(empty_text)}</p>'
+    tag = "ol" if ordered else "ul"
+    class_name = "flow-list" if ordered else "business-list"
+    rendered = []
+    for item in items:
+        source = ""
+        if item.get("repository_relative_path"):
+            source = (
+                f"{item.get('repository_relative_path', '')}:"
+                f"{item.get('start_line', '')} {item.get('symbol', '')}"
+            ).strip()
+        supporting = item.get("reason", "") or source
+        rendered.append(
+            f"<li><span>{esc(item_text(item))}</span>"
+            f"{f'<small>{esc(supporting)}</small>' if supporting else ''}</li>"
+        )
+    return f'<{tag} class="{class_name}">{"".join(rendered)}</{tag}>'
+
+
+def first_item_text(detail: dict[str, Any], section_id: str, fallback: str) -> str:
+    items = section_items(detail, section_id)
+    return item_text(items[0]) if items and item_text(items[0]) else fallback
+
+
+def use_case_title_map(views: dict[str, Any]) -> dict[str, str]:
+    return {
+        item["id"]: item["title"]
+        for item in views.get("use_case_catalog", [])
+        if item.get("id")
+    }
+
+
+def format_ratio(metric: dict[str, Any]) -> str:
+    ratio = metric.get("ratio")
+    percentage = f"{ratio * 100:.0f}%" if isinstance(ratio, (int, float)) else "未计算"
+    numerator = metric.get("numerator")
+    denominator = metric.get("denominator")
+    if numerator is None or denominator is None:
+        return percentage
+    return f"{percentage}（{numerator}/{denominator}）"
+
+
 def render_html_site(model: dict[str, Any]) -> str:
     views = model["views"]
     overview = views["overview"]
     canonical_hash = model["canonical_revision_sha256"]
     snapshot = overview["snapshot"]
     navigation = "".join(
-        f'<a href="#{esc(item["id"])}">{esc(item["label"])}</a>'
-        for item in model["navigation"]
+        f'<a href="#{target}">{label}</a>'
+        for target, label in [
+            ("overview", "业务全景"),
+            ("business_scenarios", "业务场景"),
+            ("key_rules", "关键规则"),
+            ("open_questions", "待确认事项"),
+            ("analysis_notes", "分析说明"),
+        ]
     )
     empty_states = "".join(
         f'<div data-empty-state="{esc(item["state"])}"><strong>{esc(item["state"])}</strong><span>{esc(item["reason"])}</span></div>'
         for item in model["empty_states"]
     )
-    capability_items = "".join(
-        f"<li><strong>{esc(item['title'])}</strong><span>{esc(item['summary'])}</span></li>"
+    capability_html = "".join(
+        '<article class="capability-card">'
+        f'<span class="card-label">业务能力</span><h3>{esc(item["title"])}</h3>'
+        f'<p>{esc(item.get("summary", ""))}</p></article>'
         for item in views["capability_tree"]
-    ) or '<li data-empty-state="not_investigated">能力尚未完成调查。</li>'
+    ) or '<p class="empty" data-empty-state="not_investigated">业务能力尚未完成整理。</p>'
     coverage = views["coverage_dashboard"]
     metrics = coverage.get("metrics", coverage)
-    coverage_items = "".join(
-        f"<div><dt>{esc(name.replace('_', ' '))}</dt><dd>{esc(value.get('ratio'))} ({esc(value.get('numerator'))}/{esc(value.get('denominator'))})</dd></div>"
+    coverage_html = "".join(
+        f'<div><dt>{esc(name.replace("_", " "))}</dt><dd>{esc(format_ratio(value))}</dd></div>'
         for name, value in sorted(metrics.items())
         if isinstance(value, dict)
     )
-    unknown_items = "".join(
-        f"<li><strong>{esc(item['title'])}</strong><span>{esc(item.get('question', item.get('summary', '')))}</span><small>{esc(item.get('reason', ''))}</small></li>"
+    rules_html = "".join(
+        '<li class="rule-item">'
+        f'<strong>{esc(item["title"])}</strong>'
+        f'<span>{esc(item.get("statement", item.get("summary", "")))}</span></li>'
+        for item in views["rule_catalog"]
+    ) or '<li class="empty" data-empty-state="not_investigated">关键规则尚未完成整理。</li>'
+    unknown_html = "".join(
+        '<li class="question-item">'
+        f'<strong>{esc(item["title"])}</strong>'
+        f'<span>{esc(item.get("question", item.get("summary", "")))}</span>'
+        f'<small>{esc(item.get("reason", ""))}</small></li>'
         for item in views["gap_views"]["unknowns"]
     )
-    conflict_items = "".join(
-        f"<li><strong>{esc(item['title'])}</strong><span>{esc(item.get('business_question', item.get('summary', '')))}</span></li>"
+    conflict_html = "".join(
+        '<li class="question-item conflict">'
+        f'<strong>{esc(item["title"])}</strong>'
+        f'<span>{esc(item.get("business_question", item.get("summary", "")))}</span></li>'
         for item in views["gap_views"]["conflicts"]
-    ) or '<li data-empty-state="confirmed_empty">当前未发现冲突。</li>'
-    rules_items = "".join(
-        f"<li><strong>{esc(item['title'])}</strong><span>{esc(item.get('statement', item.get('summary', '')))}</span></li>"
-        for item in views["rule_catalog"]
-    )
-    workflow_items = "".join(
-        f"<li><strong>{esc(item['title'])}</strong><span>{esc(item.get('summary', ''))}</span></li>"
-        for item in views["workflow_views"]
-    ) or '<li data-empty-state="not_investigated">流程尚未完成调查。</li>'
-    state_items = "".join(
-        f"<li><strong>{esc(item.get('title', item.get('id', '')))}</strong></li>"
-        for item in views["state_views"]
-    ) or '<li data-empty-state="searched_not_found">当前源码未发现独立状态机。</li>'
-    effect_items = "".join(
-        f"<li><strong>{esc(item.get('use_case_id', ''))}</strong><span>{esc(len(item.get('effects', [])))} 个外部影响</span></li>"
-        for item in views["effect_catalog"]
-    ) or '<li data-empty-state="not_investigated">外部影响尚未完成调查。</li>'
-    actor_items = "".join(
-        f"<li><strong>{esc(item['actor']['title'])}</strong><span>{', '.join(item.get('use_case_ids', [])) or '未关联用例'}</span><small data-empty-state=\"searched_not_found\">权限规则已搜索但未发现明确证据。</small></li>"
+    ) or '<li class="empty" data-empty-state="confirmed_empty">当前已整理范围内未发现相互冲突的业务结论。</li>'
+    title_map = use_case_title_map(views)
+    actor_html = "".join(
+        '<li><strong>'
+        f'{esc(item["actor"]["title"])}</strong><span>{esc(item["actor"].get("summary", ""))}</span>'
+        f'<small>{esc("、".join(title_map.get(use_case_id, use_case_id) for use_case_id in item.get("use_case_ids", [])) or "相关场景尚待确认")}</small></li>'
         for item in views["actor_permission_views"]
-    ) or '<li data-empty-state="not_investigated">角色尚未完成调查。</li>'
-    evolution = views["evolution_views"]
-    evolution_items = "".join(
-        f"<li><strong>{esc(item['title'])}</strong><span>{esc(item['after_summary'])}</span><small>{esc(item['introduced_at'])} · {esc(item['current_effectiveness'])}</small></li>"
-        for item in evolution["events"]
-    ) or '<li data-empty-state="not_investigated">历史演进尚未完成调查。</li>'
-    use_case_html = []
+    ) or '<li class="empty" data-empty-state="not_investigated">参与者尚未完成整理。</li>'
+
+    scenario_cards: list[str] = []
+    business_chains: list[str] = []
+    use_case_details: list[str] = []
     for detail in views["use_case_details"]:
-        sections = []
-        for section in detail["sections"]:
-            if section["id"] == "summary":
-                section = {
-                    **section,
-                    "items": [
-                        *section["items"],
-                        *[
-                            {"statement": item["goal"], "label": item.get("goal_label", "业务目标")}
-                            for item in section["items"]
-                            if item.get("goal")
-                        ],
-                    ],
-                }
-                section["title"] = "概要与业务目标"
-            elif section["id"] == "evidence":
-                section["title"] = "技术证据"
-            items = "".join(
-                f"<li>{esc(item.get('statement', item.get('summary', item.get('observation', item.get('title', str(item))))))}"
-                + (
-                    f"<small>{esc(item.get('repository_relative_path', ''))}:{esc(item.get('start_line', ''))} {esc(item.get('symbol', ''))}</small>"
-                    if item.get("repository_relative_path")
-                    else ""
-                )
-                + "</li>"
-                for item in section["items"]
-            ) or f'<li data-empty-state="{esc(section.get("empty_state") or "not_investigated")}">暂无内容</li>'
-            if section["id"] == "evidence":
-                sections.append(
-                    f'<section><details open><summary>{esc(section["title"])}</summary><ul>{items}</ul></details></section>'
-                )
-            else:
-                sections.append(f'<section><h3>{esc(section["title"])}</h3><ul>{items}</ul></section>')
-        use_case_html.append(
-            f'<article class="use-case" id="use-case-{esc(detail["id"])}"><h2>{esc(detail["title"])}</h2>{"".join(sections)}</article>'
+        summary_items = section_items(detail, "summary")
+        summary = summary_items[0] if summary_items else {}
+        actors = summary.get("actors", [])
+        actor_text = "、".join(actors) if actors else "参与者尚待确认"
+        goal = summary.get("goal") or "业务目标尚待确认"
+        outcome = first_item_text(detail, "success", "业务结果尚待确认")
+        initiation = section_items(detail, "trigger_preconditions")
+        flow = section_items(detail, "main_flow")
+        rules = section_items(detail, "rules_decisions")
+        results = section_items(detail, "effects", "success")
+        exceptions = section_items(detail, "rejection_failure", "recovery")
+        questions = section_items(detail, "permissions", "variants", "gaps")
+        evolution = section_items(detail, "evolution")
+        evidence = section_items(detail, "evidence")
+
+        scenario_cards.append(
+            '<article class="scenario-card">'
+            f'<div class="scenario-card__top"><span>业务场景</span><strong>{esc(actor_text)}</strong></div>'
+            f'<h3>{esc(detail["title"])}</h3><p>{esc(summary.get("statement", ""))}</p>'
+            '<dl class="scenario-facts">'
+            f'<div><dt>业务目标</dt><dd>{esc(goal)}</dd></div>'
+            f'<div><dt>完成结果</dt><dd>{esc(outcome)}</dd></div></dl>'
+            f'<a class="detail-link" href="#use-case-{esc(detail["id"])}">查看场景详情 <span aria-hidden="true">→</span></a>'
+            '</article>'
         )
-    use_case_html = "".join(use_case_html)
+        business_chains.append(
+            '<li class="chain-item">'
+            f'<span class="chain-node"><small>参与者</small>{esc(actor_text)}</span>'
+            '<span class="chain-arrow" aria-hidden="true">→</span>'
+            f'<span class="chain-node action"><small>业务动作</small>{esc(detail["title"])}</span>'
+            '<span class="chain-arrow" aria-hidden="true">→</span>'
+            f'<span class="chain-node"><small>业务结果</small>{esc(outcome)}</span></li>'
+        )
+        use_case_details.append(
+            f'<article class="use-case" id="use-case-{esc(detail["id"])}">'
+            '<header class="use-case__header"><div><span class="section-kicker">业务用例详情</span>'
+            f'<h2>{esc(detail["title"])}</h2><p>{esc(summary.get("statement", ""))}</p></div>'
+            '<a href="#business_scenarios">返回场景列表</a></header>'
+            '<section class="use-case__intro">'
+            f'<div><span>参与者</span><strong>{esc(actor_text)}</strong></div>'
+            f'<div><span>业务目标</span><strong>{esc(goal)}</strong></div></section>'
+            '<section class="detail-section"><h3>参与者与发起条件</h3>'
+            f'{render_statement_list(initiation, empty_state=section_by_id(detail, "trigger_preconditions").get("empty_state") or "not_investigated")}</section>'
+            '<section class="detail-section"><h3>业务流程</h3>'
+            f'{render_statement_list(flow, ordered=True, empty_state=section_by_id(detail, "main_flow").get("empty_state") or "not_investigated")}</section>'
+            '<section class="detail-grid"><div class="detail-section"><h3>关键规则</h3>'
+            f'{render_statement_list(rules, empty_state=section_by_id(detail, "rules_decisions").get("empty_state") or "not_investigated")}</div>'
+            '<div class="detail-section outcome"><h3>业务结果</h3>'
+            f'{render_statement_list(results)}</div></section>'
+            '<section class="detail-section exception"><h3>异常与恢复</h3>'
+            f'{render_statement_list(exceptions)}</section>'
+            '<section class="detail-section questions"><h3>待确认事项</h3>'
+            f'{render_statement_list(questions, empty_text="当前场景没有已记录的待确认事项。")}</section>'
+            + (
+                '<section class="detail-section"><h3>业务变化</h3>'
+                f'{render_statement_list(evolution)}</section>'
+                if evolution
+                else ""
+            )
+            +
+            '<details class="implementation-evidence"><summary>实现依据</summary>'
+            '<p>以下内容用于从业务结论下探到当前源码，不作为默认业务阅读层。</p>'
+            f'{render_statement_list(evidence, empty_state=section_by_id(detail, "evidence").get("empty_state") or "not_investigated", empty_text="当前没有可展示的直接源码证据。")}</details>'
+            '</article>'
+        )
+
     noscript_cases = "".join(
-        f"<li><a href=\"#use-case-{esc(item['id'])}\">{esc(item['title'])}</a></li>"
+        f'<li><a href="#use-case-{esc(item["id"])}">{esc(item["title"])}</a></li>'
         for item in views["use_case_catalog"]
     )
     data = {
@@ -493,8 +602,6 @@ def render_html_site(model: dict[str, Any]) -> str:
                 "summary": item.get("summary", ""),
                 "aliases": [],
                 "route": f"#use-case-{item['id']}",
-                "status": "confirmed",
-                "confidence": "",
             }
             for item in views["use_case_catalog"]
         ],
@@ -505,117 +612,146 @@ def render_html_site(model: dict[str, Any]) -> str:
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>业务知识库</title>
+<title>项目业务知识地图</title>
 <style>
-:root {{ --ink:#17211b; --muted:#5d6b63; --line:#d7ddd8; --paper:#f7f8f5; --panel:#fff; --green:#17633b; --blue:#245c8a; --amber:#8b5a08; --red:#9b2c2c; }}
+:root {{ --ink:#18211c; --muted:#667168; --paper:#f3f5f1; --panel:#fff; --forest:#234d37; --leaf:#4f765d; --clay:#b7653b; --line:#d9dfd8; --soft:#e9efe9; --warning:#8a6117; --shadow:0 18px 50px rgba(35,77,55,.08); }}
 * {{ box-sizing:border-box; }}
 html {{ scroll-behavior:smooth; }}
-body {{ margin:0; background:var(--paper); color:var(--ink); font:15px/1.55 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; letter-spacing:0; }}
+body {{ margin:0; background:var(--paper); color:var(--ink); font:15px/1.65 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }}
 button,input {{ font:inherit; }}
-.shell {{ display:grid; grid-template-columns:240px minmax(0,1fr); min-height:100vh; }}
-aside {{ position:sticky; top:0; height:100vh; padding:24px 18px; border-right:1px solid var(--line); background:#eef1ed; }}
-.brand {{ margin-bottom:24px; }}
-.brand strong {{ display:block; font-size:20px; }}
-.brand small,.meta,.empty {{ color:var(--muted); }}
-nav {{ display:grid; gap:4px; }}
-nav a {{ color:var(--ink); text-decoration:none; padding:8px 10px; border-left:3px solid transparent; }}
-nav a:hover,nav a.active {{ background:#fff; border-left-color:var(--green); }}
+.shell {{ min-height:100vh; }}
+aside {{ position:sticky; top:0; z-index:20; display:flex; align-items:center; justify-content:space-between; gap:24px; padding:14px max(24px,calc((100vw - 1240px)/2)); border-bottom:1px solid var(--line); background:rgba(243,245,241,.96); backdrop-filter:blur(14px); }}
+.brand {{ display:flex; align-items:baseline; gap:10px; white-space:nowrap; }}
+.brand strong {{ font-size:17px; }}
+.brand small,.empty {{ color:var(--muted); }}
+nav {{ display:flex; flex-wrap:wrap; justify-content:flex-end; gap:4px; }}
+nav a {{ color:var(--muted); text-decoration:none; padding:7px 10px; border-radius:999px; }}
+nav a:hover,nav a.active {{ color:var(--forest); background:var(--soft); }}
+a:focus-visible,input:focus-visible,summary:focus-visible {{ outline:3px solid rgba(183,101,59,.3); outline-offset:3px; }}
 main {{ min-width:0; }}
-.topbar {{ position:sticky; top:0; z-index:10; display:flex; gap:12px; align-items:center; padding:14px 28px; border-bottom:1px solid var(--line); background:rgba(247,248,245,.96); }}
-.search {{ flex:1; min-width:0; border:1px solid #aeb8b1; background:#fff; padding:10px 12px; border-radius:4px; }}
-.content {{ max-width:1180px; margin:0 auto; padding:34px 28px 72px; }}
-.overview {{ display:grid; grid-template-columns:2fr 1fr; gap:28px; align-items:start; border-bottom:1px solid var(--line); padding-bottom:30px; }}
-h1 {{ margin:0 0 10px; font-size:34px; line-height:1.15; }}
-h2 {{ margin:0; font-size:25px; }}
-h3 {{ margin:0 0 10px; font-size:15px; color:var(--green); }}
-.overview p,.use-case header p {{ color:var(--muted); max-width:74ch; }}
-.snapshot {{ border-left:4px solid var(--blue); padding-left:16px; }}
-.snapshot code {{ overflow-wrap:anywhere; }}
-.band {{ padding:28px 0; border-bottom:1px solid var(--line); }}
-.band > header {{ display:flex; justify-content:space-between; align-items:end; gap:16px; margin-bottom:18px; }}
-.detail-list,.fact-list {{ list-style:none; padding:0; margin:0; display:grid; gap:8px; }}
-.detail-list li,.fact-list li {{ display:grid; gap:2px; padding:9px 0; border-bottom:1px solid #e8ece9; }}
-.detail-list span,.fact-list span {{ color:#33423a; }}
-small {{ color:var(--muted); }}
-.use-case {{ padding:34px 0; border-bottom:2px solid var(--line); }}
-.use-case > header {{ display:flex; justify-content:space-between; gap:24px; align-items:start; margin-bottom:24px; }}
-.eyebrow {{ color:var(--green); font-size:12px; text-transform:uppercase; }}
-.status {{ display:flex; gap:6px; white-space:nowrap; }}
-.status span {{ border:1px solid var(--line); padding:3px 7px; font-size:12px; }}
-.use-case section {{ margin:22px 0; }}
-.facts {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }}
-.facts div {{ border-left:3px solid var(--green); padding-left:12px; }}
-.facts dt {{ color:var(--muted); font-size:12px; }}
-.facts dd {{ margin:2px 0 0; }}
-.three-column {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:24px; }}
-.warning li {{ border-left:3px solid var(--amber); padding-left:10px; }}
-.evidence code {{ color:var(--blue); overflow-wrap:anywhere; }}
-details {{ margin-top:24px; border-top:1px solid var(--line); padding-top:14px; }}
-summary {{ cursor:pointer; font-weight:600; }}
+.topbar {{ position:relative; max-width:1240px; margin:0 auto; padding:22px 28px 0; }}
+.search {{ width:100%; border:1px solid var(--line); background:var(--panel); padding:12px 16px; border-radius:12px; box-shadow:0 6px 20px rgba(24,33,28,.04); }}
+.content {{ max-width:1240px; margin:0 auto; padding:28px 28px 84px; }}
+.overview {{ position:relative; overflow:hidden; padding:58px clamp(24px,5vw,68px); border-radius:28px; background:var(--forest); color:#fff; box-shadow:var(--shadow); }}
+.overview::after {{ content:""; position:absolute; width:360px; height:360px; right:-150px; bottom:-210px; border:70px solid rgba(255,255,255,.06); border-radius:50%; }}
+.section-kicker,.card-label {{ display:block; margin-bottom:10px; color:var(--clay); font-size:12px; font-weight:800; letter-spacing:.12em; }}
+.overview .section-kicker {{ color:#dca583; }}
+h1 {{ max-width:820px; margin:0 0 18px; font-size:clamp(38px,6vw,72px); line-height:1.02; letter-spacing:-.045em; }}
+h2 {{ margin:0; font-size:clamp(27px,3vw,38px); line-height:1.15; letter-spacing:-.025em; }}
+h3 {{ margin:0; font-size:19px; line-height:1.3; }}
+.overview__lead {{ max-width:760px; margin:0; color:#dfe9e2; font-size:18px; }}
+.scope-note {{ position:relative; z-index:1; display:inline-flex; margin:30px 0 0; padding:10px 14px; border:1px solid rgba(255,255,255,.18); border-radius:999px; color:#f4f8f5; background:rgba(255,255,255,.08); }}
+.band {{ padding:64px 0; border-bottom:1px solid var(--line); }}
+.band > header {{ display:flex; justify-content:space-between; align-items:end; gap:24px; margin-bottom:26px; }}
+.band > header p {{ max-width:680px; margin:8px 0 0; color:var(--muted); }}
+.count {{ flex:none; color:var(--leaf); font-size:13px; font-weight:700; }}
+.capability-grid,.scenario-grid {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }}
+.capability-card,.scenario-card {{ padding:24px; border:1px solid var(--line); border-radius:18px; background:var(--panel); box-shadow:0 8px 28px rgba(24,33,28,.035); }}
+.capability-card p,.scenario-card p {{ margin:10px 0 0; color:var(--muted); }}
+.scenario-card {{ display:flex; flex-direction:column; min-height:300px; }}
+.scenario-card__top {{ display:flex; justify-content:space-between; gap:16px; margin-bottom:28px; color:var(--leaf); font-size:12px; }}
+.scenario-card__top strong {{ color:var(--ink); }}
+.scenario-facts {{ display:grid; gap:10px; margin:22px 0; }}
+.scenario-facts div {{ padding-left:12px; border-left:2px solid var(--soft); }}
+.scenario-facts dt {{ color:var(--muted); font-size:12px; }}
+.scenario-facts dd {{ margin:2px 0 0; }}
+.detail-link {{ margin-top:auto; color:var(--clay); font-weight:800; text-decoration:none; }}
+.actor-strip {{ list-style:none; display:flex; flex-wrap:wrap; gap:10px; padding:0; margin:22px 0 0; }}
+.actor-strip li {{ display:grid; gap:2px; min-width:220px; padding:14px 16px; border-radius:14px; background:var(--soft); }}
+.actor-strip span,.actor-strip small {{ color:var(--muted); }}
+.business-chain {{ list-style:none; display:grid; gap:14px; padding:0; margin:28px 0 0; }}
+.chain-item {{ display:grid; grid-template-columns:minmax(150px,1fr) auto minmax(180px,1.25fr) auto minmax(180px,1.25fr); align-items:stretch; gap:12px; }}
+.chain-node {{ display:flex; flex-direction:column; justify-content:center; min-height:82px; padding:14px 16px; border:1px solid var(--line); border-radius:14px; background:var(--panel); }}
+.chain-node.action {{ color:#fff; border-color:var(--forest); background:var(--forest); }}
+.chain-node small {{ color:var(--muted); }}
+.chain-node.action small {{ color:#c9dbcf; }}
+.chain-arrow {{ align-self:center; color:var(--clay); font-size:22px; }}
+.use-case {{ scroll-margin-top:82px; margin:34px 0; padding:clamp(24px,4vw,46px); border:1px solid var(--line); border-radius:24px; background:var(--panel); box-shadow:var(--shadow); }}
+.use-case__header {{ display:flex; justify-content:space-between; gap:24px; align-items:start; padding-bottom:24px; border-bottom:1px solid var(--line); }}
+.use-case__header p {{ max-width:760px; margin:12px 0 0; color:var(--muted); }}
+.use-case__header a {{ flex:none; color:var(--leaf); text-decoration:none; }}
+.use-case__intro {{ display:grid; grid-template-columns:1fr 2fr; gap:14px; margin:26px 0; }}
+.use-case__intro div {{ display:grid; gap:4px; padding:18px; border-radius:14px; background:var(--soft); }}
+.use-case__intro span {{ color:var(--muted); font-size:12px; }}
+.detail-section {{ margin:30px 0; }}
+.detail-section h3 {{ margin-bottom:14px; color:var(--forest); }}
+.detail-grid {{ display:grid; grid-template-columns:1fr 1fr; gap:24px; }}
+.business-list,.flow-list {{ margin:0; padding:0; }}
+.business-list {{ list-style:none; display:grid; gap:8px; }}
+.business-list li {{ display:grid; gap:4px; padding:12px 0; border-bottom:1px solid #edf0ed; }}
+.business-list small {{ color:var(--muted); }}
+.flow-list {{ list-style:none; display:grid; counter-reset:flow; gap:12px; }}
+.flow-list li {{ counter-increment:flow; display:grid; grid-template-columns:42px 1fr; gap:14px; align-items:start; }}
+.flow-list li::before {{ content:counter(flow); display:grid; place-items:center; width:34px; height:34px; border-radius:50%; color:#fff; background:var(--forest); font-weight:800; }}
+.outcome {{ padding:20px; border-radius:16px; background:#eef5ef; }}
+.exception {{ padding:20px; border-left:4px solid var(--warning); background:#faf7ef; }}
+.questions {{ padding:20px; border-radius:16px; background:#f7f2ec; }}
+.implementation-evidence,.analysis details {{ margin-top:30px; padding:18px 20px; border:1px solid var(--line); border-radius:14px; background:#f8faf8; }}
+summary {{ cursor:pointer; color:var(--forest); font-weight:800; }}
+.implementation-evidence > p,.analysis details > p {{ color:var(--muted); }}
+.rule-list,.question-list {{ list-style:none; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; padding:0; }}
+.rule-item,.question-item {{ display:grid; gap:6px; padding:18px; border:1px solid var(--line); border-radius:14px; background:var(--panel); }}
+.rule-item span,.question-item span,.question-item small {{ color:var(--muted); }}
 .coverage {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }}
 .coverage div {{ padding:12px; border:1px solid var(--line); background:var(--panel); }}
 .coverage dt {{ color:var(--muted); font-size:12px; }}
 .coverage dd {{ margin:4px 0 0; font-weight:700; }}
-.search-results {{ display:none; position:absolute; top:58px; left:28px; right:28px; max-height:60vh; overflow:auto; border:1px solid var(--line); background:#fff; box-shadow:0 12px 28px rgba(23,33,27,.14); }}
+.empty-states {{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:18px; }}
+.empty-states div {{ display:grid; gap:4px; padding:12px; border-radius:10px; background:var(--soft); }}
+.empty-states span {{ color:var(--muted); }}
+.analysis-meta {{ display:grid; gap:8px; margin:18px 0; }}
+.analysis-meta p {{ margin:0; }}
+.analysis-meta code {{ overflow-wrap:anywhere; }}
+.search-results {{ display:none; position:absolute; z-index:30; top:72px; left:28px; right:28px; max-height:60vh; overflow:auto; border:1px solid var(--line); border-radius:12px; background:#fff; box-shadow:0 18px 42px rgba(23,33,27,.16); }}
 .search-results.visible {{ display:block; }}
 .search-results a {{ display:grid; gap:2px; color:var(--ink); text-decoration:none; padding:11px 14px; border-bottom:1px solid #e8ece9; }}
 .search-results a:hover {{ background:#f1f5f1; }}
+@media (prefers-reduced-motion:reduce) {{ html {{ scroll-behavior:auto; }} }}
 @media (max-width:820px) {{
-  .shell {{ grid-template-columns:1fr; }}
-  aside {{ position:static; height:auto; border-right:0; border-bottom:1px solid var(--line); }}
-  nav {{ grid-template-columns:repeat(2,minmax(0,1fr)); }}
-  .topbar {{ top:0; padding:12px 16px; }}
+  aside {{ position:static; display:grid; padding:16px; }}
+  nav {{ justify-content:flex-start; }}
+  .topbar {{ padding:18px 16px 0; }}
   .content {{ padding:26px 16px 56px; }}
-  .overview,.three-column,.facts,.coverage {{ grid-template-columns:1fr; }}
-  .use-case > header {{ display:grid; }}
-  h1 {{ font-size:29px; }}
+  .overview {{ padding:38px 24px; border-radius:20px; }}
+  .capability-grid,.scenario-grid,.detail-grid,.use-case__intro,.rule-list,.question-list,.coverage,.empty-states {{ grid-template-columns:1fr; }}
+  .chain-item {{ grid-template-columns:1fr; }}
+  .chain-arrow {{ transform:rotate(90deg); justify-self:center; }}
+  .use-case__header {{ display:grid; }}
+  .band {{ padding:48px 0; }}
 }}
 </style>
 </head>
 <body>
 <div class="shell">
 <aside>
-  <div class="brand"><strong>业务知识库</strong><small>代码证据驱动</small></div>
+  <div class="brand"><strong>项目业务知识</strong><small>业务结论可追溯</small></div>
   <nav>
 {navigation}
   </nav>
 </aside>
 <main>
   <div class="topbar">
-    <input class="search" id="search" type="search" placeholder="搜索业务名称、目标、规则、代码符号或未知问题" aria-label="搜索业务知识">
-    <span class="meta">{esc(overview.get('aggregate_status', 'partial'))}</span>
+    <input class="search" id="search" type="search" placeholder="搜索业务场景、目标、规则或实现线索" aria-label="搜索业务知识">
     <div class="search-results" id="search-results"></div>
   </div>
   <div class="content">
     <section class="overview" id="overview">
-      <div>
-        <span class="eyebrow">Current business behavior</span>
-        <h1>从代码还原的业务知识</h1>
-        <p>围绕角色、目标、流程、规则、状态、影响、异常、补偿和未知项组织。技术实现只作为可展开证据。</p>
-      </div>
-      <div class="snapshot">
-        <strong>知识快照</strong>
-        <p>Snapshot: <code>{esc(snapshot.get('snapshot_id', 'unknown'))}</code></p>
-        <p>Canonical: <code>{esc(canonical_hash)}</code></p>
-        <p>Repository: <code>{esc(snapshot.get('canonical_root', 'unknown'))}</code></p>
-      </div>
+      <span class="section-kicker">业务全景</span>
+      <h1>从业务目标出发，理解这个系统如何运转</h1>
+      <p class="overview__lead">这里围绕参与者、业务问题、流程、规则、结果与异常恢复组织知识。需要核验时，可以从具体业务用例继续下探到当前源码依据。</p>
+      <p class="scope-note">当前已整理 {len(views['use_case_catalog'])} 个业务场景；其他业务能力将在后续分析中持续补充，本页面不代表系统完整业务全貌。</p>
     </section>
-    <section class="band" id="capability_tree"><header><h2>业务能力</h2><span>{len(views['capability_tree'])}</span></header><ul class="detail-list">{capability_items}</ul></section>
-    <section class="band" id="use_case_catalog"><header><h2>用例目录</h2><span>{len(views['use_case_catalog'])}</span></header>{use_case_html}</section>
-    <section class="band" id="workflow_views"><header><h2>业务流程</h2><span>{len(views['workflow_views'])}</span></header><ul class="detail-list">{workflow_items}</ul></section>
-    <section class="band" id="state_views"><header><h2>生命周期与状态</h2><span>{len(views['state_views'])}</span></header><ul class="detail-list">{state_items}</ul></section>
-    <section class="band" id="rule_catalog"><header><h2>业务规则</h2><span>{len(views['rule_catalog'])}</span></header><ul class="detail-list">{rules_items}</ul></section>
-    <section class="band" id="effect_catalog"><header><h2>数据与外部影响</h2><span>{len(views['effect_catalog'])}</span></header><ul class="detail-list">{effect_items}</ul></section>
-    <section class="band" id="actor_permission_views"><header><h2>角色与权限</h2><span>{len(views['actor_permission_views'])}</span></header><ul class="detail-list">{actor_items}</ul></section>
-    <section class="band" id="evolution_views"><header><h2>业务演进</h2><span>{evolution['commit_count']} commits / {len(evolution['events'])} events</span></header><ul class="detail-list">{evolution_items}</ul></section>
-    <section class="band" id="gap_views"><header><h2>未知与冲突</h2><span>{len(views['gap_views']['unknowns']) + len(views['gap_views']['conflicts'])}</span></header><ul class="detail-list warning">{unknown_items}{conflict_items}</ul></section>
-    <section class="band" id="coverage_dashboard"><header><h2>覆盖率与证据</h2></header><dl class="coverage">{coverage_items}</dl><div class="empty-states">{empty_states}</div></section>
+    <section class="band" id="business_capabilities"><header><div><span class="section-kicker">系统解决什么问题</span><h2>当前已整理的业务能力</h2><p>这些能力来自当前已完成语义收敛的业务场景，不等同于项目的完整能力清单。</p></div><span class="count">{len(views['capability_tree'])} 项能力</span></header><div class="capability-grid">{capability_html}</div><ul class="actor-strip">{actor_html}</ul></section>
+    <section class="band" id="business_chains"><header><div><span class="section-kicker">业务链</span><h2>参与者如何获得业务结果</h2><p>每条链只保留参与者、业务动作与结果，具体规则和异常在场景详情中展开。</p></div></header><ol class="business-chain">{"".join(business_chains)}</ol></section>
+    <section class="band" id="business_scenarios"><header><div><span class="section-kicker">逐层下探</span><h2>业务场景</h2><p>先阅读业务目标与结果，再进入详情查看流程、规则、异常恢复和实现依据。</p></div><span class="count">当前已整理 {len(views['use_case_catalog'])} 个</span></header><div class="scenario-grid">{"".join(scenario_cards)}</div>{"".join(use_case_details)}</section>
+    <section class="band" id="key_rules"><header><div><span class="section-kicker">跨场景约束</span><h2>关键规则</h2><p>这些规则会影响产品行为和后续需求设计，修改前应确认受影响的业务场景。</p></div><span class="count">{len(views['rule_catalog'])} 条</span></header><ul class="rule-list">{rules_html}</ul></section>
+    <section class="band" id="open_questions"><header><div><span class="section-kicker">产品决策边界</span><h2>待确认事项</h2><p>以下问题尚不能由当前源码证据完整回答。涉及这些范围的新需求，应先完成针对性调查。</p></div><span class="count">{len(views['gap_views']['unknowns']) + len(views['gap_views']['conflicts'])} 项</span></header><ul class="question-list">{unknown_html}{conflict_html}</ul></section>
+    <section class="band analysis" id="analysis_notes"><header><div><span class="section-kicker">可信度与范围</span><h2>分析说明</h2><p>业务阅读不需要先理解这些信息；核验知识来源、覆盖范围或生成一致性时再展开。</p></div></header><details><summary>查看分析范围与证据说明</summary><div class="analysis-meta"><p>Snapshot: <code>{esc(snapshot.get('snapshot_id', 'unknown'))}</code></p><p>Canonical revision: <code>{esc(canonical_hash)}</code></p><p>Repository: <code>{esc(snapshot.get('canonical_root', 'unknown'))}</code></p><p>当前整理状态：{esc('已通过当前范围校验' if overview.get('aggregate_status') == 'passed' else '当前范围已发布，仍有业务知识待继续整理')}</p></div><dl class="coverage">{coverage_html}</dl><div class="empty-states">{empty_states}</div></details></section>
     <noscript>
       <section class="band">
-        <h2>无脚本业务用例索引</h2>
+        <h2>业务场景索引</h2>
         <ul>{noscript_cases}</ul>
-        <h2>无脚本覆盖率</h2>
-        <dl class="coverage">{coverage_items}</dl>
+        <p>当前页面的业务内容、场景详情和分析说明不依赖脚本；脚本仅用于本地搜索和定位增强。</p>
       </section>
     </noscript>
   </div>
@@ -635,8 +771,8 @@ summary {{ cursor:pointer; font-weight:600; }}
       return normalize([item.title, item.summary, item.kind, item.aliases.join(" ")].join(" ")).indexOf(needle) !== -1;
     }}).slice(0, 30);
     results.innerHTML = matches.map(function (item) {{
-      return '<a href="' + item.route + '"><strong>' + escapeHtml(item.title) + '</strong><span>' + escapeHtml(item.summary) + '</span><small>' + escapeHtml(item.kind + " · " + item.status + " · " + item.confidence) + '</small></a>';
-    }}).join("") || '<a href="#unknowns"><strong>没有直接结果</strong><span>查看未知项或触发针对性重新分析。</span></a>';
+      return '<a href="' + item.route + '"><strong>' + escapeHtml(item.title) + '</strong><span>' + escapeHtml(item.summary) + '</span></a>';
+    }}).join("") || '<a href="#open_questions"><strong>没有直接结果</strong><span>查看待确认事项，或针对该问题继续调查。</span></a>';
     results.className = "search-results visible";
   }}
   function escapeHtml(value) {{

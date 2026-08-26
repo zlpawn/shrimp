@@ -61,9 +61,9 @@ class RenderBusinessSiteTests(unittest.TestCase):
         renderer.write_projections(self.revision)
         html = (self.revision / "site" / "index.html").read_text(encoding="utf-8")
 
-        scope_heading = html.index("当前已整理")
-        analysis_heading = html.index("分析说明")
-        self.assertLess(scope_heading, analysis_heading)
+        overview_section = html.index('<section class="overview" id="overview">')
+        analysis_section = html.index('id="analysis_notes"')
+        self.assertLess(overview_section, analysis_section)
         self.assertIn("业务场景", html)
         self.assertIn("查看场景详情", html)
         self.assertIn('href="#use-case-UC-create-work-order"', html)

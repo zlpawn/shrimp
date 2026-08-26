@@ -75,7 +75,14 @@ class SiteViewModelTests(unittest.TestCase):
             "not_applicable",
         ]:
             self.assertIn(f'data-empty-state="{state}"', rendered)
-        for label in view_model.FIXED_NAVIGATION_LABELS.values():
+        self.assertEqual(
+            model["navigation"],
+            [
+                {"id": key, "label": label}
+                for key, label in view_model.FIXED_NAVIGATION_LABELS.items()
+            ],
+        )
+        for label in ["业务全景", "业务场景", "关键规则", "待确认事项", "分析说明"]:
             self.assertIn(label, rendered)
         self.assertIn("<noscript>", rendered)
         self.assertIn("UC-create-work-order", rendered)
