@@ -6256,21 +6256,33 @@ input:focus, select:focus {
 }
 
 .trend-intel-date-label {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
   font-size: 13px;
   color: var(--text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.trend-intel-date-label span {
+  white-space: nowrap;
+  user-select: none;
+  flex-shrink: 0;
 }
 
 .trend-intel-date-input {
-  padding: 5px 8px;
+  padding: 4px 8px;
   font-size: 13px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
   background: var(--input-bg);
   color: var(--text-primary);
   font-family: inherit;
+  height: 32px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  cursor: pointer;
 }
 
 .trend-intel-segmented-toggle {
