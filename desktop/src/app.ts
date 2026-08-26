@@ -4188,7 +4188,7 @@ window.switchTab = function(tabId) {
 
     render();
 
-    if (['dream-skin', 'nat-traversal', 'remote-session', 'command-apps', 'session-kanban', 'mcp-management'].includes(tabId)) {
+    if (['dream-skin', 'nat-traversal', 'remote-session', 'command-apps', 'session-kanban', 'mcp-management', 'trend-intel'].includes(tabId)) {
         try {
             runTabEnter(tabId);
         } catch (error) {
