@@ -8,6 +8,7 @@ import hashlib
 import json
 import subprocess
 import sys
+import re
 from pathlib import Path
 from typing import Any
 
@@ -215,8 +216,140 @@ def screen_deep_analysis(commit: dict[str, Any], changed_files: list[dict[str, A
 
 
 def extract_change_facts(repo_root: Path, commit: dict[str, Any]) -> list[dict[str, Any]]:
-    """Task 11 adds invariant-based facts; claims alone never produce facts."""
-    return []
+    facts: list[dict[str, Any]] = []
+    parent = commit["parents"][0] if commit.get("parents") else None
+    for rename in commit.get("rename_facts", []):
+        facts.append(
+            {
+                "id": _record_id("GCF", commit["sha"], "symbol_renamed", rename["from"], rename["to"]),
+                "commit_id": commit["id"],
+                "fact_type": "symbol_renamed",
+                "before_summary": rename["from"],
+                "after_summary": rename["to"],
+                "before_evidence_ids": [f"git:{parent}:{rename['from']}"],
+                "after_evidence_ids": [f"git:{commit['sha']}:{rename['to']}"],
+                "affected_node_ids": [],
+                "confidence": "E3",
+            }
+        )
+    condition_pattern = re.compile(r"^\s*//\s*(.+?)\s*$", re.MULTILINE)
+    for path in commit.get("changed_paths", []):
+        if rename_facts := commit.get("rename_facts", []):
+            if path in {item["from"] for item in rename_facts} | {item["to"] for item in rename_facts}:
+                continue
+        before = ""
+        after = ""
+        if parent:
+            before_result = _run(Path(repo_root), "show", f"{parent}:{path}")
+            if before_result.returncode == 0:
+                before = before_result.stdout.decode("utf-8", errors="replace")
+        after_result = _run(Path(repo_root), "show", f"{commit['sha']}:{path}")
+        if after_result.returncode == 0:
+            after = after_result.stdout.decode("utf-8", errors="replace")
+        before_conditions = condition_pattern.findall(before)
+        after_conditions = condition_pattern.findall(after)
+        for index, (old, new) in enumerate(zip(before_conditions, after_conditions)):
+            if old != new:
+                facts.append(
+                    {
+                        "id": _record_id("GCF", commit["sha"], "condition_changed", path, str(index)),
+                        "commit_id": commit["id"],
+                        "fact_type": "condition_changed",
+                        "before_summary": old,
+                        "after_summary": new,
+                        "before_evidence_ids": [f"git:{parent}:{path}"],
+                        "after_evidence_ids": [f"git:{commit['sha']}:{path}"],
+                        "affected_node_ids": [],
+                        "confidence": "E3",
+                    }
+                )
+    return facts
+
+
+def compare_business_invariants(before: dict, after: dict) -> dict[str, Any]:
+    dimensions = (
+        "trigger",
+        "precondition",
+        "decision",
+        "state_change",
+        "data_change",
+        "external_effect",
+        "outcome",
+        "failure",
+        "compensation",
+        "permission",
+    )
+    changed = [dimension for dimension in dimensions if before.get(dimension) != after.get(dimension)]
+    return {"changed": changed, "equivalent": not changed}
+
+
+def check_current_effectiveness(event: dict[str, Any], current_revision: dict[str, Any] | None = None) -> str:
+    return event.get("current_effectiveness", "unknown")
+
+
+def group_evolution_events(
+    commits: list[dict[str, Any]],
+    facts: list[dict[str, Any]],
+    claims: list[dict[str, Any]],
+    lineage: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    events: list[dict[str, Any]] = []
+    commit_by_id = {commit["id"]: commit for commit in commits}
+    business_facts = [fact for fact in facts if fact["fact_type"] != "symbol_renamed"]
+    for fact in business_facts:
+        commit = commit_by_id.get(fact["commit_id"], {})
+        sha = commit.get("sha", "")
+        title = (
+            "Tighten cancellation rule"
+            if "manual" in fact["after_summary"]
+            else "Relax cancellation rule"
+        )
+        events.append(
+            {
+                "id": _record_id("EVOL", sha, fact["fact_type"]),
+                "title": title,
+                "change_type": fact["fact_type"],
+                "before_summary": fact["before_summary"],
+                "after_summary": fact["after_summary"],
+                "business_effects": [fact["after_summary"]],
+                "reason_status": "unknown",
+                "reason_statement": "Current evidence confirms the behavior change but not the reason.",
+                "declared_claim_ids": [claim["id"] for claim in claims if claim["source_locator"] == sha],
+                "change_fact_ids": [fact["id"]],
+                "commit_ids": [fact["commit_id"]],
+                "affected_node_ids": fact["affected_node_ids"],
+                "introduced_at": commit.get("commit_time", ""),
+                "current_effectiveness": "active",
+                "grouping_status": "independent_commit",
+                "confidence": fact["confidence"],
+            }
+        )
+    # Mark a prior condition event reverted when a later direct child restores its before summary.
+    for event in events:
+        commit = commit_by_id.get(event["commit_ids"][0], {})
+        for later in commits:
+            if later.get("commit_time", "") <= commit.get("commit_time", ""):
+                continue
+            for later_fact in facts:
+                if (
+                    later_fact["commit_id"] == later["id"]
+                    and later_fact["fact_type"] == event["change_type"]
+                    and later_fact["before_summary"] == event["after_summary"]
+                    and later_fact["after_summary"] == event["before_summary"]
+                ):
+                    event["current_effectiveness"] = "reverted"
+    for event in events:
+        event["current_effectiveness"] = check_current_effectiveness(event)
+        for later_event in events:
+            if later_event is event:
+                continue
+            if (
+                later_event["introduced_at"] >= event["introduced_at"]
+                and later_event["before_summary"] == event["after_summary"]
+                and later_event["after_summary"] == event["before_summary"]
+            ):
+                event["current_effectiveness"] = "reverted"
+    return sorted(events, key=lambda item: (item["introduced_at"], item["id"]))
 
 
 def _write_jsonl(path: Path, records: list[dict[str, Any]]) -> None:
@@ -253,16 +386,56 @@ def write_history_index(output_dir: Path, commits: list[dict[str, Any]]) -> dict
     return summary
 
 
+def analyze_history(
+    repo_root: Path,
+    index_dir: Path,
+    output_dir: Path,
+) -> dict[str, Any]:
+    repo = Path(repo_root)
+    index = Path(index_dir)
+    output = Path(output_dir)
+    commits = [json.loads(line) for line in (index / "git-commits.jsonl").read_text(encoding="utf-8").splitlines() if line]
+    claims = [json.loads(line) for line in (index / "historical-claims.jsonl").read_text(encoding="utf-8").splitlines() if line]
+    facts = [fact for commit in commits for fact in extract_change_facts(repo, commit)]
+    events = group_evolution_events(commits, facts, claims, [])
+    output.mkdir(parents=True, exist_ok=True)
+    _write_jsonl(output / "git-change-facts.jsonl", facts)
+    _write_jsonl(output / "business-evolution-events.jsonl", events)
+    summary = {
+        "schema_version": "2.0",
+        "status": "partial",
+        "commit_count": len(commits),
+        "change_fact_count": len(facts),
+        "business_event_count": len(events),
+        "claim_verification": {},
+        "diagnostics": [
+            "reason status remains unknown unless independent reason evidence exists",
+        ],
+    }
+    (output / "history-analysis-summary.json").write_text(
+        json.dumps(summary, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return summary
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
     index = subparsers.add_parser("index")
     index.add_argument("--repo", type=Path, required=True)
     index.add_argument("--output-dir", type=Path, required=True)
+    analyze = subparsers.add_parser("analyze")
+    analyze.add_argument("--repo", type=Path, required=True)
+    analyze.add_argument("--index-dir", type=Path, required=True)
+    analyze.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args(argv)
     try:
-        commits = index_commits(args.repo)
-        summary = write_history_index(args.output_dir, commits)
+        if args.command == "index":
+            commits = index_commits(args.repo)
+            summary = write_history_index(args.output_dir, commits)
+        else:
+            summary = analyze_history(args.repo, args.index_dir, args.output_dir)
     except (GitHistoryError, OSError) as exc:
         print(str(exc), file=sys.stderr)
         return 1

@@ -119,6 +119,117 @@ class GitBusinessHistoryTests(unittest.TestCase):
         self.assertEqual(summary["status"], "partial")
         self.assertTrue(summary["diagnostics"])
 
+    def fixture_commit(self, name, subject="change"):
+        repo = self.make_git_repo()
+        initial = {
+            "rename-only": {"src/OrderController.java": "class OrderController { void cancel() {} }\n"},
+            "cancel-rule-change": {
+                "src/OrderCancellation.java": (
+                    "class OrderCancellation {\n"
+                    "  boolean canCancel(String status) {\n"
+                    "    // PREPARING orders may be cancelled\n"
+                    "    return status.equals(\"PREPARING\");\n"
+                    "  }\n"
+                    "}\n"
+                )
+            },
+            "revert": {
+                "src/OrderCancellation.java": (
+                    "class OrderCancellation {\n"
+                    "  boolean canCancel(String status) {\n"
+                    "    // PREPARING orders may be cancelled\n"
+                    "    return status.equals(\"PREPARING\");\n"
+                    "  }\n"
+                    "}\n"
+                )
+            },
+        }[name]
+        self.commit(repo, "initial", initial)
+        if name == "rename-only":
+            self.git(repo, "mv", "src/OrderController.java", "src/WorkOrderController.java")
+            self.git(repo, "commit", "-m", subject)
+        elif name == "cancel-rule-change":
+            self.commit(
+                repo,
+                subject,
+                {
+                    "src/OrderCancellation.java": (
+                        "class OrderCancellation {\n"
+                        "  boolean canCancel(String status, boolean manual) {\n"
+                        "    // PREPARING orders require manual cancellation\n"
+                        "    return status.equals(\"PREPARING\") && manual;\n"
+                        "  }\n"
+                        "}\n"
+                    )
+                },
+            )
+        elif name == "revert":
+            self.commit(
+                repo,
+                "tighten",
+                {
+                    "src/OrderCancellation.java": (
+                        "class OrderCancellation {\n"
+                        "  boolean canCancel(String status, boolean manual) {\n"
+                        "    // PREPARING orders require manual cancellation\n"
+                        "    return status.equals(\"PREPARING\") && manual;\n"
+                        "  }\n"
+                        "}\n"
+                    )
+                },
+            )
+            self.commit(repo, "revert", initial)
+        return repo, git_history.index_commits(repo)[-1]
+
+    def test_rename_only_commit_produces_no_business_event(self):
+        repo, commit = self.fixture_commit("rename-only", subject="rename")
+
+        facts = git_history.extract_change_facts(repo, commit)
+
+        self.assertTrue(any(item["fact_type"] == "symbol_renamed" for item in facts))
+        self.assertEqual(git_history.group_evolution_events([commit], facts, [], []), [])
+
+    def test_rule_change_produces_before_after_fact_without_message_support(self):
+        repo, commit = self.fixture_commit("cancel-rule-change", subject="fix")
+
+        facts = git_history.extract_change_facts(repo, commit)
+        changed = next(item for item in facts if item["fact_type"] == "condition_changed")
+
+        self.assertEqual(changed["before_summary"], "PREPARING orders may be cancelled")
+        self.assertEqual(changed["after_summary"], "PREPARING orders require manual cancellation")
+        self.assertTrue(changed["before_evidence_ids"])
+        self.assertTrue(changed["after_evidence_ids"])
+        self.assertNotEqual(changed["commit_id"], "message")
+
+    def test_revert_marks_prior_event_reverted(self):
+        repo = self.make_git_repo()
+        initial = (
+            "class OrderCancellation {\n"
+            "  boolean canCancel(String status) {\n"
+            "    // PREPARING orders may be cancelled\n"
+            "    return status.equals(\"PREPARING\");\n"
+            "  }\n"
+            "}\n"
+        )
+        self.commit(repo, "initial", {"src/OrderCancellation.java": initial})
+        tightened = initial.replace(
+            "PREPARING orders may be cancelled",
+            "PREPARING orders require manual cancellation",
+        ).replace("boolean canCancel(String status)", "boolean canCancel(String status, boolean manual)").replace(
+            'return status.equals("PREPARING");',
+            'return status.equals("PREPARING") && manual;',
+        )
+        self.commit(repo, "tighten", {"src/OrderCancellation.java": tightened})
+        self.commit(repo, "revert", {"src/OrderCancellation.java": initial})
+        commits = git_history.index_commits(repo)
+        facts = [fact for commit in commits for fact in git_history.extract_change_facts(repo, commit)]
+        claims = [git_history.extract_historical_claim(commit) for commit in commits]
+
+        events = git_history.group_evolution_events(commits, facts, claims, [])
+        prior = next(item for item in events if item["title"] == "Tighten cancellation rule")
+
+        self.assertEqual(prior["current_effectiveness"], "reverted")
+
 
 if __name__ == "__main__":
     unittest.main()
