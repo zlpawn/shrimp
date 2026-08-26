@@ -824,6 +824,7 @@ test("custom agent nav and sections use clientDisplayName for titles and slug fo
 
 test("create client modal contains distinct display-name and slug fields with helper hints", async () => {
   const html = await readFile(path.join(ROOT, "desktop", "index.html"), "utf8");
+  assert.match(html, /id="client-create-modal"[\s\S]*?<h3 class="skill-modal-title">新建代理节点<\/h3>\s*<div class="skill-modal-body"/);
   assert.match(html, /id="client-create-display-name"/);
   assert.match(html, /id="client-create-slug"/);
   assert.match(html, /for="client-create-display-name">显示名称<\/label>/);
