@@ -18,6 +18,8 @@ restore-codex-custom-provider.ps1
 *.bak
 
 # Runtime state
+temp.pid
+$null
 gateway.pid
 gateway.pid.json
 gateway.*.pid
@@ -57,6 +59,10 @@ _inspect_repo/
 codeg-*
 
 # Generated media outputs
+/data/
+/video-kb/
+antigravity-models-raw.json
+cookies-www.bilibili.com.txt
 images/
 videos/
 web_search/

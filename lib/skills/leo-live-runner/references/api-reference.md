@@ -4,13 +4,12 @@
 
 ---
 
-## 🔐 1. 安全认证规范 (Header)
+## 🔐 1. 安全认证与 SPI 插件机制
 
-当宿主服务开启了 Token 校验（`leo.live-runner.token-check-enabled: true`）时，每个 HTTP 请求需在请求头中携带：
+框架支持通过 `LiveRunnerAccessValidator` SPI 接口进行自定义权限校验（如 JWT、SSO、IP 白名单、自定义 Header 等）。
 
-| 请求头字段 (Header) | 字段类型 | 描述 |
-| :--- | :--- | :--- |
-| `X-Live-Token` | `String` | 宿主服务在 `application.yml` 中配置的密钥（如 `LeoLiveRunnerSecretToken@2026`）。默认未开启校验时可不传。 |
+- **未配置自定义 Validator**：默认走 `DefaultWarnAccessValidator`，打印 WARN 告警日志并默认放行（便于开发调试）；
+- **已配置自定义 Validator**：按自定义规则校验请求头、客户端 IP 或 Token。请求时可根据业务自定义规则携带对应 Header（如 `Authorization: Bearer <token>` 或 `X-Admin-Token: <secret>`）。
 
 ---
 
