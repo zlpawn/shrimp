@@ -6753,7 +6753,7 @@ window.addEventListener('load', () => {
     const hash = window.location.hash.replace('#', '');
     const parts = hash.split('/');
     const tabId = parts[0];
-    const knownTabs = ['code','desktop','codex','deeptutor','analytics','proxy','sync','skills','install-history','tools','extensions','cli','cli-install-history','cli-sources','dream-skin','nat-traversal','remote-session','command-apps','session-kanban','mcp-management'];
+    const knownTabs = ['code','desktop','codex','deeptutor','analytics','proxy','sync','skills','install-history','tools','extensions','cli','cli-install-history','cli-sources','dream-skin','nat-traversal','remote-session','command-apps','session-kanban','mcp-management','trend-intel'];
     if (knownTabs.includes(tabId) || isCustomClient(tabId)) {
         switchTab(tabId);
         // Restore sub-view for tools/extensions
