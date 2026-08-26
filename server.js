@@ -202,6 +202,11 @@ import { resolveMcpPaths } from "./lib/mcp-management/paths.mjs";
 import { createMcpStore } from "./lib/mcp-management/store.mjs";
 import { createMcpManagementService } from "./lib/mcp-management/application/service.mjs";
 import { routeMcpManagementRequest } from "./lib/mcp-management/http/routes.mjs";
+import {
+  createTrendIntelService,
+  createTrendIntelScheduler,
+  routeTrendIntelRequest,
+} from "./lib/trend-intel/index.mjs";
 
 loadDotEnv();
 enableNodeEnvProxy();
@@ -348,6 +353,23 @@ function ensureSessionKanbanService() {
   });
   globalSessionKanbanScheduler.start();
   return globalSessionKanbanService;
+}
+ 
+let globalTrendIntelService = null;
+let globalTrendIntelScheduler = null;
+function ensureTrendIntelService() {
+  if (globalTrendIntelService) return globalTrendIntelService;
+  globalTrendIntelService = createTrendIntelService({
+    listenPort: LISTEN_PORT,
+  });
+  const config = globalTrendIntelService.getConfig();
+  if (config?.scheduler?.enabled !== false) {
+    globalTrendIntelScheduler = createTrendIntelScheduler(globalTrendIntelService, {
+      logger: console,
+    });
+    globalTrendIntelScheduler.start();
+  }
+  return globalTrendIntelService;
 }
 
 function ensureMcpManagementService() {
@@ -1171,6 +1193,15 @@ async function route(req, res) {
     });
     return;
   }
+
+  if (reqPath.startsWith("/v1/trend-intel")) {
+    if (!checkLocalAuth(req, res)) return;
+    await routeTrendIntelRequest(req, res, context, reqPath, {
+      service: ensureTrendIntelService(),
+    });
+    return;
+  }
+
 
   if (reqPath.startsWith("/v1/mcp-management")) {
     if (!checkLocalAuth(req, res)) return;
