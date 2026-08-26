@@ -318,6 +318,10 @@ function isCustomClient(name) {
 function clientDisplayName(client) {
     const key = String(client || '').trim();
     if (!key) return '';
+    const customName = config.clients?.[key]?.display_name;
+    if (customName && typeof customName === 'string' && customName.trim()) {
+        return customName.trim();
+    }
     return CLIENT_DISPLAY_NAMES[key] || key;
 }
 
@@ -1164,7 +1168,7 @@ function renderCustomClientNav() {
     container.innerHTML = names.map(name => `
         <a href="#${escapeHtml(name)}" class="nav-item nav-item-custom" onclick="switchTab('${escapeHtml(name)}')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px; flex-shrink: 0;"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-            <span class="nav-item-name">${escapeHtml(name)}</span>
+            <span class="nav-item-name">${escapeHtml(clientDisplayName(name))}</span>
             <span class="nav-item-badge">自定义</span>
         </a>
     `).join('');
@@ -1196,8 +1200,8 @@ function renderCustomClientSections() {
         const header = `
             <div class="section-header custom-client-section-header" id="custom-client-block-${escapeHtml(client)}">
                 <div>
-                    <h2>${escapeHtml(client)} 代理</h2>
-                    <p>接入协议：${escapeHtml(protocolLabel(protocol))} · 路由前缀 <code>/${escapeHtml(client)}/</code></p>
+                    <h2>${escapeHtml(clientDisplayName(client))} 代理</h2>
+                    <p>接入协议：${escapeHtml(protocolLabel(protocol))} · 路由标识 <code>/${escapeHtml(client)}/</code></p>
                 </div>
                 <div class="section-header-actions">
                     <select class="custom-client-protocol-select" title="切换接入协议" onchange="setCustomClientProtocol('${escapeHtml(client)}', this.value)">
@@ -1248,7 +1252,7 @@ function renderCustomClientSections() {
         const guide = showGuide ? `
             <div class="usage-guide">
                 <h3>🚀 如何连接此网关？</h3>
-                <p>${escapeHtml(client)} 走 ${escapeHtml(protocolLabel(protocol))} 协议。把下面的地址填入客户端作为 API 入口：</p>
+                <p>${escapeHtml(clientDisplayName(client))} 走 ${escapeHtml(protocolLabel(protocol))} 协议。把下面的地址填入客户端作为 API 入口：</p>
                 <div style="display:flex; flex-direction:column; gap:8px; margin-top: 10px;">
                     ${chatSnippet}
                     ${embeddingSnippet}
@@ -1265,7 +1269,7 @@ function renderCustomClientSections() {
             body = guide + `
                 <div id="${gridId}" class="node-groups">
                     <div class="empty-state">
-                        <p>${escapeHtml(client)} 尚未配置任何节点。</p>
+                        <p>${escapeHtml(clientDisplayName(client))} 尚未配置任何节点。</p>
                         <button class="btn" onclick="addEndpoint('${escapeHtml(client)}')">创建第一个节点</button>
                     </div>
                 </div>
