@@ -1336,6 +1336,10 @@ def validate_revision_v2(root: Path) -> dict[str, Any]:
     )
     investigation_records = read_jsonl(root / "investigations.jsonl")
     candidates = read_jsonl(root / "use-case-candidates.jsonl")
+    migration_gaps: list[str] = []
+    legacy_inventory = [item for item in inventory_records if item.get("id_scheme") == "legacy_v1"]
+    if legacy_inventory:
+        migration_gaps.append("v2 discovery required")
     candidate_summary = validate_candidates(
         candidates, inventory_by_id, node_ids, investigations
     )
@@ -1382,6 +1386,8 @@ def validate_revision_v2(root: Path) -> dict[str, Any]:
         "aggregate_status": aggregate,
         "metrics": metrics,
     }
+    if migration_gaps:
+        coverage["migration_gaps"] = migration_gaps
     return {
         "status": aggregate,
         "errors": [],
