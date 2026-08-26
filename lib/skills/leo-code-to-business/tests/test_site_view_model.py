@@ -38,6 +38,7 @@ class SiteViewModelTests(unittest.TestCase):
     def test_view_model_always_contains_fixed_views(self):
         model = view_model.build_site_view_model(self.revision)
 
+        self.assertEqual(model["view_schema_version"], "2.0")
         self.assertEqual(list(model["views"]), list(view_model.FIXED_VIEW_IDS))
 
     def test_use_case_details_use_exact_section_order(self):

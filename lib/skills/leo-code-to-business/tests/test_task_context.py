@@ -50,6 +50,31 @@ class TaskContextTests(unittest.TestCase):
         self.assertIn("UNK-work-order-permission", pack["unknown_ids"])
         self.assertTrue(pack["coverage_warnings"])
 
+    def test_context_pack_keeps_the_existing_top_level_contract(self):
+        pack = task_context.build_task_context_pack(
+            "修改整改工单创建规则",
+            self.revision,
+        )
+
+        self.assertEqual(
+            set(pack),
+            {
+                "question",
+                "node_ids",
+                "node_count",
+                "primary_use_case_ids",
+                "related_use_case_ids",
+                "rule_ids",
+                "state_ids",
+                "entity_ids",
+                "evolution_ids",
+                "evidence_ids",
+                "unknown_ids",
+                "coverage_warnings",
+                "retrieval_reasons",
+            },
+        )
+
     def test_context_expansion_is_bounded_and_deterministic(self):
         first = task_context.expand_business_context(
             ["UC-create-work-order"], self.revision, max_nodes=2

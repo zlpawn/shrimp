@@ -61,13 +61,37 @@ class RenderBusinessSiteTests(unittest.TestCase):
         renderer.write_projections(self.revision)
         html = (self.revision / "site" / "index.html").read_text(encoding="utf-8")
 
-        business_heading = html.index("业务目标")
-        trace_heading = html.index("技术证据")
-        self.assertLess(business_heading, trace_heading)
+        scope_heading = html.index("当前已整理")
+        analysis_heading = html.index("分析说明")
+        self.assertLess(scope_heading, analysis_heading)
+        self.assertIn("业务场景", html)
+        self.assertIn("查看场景详情", html)
+        self.assertIn('href="#use-case-UC-create-work-order"', html)
+        self.assertIn("业务流程", html)
+        self.assertIn("异常与恢复", html)
+        self.assertIn("待确认事项", html)
         self.assertIn("工地检查员", html)
         self.assertIn("将施工问题转为可跟踪的整改待办", html)
         self.assertIn("工单创建权限未知", html)
-        self.assertIn("<details", html)
+        self.assertIn("实现依据", html)
+        self.assertNotIn("<details open>", html)
+
+    def test_html_keeps_analysis_metadata_out_of_the_first_reading_layer(self):
+        renderer.write_projections(self.revision)
+        html = (self.revision / "site" / "index.html").read_text(encoding="utf-8")
+
+        overview = html.split('<section class="overview" id="overview">', 1)[1].split(
+            "</section>", 1
+        )[0]
+        self.assertNotIn("Canonical", overview)
+        self.assertNotIn("Repository", overview)
+        self.assertNotIn("Snapshot", overview)
+        self.assertNotIn('<span class="meta">partial</span>', html)
+        self.assertIn('id="analysis_notes"', html)
+        analysis = html.split('id="analysis_notes"', 1)[1]
+        self.assertIn("Canonical revision", analysis)
+        self.assertIn("Repository", analysis)
+        self.assertIn("Snapshot", analysis)
 
     def test_html_escapes_script_termination_in_embedded_data(self):
         aliases = json.loads(
@@ -98,10 +122,23 @@ class RenderBusinessSiteTests(unittest.TestCase):
         renderer.write_projections(self.revision)
         ai_context = (self.revision / "ai-context.md").read_text(encoding="utf-8")
 
-        self.assertIn("Canonical revision", ai_context)
+        business_orientation = ai_context.index("## 项目业务定位")
+        organized_scope = ai_context.index("## 当前已整理范围")
+        scenarios = ai_context.index("## 已确认业务场景")
+        development_policy = ai_context.index("## 新需求开发工作法")
+        retrieval_guide = ai_context.index("## 检索与核验指南")
+        revision_metadata = ai_context.index("## 修订信息")
+
+        self.assertLess(business_orientation, organized_scope)
+        self.assertLess(organized_scope, scenarios)
+        self.assertLess(scenarios, development_policy)
+        self.assertLess(development_policy, retrieval_guide)
+        self.assertLess(retrieval_guide, revision_metadata)
+        self.assertIn("先分析业务影响，再进入代码实现", ai_context)
+        self.assertIn("不代表系统完整业务全貌", ai_context)
         self.assertIn("工单管理", ai_context)
+        self.assertIn("UC-create-work-order", ai_context)
         self.assertIn("use-cases.jsonl", ai_context)
-        self.assertIn("Unknowns", ai_context)
         self.assertLess(len(ai_context), 8000)
         self.assertNotIn('"main_flow":', ai_context)
 
