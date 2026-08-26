@@ -9,6 +9,7 @@ test("short aliases resolve to canonical commands", () => {
   assert.equal(reg.resolveCommand(["st"])?.name, "status");
   assert.equal(reg.resolveCommand(["key", "set"])?.name, "secret.set");
   assert.equal(reg.resolveCommand(["c", "copy"])?.name, "client.copy");
+  assert.equal(reg.resolveCommand(["c", "rename"])?.name, "client.rename");
   assert.equal(reg.resolveCommand(["tools", "ls"])?.name, "cli-tool.list");
   assert.equal(reg.resolveCommand(["oauth", "status"])?.name, "upstream.google-oauth.status");
 });

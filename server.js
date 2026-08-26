@@ -1432,6 +1432,7 @@ async function route(req, res) {
     try {
       const payload = JSON.parse(await readText(req) || "{}");
       const client = slugifyClientName(payload.client);
+      const displayName = typeof payload.displayName === "string" ? payload.displayName.trim() : "";
       const copyFrom = payload.copyFrom ? slugifyClientName(payload.copyFrom) : "";
       const mode = String(payload.mode || "replace").trim();
       const protocol = String(payload.protocol || "").trim().toLowerCase();
@@ -1463,7 +1464,7 @@ async function route(req, res) {
         }
         nextConfig.clients = {
           ...(nextConfig.clients || {}),
-          [client]: { endpoints: [], protocol: resolvedProtocol },
+          [client]: { endpoints: [], display_name: displayName || client, protocol: resolvedProtocol },
         };
       } else {
         // Seed from another client: clone endpoints + carry over secrets by endpoint id.
@@ -1475,6 +1476,7 @@ async function route(req, res) {
           mode,
         });
         if (nextConfig.clients?.[client]) {
+          nextConfig.clients[client].display_name = displayName || client;
           nextConfig.clients[client].protocol = resolvedProtocol;
         }
       }
@@ -1493,10 +1495,57 @@ async function route(req, res) {
       sendJson(res, 200, {
         success: true,
         client,
+        display_name: displayName || client,
         copy_from: copyFrom || null,
         mode: copyFrom ? mode : null,
         endpoint_count: GATEWAY_CONFIG.clients?.[client]?.endpoints?.length || 0,
       });
+    } catch (error) {
+      if (error instanceof GatewayConfigError) {
+        sendJson(res, 400, {
+          error: {
+            type: error.code,
+            message: "Gateway configuration is invalid.",
+            issues: error.issues,
+          },
+        });
+      } else {
+        sendJson(res, 500, { error: error.message });
+      }
+    }
+    return;
+  }
+
+  // Rename a custom agent-node group's display name.
+  // The four built-in clients (code/desktop/codex/deeptutor) are protected and cannot be renamed.
+  if (reqPath === "/v1/config/rename-client" && req.method === "POST") {
+    if (!checkLocalAuth(req, res)) return;
+    try {
+      const payload = JSON.parse(await readText(req) || "{}");
+      const client = slugifyClientName(payload.client);
+      const displayName = typeof payload.displayName === "string" ? payload.displayName.trim() : "";
+      if (!client) { sendJson(res, 400, { error: "client name is required" }); return; }
+      if (!displayName) { sendJson(res, 400, { error: "displayName is required" }); return; }
+      if (BUILTIN_CLIENTS.has(client)) {
+        sendJson(res, 400, { error: "built-in client '" + client + "' cannot be renamed" }); return;
+      }
+      if (!GATEWAY_CONFIG.clients?.[client]) {
+        sendJson(res, 404, { error: "client '" + client + "' not found" }); return;
+      }
+
+      const nextConfig = structuredClone(GATEWAY_CONFIG);
+      nextConfig.clients[client].display_name = displayName;
+
+      const saved = saveGatewayState({
+        configPath: GATEWAY_CONFIG_FILE,
+        secretsPath: GATEWAY_SECRETS_FILE,
+        config: nextConfig,
+        officialCodexIds: OFFICIAL_CODEX_MODEL_IDS,
+      });
+      GATEWAY_CONFIG = saved.config;
+      reloadGatewayConfig({ reloadFiles: false });
+      logInfo("gateway_config_client_renamed", { client, display_name: displayName });
+      sendJson(res, 200, { success: true, client, displayName, display_name: displayName });
     } catch (error) {
       if (error instanceof GatewayConfigError) {
         sendJson(res, 400, {
