@@ -58,6 +58,15 @@ Reanalysis may restore a claim only with evidence from the new frozen snapshot a
 8. Recalculate coverage and run a fresh semantic review.
 9. Publish a new immutable revision and atomically replace `current.json`.
 
+Rerun applicable discovery adapters on the new snapshot before resolving candidate changes. Stable
+candidate IDs derive from repository lineage and seed signal; additional provenance does not create
+a new candidate. Recheck candidate conservation, family closure, reverse writers, omission audit,
+and both coverage statuses before publication.
+
+If history is requested, update `historical-claims.jsonl` and verified facts without treating commit
+messages as current evidence. Recompute event current effectiveness against the new canonical
+revision. Current coverage and history coverage remain independent.
+
 Query mode creates a targeted gap record and runs the required investigations before answering when
 knowledge is stale or insufficient.
 
@@ -88,6 +97,13 @@ or snapshot hash change invalidates the frozen review.
 
 Run a full audit when no prior snapshot exists, investigation/schema versions change, branch history
 diverges, high-impact files change, or the previous revision is partial/stale.
+
+## Legacy Migration
+
+For a complete v1 workspace, run `migrate_business_revision.py` into a new external run directory.
+Never edit the source revision. Preserve IDs and statuses, add empty schema-valid v2 ledgers, and
+keep the migrated revision partial until exact current v2 signals are discovered. Publish only
+through the normal immutable revision flow.
 
 ## Gate
 

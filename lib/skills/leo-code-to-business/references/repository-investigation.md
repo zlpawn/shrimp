@@ -18,6 +18,12 @@ Before semantic synthesis, run five independent repository-wide passes:
 Each pass records exact queries, scope, provider, result count, truncation, accepted candidates,
 rejected candidates with reasons, and the next investigation decision.
 
+Begin with `discover_repository_signals.py`. It detects repository languages and runs every
+applicable adapter, producing `discovery-observations.jsonl`, `inventory.jsonl`,
+`use-case-candidates.jsonl`, and `discovery-summary.json`. Adapter output is a search denominator,
+not confirmed business meaning. Unsupported detected languages and unsupported constructs remain
+explicit diagnostics.
+
 ## Mandatory Investigation Kinds
 
 Use these exact machine-readable IDs:
@@ -77,6 +83,10 @@ do not choose the most plausible implementation silently.
 A confirmed use case needs all eight investigation kinds. A remembered, inferred, or tool-returned
 relationship is not confirmed until current source verification is complete against the frozen
 snapshot.
+
+After semantic reconstruction, run an independent omission audit that starts from inventory,
+mutation/state/effect anchors, family matrices, and reverse-writer searches. The reviewer must not
+reuse the producing model's assurance that coverage is complete.
 
 ## Node and TypeScript Discovery Coverage
 

@@ -44,9 +44,13 @@ _leo_business/
     └── <revision-id>/
         ├── manifest.json
         ├── ai-context.md
+        ├── site-view-model.json
         ├── site/
         │   └── index.html
         ├── inventory.jsonl
+        ├── discovery-observations.jsonl
+        ├── use-case-candidates.jsonl
+        ├── legacy-signal-aliases.jsonl
         ├── capabilities.json
         ├── actors.json
         ├── use-case-families.json
@@ -63,6 +67,12 @@ _leo_business/
         ├── evidence.jsonl
         ├── conflicts.jsonl
         ├── unknowns.jsonl
+        ├── git-commits.jsonl
+        ├── git-change-facts.jsonl
+        ├── historical-claims.jsonl
+        ├── business-evolution-events.jsonl
+        ├── lineage-links.jsonl
+        ├── omission-audit.json
         ├── semantic-review.json
         ├── coverage.json
         └── change-impact.json
@@ -81,6 +91,12 @@ html_path -> revisions/<revision-id>/site/index.html
 
 AI reads `ai-context.md` first, then retrieves canonical JSON/JSONL records as needed. People open
 `site/index.html` directly. Both projections must identify the same canonical revision hash.
+Task-scoped consumers use `scripts/task_context.py` to build a bounded task context pack under the
+current run; task packs are retrieval artifacts, not canonical authoring sources.
+
+The v2 manifest keeps `current_coverage_status`, `history_coverage_status`, and `aggregate_status`
+visible independently. `current.json` points to one immutable revision and never merges artifacts
+from different canonical hashes.
 
 ## Snapshot Isolation
 

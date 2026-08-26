@@ -25,6 +25,18 @@ discovered entries
 No inventory ID may disappear. Unknown and excluded items remain visible in denominators. High
 confidence cannot increase coverage. Completing selected modules does not prove repository coverage.
 
+V2 also enforces:
+
+```text
+observation discovered IDs = inventory IDs
+inventory signals = candidate basis signals + evidenced non-candidate dispositions
+critical/high candidates = resolved dispositions + visible unresolved failures
+family matrix cells = evidenced dispositions + visible unresolved failures
+```
+
+Detected languages without an applicable adapter force partial current coverage even when the
+supported-language inventory is non-empty.
+
 ## Required Investigation Signals
 
 Every confirmed use case requires:
@@ -66,6 +78,24 @@ unknown discipline
 No dimension may be 0. Business framing, main flow, evidence, and unknown discipline must be 2.
 Total must be at least 13/16 for real-repository acceptance. Review hashes must match the canonical
 revision and generated answer.
+
+## Independent Statuses
+
+Persist `current_coverage_status` and `history_coverage_status` independently. Current is derived
+from discovery, candidate conservation, family closure, investigations, evidence, omissions, and
+semantic quality. History is `not_requested`, `passed`, `partial`, or `blocked` according to the
+requested history scope. Aggregate status is blocked if either blocks, partial if either is partial,
+and passed only when current passes and history is passed or not requested.
+
+A partial history analysis must not stale otherwise valid current claims. A migrated v1 revision is
+partial until current v2 discovery runs.
+
+## Real Acceptance
+
+The checked-in real-Git bundle is mandatory and offline. Fixed Java acceptance, when the repository
+and commit are available, must exit 0 and verify named business scenarios. Cross-model comparison
+requires exact observation/inventory IDs and 100% critical/high seed recall; normal/low differences
+remain in adjudication output.
 
 ## Gate
 

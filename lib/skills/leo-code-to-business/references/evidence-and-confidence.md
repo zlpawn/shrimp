@@ -59,6 +59,24 @@ historical evidence
 business question
 ```
 
+Git history uses a stricter separation:
+
+- `historical-claims.jsonl` stores commit-message and other declared statements with verification
+  status; a commit message never proves the change or its business reason.
+- `git-change-facts.jsonl` stores observed before/after source facts.
+- `business-evolution-events.jsonl` exists only when a verified business invariant changed.
+- `reason_status` remains unknown unless independent evidence proves why the change was made.
+
+Conservative grouping requires compatible verified outcomes, affected stable business targets,
+direct ancestry, and a bounded time window. Message similarity is supporting evidence only.
+
+## Independent Reviews
+
+The independent omission audit receives the frozen inventory, candidates, families, and canonical
+knowledge but not the producing analysis narrative. It names missing signals, writers, family
+members, and dimensions with severity. The independent semantic review receives canonical artifacts
+and rubric, not expected answers or source access. Review hashes must match the canonical revision.
+
 ## Freshness
 
 Keep `claim_status` separate from `lifecycle_status`. Changed or deleted evidence makes dependent

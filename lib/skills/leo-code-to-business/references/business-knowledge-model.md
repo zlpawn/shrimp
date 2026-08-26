@@ -4,6 +4,21 @@
 
 Define the canonical concepts shared by AI and HTML projections.
 
+Schema v2 separates discovery signals and candidate decisions from authored business knowledge,
+and separates current knowledge from requested Git history. The canonical hash covers semantic
+artifacts but excludes coverage, reviews, publication status, and projections.
+
+## Discovery and Candidate Layer
+
+`discovery-observations.jsonl` records what each adapter inspected and emitted. `inventory.jsonl`
+is the immutable signal denominator for the snapshot. `use-case-candidates.jsonl` records one stable
+seed candidate per repository-lineage/signal pair; adding supporting signals must not change its ID.
+
+Candidate dispositions are `confirmed`, `variant`, `supporting_behavior`, `duplicate`, `excluded`,
+or `unresolved`. Confirmed candidates point to a use case, variants point to a family and variant,
+supporting behavior points to the candidate/use case it supports, and excluded/duplicate records
+retain their reason. Critical/high unresolved candidates prevent current coverage from passing.
+
 ## Node Types
 
 Represent capabilities, actors, use cases, use-case families, business rules, workflows, states,
@@ -110,6 +125,28 @@ all eight required investigation kinds
 Preconditions, decisions, state/data/external effects, failures, compensation, permissions, and
 observability require either substantive values or a `has_unknown` relationship from the exact
 dimension address to a searched unknown.
+
+## Use-Case Family Contract
+
+A family owns a closure matrix over relevant actions and channels. Each cell is `confirmed`,
+`variant`, `not_applicable`, `searched_not_found`, or `unresolved`, with a reason and investigation
+evidence. Record reverse-writer investigations separately. A route catalog cannot stand in for
+family closure.
+
+## Current and History Artifacts
+
+Current nodes describe behavior at the frozen snapshot. Optional history adds `git-commits.jsonl`,
+`historical-claims.jsonl`, `git-change-facts.jsonl`, `business-evolution-events.jsonl`, and
+`lineage-links.jsonl`. Commit messages remain claims. Business evolution requires verified
+before/after invariants; rename-only facts do not create business events. Event effectiveness is
+`active`, `superseded`, `reverted`, `partially_active`, `historical_only`, or `unknown`.
+
+## Migration
+
+`migrate_business_revision.py` copies a complete v1 revision into a new v2 run, preserves legacy
+IDs, marks legacy inventory with `id_scheme = legacy_v1`, and leaves current coverage partial until
+fresh v2 discovery establishes exact signals. Migration never edits the source revision or current
+publication pointer.
 
 ## Unknown Contract
 

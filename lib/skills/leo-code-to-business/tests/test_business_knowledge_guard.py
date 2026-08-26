@@ -79,6 +79,16 @@ class BusinessKnowledgeGuardTests(unittest.TestCase):
             "codebase-memory-mcp",
             "_leo_business",
             "output-workspace.md",
+            "discover_repository_signals.py",
+            "use-case-candidates.jsonl",
+            "candidate conservation",
+            "independent omission audit",
+            "site-view-model.json",
+            "historical-claims.jsonl",
+            "commit message",
+            "current_coverage_status",
+            "history_coverage_status",
+            "task context",
         ]:
             self.assertIn(required, text)
 

@@ -31,6 +31,25 @@ retries, compensation, and repair before declaring a use-case family complete.
 Represent every family candidate as confirmed, inferred, or searched unresolved. One endpoint is not
 the family.
 
+## Candidate Investigation
+
+Start semantic work from `use-case-candidates.jsonl`, not from a hand-picked route. Investigate
+critical/high candidates first, then complete capability waves without dropping normal/low items.
+Preserve the seed signal and supporting basis signals. Candidate conservation requires every signal
+to reach a candidate or an evidence-linked non-candidate disposition.
+
+Candidate status changes require an explicit reason and the investigations that justify the
+decision. Do not resolve two similar signals as duplicates merely because their method names match;
+compare actor, goal, lifecycle, mutation, effect, outcome, and failure behavior.
+
+## Family Matrix Investigation
+
+Derive relevant action/channel axes from repository evidence. Search alternate application APIs,
+operations/backdoors, consumers, schedules, callbacks, upload/pending flows, status checks,
+unbind/rebind, retry, compensation, and repair. Record negative search results as
+`searched_not_found`; reserve `not_applicable` for a proved scope exclusion. Unsearched cells remain
+`unresolved`.
+
 ## Rule Translation
 
 A rule states the business condition, decision, and effect. "The code checks `deviceType`" is

@@ -313,11 +313,41 @@ test("Leo code to business is a managed business-knowledge skill", () => {
       "SKILL.md",
       "agents/openai.yaml",
       "references/business-knowledge-model.md",
+      "references/business-discovery.md",
+      "references/evidence-and-confidence.md",
+      "references/coverage-and-completion.md",
       "references/repository-investigation.md",
+      "references/incremental-update.md",
+      "references/html-projection.md",
       "references/optional-code-tools.md",
       "references/output-workspace.md",
+      "references/acceptance-scenarios.md",
+      "scripts/discover_repository_signals.py",
+      "scripts/git_business_history.py",
+      "scripts/migrate_business_revision.py",
+      "scripts/task_context.py",
+      "scripts/site_view_model.py",
+      "scripts/run_v2_acceptance.py",
+      "schemas/use-case-candidate.schema.json",
+      "schemas/business-evolution-event.schema.json",
     ]) {
       assert.equal(fs.existsSync(path.join(installed, relativePath)), true, relativePath);
+    }
+
+    const installedSkillText = fs.readFileSync(path.join(installed, "SKILL.md"), "utf-8").toLowerCase();
+    for (const required of [
+      "discover_repository_signals.py",
+      "use-case-candidates.jsonl",
+      "candidate conservation",
+      "independent omission audit",
+      "site-view-model.json",
+      "historical-claims.jsonl",
+      "commit message",
+      "current_coverage_status",
+      "history_coverage_status",
+      "task context",
+    ]) {
+      assert.equal(installedSkillText.includes(required), true, required);
     }
   } finally {
     fs.rmSync(tmpHome, { recursive: true, force: true });
