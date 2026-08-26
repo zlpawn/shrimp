@@ -159,56 +159,192 @@ def related_nodes(
     return unique
 
 
+def statement_texts(values: Any, limit: int = 4) -> list[str]:
+    if not isinstance(values, list):
+        return []
+    result: list[str] = []
+    for value in values:
+        if isinstance(value, dict):
+            statement = value.get("statement") or value.get("summary") or value.get("title")
+        else:
+            statement = str(value)
+        if statement and statement not in result:
+            result.append(str(statement))
+        if len(result) >= limit:
+            break
+    return result
+
+
+def format_compact_items(values: list[str], fallback: str = "尚未确认") -> str:
+    return "；".join(values) if values else fallback
+
+
+def use_case_rules(revision: dict[str, Any], use_case_id: str) -> list[dict[str, Any]]:
+    return related_nodes(revision, use_case_id, "uses_rule")
+
+
 def render_ai_context(revision: dict[str, Any]) -> str:
     manifest = revision["manifest"]
     canonical_hash = manifest["canonical_revision_sha256"]
     snapshot = manifest.get("repository_snapshot", {})
     capabilities = "\n".join(
-        f"- `{item['id']}`: {item['title']} - {item['summary']}"
+        f"- **{item['title']}**：{item['summary']}（下探 ID：`{item['id']}`）"
         for item in revision["capabilities"]
-    ) or "- No confirmed capabilities."
+    ) or "- 当前尚未整理出已确认的业务能力。"
+    actor_lines = []
+    for actor in revision["actors"]:
+        use_case_titles = [
+            node["title"]
+            for node in related_nodes(revision, actor["id"], "participates_in")
+            if node.get("title")
+        ]
+        scope = f"；参与场景：{'、'.join(use_case_titles)}" if use_case_titles else ""
+        actor_lines.append(f"- **{actor['title']}**：{actor['summary']}{scope}")
+    actors = "\n".join(actor_lines) or "- 当前尚未整理出已确认的参与者。"
+    use_case_blocks = []
+    for use_case in revision["use_cases"]:
+        actor_names = [
+            actor["title"]
+            for actor in related_nodes(revision, use_case["id"], "participates_in")
+        ]
+        rules = use_case_rules(revision, use_case["id"])
+        unknowns = unknowns_for_use_case(revision, use_case["id"])
+        initiation = [
+            *statement_texts(use_case.get("triggers"), 2),
+            *statement_texts(use_case.get("preconditions"), 1),
+        ]
+        failure_recovery = [
+            *statement_texts(use_case.get("rejection_conditions"), 1),
+            *statement_texts(use_case.get("failure_paths"), 1),
+            *statement_texts(use_case.get("compensation_paths"), 1),
+        ]
+        lines = [
+            f"### {use_case['title']}",
+            "",
+            f"- 参与者：{format_compact_items(actor_names)}",
+            f"- 业务目标：{use_case.get('goal', {}).get('statement') or '尚未确认'}",
+            f"- 发起条件：{format_compact_items(initiation)}",
+            f"- 核心流程：{format_compact_items(statement_texts(use_case.get('main_flow'), 4))}",
+            f"- 关键规则：{format_compact_items([item.get('statement', item.get('summary', '')) for item in rules][:3])}",
+            f"- 完成结果：{format_compact_items(statement_texts(use_case.get('success_outcomes'), 2))}",
+            f"- 异常与恢复：{format_compact_items(failure_recovery)}",
+            f"- 待确认：{format_compact_items([item.get('question', item.get('summary', '')) for item in unknowns][:2], '当前没有关联的高优先级未知项')}",
+            f"- 开发下探：检索 `{use_case['id']}`，再读取相关规则、状态、实体、关系与源码证据。",
+            "",
+        ]
+        use_case_blocks.append("\n".join(lines))
+    use_cases = "\n".join(use_case_blocks) or "当前尚未整理出已确认的业务场景。"
+    cross_rules = "\n".join(
+        f"- **{item['title']}**：{item.get('statement', item.get('summary', ''))}"
+        for item in revision["rules"][:12]
+    ) or "- 当前尚未整理出跨场景关键规则。"
+    state_lines = "\n".join(
+        f"- **{item['title']}**：{item.get('summary', '')}"
+        for item in revision["state_machines"][:8]
+    ) or "- 当前尚未整理出独立生命周期。"
+    unknown_lines = "\n".join(
+        f"- **{item['title']}**：{item.get('question', item.get('summary', ''))}"
+        f" 原因：{item.get('reason', '尚未记录')}"
+        for item in revision["unknowns"][:12]
+    ) or "- 当前已整理范围内没有记录未知项。"
+    conflict_lines = "\n".join(
+        f"- **{item['title']}**：{item.get('business_question', item.get('summary', ''))}"
+        for item in revision["conflicts"][:8]
+    ) or "- 当前已整理范围内未发现冲突。"
     aliases = "\n".join(
         f"- `{item.get('alias')}` -> {', '.join(item.get('target_ids', []))}"
         for item in revision["aliases"][:30]
-    ) or "- No aliases."
-    unknown_count = len(revision["unknowns"])
-    conflict_count = len(revision["conflicts"])
+    ) or "- 当前没有别名映射。"
+    scope_status = manifest.get("aggregate_status", manifest.get("coverage_status", "partial"))
+    status_text = (
+        "当前整理范围已通过校验。"
+        if scope_status == "passed"
+        else "当前整理范围已发布，但仍有业务知识等待继续归纳。"
+    )
     lines = [
-        "# Business Knowledge AI Context",
+        "# 项目业务导览",
         "",
-        f"- Canonical revision: `{canonical_hash}`",
-        f"- Snapshot: `{snapshot.get('snapshot_id', 'unknown')}`",
-        f"- Repository: `{snapshot.get('canonical_root', 'unknown')}`",
-        f"- Status: `{manifest.get('coverage_status', 'partial')}`",
-        f"- Unknowns: `{unknown_count}`",
-        f"- Conflicts: `{conflict_count}`",
+        "## 项目业务定位",
         "",
-        "## Capabilities",
+        "这份知识用于从参与者、业务目标、流程、规则、结果、异常与恢复理解当前系统。",
+        "代码、接口、字段和文件路径是核验与开发下探依据，不是业务解释的默认层级。",
+        "",
+        "## 当前已整理范围",
+        "",
+        f"当前已完整整理 {len(revision['use_cases'])} 个业务场景、{len(revision['capabilities'])} 项业务能力。",
+        "这不代表系统完整业务全貌。范围外问题不得仅凭名称或关键词推断为已确认行为。",
+        f"{status_text}",
+        "",
+        "## 参与者与业务目标",
+        "",
+        actors,
+        "",
+        "## 业务能力地图",
         "",
         capabilities,
         "",
-        "## File Routing",
+        "## 已确认业务场景",
         "",
-        "- `use-cases.jsonl`: actors pursuing goals, flows, decisions, effects, failures, and outcomes.",
-        "- `use-case-families.json`: alternate channels, lifecycle variants, unbind/rebind, and repair paths.",
-        "- `business-rules.jsonl`: business conditions, decisions, and effects.",
-        "- `state-machines.json`: lifecycle states and transitions.",
-        "- `entities.json`: business meaning of records and fields.",
-        "- `unknowns.jsonl` and `conflicts.jsonl`: limits, unresolved questions, and contradictions.",
-        "- `relationships.jsonl`: authoritative links between all knowledge and evidence.",
-        "- `evidence.jsonl` and `investigations.jsonl`: current-source proof and completed search work.",
+        use_cases,
+        "## 跨场景关键规则与生命周期",
         "",
-        "## Alias Resolution",
+        "### 关键规则",
+        "",
+        cross_rules,
+        "",
+        "### 生命周期",
+        "",
+        state_lines,
+        "",
+        "## 重要待确认事项",
+        "",
+        unknown_lines,
+        "",
+        "### 冲突",
+        "",
+        conflict_lines,
+        "",
+        "## 新需求开发工作法",
+        "",
+        "**先分析业务影响，再进入代码实现。**",
+        "",
+        "收到新需求时按以下顺序工作：",
+        "",
+        "1. 用业务语言重述需求及预期结果。",
+        "2. 判断当前知识对需求是完整覆盖、部分覆盖还是未覆盖。",
+        "3. 识别受影响的能力、用例、参与者、规则、状态、数据、外部系统、异常与恢复路径。",
+        "4. 明确必须保持的当前业务行为和边界条件。",
+        "5. 对未知项或未覆盖范围先调查当前源码，不把相似关键词当作确认事实。",
+        "6. 再检索实现入口、关系、实体和直接源码证据，制定或执行代码修改。",
+        "7. 从正常流程、边界条件、失败恢复、幂等、权限和外部影响生成测试与验收清单。",
+        "8. 开发完成后判断是否需要更新业务知识。",
+        "",
+        "## 检索与核验指南",
+        "",
+        "先用业务名称、别名或稳定 ID 定位场景，再按任务需要读取：",
+        "",
+        "- `use-cases.jsonl`：参与者目标、流程、决策、结果、失败和恢复。",
+        "- `use-case-families.json`：渠道、生命周期变体、解绑重绑和修复路径。",
+        "- `business-rules.jsonl`：业务条件、判断和影响。",
+        "- `state-machines.json`：生命周期状态与转换。",
+        "- `entities.json`：业务记录和字段含义。",
+        "- `unknowns.jsonl`、`conflicts.jsonl`：知识边界和矛盾。",
+        "- `relationships.jsonl`：业务节点之间及其与证据的权威关系。",
+        "- `evidence.jsonl`、`investigations.jsonl`：当前源码证明和已执行的调查。",
+        "- 对具体新需求可运行 `scripts/task_context.py` 获取有界检索包；该包用于定位，结论仍需回到 canonical 记录和当前源码核验。",
+        "",
+        "### 别名与稳定 ID",
         "",
         aliases,
         "",
-        "## Answer Policy",
+        "## 修订信息",
         "",
-        "Lead with business purpose, actor, trigger, goal, flow, rules, outcome, failures, variants,",
-        "unknowns, and evidence. Technical symbols support the explanation; they are not the hierarchy.",
-        "Treat current source as authoritative for current behavior. Keep inference, documents, history,",
-        "conflicts, and unknowns visibly separate. Trigger targeted investigation before answering when",
-        "the snapshot is stale or required dimensions are missing.",
+        f"- Canonical revision：`{canonical_hash}`",
+        f"- Snapshot：`{snapshot.get('snapshot_id', 'unknown')}`",
+        f"- Repository：`{snapshot.get('canonical_root', 'unknown')}`",
+        f"- Coverage status：`{manifest.get('coverage_status', 'partial')}`",
+        f"- Unknowns：`{len(revision['unknowns'])}`",
+        f"- Conflicts：`{len(revision['conflicts'])}`",
         "",
     ]
     return "\n".join(lines)
