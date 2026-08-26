@@ -1106,9 +1106,11 @@ function refreshClientCreateSources() {
     const select = document.getElementById('client-create-source');
     if (!select) return;
     const names = Object.keys(config.clients || {});
-    select.innerHTML = names.map(name =>
-        `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`
-    ).join('');
+    select.innerHTML = names.map(name => {
+        const label = clientDisplayName(name);
+        const text = (label && label !== name) ? `${label} (${name})` : name;
+        return `<option value="${escapeHtml(name)}">${escapeHtml(text)}</option>`;
+    }).join('');
 }
 
 window.submitCreateClient = async function() {

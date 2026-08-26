@@ -1432,7 +1432,7 @@ async function route(req, res) {
     try {
       const payload = JSON.parse(await readText(req) || "{}");
       const client = slugifyClientName(payload.client);
-      const displayName = typeof payload.displayName === "string" ? payload.displayName.trim() : "";
+      const displayName = typeof payload.displayName === "string" ? payload.displayName.trim().slice(0, 60) : "";
       const copyFrom = payload.copyFrom ? slugifyClientName(payload.copyFrom) : "";
       const mode = String(payload.mode || "replace").trim();
       const protocol = String(payload.protocol || "").trim().toLowerCase();
@@ -1524,7 +1524,7 @@ async function route(req, res) {
     try {
       const payload = JSON.parse(await readText(req) || "{}");
       const client = slugifyClientName(payload.client);
-      const displayName = typeof payload.displayName === "string" ? payload.displayName.trim() : "";
+      const displayName = typeof payload.displayName === "string" ? payload.displayName.trim().slice(0, 60) : "";
       if (!client) { sendJson(res, 400, { error: "client name is required" }); return; }
       if (!displayName) { sendJson(res, 400, { error: "displayName is required" }); return; }
       if (BUILTIN_CLIENTS.has(client)) {
