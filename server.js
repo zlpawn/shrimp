@@ -1450,7 +1450,7 @@ async function route(req, res) {
       }
 
       const nextConfig = structuredClone(GATEWAY_CONFIG);
-      const nextSecrets = structuredClone(GATEWAY_SECRETS);
+      let nextSecrets = structuredClone(GATEWAY_SECRETS);
 
       // Resolve the protocol the new group will serve. Explicit payload wins;
       // otherwise inherit from the source client (codex/deeptutor -> openai,
@@ -1468,13 +1468,14 @@ async function route(req, res) {
         };
       } else {
         // Seed from another client: clone endpoints + carry over secrets by endpoint id.
-        copyClientEndpoints({
+        const copyResult = copyClientEndpoints({
           config: nextConfig,
           secrets: nextSecrets,
           from: copyFrom,
           to: client,
           mode,
         });
+        nextSecrets = copyResult.secrets;
         if (nextConfig.clients?.[client]) {
           nextConfig.clients[client].display_name = displayName || client;
           nextConfig.clients[client].protocol = resolvedProtocol;
