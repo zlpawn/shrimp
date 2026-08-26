@@ -401,41 +401,130 @@ function renderHeaderNav(): string {
   `;
 }
 
-function parseMarkdownToSections(md: string): Array<{ title: string; items: Array<{ title: string; scoreText?: string; content: string; extra?: string }> }> {
-  if (!md) return [];
-  const sections: Array<{ title: string; items: Array<{ title: string; scoreText?: string; content: string; extra?: string }> }> = [];
-  const lines = md.split("\n");
-  let currentSection: { title: string; items: Array<{ title: string; scoreText?: string; content: string; extra?: string }> } | null = null;
-  let currentItem: { title: string; scoreText?: string; content: string; extra?: string } | null = null;
+interface ParsedBriefItem {
+  title: string;
+  worldScore?: string;
+  creatorScore?: string;
+  trendState?: string;
+  velocity?: string;
+  platforms: string[];
+  summary?: string;
+  creatorAngles: string[];
+  timeWindow?: string;
+}
 
-  for (const line of lines) {
-    const trimmed = line.trim();
+interface ParsedSection {
+  title: string;
+  icon: string;
+  badgeClass: string;
+  items: ParsedBriefItem[];
+}
+
+function parseMarkdownToSections(md: string): ParsedSection[] {
+  if (!md) return [];
+  const sections: ParsedSection[] = [];
+  const lines = md.split("\n");
+  let currentSection: ParsedSection | null = null;
+  let currentItem: ParsedBriefItem | null = null;
+  let inAngles = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i];
+    const trimmed = rawLine.trim();
+    if (!trimmed) continue;
+
     if (trimmed.startsWith("## ")) {
       if (currentItem && currentSection) currentSection.items.push(currentItem);
       currentItem = null;
-      currentSection = { title: trimmed.replace("## ", "").trim(), items: [] };
+      inAngles = false;
+      const title = trimmed.replace("## ", "").trim();
+      let icon = "📌";
+      let badgeClass = "badge-default";
+      if (title.includes("必须知道") || title.startsWith("①")) {
+        icon = "🚨";
+        badgeClass = "badge-danger";
+      } else if (title.includes("快速升温") || title.startsWith("②")) {
+        icon = "🚀";
+        badgeClass = "badge-success";
+      } else if (title.includes("值得做") || title.startsWith("③")) {
+        icon = "💡";
+        badgeClass = "badge-warning";
+      } else if (title.includes("值得知道") || title.startsWith("④")) {
+        icon = "👀";
+        badgeClass = "badge-info";
+      } else if (title.includes("大众舆论") || title.startsWith("⑤")) {
+        icon = "💬";
+        badgeClass = "badge-neutral";
+      } else if (title.includes("重点赛道") || title.startsWith("🎯")) {
+        icon = "🎯";
+        badgeClass = "badge-brand";
+      }
+
+      currentSection = { title, icon, badgeClass, items: [] };
       sections.push(currentSection);
       continue;
     }
 
     if (trimmed.startsWith("- **【")) {
       if (currentItem && currentSection) currentSection.items.push(currentItem);
-      // Extract title inside 【...】
-      const match = trimmed.match(/- \*\*【(.*?)】\*\*(.*)/);
-      if (match) {
-        currentItem = {
-          title: match[1],
-          scoreText: match[2]?.trim(),
-          content: ""
-        };
-      } else {
-        currentItem = { title: trimmed.replace(/^-\s*/, ""), content: "" };
-      }
+      inAngles = false;
+      
+      const titleMatch = trimmed.match(/- \*\*【(.*?)】\*\*(.*)/);
+      const title = titleMatch ? titleMatch[1].trim() : trimmed.replace(/^-\s*/, "");
+      const metaPart = titleMatch ? titleMatch[2].trim() : "";
+
+      const worldMatch = metaPart.match(/世界重要度:\s*([\d\.]+(?:\/10)?)/);
+      const creatorMatch = metaPart.match(/创作价值:\s*([\d\.]+(?:\/10)?)/);
+      const stateMatch = metaPart.match(/状态:\s*([A-Za-z_]+)/);
+      const velMatch = metaPart.match(/速度:\s*([+-]?\d+(?:\.\d+)?(?:\s*排名\/时)?)/);
+      const platMatch = metaPart.match(/平台:\s*([^)]+)/);
+      
+      const platforms = platMatch 
+        ? platMatch[1].split(/[,，]/).map(s => s.trim()).filter(Boolean)
+        : [];
+
+      currentItem = {
+        title,
+        worldScore: worldMatch ? worldMatch[1].replace("/10", "") : undefined,
+        creatorScore: creatorMatch ? creatorMatch[1].replace("/10", "") : undefined,
+        trendState: stateMatch ? stateMatch[1] : undefined,
+        velocity: velMatch ? velMatch[1] : undefined,
+        platforms,
+        creatorAngles: []
+      };
       continue;
     }
 
-    if (currentItem && trimmed.startsWith("-")) {
-      currentItem.content += (currentItem.content ? "\n" : "") + trimmed;
+    if (currentItem) {
+      if (trimmed.includes("切入角度") || trimmed.includes("选题建议")) {
+        inAngles = true;
+        continue;
+      }
+      if (trimmed.includes("建议窗口") || trimmed.includes("建议窗口期")) {
+        inAngles = false;
+        const wMatch = trimmed.match(/建议窗口期?[：:]\s*(.*)/);
+        const rawW = wMatch ? wMatch[1] : trimmed;
+        currentItem.timeWindow = rawW.replace(/^[⏱⏳\s*]+/, "").replace(/\*+$/, "").trim();
+        continue;
+      }
+      if (inAngles && (rawLine.startsWith("    - ") || rawLine.startsWith("  - ") || trimmed.startsWith("- "))) {
+        const angleText = trimmed.replace(/^-\s*/, "").replace(/^\*+|\*+$/g, "").trim();
+        if (angleText && !angleText.includes("切入角度")) {
+          currentItem.creatorAngles.push(angleText);
+        }
+        continue;
+      }
+      if (trimmed.startsWith("- 📌") || trimmed.startsWith("📌") || trimmed.startsWith("-")) {
+        inAngles = false;
+        const text = trimmed
+          .replace(/^[-\s*📌]+/, "")
+          .replace(/^(核心事实|动态速递|事件概述|观察聚焦|讨论焦点|赛道要闻)?[：:\s*]*/, "")
+          .replace(/^[：:\s*]+/, "")
+          .trim();
+        if (text) {
+          currentItem.summary = (currentItem.summary ? currentItem.summary + " " : "") + text;
+        }
+      }
     }
   }
 
@@ -542,27 +631,77 @@ function renderBriefView(): string {
           <pre class="trend-intel-raw-md"><code>${escapeHtml(brief.markdown)}</code></pre>
         </div>
       ` : `
-        <div class="trend-intel-sections-grid">
+        <!-- Sections Layout -->
+        <div class="trend-intel-sections-layout">
           ${sections.map((sec, idx) => `
-            <div class="trend-intel-section-card ${idx === 0 ? "section-must-know" : (idx === 1 ? "section-rapid-rising" : (idx === 2 ? "section-creator" : ""))} ">
+            <div class="trend-intel-section-card ${sec.badgeClass}">
               <div class="trend-intel-section-header">
-                <h3>${escapeHtml(sec.title)}</h3>
-                <span class="trend-intel-section-count">${sec.items.length} 条</span>
+                <div class="trend-intel-section-title-wrap">
+                  <span class="trend-intel-section-icon">${sec.icon}</span>
+                  <h3>${escapeHtml(sec.title)}</h3>
+                </div>
+                <span class="trend-intel-section-count">${sec.items.length} 个热点</span>
               </div>
-              <div class="trend-intel-section-items">
+              <div class="trend-intel-section-cards-grid">
                 ${sec.items.length === 0 ? `<p class="trend-intel-sec-empty">本栏目今日暂无突出条目</p>` : sec.items.map(item => `
-                  <div class="trend-intel-brief-item">
-                    <div class="trend-intel-brief-item-top">
-                      <div class="trend-intel-brief-item-title">${escapeHtml(item.title)}</div>
-                      ${item.scoreText ? `<span class="trend-intel-score-badge">${escapeHtml(item.scoreText)}</span>` : ""}
+                  <div class="trend-intel-brief-card">
+                    <!-- Card Header: Badges & Platforms -->
+                    <div class="trend-intel-card-header">
+                      <div class="trend-intel-card-badges">
+                        ${item.worldScore ? `
+                          <span class="trend-badge badge-world" title="世界重要性：反映事件对宏观社会、经济与行业的影响力">
+                            <span class="badge-dot"></span>重要度 <strong>${escapeHtml(item.worldScore)}</strong>
+                          </span>
+                        ` : ""}
+                        ${item.creatorScore ? `
+                          <span class="trend-badge badge-creator" title="内容创作价值：反映事件是否存在认知差/信息差，适合自媒体选题">
+                            <span class="badge-dot"></span>创作价值 <strong>${escapeHtml(item.creatorScore)}</strong>
+                          </span>
+                        ` : ""}
+                        ${item.trendState ? `
+                          <span class="trend-badge badge-state ${item.trendState === "RAPID_RISING" ? "state-rapid" : ""}">
+                            🚀 ${escapeHtml(item.trendState)} ${item.velocity ? `(${escapeHtml(item.velocity)})` : ""}
+                          </span>
+                        ` : ""}
+                      </div>
+                      ${item.platforms && item.platforms.length > 0 ? `
+                        <div class="trend-intel-card-platforms">
+                          ${item.platforms.map(p => `<span class="trend-platform-tag">${escapeHtml(p)}</span>`).join("")}
+                        </div>
+                      ` : ""}
                     </div>
-                    <div class="trend-intel-brief-item-body">
-                      ${item.content ? item.content.split("\n").map(c => `<div class="trend-intel-brief-line">${escapeHtml(c)}</div>`).join("") : ""}
-                    </div>
-                    <div class="trend-intel-brief-item-footer">
-                      <button class="btn btn-xs" onclick="window.__trendIntelAnalyzeRaw('${escapeHtml(item.title)}', '全网', 1, '')">
-                        💡 让AI深度解析
-                      </button>
+
+                    <!-- Full-Width Card Title -->
+                    <h4 class="trend-intel-card-title">${escapeHtml(item.title)}</h4>
+
+                    <!-- Card Summary -->
+                    ${item.summary ? `
+                      <p class="trend-intel-card-summary">${escapeHtml(item.summary)}</p>
+                    ` : ""}
+
+                    <!-- Angles Callout Box -->
+                    ${item.creatorAngles && item.creatorAngles.length > 0 ? `
+                      <div class="trend-intel-angles-box">
+                        <div class="trend-intel-angles-title">🎯 差异化创作切入角度：</div>
+                        <ul class="trend-intel-angles-list">
+                          ${item.creatorAngles.map(a => `<li>${escapeHtml(a)}</li>`).join("")}
+                        </ul>
+                      </div>
+                    ` : ""}
+
+                    <!-- Card Footer Actions -->
+                    <div class="trend-intel-card-footer">
+                      ${item.timeWindow ? `
+                        <span class="trend-intel-window-tag" title="建议发布窗口期">⏳ ${escapeHtml(item.timeWindow)}</span>
+                      ` : `<span style="flex:1;"></span>`}
+                      <div class="trend-intel-card-btns">
+                        <button class="btn btn-xs" onclick="window.__trendIntelAnalyzeRaw('${escapeHtml(item.title)}', '全网', 1, '')">
+                          💡 让AI深度解析
+                        </button>
+                        <button class="btn btn-xs btn-primary" onclick="window.__trendIntelIdeateFromBrief('${escapeHtml(item.title)}')">
+                          ✨ 复制选题大纲
+                        </button>
+                      </div>
                     </div>
                   </div>
                 `).join("")}
@@ -1283,6 +1422,14 @@ export function initTrendIntel(): void {
 (window as any).__trendIntelIdeateEvent = (eventId: string) => {
   const evt = state.events.find(e => e.event_id === eventId);
   if (evt) copyEventIdeatePrompt(evt);
+};
+
+(window as any).__trendIntelIdeateFromBrief = (title: string) => {
+  const prompt = `请基于热点事件「${title}」进行爆款内容选题策划：
+1. 3 套针对不同受众画像的爆款标题（悬念型、深度干货型、争议思辨型）；
+2. 核心冲突与受众认知差分析（大众常规怎么看 vs 真正有价值的角度）；
+3. 详尽的短视频/图文行文大纲（含开头黄金 3 秒钩子、中段论证逻辑与结尾金句）。`;
+  copyText(prompt, `已复制「${title}」的选题策划提示词！`);
 };
 
 (window as any).__trendIntelUpdateDraft = (path: string, val: any) => {

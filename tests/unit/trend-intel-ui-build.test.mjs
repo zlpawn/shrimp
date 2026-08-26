@@ -72,7 +72,7 @@ test("trend intel - styles define responsive dashboard and theme support", () =>
 
   assert.match(css, /\.trend-intel-root-wrap/);
   assert.match(css, /\.trend-intel-nav/);
-  assert.match(css, /\.trend-intel-sections-grid/);
+  assert.match(css, /\.trend-intel-sections-layout/);
   assert.match(css, /\.trend-intel-kpi-grid/);
   assert.match(css, /\.trend-intel-table/);
   assert.match(css, /\.trend-intel-events-grid/);

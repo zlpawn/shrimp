@@ -6341,33 +6341,22 @@ input:focus, select:focus {
   color: var(--text-secondary);
 }
 
-/* Sections Grid */
-.trend-intel-sections-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-  gap: 16px;
+/* Sections Layout & Cards */
+.trend-intel-sections-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
 }
 
 .trend-intel-section-card {
   background: var(--surface);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  padding: 16px;
+  padding: 20px 22px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-.trend-intel-section-card.section-must-know {
-  border-left: 4px solid var(--danger);
-}
-
-.trend-intel-section-card.section-rapid-rising {
-  border-left: 4px solid var(--success);
-}
-
-.trend-intel-section-card.section-creator {
-  border-left: 4px solid #f59e0b;
+  gap: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .trend-intel-section-header {
@@ -6375,78 +6364,214 @@ input:focus, select:focus {
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid var(--border-color);
-  padding-bottom: 8px;
+  padding-bottom: 12px;
+}
+
+.trend-intel-section-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.trend-intel-section-icon {
+  font-size: 18px;
 }
 
 .trend-intel-section-header h3 {
   margin: 0;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--text-primary);
+  letter-spacing: -0.01em;
 }
 
 .trend-intel-section-count {
   font-size: 11px;
+  font-weight: 600;
   color: var(--text-secondary);
   background: var(--input-bg);
+  padding: 3px 8px;
+  border-radius: var(--radius-full, 9999px);
+  border: 1px solid var(--border-color);
+}
+
+.trend-intel-section-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .trend-intel-section-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.trend-intel-sec-empty {
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 16px 0;
+  margin: 0;
+  font-style: italic;
+}
+
+/* Individual Brief Card */
+.trend-intel-brief-card {
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.trend-intel-brief-card:hover {
+  border-color: var(--brand-primary, #6366f1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.trend-intel-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.trend-intel-card-badges {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.trend-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+}
+
+.trend-badge.badge-world {
+  background: rgba(239, 68, 68, 0.08);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.trend-badge.badge-creator {
+  background: rgba(245, 158, 11, 0.08);
+  color: #d97706;
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+.trend-badge.badge-state {
+  background: rgba(16, 185, 129, 0.08);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.trend-badge.badge-state.state-rapid {
+  background: rgba(168, 85, 247, 0.1);
+  color: #a855f7;
+  border-color: rgba(168, 85, 247, 0.3);
+  font-weight: 700;
+}
+
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.trend-intel-card-platforms {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.trend-platform-tag {
+  font-size: 10.5px;
+  color: var(--text-secondary);
+  background: var(--surface);
+  border: 1px solid var(--border-color);
   padding: 2px 6px;
   border-radius: var(--radius-sm);
 }
 
-.trend-intel-section-items {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.trend-intel-card-title {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
 }
 
-.trend-intel-brief-item {
-  padding: 10px 12px;
-  background: var(--input-bg);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
+.trend-intel-card-summary {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* Angles Callout Box */
+.trend-intel-angles-box {
+  background: var(--surface);
+  border: 1px dashed rgba(245, 158, 11, 0.4);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.trend-intel-brief-item-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
+.trend-intel-angles-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #d97706;
 }
 
-.trend-intel-brief-item-title {
-  font-size: 13px;
-  font-weight: 600;
+.trend-intel-angles-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12.5px;
   color: var(--text-primary);
-  line-height: 1.4;
-}
-
-.trend-intel-score-badge {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
-  background: var(--brand-glow);
-  color: var(--text-primary);
-  white-space: nowrap;
-}
-
-.trend-intel-brief-item-body {
-  font-size: 12px;
-  color: var(--text-secondary);
   line-height: 1.5;
 }
 
-.trend-intel-brief-line {
-  margin-bottom: 2px;
+.trend-intel-angles-list li {
+  margin-bottom: 3px;
 }
 
-.trend-intel-brief-item-footer {
+.trend-intel-card-footer {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color);
+}
+
+.trend-intel-window-tag {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+.trend-intel-card-btns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .trend-intel-raw-md-wrap {
