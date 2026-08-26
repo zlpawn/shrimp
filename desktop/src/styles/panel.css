@@ -6258,20 +6258,25 @@ input:focus, select:focus {
 .trend-intel-date-label {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-size: 13px;
   color: var(--text-secondary);
   white-space: nowrap;
   flex-shrink: 0;
+  width: auto;
 }
 
 .trend-intel-date-label span {
   white-space: nowrap;
   user-select: none;
   flex-shrink: 0;
+  font-weight: 500;
 }
 
 .trend-intel-date-input {
+  width: 138px !important;
+  min-width: 138px;
+  max-width: 138px;
   padding: 4px 8px;
   font-size: 13px;
   border-radius: var(--radius-md);
