@@ -198,6 +198,11 @@ import {
 import { createRemoteSessionService } from "./lib/remote-session/application/service.mjs";
 import { routeRemoteSessionRequest } from "./lib/remote-session/http/routes.mjs";
 import { createFakeHostBackend } from "./lib/remote-session/host-attach/fake-host.mjs";
+import {
+  createOfficialRemoteLinkService,
+  createOfficialRemoteLinkSqliteStore,
+  routeOfficialRemoteLinkRequest,
+} from "./lib/remote-session/official-links/index.mjs";
 import { resolveMcpPaths } from "./lib/mcp-management/paths.mjs";
 import { createMcpStore } from "./lib/mcp-management/store.mjs";
 import { createMcpManagementService } from "./lib/mcp-management/application/service.mjs";
@@ -266,6 +271,7 @@ const OFFICIAL_CLAUDE_MODEL_IDS = new Set(OFFICIAL_CLAUDE_MODELS);
 let globalDreamSkinService = null;
 let globalNatTraversalService = null;
 let globalRemoteSessionService = null;
+let globalOfficialRemoteLinkService = null;
 let globalCommandAppsService = null;
 let globalMcpManagementService = null;
 
@@ -317,6 +323,16 @@ async function ensureRemoteSessionService() {
     logger: console,
   });
   return globalRemoteSessionService;
+}
+
+function ensureOfficialRemoteLinkService() {
+  if (globalOfficialRemoteLinkService) return globalOfficialRemoteLinkService;
+  globalOfficialRemoteLinkService = createOfficialRemoteLinkService({
+    store: createOfficialRemoteLinkSqliteStore({
+      dbPath: process.env.REMOTE_SESSION_LINKS_DB_FILE || path.join(path.dirname(GATEWAY_CONFIG_FILE), "gateway.db"),
+    }),
+  });
+  return globalOfficialRemoteLinkService;
 }
 
 function ensureCommandAppsService() {
@@ -1220,6 +1236,12 @@ async function route(req, res) {
 
   if (reqPath.startsWith("/v1/remote-session")) {
     if (!checkLocalAuth(req, res)) return;
+    if (reqPath.startsWith("/v1/remote-session/official-links")) {
+      await routeOfficialRemoteLinkRequest(req, res, context, reqPath, {
+        service: ensureOfficialRemoteLinkService(),
+      });
+      return;
+    }
     await routeRemoteSessionRequest(req, res, context, reqPath, {
       service: await ensureRemoteSessionService(),
     });

@@ -123,6 +123,8 @@ type Project = {
 };
 
 type AvailableModel = { id: string; name: string; source?: string; isRecommended?: boolean };
+type OfficialRemoteLink = { id: string; name: string; url: string; kind?: string; createdAt?: number; updatedAt?: number };
+type OfficialLinkFramePolicy = { id?: string; embeddable?: boolean; reason?: string; xFrameOptions?: string };
 
 type SessionEvent = {
   seq?: number;
@@ -149,7 +151,7 @@ const OFFICIAL_MODELS_FALLBACK: AvailableModel[] = sortAntigravityModels([
 ]);
 
 const state: {
-  view: "catalog" | "antigravity";
+  view: "catalog" | "antigravity" | "official-links";
   loading: boolean;
   error: string;
   config: RemoteConfig | null;
@@ -174,6 +176,12 @@ const state: {
   showPeersDrawer: boolean;
   showPasswordPlain: boolean;
   stream: StreamState;
+  officialLinks: OfficialRemoteLink[];
+  selectedOfficialLinkId: string;
+  editingOfficialLink: { id?: string; name: string; url: string } | null;
+  showOfficialLinkModal: boolean;
+  officialFramePolicy: OfficialLinkFramePolicy | null;
+  officialFrameChecking: boolean;
 } = {
   view: "catalog",
   loading: false,
@@ -200,6 +208,12 @@ const state: {
   showPeersDrawer: false,
   showPasswordPlain: false,
   stream: { sessionId: "", source: null },
+  officialLinks: [],
+  selectedOfficialLinkId: "",
+  editingOfficialLink: null,
+  showOfficialLinkModal: false,
+  officialFramePolicy: null,
+  officialFrameChecking: false,
 };
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -385,6 +399,11 @@ function renderCatalog(): string {
   const sessionActive = Boolean(currentSession && currentSession.state !== "ended");
   const remotes = remotePeers();
   const activePeer = selectedPeer();
+  const officialBadgeClass = state.officialLinks.length ? "badge badge-default" : "badge";
+  const officialBadgeText = state.officialLinks.length ? state.officialLinks.length + " 个链接" : "未配置";
+  const officialRecentText = state.officialLinks[0]
+    ? "最近：" + state.officialLinks[0].name
+    : "保存官方 /r/ 链接并按需打开";
 
   return `
     <div class="rs-page">
@@ -433,6 +452,31 @@ function renderCatalog(): string {
           <div class="node-card-footer">
             <span>连接远端 Antigravity，交互式执行 Cascade 编码与审批</span>
             <span class="node-card-cta">进入远程编码工作台 →</span>
+          </div>
+        </div>
+      </div>
+      <div class="endpoints-grid">
+        <div class="node-card" role="button" tabindex="0"
+             onclick="window.__rsOpenScene('official-links')"
+             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.__rsOpenScene('official-links');}">
+          <div class="node-card-top">
+            <div class="node-card-title-row">
+              <div class="node-card-title">🔗 Antigravity 官方远程控制</div>
+            </div>
+            <div class="node-card-actions" onclick="event.stopPropagation()">
+              <span class="${officialBadgeClass}">${officialBadgeText}</span>
+            </div>
+          </div>
+          <div class="node-card-meta">
+            <div class="node-card-row">
+              <span class="badge">Official Remote Control</span>
+              <span class="badge">新 Tab 打开</span>
+            </div>
+            <div class="node-card-row mono">${escapeHtml(officialRecentText)}</div>
+          </div>
+          <div class="node-card-footer">
+            <span>管理官方远程链接；官方站点禁止 iframe 时使用新 Tab</span>
+            <span class="node-card-cta">管理官方链接 →</span>
           </div>
         </div>
       </div>
@@ -619,6 +663,98 @@ function renderAntigravityScene(): string {
         ${renderEvents()}
       </div>
       ${renderConversationModal()}
+    </div>
+  `;
+}
+
+function selectedOfficialLink(): OfficialRemoteLink | null {
+  return state.officialLinks.find((item) => item.id === state.selectedOfficialLinkId) || null;
+}
+
+function renderOfficialLinksScene(): string {
+  const selected = selectedOfficialLink();
+  const policy = state.officialFramePolicy;
+  const statusText = state.officialFrameChecking
+    ? "正在检测官方页面嵌入策略..."
+    : policy?.embeddable === false
+      ? "官方站点禁止 iframe 嵌入，请使用新 Tab 打开。"
+      : policy?.embeddable
+        ? "官方页面允许嵌入，可以尝试预览。"
+        : "尚未检测嵌入策略。";
+  const pills = state.officialLinks
+    .map((item) => {
+      const active = item.id === state.selectedOfficialLinkId;
+      return `<button type="button" class="rs-official-link-pill ${active ? "active" : ""}" role="radio" aria-checked="${active}" aria-current="${active ? "true" : "false"}" onclick="window.__rsSelectOfficialLink('${escapeHtml(item.id)}')">${escapeHtml(item.name)}</button>`;
+    })
+    .join("");
+  return `
+    <div class="rs-page">
+      <div class="rs-top-action-bar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <button class="btn btn-sm" onclick="window.__rsBackToCatalog()">← 返回场景列表</button>
+        <button class="btn btn-primary" onclick="window.__rsEditOfficialLink()">+ 新增官方链接</button>
+      </div>
+      ${state.error ? `<div class="rs-alert">${escapeHtml(state.error)}</div>` : ""}
+      <div class="card rs-block">
+        <div class="rs-block-head">
+          <h3>官方远程链接</h3>
+          <div class="rs-inline-actions">
+            <button class="btn btn-sm" onclick="window.__rsLoadOfficialLinks()" ${state.loading ? "disabled" : ""}>刷新</button>
+          </div>
+        </div>
+        <div class="rs-official-link-track" role="radiogroup" aria-label="官方远程链接">
+          ${pills}
+          <button type="button" class="rs-official-link-pill rs-official-add" onclick="window.__rsEditOfficialLink()">+ 新增</button>
+        </div>
+      </div>
+      <div class="card rs-block">
+        <div class="rs-block-head">
+          <h3>${selected ? escapeHtml(selected.name) : "选择一个官方链接"}</h3>
+          <div class="rs-inline-actions">
+            ${selected ? `
+              <button class="btn btn-sm" onclick="window.__rsCheckOfficialFrame()">检测嵌入</button>
+              <button class="btn btn-sm" onclick="window.__rsEditOfficialLink('${escapeHtml(selected.id)}')">编辑</button>
+              <button class="btn btn-sm" onclick="window.__rsDeleteOfficialLink('${escapeHtml(selected.id)}')">删除</button>
+              <button class="btn btn-primary btn-sm" onclick="window.__rsOpenOfficialLink('${escapeHtml(selected.id)}')">打开官方页面</button>
+            ` : ""}
+          </div>
+        </div>
+        ${selected ? `
+          <div class="rs-official-detail">
+            <code class="path-pill">${escapeHtml(selected.url)}</code>
+            <div class="rs-official-status ${policy?.embeddable === false ? "is-blocked" : ""}">${escapeHtml(statusText)}</div>
+            ${policy?.embeddable ? `
+              <div class="rs-official-frame-wrap">
+                <iframe src="${escapeHtml(selected.url)}" title="Antigravity 官方远程控制"></iframe>
+              </div>
+            ` : ""}
+          </div>
+        ` : `<div class="rs-empty">尚无选中的官方链接。点击“新增官方链接”保存一个 antigravity.google.com /r/ 链接。</div>`}
+      </div>
+      ${renderOfficialLinkModal()}
+    </div>
+  `;
+}
+
+function renderOfficialLinkModal(): string {
+  if (!state.showOfficialLinkModal || !state.editingOfficialLink) return "";
+  return `
+    <div class="rs-modal-overlay" onclick="window.__rsCloseOfficialLinkModal()">
+      <div class="rs-modal-card" onclick="event.stopPropagation()">
+        <h3>${state.editingOfficialLink.id ? "编辑官方链接" : "新增官方链接"}</h3>
+        <label class="form-group">
+          <span>名称</span>
+          <input id="rs-official-name" type="text" value="${escapeHtml(state.editingOfficialLink.name)}" placeholder="例如：工作台 Mac" maxlength="80" />
+        </label>
+        <label class="form-group">
+          <span>官方远程链接 (HTTPS)</span>
+          <textarea id="rs-official-url" rows="4" placeholder="https://antigravity.google.com/r/...">${escapeHtml(state.editingOfficialLink.url)}</textarea>
+        </label>
+        <p class="rs-help rs-help-warn">链接仅保存在本机 gateway.db，不会提交到 GitHub。</p>
+        <div class="rs-inline-actions" style="justify-content:flex-end; margin-top:16px;">
+          <button class="btn" onclick="window.__rsCloseOfficialLinkModal()">取消</button>
+          <button class="btn btn-primary" onclick="window.__rsSaveOfficialLink()">保存</button>
+        </div>
+      </div>
     </div>
   `;
 }
@@ -821,7 +957,11 @@ function renderPeerModal(): string {
 function render(): void {
   const el = rootEl();
   if (!el) return;
-  const content = state.view === "antigravity" ? renderAntigravityScene() : renderCatalog();
+  const content = state.view === "antigravity"
+    ? renderAntigravityScene()
+    : state.view === "official-links"
+      ? renderOfficialLinksScene()
+      : renderCatalog();
   el.innerHTML = content + renderPeersDrawer() + renderPeerModal();
 }
 
@@ -891,6 +1031,114 @@ async function reload(): Promise<void> {
     state.error = error?.message || String(error);
   } finally {
     state.loading = false;
+    render();
+  }
+}
+
+async function loadOfficialLinks(): Promise<void> {
+  state.loading = true;
+  state.error = "";
+  render();
+  try {
+    const data = await api<{ links: OfficialRemoteLink[] }>("/v1/remote-session/official-links");
+    state.officialLinks = data.links || [];
+    if (!state.officialLinks.some((item) => item.id === state.selectedOfficialLinkId)) {
+      state.selectedOfficialLinkId = state.officialLinks[0]?.id || "";
+      state.officialFramePolicy = null;
+    }
+  } catch (error: any) {
+    state.error = error?.message || String(error);
+  } finally {
+    state.loading = false;
+    render();
+  }
+}
+
+async function selectOfficialLink(linkId: string): Promise<void> {
+  state.selectedOfficialLinkId = linkId;
+  state.officialFramePolicy = null;
+  render();
+}
+
+function editOfficialLink(linkId = ""): void {
+  const current = state.officialLinks.find((item) => item.id === linkId);
+  state.editingOfficialLink = current
+    ? { id: current.id, name: current.name, url: current.url }
+    : { name: "", url: "" };
+  state.showOfficialLinkModal = true;
+  render();
+}
+
+function closeOfficialLinkModal(): void {
+  state.showOfficialLinkModal = false;
+  state.editingOfficialLink = null;
+  render();
+}
+
+async function saveOfficialLink(): Promise<void> {
+  if (!state.editingOfficialLink) return;
+  const name = (document.getElementById("rs-official-name") as HTMLInputElement | null)?.value.trim() || "";
+  const url = (document.getElementById("rs-official-url") as HTMLTextAreaElement | null)?.value.trim() || "";
+  try {
+    const path = state.editingOfficialLink.id
+      ? "/v1/remote-session/official-links/" + encodeURIComponent(state.editingOfficialLink.id)
+      : "/v1/remote-session/official-links";
+    const data = await api<{ link: OfficialRemoteLink }>(path, {
+      method: state.editingOfficialLink.id ? "PUT" : "POST",
+      body: JSON.stringify({ name, url }),
+    });
+    state.showOfficialLinkModal = false;
+    state.editingOfficialLink = null;
+    state.selectedOfficialLinkId = data.link.id;
+    showToast("官方远程链接已保存", "success");
+    await loadOfficialLinks();
+  } catch (error: any) {
+    showToast(error?.message || String(error), "error");
+  }
+}
+
+async function deleteOfficialLink(linkId: string): Promise<void> {
+  const current = state.officialLinks.find((item) => item.id === linkId);
+  if (!current || !confirm(`确定删除官方远程链接 "${current.name}" 吗？`)) return;
+  try {
+    await api("/v1/remote-session/official-links/" + encodeURIComponent(linkId), { method: "DELETE" });
+    if (state.selectedOfficialLinkId === linkId) {
+      state.selectedOfficialLinkId = "";
+      state.officialFramePolicy = null;
+    }
+    showToast("官方远程链接已删除", "success");
+    await loadOfficialLinks();
+  } catch (error: any) {
+    showToast(error?.message || String(error), "error");
+  }
+}
+
+function openOfficialLink(linkId: string): void {
+  const current = state.officialLinks.find((item) => item.id === linkId);
+  if (!current) return;
+  window.open(current.url, "_blank", "noopener,noreferrer");
+}
+
+async function checkOfficialFrame(): Promise<void> {
+  if (!state.selectedOfficialLinkId) return;
+  state.officialFrameChecking = true;
+  state.officialFramePolicy = null;
+  render();
+  try {
+    const data = await api<OfficialLinkFramePolicy>(
+      "/v1/remote-session/official-links/" +
+        encodeURIComponent(state.selectedOfficialLinkId) +
+        "/frame-policy",
+    );
+    state.officialFramePolicy = data;
+  } catch (error: any) {
+    state.officialFramePolicy = {
+      embeddable: false,
+      reason: "check_failed",
+      xFrameOptions: error?.message || String(error),
+    };
+  } finally {
+    state.officialFrameChecking = false;
     render();
   }
 }
@@ -1285,7 +1533,7 @@ function copyConversationContent(): void {
 
 // Window Globals for UI actions
 (window as any).__rsReload = () => { void reload(); };
-(window as any).__rsOpenScene = (scene: "antigravity") => {
+(window as any).__rsOpenScene = (scene: "antigravity" | "official-links") => {
   state.view = scene;
   render();
 };
@@ -1293,6 +1541,14 @@ function copyConversationContent(): void {
   state.view = "catalog";
   render();
 };
+(window as any).__rsLoadOfficialLinks = () => { void loadOfficialLinks(); };
+(window as any).__rsSelectOfficialLink = (linkId: string) => { void selectOfficialLink(linkId); };
+(window as any).__rsEditOfficialLink = (linkId = "") => { editOfficialLink(linkId); };
+(window as any).__rsCloseOfficialLinkModal = () => { closeOfficialLinkModal(); };
+(window as any).__rsSaveOfficialLink = () => { void saveOfficialLink(); };
+(window as any).__rsDeleteOfficialLink = (linkId: string) => { void deleteOfficialLink(linkId); };
+(window as any).__rsOpenOfficialLink = (linkId: string) => { openOfficialLink(linkId); };
+(window as any).__rsCheckOfficialFrame = () => { void checkOfficialFrame(); };
 (window as any).__rsOpenPeersDrawer = () => {
   state.showPeersDrawer = true;
   render();
@@ -1506,7 +1762,7 @@ function copyConversationContent(): void {
 
 registerTab("remote-session", {
   onEnter: () => {
-    void reload();
+    void Promise.all([reload(), loadOfficialLinks()]);
   },
   onLeave: () => {
     closeEventStream();
