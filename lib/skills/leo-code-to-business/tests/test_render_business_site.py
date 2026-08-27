@@ -147,6 +147,23 @@ class RenderBusinessSiteTests(unittest.TestCase):
         result = renderer.guard.validate_revision(self.revision)
         self.assertEqual(result["status"], "passed")
 
+    def test_v2_render_uses_v2_canonical_hash_contract(self):
+        revision = Path(self.temp.name) / "revision-v2"
+        shutil.copytree(
+            SKILL_DIR / "tests" / "fixtures" / "sample-revision-v2",
+            revision,
+        )
+
+        renderer.refresh_canonical_hashes(revision)
+
+        manifest = json.loads(
+            (revision / "manifest.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(
+            manifest["canonical_revision_sha256"],
+            renderer.guard.canonical_revision_sha256_v2(revision),
+        )
+
     def test_projection_file_tampering_is_rejected(self):
         renderer.write_projections(self.revision)
         with (self.revision / "ai-context.md").open("a", encoding="utf-8") as handle:

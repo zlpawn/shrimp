@@ -265,7 +265,8 @@
           "models": [],
           "model_mapping": {
             "glm-5.3-zp": "GLM-5.3",
-            "glm-5.2-zp": "GLM-5.2"
+            "glm-5.2-zp": "GLM-5.2",
+            "glm-5.3-flash-zp": "GLM-5.3-Flash"
           },
           "capabilities": {
             "input_modalities": [

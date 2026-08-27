@@ -1146,6 +1146,14 @@ def canonical_revision_sha256_v2(revision_dir: Path) -> str:
     return contract.canonical_sha256(payload, sort_records=True)
 
 
+def revision_canonical_sha256(revision_dir: Path | str) -> str:
+    root = Path(revision_dir)
+    manifest = read_json(root / "manifest.json")
+    if manifest.get("schema_version") == contract.V2_SCHEMA_VERSION:
+        return canonical_revision_sha256_v2(root)
+    return canonical_revision_sha256(root)
+
+
 def validate_semantic_review(
     review: dict[str, Any],
     canonical_hash: str,
@@ -1571,13 +1579,22 @@ def validate_revision_v2(root: Path) -> dict[str, Any]:
     }
     if migration_gaps:
         coverage["migration_gaps"] = migration_gaps
+    canonical_hash = manifest.get("canonical_revision_sha256")
+    if not canonical_hash:
+        raise ValidationError("manifest canonical revision hash is missing")
+    calculated_hash = canonical_revision_sha256_v2(root)
+    if canonical_hash != calculated_hash:
+        raise ValidationError("manifest canonical revision hash does not match artifacts")
+    validate_projections(manifest, canonical_hash)
+    validate_projection_files(root, manifest)
+    validate_semantic_review(read_json(root / "semantic-review.json"), canonical_hash)
     return {
         "status": aggregate,
         "errors": [],
         "coverage": coverage,
         "business_flow_diagnostics": flow_diagnostics,
-        "canonical_revision_sha256": manifest.get("canonical_revision_sha256"),
-        "calculated_canonical_sha256": manifest.get("canonical_revision_sha256"),
+        "canonical_revision_sha256": canonical_hash,
+        "calculated_canonical_sha256": calculated_hash,
         "node_count": len(node_ids),
         "relationship_count": len(read_jsonl(root / "relationships.jsonl")),
         "evidence_count": len(evidence),

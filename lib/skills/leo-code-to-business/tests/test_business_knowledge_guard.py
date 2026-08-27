@@ -879,11 +879,15 @@ class BusinessKnowledgeGuardV2Tests(unittest.TestCase):
         with self.assertRaisesRegex(guard.ValidationError, message):
             guard.validate_revision(self.revision)
 
+    def refresh_v2_revision(self):
+        renderer.write_projections(self.revision)
+
     def assert_guard_status(self, status, *, unresolved_id):
         manifest = self.read_v2_json("manifest.json")
         manifest["current_coverage_status"] = status
         manifest["aggregate_status"] = status
         self.write_v2_json("manifest.json", manifest)
+        self.refresh_v2_revision()
         result = guard.validate_revision(self.revision)
         self.assertEqual(result["status"], status)
         self.assertIn(
@@ -968,6 +972,7 @@ class BusinessKnowledgeGuardV2Tests(unittest.TestCase):
         manifest["aggregate_status"] = "partial"
         manifest["coverage_status"] = "partial"
         self.write_v2_json("manifest.json", manifest)
+        self.refresh_v2_revision()
 
         result = guard.validate_revision(self.revision)
         metric = result["coverage"]["metrics"][
@@ -1018,6 +1023,17 @@ class BusinessKnowledgeGuardV2Tests(unittest.TestCase):
         self.write_v2_jsonl("git-change-facts.jsonl", facts)
 
         self.assertNotEqual(before, guard.canonical_revision_sha256_v2(self.revision))
+
+    def test_v2_rejects_manifest_hash_from_v1_contract(self):
+        manifest = self.read_v2_json("manifest.json")
+        manifest["canonical_revision_sha256"] = guard.canonical_revision_sha256(
+            self.revision
+        )
+        self.write_v2_json("manifest.json", manifest)
+
+        self.assert_guard_error(
+            "manifest canonical revision hash does not match artifacts"
+        )
 
     def test_partial_history_does_not_stale_current_claims(self):
         manifest = self.read_v2_json("manifest.json")
