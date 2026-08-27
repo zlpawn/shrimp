@@ -162,7 +162,6 @@ test("remote session panel exposes official link manager and wheel selector", ()
   const source = fs.readFileSync(path.join(panelRoot, "desktop/src/modules/remote-session.ts"), "utf8");
   const css = fs.readFileSync(path.join(panelRoot, "desktop/src/styles/panel.css"), "utf8");
   const html = fs.readFileSync(path.join(panelRoot, "desktop/index.html"), "utf8");
-  const html = fs.readFileSync(path.join(panelRoot, "desktop/index.html"), "utf8");
   assert.match(source, /Antigravity 官方远程控制/);
   assert.match(source, /official-links/);
   assert.match(source, /__rsOpenOfficialLink/);
@@ -175,6 +174,7 @@ test("remote session panel exposes official link manager and wheel selector", ()
 test("remote session panels and dialogs use spacious grouped layouts", () => {
   const source = fs.readFileSync(path.join(panelRoot, "desktop/src/modules/remote-session.ts"), "utf8");
   const css = fs.readFileSync(path.join(panelRoot, "desktop/src/styles/panel.css"), "utf8");
+  const html = fs.readFileSync(path.join(panelRoot, "desktop/index.html"), "utf8");
 
   assert.match(source, /class="rs-modal-card rs-modal-shell rs-modal-wide"[^>]*onclick="event\.stopPropagation\(\)"[\s\S]*?rs-official-name/);
   assert.match(source, /class="rs-modal-card rs-modal-shell rs-modal-wide"[\s\S]*?modal-peer-transport-type/);
