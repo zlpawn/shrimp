@@ -249,6 +249,7 @@ const SKILLS_CONFIG_FILE = resolveProjectPath(
   process.env.SKILLS_CONFIG_FILE ||
   path.join(path.dirname(GATEWAY_CONFIG_FILE), "skills.config.json"),
 );
+process.env.SKILLS_CONFIG_FILE = SKILLS_CONFIG_FILE;
 const globalExtensionStore = createExtensionStore({ dataDir: path.dirname(GATEWAY_CONFIG_FILE) });
 const globalExtensionTaskSystem = createExtensionTaskSystem({
   dataDir: path.dirname(GATEWAY_CONFIG_FILE),
