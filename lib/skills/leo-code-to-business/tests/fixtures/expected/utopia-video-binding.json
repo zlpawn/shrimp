@@ -28,42 +28,63 @@
       "symbol_contains": "VideoInfoServiceImpl.doRelate"
     }
   ],
-  "required_business_concepts": [
+  "required_business_concepts": [],
+  "required_business_flow_concepts": [
+    {
+      "id": "operator-selects-footage-and-node",
+      "any_of": ["视频操作人员选择现场视频和对应的工程验收节点", "video operator selects site footage and the acceptance node"]
+    },
+    {
+      "id": "duplicate-and-eligibility-check",
+      "any_of": ["系统检查本次操作是否重复", "system checks whether the operation is a duplicate"]
+    },
+    {
+      "id": "capture-mode-selects-scope",
+      "any_of": ["拍摄设备和视频形态确定关联范围", "capture mode determines the association scope"]
+    },
+    {
+      "id": "same-session-footage-grouped",
+      "any_of": ["同一次拍摄的相关视频作为一组", "related footage from the same capture session"]
+    },
+    {
+      "id": "assigned-to-acceptance-node",
+      "any_of": ["视频归档到指定工程的验收节点", "footage is assigned to the selected acceptance node"]
+    },
+    {
+      "id": "acceptance-staff-can-find-and-use",
+      "any_of": ["验收人员可以在对应节点查询和使用这些视频", "acceptance staff can search and use the associated footage"]
+    }
+  ],
+  "technical_fact_placements": [
     {
       "id": "tenant-precedence",
-      "any_of": ["显式租户覆盖上下文租户", "explicit tenant overrides context tenant"]
+      "any_of": ["显式租户优先于上下文租户", "explicit tenant overrides context tenant"],
+      "allowed_locations": ["permissions", "decision_points", "evidence"]
     },
     {
       "id": "tenant-inheritance",
-      "any_of": ["未显式传入时继承上下文租户", "otherwise inherit context tenant"]
+      "any_of": ["继承上下文租户", "inherit context tenant"],
+      "allowed_locations": ["permissions", "decision_points", "evidence"]
     },
     {
       "id": "dedup-key",
-      "any_of": ["projectId + acceptanceNode", "projectid+acceptancenode"]
+      "any_of": ["projectId+acceptanceNode", "projectId + acceptanceNode"],
+      "allowed_locations": ["business_rules", "rejection_conditions", "evidence"]
     },
     {
-      "id": "rapid-repeat",
-      "any_of": ["快速重复操作会被拒绝", "rapid repeated operations are rejected"]
-    },
-    {
-      "id": "linjing-branch",
-      "any_of": ["LINJING 选择 3D 头戴分支", "LINJING selects the 3D/head-mounted branch"]
-    },
-    {
-      "id": "normal-branch",
-      "any_of": ["其他设备进入普通耳挂分支", "other device types select the normal/ear-mounted branch"]
-    },
-    {
-      "id": "folder-expansion",
-      "any_of": ["扩展到同文件夹全部视频", "expands to all videos in the same folders"]
+      "id": "linjing-constant",
+      "any_of": ["LINJING"],
+      "allowed_locations": ["decision_points", "evidence"]
     },
     {
       "id": "binding-fields",
-      "any_of": ["写入项目、验收节点、地址、项目经理、检查员、操作人、关联状态和关联时间", "writes project, node, address, foreman, inspector, operator, status and time"]
+      "any_of": ["工程、验收节点、地址、人员和操作人字段", "project, node, address, foreman, inspector, operator, status and time"],
+      "allowed_locations": ["data_changes", "state_changes", "evidence"]
     },
     {
       "id": "index-sync",
-      "any_of": ["数据库更新后同步 ES", "database update is followed by ES"]
+      "any_of": ["Elasticsearch", "ES"],
+      "allowed_locations": ["external_effects", "evidence"]
     }
   ],
   "required_unknowns": [],

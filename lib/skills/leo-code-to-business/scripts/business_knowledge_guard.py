@@ -1748,6 +1748,47 @@ def _validate_benchmark_evidence(
         )
 
 
+def _validate_technical_fact_placements(
+    nodes_by_file: dict[str, list[dict[str, Any]]],
+    evidence: list[dict[str, Any]],
+    requirements: list[dict[str, Any]],
+) -> None:
+    use_cases = nodes_by_file.get("use-cases.jsonl", [])
+    location_text = {
+        "business_rules": _normalized_text(
+            nodes_by_file.get("business-rules.jsonl", [])
+        ),
+        "evidence": _normalized_text(evidence),
+    }
+    for field in (
+        "decision_points",
+        "rejection_conditions",
+        "permissions",
+        "data_changes",
+        "state_changes",
+        "external_effects",
+        "observability",
+    ):
+        location_text[field] = _normalized_text(
+            [use_case.get(field, []) for use_case in use_cases]
+        )
+
+    missing: list[str] = []
+    for requirement in requirements:
+        alternatives = list(requirement.get("any_of", []))
+        allowed_locations = list(requirement.get("allowed_locations", []))
+        if not allowed_locations or not any(
+            _matches_any(location_text.get(location, ""), alternatives)
+            for location in allowed_locations
+        ):
+            missing.append(str(requirement.get("id", "unnamed")))
+    if missing:
+        raise ValidationError(
+            "benchmark missing technical fact placements: "
+            + ", ".join(missing)
+        )
+
+
 def _validate_business_framing(
     bundle: dict[str, Any],
     expectation: dict[str, Any],
@@ -1902,6 +1943,23 @@ def benchmark_revision(
         "business concepts",
         business_text,
         expectation.get("required_business_concepts", []),
+    )
+    business_flow_text = _normalized_text(
+        [
+            use_case.get("main_flow", [])
+            for use_case in bundle["nodes_by_file"]["use-cases.jsonl"]
+            if use_case.get("claim_status") == "confirmed"
+        ]
+    )
+    _require_concept_groups(
+        "business flow concepts",
+        business_flow_text,
+        expectation.get("required_business_flow_concepts", []),
+    )
+    _validate_technical_fact_placements(
+        bundle["nodes_by_file"],
+        bundle["evidence"],
+        expectation.get("technical_fact_placements", []),
     )
     _require_concept_groups(
         "searched unknowns",

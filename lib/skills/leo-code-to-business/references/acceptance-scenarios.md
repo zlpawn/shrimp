@@ -68,16 +68,24 @@ Main entry:
 POST /app/video/relate
 ```
 
-Explain:
+The canonical business flow must explain:
 
-- explicit tenant overrides context tenant; otherwise inherit context;
-- deduplication key uses `projectId + acceptanceNode`;
-- rapid repeated operations are rejected;
-- `deviceType == LINJING` selects the 3D/head-mounted branch;
-- other device types select the normal/ear-mounted branch;
-- the evidenced branch expands selected videos to all videos in the same folders;
-- binding writes project, acceptance node, address, foreman, inspector, operator, status, and time;
-- database update is followed by Elasticsearch or index synchronization.
+- a video operator selects site footage and the project acceptance node it should support;
+- the system checks duplicate submission and association eligibility;
+- capture mode determines whether only selected footage or related footage from the same capture
+  session is associated;
+- the footage is assigned to the acceptance node with site and responsible-party context;
+- acceptance staff can search and use the associated footage.
+
+Preserve the following implementation facts outside `main_flow`:
+
+- explicit tenant precedence and context inheritance in permissions, decision points, or evidence;
+- the `projectId + acceptanceNode` deduplication key in a rule, rejection condition, or evidence;
+- `deviceType == LINJING` in decision evidence while the flow uses the business category
+  "head-mounted capture";
+- project, acceptance-node, address, responsible-party, operator, status, and time writes in data or
+  state changes;
+- Elasticsearch or index synchronization in external effects or evidence.
 
 Represent the full family as confirmed, inferred, or searched unresolved:
 
@@ -97,7 +105,8 @@ Record alternate-entry and backward-writer investigations.
 ## Gate
 
 An answer limited to one controller method fails even when technically accurate. No semantic rubric
-dimension may score 0 and the total must be at least 13/16.
+dimension may score 0 and the total must be at least 13/16. `main_flow = 2` also requires that a
+product or operations reader can understand the scenario without source-code knowledge.
 
 Run deterministic acceptance with:
 

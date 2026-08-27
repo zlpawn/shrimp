@@ -1,6 +1,10 @@
 {
   "reviewer_mode": "independent",
   "minimum_total_score": 13,
+  "non_technical_comprehensibility": {
+    "main_flow_score_2_requires": "A product or operations reader can understand participant actions, business stages, decisions, and visible outcomes without source-code knowledge.",
+    "main_flow_score_at_most_1_when": "Implementation order, identifiers, storage writes, middleware, or field inventories substitute for the business scenario."
+  },
   "required_score_minimums": {
     "business_framing": 2,
     "main_flow": 2,

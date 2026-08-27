@@ -693,8 +693,72 @@ class BusinessKnowledgeGuardTests(unittest.TestCase):
 
         self.assertEqual(len(work_order["required_unknowns"]), 5)
         self.assertEqual(len(video["required_family_members"]), 8)
+        self.assertIn("required_business_flow_concepts", video)
+        self.assertIn("technical_fact_placements", video)
         self.assertEqual(rubric["reviewer_mode"], "independent")
         self.assertGreaterEqual(rubric["minimum_total_score"], 13)
+        self.assertIn("non_technical_comprehensibility", rubric)
+
+    def test_benchmark_requires_technical_facts_in_allowed_dimensions(self):
+        nodes_by_file = {
+            "use-cases.jsonl": [
+                {
+                    "id": "UC-video",
+                    "decision_points": [
+                        {"statement": "内部设备常量 LINJING 对应头戴拍摄模式。"}
+                    ],
+                    "external_effects": [
+                        {"statement": "关联结果同步到 Elasticsearch 供检索。"}
+                    ],
+                    "main_flow": [
+                        {"statement": "操作人员选择视频和验收节点。"}
+                    ],
+                }
+            ],
+            "business-rules.jsonl": [
+                {
+                    "id": "BR-video-dedup",
+                    "statement": "projectId+acceptanceNode 构成短时防重复键。",
+                }
+            ],
+        }
+        requirements = [
+            {
+                "id": "device-constant",
+                "any_of": ["LINJING"],
+                "allowed_locations": ["decision_points", "evidence"],
+            },
+            {
+                "id": "dedup-key",
+                "any_of": ["projectId+acceptanceNode"],
+                "allowed_locations": ["business_rules", "evidence"],
+            },
+            {
+                "id": "index-sync",
+                "any_of": ["Elasticsearch"],
+                "allowed_locations": ["external_effects", "evidence"],
+            },
+        ]
+
+        guard._validate_technical_fact_placements(
+            nodes_by_file,
+            [],
+            requirements,
+        )
+
+        nodes_by_file["use-cases.jsonl"][0]["external_effects"] = []
+        nodes_by_file["use-cases.jsonl"][0]["main_flow"].append(
+            {"statement": "数据库更新后同步 Elasticsearch"}
+        )
+        with self.assertRaisesRegex(
+            guard.ValidationError,
+            "index-sync",
+        ):
+            guard._validate_technical_fact_placements(
+                nodes_by_file,
+                [],
+                requirements,
+            )
 
     def test_failed_publication_keeps_current_pointer(self):
         workspace = self.root / "workspace"
