@@ -3,7 +3,7 @@ import test from "node:test";
 import {
   runInstallCommand,
   tailText,
-} from "../../../../lib/clis/shrimp/domain/install-runner.mjs";
+} from "../../../lib/shrimp-cli/domain/install-runner.mjs";
 
 test("noninteractive install captures stdout and exit code", async () => {
   const isWin = process.platform === "win32";

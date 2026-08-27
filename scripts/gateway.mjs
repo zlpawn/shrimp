@@ -3,7 +3,7 @@
 import {
   parseGatewayArgs,
   runGatewayCommand,
-} from "../lib/cli/gateway-service.mjs";
+} from "../lib/cli-core/gateway-service.mjs";
 
 try {
   const options = parseGatewayArgs(process.argv.slice(2));

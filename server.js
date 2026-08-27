@@ -129,9 +129,9 @@ import { SessionWatcherDaemon } from "./lib/session-sync/watcher-daemon.mjs";
 import { WebSocketServer } from "ws";
 import * as nodePty from "node-pty";
 import { InstallHistory } from "./lib/skills/install-history.mjs";
-import { CliInstallHistory } from "./lib/cli/install-history.mjs";
-import { discoverInstalledClis } from "./lib/cli/discovery.mjs";
-import { CliSourceConfig } from "./lib/cli/source-config.mjs";
+import { CliInstallHistory } from "./lib/cli-core/install-history.mjs";
+import { discoverInstalledClis } from "./lib/cli-core/discovery.mjs";
+import { CliSourceConfig } from "./lib/cli-core/source-config.mjs";
 import {
   collectImages,
   containsImages,
@@ -1467,7 +1467,7 @@ async function route(req, res) {
   }
 
   // Create a new agent-node group (optionally seeded by copying from an existing client).
-  // Mirrors lib/clis/shrimp/domain/client-service.mjs addClient() but operates in-process
+  // Mirrors lib/shrimp-cli/domain/client-service.mjs addClient() but operates in-process
   // so the desktop config panel can manage agent nodes without the CLI.
   if (reqPath === "/v1/config/add-client" && req.method === "POST") {
     if (!checkLocalAuth(req, res)) return;

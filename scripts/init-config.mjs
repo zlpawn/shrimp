@@ -3,7 +3,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { interactiveSetup } from "../lib/cli/init-config.mjs";
+import { interactiveSetup } from "../lib/cli-core/init-config.mjs";
 
 try {
   const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");

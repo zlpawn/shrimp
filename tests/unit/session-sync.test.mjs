@@ -6,7 +6,7 @@ import os from 'node:os';
 import { HubStore } from '../../lib/session-sync/hub-store.mjs';
 import { SessionWatcherDaemon } from '../../lib/session-sync/watcher-daemon.mjs';
 import { SkillInstaller } from '../../lib/session-sync/skill-installer.mjs';
-import { interactiveSetup } from '../../lib/cli/init-config.mjs';
+import { interactiveSetup } from '../../lib/cli-core/init-config.mjs';
 
 test('HubStore - save and retrieve session', () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hub-store-test-'));

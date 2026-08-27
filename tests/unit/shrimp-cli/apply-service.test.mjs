@@ -8,7 +8,7 @@ import {
   setModelSlots,
   snippetForClient,
   writeCodexCatalog,
-} from "../../../../lib/clis/shrimp/domain/apply-service.mjs";
+} from "../../../lib/shrimp-cli/domain/apply-service.mjs";
 
 async function tempState() {
   const dir = await mkdtemp(path.join(os.tmpdir(), "shrimp-apply-"));

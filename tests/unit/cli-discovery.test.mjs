@@ -4,9 +4,9 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { discoverInstalledClis, __test__ } from "../../lib/cli/discovery.mjs";
-import { CliInstallHistory } from "../../lib/cli/install-history.mjs";
-import { CliSourceConfig, expandDirs, defaultSources } from "../../lib/cli/source-config.mjs";
+import { discoverInstalledClis, __test__ } from "../../lib/cli-core/discovery.mjs";
+import { CliInstallHistory } from "../../lib/cli-core/install-history.mjs";
+import { CliSourceConfig, expandDirs, defaultSources } from "../../lib/cli-core/source-config.mjs";
 
 const { isIgnoredPath, classifyTier, isSatelliteCliName } = __test__;
 

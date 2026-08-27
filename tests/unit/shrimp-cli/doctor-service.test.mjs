@@ -3,7 +3,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { runDoctor } from "../../../../lib/clis/shrimp/domain/doctor-service.mjs";
+import { runDoctor } from "../../../lib/shrimp-cli/domain/doctor-service.mjs";
 
 test("doctor reports missing secrets and closed port", async (t) => {
   const dir = await mkdtemp(path.join(os.tmpdir(), "shrimp-doctor-"));

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { resolveInstallInvocation } from "../../../../lib/clis/shrimp/parse-args.mjs";
+import { resolveInstallInvocation } from "../../../lib/shrimp-cli/parse-args.mjs";
 
 test("accepts --command string", () => {
   const r = resolveInstallInvocation(["--command", "npx -y foo", "--name", "bar"]);

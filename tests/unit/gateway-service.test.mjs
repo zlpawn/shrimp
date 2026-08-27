@@ -1,4 +1,4 @@
-﻿import assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -15,7 +15,7 @@ import {
   recoverMetadataFromHealth,
   resolveGatewayPort,
   processProbeIndicatesRunning,
-} from "../../lib/cli/gateway-service.mjs";
+} from "../../lib/cli-core/gateway-service.mjs";
 
 test("gateway arguments keep the command simple while supporting isolated ports", () => {
   assert.deepEqual(

@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm, writeFile, mkdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { addEndpoint, listEndpoints, removeEndpoint } from "../../../../lib/clis/shrimp/domain/endpoint-service.mjs";
+import { addEndpoint, listEndpoints, removeEndpoint } from "../../../lib/shrimp-cli/domain/endpoint-service.mjs";
 
 async function tempState() {
   const dir = await mkdtemp(path.join(os.tmpdir(), "shrimp-endpoint-"));

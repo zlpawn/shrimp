@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
@@ -13,6 +14,7 @@ test("npm package metadata exposes only public release files", async () => {
   assert.equal(pkg.name, "@wuhezhizhong/shrimp");
   assert.equal(pkg.bin.shrimp, "bin/shrimp.js");
   assert.equal(pkg.bin["local-ai-gateway"], undefined);
+  assert.equal(pkg.bin.cli, undefined);
   assert.equal(pkg.publishConfig.access, "public");
   assert.equal(pkg.repository.url, "git+https://github.com/zlpawn/shrimp.git");
   assert.equal(pkg.homepage, "https://github.com/zlpawn/shrimp#readme");
@@ -20,6 +22,11 @@ test("npm package metadata exposes only public release files", async () => {
   assert.ok(pkg.files.includes("gateway.config.example.json"));
   assert.ok(!pkg.files.includes("gateway.config.json"));
   assert.ok(!pkg.files.includes("models.json"));
+});
+
+test("npm package ships only the shrimp CLI launcher", async () => {
+  assert.equal(fs.existsSync(path.join(projectRoot, "bin", "cli.js")), false);
+  assert.equal(fs.existsSync(path.join(projectRoot, "bin", "shrimp.js")), true);
 });
 
 test("public package attribution does not expose a local user alias", async () => {
