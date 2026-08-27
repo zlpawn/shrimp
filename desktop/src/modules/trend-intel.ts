@@ -1053,6 +1053,37 @@ function renderTrendExplorerView(): string {
   `;
 }
 
+function extractEndpointModels(ep: any): string[] {
+  if (!ep) return [];
+  const list = new Set<string>();
+  if (Array.isArray(ep.models)) {
+    ep.models.forEach((m: any) => {
+      if (typeof m === "string" && m.trim()) list.add(m.trim());
+    });
+  }
+  if (ep.model_mapping && typeof ep.model_mapping === "object") {
+    Object.keys(ep.model_mapping).forEach(k => {
+      if (typeof k === "string" && k.trim()) list.add(k.trim());
+    });
+    Object.values(ep.model_mapping).forEach((v: any) => {
+      if (typeof v === "string" && v.trim()) list.add(v.trim());
+    });
+  }
+  if (ep.model_labels && typeof ep.model_labels === "object") {
+    Object.keys(ep.model_labels).forEach(k => {
+      if (typeof k === "string" && k.trim()) list.add(k.trim());
+    });
+    Object.values(ep.model_labels).forEach((v: any) => {
+      if (typeof v === "string" && v.trim()) list.add(v.trim());
+    });
+  }
+  if (typeof ep.model === "string" && ep.model.trim()) list.add(ep.model.trim());
+  if (typeof ep.default_model === "string" && ep.default_model.trim()) list.add(ep.default_model.trim());
+  if (typeof ep.upstream_model === "string" && ep.upstream_model.trim()) list.add(ep.upstream_model.trim());
+  if (typeof ep.embedding_model === "string" && ep.embedding_model.trim()) list.add(ep.embedding_model.trim());
+  return Array.from(list);
+}
+
 // --- Sub-View 4: Settings ---
 
 function renderSettingsView(): string {
@@ -1067,7 +1098,7 @@ function renderSettingsView(): string {
   const endpoints = state.gatewayConfig?.clients?.[selectedClient]?.endpoints || [];
   const selectedEpIndex = Math.min(endpoints.length - 1, Math.max(0, d.model_route?.endpoint_index || 0));
   const currentEndpoint = endpoints[selectedEpIndex];
-  const endpointModels: string[] = Array.isArray(currentEndpoint?.models) ? currentEndpoint.models : [];
+  const endpointModels: string[] = extractEndpointModels(currentEndpoint);
 
   return `
     <div class="trend-intel-view trend-intel-settings-view">
