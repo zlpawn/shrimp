@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
 
 import {
@@ -7,6 +9,11 @@ import {
   createRemoteSessionService,
   routeRemoteSessionRequest,
 } from "../../lib/remote-session/index.mjs";
+import {
+  createOfficialRemoteLinkService,
+  createOfficialRemoteLinkSqliteStore,
+  routeOfficialRemoteLinkRequest,
+} from "../../lib/remote-session/official-links/index.mjs";
 
 function makeReq(method, reqPath, body) {
   const bodyBuf = body ? Buffer.from(JSON.stringify(body)) : Buffer.alloc(0);
@@ -196,6 +203,26 @@ test("SSE event stream emits session events", async () => {
   const payload = res.chunks.join("");
   assert.match(payload, /event: session_event/);
   assert.match(payload, /approval_required|assistant_text|session_opened/);
+});
+
+test("official Antigravity remote links persist through HTTP routes", async () => {
+  const store = createOfficialRemoteLinkSqliteStore({ dbPath: path.join(os.tmpdir(), "official-links-api.sqlite") });
+  const service = createOfficialRemoteLinkService({ store, fetchImpl: async () => ({ status: 200, headers: new Map() }) });
+  const createRes = makeRes();
+  await routeOfficialRemoteLinkRequest(
+    makeReq("POST", "/v1/remote-session/official-links", {
+      name: "工作台",
+      url: "https://antigravity.google.com/r/demo-v2?p=c%2Fdemo",
+    }),
+    createRes,
+    {},
+    "/v1/remote-session/official-links",
+    { service },
+  );
+  assert.equal(createRes.statusCode, 200);
+  const link = JSON.parse(createRes.body).link;
+  assert.equal(link.kind, "antigravity");
+  store.close();
 });
 
 test("lists and inspects conversations via HTTP", async () => {
