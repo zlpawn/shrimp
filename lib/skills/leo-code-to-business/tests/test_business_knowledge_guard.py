@@ -221,6 +221,113 @@ class BusinessKnowledgeGuardTests(unittest.TestCase):
             evidence,
         )
 
+    def test_flow_quality_rejects_technical_execution_chain(self):
+        use_case = {
+            "id": "UC-relate-video-site",
+            "claim_status": "confirmed",
+            "main_flow": [
+                {
+                    "local_id": "step-1",
+                    "statement": "显式 tenant 覆盖上下文 tenant，否则继承上下文",
+                },
+                {
+                    "local_id": "step-2",
+                    "statement": "以 projectId+acceptanceNode 建立短时防重复键",
+                },
+                {
+                    "local_id": "step-3",
+                    "statement": "LINJING 设备进入 3D/头戴路径，其他设备进入普通/耳挂路径",
+                },
+                {
+                    "local_id": "step-4",
+                    "statement": "3D 路径将选择扩展为相同目录内全部视频",
+                },
+                {
+                    "local_id": "step-5",
+                    "statement": "写入工程、节点、地址、工长、检查员、操作人、关联状态和时间",
+                },
+                {
+                    "local_id": "step-6",
+                    "statement": "数据库更新后同步 Elasticsearch",
+                },
+            ],
+        }
+
+        diagnostics = guard.validate_business_flow_quality(use_case)
+        by_address = {
+            item["flow_step_address"]: item for item in diagnostics
+        }
+
+        self.assertEqual(len(diagnostics), 6)
+        self.assertIn(
+            "UC-relate-video-site#main_flow/step-1",
+            by_address,
+        )
+        self.assertIn(
+            "UC-relate-video-site#main_flow/step-2",
+            by_address,
+        )
+        self.assertIn(
+            "code_shaped_expression",
+            by_address[
+                "UC-relate-video-site#main_flow/step-2"
+            ]["reason_codes"],
+        )
+        self.assertIn(
+            "internal_constant_without_business_meaning",
+            by_address[
+                "UC-relate-video-site#main_flow/step-3"
+            ]["reason_codes"],
+        )
+        self.assertIn(
+            "field_write_inventory",
+            by_address[
+                "UC-relate-video-site#main_flow/step-5"
+            ]["reason_codes"],
+        )
+        self.assertIn(
+            "infrastructure_sequence",
+            by_address[
+                "UC-relate-video-site#main_flow/step-6"
+            ]["reason_codes"],
+        )
+        self.assertTrue(
+            all(item["severity"] == "high" for item in diagnostics)
+        )
+
+    def test_flow_quality_accepts_business_effects_with_technical_terms(self):
+        use_case = {
+            "id": "UC-relate-video-site",
+            "claim_status": "confirmed",
+            "main_flow": [
+                {
+                    "local_id": "step-1",
+                    "statement": "视频操作人员选择现场视频和对应的工程验收节点。",
+                },
+                {
+                    "local_id": "step-2",
+                    "statement": "所选租户决定本次关联归属的组织。",
+                },
+                {
+                    "local_id": "step-3",
+                    "statement": "头戴设备会把同一次拍摄的相关视频作为一组关联。",
+                },
+                {
+                    "local_id": "step-4",
+                    "statement": "关联完成后，验收人员可以在视频搜索中找到这些资料。",
+                },
+                {
+                    "local_id": "step-5",
+                    "statement": "检查员提交 HOME2 整改工单，任务进入 TODO 待办流程。",
+                },
+            ],
+        }
+
+        self.assertEqual(
+            guard.validate_business_flow_quality(use_case),
+            [],
+        )
+
     def test_inventory_requires_exactly_one_classification(self):
         inventory = self.read_jsonl("inventory.jsonl")
         inventory[0]["classification"] = None

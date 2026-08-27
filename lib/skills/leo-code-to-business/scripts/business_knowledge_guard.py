@@ -8,6 +8,7 @@ import copy
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -134,10 +135,167 @@ QUERY_INTENTS = (
         ),
     },
 )
+FLOW_REASON_CODE_SHAPED = "code_shaped_expression"
+FLOW_REASON_INFRASTRUCTURE = "infrastructure_sequence"
+FLOW_REASON_FIELD_INVENTORY = "field_write_inventory"
+FLOW_REASON_INTERNAL_CONSTANT = "internal_constant_without_business_meaning"
+FLOW_REASON_MISSING_EVENT = "missing_actor_or_business_event"
+FLOW_REASON_MISSING_EFFECT = "missing_business_effect"
+
+_FLOW_CODE_SHAPED_PATTERNS = (
+    re.compile(r"\b[a-z]+[A-Z][A-Za-z0-9]*\b"),
+    re.compile(r"\b[a-z][a-z0-9]*_[a-z0-9_]+\b", re.IGNORECASE),
+    re.compile(r"(?:==|!=|>=|<=|->|::)"),
+    re.compile(r"\b[A-Za-z][A-Za-z0-9]*\s*\+\s*[A-Za-z][A-Za-z0-9]*\b"),
+    re.compile(r"(?:GET|POST|PUT|PATCH|DELETE)\s+/[A-Za-z0-9_./{}:-]+", re.IGNORECASE),
+    re.compile(r"\b[A-Za-z_][A-Za-z0-9_]*\([^)]*\)"),
+)
+_FLOW_INFRASTRUCTURE_PATTERN = re.compile(
+    r"(?:数据库|Elasticsearch|\bES\b|Redis|Kafka|MyBatis|Feign|"
+    r"\bdatabase\b|\bindex(?:ing)?\b|\bcache\b|\bqueue\b|\bHTTP\b)",
+    re.IGNORECASE,
+)
+_FLOW_INFRASTRUCTURE_ACTION_PATTERN = re.compile(
+    r"(?:写入|更新|同步|推送|调用|入队|出队|持久化|"
+    r"\bwrite\b|\bupdate\b|\bsync\b|\bpush\b|\bcall\b|"
+    r"\benqueue\b|\bdequeue\b|\bpersist\b)",
+    re.IGNORECASE,
+)
+_FLOW_FIELD_WRITE_PATTERN = re.compile(
+    r"^(?:写入|更新|记录|保存|组装|set\b|write\b|update\b|save\b)",
+    re.IGNORECASE,
+)
+_FLOW_INTERNAL_CONSTANT_PATTERN = re.compile(
+    r"(?<![A-Za-z0-9])(?:[A-Z][A-Z0-9_]{2,}|[0-9]+D)(?![A-Za-z0-9])"
+)
+_FLOW_CONTEXT_PRECEDENCE_PATTERN = re.compile(
+    r"(?=.*(?:tenant|租户))(?=.*(?:context|上下文))"
+    r"(?=.*(?:覆盖|继承|override|inherit))",
+    re.IGNORECASE,
+)
+_FLOW_BUSINESS_ACTION_PATTERN = re.compile(
+    r"(?:选择|提交|审核|批准|关联|解绑|替换|检查|验收|查询|查看|使用|"
+    r"重试|修复|创建|发布|取消|确认|分配|归档|处理|拒绝|拍摄|"
+    r"\bselect\b|\bsubmit\b|\bapprove\b|\bassociate\b|\binspect\b|"
+    r"\bview\b|\buse\b|\bretry\b|\brepair\b|\bcreate\b|\bpublish\b)",
+    re.IGNORECASE,
+)
+_FLOW_BUSINESS_OBJECT_PATTERN = re.compile(
+    r"(?:视频|工程|验收节点|工单|任务|订单|资料|组织|项目|申请|审批|客户|"
+    r"现场|拍摄|证据|人员|员工|服务|结果|"
+    r"\bvideo\b|\bproject\b|\border\b|\btask\b|\bclaim\b|\bapproval\b|"
+    r"\bcustomer\b|\bevidence\b|\bresult\b)",
+    re.IGNORECASE,
+)
+_FLOW_BUSINESS_EFFECT_PATTERN = re.compile(
+    r"(?:可以|可供|能够|成为|归属|生效|完成|成功|失败|被拒绝|可查询|"
+    r"可搜索|可使用|进入.{0,12}流程|得到|获得|避免|确保|恢复|可见|找到|"
+    r"\bcan\b|\bavailable\b|\bvisible\b|\bbelongs?\b|\bcompleted?\b|"
+    r"\bsucceeds?\b|\bfails?\b|\brejected?\b|\bsearchable\b|\busable\b)",
+    re.IGNORECASE,
+)
 
 
 class ValidationError(Exception):
     """Raised when canonical business knowledge violates a release contract."""
+
+
+def analyze_flow_statement(statement: str) -> dict[str, Any]:
+    text = str(statement or "").strip()
+    reason_codes: list[str] = []
+
+    if any(pattern.search(text) for pattern in _FLOW_CODE_SHAPED_PATTERNS):
+        reason_codes.append(FLOW_REASON_CODE_SHAPED)
+    if _FLOW_CONTEXT_PRECEDENCE_PATTERN.search(text):
+        reason_codes.append(FLOW_REASON_CODE_SHAPED)
+    if (
+        _FLOW_INFRASTRUCTURE_PATTERN.search(text)
+        and _FLOW_INFRASTRUCTURE_ACTION_PATTERN.search(text)
+    ):
+        reason_codes.append(FLOW_REASON_INFRASTRUCTURE)
+
+    delimiter_count = sum(text.count(delimiter) for delimiter in ("、", ",", "，"))
+    if _FLOW_FIELD_WRITE_PATTERN.search(text) and delimiter_count >= 3:
+        reason_codes.append(FLOW_REASON_FIELD_INVENTORY)
+    if _FLOW_INTERNAL_CONSTANT_PATTERN.search(text):
+        reason_codes.append(FLOW_REASON_INTERNAL_CONSTANT)
+
+    has_business_event = bool(
+        _FLOW_BUSINESS_ACTION_PATTERN.search(text)
+        and _FLOW_BUSINESS_OBJECT_PATTERN.search(text)
+    )
+    has_business_effect = bool(_FLOW_BUSINESS_EFFECT_PATTERN.search(text))
+    if reason_codes and not has_business_event:
+        reason_codes.append(FLOW_REASON_MISSING_EVENT)
+    if reason_codes and not has_business_effect:
+        reason_codes.append(FLOW_REASON_MISSING_EFFECT)
+
+    strong_reasons = {
+        FLOW_REASON_CODE_SHAPED,
+        FLOW_REASON_INFRASTRUCTURE,
+        FLOW_REASON_FIELD_INVENTORY,
+        FLOW_REASON_INTERNAL_CONSTANT,
+    }
+    missing_anchor = (
+        FLOW_REASON_MISSING_EVENT in reason_codes
+        or FLOW_REASON_MISSING_EFFECT in reason_codes
+    )
+    severity = (
+        "high"
+        if strong_reasons.intersection(reason_codes) and missing_anchor
+        else None
+    )
+    return {
+        "reason_codes": reason_codes,
+        "has_business_event": has_business_event,
+        "has_business_effect": has_business_effect,
+        "severity": severity,
+    }
+
+
+def validate_business_flow_quality(
+    use_case: dict[str, Any],
+) -> list[dict[str, Any]]:
+    if use_case.get("claim_status") != "confirmed":
+        return []
+
+    use_case_id = str(use_case.get("id", ""))
+    diagnostics: list[dict[str, Any]] = []
+    for index, step in enumerate(use_case.get("main_flow", []), 1):
+        if not isinstance(step, dict):
+            continue
+        statement = str(step.get("statement", ""))
+        analysis = analyze_flow_statement(statement)
+        if analysis["severity"] != "high":
+            continue
+        local_id = str(step.get("local_id") or f"step-{index}")
+        diagnostics.append(
+            {
+                "use_case_id": use_case_id,
+                "flow_step_address": f"{use_case_id}#main_flow/{local_id}",
+                "severity": "high",
+                "reason_codes": sorted(analysis["reason_codes"]),
+                "statement": statement,
+            }
+        )
+    return diagnostics
+
+
+def validate_business_flows(
+    use_cases: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    return sorted(
+        (
+            diagnostic
+            for use_case in use_cases
+            for diagnostic in validate_business_flow_quality(use_case)
+        ),
+        key=lambda item: (
+            item["use_case_id"],
+            item["flow_step_address"],
+            item["reason_codes"],
+        ),
+    )
 
 
 def _is_within(path: Path, parent: Path) -> bool:
