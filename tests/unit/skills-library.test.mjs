@@ -384,3 +384,178 @@ description: Use when reviewing Java code for coding standards and maintainabili
     fs.rmSync(tmpHome, { recursive: true, force: true });
   }
 });
+
+test("SkillInstaller.resolveCustomSkillDir resolves stripped slug, raw slug, and override paths", () => {
+  const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), "skill-resolve-custom-"));
+  try {
+    // 1. Default when neither directory exists -> ~/.workbuddy/skills (stripped)
+    const defaultDir = SkillInstaller.resolveCustomSkillDir("work-buddy", tmpHome);
+    assert.equal(defaultDir, path.join(tmpHome, ".workbuddy", "skills"));
+
+    // 2. When raw slug exists (~/.work-buddy/skills) but stripped does not
+    const rawDir = path.join(tmpHome, ".work-buddy", "skills");
+    fs.mkdirSync(rawDir, { recursive: true });
+    assert.equal(SkillInstaller.resolveCustomSkillDir("work-buddy", tmpHome), rawDir);
+
+    // 3. When stripped slug exists (~/.workbuddy/skills), it takes precedence
+    const strippedDir = path.join(tmpHome, ".workbuddy", "skills");
+    fs.mkdirSync(strippedDir, { recursive: true });
+    assert.equal(SkillInstaller.resolveCustomSkillDir("work-buddy", tmpHome), strippedDir);
+
+    // 4. When customPaths override is provided, it takes highest priority
+    const customOverride = SkillInstaller.resolveCustomSkillDir("work-buddy", tmpHome, {
+      "work-buddy": "~/my-custom-skills/work-buddy",
+    });
+    assert.equal(customOverride, path.join(tmpHome, "my-custom-skills", "work-buddy"));
+
+    const absoluteOverride = SkillInstaller.resolveCustomSkillDir("work-buddy", tmpHome, {
+      "work-buddy": "/var/skills/work-buddy",
+    });
+    assert.equal(absoluteOverride, path.resolve("/var/skills/work-buddy"));
+  } finally {
+    fs.rmSync(tmpHome, { recursive: true, force: true });
+  }
+});
+
+test("SkillInstaller.getDiscoveryRoots includes custom clients when directory exists and skips when missing", () => {
+  const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), "skill-roots-custom-"));
+  try {
+    // 1. When custom client directory does not exist on disk: skip
+    const rootsBefore = SkillInstaller.getDiscoveryRoots(tmpHome, ["work-buddy"]);
+    assert.equal(rootsBefore.some((r) => r.id === "work-buddy"), false);
+    assert.equal(rootsBefore.length, 3); // central, antigravity, claude
+
+    // 2. When custom client directory exists: include
+    const customSkillsDir = path.join(tmpHome, ".workbuddy", "skills");
+    fs.mkdirSync(customSkillsDir, { recursive: true });
+
+    const rootsAfter = SkillInstaller.getDiscoveryRoots(tmpHome, ["work-buddy"]);
+    const customRoot = rootsAfter.find((r) => r.id === "work-buddy");
+    assert.ok(customRoot);
+    assert.equal(customRoot.id, "work-buddy");
+    assert.equal(customRoot.client, "work-buddy");
+    assert.equal(customRoot.dir, customSkillsDir);
+    assert.equal(customRoot.isCustom, true);
+    assert.equal(rootsAfter.length, 4);
+  } finally {
+    fs.rmSync(tmpHome, { recursive: true, force: true });
+  }
+});
+
+test("SkillInstaller.buildPresentIn reports presence correctly in custom client root", () => {
+  const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), "skill-present-custom-"));
+  try {
+    const customSkillsDir = path.join(tmpHome, ".workbuddy", "skills");
+    fs.mkdirSync(customSkillsDir, { recursive: true });
+
+    // Not present initially
+    const presentBefore = SkillInstaller.buildPresentIn(tmpHome, "custom-test-skill", ["work-buddy"]);
+    assert.equal(presentBefore["work-buddy"], false);
+    assert.equal(presentBefore.central, false);
+
+    // Create skill in custom root
+    const skillDir = path.join(customSkillsDir, "custom-test-skill");
+    fs.mkdirSync(skillDir, { recursive: true });
+    fs.writeFileSync(path.join(skillDir, "SKILL.md"), "---\nname: custom-test-skill\n---\n# Test", "utf-8");
+
+    const presentAfter = SkillInstaller.buildPresentIn(tmpHome, "custom-test-skill", ["work-buddy"]);
+    assert.equal(presentAfter["work-buddy"], true);
+    assert.equal(presentAfter.central, false);
+  } finally {
+    fs.rmSync(tmpHome, { recursive: true, force: true });
+  }
+});
+
+test("SkillInstaller.linkSkillToClient links central skill to custom client root and unlinks cleanly", () => {
+  const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), "skill-link-custom-"));
+  try {
+    // Setup central skill
+    const centralSkillDir = SkillInstaller.getCentralSkillDir("session-sync", tmpHome);
+    fs.mkdirSync(centralSkillDir, { recursive: true });
+    fs.writeFileSync(path.join(centralSkillDir, "SKILL.md"), "---\nname: session-sync\n---\n# Sync", "utf-8");
+
+    const customSkillsDir = path.join(tmpHome, ".workbuddy", "skills");
+    const targetSkillDir = path.join(customSkillsDir, "session-sync");
+
+    // Link to custom client
+    const linkResult = SkillInstaller.linkSkillToClient("session-sync", "work-buddy", true, tmpHome, ["work-buddy"]);
+    assert.equal(linkResult.linked, true);
+    assert.equal(linkResult.client, "work-buddy");
+    assert.equal(fs.existsSync(path.join(targetSkillDir, "SKILL.md")), true);
+
+    const presentLinked = SkillInstaller.buildPresentIn(tmpHome, "session-sync", ["work-buddy"]);
+    assert.equal(presentLinked["work-buddy"], true);
+
+    // Unlink from custom client
+    const unlinkResult = SkillInstaller.linkSkillToClient("session-sync", "work-buddy", false, tmpHome, ["work-buddy"]);
+    assert.equal(unlinkResult.linked, false);
+    assert.equal(unlinkResult.client, "work-buddy");
+    assert.equal(fs.existsSync(targetSkillDir), false);
+
+    const presentUnlinked = SkillInstaller.buildPresentIn(tmpHome, "session-sync", ["work-buddy"]);
+    assert.equal(presentUnlinked["work-buddy"], false);
+  } finally {
+    fs.rmSync(tmpHome, { recursive: true, force: true });
+  }
+});
+
+test("SkillInstaller.loadSkillsConfig and saveSkillsConfig handle custom client path overrides", () => {
+  const tmpConfig = path.join(os.tmpdir(), `skills-config-${Date.now()}.json`);
+  try {
+    // When file does not exist -> default config
+    const initial = SkillInstaller.loadSkillsConfig(tmpConfig);
+    assert.deepEqual(initial, { version: 1, clientPaths: {} });
+
+    // Save custom paths
+    const toSave = {
+      version: 1,
+      clientPaths: {
+        "work-buddy": "~/.workbuddy/skills",
+        "custom-agent": "/opt/agent/skills",
+      },
+    };
+    SkillInstaller.saveSkillsConfig(tmpConfig, toSave);
+
+    const loaded = SkillInstaller.loadSkillsConfig(tmpConfig);
+    assert.deepEqual(loaded, toSave);
+  } finally {
+    if (fs.existsSync(tmpConfig)) fs.rmSync(tmpConfig, { force: true });
+  }
+});
+
+test("SkillInstaller.consolidateAndDispatch dispatches and unlinks custom client targets", () => {
+  const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), "skill-consolidate-custom-"));
+  try {
+    // Setup central skills
+    const centralRoot = SkillInstaller.getCentralSkillsRoot(tmpHome);
+    const skillDir = path.join(centralRoot, "sample-skill");
+    fs.mkdirSync(skillDir, { recursive: true });
+    fs.writeFileSync(path.join(skillDir, "SKILL.md"), "---\nname: sample-skill\n---\n# Sample", "utf-8");
+
+    const customSkillsDir = path.join(tmpHome, ".workbuddy", "skills");
+    const targetSkillDir = path.join(customSkillsDir, "sample-skill");
+
+    // Consolidate and dispatch to work-buddy
+    const dispatchResult = SkillInstaller.consolidateAndDispatch({
+      homeDir: tmpHome,
+      targets: { "work-buddy": true },
+      customClients: ["work-buddy"],
+    });
+
+    assert.ok(dispatchResult.linked >= 1);
+    assert.equal(fs.existsSync(path.join(targetSkillDir, "SKILL.md")), true);
+
+    // Consolidate and undispatch from work-buddy
+    const undispatchResult = SkillInstaller.consolidateAndDispatch({
+      homeDir: tmpHome,
+      targets: { "work-buddy": false },
+      customClients: ["work-buddy"],
+    });
+
+    assert.ok(undispatchResult.unlinked >= 1);
+    assert.equal(fs.existsSync(targetSkillDir), false);
+  } finally {
+    fs.rmSync(tmpHome, { recursive: true, force: true });
+  }
+});
+

@@ -4,11 +4,18 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { createMcpStore } from "../../lib/mcp-management/store.mjs";
-import { createMcpManagementService } from "../../lib/mcp-management/application/service.mjs";
+import { createMcpManagementService, resolveCustomMcpPath } from "../../lib/mcp-management/application/service.mjs";
 import { codexAdapter } from "../../lib/mcp-management/clients/codex.mjs";
 import { createJsonClientAdapter } from "../../lib/mcp-management/clients/json-client.mjs";
-import { listClientAdapters } from "../../lib/mcp-management/clients/registry.mjs";
+import { listClientAdapters, getClientAdapter } from "../../lib/mcp-management/clients/registry.mjs";
 import { McpManagementError } from "../../lib/mcp-management/domain/errors.mjs";
+import {
+  BUILTIN_CLIENT_IDS,
+  resolveAllClientIds,
+  emptyDistribution,
+  normalizeDistribution,
+  normalizeMcpConfig,
+} from "../../lib/mcp-management/domain/schema.mjs";
 
 function makeRoot() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "shrimp-mcp-test-"));
@@ -507,3 +514,146 @@ test("distribution expands relative mcps args to absolute paths for client confi
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("normalizeDistribution and normalizeMcpConfig preserve custom client keys", () => {
+  const customClients = ["work-buddy", "cursor"];
+  const dist = normalizeDistribution({
+    codex: true,
+    claude: false,
+    "work-buddy": true,
+  }, customClients);
+
+  assert.equal(dist.codex, true);
+  assert.equal(dist.claude, false);
+  assert.equal(dist.claude_code, false);
+  assert.equal(dist.antigravity, false);
+  assert.equal(dist["work-buddy"], true);
+  assert.equal(dist.cursor, false);
+
+  const emptyDist = emptyDistribution(false, customClients);
+  assert.equal(emptyDist.codex, false);
+  assert.equal(emptyDist["work-buddy"], false);
+  assert.equal(emptyDist.cursor, false);
+
+  const cfg = normalizeMcpConfig({
+    servers: {
+      test_server: {
+        name: "test_server",
+        transport: "stdio",
+        command: "node",
+        distribution: { "work-buddy": true },
+      },
+    },
+    clientPaths: {
+      "work-buddy": "~/.workbuddy/mcp.json",
+    },
+  }, customClients);
+
+  assert.equal(cfg.clientPaths["work-buddy"], "~/.workbuddy/mcp.json");
+  assert.equal(cfg.clientPaths.cursor, "");
+  assert.equal(cfg.servers.test_server.distribution["work-buddy"], true);
+});
+
+test("getClientAdapter returns JsonClientAdapter for arbitrary custom client IDs", () => {
+  const adapter = getClientAdapter("work-buddy");
+  assert.ok(adapter);
+  assert.equal(adapter.id, "work-buddy");
+  assert.equal(adapter.listKey, "mcpServers");
+
+  // scan empty doc
+  const scanned = adapter.scan(JSON.stringify({ mcpServers: { my_srv: { command: "node", args: ["a.js"] } } }));
+  assert.ok(scanned instanceof Map);
+  assert.equal(scanned.get("my_srv").command, "node");
+
+  // merge into empty text
+  const merged = adapter.merge("", [{
+    name: "new_srv",
+    transport: "remote",
+    url: "https://example.com/mcp",
+  }]);
+  const parsed = JSON.parse(merged);
+  assert.deepEqual(parsed, {
+    mcpServers: {
+      new_srv: {
+        url: "https://example.com/mcp",
+      },
+    },
+  });
+});
+
+test("McpService.scanClients resolves custom client default path and reports missing status when file does not exist", () => {
+  const root = makeRoot();
+  try {
+    const { service } = makeService(root);
+    const result = service.scan(["work-buddy"]);
+    assert.ok(result.paths["work-buddy"]);
+    assert.equal(result.paths["work-buddy"], path.join(root, ".workbuddy", "mcp.json"));
+
+    const clientResult = result.clients.find((c) => c.client === "work-buddy");
+    assert.ok(clientResult);
+    assert.equal(clientResult.status, "missing");
+    assert.deepEqual(clientResult.servers, []);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("McpService.scanClients discovers MCP servers when custom client config file exists", () => {
+  const root = makeRoot();
+  try {
+    const wbDir = path.join(root, ".workbuddy");
+    fs.mkdirSync(wbDir, { recursive: true });
+    fs.writeFileSync(path.join(wbDir, "mcp.json"), JSON.stringify({
+      mcpServers: {
+        custom_srv: {
+          command: "node",
+          args: ["tool.js"],
+        },
+      },
+    }));
+
+    const { service } = makeService(root);
+    const result = service.scan(["work-buddy"]);
+    const clientResult = result.clients.find((c) => c.client === "work-buddy");
+    assert.ok(clientResult);
+    assert.equal(clientResult.status, "ok");
+    assert.equal(clientResult.servers.length, 1);
+    assert.equal(clientResult.servers[0].name, "custom_srv");
+    assert.equal(result.presentIn.custom_srv["work-buddy"], true);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("McpService.distribute and apply writes MCP configuration into custom client config file", () => {
+  const root = makeRoot();
+  try {
+    const { service } = makeService(root);
+    service.upsertServer({
+      name: "hub_tool",
+      title: "Hub Tool",
+      transport: "remote",
+      url: "https://mcp.hub.test/v1",
+      distribution: { "work-buddy": true },
+    });
+
+    const applyResult = service.apply({ targets: { "work-buddy": true }, customClientIds: ["work-buddy"] });
+    assert.ok(applyResult.changed.length > 0);
+
+    const targetFile = path.join(root, ".workbuddy", "mcp.json");
+    assert.ok(fs.existsSync(targetFile));
+    const content = JSON.parse(fs.readFileSync(targetFile, "utf8"));
+    assert.ok(content.mcpServers);
+    assert.equal(content.mcpServers.hub_tool.url, "https://mcp.hub.test/v1");
+
+    // Also verify state includes custom client metadata
+    const stateResult = service.state(["work-buddy"]);
+    const customMeta = stateResult.clientsMeta.find((m) => m.id === "work-buddy");
+    assert.ok(customMeta);
+    assert.equal(customMeta.id, "work-buddy");
+    assert.equal(customMeta.path, targetFile);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+

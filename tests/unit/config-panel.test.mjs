@@ -915,3 +915,49 @@ test("removeCustomClient confirmation prompt displays both display name and slug
   assert.match(ts, /确定删除代理节点「\$\{clientDisplayName\(client\)\}\s*\(\$\{client\}\)」/);
 });
 
+test("Skill modal dynamically renders custom client work-buddy with display name WorkBuddy 代理", async () => {
+  const [appTs, indexHtml] = await Promise.all([
+    readFile(path.join(ROOT, "desktop", "src", "app.ts"), "utf8"),
+    readFile(path.join(ROOT, "desktop", "index.html"), "utf8"),
+  ]);
+
+  // Check app.ts dynamically iterates over custom clients in skill detail mount list
+  assert.match(appTs, /customClientNames/);
+  assert.match(appTs, /linkSkillClient\('\$\{escapeHtml\(skill\.name\)\}','\$\{escapeHtml\(/);
+  assert.match(appTs, /window\.toggleSkillClient\s*=\s*async function/);
+  assert.match(appTs, /consolidate-custom-/);
+
+  // Check consolidate panel support in index.html and app.ts
+  assert.match(indexHtml, /id="consolidate-targets-container"|id="consolidate-panel"/);
+  assert.match(appTs, /renderConsolidateTargets/);
+});
+
+test("renderClientList in MCP Hub dynamically renders custom client cards with status badge and path editor", async () => {
+  const mcpTs = await readFile(path.join(ROOT, "desktop", "src", "modules", "mcp-management.ts"), "utf8");
+
+  // Check renderClientList renders dynamically from state.data.clients
+  assert.match(mcpTs, /function renderClientList\(\)/);
+  assert.match(mcpTs, /clientDisplayName\(client\.client\)/);
+  assert.match(mcpTs, /clientIcon\(client\.client\)/);
+  assert.match(mcpTs, /\$\{client\.servers\.length\}\s*个已安装/);
+  assert.match(mcpTs, /window\.__mcpSavePath\('\$\{escapeHtml\(client\.client\)\}'\)/);
+  assert.match(mcpTs, /window\.__mcpImportServer\('\$\{escapeHtml\(client\.client\)\}'/);
+  assert.match(mcpTs, /\/v1\/mcp-management\/client-path/);
+  assert.match(mcpTs, /method:\s*"PUT"/);
+});
+
+test("Server distribution checklist in MCP Hub includes custom client checkbox with display name", async () => {
+  const mcpTs = await readFile(path.join(ROOT, "desktop", "src", "modules", "mcp-management.ts"), "utf8");
+
+  // Check dynamic distribution checkboxes in editor
+  assert.match(mcpTs, /mcp-edit-\$\{escapeHtml\(cid\)\}/);
+  assert.match(mcpTs, /window\.__mcpToggleDraft\('\$\{escapeHtml\(cid\)\}',\s*this\.checked\)/);
+  assert.match(mcpTs, /clientDisplayName\(cid\)/);
+
+  // Check distribution in collect() & server cards
+  assert.match(mcpTs, /distribution\[k\]\s*=\s*Boolean\(v\)/);
+  assert.match(mcpTs, /function clientIcon/);
+  assert.match(mcpTs, /return "⚪"/);
+});
+
+

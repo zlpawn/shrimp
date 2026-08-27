@@ -245,6 +245,11 @@ const GATEWAY_SECRETS_FILE = resolveProjectPath(
   process.env.GATEWAY_SECRETS_FILE ||
   path.join(path.dirname(GATEWAY_CONFIG_FILE), "gateway.secrets.json"),
 );
+const SKILLS_CONFIG_FILE = resolveProjectPath(
+  process.env.SKILLS_CONFIG_FILE ||
+  path.join(path.dirname(GATEWAY_CONFIG_FILE), "skills.config.json"),
+);
+process.env.SKILLS_CONFIG_FILE = SKILLS_CONFIG_FILE;
 const globalExtensionStore = createExtensionStore({ dataDir: path.dirname(GATEWAY_CONFIG_FILE) });
 const globalExtensionTaskSystem = createExtensionTaskSystem({
   dataDir: path.dirname(GATEWAY_CONFIG_FILE),
@@ -449,6 +454,11 @@ let GATEWAY_STATE = loadGatewayState({
 });
 let GATEWAY_CONFIG = GATEWAY_STATE.config;
 let GATEWAY_SECRETS = GATEWAY_STATE.secrets;
+
+function getCustomClientKeys() {
+  const builtin = new Set(["code", "desktop", "codex", "deeptutor"]);
+  return Object.keys(GATEWAY_CONFIG.clients || {}).filter((k) => !builtin.has(k));
+}
 let globalWatcherDaemon = null;
 let CLAUDE_CODE_MODEL_ROUTES = buildClaudeCodeModelRoutes(
   GATEWAY_CONFIG.clients?.code?.endpoints || [],
@@ -1232,6 +1242,7 @@ async function route(req, res) {
     if (!checkLocalAuth(req, res)) return;
     await routeMcpManagementRequest(req, res, context, reqPath, {
       service: ensureMcpManagementService(),
+      customClientIds: getCustomClientKeys(),
     });
     return;
   }
@@ -1690,13 +1701,15 @@ function collectGroupedModelsFromConfig(config) {
       "session-sync": sessionTargets,
       "leo-grok-imagine": grokImagineTargets,
     };
-    const symlinkStatus = SkillInstaller.getSymlinkStatus(os.homedir(), "session-sync");
-    const grokImagineSymlinkStatus = SkillInstaller.getSymlinkStatus(os.homedir(), "leo-grok-imagine");
+    const customClients = getCustomClientKeys();
+    const symlinkStatus = SkillInstaller.getSymlinkStatus(os.homedir(), "session-sync", customClients);
+    const grokImagineSymlinkStatus = SkillInstaller.getSymlinkStatus(os.homedir(), "leo-grok-imagine", customClients);
     const isCentralInstalled = SkillInstaller.isInstalled("session-sync");
     const isGrokImagineInstalled = SkillInstaller.isInstalled("leo-grok-imagine");
     const groupedModels = collectGroupedModelsFromConfig(GATEWAY_CONFIG);
     const skillLibrary = SkillInstaller.buildLibrarySnapshot({
       mounts: skillMounts,
+      customClients,
     });
     sendJson(res, 200, {
       success: true,
@@ -1800,9 +1813,9 @@ function collectGroupedModelsFromConfig(config) {
         targets,
         grokImagineTargets,
         skillMounts,
-        symlinks: SkillInstaller.getSymlinkStatus(os.homedir(), "session-sync"),
-        grokImagineSymlinks: SkillInstaller.getSymlinkStatus(os.homedir(), "leo-grok-imagine"),
-        skillLibrary: SkillInstaller.buildLibrarySnapshot({ mounts: skillMounts }),
+        symlinks: SkillInstaller.getSymlinkStatus(os.homedir(), "session-sync", getCustomClientKeys()),
+        grokImagineSymlinks: SkillInstaller.getSymlinkStatus(os.homedir(), "leo-grok-imagine", getCustomClientKeys()),
+        skillLibrary: SkillInstaller.buildLibrarySnapshot({ mounts: skillMounts, customClients: getCustomClientKeys() }),
       });
     } catch (err) {
       sendJson(res, 500, { error: err.message });
@@ -1830,10 +1843,12 @@ function collectGroupedModelsFromConfig(config) {
       "session-sync": sessionTargets,
       "leo-grok-imagine": grokImagineTargets,
     };
+    const customClients = getCustomClientKeys();
     const library = SkillInstaller.buildLibrarySnapshot({
       query,
       category,
       scope,
+      customClients,
     });
     sendJson(res, 200, {
       success: true,
@@ -1855,7 +1870,8 @@ function collectGroupedModelsFromConfig(config) {
         sendJson(res, 400, { error: "skill and client are required" });
         return;
       }
-      const result = SkillInstaller.linkSkillToClient(skillName, client, action !== "unlink");
+      const customClients = getCustomClientKeys();
+      const result = SkillInstaller.linkSkillToClient(skillName, client, action !== "unlink", os.homedir(), customClients);
       logInfo("skill_link", {
         skill: skillName,
         client,
@@ -1868,7 +1884,7 @@ function collectGroupedModelsFromConfig(config) {
       sendJson(res, 200, {
         success: true,
         ...result,
-        skillLibrary: SkillInstaller.buildLibrarySnapshot({}),
+        skillLibrary: SkillInstaller.buildLibrarySnapshot({ customClients }),
       });
     } catch (err) {
       logError("skill_link", err, {});
@@ -1900,10 +1916,11 @@ function collectGroupedModelsFromConfig(config) {
         featured: Boolean(payload.featured),
       });
 
+      const customClients = getCustomClientKeys();
       sendJson(res, 200, {
         success: true,
         ...result,
-        skillLibrary: SkillInstaller.buildLibrarySnapshot({}),
+        skillLibrary: SkillInstaller.buildLibrarySnapshot({ customClients }),
       });
     } catch (err) {
       sendJson(res, 400, { error: err.message || String(err) });
@@ -1962,13 +1979,14 @@ function collectGroupedModelsFromConfig(config) {
           : targets;
       const results = SkillInstaller.updateSymlinks(effectiveTargets, os.homedir(), null, skillName);
 
+      const customClients = getCustomClientKeys();
       sendJson(res, 200, {
         success: true,
         skill: skillName,
         targets: effectiveTargets,
         results,
         skillMounts: current.skillMounts,
-        skillLibrary: SkillInstaller.buildLibrarySnapshot({ mounts: current.skillMounts }),
+        skillLibrary: SkillInstaller.buildLibrarySnapshot({ mounts: current.skillMounts, customClients }),
       });
     } catch (err) {
       sendJson(res, 500, { error: err.message });
@@ -1984,13 +2002,15 @@ function collectGroupedModelsFromConfig(config) {
       const payload = JSON.parse(await readText(req) || "{}");
       const skillName = String(payload.skill || payload.name || "").trim();
       if (!skillName) { sendJson(res, 400, { error: "skill is required" }); return; }
+      const customClients = getCustomClientKeys();
       const result = SkillInstaller.unifySkillToCentral(skillName, {
         overwrite: Boolean(payload.overwrite),
+        customClients,
       });
       sendJson(res, 200, {
         success: true,
         ...result,
-        skillLibrary: SkillInstaller.buildLibrarySnapshot({}),
+        skillLibrary: SkillInstaller.buildLibrarySnapshot({ customClients }),
       });
     } catch (err) {
       sendJson(res, 400, { error: err.message || String(err) });
@@ -2001,11 +2021,12 @@ function collectGroupedModelsFromConfig(config) {
   if (reqPath === "/v1/skills/unify-all" && req.method === "POST") {
     if (!checkLocalAuth(req, res)) return;
     try {
-      const result = SkillInstaller.unifyAllToCentral({});
+      const customClients = getCustomClientKeys();
+      const result = SkillInstaller.unifyAllToCentral({ customClients });
       sendJson(res, 200, {
         success: true,
         ...result,
-        skillLibrary: SkillInstaller.buildLibrarySnapshot({}),
+        skillLibrary: SkillInstaller.buildLibrarySnapshot({ customClients }),
       });
     } catch (err) {
       sendJson(res, 500, { error: err.message || String(err) });
@@ -2018,16 +2039,22 @@ function collectGroupedModelsFromConfig(config) {
     if (!checkLocalAuth(req, res)) return;
     try {
       const payload = JSON.parse(await readText(req) || "{}");
+      const customClients = getCustomClientKeys();
       const targets = {
         claude: Boolean(payload.targets?.claude),
         antigravity: Boolean(payload.targets?.antigravity),
         claudeDesktop3p: Boolean(payload.targets?.claudeDesktop3p),
       };
-      const result = SkillInstaller.consolidateAndDispatch({ targets });
+      for (const k of customClients) {
+        if (payload.targets && payload.targets[k] !== undefined) {
+          targets[k] = Boolean(payload.targets[k]);
+        }
+      }
+      const result = SkillInstaller.consolidateAndDispatch({ targets, customClients });
       sendJson(res, 200, {
         success: true,
         ...result,
-        skillLibrary: SkillInstaller.buildLibrarySnapshot({}),
+        skillLibrary: SkillInstaller.buildLibrarySnapshot({ customClients }),
       });
     } catch (err) {
       sendJson(res, 500, { error: err.message || String(err) });
@@ -2041,11 +2068,12 @@ function collectGroupedModelsFromConfig(config) {
     try {
       const payload = JSON.parse(await readText(req) || "{}");
       const names = Array.isArray(payload.skills) ? payload.skills : [];
-      const result = SkillInstaller.batchDeleteSkills(names);
+      const customClients = getCustomClientKeys();
+      const result = SkillInstaller.batchDeleteSkills(names, os.homedir(), customClients);
       sendJson(res, 200, {
         success: true,
         ...result,
-        skillLibrary: SkillInstaller.buildLibrarySnapshot({}),
+        skillLibrary: SkillInstaller.buildLibrarySnapshot({ customClients }),
       });
     } catch (err) {
       sendJson(res, 500, { error: err.message || String(err) });
@@ -2059,14 +2087,44 @@ function collectGroupedModelsFromConfig(config) {
     try {
       const payload = JSON.parse(await readText(req) || "{}");
       const names = Array.isArray(payload.skills) ? payload.skills : [];
-      const result = SkillInstaller.batchUnlinkSkills(names);
+      const customClients = getCustomClientKeys();
+      const result = SkillInstaller.batchUnlinkSkills(names, os.homedir(), customClients);
       sendJson(res, 200, {
         success: true,
         ...result,
-        skillLibrary: SkillInstaller.buildLibrarySnapshot({}),
+        skillLibrary: SkillInstaller.buildLibrarySnapshot({ customClients }),
       });
     } catch (err) {
       sendJson(res, 500, { error: err.message || String(err) });
+    }
+    return;
+  }
+
+  // --- Skills: client path configuration ---
+  if (reqPath === "/v1/skills/client-path" && req.method === "PUT") {
+    if (!checkLocalAuth(req, res)) return;
+    try {
+      const payload = JSON.parse(await readText(req) || "{}");
+      const client = String(payload.client || "").trim();
+      const customPath = payload.path !== undefined ? String(payload.path || "").trim() : "";
+      if (!client) {
+        sendJson(res, 400, { error: "client is required" });
+        return;
+      }
+      const config = SkillInstaller.loadSkillsConfig(SKILLS_CONFIG_FILE);
+      if (customPath) {
+        config.clientPaths[client] = customPath;
+      } else {
+        delete config.clientPaths[client];
+      }
+      SkillInstaller.saveSkillsConfig(SKILLS_CONFIG_FILE, config);
+      sendJson(res, 200, {
+        success: true,
+        client,
+        path: customPath || null,
+      });
+    } catch (err) {
+      sendJson(res, 400, { error: err.message || String(err) });
     }
     return;
   }
