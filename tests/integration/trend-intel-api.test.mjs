@@ -211,6 +211,40 @@ test("routes - POST /v1/trend-intel/generate-brief and GET /v1/trend-intel/brief
   }
 });
 
+test("routes - POST /v1/trend-intel/generate-brief automatically crawls if database is empty", async () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "trend-intel-route-test-"));
+  const mockFetch = createMockFetch();
+  const service = createTrendIntelService({ dataDir, fetchImpl: mockFetch });
+  const server = http.createServer(async (req, res) => {
+    const handled = await routeTrendIntelRequest(req, res, service);
+    if (!handled) {
+      res.statusCode = 404;
+      res.end();
+    }
+  });
+
+  await new Promise(r => server.listen(0, "127.0.0.1", r));
+  const port = server.address().port;
+
+  try {
+    // Generate brief directly WITHOUT prior crawl
+    const genRes = await fetch(`http://127.0.0.1:${port}/v1/trend-intel/generate-brief`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date: "2026-08-27" })
+    });
+    assert.equal(genRes.status, 200);
+    const genData = await genRes.json();
+    assert.ok(genData.brief);
+    assert.ok(Array.isArray(genData.events));
+    assert.ok(genData.events.length > 0);
+  } finally {
+    server.close();
+    service.destroy();
+    fs.rmSync(dataDir, { recursive: true, force: true });
+  }
+});
+
 test("routes - unknown trend-intel subpath returns 404 and unhandled returns false", async () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "trend-intel-route-test-"));
   const service = createTrendIntelService({ dataDir });
