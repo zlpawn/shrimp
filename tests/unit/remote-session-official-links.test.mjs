@@ -161,6 +161,8 @@ test("HTTP official link routes expose CRUD and frame policy checks", async () =
 test("remote session panel exposes official link manager and wheel selector", () => {
   const source = fs.readFileSync(path.join(panelRoot, "desktop/src/modules/remote-session.ts"), "utf8");
   const css = fs.readFileSync(path.join(panelRoot, "desktop/src/styles/panel.css"), "utf8");
+  const html = fs.readFileSync(path.join(panelRoot, "desktop/index.html"), "utf8");
+  const html = fs.readFileSync(path.join(panelRoot, "desktop/index.html"), "utf8");
   assert.match(source, /Antigravity 官方远程控制/);
   assert.match(source, /official-links/);
   assert.match(source, /__rsOpenOfficialLink/);
@@ -186,4 +188,5 @@ test("remote session panels and dialogs use spacious grouped layouts", () => {
   assert.equal((catalog.match(/class="endpoints-grid rs-catalog-grid"/g) || []).length, 1);
   assert.match(catalog, /Antigravity 远程编码[\s\S]*Antigravity 官方远程控制/);
   assert.match(css, /.rs-catalog-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
+  assert.match(html, /panel\.bundle\.js\?v=remote-session-layout-1/);
 });
