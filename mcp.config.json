@@ -34,6 +34,22 @@
         "claude_code": false,
         "antigravity": false
       }
+    },
+    "amap-maps": {
+      "name": "amap-maps",
+      "title": "高德地图",
+      "description": "",
+      "enabled": true,
+      "transport": "remote",
+      "command": "",
+      "args": [],
+      "url": "https://mcp.amap.com/mcp?key=${key}",
+      "distribution": {
+        "codex": false,
+        "claude": false,
+        "claude_code": false,
+        "antigravity": false
+      }
     }
   },
   "clientPaths": {

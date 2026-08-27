@@ -3,15 +3,16 @@
   "updatedAt": "2026-08-21T00:16:00.000Z",
   "skills": [
     {
-      "id": "trend-intelligence",
-      "name": "trend-intelligence",
-      "title": "Trend Intelligence 热点情报与选题分析",
+      "id": "leo-trend-intelligence",
+      "name": "leo-trend-intelligence",
+      "title": "Leo Trend Intelligence 热点情报与选题分析",
       "summary": "基于 TrendRadar 的全网多平台时序热点情报与自媒体选题分析专家。具备 World Importance 与 Creator Value 独立双评分体系，基于 6+4 深度分析框架拆解热点、挖掘反常识与认知差、判定时效窗口并输出自媒体选题大纲。",
       "category": "research",
       "categoryLabel": "研究与知识",
       "icon": "📡",
       "featured": true,
       "tags": [
+        "leo-trend-intelligence",
         "trend-intelligence",
         "trendradar",
         "hotlist",

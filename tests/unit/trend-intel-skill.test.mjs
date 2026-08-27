@@ -11,13 +11,13 @@ import { SkillInstaller } from "../../lib/session-sync/skill-installer.mjs";
 const execFileAsync = promisify(execFile);
 
 test("skill - SKILL.md exists, has frontmatter, 6+4 framework and dual scoring", () => {
-  const skillPath = path.resolve("lib/skills/trend-intelligence/SKILL.md");
-  assert.ok(fs.existsSync(skillPath), "lib/skills/trend-intelligence/SKILL.md must exist");
+  const skillPath = path.resolve("lib/skills/leo-trend-intelligence/SKILL.md");
+  assert.ok(fs.existsSync(skillPath), "lib/skills/leo-trend-intelligence/SKILL.md must exist");
   const content = fs.readFileSync(skillPath, "utf-8");
 
   // Frontmatter
   assert.ok(content.startsWith("---"), "SKILL.md should start with frontmatter");
-  assert.ok(content.includes("name: trend-intelligence"), "frontmatter must include name: trend-intelligence");
+  assert.ok(content.includes("name: leo-trend-intelligence"), "frontmatter must include name: leo-trend-intelligence");
   assert.ok(content.includes("description:"), "frontmatter must include description");
 
   // Dual Scoring definitions
@@ -47,39 +47,39 @@ test("skill - SKILL.md exists, has frontmatter, 6+4 framework and dual scoring",
   assert.ok(content.includes("latest_events.json"), "must document fallback latest_events.json file");
 });
 
-test("skill - managed catalog discovers and registers trend-intelligence", () => {
-  const skill = SkillInstaller.getManagedSkill("trend-intelligence");
-  assert.ok(skill, "trend-intelligence must be discovered as managed skill");
-  assert.equal(skill.name, "trend-intelligence");
+test("skill - managed catalog discovers and registers leo-trend-intelligence", () => {
+  const skill = SkillInstaller.getManagedSkill("leo-trend-intelligence");
+  assert.ok(skill, "leo-trend-intelligence must be discovered as managed skill");
+  assert.equal(skill.name, "leo-trend-intelligence");
   assert.ok(skill.title, "must have a display title");
   assert.ok(skill.summary, "must have a summary");
   assert.equal(skill.featured, true);
-  assert.ok(skill.tags.includes("trend-intelligence"));
+  assert.ok(skill.tags.includes("leo-trend-intelligence"));
 });
 
 test("skill - SkillInstaller can install base skill to target directory", () => {
   const tmpDir = path.join(os.tmpdir(), "trend-intel-install-test-" + Date.now());
   try {
-    const installedFile = SkillInstaller.installBaseSkill(tmpDir, "trend-intelligence");
+    const installedFile = SkillInstaller.installBaseSkill(tmpDir, "leo-trend-intelligence");
     assert.ok(fs.existsSync(installedFile));
-    assert.ok(fs.existsSync(path.join(tmpDir, "scripts", "trend_intel.mjs")));
+    assert.ok(fs.existsSync(path.join(tmpDir, "scripts", "leo_trend_intel.mjs")));
     const content = fs.readFileSync(installedFile, "utf-8");
-    assert.ok(content.includes("trend-intelligence"));
+    assert.ok(content.includes("leo-trend-intelligence"));
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });
 
-test("skill - helper script trend_intel.mjs runs with --help", async () => {
-  const scriptPath = path.resolve("lib/skills/trend-intelligence/scripts/trend_intel.mjs");
-  assert.ok(fs.existsSync(scriptPath), "scripts/trend_intel.mjs must exist");
+test("skill - helper script leo_trend_intel.mjs runs with --help", async () => {
+  const scriptPath = path.resolve("lib/skills/leo-trend-intelligence/scripts/leo_trend_intel.mjs");
+  assert.ok(fs.existsSync(scriptPath), "scripts/leo_trend_intel.mjs must exist");
 
   const { stdout } = await execFileAsync(process.execPath, [scriptPath, "--help"]);
-  assert.ok(stdout.includes("trend-intel") || stdout.includes("Usage") || stdout.includes("用法"));
+  assert.ok(stdout.includes("trend-intel") || stdout.includes("Usage") || stdout.includes("用法") || stdout.includes("Leo Trend Intelligence"));
 });
 
-test("skill - helper script trend_intel.mjs supports --status command", async () => {
-  const scriptPath = path.resolve("lib/skills/trend-intelligence/scripts/trend_intel.mjs");
+test("skill - helper script leo_trend_intel.mjs supports --status command", async () => {
+  const scriptPath = path.resolve("lib/skills/leo-trend-intelligence/scripts/leo_trend_intel.mjs");
   const { stdout } = await execFileAsync(process.execPath, [
     scriptPath,
     "--status",
@@ -90,8 +90,8 @@ test("skill - helper script trend_intel.mjs supports --status command", async ()
   assert.ok(stdout.includes("目标网关地址"));
 });
 
-test("skill - helper script trend_intel.mjs falls back to local file when gateway offline", async () => {
-  const scriptPath = path.resolve("lib/skills/trend-intelligence/scripts/trend_intel.mjs");
+test("skill - helper script leo_trend_intel.mjs falls back to local file when gateway offline", async () => {
+  const scriptPath = path.resolve("lib/skills/leo-trend-intelligence/scripts/leo_trend_intel.mjs");
   const tmpDir = path.join(process.cwd(), "output", "trend-intel");
   fs.mkdirSync(tmpDir, { recursive: true });
   const testBriefPath = path.join(tmpDir, "latest_brief.md");
@@ -109,8 +109,8 @@ test("skill - helper script trend_intel.mjs falls back to local file when gatewa
   assert.ok(stdout.includes("自动化测试条目 123456") || stdout.includes("测试热点简报"));
 });
 
-test("skill - helper script trend_intel.mjs falls back to local events json when gateway offline", async () => {
-  const scriptPath = path.resolve("lib/skills/trend-intelligence/scripts/trend_intel.mjs");
+test("skill - helper script leo_trend_intel.mjs falls back to local events json when gateway offline", async () => {
+  const scriptPath = path.resolve("lib/skills/leo-trend-intelligence/scripts/leo_trend_intel.mjs");
   const tmpDir = path.join(process.cwd(), "output", "trend-intel");
   fs.mkdirSync(tmpDir, { recursive: true });
   const testEventsPath = path.join(tmpDir, "latest_events.json");
@@ -137,8 +137,8 @@ test("skill - helper script trend_intel.mjs falls back to local events json when
   assert.ok(stdout.includes("8.8"));
 });
 
-test("skill - helper script trend_intel.mjs fetches from live gateway when available", async () => {
-  const scriptPath = path.resolve("lib/skills/trend-intelligence/scripts/trend_intel.mjs");
+test("skill - helper script leo_trend_intel.mjs fetches from live gateway when available", async () => {
+  const scriptPath = path.resolve("lib/skills/leo-trend-intelligence/scripts/leo_trend_intel.mjs");
 
   // Start mock HTTP server
   const server = http.createServer((req, res) => {

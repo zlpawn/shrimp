@@ -1,9 +1,9 @@
 ---
-name: trend-intelligence
+name: leo-trend-intelligence
 description: 基于 TrendRadar 的全网多平台时序热点情报与自媒体选题分析专家。具备 World Importance（宏观世界重要性）与 Creator Value（内容价值）独立双评分体系，基于 6+4 深度分析框架拆解热点、挖掘反常识与认知差、判定时效窗口并输出自媒体选题大纲。支持 REST API 直连、本地简报文件与用户输入多模态摄入。
 ---
 
-# Trend Intelligence Skill (全网热点情报与自媒体选题分析专家)
+# Leo Trend Intelligence Skill (全网热点情报与自媒体选题分析专家)
 
 ## 一、 角色与定位 (Role & Positioning)
 
@@ -42,8 +42,8 @@ Agent 在执行热点分析与选题策划时，支持三种数据获取渠道�
 * 获取跨平台升温事件流：`GET http://127.0.0.1:8787/v1/trend-intel/events?limit=20`
 * 或通过内置 CLI 脚本执行：
   ```bash
-  node lib/skills/trend-intelligence/scripts/trend_intel.mjs --brief
-  node lib/skills/trend-intelligence/scripts/trend_intel.mjs --events --limit 15
+  node lib/skills/leo-trend-intelligence/scripts/leo_trend_intel.mjs --brief
+  node lib/skills/leo-trend-intelligence/scripts/leo_trend_intel.mjs --events --limit 15
   ```
 
 ### 模式 2：本地标准文件读取（离线 / 容灾降级）

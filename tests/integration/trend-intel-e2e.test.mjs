@@ -359,8 +359,8 @@ test("E2E - Full Pipeline: Crawl ➔ Snapshots ➔ Velocity ➔ Cluster ➔ Dual
     // Step 7: Agent Skill CLI Verification & Offline Fallback
     // -------------------------------------------------------------------------
     await t.test("7. Skill CLI: Live execution via gateway and graceful offline fallback", async () => {
-      const scriptPath = path.resolve("lib/skills/trend-intelligence/scripts/trend_intel.mjs");
-      assert.ok(fs.existsSync(scriptPath), "trend_intel.mjs script must exist");
+      const scriptPath = path.resolve("lib/skills/leo-trend-intelligence/scripts/leo_trend_intel.mjs");
+      assert.ok(fs.existsSync(scriptPath), "leo_trend_intel.mjs script must exist");
 
       // 7.1 CLI --status (Live Gateway)
       const { stdout: statusLive } = await execFileAsync(process.execPath, [

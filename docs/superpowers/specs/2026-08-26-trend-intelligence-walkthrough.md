@@ -164,7 +164,7 @@ Trend Intelligence 为创作者与决策者提供：
 
 ---
 
-## 6. Agent Skill 使用指南 (`trend-intelligence`)
+## 6. Agent Skill 使用指南 (`leo-trend-intelligence`)
 
 ### 6.1 技能安装
 在网关「预置技能」页面点击一键安装，或通过命令行安装：
@@ -172,25 +172,25 @@ Trend Intelligence 为创作者与决策者提供：
 node bin/shrimp.js sync install-skill
 ```
 
-### 6.2 辅助脚本命令行用法 (`scripts/trend_intel.mjs`)
+### 6.2 辅助脚本命令行用法 (`scripts/leo_trend_intel.mjs`)
 Agent 可直接通过 CLI 脚本与 Trend Intelligence 交互，具备**实时网关 API 优先 + 离线本地文件降级**双模容灾保障：
 
 ```bash
 # 1. 检查运行状态与数据源诊断
-node lib/skills/trend-intelligence/scripts/trend_intel.mjs --status
+node lib/skills/leo-trend-intelligence/scripts/leo_trend_intel.mjs --status
 
 # 2. 获取今日完整热点简报 Markdown
-node lib/skills/trend-intelligence/scripts/trend_intel.mjs --brief
+node lib/skills/leo-trend-intelligence/scripts/leo_trend_intel.mjs --brief
 
 # 3. 获取全网高价值聚类事件 (文本卡片)
-node lib/skills/trend-intelligence/scripts/trend_intel.mjs --events --limit 10
+node lib/skills/leo-trend-intelligence/scripts/leo_trend_intel.mjs --events --limit 10
 
 # 4. 获取聚类事件结构化 JSON (供 Agent 直接解析)
-node lib/skills/trend-intelligence/scripts/trend_intel.mjs --events --format json
+node lib/skills/leo-trend-intelligence/scripts/leo_trend_intel.mjs --events --format json
 
 # 5. 立即触发一次全网采集与简报重新生成
-node lib/skills/trend-intelligence/scripts/trend_intel.mjs --crawl
-node lib/skills/trend-intelligence/scripts/trend_intel.mjs --generate-brief
+node lib/skills/leo-trend-intelligence/scripts/leo_trend_intel.mjs --crawl
+node lib/skills/leo-trend-intelligence/scripts/leo_trend_intel.mjs --generate-brief
 ```
 
 ### 6.3 6+4 分析方法论与选题 Prompt 范式
