@@ -455,7 +455,7 @@ function renderCatalog(): string {
           </div>
         </div>
       </div>
-      <div class="endpoints-grid">
+
         <div class="node-card" role="button" tabindex="0"
              onclick="window.__rsOpenScene('official-links')"
              onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.__rsOpenScene('official-links');}">
@@ -739,18 +739,28 @@ function renderOfficialLinkModal(): string {
   if (!state.showOfficialLinkModal || !state.editingOfficialLink) return "";
   return `
     <div class="rs-modal-overlay" onclick="window.__rsCloseOfficialLinkModal()">
-      <div class="rs-modal-card" onclick="event.stopPropagation()">
-        <h3>${state.editingOfficialLink.id ? "编辑官方链接" : "新增官方链接"}</h3>
-        <label class="form-group">
-          <span>名称</span>
-          <input id="rs-official-name" type="text" value="${escapeHtml(state.editingOfficialLink.name)}" placeholder="例如：工作台 Mac" maxlength="80" />
-        </label>
-        <label class="form-group">
-          <span>官方远程链接 (HTTPS)</span>
-          <textarea id="rs-official-url" rows="4" placeholder="https://antigravity.google.com/r/...">${escapeHtml(state.editingOfficialLink.url)}</textarea>
-        </label>
-        <p class="rs-help rs-help-warn">链接仅保存在本机 gateway.db，不会提交到 GitHub。</p>
-        <div class="rs-inline-actions" style="justify-content:flex-end; margin-top:16px;">
+      <div class="rs-modal-card rs-modal-shell rs-modal-wide" onclick="event.stopPropagation()">
+        <div class="rs-modal-header">
+          <div>
+            <h3>${state.editingOfficialLink.id ? "编辑官方链接" : "新增官方链接"}</h3>
+            <p class="rs-help">保存官方 Remote Control 链接，便于从远程会话面板直达。</p>
+          </div>
+          <button class="btn btn-sm" type="button" onclick="window.__rsCloseOfficialLinkModal()">✕ 关闭</button>
+        </div>
+        <div class="rs-modal-body">
+          <div class="rs-form-grid">
+            <label class="form-group">
+              <span>名称</span>
+              <input id="rs-official-name" type="text" value="${escapeHtml(state.editingOfficialLink.name)}" placeholder="例如：工作台 Mac" maxlength="80" />
+            </label>
+            <label class="form-group rs-col-2">
+              <span>官方远程链接 (HTTPS)</span>
+              <textarea id="rs-official-url" rows="4" placeholder="https://antigravity.google.com/r/...">${escapeHtml(state.editingOfficialLink.url)}</textarea>
+            </label>
+          </div>
+          <p class="rs-help rs-help-warn">链接仅保存在本机 gateway.db，不会提交到 GitHub。</p>
+        </div>
+        <div class="rs-modal-footer">
           <button class="btn" onclick="window.__rsCloseOfficialLinkModal()">取消</button>
           <button class="btn btn-primary" onclick="window.__rsSaveOfficialLink()">保存</button>
         </div>
@@ -849,19 +859,19 @@ function renderPeerModal(): string {
 
   return `
     <div class="rs-modal-overlay" onclick="if(event.target===this) window.__rsClosePeerModal()">
-      <div class="rs-modal-card card">
-        <div class="rs-block-head">
+      <div class="rs-modal-card rs-modal-shell rs-modal-wide">
+        <div class="rs-modal-header">
           <h3>${p.id && !p.id.startsWith("peer_") ? "编辑对端节点 (Peer)" : "添加新对端节点 (Peer)"}</h3>
           <button class="btn btn-sm" onclick="window.__rsClosePeerModal()">✕</button>
         </div>
 
-        <div class="rs-divider"></div>
-        <div class="rs-section-subtitle">
-          <span>网络通道配置 (Transport)</span>
-          ${isFrp ? `<button class="btn btn-sm" onclick="window.__rsFetchFrpProxies()">刷新 FRP 代理列表</button>` : ""}
-        </div>
+        <div class="rs-modal-body">
+          <div class="rs-section-subtitle">
+            <span>网络通道配置 (Transport)</span>
+            ${isFrp ? `<button class="btn btn-sm" onclick="window.__rsFetchFrpProxies()">刷新 FRP 代理列表</button>` : ""}
+          </div>
 
-        <div class="rs-form-grid">
+          <div class="rs-form-grid">
           <label class="form-group">
             <span>穿透方式</span>
             <select id="modal-peer-transport-type" onchange="window.__rsModalTransportChange(this.value)">
@@ -903,12 +913,11 @@ function renderPeerModal(): string {
             <span>节点名称 (Display Name)</span>
             <input id="modal-peer-name" value="${escapeHtml(p.name || p.displayName || "")}" placeholder="例如：办公室开发机 / mac-pa" />
           </label>
-        </div>
+          </div>
 
-        <div class="rs-divider"></div>
-        <div class="rs-section-subtitle">主机访问与认证 (Auth)</div>
+          <div class="rs-section-subtitle">主机访问与认证 (Auth)</div>
 
-        <div class="rs-form-grid">
+          <div class="rs-form-grid">
           <label class="form-group ${!isSsh && !isToken ? "rs-col-2" : ""}">
             <span>认证模式</span>
             <select id="modal-peer-auth-type" onchange="window.__rsModalAuthChange(this.value)">
@@ -943,9 +952,10 @@ function renderPeerModal(): string {
               <input id="modal-peer-token" type="password" value="${escapeHtml(p.auth?.gatewayToken || "")}" placeholder="填写远端网关 Token" />
             </label>
           ` : ""}
+          </div>
         </div>
 
-        <div class="rs-inline-actions" style="margin-top:20px; justify-content:flex-end;">
+        <div class="rs-modal-footer">
           <button class="btn" onclick="window.__rsClosePeerModal()">取消</button>
           <button class="btn btn-primary" onclick="window.__rsSavePeerModal()">保存节点</button>
         </div>

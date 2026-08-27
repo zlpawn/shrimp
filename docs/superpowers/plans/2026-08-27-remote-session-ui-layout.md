@@ -32,10 +32,10 @@
 - Produces CSS classes: `rs-modal-shell`, `rs-modal-header`, `rs-modal-body`, `rs-modal-footer`, and `rs-modal-wide`.
 - Consumes existing `form-group`, `rs-form-grid`, and `rs-col-2` classes.
 
-- [ ] Add a failing static test requiring official-link and peer modals to use `rs-modal-shell rs-modal-wide` with header/body/footer regions.
-- [ ] Run only that test and confirm it fails for missing structure.
-- [ ] Refactor both modal renderers and add the CSS shell.
-- [ ] Run the official-link test file and confirm it passes.
+- [x] Add a failing static test requiring official-link and peer modals to use `rs-modal-shell rs-modal-wide` with header/body/footer regions.
+- [x] Run only that test and confirm it fails for missing structure.
+- [x] Refactor both modal renderers and add the CSS shell.
+- [x] Run the official-link test file and confirm it passes.
 
 ### Task 2: Grouped remote-session catalog
 
@@ -49,7 +49,7 @@
 - Produces one catalog-level `endpoints-grid` containing both remote-session `node-card` entries.
 - Preserves existing `window.__rsOpenScene` handlers and card content.
 
-- [ ] Extend the failing static test to require exactly one catalog grid containing both card titles.
-- [ ] Run the test and confirm the catalog assertion fails.
-- [ ] Remove the duplicate wrapper so both cards share one grid.
-- [ ] Run `npm run test:remote-session`, `npm run check`, and `npm run build:panel`.
+- [x] Extend the failing static test to require exactly one catalog grid containing both card titles.
+- [x] Run the test and confirm the catalog assertion fails.
+- [x] Remove the duplicate wrapper so both cards share one grid.
+- [x] Run `npm run test:remote-session`, `npm run check`, and `npm run build:panel`.

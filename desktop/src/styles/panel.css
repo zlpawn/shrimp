@@ -5760,6 +5760,62 @@ input:focus, select:focus {
   background: var(--surface, #1e1e1e);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
+
+.rs-modal-shell {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.rs-modal-wide {
+  max-width: 720px;
+}
+
+.rs-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--surface);
+}
+
+.rs-modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.rs-modal-header .rs-help {
+  margin: 4px 0 0;
+}
+
+.rs-modal-body {
+  flex: 1;
+  min-height: 0;
+  padding: 20px 24px;
+  overflow-y: auto;
+  background: var(--surface);
+}
+
+.rs-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 24px;
+  border-top: 1px solid var(--border-color);
+  background: var(--surface);
+}
+
+.rs-modal-shell .rs-section-subtitle {
+  margin-top: 4px;
+}
+
+.rs-modal-shell .rs-section-subtitle + .rs-form-grid {
+  margin-bottom: 18px;
+}
 /* Command Apps module */
 .command-apps-root { padding: 16px 0; }
 

@@ -169,3 +169,20 @@ test("remote session panel exposes official link manager and wheel selector", ()
   assert.match(css, /.rs-official-link-track\s*\{[^}]*overflow-x:\s*auto/);
   assert.match(css, /.rs-official-link-pill\.active/);
 });
+
+test("remote session panels and dialogs use spacious grouped layouts", () => {
+  const source = fs.readFileSync(path.join(panelRoot, "desktop/src/modules/remote-session.ts"), "utf8");
+  const css = fs.readFileSync(path.join(panelRoot, "desktop/src/styles/panel.css"), "utf8");
+
+  assert.match(source, /class="rs-modal-card rs-modal-shell rs-modal-wide"[^>]*onclick="event\.stopPropagation\(\)"[\s\S]*?rs-official-name/);
+  assert.match(source, /class="rs-modal-card rs-modal-shell rs-modal-wide"[\s\S]*?modal-peer-transport-type/);
+  assert.match(source, /class="rs-modal-header"[\s\S]*?class="rs-modal-body"[\s\S]*?class="rs-modal-footer"/);
+  assert.match(css, /.rs-modal-wide\s*\{[^}]*max-width:\s*720px/s);
+  assert.match(css, /.rs-modal-body\s*\{[^}]*overflow-y:\s*auto/s);
+
+  const catalogStart = source.indexOf("function renderCatalog");
+  const catalogEnd = source.indexOf("function renderAntigravityScene", catalogStart);
+  const catalog = source.slice(catalogStart, catalogEnd);
+  assert.equal((catalog.match(/class="endpoints-grid"/g) || []).length, 1);
+  assert.match(catalog, /Antigravity 远程编码[\s\S]*Antigravity 官方远程控制/);
+});
