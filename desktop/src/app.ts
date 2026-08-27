@@ -3037,8 +3037,8 @@ function renderSkillDetail() {
         isCentral: boolean;
         isCopy: boolean;
     }> = Object.entries(tools).map(([tool, meta]: [string, any]) => {
-        const rootId = rootByClient[tool];
-        const present = rootId ? Boolean(presentIn[rootId]) : Boolean(skill.installed);
+        const rootId = rootByClient[tool] || tool;
+        const present = tool === 'codex' ? Boolean(skill.installed) : Boolean(presentIn[rootId]);
         const displayName = clientDisplayName(tool);
         return {
             id: tool,
