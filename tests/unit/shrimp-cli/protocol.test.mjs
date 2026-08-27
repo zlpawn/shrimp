@@ -6,7 +6,7 @@ import {
   redactSecrets,
   formatSecretState,
   EXIT,
-} from "../../../../lib/clis/shrimp/protocol.mjs";
+} from "../../../lib/shrimp-cli/protocol.mjs";
 
 test("success envelope shape", () => {
   const env = successEnvelope({

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildRegistry } from "../../../../lib/clis/shrimp/index.mjs";
-import { parseGlobalFlags } from "../../../../lib/clis/shrimp/parse-args.mjs";
+import { buildRegistry } from "../../../lib/shrimp-cli/index.mjs";
+import { parseGlobalFlags } from "../../../lib/shrimp-cli/parse-args.mjs";
 
 test("short aliases resolve to canonical commands", () => {
   const reg = buildRegistry();

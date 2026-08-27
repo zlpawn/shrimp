@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { embedSimilarity } from "../../../../lib/clis/shrimp/domain/tool-service.mjs";
+import { embedSimilarity } from "../../../lib/shrimp-cli/domain/tool-service.mjs";
 
 // Directly test cosine via public API by monkeypatching fetch/health internals is heavy;
 // unit-test the pure path through a tiny local reimplementation check using private behavior

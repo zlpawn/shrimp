@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createRegistry } from "../../../../lib/clis/shrimp/registry.mjs";
+import { createRegistry } from "../../../lib/shrimp-cli/registry.mjs";
 
 test("registry dispatches a command and returns handler result", async () => {
   const reg = createRegistry();

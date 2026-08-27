@@ -3,9 +3,9 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { addEndpoint } from "../../../../lib/clis/shrimp/domain/endpoint-service.mjs";
-import { getSecret, listSecrets, setSecret } from "../../../../lib/clis/shrimp/domain/secret-service.mjs";
-import { redactSecrets } from "../../../../lib/clis/shrimp/protocol.mjs";
+import { addEndpoint } from "../../../lib/shrimp-cli/domain/endpoint-service.mjs";
+import { getSecret, listSecrets, setSecret } from "../../../lib/shrimp-cli/domain/secret-service.mjs";
+import { redactSecrets } from "../../../lib/shrimp-cli/protocol.mjs";
 
 async function tempState() {
   const dir = await mkdtemp(path.join(os.tmpdir(), "shrimp-secret-"));

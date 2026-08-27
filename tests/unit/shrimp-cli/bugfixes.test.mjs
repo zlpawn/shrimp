@@ -3,8 +3,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { parseGlobalFlags } from "../../../../lib/clis/shrimp/parse-args.mjs";
-import { updateEndpoint, addEndpoint } from "../../../../lib/clis/shrimp/domain/endpoint-service.mjs";
+import { parseGlobalFlags } from "../../../lib/shrimp-cli/parse-args.mjs";
+import { updateEndpoint, addEndpoint } from "../../../lib/shrimp-cli/domain/endpoint-service.mjs";
 
 test("bugfix: parseGlobalFlags preserves trailing -y flag for subcommands", () => {
   const argv = ["cli-tool", "install", "npx", "-y", "@foo/bar"];

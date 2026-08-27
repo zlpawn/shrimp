@@ -3,8 +3,8 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { addEndpoint } from "../../../../lib/clis/shrimp/domain/endpoint-service.mjs";
-import { addClient, copyClient, getClient, listClients, removeClient, renameClient } from "../../../../lib/clis/shrimp/domain/client-service.mjs";
+import { addEndpoint } from "../../../lib/shrimp-cli/domain/endpoint-service.mjs";
+import { addClient, copyClient, getClient, listClients, removeClient, renameClient } from "../../../lib/shrimp-cli/domain/client-service.mjs";
 
 async function tempState() {
   const dir = await mkdtemp(path.join(os.tmpdir(), "shrimp-copy-"));

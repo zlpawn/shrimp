@@ -9,7 +9,7 @@ import {
   initializeConfig,
   loadEnvironmentFile,
   resolveUserPath,
-} from "../../lib/cli/init-config.mjs";
+} from "../../lib/cli-core/init-config.mjs";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
