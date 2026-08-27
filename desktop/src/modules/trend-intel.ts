@@ -276,6 +276,7 @@ export async function triggerGenerateBrief(): Promise<void> {
   state.generating = true;
   render();
   try {
+    showToast("正在同步最新热榜并执行 AI 深度研判…", "info");
     const res = await apiFetch<{ brief: DailyBrief; events: TrendEvent[] }>("/v1/trend-intel/generate-brief", {
       method: "POST",
       body: JSON.stringify({ date: state.briefDate })
@@ -615,10 +616,10 @@ function renderBriefView(): string {
         <div class="trend-intel-empty-box">
           <div class="trend-intel-empty-icon">📰</div>
           <h3>${escapeHtml(state.briefDate)} 暂无热点简报</h3>
-          <p>当前日期尚未生成情报简报。点击下方按钮，系统将自动汇总当前已采集的全网热榜数据并执行 AI 双维评分与聚类。</p>
+          <p>当前日期尚未生成情报简报。点击下方按钮，系统将自动拉取最新全网热榜并由 AI 一键完成双维打分、切入角度研判与智能聚合。</p>
           <div class="trend-intel-empty-actions">
             <button class="btn btn-primary" onclick="window.__trendIntelGenerateBrief()" ${state.generating ? "disabled" : ""}>
-              ⚡ 立即生成该日简报
+              ⚡ 一键生成该日简报
             </button>
             <button class="btn" onclick="window.__trendIntelCrawl()" ${state.crawling ? "disabled" : ""}>
               🔄 抓取全网最新榜单
