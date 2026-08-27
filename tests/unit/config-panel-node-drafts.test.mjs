@@ -218,3 +218,25 @@ test("scoped save keeps unrelated working values and clears saved secrets", () =
   assert.equal(reconciled.clients.codex.endpoints[0].has_api_key, true);
   assert.equal("api_key" in reconciled.clients.codex.endpoints[0], false);
 });
+
+test("scoped save preserves custom client display_name and protocol metadata", () => {
+  const persisted = fixture();
+  persisted.clients["work-buddy"] = {
+    display_name: "办公助手",
+    protocol: "openai",
+    endpoints: [{ id: "ep_wb1", name: "WB", is_default: true }],
+  };
+  const working = structuredClone(persisted);
+  working.clients["work-buddy"].display_name = "我的超强办公助手";
+  working.clients["work-buddy"].endpoints[0].name = "WB Edited";
+
+  const nodeSaved = buildScopedSaveConfig(persisted, working, {
+    client: "work-buddy",
+    scope: "node",
+    endpoint: { id: "ep_wb1", index: 0 },
+  });
+
+  assert.equal(nodeSaved.clients["work-buddy"].display_name, "我的超强办公助手");
+  assert.equal(nodeSaved.clients["work-buddy"].protocol, "openai");
+  assert.equal(nodeSaved.clients["work-buddy"].endpoints[0].name, "WB Edited");
+});

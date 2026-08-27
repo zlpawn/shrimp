@@ -6560,7 +6560,7 @@ function resolveUrl(baseUrl, defaultPath) {
     if (trimmed.endsWith("/v1/messages") || trimmed.endsWith("/messages")) {
       return trimmed;
     }
-    if (trimmed.endsWith("/v1")) {
+    if (trimmed.endsWith("/v1") || trimmed.endsWith("/v4") || trimmed.endsWith("/v3") || trimmed.endsWith("/v2")) {
       return `${trimmed}/messages`;
     }
     return `${trimmed}/v1/messages`;
@@ -6570,7 +6570,7 @@ function resolveUrl(baseUrl, defaultPath) {
     if (trimmed.endsWith("/v1/chat/completions") || trimmed.endsWith("/chat/completions")) {
       return trimmed;
     }
-    if (trimmed.endsWith("/v1")) {
+    if (trimmed.endsWith("/v1") || trimmed.endsWith("/v4") || trimmed.endsWith("/v3") || trimmed.endsWith("/v2") || trimmed.endsWith("/paas/v4")) {
       return `${trimmed}/chat/completions`;
     }
     return `${trimmed}/v1/chat/completions`;

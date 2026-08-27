@@ -1184,6 +1184,9 @@ window.renameCustomClient = async function(client: string) {
         if (config.clients?.[client]) {
             config.clients[client].display_name = trimmed;
         }
+        if (persistedConfig?.clients?.[client]) {
+            persistedConfig.clients[client].display_name = trimmed;
+        }
         render();
         showToast(`已将代理重命名为「${trimmed}」`, 'success');
     } catch (e) {

@@ -36,6 +36,12 @@ function ensureClient(target, source, client) {
     target.clients[client].endpoints = [];
   }
   target.clients[client].endpoints ||= [];
+  if (source?.clients?.[client]?.display_name !== undefined) {
+    target.clients[client].display_name = source.clients[client].display_name;
+  }
+  if (source?.clients?.[client]?.protocol !== undefined) {
+    target.clients[client].protocol = source.clients[client].protocol;
+  }
   return target.clients[client];
 }
 
@@ -180,64 +186,62 @@ export function buildNodeSaveConfig(
 export function buildScopedSaveConfig(persisted, working, options = {}) {
   const scope = options.scope || "global";
   const client = options.client || "";
+  let next;
   if (scope === "node") {
-    return buildNodeSaveConfig(
+    next = buildNodeSaveConfig(
       persisted,
       working,
       client,
       options.endpoint || {},
     );
-  }
-  if (scope === "exposure" || scope === "enabled") {
-    const next = clone(persisted);
+  } else if (scope === "exposure" || scope === "enabled") {
+    next = clone(persisted);
     const sourceIndex = endpointIndex(
       working,
       client,
       options.endpoint || {},
     );
-    if (sourceIndex < 0) return next;
-    const sourceEndpoint = endpointsOf(working, client)[sourceIndex];
-    const targetIndex = endpointIndex(next, client, {
-      id: sourceEndpoint.id,
-      index: options.endpoint?.index,
-    });
-    if (targetIndex < 0) return next;
-    const field = scope === "exposure" ? "expose_models" : "enabled";
-    next.clients[client].endpoints[targetIndex][field] = sourceEndpoint[field];
-    return next;
-  }
-  if (scope === "proxy") {
-    const next = clone(persisted);
-    const sourceIndex = endpointIndex(
-      working,
-      client,
-      options.endpoint || {},
-    );
-    if (sourceIndex < 0) return next;
-    const sourceEndpoint = endpointsOf(working, client)[sourceIndex];
-    const targetIndex = endpointIndex(next, client, {
-      id: sourceEndpoint.id,
-      index: options.endpoint?.index,
-    });
-    if (targetIndex < 0) return next;
-    const targetEndpoint = next.clients[client].endpoints[targetIndex];
-    for (const field of ["proxy", "proxy_mode", "proxy_url"]) {
-      if (field in sourceEndpoint) targetEndpoint[field] = sourceEndpoint[field];
-      else delete targetEndpoint[field];
+    if (sourceIndex >= 0) {
+      const sourceEndpoint = endpointsOf(working, client)[sourceIndex];
+      const targetIndex = endpointIndex(next, client, {
+        id: sourceEndpoint.id,
+        index: options.endpoint?.index,
+      });
+      if (targetIndex >= 0) {
+        const field = scope === "exposure" ? "expose_models" : "enabled";
+        next.clients[client].endpoints[targetIndex][field] = sourceEndpoint[field];
+      }
     }
-    return next;
-  }
-  if (scope === "client") {
-    const next = clone(persisted);
+  } else if (scope === "proxy") {
+    next = clone(persisted);
+    const sourceIndex = endpointIndex(
+      working,
+      client,
+      options.endpoint || {},
+    );
+    if (sourceIndex >= 0) {
+      const sourceEndpoint = endpointsOf(working, client)[sourceIndex];
+      const targetIndex = endpointIndex(next, client, {
+        id: sourceEndpoint.id,
+        index: options.endpoint?.index,
+      });
+      if (targetIndex >= 0) {
+        const targetEndpoint = next.clients[client].endpoints[targetIndex];
+        for (const field of ["proxy", "proxy_mode", "proxy_url"]) {
+          if (field in sourceEndpoint) targetEndpoint[field] = sourceEndpoint[field];
+          else delete targetEndpoint[field];
+        }
+      }
+    }
+  } else if (scope === "client") {
+    next = clone(persisted);
     const target = ensureClient(next, working, client);
     const source = working?.clients?.[client] || {};
     for (const [key, value] of Object.entries(source)) {
       if (key !== "endpoints") target[key] = clone(value);
     }
-    return next;
-  }
-  if (scope === "delete") {
-    const next = clone(persisted);
+  } else if (scope === "delete") {
+    next = clone(persisted);
     const target = ensureClient(next, working, client);
     const deletedId = options.deletedEndpointId || "";
     if (deletedId) {
@@ -247,10 +251,8 @@ export function buildScopedSaveConfig(persisted, working, options = {}) {
     } else if (Number.isInteger(options.deletedEndpointIndex)) {
       target.endpoints.splice(options.deletedEndpointIndex, 1);
     }
-    return next;
-  }
-  if (["default", "default-embedding", "default-web-search"].includes(scope)) {
-    const next = clone(persisted);
+  } else if (["default", "default-embedding", "default-web-search"].includes(scope)) {
+    next = clone(persisted);
     const target = ensureClient(next, working, client);
     target.endpoints.forEach((endpoint, index) => {
       const workingIndex = endpointIndex(working, client, {
@@ -265,9 +267,26 @@ export function buildScopedSaveConfig(persisted, working, options = {}) {
     if (client === "code" && working?.clients?.code?.model_slots) {
       target.model_slots = clone(working.clients.code.model_slots);
     }
-    return next;
+  } else {
+    next = clone(working);
   }
-  return clone(working);
+
+  // Preserve custom clients and their metadata (display_name, protocol) from working into next
+  if (next?.clients && working?.clients) {
+    for (const [name, clientBody] of Object.entries(working.clients)) {
+      if (!next.clients[name]) {
+        next.clients[name] = clone(clientBody);
+      } else {
+        if (clientBody?.display_name !== undefined) {
+          next.clients[name].display_name = clientBody.display_name;
+        }
+        if (clientBody?.protocol !== undefined) {
+          next.clients[name].protocol = clientBody.protocol;
+        }
+      }
+    }
+  }
+  return next;
 }
 
 export function reconcileWorkingConfigAfterSave(
