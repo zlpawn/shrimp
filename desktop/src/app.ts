@@ -3076,19 +3076,20 @@ function renderSkillDetail() {
         const modeKind = item.isCopy ? 'copy' : 'link';
         const linkBtn = item.isCentral ? '' : `<button class="btn" style="padding:4px 10px;font-size:12px;flex:0 0 auto;" onclick="linkSkillClient('${escapeHtml(skill.name)}','${escapeHtml(item.id)}','${action}','${modeKind}')">${actionLabel}</button>`;
         const isPathEdit = skillsLibraryState.pathEditClient === item.id;
+        const isCustomClient = !['codex', 'claude', 'claudeDesktop3p', 'antigravity'].includes(item.id);
+        const customPathBtn = isCustomClient
+            ? `<button class="btn btn-xs" style="padding:1px 6px;font-size:11px;color:var(--text-muted);border:1px dashed var(--border-color);border-radius:4px;white-space:nowrap;flex:0 0 auto;" onclick="window.editSkillClientPath('${escapeHtml(item.id)}', '${escapeHtml(item.path)}')" title="自定义此客户端的 Skill 根目录">自定义路径</button>`
+            : '';
         const pathContent = isPathEdit
             ? `
-            <div class="skill-path-inline-edit" style="display:flex;gap:4px;margin-top:4px;align-items:center;flex-wrap:wrap;">
-                <input id="skill-path-input-${escapeHtml(item.id)}" class="input input-xs" style="font-family:monospace;font-size:11px;padding:3px 8px;width:240px;max-width:100%;background:var(--card-bg);border:1px solid var(--primary-color);" value="${escapeHtml(skillsLibraryState.pathDraft || '')}" placeholder="留空使用默认目录" onkeydown="if(event.key==='Enter')window.saveSkillClientPath('${escapeHtml(item.id)}')" />
-                <button class="btn btn-primary btn-xs" style="padding:2px 8px;font-size:11px;" onclick="window.saveSkillClientPath('${escapeHtml(item.id)}')">保存</button>
-                <button class="btn btn-xs" style="padding:2px 8px;font-size:11px;" onclick="window.cancelSkillClientPath()">取消</button>
+            <div class="skill-path-inline-edit" style="display:flex;gap:4px;margin-top:5px;align-items:center;">
+                <input id="skill-path-input-${escapeHtml(item.id)}" class="input input-xs" style="font-family:monospace;font-size:11px;padding:3px 8px;flex:1;min-width:0;background:var(--card-bg);border:1px solid var(--primary-color);" value="${escapeHtml(skillsLibraryState.pathDraft || '')}" placeholder="留空使用默认目录" onkeydown="if(event.key==='Enter')window.saveSkillClientPath('${escapeHtml(item.id)}')" />
+                <button class="btn btn-primary btn-xs" style="padding:2px 8px;font-size:11px;white-space:nowrap;flex:0 0 auto;" onclick="window.saveSkillClientPath('${escapeHtml(item.id)}')">保存</button>
+                <button class="btn btn-xs" style="padding:2px 8px;font-size:11px;white-space:nowrap;flex:0 0 auto;" onclick="window.cancelSkillClientPath()">取消</button>
             </div>
             `
             : `
-            <div style="display:flex;align-items:center;gap:6px;margin-top:3px;">
-                <code class="path-pill skill-path-wrap">${escapeHtml(item.path)}</code>
-                ${!item.isCentral ? `<button class="btn btn-xs" style="padding:1px 6px;font-size:11px;color:var(--text-muted);border:1px dashed var(--border-color);border-radius:4px;" onclick="window.editSkillClientPath('${escapeHtml(item.id)}', '${escapeHtml(item.path)}')" title="自定义此客户端的 Skill 根目录">自定义路径</button>` : ''}
-            </div>
+            <code class="path-pill skill-path-wrap" style="display:block;width:100%;margin-top:4px;box-sizing:border-box;">${escapeHtml(item.path)}</code>
             `;
         const badgeLabel = item.present ? '已安装' : '未安装';
         return `
@@ -3098,7 +3099,10 @@ function renderSkillDetail() {
                     ${escapeHtml(item.short)}
                 </div>
                 <div class="skill-mount-copy">
-                    <div style="font-size:13px;font-weight:600;color:var(--text-primary);">${escapeHtml(item.label)}</div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+                        <div style="font-size:13px;font-weight:600;color:var(--text-primary);">${escapeHtml(item.label)}</div>
+                        ${customPathBtn}
+                    </div>
                     ${pathContent}
                 </div>
             </div>
