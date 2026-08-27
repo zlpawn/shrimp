@@ -1,7 +1,7 @@
 # Design Specification: Dynamic Skill Discovery/Distribution & MCP Hub Management for Custom Agent Clients
 
 - **Date**: 2026-08-27
-- **Status**: Draft (In Spec Review)
+- **Status**: Approved
 - **Branch**: `feat/custom-client-skills-mcp`
 - **Worktree**: `.worktrees/custom-client-skills-mcp`
 
@@ -99,11 +99,11 @@ For any custom client identifier `client` (e.g., `work-buddy`):
 2. **Dynamic Presence Check**:
    - Update `SkillInstaller.buildPresentIn(homeDir, skillName, customClients = [])`:
      * Checks built-in roots and dynamically populates `presentIn[client] = fs.existsSync(path.join(resolvedDir, skillName, "SKILL.md"))`.
-3. **Dynamic Installation / Uninstallation**:
-   - Update `SkillInstaller.installSkill(skillName, targetClient, homeDir, customClients = [])`:
-     * If `targetClient` is custom, resolves target directory, ensures parent directory exists (`mkdir -p`), and establishes symlink (or copy on Windows) from `~/.agents/skills/{skillName}`.
-   - Update `SkillInstaller.uninstallSkill(skillName, targetClient, homeDir, customClients = [])`:
-     * Removes symlink/directory in the target client's skill directory.
+3. **Dynamic Installation / Uninstallation / Batch Dispatch**:
+   - Update `SkillInstaller.linkSkillToClient(skillName, client, enable, homeDir, customClients = [])`:
+     * If `client` is custom, resolves target directory, ensures parent directory exists (`mkdir -p`), and establishes symlink (or copy on Windows) from `~/.agents/skills/{skillName}`.
+   - Update `SkillInstaller.consolidateAndDispatch({ homeDir, targets, customClients = [] })`:
+     * Supports dispatching central skills to all selected custom clients.
 4. **Skills Config Store**:
    - Add `SkillInstaller.loadSkillsConfig(configPath)` and `SkillInstaller.saveSkillsConfig(configPath, nextConfig)` for custom skill directory overrides.
 
@@ -130,27 +130,28 @@ For any custom client identifier `client` (e.g., `work-buddy`):
    }
    ```
 2. Pass `getCustomClientKeys()` into:
-   - `GET /v1/skills/list`: Catalog enriched with custom client presence.
-   - `POST /v1/skills/install` / `POST /v1/skills/uninstall`: Target any client.
-   - `POST /v1/skills/save-client-path`: Custom skill directory override.
-   - `GET /v1/mcp/state`: State includes custom client cards, detection, and distribution.
-   - `POST /v1/mcp/save-client-path`: Update MCP config path for any client.
-   - `POST /v1/mcp/apply` & `POST /v1/mcp/sync`: Sync to all selected clients.
+   - `GET /v1/skills/library`: Catalog enriched with custom client presence.
+   - `POST /v1/skills/link`: Target any client (link / unlink).
+   - `POST /v1/skills/consolidate`: Batch dispatch to selected clients.
+   - `PUT /v1/skills/client-path`: Custom skill directory override.
+   - `GET /v1/mcp-management/state`: State includes custom client cards, detection, and distribution.
+   - `PUT /v1/mcp-management/client-path`: Update MCP config path for any client.
+   - `POST /v1/mcp-management/apply` & `POST /v1/mcp-management/sync`: Sync to all selected clients.
 
 ---
 
 ## 4. Frontend UI Implementation
 
-### 4.1 Skill Library Modal (`desktop/src/modules/skills/`)
+### 4.1 Skill Library Modal (`desktop/src/app.ts`)
 * In the Skill details/install modal:
   * Dynamically list all clients (built-in + custom).
   * Render client labels using `clientDisplayName(client)`.
   * Display install status badge per client (`已安装` / `未安装`).
-  * Allow toggling install/uninstall per client individually or via batch actions.
+  * Allow toggling install/unlink per client individually or via batch dispatch.
 
 ### 4.2 MCP Hub Client Status Grid (`desktop/src/modules/mcp-management.ts`)
 * In `renderClientList()`:
-  * Map over all clients returned by `/v1/mcp/state` (including custom clients).
+  * Map over all clients returned by `/v1/mcp-management/state` (including custom clients).
   * Display custom client cards with status pills (`X 个已安装` / `配置文件未创建` / `配置文件解析失败`).
   * Display detected local MCP list with `📥 导入托管` and `🔍 调试` action buttons.
   * Provide `自定义路径` button and editor for custom clients.
@@ -177,7 +178,7 @@ For any custom client identifier `client` (e.g., `work-buddy`):
 ## 6. Testing Strategy
 
 1. **Unit Tests**:
-   - `tests/unit/skills-library.test.mjs`: Test dynamic custom client discovery roots, presence detection, installation, and uninstallation.
+   - `tests/unit/skills-library.test.mjs`: Test dynamic custom client discovery roots, presence detection, linking, and unlinking.
    - `tests/unit/mcp-management.test.mjs`: Test schema normalization with dynamic client IDs, custom client JSON adapter read/write/verify, and path resolution.
    - `tests/unit/config-panel.test.mjs`: Test frontend dynamic rendering for Skill modal and MCP cards.
 2. **Integration Verification**:
