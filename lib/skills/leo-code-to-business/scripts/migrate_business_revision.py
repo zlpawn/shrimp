@@ -13,6 +13,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import business_contract as contract
 import business_knowledge_guard as guard
+import render_business_site as renderer
 
 
 class MigrationError(RuntimeError):
@@ -209,6 +210,7 @@ def migrate_v1_to_v2(source_revision: Path, target_run: Path) -> Path:
         }
     )
     guard.write_json_atomic(target / "manifest.json", manifest)
+    renderer.write_projections(target)
     return target
 
 

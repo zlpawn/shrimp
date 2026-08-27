@@ -1,22 +1,50 @@
 {
-  "schema_version": "2.0",
-  "run_id": "RUN-v2-sample",
-  "mode": "build",
-  "status": "passed",
-  "repository_snapshot": {
-    "snapshot_id": "SNAP-sample",
-    "snapshot_sha256": "snapshot-sample",
-    "canonical_root": "/tmp/sample-repo",
-    "repository_lineage_id": "REPO-sample-lineage",
-    "git": {"branch": "main", "head_sha": "abc123", "root_commit_shas": ["root123"]},
-    "working_tree_dirty": false
-  },
-  "repository_lineage_id": "REPO-sample-lineage",
-  "canonical_revision_sha256": null,
-  "projection_hashes": {},
-  "provider_observations": [{"adapter_id": "java-spring", "adapter_version": "2.0", "status": "completed"}],
+  "aggregate_status": "passed",
+  "canonical_revision_sha256": "d403cf915062d3c8e55e24e175b22913c9363a6208729ee1d7b8255625585946",
+  "coverage_status": "passed",
   "current_coverage_status": "passed",
   "history_coverage_status": "passed",
-  "aggregate_status": "passed",
-  "coverage_status": "passed"
+  "mode": "build",
+  "projection_hashes": {
+    "ai": {
+      "canonical_sha256": "d403cf915062d3c8e55e24e175b22913c9363a6208729ee1d7b8255625585946",
+      "path": "ai-context.md",
+      "sha256": "09bdd83921c45b038b2e81c0193d24788cf3439805468a25cc1343dbb6e3c6ae"
+    },
+    "html": {
+      "canonical_sha256": "d403cf915062d3c8e55e24e175b22913c9363a6208729ee1d7b8255625585946",
+      "path": "site/index.html",
+      "sha256": "5d6fbfee29a1dcb3ad072c3fd9ba54e7cb53700308130ec1b7154b836522b3b3"
+    },
+    "view_model": {
+      "canonical_sha256": "d403cf915062d3c8e55e24e175b22913c9363a6208729ee1d7b8255625585946",
+      "path": "site-view-model.json",
+      "sha256": "4bbc69e9c774b4dfeebca4ee56f3f04127a5aff398b3134f46ddb626fc91f658"
+    }
+  },
+  "provider_observations": [
+    {
+      "adapter_id": "java-spring",
+      "adapter_version": "2.0",
+      "status": "completed"
+    }
+  ],
+  "repository_lineage_id": "REPO-sample-lineage",
+  "repository_snapshot": {
+    "canonical_root": "/tmp/sample-repo",
+    "git": {
+      "branch": "main",
+      "head_sha": "abc123",
+      "root_commit_shas": [
+        "root123"
+      ]
+    },
+    "repository_lineage_id": "REPO-sample-lineage",
+    "snapshot_id": "SNAP-sample",
+    "snapshot_sha256": "snapshot-sample",
+    "working_tree_dirty": false
+  },
+  "run_id": "RUN-v2-sample",
+  "schema_version": "2.0",
+  "status": "passed"
 }

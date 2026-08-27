@@ -1,9 +1,95 @@
-# Business Knowledge AI Context
+# 项目业务导览
 
-- Schema: `2.0`
-- Revision: pending canonical hash generation
-- Current coverage: `passed`
-- History coverage: `passed`
+## 项目业务定位
 
-The sample models construction rectification work-order creation, its fixed type rule, verified
-current-source evidence, one unknown permission boundary, and one evidence-linked evolution event.
+这份知识用于从参与者、业务目标、流程、规则、结果、异常与恢复理解当前系统。
+代码、接口、字段和文件路径是核验与开发下探依据，不是业务解释的默认层级。
+
+## 当前已整理范围
+
+当前已完整整理 1 个业务场景、1 项业务能力。
+这不代表系统完整业务全貌。范围外问题不得仅凭名称或关键词推断为已确认行为。
+当前整理范围已通过校验。
+
+## 参与者与业务目标
+
+- **工地检查员**：发现施工问题并发起整改工单的现场角色。；参与场景：创建施工整改工单
+
+## 业务能力地图
+
+- **工单管理**：为施工问题创建和跟踪待办工单。（下探 ID：`CAP-work-order`）
+
+## 已确认业务场景
+
+### 创建施工整改工单
+
+- 参与者：工地检查员
+- 业务目标：将施工问题转为可跟踪的整改待办
+- 发起条件：检查员提交创建工单请求；输入包含目标项目和整改内容
+- 核心流程：检查员提交项目和整改信息；系统补齐工单业务字段并调用外部工单系统；根据外部结果返回创建成功或失败
+- 关键规则：创建施工整改工单时使用固定的项目订单类型 HOME2 和工单类型 TODO。
+- 完成结果：施工问题成为外部工单系统中的待办任务
+- 异常与恢复：外部工单系统未返回有效结果时本次创建不成立；外部结果为空或调用失败时返回失败并记录错误；外部创建失败时本次操作以失败结束，未发现自动补偿
+- 待确认：哪些角色被授权创建整改工单？
+- 开发下探：检索 `UC-create-work-order`，再读取相关规则、状态、实体、关系与源码证据。
+
+## 跨场景关键规则与生命周期
+
+### 关键规则
+
+- **整改工单使用固定类型**：创建施工整改工单时使用固定的项目订单类型 HOME2 和工单类型 TODO。
+
+### 生命周期
+
+- 当前尚未整理出独立生命周期。
+
+## 重要待确认事项
+
+- **工单创建权限未知**：哪些角色被授权创建整改工单？ 原因：当前追踪范围未发现明确授权规则。
+
+### 冲突
+
+- 当前已整理范围内未发现冲突。
+
+## 新需求开发工作法
+
+**先分析业务影响，再进入代码实现。**
+
+收到新需求时按以下顺序工作：
+
+1. 用业务语言重述需求及预期结果。
+2. 判断当前知识对需求是完整覆盖、部分覆盖还是未覆盖。
+3. 识别受影响的能力、用例、参与者、规则、状态、数据、外部系统、异常与恢复路径。
+4. 明确必须保持的当前业务行为和边界条件。
+5. 对未知项或未覆盖范围先调查当前源码，不把相似关键词当作确认事实。
+6. 再检索实现入口、关系、实体和直接源码证据，制定或执行代码修改。
+7. 从正常流程、边界条件、失败恢复、幂等、权限和外部影响生成测试与验收清单。
+8. 开发完成后判断是否需要更新业务知识。
+
+## 检索与核验指南
+
+先用业务名称、别名或稳定 ID 定位场景，再按任务需要读取：
+
+- `use-cases.jsonl`：参与者目标、流程、决策、结果、失败和恢复。
+- `use-case-families.json`：渠道、生命周期变体、解绑重绑和修复路径。
+- `business-rules.jsonl`：业务条件、判断和影响。
+- `state-machines.json`：生命周期状态与转换。
+- `entities.json`：业务记录和字段含义。
+- `unknowns.jsonl`、`conflicts.jsonl`：知识边界和矛盾。
+- `relationships.jsonl`：业务节点之间及其与证据的权威关系。
+- `evidence.jsonl`、`investigations.jsonl`：当前源码证明和已执行的调查。
+- 对具体新需求可运行 `scripts/task_context.py` 获取有界检索包；该包用于定位，结论仍需回到 canonical 记录和当前源码核验。
+
+### 别名与稳定 ID
+
+- `addWorkOrder` -> UC-create-work-order
+- `工单创建` -> UC-create-work-order
+
+## 修订信息
+
+- Canonical revision：`d403cf915062d3c8e55e24e175b22913c9363a6208729ee1d7b8255625585946`
+- Snapshot：`SNAP-sample`
+- Repository：`/tmp/sample-repo`
+- Coverage status：`passed`
+- Unknowns：`1`
+- Conflicts：`0`

@@ -1,17 +1,17 @@
 {
+  "canonical_revision_sha256": "d403cf915062d3c8e55e24e175b22913c9363a6208729ee1d7b8255625585946",
   "review_protocol_version": "2.0",
+  "reviewed_at": "2026-08-14T00:00:00Z",
   "reviewer_mode": "independent",
-  "canonical_revision_sha256": null,
   "scores": {
     "business_framing": 2,
+    "effects": 2,
+    "evidence": 2,
+    "failure_and_recovery": 2,
     "main_flow": 2,
     "rules_and_decisions": 2,
-    "effects": 2,
-    "failure_and_recovery": 2,
-    "variants": 2,
-    "evidence": 2,
-    "unknown_discipline": 2
+    "unknown_discipline": 2,
+    "variants": 2
   },
-  "total_score": 16,
-  "reviewed_at": "2026-08-14T00:00:00Z"
+  "total_score": 16
 }

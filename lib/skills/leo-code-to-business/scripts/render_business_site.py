@@ -115,7 +115,7 @@ def load_canonical_revision(revision_dir: Path | str) -> dict[str, Any]:
 
 def refresh_canonical_hashes(revision_dir: Path | str) -> str:
     root = Path(revision_dir)
-    canonical_hash = guard.canonical_revision_sha256(root)
+    canonical_hash = guard.revision_canonical_sha256(root)
     manifest = guard.read_json(root / "manifest.json")
     manifest["canonical_revision_sha256"] = canonical_hash
     projections = manifest.setdefault("projection_hashes", {})
