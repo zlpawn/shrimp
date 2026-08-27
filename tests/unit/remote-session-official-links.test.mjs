@@ -190,3 +190,31 @@ test("remote session panels and dialogs use spacious grouped layouts", () => {
   assert.match(css, /.rs-catalog-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
   assert.match(html, /panel\.bundle\.js\?v=remote-session-layout-1/);
 });
+
+test("remote session catalog cards share the same catalog grid", () => {
+  const source = fs.readFileSync(path.join(panelRoot, "desktop/src/modules/remote-session.ts"), "utf8");
+  const catalogStart = source.indexOf("function renderCatalog");
+  const catalogEnd = source.indexOf("function renderAntigravityScene", catalogStart);
+  const catalog = source.slice(catalogStart, catalogEnd);
+
+  const gridOpen = catalog.indexOf('class="endpoints-grid rs-catalog-grid"');
+  assert.ok(gridOpen >= 0, "catalog grid should exist");
+
+  const gridTagStart = catalog.lastIndexOf("<div", gridOpen);
+  const divTokens = catalog.slice(gridTagStart).matchAll(/<div\b[^>]*>|<\/div>/g);
+  let depth = 0;
+  let gridClose = -1;
+  for (const token of divTokens) {
+    depth += token[0] === "</div>" ? -1 : 1;
+    if (depth === 0) {
+      gridClose = gridTagStart + token.index + token[0].length;
+      break;
+    }
+  }
+  assert.ok(gridClose >= 0, "catalog grid should have a matching closing tag");
+
+  const remoteCodingCard = catalog.indexOf("Antigravity 远程编码", gridOpen);
+  const officialControlCard = catalog.indexOf("Antigravity 官方远程控制", gridOpen);
+  assert.ok(remoteCodingCard >= 0 && remoteCodingCard < gridClose, "remote coding card should be inside catalog grid");
+  assert.ok(officialControlCard >= 0 && officialControlCard < gridClose, "official control card should be inside catalog grid");
+});

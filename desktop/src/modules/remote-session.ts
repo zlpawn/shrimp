@@ -454,8 +454,6 @@ function renderCatalog(): string {
             <span class="node-card-cta">进入远程编码工作台 →</span>
           </div>
         </div>
-      </div>
-
         <div class="node-card" role="button" tabindex="0"
              onclick="window.__rsOpenScene('official-links')"
              onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.__rsOpenScene('official-links');}">
