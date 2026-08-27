@@ -1056,31 +1056,23 @@ function renderTrendExplorerView(): string {
 function extractEndpointModels(ep: any): string[] {
   if (!ep) return [];
   const list = new Set<string>();
+  // 1. Direct exposed models in models array
   if (Array.isArray(ep.models)) {
     ep.models.forEach((m: any) => {
       if (typeof m === "string" && m.trim()) list.add(m.trim());
     });
   }
+  // 2. Public client-facing mapping keys (e.g. glm-5.3-zp)
   if (ep.model_mapping && typeof ep.model_mapping === "object") {
     Object.keys(ep.model_mapping).forEach(k => {
       if (typeof k === "string" && k.trim()) list.add(k.trim());
     });
-    Object.values(ep.model_mapping).forEach((v: any) => {
-      if (typeof v === "string" && v.trim()) list.add(v.trim());
-    });
   }
-  if (ep.model_labels && typeof ep.model_labels === "object") {
-    Object.keys(ep.model_labels).forEach(k => {
-      if (typeof k === "string" && k.trim()) list.add(k.trim());
-    });
-    Object.values(ep.model_labels).forEach((v: any) => {
-      if (typeof v === "string" && v.trim()) list.add(v.trim());
-    });
+  // 3. Fallback to model/default_model only if no models or mapping keys
+  if (list.size === 0) {
+    if (typeof ep.model === "string" && ep.model.trim()) list.add(ep.model.trim());
+    if (typeof ep.default_model === "string" && ep.default_model.trim()) list.add(ep.default_model.trim());
   }
-  if (typeof ep.model === "string" && ep.model.trim()) list.add(ep.model.trim());
-  if (typeof ep.default_model === "string" && ep.default_model.trim()) list.add(ep.default_model.trim());
-  if (typeof ep.upstream_model === "string" && ep.upstream_model.trim()) list.add(ep.upstream_model.trim());
-  if (typeof ep.embedding_model === "string" && ep.embedding_model.trim()) list.add(ep.embedding_model.trim());
   return Array.from(list);
 }
 
