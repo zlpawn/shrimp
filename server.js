@@ -915,6 +915,15 @@ server.listen(LISTEN_PORT, LISTEN_HOST, () => {
     });
   }
 
+  // Eagerly start Trend Intelligence background service and scheduler
+  setImmediate(() => {
+    try {
+      ensureTrendIntelService();
+    } catch (error) {
+      console.error(`Trend Intel service failed to start: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  });
+
   console.log(`Ark Anthropic messages URL: ${ARK_MESSAGES_URL}`);
   console.log(`Ark Codex/OpenAI URL: ${ARK_CODEX_BASE_URL}`);
   console.log(`Official Anthropic messages URL: ${ANTHROPIC_MESSAGES_URL}`);
