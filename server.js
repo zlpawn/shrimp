@@ -130,7 +130,8 @@ import { WebSocketServer } from "ws";
 import * as nodePty from "node-pty";
 import { InstallHistory } from "./lib/skills/install-history.mjs";
 import { CliInstallHistory } from "./lib/cli-core/install-history.mjs";
-import { discoverInstalledClis } from "./lib/cli-core/discovery.mjs";
+import { discoverInstalledClis, scanInRepoClis } from "./lib/cli-core/discovery.mjs";
+import { createCliShimManager } from "./lib/cli-core/shim-manager.mjs";
 import { CliSourceConfig } from "./lib/cli-core/source-config.mjs";
 import {
   collectImages,
@@ -2340,6 +2341,89 @@ sendJson(res, 200, result);
       sendJson(res, 200, { success: true, record });
     } catch (err) {
       sendJson(res, 400, { error: err.message || String(err) });
+    }
+    return;
+  }
+
+  // --- In-repo CLI global shell shims ---
+  if (reqPath === "/v1/cli/shims" && req.method === "GET") {
+    if (!checkLocalAuth(req, res)) return;
+    try {
+      sendJson(res, 200, {
+        success: true,
+        ...createCliShimManager({
+          homeDir: process.env.USERPROFILE || process.env.HOME,
+          dataDir: path.dirname(GATEWAY_CONFIG_FILE),
+          sourceRoot: PROJECT_ROOT,
+          platform: process.platform,
+          shell: process.env.SHELL || "",
+        }).status(),
+      });
+    } catch (err) {
+      sendJson(res, 500, { error: err.message || String(err) });
+    }
+    return;
+  }
+
+  if (reqPath === "/v1/cli/shims" && req.method === "POST") {
+    if (!checkLocalAuth(req, res)) return;
+    try {
+      const body = JSON.parse(await readText(req) || "{}");
+      const name = String(body.name || "").trim();
+      if (!name) { sendJson(res, 400, { error: "name is required" }); return; }
+      const cli = scanInRepoClis(PROJECT_ROOT).find((item) => item.name === name);
+      if (!cli) {
+        sendJson(res, 404, { error: { type: "in_repo_cli_not_found", message: "CLI not found in ./clis: " + name } });
+        return;
+      }
+      const manager = createCliShimManager({
+        homeDir: process.env.USERPROFILE || process.env.HOME,
+        dataDir: path.dirname(GATEWAY_CONFIG_FILE),
+        sourceRoot: PROJECT_ROOT,
+        platform: process.platform,
+        shell: process.env.SHELL || "",
+      });
+      const shim = manager.install(cli);
+      const path = body.ensurePath === false ? null : manager.ensurePath();
+      sendJson(res, 200, { success: true, shim, path, status: manager.status() });
+    } catch (err) {
+      sendJson(res, err.code === "shim_conflict" ? 409 : 400, { error: err.message || String(err) });
+    }
+    return;
+  }
+
+  if (reqPath === "/v1/cli/shims/path" && req.method === "POST") {
+    if (!checkLocalAuth(req, res)) return;
+    try {
+      const manager = createCliShimManager({
+        homeDir: process.env.USERPROFILE || process.env.HOME,
+        dataDir: path.dirname(GATEWAY_CONFIG_FILE),
+        sourceRoot: PROJECT_ROOT,
+        platform: process.platform,
+        shell: process.env.SHELL || "",
+      });
+      sendJson(res, 200, { success: true, path: manager.ensurePath(), status: manager.status() });
+    } catch (err) {
+      sendJson(res, 400, { error: err.message || String(err) });
+    }
+    return;
+  }
+
+  const shimMatch = reqPath.match(/^\/v1\/cli\/shims\/([^/]+)$/);
+  if (shimMatch && req.method === "DELETE") {
+    if (!checkLocalAuth(req, res)) return;
+    try {
+      const manager = createCliShimManager({
+        homeDir: process.env.USERPROFILE || process.env.HOME,
+        dataDir: path.dirname(GATEWAY_CONFIG_FILE),
+        sourceRoot: PROJECT_ROOT,
+        platform: process.platform,
+        shell: process.env.SHELL || "",
+      });
+      const result = manager.uninstall(decodeURIComponent(shimMatch[1]));
+      sendJson(res, 200, { success: true, result, status: manager.status() });
+    } catch (err) {
+      sendJson(res, err.code === "shim_not_managed" ? 409 : 400, { error: err.message || String(err) });
     }
     return;
   }

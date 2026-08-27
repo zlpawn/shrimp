@@ -2414,6 +2414,92 @@ let cliLibraryState = { loaded: false, loading: false, query: "", view: "recomme
 let cliSearchTimer = null;
 let cliIgnoredState = [];
 let cliFavoriteState = [];
+let cliShimState = { loaded: false, loading: false, binDir: "", pathConfigured: false, shell: "", shims: [] };
+
+async function loadCliShims() {
+    try {
+        const res = await fetch('/v1/cli/shims');
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || '失败');
+        cliShimState = {
+            loaded: true,
+            loading: false,
+            binDir: data.binDir || '',
+            pathConfigured: Boolean(data.pathConfigured),
+            shell: data.shell || '',
+            shims: data.shims || [],
+        };
+    } catch (err) {
+        cliShimState.loading = false;
+        showToast('加载全局 CLI 垫片状态失败: ' + err.message, 'danger');
+    }
+}
+
+function isCliShimInstalled(name) {
+    return cliShimState.shims.some((shim) => shim.name === name && shim.present !== false);
+}
+
+function renderCliShimPathStatus() {
+    const el = document.getElementById('cli-shim-path-status');
+    if (!el) return;
+    const shellName = cliShimState.shell === 'git-bash' ? 'Git Bash' : cliShimState.shell || 'shell';
+    if (!cliShimState.loaded) {
+        el.textContent = '全局路径检查中…';
+        return;
+    }
+    const label = cliShimState.pathConfigured ? shellName + ' 已配置' : shellName + ' 未配置';
+    el.textContent = label + ' · ' + (cliShimState.binDir || '~/.shrimp/bin');
+    el.style.color = cliShimState.pathConfigured ? '#059669' : '#d97706';
+    el.style.background = cliShimState.pathConfigured ? 'rgba(16,185,129,0.12)' : 'rgba(245,158,11,0.14)';
+}
+
+async function installCliShim(name) {
+    try {
+        const res = await fetch('/v1/cli/shims', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.error || '安装失败');
+        cliShimState.binDir = data.status?.binDir || cliShimState.binDir;
+        cliShimState.pathConfigured = Boolean(data.status?.pathConfigured);
+        cliShimState.shell = data.status?.shell || cliShimState.shell;
+        cliShimState.shims = data.status?.shims || [];
+        renderCliLibrary();
+        const shellName = cliShimState.shell === 'git-bash' ? 'Git Bash' : cliShimState.shell || 'shell';
+        showToast(name + ' 已全局安装；请重启 ' + shellName + ' 或 source rc 文件后使用', 'success');
+    } catch (err) {
+        showToast('安装全局 CLI 失败: ' + err.message, 'danger');
+    }
+}
+
+async function uninstallCliShim(name) {
+    if (!confirm('卸载全局命令 ' + name + '？')) return;
+    try {
+        const res = await fetch('/v1/cli/shims/' + encodeURIComponent(name), { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.error || '卸载失败');
+        cliShimState.shims = data.status?.shims || [];
+        renderCliLibrary();
+        showToast(name + ' 已卸载', 'success');
+    } catch (err) {
+        showToast('卸载全局 CLI 失败: ' + err.message, 'danger');
+    }
+}
+
+async function configureCliShimPath() {
+    try {
+        const res = await fetch('/v1/cli/shims/path', { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.error || '配置失败');
+        await loadCliShims();
+        renderCliLibrary();
+        showToast('已配置 PATH；重启终端后生效', 'success');
+    } catch (err) {
+        showToast('配置 PATH 失败: ' + err.message, 'danger');
+    }
+}
 
 async function loadCliIgnored() {
     try {
@@ -2483,6 +2569,7 @@ async function refreshCliLibrary(force) {
         cliLibraryState.items = data.items || [];
         cliLibraryState.inRepoClis = data.inRepoClis || [];
         cliLibraryState.stats = data.stats || { total: 0, installed: 0, recommended: 0, other: 0, shown: cliLibraryState.items.length, view: cliLibraryState.view };
+        await loadCliShims();
         if (cliLibraryState.stats.view) cliLibraryState.view = cliLibraryState.stats.view;
         cliLibraryState.loaded = true;
         renderCliLibrary();
@@ -2519,6 +2606,7 @@ function renderCliLibrary() {
     if (!host) return;
 
     const chip = document.getElementById('cli-stats-chip');
+    renderCliShimPathStatus();
     const stats = cliLibraryState.stats || {};
     const recommended = stats.recommended != null ? stats.recommended : 0;
     const total = stats.total != null ? stats.total : 0;
@@ -2547,6 +2635,10 @@ function renderCliLibrary() {
                 const langIcon = item.lang === 'java' ? '☕' : item.lang === 'python' ? '🐍' : item.lang === 'node' ? '🟢' : item.lang === 'go' ? '⚡' : item.lang === 'powershell' ? '🟦' : item.lang === 'shell' ? '🐚' : '🛠️';
                 const langLabel = item.langLabel || (item.lang === 'java' ? 'Java JBang' : item.lang === 'python' ? 'Python (uv)' : item.lang === 'node' ? 'Node.js' : item.lang === 'go' ? 'Go' : '自研');
                 const fullCmd = item.fullCommand || (item.command + ' ' + item.path);
+                const shimInstalled = isCliShimInstalled(item.name);
+                const shimButton = shimInstalled
+                    ? '<button class="btn" style="padding:4px 10px;font-size:12px;" onclick="uninstallCliShim(\'' + escapeHtml(item.name) + '\')">卸载全局</button>'
+                    : '<button class="btn btn-primary" style="padding:4px 10px;font-size:12px;" onclick="installCliShim(\'' + escapeHtml(item.name) + '\')">安装全局</button>';
 
                 return '<div class="mcp-card" style="cursor:default;padding:12px 14px;background:var(--surface);display:flex;flex-direction:column;gap:8px;">' +
                     '<div class="mcp-card-head">' +
@@ -2558,8 +2650,8 @@ function renderCliLibrary() {
                     '$ ' + escapeHtml(fullCmd) + ' --help' +
                     '</div>' +
                     '<div class="mcp-card-meta" style="margin-top:auto;padding-top:6px;border-top:1px dashed var(--border-color);display:flex;justify-content:space-between;align-items:center;font-size:11px;">' +
-                    '<span class="mcp-card-status"><span class="dot-on"></span> 源码已就绪</span>' +
-                    '<span style="color:var(--text-secondary);">入口: <code>' + escapeHtml(item.path) + '</code></span>' +
+                    '<span class="mcp-card-status"><span class="dot-on"></span> ' + (shimInstalled ? '已全局可用' : '源码已就绪') + '</span>' +
+                    '<span style="display:flex;gap:6px;align-items:center;color:var(--text-secondary);">入口: <code>' + escapeHtml(item.path) + '</code>' + shimButton + '</span>' +
                     '</div>' +
                     '</div>';
             }).join('');
@@ -2878,6 +2970,9 @@ window.startCliInstallFromForm = async function() {
     const ok = await startCliInstallWithCommand(cmd, cliName);
     if (ok) { document.getElementById('cli-install-cmd').value = ''; document.getElementById('cli-install-name').value = ''; }
 };
+window.installCliShim = installCliShim;
+window.uninstallCliShim = uninstallCliShim;
+window.configureCliShimPath = configureCliShimPath;
 
 window.reinstallCliRecord = async function(id) {
     const res = await fetch('/v1/cli/install-history');

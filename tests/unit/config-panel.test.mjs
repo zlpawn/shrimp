@@ -61,6 +61,17 @@ test("config panel supports stable endpoint ids, secret status, exposure, and co
   assert.doesNotMatch(html, /codex:\s*\{\s*endpoints:\s*\[JSON\.parse/);
 });
 
+test("local CLI hub can install and uninstall managed global shell shims", async () => {
+  const html = await readSources();
+  assert.match(html, /cli-shim-path-status/);
+  assert.match(html, /安装全局/);
+  assert.match(html, /卸载全局/);
+  assert.match(html, /\/v1\/cli\/shims/);
+  assert.match(html, /~\/\.shrimp\/bin/);
+  assert.match(html, /Git Bash/);
+  assert.match(html, /zsh/);
+});
+
 test("Codex endpoint editor offers Anthropic Messages protocol and auth selection", async () => {
   const html = await readSources();
   assert.match(html, /Anthropic Messages 协议/);

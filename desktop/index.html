@@ -763,7 +763,11 @@ experimental_bearer_token = "dummy"</pre>
                 <div id="cli-inrepo-section" style="margin-bottom: 24px; display: none;">
                     <div class="mcp-section-label-row" style="margin-bottom: 10px;">
                         <span class="mcp-section-label">🚀 本地自研 / 网关托管 CLI</span>
-                        <span class="mcp-badge-counter" id="cli-inrepo-counter">0</span>
+                        <span style="display:flex;gap:8px;align-items:center;" title="Windows 使用 Git Bash；macOS 使用 zsh。">
+                            <span class="skill-pill" id="cli-shim-path-status">全局路径检查中…</span>
+                            <button type="button" class="btn" style="padding:3px 10px;font-size:11px;" onclick="configureCliShimPath()">配置 PATH</button>
+                            <span class="mcp-badge-counter" id="cli-inrepo-counter">0</span>
+                        </span>
                     </div>
                     <div id="cli-inrepo-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px;"></div>
                 </div>
