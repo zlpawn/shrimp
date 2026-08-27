@@ -648,9 +648,11 @@ experimental_bearer_token = "dummy"</pre>
 
                 <div class="consolidate-panel" id="consolidate-panel" style="display:none;">
                     <span class="panel-label">收拢与分发</span>
-                    <label><input type="checkbox" id="consolidate-claude" checked /> Claude Code</label>
-                    <label><input type="checkbox" id="consolidate-antigravity" checked /> Antigravity</label>
-                    <label><input type="checkbox" id="consolidate-3p" /> Claude Desktop 3P</label>
+                    <span id="consolidate-targets-container" style="display:inline-flex;gap:12px;align-items:center;flex-wrap:wrap;">
+                        <label><input type="checkbox" id="consolidate-claude" checked /> Claude Code</label>
+                        <label><input type="checkbox" id="consolidate-antigravity" checked /> Antigravity</label>
+                        <label><input type="checkbox" id="consolidate-3p" /> Claude Desktop 3P</label>
+                    </span>
                     <button class="btn btn-primary" style="padding:4px 12px;font-size:12px;" onclick="runConsolidate()">执行收拢与分发</button>
                     <span style="font-size:11px;color:var(--text-secondary);">收拢散落的真实目录到中央，再按勾选的客户端创建/清理软链</span>
                 </div>

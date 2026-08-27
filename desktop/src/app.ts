@@ -303,6 +303,10 @@ const CLIENT_DISPLAY_NAMES = {
     desktop: 'Claude Desktop',
     codex: 'Codex',
     deeptutor: 'DeepTutor',
+    claude: 'Claude Code',
+    antigravity: 'Antigravity',
+    claudeDesktop3p: 'Claude Desktop 3P',
+    claude_code: 'Claude Code',
 };
 
 // Custom agent-node groups come from config.clients minus the built-ins.
@@ -2068,17 +2072,53 @@ window.unifyAllSkills = async function() {
 };
 
 // ===== Skills: consolidate + dispatch =====
+function renderConsolidateTargets() {
+    const container = document.getElementById('consolidate-targets-container');
+    if (!container) return;
+    const customNames = typeof customClientNames === 'function' ? customClientNames() : [];
+    const prevChecked: Record<string, boolean> = {};
+    for (const c of customNames) {
+        const el = document.getElementById(`consolidate-custom-${c}`) as HTMLInputElement | null;
+        if (el) prevChecked[c] = el.checked;
+    }
+    const claudeEl = document.getElementById('consolidate-claude') as HTMLInputElement | null;
+    const agEl = document.getElementById('consolidate-antigravity') as HTMLInputElement | null;
+    const cpEl = document.getElementById('consolidate-3p') as HTMLInputElement | null;
+    const isClaude = claudeEl ? claudeEl.checked : true;
+    const isAg = agEl ? agEl.checked : true;
+    const is3p = cpEl ? cpEl.checked : false;
+
+    let html = `
+        <label><input type="checkbox" id="consolidate-claude" ${isClaude ? 'checked' : ''} /> Claude Code</label>
+        <label><input type="checkbox" id="consolidate-antigravity" ${isAg ? 'checked' : ''} /> Antigravity</label>
+        <label><input type="checkbox" id="consolidate-3p" ${is3p ? 'checked' : ''} /> Claude Desktop 3P</label>
+    `;
+    for (const c of customNames) {
+        const isChecked = prevChecked[c] !== undefined ? prevChecked[c] : true;
+        html += `<label><input type="checkbox" id="consolidate-custom-${escapeHtml(c)}" ${isChecked ? 'checked' : ''} /> ${escapeHtml(clientDisplayName(c))}</label>`;
+    }
+    container.innerHTML = html;
+}
+
 window.runConsolidate = async function() {
-    const targets = {
-        claude: (document.getElementById('consolidate-claude') as HTMLInputElement)?.checked,
-        antigravity: (document.getElementById('consolidate-antigravity') as HTMLInputElement)?.checked,
-        claudeDesktop3p: (document.getElementById('consolidate-3p') as HTMLInputElement)?.checked,
+    const targets: Record<string, boolean> = {
+        claude: Boolean((document.getElementById('consolidate-claude') as HTMLInputElement)?.checked),
+        antigravity: Boolean((document.getElementById('consolidate-antigravity') as HTMLInputElement)?.checked),
+        claudeDesktop3p: Boolean((document.getElementById('consolidate-3p') as HTMLInputElement)?.checked),
     };
-    if (!targets.claude && !targets.antigravity && !targets.claudeDesktop3p) {
+    const customNames = typeof customClientNames === 'function' ? customClientNames() : [];
+    for (const c of customNames) {
+        const el = document.getElementById(`consolidate-custom-${c}`) as HTMLInputElement | null;
+        if (el) {
+            targets[c] = el.checked;
+        }
+    }
+    const selectedTargets = Object.entries(targets).filter(([, v]) => v);
+    if (selectedTargets.length === 0) {
         showToast('请至少选择一个客户端目录', 'error');
         return;
     }
-    const clientNames = Object.entries(targets).filter(([,v]) => v).map(([k]) => k).join(', ');
+    const clientNames = selectedTargets.map(([k]) => clientDisplayName(k) || k).join(', ');
     const ok = await showSkillConfirmModal(
         '收拢与分发',
         '将执行以下操作：\n\n1. 收拢：把散落在各客户端目录的真实副本统一到中央目录\n2. 分发：为选中的客户端（' + escapeHtml(clientNames) + '）创建软链\n3. 清理：为未选中的客户端移除软链（保留真实目录）\n\n确认执行？'
@@ -2112,6 +2152,9 @@ window.toggleConsolidatePanel = function() {
     const isOpen = panel.style.display !== 'none';
     panel.style.display = isOpen ? 'none' : '';
     btn.classList.toggle('is-active', !isOpen);
+    if (!isOpen) {
+        renderConsolidateTargets();
+    }
 };
 
 window.toggleBatchMode = function() {
@@ -2975,28 +3018,73 @@ function renderSkillDetail() {
     const tools = skill.tools || skillsLibraryState.tools || {};
     const presentIn = skill.presentIn || {};
     const rootByClient = { antigravity: 'antigravity', claude: 'claude', claudeDesktop3p: 'claudeDesktop3p', codex: 'central' };
-    const clientRows = Object.entries(tools).map(([tool, meta]) => {
+
+    const customNames = typeof customClientNames === 'function' ? customClientNames() : [];
+    const allCustomKeys = Array.from(new Set([
+        ...customNames,
+        ...Object.keys(presentIn).filter(k => !rootByClient[k] && k !== 'central')
+    ]));
+
+    const clientEntries: Array<{
+        id: string;
+        label: string;
+        short: string;
+        color: string;
+        path: string;
+        present: boolean;
+        isCentral: boolean;
+        isCopy: boolean;
+    }> = Object.entries(tools).map(([tool, meta]: [string, any]) => {
         const rootId = rootByClient[tool];
         const present = rootId ? Boolean(presentIn[rootId]) : Boolean(skill.installed);
-        const isCentral = tool === 'codex';
-        const action = present ? 'unlink' : 'link';
-        const isCopy = meta.mode === 'copy';
-        const actionLabel = present ? (isCopy ? '移除' : '取消链接') : (isCopy ? '复制' : '链接');
-        const modeKind = isCopy ? 'copy' : 'link';
-        const linkBtn = isCentral ? '' : `<button class="btn" style="padding:4px 10px;font-size:12px;flex:0 0 auto;" onclick="linkSkillClient('${escapeHtml(skill.name)}','${tool}','${action}','${modeKind}')">${actionLabel}</button>`;
+        return {
+            id: tool,
+            label: meta.label || clientDisplayName(tool),
+            short: meta.short || tool.slice(0, 1).toUpperCase(),
+            color: meta.color || 'var(--text-primary)',
+            path: meta.path || '',
+            present,
+            isCentral: tool === 'codex',
+            isCopy: meta.mode === 'copy',
+        };
+    });
+
+    for (const c of allCustomKeys) {
+        if (!tools[c]) {
+            const present = Boolean(presentIn[c]);
+            const displayName = clientDisplayName(c);
+            clientEntries.push({
+                id: c,
+                label: displayName,
+                short: c.slice(0, 1).toUpperCase(),
+                color: 'var(--text-primary)',
+                path: `~/.${c}/skills/${skill.name}`,
+                present,
+                isCentral: false,
+                isCopy: false,
+            });
+        }
+    }
+
+    const clientRows = clientEntries.map((item) => {
+        const action = item.present ? 'unlink' : 'link';
+        const actionLabel = item.present ? (item.isCopy ? '移除' : '取消链接') : (item.isCopy ? '复制' : '链接');
+        const modeKind = item.isCopy ? 'copy' : 'link';
+        const linkBtn = item.isCentral ? '' : `<button class="btn" style="padding:4px 10px;font-size:12px;flex:0 0 auto;" onclick="linkSkillClient('${escapeHtml(skill.name)}','${escapeHtml(item.id)}','${action}','${modeKind}')">${actionLabel}</button>`;
+        const badgeLabel = item.present ? '已安装' : '未安装';
         return `
-        <div class="skill-mount-row">
+        <div class="skill-mount-row" data-client="${escapeHtml(item.id)}">
             <div class="skill-mount-main">
-                <div style="width:28px;height:28px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border-color);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex:0 0 auto;color:${escapeHtml(meta.color || 'var(--text-primary)')};">
-                    ${escapeHtml(meta.short || tool.slice(0,1).toUpperCase())}
+                <div style="width:28px;height:28px;border-radius:8px;background:var(--input-bg);border:1px solid var(--border-color);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex:0 0 auto;color:${escapeHtml(item.color)};">
+                    ${escapeHtml(item.short)}
                 </div>
                 <div class="skill-mount-copy">
-                    <div style="font-size:13px;font-weight:600;color:var(--text-primary);">${escapeHtml(meta.label || tool)}</div>
-                    <code class="path-pill skill-path-wrap">${escapeHtml(meta.path || '')}</code>
+                    <div style="font-size:13px;font-weight:600;color:var(--text-primary);">${escapeHtml(item.label)}</div>
+                    <code class="path-pill skill-path-wrap">${escapeHtml(item.path)}</code>
                 </div>
             </div>
             ${linkBtn}
-            <span class="skill-pill skill-status-pill ${present ? 'installed' : 'missing'}">${present ? '可用' : '未安装'}</span>
+            <span class="skill-pill skill-status-pill ${item.present ? 'installed' : 'missing'}">${badgeLabel}</span>
         </div>
         `;
     }).join('');
@@ -3041,6 +3129,7 @@ function renderSkillDetail() {
 function renderSkillsLibrary() {
     updateSkillsScopeChips();
     renderSkillsCategories();
+    renderConsolidateTargets();
     renderSkillsList();
     renderSkillDetail();
 }
@@ -3254,10 +3343,11 @@ window.linkSkillClient = async function(skillName, client, action, modeKind) {
         const data = await res.json();
         if (!data.success) throw new Error(data.error || '操作失败');
         await refreshSkillsLibrary(true);
+        const displayName = clientDisplayName(client) || client;
         const isCopy = modeKind === 'copy';
         const msg = action === 'unlink'
-            ? (isCopy ? `已从 ${client} 移除 ${skillName}` : `已从 ${client} 取消链接 ${skillName}`)
-            : (isCopy ? `已复制 ${skillName} 到 ${client}` : `已链接 ${skillName} 到 ${client}`);
+            ? (isCopy ? `已从 ${displayName} 移除 ${skillName}` : `已从 ${displayName} 取消链接 ${skillName}`)
+            : (isCopy ? `已复制 ${skillName} 到 ${displayName}` : `已链接 ${skillName} 到 ${displayName}`);
         showToast(msg, 'success');
         return true;
     } catch (err) {
@@ -3266,6 +3356,15 @@ window.linkSkillClient = async function(skillName, client, action, modeKind) {
         return false;
     }
 };
+
+window.toggleSkillClient = async function(skillName, client, enable) {
+    const action = enable ? 'link' : 'unlink';
+    return window.linkSkillClient(skillName, client, action);
+};
+
+(window as any).renderSkillDetailModal = renderSkillDetail;
+(window as any).renderSkillModal = renderSkillDetail;
+(window as any).toggleSkillClient = window.toggleSkillClient;
 
 
 async function loadSyncStatus() {

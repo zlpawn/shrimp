@@ -11,7 +11,7 @@ type McpServer = {
   command?: string;
   args?: string[];
   url?: string;
-  distribution?: { codex?: boolean; claude?: boolean; claude_code?: boolean; antigravity?: boolean };
+  distribution?: Record<string, boolean>;
 };
 
 type ClientScan = {
@@ -98,6 +98,7 @@ const state = {
     claude: false,
     claude_code: false,
     antigravity: false,
+    distribution: {} as Record<string, boolean>,
   },
 };
 
@@ -258,18 +259,32 @@ function runningInspectorUrl(serverName: string): string {
   return "";
 }
 
-function clientLabel(id: string): string {
+function clientDisplayName(id: string): string {
+  if (!id) return "";
+  const info = state.data?.clientsMeta?.find((m) => m.id === id);
+  if (info?.label && info.label !== id) return info.label;
+  const w = window as any;
+  if (typeof w.__clientDisplayName === "function") {
+    const custom = w.__clientDisplayName(id);
+    if (custom && custom !== id) return custom;
+  }
   if (id === "codex") return "OpenAI Codex";
   if (id === "claude") return "Claude Desktop";
   if (id === "claude_code") return "Claude Code";
-  return "Google Antigravity";
+  if (id === "antigravity") return "Google Antigravity";
+  return info?.label || (typeof w.__clientDisplayName === "function" ? w.__clientDisplayName(id) : id) || id;
+}
+
+function clientLabel(id: string): string {
+  return clientDisplayName(id);
 }
 
 function clientIcon(id: string): string {
   if (id === "codex") return "🟢";
   if (id === "claude") return "🟠";
   if (id === "claude_code") return "🟣";
-  return "🔵";
+  if (id === "antigravity") return "🔵";
+  return "🤖";
 }
 
 function renderHeader(): string {
@@ -307,7 +322,7 @@ function renderClientList(): string {
 
   return clients.map((client) => {
     const info = meta.find((m) => m.id === client.client);
-    const label = info?.label || clientLabel(client.client);
+    const label = info?.label || clientDisplayName(client.client);
     const statusText = client.status === "ok"
       ? `${client.servers.length} 个已安装`
       : client.status === "missing" ? "配置文件未创建" : "配置文件解析失败";
@@ -337,7 +352,7 @@ function renderClientList(): string {
     }).join("");
 
     return `
-      <div class="mcp-client-card">
+      <div class="mcp-client-card" data-client="${escapeHtml(client.client)}">
         <div class="mcp-client-head">
           <div class="mcp-client-title-row">
             <span class="mcp-client-icon">${clientIcon(client.client)}</span>
@@ -410,12 +425,10 @@ function renderServerCards(): string {
         const isDebugging = isInspectorRunning(item.name);
         const debugTag = isDebugging ? `<span class="mcp-badge" style="background: rgba(34, 197, 94, 0.2); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.4); cursor: pointer;" onclick="event.stopPropagation(); window.__mcpOpenInspector('${escapeHtml(item.name)}')" title="点击打开 Inspector 调试控制台">⚡ 调试中</span>` : "";
         const dist = configured.distribution || {};
-        const clients = [
-          dist.codex ? "Codex" : "",
-          dist.claude ? "Claude Desktop" : "",
-          dist.claude_code ? "Claude Code" : "",
-          dist.antigravity ? "Antigravity" : "",
-        ].filter(Boolean).join(" · ");
+        const clientEntries = Object.entries(dist)
+          .filter(([, v]) => Boolean(v))
+          .map(([k]) => clientDisplayName(k));
+        const clients = clientEntries.join(" · ");
 
         return `
           <article class="mcp-card${active}${disabled}" onclick="window.__mcpSelect('${escapeHtml(item.name)}')">
@@ -472,12 +485,10 @@ function renderServerCards(): string {
       const isDebugging = isInspectorRunning(server.name);
       const debugTag = isDebugging ? `<span class="mcp-badge" style="background: rgba(34, 197, 94, 0.2); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.4); cursor: pointer;" onclick="event.stopPropagation(); window.__mcpOpenInspector('${escapeHtml(server.name)}')" title="点击打开 Inspector 调试控制台">⚡ 调试中</span>` : "";
       const dist = server.distribution || {};
-      const clients = [
-        dist.codex ? "Codex" : "",
-        dist.claude ? "Claude Desktop" : "",
-        dist.claude_code ? "Claude Code" : "",
-        dist.antigravity ? "Antigravity" : "",
-      ].filter(Boolean).join(" · ");
+      const clientEntries = Object.entries(dist)
+        .filter(([, v]) => Boolean(v))
+        .map(([k]) => clientDisplayName(k));
+      const clients = clientEntries.join(" · ");
 
       return `
         <article class="mcp-card${active}${disabled}" onclick="window.__mcpSelect('${escapeHtml(server.name)}')">
@@ -649,41 +660,31 @@ function renderEditor(): string {
               <span class="mcp-toggle-track"><span class="mcp-toggle-thumb"></span></span>
             </label>
 
-            <label class="mcp-toggle-card">
-              <div class="mcp-toggle-label">
-                <span class="mcp-toggle-title">OpenAI Codex</span>
-                <span class="mcp-toggle-desc">写入 ~/.codex/config.toml</span>
-              </div>
-              <input type="checkbox" id="mcp-edit-codex" class="mcp-toggle-input" ${d.codex ? "checked" : ""} onchange="window.__mcpToggleDraft('codex', this.checked)" />
-              <span class="mcp-toggle-track"><span class="mcp-toggle-thumb"></span></span>
-            </label>
-
-            <label class="mcp-toggle-card">
-              <div class="mcp-toggle-label">
-                <span class="mcp-toggle-title">Claude Desktop</span>
-                <span class="mcp-toggle-desc">写入 Claude-3p managedMcpServers</span>
-              </div>
-              <input type="checkbox" id="mcp-edit-claude" class="mcp-toggle-input" ${d.claude ? "checked" : ""} onchange="window.__mcpToggleDraft('claude', this.checked)" />
-              <span class="mcp-toggle-track"><span class="mcp-toggle-thumb"></span></span>
-            </label>
-
-            <label class="mcp-toggle-card">
-              <div class="mcp-toggle-label">
-                <span class="mcp-toggle-title">Claude Code</span>
-                <span class="mcp-toggle-desc">写入 ~/.claude.json</span>
-              </div>
-              <input type="checkbox" id="mcp-edit-claude-code" class="mcp-toggle-input" ${d.claude_code ? "checked" : ""} onchange="window.__mcpToggleDraft('claude_code', this.checked)" />
-              <span class="mcp-toggle-track"><span class="mcp-toggle-thumb"></span></span>
-            </label>
-
-            <label class="mcp-toggle-card">
-              <div class="mcp-toggle-label">
-                <span class="mcp-toggle-title">Google Antigravity</span>
-                <span class="mcp-toggle-desc">写入 mcp_config.json</span>
-              </div>
-              <input type="checkbox" id="mcp-edit-antigravity" class="mcp-toggle-input" ${d.antigravity ? "checked" : ""} onchange="window.__mcpToggleDraft('antigravity', this.checked)" />
-              <span class="mcp-toggle-track"><span class="mcp-toggle-thumb"></span></span>
-            </label>
+            ${(() => {
+              const metaList = state.data?.clientsMeta || [];
+              const clientScans = state.data?.clients || [];
+              const clientIds = Array.from(new Set([
+                "codex", "claude", "claude_code", "antigravity",
+                ...metaList.map((m) => m.id),
+                ...clientScans.map((c) => c.client),
+              ]));
+              return clientIds.map((cid) => {
+                const meta = metaList.find((m) => m.id === cid);
+                const label = meta?.label || clientDisplayName(cid);
+                const isChecked = Boolean(d.distribution?.[cid] ?? (d as Record<string, any>)[cid]);
+                const pathDesc = meta?.path ? `写入 ${escapeHtml(meta.path)}` : cid === "codex" ? "写入 ~/.codex/config.toml" : cid === "claude" ? "写入 Claude-3p managedMcpServers" : cid === "claude_code" ? "写入 ~/.claude.json" : cid === "antigravity" ? "写入 mcp_config.json" : `写入 ~/.${cid}/mcp.json`;
+                return `
+                  <label class="mcp-toggle-card">
+                    <div class="mcp-toggle-label">
+                      <span class="mcp-toggle-title">${clientIcon(cid)} ${escapeHtml(label)}</span>
+                      <span class="mcp-toggle-desc">${pathDesc}</span>
+                    </div>
+                    <input type="checkbox" id="mcp-edit-${escapeHtml(cid)}" class="mcp-toggle-input" ${isChecked ? "checked" : ""} onchange="window.__mcpToggleDraft('${escapeHtml(cid)}', this.checked)" />
+                    <span class="mcp-toggle-track"><span class="mcp-toggle-thumb"></span></span>
+                  </label>
+                `;
+              }).join("");
+            })()}
           </div>
         </div>
 
@@ -782,8 +783,15 @@ function renderDetail(): string {
   }
   const dist = server.distribution || {};
   const present = state.data?.presentIn?.[server.name] || {};
-  const rows = ["codex", "claude", "claude_code", "antigravity"].map((id) => {
-    const meta = state.data?.clientsMeta?.find((m) => m.id === id);
+  const metaList = state.data?.clientsMeta || [];
+  const clientScans = state.data?.clients || [];
+  const clientIds = Array.from(new Set([
+    "codex", "claude", "claude_code", "antigravity",
+    ...metaList.map((m) => m.id),
+    ...clientScans.map((c) => c.client),
+  ]));
+  const rows = clientIds.map((id) => {
+    const meta = metaList.find((m) => m.id === id);
     const installed = Boolean(present[id]);
     const target = Boolean(dist[id]);
     const status = installed ? "已同步至配置文件" : target ? "待同步写入" : "未分发至此客户端";
@@ -792,7 +800,7 @@ function renderDetail(): string {
       <div class="mcp-client-row">
         <div class="mcp-client-row-info">
           <span class="mcp-client-icon">${clientIcon(id)}</span>
-          <div class="mcp-client-name">${escapeHtml(meta?.label || clientLabel(id))}</div>
+          <div class="mcp-client-name">${escapeHtml(meta?.label || clientDisplayName(id))}</div>
         </div>
         <span class="mcp-badge ${cls}">${status}</span>
       </div>
@@ -963,12 +971,17 @@ function renderPreview(): string {
         <button class="mcp-preview-tab ${currentClient === "all" ? "active" : ""}" onclick="window.__mcpSetPreviewClient('all')">
           全部客户端 (${state.previewItems.filter(p => p.snippet || p.text).length})
         </button>
-        ${["codex", "claude", "claude_code", "antigravity"].map((cid) => {
+        ${Array.from(new Set([
+          "codex", "claude", "claude_code", "antigravity",
+          ...state.previewItems.map(p => p.client),
+          ...(state.data?.clientsMeta || []).map(m => m.id),
+          ...(state.data?.clients || []).map(c => c.client),
+        ])).map((cid) => {
           const p = state.previewItems.find(item => item.client === cid);
           const hasContent = Boolean(p?.snippet || p?.text);
           return `
             <button class="mcp-preview-tab ${currentClient === cid ? "active" : ""} ${!hasContent ? "disabled" : ""}" onclick="window.__mcpSetPreviewClient('${cid}')">
-              ${clientIcon(cid)} ${clientLabel(cid)}
+              ${clientIcon(cid)} ${clientDisplayName(cid)}
             </button>
           `;
         }).join("")}
@@ -1219,6 +1232,17 @@ function select(name: string): void {
 function newServer(): void {
   state.selected = "";
   state.editing = true;
+  const dist: Record<string, boolean> = {};
+  const metaList = state.data?.clientsMeta || [];
+  const clientScans = state.data?.clients || [];
+  const clientIds = Array.from(new Set([
+    "codex", "claude", "claude_code", "antigravity",
+    ...metaList.map((m) => m.id),
+    ...clientScans.map((c) => c.client),
+  ]));
+  for (const cid of clientIds) {
+    dist[cid] = true;
+  }
   state.draft = {
     name: "",
     title: "",
@@ -1237,6 +1261,7 @@ function newServer(): void {
     claude: true,
     claude_code: true,
     antigravity: true,
+    distribution: dist,
   };
   state.pathClient = "";
   render();
@@ -1246,6 +1271,7 @@ function edit(): void {
   const server = selected();
   if (!server) return;
   state.editing = true;
+  const dist = { ...(server.distribution || {}) };
   state.draft = {
     name: server.name,
     title: server.title || "",
@@ -1260,10 +1286,11 @@ function edit(): void {
     headers: "",
     headersList: [],
     enabled: server.enabled !== false,
-    codex: Boolean(server.distribution?.codex),
-    claude: Boolean(server.distribution?.claude),
-    claude_code: Boolean(server.distribution?.claude_code),
-    antigravity: Boolean(server.distribution?.antigravity),
+    codex: Boolean(dist.codex),
+    claude: Boolean(dist.claude),
+    claude_code: Boolean(dist.claude_code),
+    antigravity: Boolean(dist.antigravity),
+    distribution: dist,
   };
   state.pathClient = "";
   render();
@@ -1328,6 +1355,17 @@ function applyInRepo(name: string): void {
   if (!item) return;
   state.selected = "";
   state.editing = true;
+  const dist: Record<string, boolean> = {};
+  const metaList = state.data?.clientsMeta || [];
+  const clientScans = state.data?.clients || [];
+  const clientIds = Array.from(new Set([
+    "codex", "claude", "claude_code", "antigravity",
+    ...metaList.map((m) => m.id),
+    ...clientScans.map((c) => c.client),
+  ]));
+  for (const cid of clientIds) {
+    dist[cid] = true;
+  }
   state.draft = {
     name: item.name,
     title: item.title,
@@ -1346,6 +1384,7 @@ function applyInRepo(name: string): void {
     claude: true,
     claude_code: true,
     antigravity: true,
+    distribution: dist,
   };
   showToast(`已自动载入自研 MCP「${item.name}」的配置与示例数据源！`, "success");
   render();
@@ -1396,8 +1435,16 @@ function removeHeader(index: number): void {
   render();
 }
 
-function toggleDraft(field: "enabled" | "codex" | "claude" | "claude_code" | "antigravity", checked: boolean): void {
-  state.draft[field] = checked;
+function toggleDraft(field: string, checked: boolean): void {
+  if (field === "enabled") {
+    state.draft.enabled = checked;
+    return;
+  }
+  if (!state.draft.distribution) {
+    state.draft.distribution = {};
+  }
+  state.draft.distribution[field] = checked;
+  (state.draft as Record<string, any>)[field] = checked;
 }
 
 function collect(): (McpServer & { env?: Record<string, string>; headers?: Record<string, string> }) | null {
@@ -1443,6 +1490,19 @@ function collect(): (McpServer & { env?: Record<string, string>; headers?: Recor
     if (k) headers[k] = item.value;
   }
 
+  const distribution: Record<string, boolean> = {
+    codex: Boolean(d.distribution?.codex ?? codex),
+    claude: Boolean(d.distribution?.claude ?? claude),
+    claude_code: Boolean(d.distribution?.claude_code ?? claude_code),
+    antigravity: Boolean(d.distribution?.antigravity ?? antigravity),
+  };
+
+  if (d.distribution) {
+    for (const [k, v] of Object.entries(d.distribution)) {
+      distribution[k] = Boolean(v);
+    }
+  }
+
   const payload: McpServer & { env?: Record<string, string>; headers?: Record<string, string> } = {
     name,
     title: title || name,
@@ -1452,7 +1512,7 @@ function collect(): (McpServer & { env?: Record<string, string>; headers?: Recor
     args,
     url,
     enabled,
-    distribution: { codex, claude, claude_code, antigravity },
+    distribution,
   };
 
   if (Object.keys(env).length > 0) payload.env = env;
@@ -1509,9 +1569,16 @@ async function preview(serverName?: string): Promise<void> {
     const url = serverName
       ? `/v1/mcp-management/servers/${encodeURIComponent(serverName)}/preview`
       : "/v1/mcp-management/preview";
+    const targets: Record<string, boolean> = { codex: true, claude: true, claude_code: true, antigravity: true };
+    if (state.data?.clientsMeta) {
+      for (const m of state.data.clientsMeta) targets[m.id] = true;
+    }
+    if (state.data?.clients) {
+      for (const c of state.data.clients) targets[c.client] = true;
+    }
     const data = await api<{ previews: Array<{ client: string; path: string; text: string | null; snippet: string | null; hint: string | null; servers: string[] }> }>(
       url,
-      { method: "POST", body: JSON.stringify({ targets: { codex: true, claude: true, claude_code: true, antigravity: true } }) },
+      { method: "POST", body: JSON.stringify({ targets }) },
     );
     state.previewItems = data.previews || [];
     state.preview = "active";
@@ -1590,7 +1657,7 @@ function copySnippet(clientId: string): void {
   const code = viewMode === "snippet" ? (item.snippet || item.text || "") : (item.text || "");
   if (!code) return;
   void navigator.clipboard.writeText(code).then(
-    () => { showToast(`已复制 ${clientLabel(clientId)} 配置到剪贴板`, "success"); },
+    () => { showToast(`已复制 ${clientDisplayName(clientId)} 配置到剪贴板`, "success"); },
     () => { showToast("复制失败，请手动选中复制", "error"); },
   );
 }
@@ -1653,26 +1720,43 @@ function importServer(clientId: string, serverName: string): void {
     }
   }
 
+  const dist: Record<string, boolean> = {
+    codex: Boolean(clientId === "codex" || presence.codex),
+    claude: Boolean(clientId === "claude" || presence.claude),
+    claude_code: Boolean(clientId === "claude_code" || presence.claude_code),
+    antigravity: Boolean(clientId === "antigravity" || presence.antigravity),
+  };
+  const metaList = state.data?.clientsMeta || [];
+  const clientScans = state.data?.clients || [];
+  const clientIds = Array.from(new Set([
+    ...metaList.map((m) => m.id),
+    ...clientScans.map((c) => c.client),
+  ]));
+  for (const cid of clientIds) {
+    dist[cid] = Boolean(clientId === cid || presence[cid]);
+  }
+
   state.selected = "";
   state.editing = true;
   state.draft = {
     name: server.name,
     title: server.name,
-    description: `从 ${clientLabel(clientId)} 导入`,
+    description: `从 ${clientDisplayName(clientId)} 导入`,
     transport: isRemote ? "remote" : "stdio",
-    command: conf.command || "",
+    command: (conf.command as string) || "",
     args: "",
     argsList: Array.isArray(conf.args) ? [...conf.args] : [],
-    url: conf.url || "",
+    url: (conf.url as string) || "",
     env: "",
     envList,
     headers: "",
     headersList,
     enabled: true,
-    codex: Boolean(clientId === "codex" || presence.codex),
-    claude: Boolean(clientId === "claude" || presence.claude),
-    claude_code: Boolean(clientId === "claude_code" || presence.claude_code),
-    antigravity: Boolean(clientId === "antigravity" || presence.antigravity),
+    codex: Boolean(dist.codex),
+    claude: Boolean(dist.claude),
+    claude_code: Boolean(dist.claude_code),
+    antigravity: Boolean(dist.antigravity),
+    distribution: dist,
   };
 
   showToast(`已载入「${serverName}」配置，确认无误后点击保存即可纳入网关托管`, "success");
@@ -1701,9 +1785,16 @@ async function confirmApply(): Promise<void> {
     const url = sName
       ? `/v1/mcp-management/servers/${encodeURIComponent(sName)}/apply`
       : "/v1/mcp-management/apply";
+    const targets: Record<string, boolean> = { codex: true, claude: true, claude_code: true, antigravity: true };
+    if (state.data?.clientsMeta) {
+      for (const m of state.data.clientsMeta) targets[m.id] = true;
+    }
+    if (state.data?.clients) {
+      for (const c of state.data.clients) targets[c.client] = true;
+    }
     const data = await api<{ changed: string[]; backups: string[] }>(
       url,
-      { method: "POST", body: JSON.stringify({ targets: { codex: true, claude: true, claude_code: true, antigravity: true } }) },
+      { method: "POST", body: JSON.stringify({ targets }) },
     );
     state.confirming = false;
     state.confirmServerName = "";
