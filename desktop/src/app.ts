@@ -2917,6 +2917,8 @@ let skillsLibraryState = {
     tools: {},
     root: "",
     managedRoot: "",
+    pathEditClient: "",
+    pathDraft: "",
 };
 let skillsSearchTimer = null;
 
@@ -3037,10 +3039,11 @@ function renderSkillDetail() {
     }> = Object.entries(tools).map(([tool, meta]: [string, any]) => {
         const rootId = rootByClient[tool];
         const present = rootId ? Boolean(presentIn[rootId]) : Boolean(skill.installed);
+        const displayName = clientDisplayName(tool);
         return {
             id: tool,
-            label: meta.label || clientDisplayName(tool),
-            short: meta.short || tool.slice(0, 1).toUpperCase(),
+            label: displayName,
+            short: (displayName || tool).slice(0, 1).toUpperCase(),
             color: meta.color || 'var(--text-primary)',
             path: meta.path || '',
             present,
@@ -3057,7 +3060,7 @@ function renderSkillDetail() {
             clientEntries.push({
                 id: c,
                 label: displayName,
-                short: c.slice(0, 1).toUpperCase(),
+                short: (displayName || c).slice(0, 1).toUpperCase(),
                 color: 'var(--text-primary)',
                 path: `~/.${stripped}/skills/${skill.name}`,
                 present,
@@ -3072,9 +3075,21 @@ function renderSkillDetail() {
         const actionLabel = item.present ? (item.isCopy ? '移除' : '取消链接') : (item.isCopy ? '复制' : '链接');
         const modeKind = item.isCopy ? 'copy' : 'link';
         const linkBtn = item.isCentral ? '' : `<button class="btn" style="padding:4px 10px;font-size:12px;flex:0 0 auto;" onclick="linkSkillClient('${escapeHtml(skill.name)}','${escapeHtml(item.id)}','${action}','${modeKind}')">${actionLabel}</button>`;
-        const customPathBtn = !item.isCentral
-            ? `<button class="btn btn-xs" style="padding:2px 8px;font-size:11px;margin-left:6px;flex:0 0 auto;" onclick="window.editSkillClientPath('${escapeHtml(item.id)}')" title="自定义此客户端的 Skill 目录">自定义路径</button>`
-            : '';
+        const isPathEdit = skillsLibraryState.pathEditClient === item.id;
+        const pathContent = isPathEdit
+            ? `
+            <div class="skill-path-inline-edit" style="display:flex;gap:4px;margin-top:4px;align-items:center;flex-wrap:wrap;">
+                <input id="skill-path-input-${escapeHtml(item.id)}" class="input input-xs" style="font-family:monospace;font-size:11px;padding:3px 8px;width:240px;max-width:100%;background:var(--card-bg);border:1px solid var(--primary-color);" value="${escapeHtml(skillsLibraryState.pathDraft || '')}" placeholder="留空使用默认目录" onkeydown="if(event.key==='Enter')window.saveSkillClientPath('${escapeHtml(item.id)}')" />
+                <button class="btn btn-primary btn-xs" style="padding:2px 8px;font-size:11px;" onclick="window.saveSkillClientPath('${escapeHtml(item.id)}')">保存</button>
+                <button class="btn btn-xs" style="padding:2px 8px;font-size:11px;" onclick="window.cancelSkillClientPath()">取消</button>
+            </div>
+            `
+            : `
+            <div style="display:flex;align-items:center;gap:6px;margin-top:3px;">
+                <code class="path-pill skill-path-wrap">${escapeHtml(item.path)}</code>
+                ${!item.isCentral ? `<button class="btn btn-xs" style="padding:1px 6px;font-size:11px;color:var(--text-muted);border:1px dashed var(--border-color);border-radius:4px;" onclick="window.editSkillClientPath('${escapeHtml(item.id)}', '${escapeHtml(item.path)}')" title="自定义此客户端的 Skill 根目录">自定义路径</button>` : ''}
+            </div>
+            `;
         const badgeLabel = item.present ? '已安装' : '未安装';
         return `
         <div class="skill-mount-row" data-client="${escapeHtml(item.id)}">
@@ -3083,11 +3098,8 @@ function renderSkillDetail() {
                     ${escapeHtml(item.short)}
                 </div>
                 <div class="skill-mount-copy">
-                    <div style="display:flex;align-items:center;gap:4px;">
-                        <div style="font-size:13px;font-weight:600;color:var(--text-primary);">${escapeHtml(item.label)}</div>
-                        ${customPathBtn}
-                    </div>
-                    <code class="path-pill skill-path-wrap">${escapeHtml(item.path)}</code>
+                    <div style="font-size:13px;font-weight:600;color:var(--text-primary);">${escapeHtml(item.label)}</div>
+                    ${pathContent}
                 </div>
             </div>
             ${linkBtn}
@@ -3369,15 +3381,36 @@ window.toggleSkillClient = async function(skillName, client, enable) {
     return window.linkSkillClient(skillName, client, action);
 };
 
-(window as any).editSkillClientPath = async function(client: string) {
+(window as any).editSkillClientPath = function(client: string, currentPath?: string) {
+    skillsLibraryState.pathEditClient = client;
+    const current = String(currentPath || '').trim();
     const defaultVal = `~/.${client.replace(/[-_]/g, '')}/skills`;
-    const input = prompt(`请输入「${clientDisplayName(client)}」的 Skill 目录绝对路径（留空使用默认路径）：`, defaultVal);
-    if (input === null) return;
+    const selected = skillsLibraryState.selectedSkill;
+    const strippedPath = current && selected && current.endsWith(`/${selected}`)
+        ? current.slice(0, -(selected.length + 1))
+        : (current || defaultVal);
+    skillsLibraryState.pathDraft = strippedPath;
+    renderSkillDetail();
+    setTimeout(() => {
+        const el = document.getElementById(`skill-path-input-${client}`) as HTMLInputElement | null;
+        if (el) el.focus();
+    }, 50);
+};
+
+(window as any).cancelSkillClientPath = function() {
+    skillsLibraryState.pathEditClient = '';
+    skillsLibraryState.pathDraft = '';
+    renderSkillDetail();
+};
+
+(window as any).saveSkillClientPath = async function(client: string) {
+    const el = document.getElementById(`skill-path-input-${client}`) as HTMLInputElement | null;
+    const pathVal = el ? el.value.trim() : '';
     try {
         const res = await fetch('/v1/skills/client-path', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ client, path: input.trim() }),
+            body: JSON.stringify({ client, path: pathVal }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.success) {
@@ -3385,6 +3418,8 @@ window.toggleSkillClient = async function(skillName, client, enable) {
             return;
         }
         showToast(`已更新「${clientDisplayName(client)}」的 Skill 目录`, 'success');
+        skillsLibraryState.pathEditClient = '';
+        skillsLibraryState.pathDraft = '';
         await refreshSkillsLibrary(true);
     } catch (e) {
         showToast('保存 Skill 路径失败：网络错误', 'error');

@@ -673,7 +673,7 @@ function renderEditor(): string {
               ]));
               return clientIds.map((cid) => {
                 const meta = metaList.find((m) => m.id === cid);
-                const label = meta?.label || clientDisplayName(cid);
+                const label = clientDisplayName(cid);
                 const isChecked = Boolean(d.distribution?.[cid] ?? (d as Record<string, any>)[cid]);
                 const pathDesc = meta?.path ? `写入 ${escapeHtml(meta.path)}` : cid === "codex" ? "写入 ~/.codex/config.toml" : cid === "claude" ? "写入 Claude-3p managedMcpServers" : cid === "claude_code" ? "写入 ~/.claude.json" : cid === "antigravity" ? "写入 mcp_config.json" : `写入 ~/.${cid}/mcp.json`;
                 return `
@@ -803,7 +803,7 @@ function renderDetail(): string {
       <div class="mcp-client-row">
         <div class="mcp-client-row-info">
           <span class="mcp-client-icon">${clientIcon(id)}</span>
-          <div class="mcp-client-name">${escapeHtml(meta?.label || clientDisplayName(id))}</div>
+          <div class="mcp-client-name">${escapeHtml(clientDisplayName(id))}</div>
         </div>
         <span class="mcp-badge ${cls}">${status}</span>
       </div>

@@ -937,7 +937,7 @@ test("renderClientList in MCP Hub dynamically renders custom client cards with s
 
   // Check renderClientList renders dynamically from state.data.clients
   assert.match(mcpTs, /function renderClientList\(\)/);
-  assert.match(mcpTs, /info\?\.label\s*\|\|\s*clientDisplayName\(client\.client\)/);
+  assert.match(mcpTs, /clientDisplayName\(client\.client\)/);
   assert.match(mcpTs, /clientIcon\(client\.client\)/);
   assert.match(mcpTs, /\$\{client\.servers\.length\}\s*个已安装/);
   assert.match(mcpTs, /window\.__mcpSavePath\('\$\{escapeHtml\(client\.client\)\}'\)/);
@@ -957,7 +957,7 @@ test("Server distribution checklist in MCP Hub includes custom client checkbox w
   // Check distribution in collect() & server cards
   assert.match(mcpTs, /distribution\[k\]\s*=\s*Boolean\(v\)/);
   assert.match(mcpTs, /function clientIcon/);
-  assert.match(mcpTs, /return "🤖"/);
+  assert.match(mcpTs, /return "⚪"/);
 });
 
 
