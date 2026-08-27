@@ -880,6 +880,61 @@ class BusinessKnowledgeGuardV2Tests(unittest.TestCase):
 
         self.assert_guard_status("partial", unresolved_id="OMIT-high")
 
+    def test_flow_diagnostics_downgrade_current_coverage(self):
+        use_cases = self.read_v2_jsonl("use-cases.jsonl")
+        use_cases[0]["main_flow"] = [
+            {
+                "local_id": "step-1",
+                "statement": "以 projectId+acceptanceNode 建立短时防重复键",
+                "claim_status": "confirmed",
+                "lifecycle_status": "active",
+                "confidence": "E3",
+            },
+            {
+                "local_id": "step-2",
+                "statement": "数据库更新后同步 Elasticsearch",
+                "claim_status": "confirmed",
+                "lifecycle_status": "active",
+                "confidence": "E3",
+            },
+        ]
+        self.write_v2_jsonl("use-cases.jsonl", use_cases)
+        manifest = self.read_v2_json("manifest.json")
+        manifest["current_coverage_status"] = "partial"
+        manifest["aggregate_status"] = "partial"
+        manifest["coverage_status"] = "partial"
+        self.write_v2_json("manifest.json", manifest)
+
+        result = guard.validate_revision(self.revision)
+        metric = result["coverage"]["metrics"][
+            "business_flow_semantic_quality"
+        ]
+
+        self.assertEqual(result["status"], "partial")
+        self.assertEqual(
+            result["coverage"]["current_coverage_status"],
+            "partial",
+        )
+        self.assertEqual(metric["numerator"], 0)
+        self.assertEqual(metric["denominator"], 1)
+        self.assertIn(
+            "UC-create-work-order#main_flow/step-1",
+            metric["unresolved_ids"],
+        )
+        self.assertEqual(len(result["business_flow_diagnostics"]), 2)
+
+    def test_valid_v2_revision_has_complete_business_flow_metric(self):
+        result = guard.validate_revision(self.revision)
+        metric = result["coverage"]["metrics"][
+            "business_flow_semantic_quality"
+        ]
+
+        self.assertEqual(result["status"], "passed")
+        self.assertEqual(metric["numerator"], 1)
+        self.assertEqual(metric["denominator"], 1)
+        self.assertEqual(metric["unresolved_ids"], [])
+        self.assertEqual(result["business_flow_diagnostics"], [])
+
     def test_v2_canonical_hash_ignores_coverage_review_and_projection_changes(self):
         before = guard.canonical_revision_sha256_v2(self.revision)
         self.write_v2_json("coverage.json", {"changed": True})

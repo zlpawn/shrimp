@@ -1434,6 +1434,7 @@ def calculate_v2_coverage(
     family_summary: dict[str, Any],
     investigation_summary: dict[str, Any],
     omission_summary: dict[str, Any],
+    flow_summary: dict[str, Any],
     history_summary: dict[str, Any],
 ) -> dict[str, Any]:
     metrics = {
@@ -1452,6 +1453,11 @@ def calculate_v2_coverage(
             investigation_summary["complete"],
             investigation_summary["required"],
             investigation_summary["unresolved_ids"],
+        ),
+        "business_flow_semantic_quality": _metric(
+            flow_summary["complete"],
+            flow_summary["required"],
+            flow_summary["unresolved_ids"],
         ),
     }
     for name, value in history_summary.get("metrics", {}).items():
@@ -1508,6 +1514,23 @@ def validate_revision_v2(root: Path) -> dict[str, Any]:
     omission_summary = validate_omission_audit(
         read_json(root / "omission-audit.json"), inventory_by_id, candidate_by_id
     )
+    confirmed_use_cases = [
+        use_case
+        for use_case in nodes_by_file["use-cases.jsonl"]
+        if use_case.get("claim_status") == "confirmed"
+    ]
+    flow_diagnostics = validate_business_flows(confirmed_use_cases)
+    affected_flow_use_cases = {
+        diagnostic["use_case_id"] for diagnostic in flow_diagnostics
+    }
+    flow_summary = {
+        "complete": len(confirmed_use_cases) - len(affected_flow_use_cases),
+        "required": len(confirmed_use_cases),
+        "unresolved_ids": [
+            diagnostic["flow_step_address"]
+            for diagnostic in flow_diagnostics
+        ],
+    }
 
     investigation_required = len(REQUIRED_INVESTIGATIONS) * sum(
         1 for item in candidates if item.get("resolved_use_case_id")
@@ -1521,12 +1544,14 @@ def validate_revision_v2(root: Path) -> dict[str, Any]:
         family_summary,
         {"complete": investigation_complete, "required": investigation_required, "unresolved_ids": []},
         omission_summary,
+        flow_summary,
         {"metrics": {}},
     )
     current_unresolved = (
         candidate_summary["unresolved_ids"]
         + omission_summary["critical_unresolved_ids"]
         + family_summary["unresolved_ids"]
+        + flow_summary["unresolved_ids"]
     )
     current_status = "passed" if not current_unresolved else "partial"
     history_status = manifest.get("history_coverage_status", "not_requested")
@@ -1550,6 +1575,7 @@ def validate_revision_v2(root: Path) -> dict[str, Any]:
         "status": aggregate,
         "errors": [],
         "coverage": coverage,
+        "business_flow_diagnostics": flow_diagnostics,
         "canonical_revision_sha256": manifest.get("canonical_revision_sha256"),
         "calculated_canonical_sha256": manifest.get("canonical_revision_sha256"),
         "node_count": len(node_ids),
