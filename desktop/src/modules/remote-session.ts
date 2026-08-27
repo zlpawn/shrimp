@@ -414,7 +414,7 @@ function renderCatalog(): string {
 
       ${state.error ? `<div class="rs-alert">${escapeHtml(state.error)}</div>` : ""}
 
-      <div class="endpoints-grid">
+      <div class="endpoints-grid rs-catalog-grid">
         <div class="node-card" role="button" tabindex="0"
              onclick="window.__rsOpenScene('antigravity')"
              onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.__rsOpenScene('antigravity');}">

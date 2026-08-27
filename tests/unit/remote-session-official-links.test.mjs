@@ -183,6 +183,7 @@ test("remote session panels and dialogs use spacious grouped layouts", () => {
   const catalogStart = source.indexOf("function renderCatalog");
   const catalogEnd = source.indexOf("function renderAntigravityScene", catalogStart);
   const catalog = source.slice(catalogStart, catalogEnd);
-  assert.equal((catalog.match(/class="endpoints-grid"/g) || []).length, 1);
+  assert.equal((catalog.match(/class="endpoints-grid rs-catalog-grid"/g) || []).length, 1);
   assert.match(catalog, /Antigravity 远程编码[\s\S]*Antigravity 官方远程控制/);
+  assert.match(css, /.rs-catalog-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
 });
