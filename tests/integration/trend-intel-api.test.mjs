@@ -297,6 +297,11 @@ test("scheduler - start, stop and status lifecycle", async () => {
     const statusRunning = scheduler.getStatus();
     assert.equal(statusRunning.running, true);
 
+    // Wait a tick for setImmediate crawl
+    await new Promise(r => setTimeout(r, 50));
+    const items = service.getRawItems({ limit: 10 });
+    assert.ok(items.length > 0);
+
     scheduler.stop();
     const statusStopped = scheduler.getStatus();
     assert.equal(statusStopped.running, false);
