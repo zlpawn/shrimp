@@ -260,9 +260,6 @@ function runningInspectorUrl(serverName: string): string {
 }
 
 function clientDisplayName(id: string): string {
-  if (!id) return "";
-  const info = state.data?.clientsMeta?.find((m) => m.id === id);
-  if (info?.label && info.label !== id) return info.label;
   const w = window as any;
   if (typeof w.__clientDisplayName === "function") {
     const custom = w.__clientDisplayName(id);
@@ -272,7 +269,14 @@ function clientDisplayName(id: string): string {
   if (id === "claude") return "Claude Desktop";
   if (id === "claude_code") return "Claude Code";
   if (id === "antigravity") return "Google Antigravity";
-  return info?.label || (typeof w.__clientDisplayName === "function" ? w.__clientDisplayName(id) : id) || id;
+  const meta = state.data?.clientsMeta || [];
+  const info = meta.find((m) => m.id === id);
+  if (info?.label && info.label !== id) return info.label;
+  if (typeof w.__clientDisplayName === "function") {
+    const custom = w.__clientDisplayName(id);
+    if (custom) return custom;
+  }
+  return id;
 }
 
 function clientLabel(id: string): string {
@@ -284,7 +288,7 @@ function clientIcon(id: string): string {
   if (id === "claude") return "🟠";
   if (id === "claude_code") return "🟣";
   if (id === "antigravity") return "🔵";
-  return "🤖";
+  return "⚪";
 }
 
 function renderHeader(): string {
@@ -321,8 +325,7 @@ function renderClientList(): string {
   const managedServers = state.data?.config?.servers || {};
 
   return clients.map((client) => {
-    const info = meta.find((m) => m.id === client.client);
-    const label = info?.label || clientDisplayName(client.client);
+    const label = clientDisplayName(client.client);
     const statusText = client.status === "ok"
       ? `${client.servers.length} 个已安装`
       : client.status === "missing" ? "配置文件未创建" : "配置文件解析失败";

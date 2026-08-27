@@ -3053,12 +3053,13 @@ function renderSkillDetail() {
         if (!tools[c]) {
             const present = Boolean(presentIn[c]);
             const displayName = clientDisplayName(c);
+            const stripped = c.replace(/[-_]/g, '');
             clientEntries.push({
                 id: c,
                 label: displayName,
                 short: c.slice(0, 1).toUpperCase(),
                 color: 'var(--text-primary)',
-                path: `~/.${c}/skills/${skill.name}`,
+                path: `~/.${stripped}/skills/${skill.name}`,
                 present,
                 isCentral: false,
                 isCopy: false,
@@ -3071,6 +3072,9 @@ function renderSkillDetail() {
         const actionLabel = item.present ? (item.isCopy ? '移除' : '取消链接') : (item.isCopy ? '复制' : '链接');
         const modeKind = item.isCopy ? 'copy' : 'link';
         const linkBtn = item.isCentral ? '' : `<button class="btn" style="padding:4px 10px;font-size:12px;flex:0 0 auto;" onclick="linkSkillClient('${escapeHtml(skill.name)}','${escapeHtml(item.id)}','${action}','${modeKind}')">${actionLabel}</button>`;
+        const customPathBtn = !item.isCentral
+            ? `<button class="btn btn-xs" style="padding:2px 8px;font-size:11px;margin-left:6px;flex:0 0 auto;" onclick="window.editSkillClientPath('${escapeHtml(item.id)}')" title="自定义此客户端的 Skill 目录">自定义路径</button>`
+            : '';
         const badgeLabel = item.present ? '已安装' : '未安装';
         return `
         <div class="skill-mount-row" data-client="${escapeHtml(item.id)}">
@@ -3079,7 +3083,10 @@ function renderSkillDetail() {
                     ${escapeHtml(item.short)}
                 </div>
                 <div class="skill-mount-copy">
-                    <div style="font-size:13px;font-weight:600;color:var(--text-primary);">${escapeHtml(item.label)}</div>
+                    <div style="display:flex;align-items:center;gap:4px;">
+                        <div style="font-size:13px;font-weight:600;color:var(--text-primary);">${escapeHtml(item.label)}</div>
+                        ${customPathBtn}
+                    </div>
                     <code class="path-pill skill-path-wrap">${escapeHtml(item.path)}</code>
                 </div>
             </div>
@@ -3360,6 +3367,28 @@ window.linkSkillClient = async function(skillName, client, action, modeKind) {
 window.toggleSkillClient = async function(skillName, client, enable) {
     const action = enable ? 'link' : 'unlink';
     return window.linkSkillClient(skillName, client, action);
+};
+
+(window as any).editSkillClientPath = async function(client: string) {
+    const defaultVal = `~/.${client.replace(/[-_]/g, '')}/skills`;
+    const input = prompt(`请输入「${clientDisplayName(client)}」的 Skill 目录绝对路径（留空使用默认路径）：`, defaultVal);
+    if (input === null) return;
+    try {
+        const res = await fetch('/v1/skills/client-path', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ client, path: input.trim() }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) {
+            showToast(data.error || '保存 Skill 路径失败', 'error');
+            return;
+        }
+        showToast(`已更新「${clientDisplayName(client)}」的 Skill 目录`, 'success');
+        await refreshSkillsLibrary(true);
+    } catch (e) {
+        showToast('保存 Skill 路径失败：网络错误', 'error');
+    }
 };
 
 (window as any).renderSkillDetailModal = renderSkillDetail;
