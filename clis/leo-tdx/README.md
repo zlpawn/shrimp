@@ -17,15 +17,16 @@ CLI 会从本机 WorkBuddy 凭据中提取 TDX token，并保存到 `~/.shrimp/s
 ```bash
 leo-tdx whoami
 leo-tdx tools
+leo-tdx tools --name-only
 leo-tdx schema tdx_quotes
 leo-tdx lookup 茅台
 leo-tdx quotes 600519 --market SH
 leo-tdx kline 600519 --market SH --period day --count 30
 leo-tdx screener "市盈率低于20"
-leo-tdx notice 600519
-leo-tdx report 600519
-leo-tdx news 新能源
-leo-tdx macro GDP
+leo-tdx notice 600519 --name 贵州茅台 --from 20260101 --to 20260131
+leo-tdx report 600519 --name 贵州茅台 --keywords 评级
+leo-tdx news --name 机器人 --from 20260801 --to 20260828
+leo-tdx macro "GDP|20240101|20241231||年度GDP"
 ```
 
 市场映射：SH=1，SZ=0，BJ=2，HK=31。默认输出 JSON，程序化处理不要解析 text 输出。

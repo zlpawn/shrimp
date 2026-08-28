@@ -40,6 +40,7 @@ export async function runCli(argv, {
       return format({ ok: true, result: await client.initialize() }, output);
     case "tools": {
       const tools = await client.listTools();
+      if (flags["name-only"]) return format({ ok: true, result: { tools: tools.map((tool) => tool.name) } }, output);
       return format({ ok: true, result: { tools } }, output);
     }
     case "schema": {
@@ -74,31 +75,14 @@ export async function runCli(argv, {
       }, output);
     }
     case "notice":
-      return callAndFormat(client, "wenda_notice_query", {
-        code: requireValue(args[1], "code"),
-        notice_type: flags.type,
-        date_range: flags.range,
-        limit: positiveInt(flags.limit, 20, "limit"),
-      }, output);
+      return callAndFormat(client, "wenda_notice_query", structuredWendaArguments(args, flags), output);
     case "report":
-      return callAndFormat(client, "wenda_report_query", {
-        code: requireValue(args[1], "code"),
-        keyword: flags.keyword,
-        date_range: flags.range,
-        limit: positiveInt(flags.limit, 20, "limit"),
-      }, output);
+      return callAndFormat(client, "wenda_report_query", structuredWendaArguments(args, flags), output);
     case "news":
-      return callAndFormat(client, "wenda_news_query", {
-        keyword: requireValue(args[1], "keyword"),
-        category: flags.category,
-        date_range: flags.range,
-        limit: positiveInt(flags.limit, 20, "limit"),
-      }, output);
+      return callAndFormat(client, "wenda_news_query", structuredWendaArguments(args, flags), output);
     case "macro":
       return callAndFormat(client, "wenda_macro_query", {
-        indicator: requireValue(args[1], "indicator"),
-        date_range: flags.range,
-        limit: positiveInt(flags.limit, 20, "limit"),
+        query: requireValue(args[1], "pipe query"),
       }, output);
     case "api":
       return callAndFormat(client, "tdx_api_data", {
@@ -179,6 +163,20 @@ function positiveInt(value, fallback, name) {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed <= 0 || parsed > 1000) throw new CliError(`${name} must be an integer from 1 to 1000.`, 2);
   return parsed;
+}
+
+function structuredWendaArguments(args, flags) {
+  const arguments_ = {};
+  const symbol = args[1];
+  if (symbol !== undefined) arguments_.symbol = symbol;
+  if (flags.name) arguments_.name = flags.name;
+  if (flags.from) arguments_.bdate = flags.from;
+  if (flags.to) arguments_.edate = flags.to;
+  if (flags.keywords) arguments_.keywords = flags.keywords;
+  if (flags.desc) arguments_.desc = flags.desc;
+  if (flags.raw) arguments_.raw = flags.raw;
+  if (!Object.keys(arguments_).length) throw new CliError("Provide a symbol, --name, --from, --to, --keywords, --desc, or --raw.", 2);
+  return arguments_;
 }
 
 async function runTokenCommand(args, { env, tokenManager, readStdin, rawArgv = [] }) {

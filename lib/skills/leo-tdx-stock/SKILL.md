@@ -13,6 +13,8 @@ description: 通过 leo-tdx CLI 查询通达信股票、K 线、选股、指标�
 2. 行情使用 `leo-tdx quotes <code> --market SH|SZ|BJ|HK`。
 3. 历史走势使用 `leo-tdx kline <code> --market ... --period day|week|month|1m|5m --count N`。
 4. 参数不确定时执行 `leo-tdx schema <tool>`，不要猜测服务端 schema。
+5. 枚举工具时优先使用 `leo-tdx tools --name-only`，避免完整 schema 消耗上下文。
+6. 公告、研报、资讯使用结构化参数：`--name`、`--from`、`--to`、`--keywords`；宏观必须使用管道式 `主体|开始日期|结束日期|关键词|描述`。
 5. 程序化处理使用默认 JSON 输出；`--output text` 仅用于给人类展示。
 
 ## 市场映射

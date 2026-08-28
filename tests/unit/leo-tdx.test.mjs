@@ -237,6 +237,51 @@ test("CLI wraps JSON argument errors as parameter errors", async () => {
   );
 });
 
+test("wenda commands map to the service's structured query schema", async () => {
+  const calls = [];
+  const transport = {
+    callTool: async (name, args) => {
+      calls.push([name, args]);
+      return "";
+    },
+    listTools: async () => [],
+  };
+  const env = { TDX_TOKEN: TOKEN };
+
+  await runCli(["notice", "600519", "--name", "贵州茅台", "--from", "20260101", "--to", "20260131", "--keywords", "业绩"], { env, transport });
+  assert.deepEqual(calls.at(-1), ["wenda_notice_query", {
+    symbol: "600519",
+    name: "贵州茅台",
+    bdate: "20260101",
+    edate: "20260131",
+    keywords: "业绩",
+  }]);
+
+  await runCli(["report", "600519", "--name", "贵州茅台", "--from", "20260101", "--to", "20260131", "--keywords", "评级"], { env, transport });
+  assert.equal(calls.at(-1)[0], "wenda_report_query");
+  assert.equal(calls.at(-1)[1].bdate, "20260101");
+
+  await runCli(["news", "--name", "机器人", "--from", "20260101", "--to", "20260131"], { env, transport });
+  assert.equal(calls.at(-1)[0], "wenda_news_query");
+  assert.equal(calls.at(-1)[1].name, "机器人");
+
+  await runCli(["macro", "GDP|20240101|20241231||年度GDP"], { env, transport });
+  assert.deepEqual(calls.at(-1), ["wenda_macro_query", { query: "GDP|20240101|20241231||年度GDP" }]);
+});
+
+test("tools command can emit a compact name-only list for agents", async () => {
+  const transport = {
+    callTool: async () => "",
+    initialize: async () => ({}),
+    listTools: async () => [
+      { name: "tdx_quotes", inputSchema: {} },
+      { name: "tdx_kline", inputSchema: {} },
+    ],
+  };
+  const result = await runCli(["tools", "--name-only"], { env: { TDX_TOKEN: TOKEN }, transport });
+  assert.deepEqual(JSON.parse(result), { ok: true, result: { tools: ["tdx_quotes", "tdx_kline"] } });
+});
+
 
 test("leo-tdx in-repo CLI and managed skill are discoverable", async () => {
   const cli = scanInRepoClis(process.cwd()).find((item) => item.name === "leo-tdx");
