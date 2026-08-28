@@ -19,8 +19,10 @@
 
 ## ⚡ 底层查询引擎架构与优化细节
 
-1. **接口直连（Zero Browser Dependency）**：
-   * 采用纯原生 Node.js 内置 `fetch()` 直连各 Kibana ES 网关（如 `https://fast108-kibana-logcenter-intra.intra.ke.com/internal/search/es`），**零外部浏览器依赖**；
+### 🌟 双引擎联动自愈架构 (Dual-Engine Self-Healing)
+1. **一级通道（Fast-Path 极速直连）**：
+   * 已收录的微服务直接向内网 Kibana 网关（如 `https://fast108-kibana-logcenter-intra.intra.ke.com/internal/search/es`）发起原生 HTTP POST；
+   * 单次检索耗时仅需 **100~200ms**，日常使用无需拉起浏览器。
    * 请求头必须携带：
      ```json
      {
@@ -30,10 +32,11 @@
      }
      ```
 
-2. **跨分片大查询保障 (`wait_for_completion_timeout`)**：
+2. **二级通道（`ego-browser` 智能自愈探针）**：
+   * 当直连返回异常（如 404/500/集群迁移）或遇到全新微服务时，脚本**自动拉起 `ego-browser` 访问 `https://fast.ke.com/#/search` 权威门户**；
+   * 通过前端级联选择器动态解析最新的 `cluster` 地址与 `index` 索引；
+   * 自动覆写更新本地自学习缓存 `~/.shrimp/skills/live-runner/service_map.json`，并立即自动重试查询，实现 **100% 无人干预的自动纠错自愈**。
+
+3. **跨分片大查询保障 (`wait_for_completion_timeout`)**：
    * 当检索跨多天（如 `48h`、`7d`）日志时，ES 集群并发扫描多达 40+ 个 Shards；
    * 必须在请求参数中设置 `wait_for_completion_timeout: '10s'`，防止 Kibana 在 1 秒时判定为 Async Search 导致前台漏读 Hits 列表。
-
-3. **自学习持久化存储**：
-   * 字典统一保存于 `~/.shrimp/skills/live-runner/service_map.json`；
-   * 支持全公司任意微服务的首次并发探测与长期缓存复用。
