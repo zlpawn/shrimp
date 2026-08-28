@@ -75,6 +75,7 @@ test("saveToken validates, stores, and restricts the token without echoing it", 
     const tokenPath = path.join(root, "token");
     assert.equal(fs.readFileSync(tokenPath, "utf8"), token + "\n");
     if (process.platform !== "win32") {
+      assert.equal(fs.statSync(path.join(home, ".shrimp", "secrets")).mode & 0o777, 0o700);
       assert.equal(fs.statSync(root).mode & 0o777, 0o700);
       assert.equal(fs.statSync(tokenPath).mode & 0o777, 0o600);
     }
@@ -228,6 +229,46 @@ test("wendao CLI login --stdin writes restricted credentials", async () => {
 
   } finally {
     fs.rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("wendao CLI flushes a large piped result before exiting", async () => {
+  const { spawn } = await import("node:child_process");
+  const preload = path.join(tempHome(), "wendao-fetch-mock.mjs");
+  fs.mkdirSync(path.dirname(preload), { recursive: true });
+  fs.writeFileSync(preload, [
+    "const result = 'x'.repeat(1024 * 1024);",
+    "globalThis.fetch = async () => ({",
+    "  ok: true,",
+    "  json: async () => ({ result, error: null }),",
+    "});",
+    "",
+  ].join("\n"), "utf8");
+
+  try {
+    const child = spawn(
+      process.execPath,
+      ["--import", `file://${preload}`, path.join(wendaoDir, "index.mjs"), "大结果测试"],
+      {
+        env: { ...process.env, WENDAO_API_KEY: "0123456789abcdef0123456789abcdef" },
+        stdio: ["ignore", "pipe", "pipe"],
+      },
+    );
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (chunk) => { stdout += chunk; });
+    child.stderr.on("data", (chunk) => { stderr += chunk; });
+    const code = await new Promise((resolve, reject) => {
+      child.on("error", reject);
+      child.on("close", resolve);
+    });
+
+    assert.equal(code, 0);
+    assert.equal(stderr, "");
+    assert.equal(stdout.length, 1024 * 1024 + 1);
+    assert.equal(stdout.at(-1), "\n");
+  } finally {
+    fs.rmSync(path.dirname(preload), { recursive: true, force: true });
   }
 });
 

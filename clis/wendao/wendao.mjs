@@ -51,10 +51,14 @@ export function saveToken(
 ) {
   const token = normalizeToken(value);
   const { root, token: tokenPath } = resolveSecretPaths({ homeDir, env });
+  const parent = path.dirname(root);
   fs.mkdirSync(root, { recursive: true, mode: 0o700 });
+  if (process.platform !== "win32") {
+    try { fs.chmodSync(parent, 0o700); } catch {}
+    fs.chmodSync(root, 0o700);
+  }
   fs.writeFileSync(tokenPath, token + "\n", { mode: 0o600, encoding: "utf8" });
   if (process.platform !== "win32") {
-    fs.chmodSync(root, 0o700);
     fs.chmodSync(tokenPath, 0o600);
   }
   return tokenPath;

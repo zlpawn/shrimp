@@ -40,8 +40,9 @@ try {
     process.exit(1);
   }
 
-  stdout.write(await queryWendao(query, { token }));
-  stdout.write("\n");
+  const result = await queryWendao(query, { token });
+  await writeAll(stdout, result);
+  await writeAll(stdout, "\n");
   process.exit(0);
 } catch (error) {
   stderr.write(`${error.message}\n`);
@@ -66,6 +67,15 @@ async function readStdin() {
   stdin.setEncoding("utf8");
   for await (const chunk of stdin) text += chunk;
   return text.trim();
+}
+
+function writeAll(stream, text) {
+  return new Promise((resolve, reject) => {
+    stream.write(text, (error) => {
+      if (error) reject(error);
+      else resolve();
+    });
+  });
 }
 
 function maskedStdout() {
