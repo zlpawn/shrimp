@@ -5325,32 +5325,7 @@ async function forwardOpenAIChatCompletionsResolved(body, clientReq, clientRes, 
         },
       });
       if (!loop.response) return;
-      const responseObj = loop.response;
-      const textOut = responseObj.output_text
-        || (Array.isArray(responseObj.output)
-          ? responseObj.output
-            .filter((item) => item?.type === "message")
-            .flatMap((item) => item.content || [])
-            .filter((part) => part?.type === "output_text")
-            .map((part) => part.text || "")
-            .join("")
-          : "");
-      const completion = {
-        id: responseObj.id || `chatcmpl_${Date.now()}`,
-        object: "chat.completion",
-        created: Math.floor(Date.now() / 1000),
-        model: requestedModel || resolvedModel,
-        choices: [{
-          index: 0,
-          message: { role: "assistant", content: textOut || null },
-          finish_reason: "stop",
-        }],
-        usage: {
-          prompt_tokens: responseObj.usage?.input_tokens || 0,
-          completion_tokens: responseObj.usage?.output_tokens || 0,
-          total_tokens: (responseObj.usage?.input_tokens || 0) + (responseObj.usage?.output_tokens || 0),
-        },
-      };
+      const completion = openAIResponseToChatCompletion(loop.response, requestedModel || resolvedModel);
       logInfo("openai_chat_response", {
         request_id: context.requestId,
         client: context.client,
@@ -6740,6 +6715,16 @@ function resolveUrl(baseUrl, defaultPath) {
     return `${trimmed}/v1/chat/completions`;
   }
 
+  if (defaultPath === "/v1/responses" || defaultPath === "/responses") {
+    if (trimmed.endsWith("/v1/responses") || trimmed.endsWith("/responses")) {
+      return trimmed;
+    }
+    if (trimmed.endsWith("/v1") || trimmed.endsWith("/v4") || trimmed.endsWith("/v3") || trimmed.endsWith("/v2")) {
+      return `${trimmed}/responses`;
+    }
+    return `${trimmed}/v1/responses`;
+  }
+
   const cleanPath = defaultPath.startsWith("/") ? defaultPath : `/${defaultPath}`;
   if (trimmed.endsWith(cleanPath)) {
     return trimmed;
@@ -7857,42 +7842,123 @@ async function fetchGrok(provider, endpointPath, body, signal) {
   }
 }
 
-// Aggregate an OpenAI Responses SSE stream (always streamed by the grok
-// proxy) into a single chat.completion JSON for non-streaming clients.
+// Aggregate an OpenAI Responses SSE stream into a single chat.completion JSON for non-streaming clients.
 async function collectResponsesSseAsChatCompletion(upstream, requestedModel) {
   let text = "";
+  let reasoning = "";
   let incomplete = false;
   let usage = null;
   let respId = "";
+  const toolCalls = new Map();
+
   await consumeSse(upstream.body, (eventName, payloadText) => {
+    if (payloadText === "[DONE]") return;
     const payload = parseJsonMaybe(payloadText) || {};
-    if (eventName === "response.created" || payload.type === "response.created") {
+    const evt = eventName || payload.type || "";
+
+    if (evt === "response.created") {
       respId = payload.response?.id || respId;
-    } else if (eventName === "response.output_text.delta" || payload.type === "response.output_text.delta") {
+    } else if (evt === "response.output_text.delta" || evt === "response.text.delta") {
       if (payload.delta) text += payload.delta;
-    } else if (eventName === "response.completed" || payload.type === "response.completed") {
+    } else if (
+      evt === "response.reasoning.delta"
+      || evt === "response.reasoning_text.delta"
+      || evt === "response.reasoning_summary_text.delta"
+    ) {
+      if (payload.delta) reasoning += payload.delta;
+    } else if (evt === "response.output_item.added") {
+      if (payload.item?.type === "function_call" || payload.item?.type === "custom_tool_call") {
+        const outIdx = payload.output_index ?? toolCalls.size;
+        toolCalls.set(outIdx, {
+          id: payload.item.call_id || payload.item.id || `call_${outIdx}`,
+          name: payload.item.name || "tool",
+          arguments: typeof payload.item.arguments === "string"
+            ? payload.item.arguments
+            : (payload.item.input ? JSON.stringify(payload.item.input) : ""),
+        });
+      }
+    } else if (evt === "response.function_call_arguments.delta") {
+      const outIdx = payload.output_index ?? 0;
+      if (!toolCalls.has(outIdx)) {
+        toolCalls.set(outIdx, {
+          id: payload.item_id || `call_${outIdx}`,
+          name: "tool",
+          arguments: "",
+        });
+      }
+      const entry = toolCalls.get(outIdx);
+      if (payload.delta) entry.arguments += payload.delta;
+    } else if (evt === "response.output_item.done") {
+      if (payload.item?.type === "function_call" || payload.item?.type === "custom_tool_call") {
+        const outIdx = payload.output_index ?? 0;
+        if (!toolCalls.has(outIdx)) {
+          toolCalls.set(outIdx, {
+            id: payload.item.call_id || payload.item.id || `call_${outIdx}`,
+            name: payload.item.name || "tool",
+            arguments: typeof payload.item.arguments === "string"
+              ? payload.item.arguments
+              : (payload.item.input ? JSON.stringify(payload.item.input) : ""),
+          });
+        } else {
+          const entry = toolCalls.get(outIdx);
+          if (payload.item.name) entry.name = payload.item.name;
+          if (!entry.arguments && payload.item.arguments) {
+            entry.arguments = typeof payload.item.arguments === "string"
+              ? payload.item.arguments
+              : JSON.stringify(payload.item.arguments || {});
+          }
+        }
+      }
+    } else if (evt === "response.completed" || evt === "response.done") {
       if (payload.response?.status === "incomplete") incomplete = true;
       usage = payload.response?.usage || usage;
     }
   });
+
   const inputTokens = usage?.input_tokens || 0;
   const outputTokens = usage?.output_tokens || 0;
+  const finishReason = incomplete
+    ? "length"
+    : toolCalls.size > 0
+      ? "tool_calls"
+      : "stop";
+
+  const message = {
+    role: "assistant",
+    content: text || (toolCalls.size > 0 ? null : ""),
+  };
+
+  if (reasoning) {
+    message.reasoning_content = reasoning;
+  }
+
+  if (toolCalls.size > 0) {
+    message.tool_calls = Array.from(toolCalls.values()).map((call) => ({
+      id: call.id,
+      type: "function",
+      function: {
+        name: call.name,
+        arguments: call.arguments,
+      },
+    }));
+  }
+
   return {
     id: respId || `chatcmpl_${Date.now()}`,
     object: "chat.completion",
     created: Math.floor(Date.now() / 1000),
-    model: requestedModel || "grok",
+    model: requestedModel || "custom-model",
     choices: [
       {
         index: 0,
-        message: { role: "assistant", content: text },
-        finish_reason: incomplete ? "length" : "stop",
+        message,
+        finish_reason: finishReason,
       },
     ],
     usage: {
       prompt_tokens: inputTokens,
       completion_tokens: outputTokens,
-      total_tokens: inputTokens + outputTokens,
+      total_tokens: usage?.total_tokens || inputTokens + outputTokens,
     },
   };
 }
@@ -9484,6 +9550,55 @@ function openAIResponseToChatCompletion(upstreamJson, requestedModel) {
   const inputTokens = upstreamJson.usage?.input_tokens || 0;
   const outputTokens = upstreamJson.usage?.output_tokens || 0;
 
+  const toolCalls = [];
+  let reasoning = "";
+  if (Array.isArray(upstreamJson.output)) {
+    for (const item of upstreamJson.output) {
+      if (!item) continue;
+      if (item.type === "function_call" || item.type === "custom_tool_call") {
+        toolCalls.push({
+          id: item.call_id || item.id || randomUUID(),
+          type: "function",
+          function: {
+            name: item.name || "tool",
+            arguments: typeof item.arguments === "string"
+              ? item.arguments
+              : (item.type === "custom_tool_call" && item.input != null
+                ? (typeof item.input === "string" ? item.input : JSON.stringify(item.input))
+                : JSON.stringify(item.arguments || {})),
+          },
+        });
+      } else if (item.type === "reasoning") {
+        if (Array.isArray(item.summary)) {
+          for (const s of item.summary) {
+            if (s?.text) reasoning += s.text;
+          }
+        } else if (item.text) {
+          reasoning += item.text;
+        }
+      }
+    }
+  }
+
+  const finishReason = incomplete
+    ? "length"
+    : toolCalls.length > 0
+      ? "tool_calls"
+      : "stop";
+
+  const message = {
+    role: "assistant",
+    content: text || (toolCalls.length > 0 ? null : ""),
+  };
+
+  if (reasoning) {
+    message.reasoning_content = reasoning;
+  }
+
+  if (toolCalls.length > 0) {
+    message.tool_calls = toolCalls;
+  }
+
   return {
     id: upstreamJson.id || `chatcmpl_${Date.now()}`,
     object: "chat.completion",
@@ -9492,11 +9607,8 @@ function openAIResponseToChatCompletion(upstreamJson, requestedModel) {
     choices: [
       {
         index: 0,
-        message: {
-          role: "assistant",
-          content: text,
-        },
-        finish_reason: incomplete ? "length" : "stop",
+        message,
+        finish_reason: finishReason,
       },
     ],
     usage: {
@@ -10682,6 +10794,11 @@ async function streamOpenAIResponseAsChatCompletion(upstream, clientRes, request
   const completionId = `chatcmpl_${Date.now()}`;
   const created = Math.floor(Date.now() / 1000);
   let sentRole = false;
+  let sawToolUse = false;
+  let incomplete = false;
+
+  const toolBlocks = new Map();
+  let nextToolIndex = 0;
 
   const ensureRole = () => {
     if (sentRole) return;
@@ -10695,37 +10812,199 @@ async function streamOpenAIResponseAsChatCompletion(upstream, clientRes, request
     });
   };
 
+  const getOrInitTool = (outputIndex, item = {}) => {
+    const key = outputIndex != null ? outputIndex : nextToolIndex;
+    if (toolBlocks.has(key)) return toolBlocks.get(key);
+    const tool = {
+      index: nextToolIndex++,
+      id: item.call_id || item.id || `call_${Date.now()}_${nextToolIndex}`,
+      name: item.name || "tool",
+      started: false,
+    };
+    toolBlocks.set(key, tool);
+    sawToolUse = true;
+    return tool;
+  };
+
   await consumeSse(upstream.body, (eventName, payloadText) => {
     if (payloadText === "[DONE]") return;
     const payload = parseJsonMaybe(payloadText) || {};
+    const evt = eventName || payload.type || "";
 
-    if (eventName === "response.output_text.delta" || payload.type === "response.output_text.delta") {
+    if (evt === "response.output_text.delta" || evt === "response.text.delta") {
+      const deltaText = payload.delta || "";
+      if (deltaText) {
+        ensureRole();
+        writeOpenAISse(clientRes, {
+          id: completionId,
+          object: "chat.completion.chunk",
+          created,
+          model: requestedModel || "custom-model",
+          choices: [{ index: 0, delta: { content: deltaText }, finish_reason: null }],
+        });
+      }
+    } else if (
+      evt === "response.reasoning.delta"
+      || evt === "response.reasoning_text.delta"
+      || evt === "response.reasoning_summary_text.delta"
+    ) {
+      const deltaReasoning = payload.delta || "";
+      if (deltaReasoning) {
+        ensureRole();
+        writeOpenAISse(clientRes, {
+          id: completionId,
+          object: "chat.completion.chunk",
+          created,
+          model: requestedModel || "custom-model",
+          choices: [{ index: 0, delta: { reasoning_content: deltaReasoning }, finish_reason: null }],
+        });
+      }
+    } else if (evt === "response.output_item.added") {
+      if (payload.item?.type === "function_call" || payload.item?.type === "custom_tool_call") {
+        ensureRole();
+        const tool = getOrInitTool(payload.output_index, payload.item);
+        if (!tool.started) {
+          tool.started = true;
+          writeOpenAISse(clientRes, {
+            id: completionId,
+            object: "chat.completion.chunk",
+            created,
+            model: requestedModel || "custom-model",
+            choices: [
+              {
+                index: 0,
+                delta: {
+                  tool_calls: [
+                    {
+                      index: tool.index,
+                      id: tool.id,
+                      type: "function",
+                      function: {
+                        name: tool.name,
+                        arguments: payload.item.arguments || (payload.item.input ? JSON.stringify(payload.item.input) : ""),
+                      },
+                    },
+                  ],
+                },
+                finish_reason: null,
+              },
+            ],
+          });
+        }
+      }
+    } else if (evt === "response.function_call_arguments.delta") {
       ensureRole();
-      writeOpenAISse(clientRes, {
-        id: completionId,
-        object: "chat.completion.chunk",
-        created,
-        model: requestedModel || "custom-model",
-        choices: [{ index: 0, delta: { content: payload.delta || "" }, finish_reason: null }],
-      });
-    }
-
-    if (eventName === "response.completed" || payload.type === "response.completed") {
-      ensureRole();
-      writeOpenAISse(clientRes, {
-        id: completionId,
-        object: "chat.completion.chunk",
-        created,
-        model: requestedModel || "custom-model",
-        choices: [{ index: 0, delta: {}, finish_reason: "stop" }],
-      });
+      const tool = getOrInitTool(payload.output_index, { id: payload.item_id });
+      if (!tool.started) {
+        tool.started = true;
+        writeOpenAISse(clientRes, {
+          id: completionId,
+          object: "chat.completion.chunk",
+          created,
+          model: requestedModel || "custom-model",
+          choices: [
+            {
+              index: 0,
+              delta: {
+                tool_calls: [
+                  {
+                    index: tool.index,
+                    id: tool.id,
+                    type: "function",
+                    function: {
+                      name: tool.name,
+                      arguments: payload.delta || "",
+                    },
+                  },
+                ],
+              },
+              finish_reason: null,
+            },
+          ],
+        });
+      } else if (payload.delta) {
+        writeOpenAISse(clientRes, {
+          id: completionId,
+          object: "chat.completion.chunk",
+          created,
+          model: requestedModel || "custom-model",
+          choices: [
+            {
+              index: 0,
+              delta: {
+                tool_calls: [
+                  {
+                    index: tool.index,
+                    function: {
+                      arguments: payload.delta,
+                    },
+                  },
+                ],
+              },
+              finish_reason: null,
+            },
+          ],
+        });
+      }
+    } else if (evt === "response.output_item.done") {
+      if (payload.item?.type === "function_call" || payload.item?.type === "custom_tool_call") {
+        ensureRole();
+        const tool = getOrInitTool(payload.output_index, payload.item);
+        if (!tool.started) {
+          tool.started = true;
+          writeOpenAISse(clientRes, {
+            id: completionId,
+            object: "chat.completion.chunk",
+            created,
+            model: requestedModel || "custom-model",
+            choices: [
+              {
+                index: 0,
+                delta: {
+                  tool_calls: [
+                    {
+                      index: tool.index,
+                      id: tool.id,
+                      type: "function",
+                      function: {
+                        name: tool.name,
+                        arguments: payload.item.arguments || (payload.item.input ? JSON.stringify(payload.item.input) : ""),
+                      },
+                    },
+                  ],
+                },
+                finish_reason: null,
+              },
+            ],
+          });
+        }
+      }
+    } else if (evt === "response.completed" || evt === "response.done") {
+      if (payload.response?.status === "incomplete") {
+        incomplete = true;
+      }
     }
   });
 
   if (!sentRole) ensureRole();
+
+  const finalFinishReason = incomplete
+    ? "length"
+    : sawToolUse
+      ? "tool_calls"
+      : "stop";
+
+  writeOpenAISse(clientRes, {
+    id: completionId,
+    object: "chat.completion.chunk",
+    created,
+    model: requestedModel || "custom-model",
+    choices: [{ index: 0, delta: {}, finish_reason: finalFinishReason }],
+  });
+
   clientRes.write("data: [DONE]\n\n");
   clientRes.end();
-  logInfo("openai_responses_as_chat_stream_complete", { request_id: requestId });
+  logInfo("openai_responses_as_chat_stream_complete", { request_id: requestId, finish_reason: finalFinishReason });
 }
 
 async function streamOpenAIChatAsAnthropicMessages(upstream, clientRes, requestedModel, requestId) {

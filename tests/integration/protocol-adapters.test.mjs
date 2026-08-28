@@ -729,3 +729,242 @@ test("Grok requests are concurrent by default when max_concurrency is omitted", 
   await Promise.all([makeRequest(), makeRequest()]);
   assert.equal(maxActiveRequests, 2);
 });
+
+test("Chat Completions client receives Responses function calls and reasoning in stream", async (t) => {
+  const mock = http.createServer((request, response) => {
+    let raw = "";
+    request.setEncoding("utf8");
+    request.on("data", (chunk) => { raw += chunk; });
+    request.on("end", () => {
+      response.writeHead(200, { "content-type": "text/event-stream" });
+      const events = [
+        ["response.created", { type: "response.created", response: { id: "resp_test", status: "in_progress" } }],
+        ["response.reasoning.delta", { type: "response.reasoning.delta", delta: "Thinking..." }],
+        ["response.output_item.added", {
+          type: "response.output_item.added",
+          output_index: 0,
+          item: { id: "fc_calc", call_id: "call_123", type: "function_call", name: "calculate", arguments: "" },
+        }],
+        ["response.function_call_arguments.delta", {
+          type: "response.function_call_arguments.delta",
+          output_index: 0,
+          item_id: "call_123",
+          delta: '{"x": 10',
+        }],
+        ["response.function_call_arguments.delta", {
+          type: "response.function_call_arguments.delta",
+          output_index: 0,
+          item_id: "call_123",
+          delta: ', "y": 20}',
+        }],
+        ["response.output_item.done", {
+          type: "response.output_item.done",
+          output_index: 0,
+          item: { id: "fc_calc", call_id: "call_123", type: "function_call", name: "calculate", arguments: '{"x": 10, "y": 20}' },
+        }],
+        ["response.completed", {
+          type: "response.completed",
+          response: { id: "resp_test", status: "completed", usage: { input_tokens: 10, output_tokens: 15, total_tokens: 25 } },
+        }],
+      ];
+      for (const [event, data] of events) {
+        response.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+      }
+      response.end();
+    });
+  });
+  const mockPort = await listen(mock);
+  t.after(() => mock.close());
+
+  const reservation = http.createServer();
+  const gatewayPort = await listen(reservation);
+  await new Promise((resolve) => reservation.close(resolve));
+
+  const tempDir = await mkdtemp(path.join(tmpdir(), "local-ai-gateway-wb-responses-stream-"));
+  t.after(() => rm(tempDir, { recursive: true, force: true }));
+  const configFile = path.join(tempDir, "gateway.config.json");
+  await writeFile(configFile, JSON.stringify({
+    server: { host: "127.0.0.1", port: gatewayPort },
+    clients: {
+      "work-buddy": {
+        protocol: "openai",
+        endpoints: [{
+          name: "mock-responses-ep",
+          type: "openai-responses",
+          base_url: `http://127.0.0.1:${mockPort}`,
+          api_key: "env:MOCK_API_KEY",
+          models: ["responses-test-model"],
+          model_mapping: {},
+        }],
+      },
+    },
+  }));
+
+  const gateway = spawn(process.execPath, ["server.js"], {
+    cwd: ROOT,
+    env: {
+      ...process.env,
+      GATEWAY_CONFIG_FILE: configFile,
+      GATEWAY_NO_OPEN: "1",
+      GATEWAY_PORT: String(gatewayPort),
+      CLAUDE_3P_SYNC_DISABLED: "1",
+      MOCK_API_KEY: "test-key",
+    },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  t.after(() => {
+    if (gateway.exitCode == null) gateway.kill();
+  });
+  await waitForHealth(gatewayPort, gateway);
+
+  const response = await fetch(`http://127.0.0.1:${gatewayPort}/work-buddy/v1/chat/completions`, {
+    method: "POST",
+    headers: {
+      authorization: "Bearer test-key",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "responses-test-model",
+      stream: true,
+      messages: [{ role: "user", content: "Calculate 10 + 20" }],
+      tools: [{
+        type: "function",
+        function: {
+          name: "calculate",
+          parameters: { type: "object", properties: { x: { type: "number" }, y: { type: "number" } } },
+        },
+      }],
+    }),
+  });
+
+  assert.equal(response.status, 200);
+  const text = await response.text();
+  const lines = text.split("\n").filter((l) => l.startsWith("data: ") && l !== "data: [DONE]");
+  const chunks = lines.map((l) => JSON.parse(l.slice(6)));
+
+  let accumulatedReasoning = "";
+  let toolCallName = "";
+  let accumulatedArgs = "";
+  let finalFinishReason = null;
+
+  for (const chunk of chunks) {
+    const choice = chunk.choices?.[0];
+    if (choice?.delta?.reasoning_content) {
+      accumulatedReasoning += choice.delta.reasoning_content;
+    }
+    if (choice?.delta?.tool_calls) {
+      for (const tc of choice.delta.tool_calls) {
+        if (tc.function?.name) toolCallName = tc.function.name;
+        if (tc.function?.arguments) accumulatedArgs += tc.function.arguments;
+      }
+    }
+    if (choice?.finish_reason) {
+      finalFinishReason = choice.finish_reason;
+    }
+  }
+
+  assert.equal(accumulatedReasoning, "Thinking...");
+  assert.equal(toolCallName, "calculate");
+  assert.equal(accumulatedArgs, '{"x": 10, "y": 20}');
+  assert.equal(finalFinishReason, "tool_calls");
+});
+
+test("Chat Completions client receives Responses function calls and reasoning in non-stream", async (t) => {
+  const mock = http.createServer((request, response) => {
+    let raw = "";
+    request.setEncoding("utf8");
+    request.on("data", (chunk) => { raw += chunk; });
+    request.on("end", () => {
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(JSON.stringify({
+        id: "resp_json_test",
+        object: "response",
+        created_at: Math.floor(Date.now() / 1000),
+        model: "responses-test-model",
+        status: "completed",
+        output: [
+          { type: "reasoning", summary: [{ type: "summary_text", text: "Deliberating..." }] },
+          {
+            type: "function_call",
+            id: "fc_search_1",
+            call_id: "call_search_123",
+            name: "web_search",
+            arguments: JSON.stringify({ query: "weather today" }),
+          },
+        ],
+        usage: { input_tokens: 5, output_tokens: 10, total_tokens: 15 },
+      }));
+    });
+  });
+  const mockPort = await listen(mock);
+  t.after(() => mock.close());
+
+  const reservation = http.createServer();
+  const gatewayPort = await listen(reservation);
+  await new Promise((resolve) => reservation.close(resolve));
+
+  const tempDir = await mkdtemp(path.join(tmpdir(), "local-ai-gateway-wb-responses-nonstream-"));
+  t.after(() => rm(tempDir, { recursive: true, force: true }));
+  const configFile = path.join(tempDir, "gateway.config.json");
+  await writeFile(configFile, JSON.stringify({
+    server: { host: "127.0.0.1", port: gatewayPort },
+    clients: {
+      "work-buddy": {
+        protocol: "openai",
+        endpoints: [{
+          name: "mock-responses-ep",
+          type: "openai-responses",
+          base_url: `http://127.0.0.1:${mockPort}`,
+          api_key: "env:MOCK_API_KEY",
+          models: ["responses-test-model"],
+          model_mapping: {},
+        }],
+      },
+    },
+  }));
+
+  const gateway = spawn(process.execPath, ["server.js"], {
+    cwd: ROOT,
+    env: {
+      ...process.env,
+      GATEWAY_CONFIG_FILE: configFile,
+      GATEWAY_NO_OPEN: "1",
+      GATEWAY_PORT: String(gatewayPort),
+      CLAUDE_3P_SYNC_DISABLED: "1",
+      MOCK_API_KEY: "test-key",
+    },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  t.after(() => {
+    if (gateway.exitCode == null) gateway.kill();
+  });
+  await waitForHealth(gatewayPort, gateway);
+
+  const response = await fetch(`http://127.0.0.1:${gatewayPort}/work-buddy/v1/chat/completions`, {
+    method: "POST",
+    headers: {
+      authorization: "Bearer test-key",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "responses-test-model",
+      stream: false,
+      messages: [{ role: "user", content: "What is the weather?" }],
+    }),
+  });
+
+  assert.equal(response.status, 200);
+  const data = await response.json();
+
+  assert.equal(data.choices[0]?.message?.reasoning_content, "Deliberating...");
+  assert.equal(data.choices[0]?.finish_reason, "tool_calls");
+  assert.deepEqual(data.choices[0]?.message?.tool_calls, [{
+    id: "call_search_123",
+    type: "function",
+    function: {
+      name: "web_search",
+      arguments: JSON.stringify({ query: "weather today" }),
+    },
+  }]);
+});
+
