@@ -8,6 +8,7 @@ import {
 
 const MARKET_SETCODES = { SH: "1", SZ: "0", BJ: "2", HK: "31" };
 const DEFAULT_CLIENT_INFO = { name: "leo-tdx", version: "1.0.0" };
+const OUTPUT_FORMATS = new Set(["json", "text", "raw"]);
 
 export async function runCli(argv, {
   env = process.env,
@@ -19,9 +20,12 @@ export async function runCli(argv, {
   const args = flags.positionals;
   const output = flags.output || "json";
   const command = args[0];
+  if (!OUTPUT_FORMATS.has(output)) {
+    throw new CliError(`Unsupported output format: ${output}. Use json, text, or raw.`, 2);
+  }
 
   if (command === "token") {
-    const result = await runTokenCommand(args.slice(1), { env, tokenManager, readStdin });
+    const result = await runTokenCommand(args.slice(1), { env, tokenManager, readStdin, rawArgv: argv });
     return format(result, output);
   }
 
@@ -33,7 +37,7 @@ export async function runCli(argv, {
 
   switch (command) {
     case "whoami":
-      return format({ ok: true, result: { serverInfo: DEFAULT_CLIENT_INFO } }, output);
+      return format({ ok: true, result: await client.initialize() }, output);
     case "tools": {
       const tools = await client.listTools();
       return format({ ok: true, result: { tools } }, output);
@@ -101,11 +105,16 @@ export async function runCli(argv, {
         entry: requireValue(args[1], "entry"),
         fixedTag: flags["fixed-tag"],
         mode: flags.mode,
-        params: flags.params ? JSON.parse(flags.params) : undefined,
+        params: flags.params ? parseJsonArgument(flags.params, "params") : undefined,
       }, output);
     case "call": {
       const tool = requireValue(args[1], "tool");
-      return callAndFormat(client, tool, JSON.parse(requireValue(args[2], "arguments JSON")), output);
+      return callAndFormat(
+        client,
+        tool,
+        parseJsonArgument(requireValue(args[2], "arguments JSON"), "arguments"),
+        output,
+      );
     }
     default:
       throw new CliError(usage(), 2);
@@ -146,8 +155,9 @@ function resolveSecurity(args, flags) {
 }
 
 async function callAndFormat(client, tool, arguments_, output) {
+  if (output === "raw") return JSON.stringify(await client.callToolRaw(tool, arguments_));
   const text = await client.callTool(tool, arguments_);
-  if (output === "text" || output === "raw") return text;
+  if (output === "text") return text;
   let result;
   try { result = JSON.parse(text); } catch { result = text; }
   return format({ ok: true, tool, result }, output);
@@ -171,7 +181,7 @@ function positiveInt(value, fallback, name) {
   return parsed;
 }
 
-async function runTokenCommand(args, { env, tokenManager, readStdin }) {
+async function runTokenCommand(args, { env, tokenManager, readStdin, rawArgv = [] }) {
   const action = args[0];
   if (action === "extract") {
     const token = tokenManager.extractWorkBuddyToken({ env });
@@ -189,7 +199,11 @@ async function runTokenCommand(args, { env, tokenManager, readStdin }) {
     return { ok: true, status: "cleared" };
   }
   if (action === "set") {
-    const token = args.includes("--stdin") ? await (readStdin || processStdin)() : args[0];
+    const tokenArgs = rawArgv;
+    if (!tokenArgs.includes("--stdin")) {
+      throw new CliError("Token input is only accepted through hidden stdin. Run: leo-tdx token set --stdin", 2);
+    }
+    const token = await (readStdin || processStdin)();
     tokenManager.saveToken(token, { env });
     return { ok: true, status: "configured", source: "input" };
   }
@@ -204,4 +218,12 @@ async function processStdin() {
 
 function usage() {
   return `Usage: leo-tdx whoami | tools | schema <tool> | lookup <query> | quotes <code> [setcode] | kline <code> ... | token extract|status|set|clear`;
+}
+
+function parseJsonArgument(value, name) {
+  try {
+    return JSON.parse(value);
+  } catch {
+    throw new CliError(`Invalid JSON arguments for ${name}.`, 2);
+  }
 }

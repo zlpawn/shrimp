@@ -9,9 +9,10 @@ import {
   candidateWorkBuddyRoots,
   extractWorkBuddyToken,
   readToken,
+  resolveSecretPaths,
   saveToken,
 } from "../../clis/leo-tdx/lib/token.mjs";
-import { createMcpClient } from "../../clis/leo-tdx/lib/mcp.mjs";
+import { createMcpClient, McpError } from "../../clis/leo-tdx/lib/mcp.mjs";
 import { runCli } from "../../clis/leo-tdx/lib/cli.mjs";
 import { scanInRepoClis } from "../../lib/cli-core/discovery.mjs";
 import { SkillInstaller } from "../../lib/session-sync/skill-installer.mjs";
@@ -171,6 +172,69 @@ test("CLI maps commands, markets, and outputs without exposing credentials", asy
 
   const text = await runCli(["quotes", "600519", "1", "--output", "text"], { env, transport });
   assert.equal(text, JSON.stringify({ tool: "tdx_quotes", args: { code: "600519", setcode: "1" } }));
+});
+
+test("whoami performs a real MCP handshake and raw output preserves JSON-RPC response", async () => {
+  const transport = {
+    initialize: async () => ({ serverInfo: { name: "tdx-finance-mcp-server", version: "1.0.0" } }),
+    listTools: async () => [],
+    callToolRaw: async () => transport.lastResponse,
+    lastResponse: { jsonrpc: "2.0", id: 9, result: { content: [] } },
+  };
+  const whoami = JSON.parse(await runCli(["whoami"], { env: { TDX_TOKEN: TOKEN }, transport }));
+  assert.equal(whoami.result.serverInfo.name, "tdx-finance-mcp-server");
+
+  const raw = await runCli(["quotes", "600519", "1", "--output", "raw"], { env: { TDX_TOKEN: TOKEN }, transport });
+  assert.deepEqual(JSON.parse(raw), transport.lastResponse);
+});
+
+test("token set only accepts hidden stdin input and output format is validated", async () => {
+  const env = {};
+  const saved = [];
+  const tokenManager = {
+    readToken,
+    extractWorkBuddyToken,
+    saveToken: (token, options) => {
+      saved.push(token);
+      return saveToken(token, options);
+    },
+    resolveSecretPaths,
+  };
+
+  await assert.rejects(
+    runCli(["token", "set", TOKEN], { env, tokenManager }),
+    /token set --stdin/i,
+  );
+  await runCli(["token", "set", "--stdin"], {
+    env,
+    tokenManager,
+    readStdin: async () => TOKEN,
+  });
+  assert.deepEqual(saved, [TOKEN]);
+
+  await assert.rejects(
+    runCli(["tools", "--output", "yaml"], { env: { TDX_TOKEN: TOKEN }, transport: { listTools: async () => [] } }),
+    /Unsupported output format/i,
+  );
+});
+
+test("MCP errors classify authentication, server, and network failures", async () => {
+  assert.equal(new McpError("HTTP 401", 401).exitCode, 3);
+  assert.equal(new McpError("HTTP 500", 500).exitCode, 4);
+  const networkError = new TypeError("fetch failed");
+  assert.equal(McpError.from(networkError).exitCode, 5);
+});
+
+test("CLI wraps JSON argument errors as parameter errors", async () => {
+  const transport = { callTool: async () => "", listTools: async () => [] };
+  await assert.rejects(
+    runCli(["call", "tdx_quotes", "{invalid"], { env: { TDX_TOKEN: TOKEN }, transport }),
+    (error) => {
+      assert.equal(error.exitCode, 2);
+      assert.match(error.message, /Invalid JSON arguments/i);
+      return true;
+    },
+  );
 });
 
 

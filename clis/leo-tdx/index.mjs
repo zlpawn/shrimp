@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import process from "node:process";
+import { McpError } from "./lib/mcp.mjs";
 import { CliError, runCli } from "./lib/cli.mjs";
 
 try {
@@ -9,7 +10,12 @@ try {
   process.exit(0);
 } catch (error) {
   process.stderr.write(`${error.message}\n`);
-  process.exit(error instanceof CliError ? error.exitCode : 4);
+  const exitCode = error instanceof CliError || error instanceof McpError
+    ? error.exitCode
+    : error?.name === "SyntaxError"
+      ? 2
+      : 4;
+  process.exit(exitCode);
 }
 
 function writeAll(stream, text) {
