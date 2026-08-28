@@ -1,0 +1,118 @@
+{
+  "zulin-iot-platform": {
+    "index": "index-8172-7302*",
+    "cluster": "https://fast108-kibana-logcenter-intra.intra.ke.com"
+  },
+  "zulin-iot-platform:prod": {
+    "index": "index-8172-7302*",
+    "cluster": "https://fast108-kibana-logcenter-intra.intra.ke.com"
+  },
+  "iot-platform": {
+    "index": "index-8172-7302*",
+    "cluster": "https://fast108-kibana-logcenter-intra.intra.ke.com"
+  },
+  "智能客服生产日志": {
+    "index": "index-17376-17615*",
+    "cluster": "https://fast104-kibana-logcenter-intra.intra.ke.com"
+  },
+  "智能客服": {
+    "index": "index-17376-17615*",
+    "cluster": "https://fast104-kibana-logcenter-intra.intra.ke.com"
+  },
+  "智慧工地-品控头戴式记录仪": {
+    "index": "index-13401-13764*",
+    "cluster": "https://fast101-kibana-logcenter-intra.intra.ke.com"
+  },
+  "品控头戴式记录仪": {
+    "index": "index-13401-13764*",
+    "cluster": "https://fast101-kibana-logcenter-intra.intra.ke.com"
+  },
+  "智慧工地-算法框架日志": {
+    "index": "index-14970-15471*",
+    "cluster": "https://fast105-kibana-logcenter-intra.intra.ke.com"
+  },
+  "算法框架日志": {
+    "index": "index-14970-15471*",
+    "cluster": "https://fast105-kibana-logcenter-intra.intra.ke.com"
+  },
+  "智慧工地saas全量日志": {
+    "index": "index-9592-8939*",
+    "cluster": "https://fast105-kibana-logcenter-intra.intra.ke.com"
+  },
+  "智慧工地saas": {
+    "index": "index-9592-8939*",
+    "cluster": "https://fast105-kibana-logcenter-intra.intra.ke.com"
+  },
+  "智慧工地saas:error": {
+    "index": "index-9592-13329*",
+    "cluster": "https://fast105-kibana-logcenter-intra.intra.ke.com"
+  },
+  "beijia-iot-warehouse": {
+    "index": "index-13831-14876*",
+    "cluster": "https://fast105-kibana-logcenter-intra.intra.ke.com"
+  },
+  "iot-warehouse": {
+    "index": "index-13831-14876*",
+    "cluster": "https://fast105-kibana-logcenter-intra.intra.ke.com"
+  },
+  "huiju-iot-cloud-plat生产": {
+    "index": "index-16112-16341*",
+    "cluster": "https://fast102-kibana-logcenter-intra.intra.ke.com"
+  },
+  "huiju-iot-cloud-plat:prod": {
+    "index": "index-16112-16341*",
+    "cluster": "https://fast102-kibana-logcenter-intra.intra.ke.com"
+  },
+  "huiju-iot-cloud-plat": {
+    "index": "index-16112-16341*",
+    "cluster": "https://fast102-kibana-logcenter-intra.intra.ke.com"
+  },
+  "iot-erp-core生产": {
+    "index": "index-15409-15829*",
+    "cluster": "https://fast101-kibana-logcenter-intra.intra.ke.com"
+  },
+  "iot-erp-core:prod": {
+    "index": "index-15409-15829*",
+    "cluster": "https://fast101-kibana-logcenter-intra.intra.ke.com"
+  },
+  "iot-erp-core": {
+    "index": "index-15409-15829*",
+    "cluster": "https://fast101-kibana-logcenter-intra.intra.ke.com"
+  },
+  "iot-ero-finance:prod": {
+    "index": "index-16665-16895*",
+    "cluster": "https://fast109-kibana-logcenter-intra.intra.ke.com"
+  },
+  "iot-erp-finance:prod": {
+    "index": "index-16665-16895*",
+    "cluster": "https://fast109-kibana-logcenter-intra.intra.ke.com"
+  },
+  "iot-erp-finance": {
+    "index": "index-16665-16895*",
+    "cluster": "https://fast109-kibana-logcenter-intra.intra.ke.com"
+  },
+  "zulin-iot-device-adaptor": {
+    "index": "index-8168-7299*",
+    "cluster": "https://fast108-kibana-logcenter-intra.intra.ke.com"
+  },
+  "zulin-iot-device-adaptor:prod": {
+    "index": "index-8168-7299*",
+    "cluster": "https://fast108-kibana-logcenter-intra.intra.ke.com"
+  },
+  "iot-device-adaptor": {
+    "index": "index-8168-7299*",
+    "cluster": "https://fast108-kibana-logcenter-intra.intra.ke.com"
+  },
+  "iot-device-access": {
+    "index": "index-8168-7299*",
+    "cluster": "https://fast108-kibana-logcenter-intra.intra.ke.com"
+  },
+  "utopia-scs-saas": {
+    "index": "index-8481-7703*",
+    "cluster": "https://fast108-kibana-logcenter-intra.intra.ke.com"
+  },
+  "beijia-basic-core": {
+    "index": "index-8481-7703*",
+    "cluster": "https://fast108-kibana-logcenter-intra.intra.ke.com"
+  }
+}

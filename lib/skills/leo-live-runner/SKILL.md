@@ -1,70 +1,100 @@
 ---
 name: leo-live-runner
-description: 在已引入 leo-live-runner-spring-boot-starter 的 Spring Boot 应用中生成、校验并执行动态 Java 热补丁代码或动态 RESTful API。支持线上紧急数据订正、无重启执行 SQL、调用现有 Spring Bean、多方法二级路由、SLF4J 原生日志以及 @Transactional 原生事务回滚。执行前必须主动提示用户输入目标服务域名。
+description: 生产与测试环境 AI 运行时治理与运维中枢。涵盖两大核心能力：(1) FAST / Kibana 线上日志毫秒级极速检索、TraceId 全链路时序回溯与 ES 索引自学习；(2) 在已引入 leo-live-runner-spring-boot-starter 的 Spring Boot 应用中生成、校验并执行动态 Java 热补丁代码或动态 RESTful API（支持数据订正、SQL 执行、Spring Bean 注入、SLF4J 日志与 @Transactional 自动回滚）。
 ---
 
-# 🚀 Leo Live Runner (AI 生产运维与动态执行 Skill)
+# 🚀 Leo Live Runner (AI 生产运维、全链路诊断与动态治理中枢)
 
-本 Skill 专门指导 AI 针对已接入 `leo-live-runner-spring-boot-starter` 的 Spring Boot 2.x / 3.x 宿主工程，生成纯正原生 Java 代码，并通过 HTTP 端点与服务进行安全交互。
+本 Skill 专门指导 AI 执行线上生产环境与测试环境的 **全流程闭环运维与治理**：
+1. **🔍 观测与诊断（Observe & Diagnose）**：基于 FAST / Kibana 毫秒级直连引擎，快速捞取报错日志、接口入参出参、TraceId 全链路时序与新服务索引自学习；
+2. **🛠️ 治理与修复（Act & Fix）**：针对已接入 `leo-live-runner-spring-boot-starter` 的 Spring Boot 宿主工程，生成纯正原生 Java 代码，无重启执行数据订正与业务排障。
 
 ---
 
 ## 🎯 触发场景
 
-当用户提出以下需求时激活本 Skill：
-1. **线上紧急数据订正 / 状态修复**：不重启应用，动态执行批量更新、多表对账修复；
-2. **免发版动态执行 Java 代码**：调用宿主应用已有的 Spring Bean（`OrderService`, `UserMapper` 等）执行业务逻辑；
-3. **运行时动态暴露 RESTful 接口**：在内存中动态注册多方法 Controller 服务族（`/query`, `/update`, `/cancel`）；
-4. **数据库与事务安全保障**：需要执行写库操作并保证 `@Transactional` 异常 100% 自动回滚。
+当用户提出以下任一需求时激活本 Skill：
+1. **FAST 线上日志与 TraceId 排查**：
+   - 查特定微服务的报错、500 异常或接口调用记录（如 *“查一下 iot-platform 最近 10 分钟的房源封禁请求”*）；
+   - 根据 TraceId 还原完整调用链路与时序（如 *“根据 traceId 361922-10... 抓下全链路日志”*）；
+   - 抓取接口真实的请求入参 (`request_in`) 与响应结果 (`request_out`)。
+2. **线上紧急数据订正 / 状态修复**：不重启应用，动态执行批量更新、多表对账修复；
+3. **免发版动态执行 Java 代码**：调用宿主应用已有的 Spring Bean（`OrderService`, `UserMapper` 等）执行业务逻辑；
+4. **运行时动态暴露 RESTful 接口**：在内存中动态注册多方法 Controller 服务族（`/query`, `/update`, `/cancel`）；
+5. **数据库与事务安全保障**：需要执行写库操作并保证 `@Transactional` 异常 100% 自动回滚。
 
 ---
 
-## 🧭 AI 标准执行五步工作流 (Core Workflow)
+## 🧭 AI 标准端到端运维工作流 (End-to-End Ops Loop)
 
 ```mermaid
 flowchart TD
-    S1["1. 需求分析与工程调研<br/>(AI 扫描当前工程已有的 Service / Mapper / Entity)"] --> S2["2. 决策调用模式<br/>(One-Shot /execute vs 动态 API /register)"]
-    S2 --> S3["3. 编写纯正原生的动态 Java 代码<br/>(零框架侵入 + SLF4J + @Transactional)"]
-    S3 --> S4["4. 提示用户输入域名并确认代码<br/>(⚠️ 必须向用户询问目标域名/IP端口)"]
-    S4 --> S5["5. 发起 HTTP 请求并解析标准响应<br/>(展示 data 返回值与错误/成功提示)"]
+    subgraph Phase1["第一阶段：线上观测与排障 (FAST Log & Trace)"]
+        L1["用户输入服务名/关键词/TraceId"] --> L2["执行 scripts/fast_query.js 毫秒级直连"]
+        L2 --> L3["展示结构化日志明细 / 生成 Mermaid 时序交互图"]
+    end
+
+    subgraph Phase2["第二阶段：动态治理与修复 (Live Runner Execution)"]
+        L3 --> R1["分析报错原因与异常数据"]
+        R1 --> R2["编写纯正原生动态 Java 修复代码 (@Transactional)"]
+        R2 --> R3["⚠️ 提示用户输入目标服务域名并确认代码"]
+        R3 --> R4["发起 POST /internal/live-runner/execute 执行订正"]
+    end
+
+    Phase1 -.-> Phase2
 ```
 
-### 步骤 1：分析需求与扫描宿主工程 (Codebase Survey)
-* 使用搜索工具扫描宿主工程：
-  - 查找是否已存在相关的业务类（如 `OrderService`, `AccountService`）；
-  - 查找是否已存在 MyBatis Mapper（如 `OrderMapper`）或 JPA Repository；
-  - 确认数据库实体字段类型与状态值定义。
+---
 
-### 步骤 2：决策调用模式
+## 🔍 第一部分：FAST / Kibana 极速日志与 Trace 检索指南
+
+### 1. 执行脚本快速调用
+AI 可直接通过以下 Node.js 脚本毫秒级直连查询（耗时 < 500ms，自动自学习记录微服务至 `~/.shrimp/skills/live-runner/service_map.json`）：
+
+```bash
+# 格式: node scripts/fast_query.js [appCode] [query/traceId] [timeRange] [size]
+
+# 1. 查微服务最近日志 (默认 24h)
+node scripts/fast_query.js iot-platform '"开始执行房源封禁"' 1h 5
+
+# 2. 根据 TraceId 追溯全链路
+node scripts/fast_query.js iot-platform '"361922-10.22.53.98-4130-1787830157652-8055"' 48h 30
+
+# 3. 跨服务查 500 异常
+node scripts/fast_query.js utopia-scs-saas 'loglevel:ERROR' 15m 10
+```
+
+### 2. 结果呈现规范
+* **单次请求排查**：提炼接口 URI、入参关键字段、响应状态与耗时；
+* **TraceId 追溯**：必须提取完整步骤并为用户绘制 **Mermaid 时序交互图**（参考 [examples/100_trace_and_log_query.md](examples/100_trace_and_log_query.md)）。
+
+---
+
+## ⚡ 第二部分：动态 Java 代码执行与数据修复规范
+
+### 1. 决策调用模式
 * **模式 A：一键即写即跑（`POST /internal/live-runner/execute`，推荐 ⭐⭐⭐⭐⭐）**
   - **适用场景**：一次性紧急修数据、单次排障、多 Pod 集群。
   - **核心优势**：一次请求携带源码与参数，当场编译、执行、卸载并返回日志，**天然免疫多 Pod 负载均衡（SLB）状态不同步问题**。
 * **模式 B：常驻动态 API（`POST /register` + `POST /invoke/...`）**
   - **适用场景**：需要作为长期固定动态接口高频调用、多方法 Controller 服务族。
 
-### 步骤 3：编写纯正原生的动态 Java 代码 (Zero-Framework-Invasion)
+### 2. 编写纯正原生的动态 Java 代码
 代码编写完全遵循标准 Java 语法，**无需 import 任何 live-runner 专有类**：
 1. **类声明**：定义一个 public 类（如 `public class FixOrderTask`）；
-2. **标准日志**：直接使用业务代码通用的 `LoggerFactory.getLogger(...)`（如 `private static final Logger log = LoggerFactory.getLogger(FixOrderTask.class);`）；
-3. **Spring Bean 依赖注入**：直接声明私有字段即可（如 `private JdbcTemplate jdbcTemplate;`, `private OrderService orderService;`），**无需加 `@Autowired` 注解**，框架自动按名/类型注入（详见 [injection-rules.md](references/injection-rules.md)）；
+2. **标准日志**：直接使用业务代码通用的 `LoggerFactory.getLogger(...)`；
+3. **Spring Bean 依赖注入**：直接声明私有字段即可（如 `private JdbcTemplate jdbcTemplate;`, `private OrderService orderService;`），**无需加 `@Autowired` 注解**，框架自动按名/类型注入；
 4. **事务安全（强制）**：任何写数据库操作，**必须声明 `@Transactional(rollbackFor = Exception.class)`**，框架会自动生成 CGLIB 事务 AOP 代理，遇到未捕获异常自动 100% 回滚；
-5. **参数自适应**：方法形参名称直接对应请求 JSON 中的 key（如 `public Object run(String orderId, String status)`），引擎自动转换数据类型。
+5. **参数自适应**：方法形参名称直接对应请求 JSON 中的 key。
 
-### 步骤 4：【必须】提示用户输入域名并确认代码 (Prompt for Domain)
+### 3. 【必须】提示用户输入域名并确认代码
 ⚠️ **安全与网络铁律**：AI 绝对不能臆造或写死生产域名。
 在准备发起 HTTP 调用前，**必须明确提示用户提供目标服务的访问域名或 IP:Port**：
 > 💬 *“代码已生成完毕，请提供目标微服务的域名或访问地址（例如：`http://localhost:8080`、`https://order-service.prod.internal` 或 Pod 直连 IP `http://10.244.1.12:8080`），以及可选的 `X-Live-Token` 密钥（若已开启鉴权）。”*
 
-### 步骤 5：发起 HTTP 请求并格式化展示结果
-向用户提供的域名发送 HTTP 请求，并解析统一企业响应：
-* **执行成功 (`code: 200`)**：`data` 返回业务计算结果，`msg` 为 `"SUCCESS"`；
-* **执行失败 (`code: 500`)**：`msg` 回显精准的异常原因（如 SQL 错误、业务校验未通过），`data` 为 `null`。
-
 ---
 
 ## 📡 HTTP 接口速查 (API Quick Reference)
-
-所有接口默认挂载在 `/internal/live-runner` 前缀下（详见 [api-reference.md](references/api-reference.md)）：
 
 | 接口路径 | HTTP 方法 | 功能描述 | 推荐场景 |
 | :--- | :--- | :--- | :--- |
@@ -79,10 +109,12 @@ flowchart TD
 
 ## 📚 规范文档与实战代码模板索引
 
-- **完整接口协议与出入参定义**：[references/api-reference.md](references/api-reference.md)
+- **FAST 日志协议与 Lucene 语法速查**：[references/fast-log-guide.md](references/fast-log-guide.md)
+- **Live Runner 接口协议与出入参定义**：[references/api-reference.md](references/api-reference.md)
 - **Spring 注入与事务代理规范**：[references/injection-rules.md](references/injection-rules.md)
-- **实战代码模板**：
+- **实战示例索引**：
   - [examples/01_one_shot_sql_fix.java](examples/01_one_shot_sql_fix.java) — 一次性应急 SQL 修复（带事务与 SLF4J 日志）
   - [examples/02_mybatis_plus_dynamic.java](examples/02_mybatis_plus_dynamic.java) — MyBatis-Plus Lambda Wrapper 动态条件更新
   - [examples/03_existing_service_facade.java](examples/03_existing_service_facade.java) — 注入宿主工程现有 Service 门面
   - [examples/04_multi_method_controller.java](examples/04_multi_method_controller.java) — 多方法动态 Controller 服务族
+  - [examples/100_trace_and_log_query.md](examples/100_trace_and_log_query.md) — 🆕 FAST 日志与 TraceId 全链路排障实战
