@@ -27,11 +27,31 @@
     "index": "index-13401-13764*",
     "cluster": "https://fast101-kibana-logcenter-intra.intra.ke.com"
   },
+  "recorder": {
+    "index": "index-13401-13764*",
+    "cluster": "https://fast101-kibana-logcenter-intra.intra.ke.com"
+  },
+  "头戴式记录仪": {
+    "index": "index-13401-13764*",
+    "cluster": "https://fast101-kibana-logcenter-intra.intra.ke.com"
+  },
+  "临境记录仪": {
+    "index": "index-13401-13764*",
+    "cluster": "https://fast101-kibana-logcenter-intra.intra.ke.com"
+  },
+  "utopia-scs-recorder": {
+    "index": "index-13401-13764*",
+    "cluster": "https://fast101-kibana-logcenter-intra.intra.ke.com"
+  },
   "智慧工地-算法框架日志": {
     "index": "index-14970-15471*",
     "cluster": "https://fast105-kibana-logcenter-intra.intra.ke.com"
   },
   "算法框架日志": {
+    "index": "index-14970-15471*",
+    "cluster": "https://fast105-kibana-logcenter-intra.intra.ke.com"
+  },
+  "algo": {
     "index": "index-14970-15471*",
     "cluster": "https://fast105-kibana-logcenter-intra.intra.ke.com"
   },
