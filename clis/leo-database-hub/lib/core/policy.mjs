@@ -23,11 +23,11 @@ export function classifyRedisCommand(command) {
 }
 
 export function authorizeOperation({ access, operationClass, flags = {} }) {
+  if (operationClass === "read") return true;
   if (access === "read") {
     throw new Error("Connection is read-only. Configure access=readwrite to permit this operation.");
   }
   if (access !== "readwrite") throw new Error("Invalid connection access mode.");
-  if (operationClass === "read") return true;
   if (operationClass === "write" || operationClass === "destructive") {
     if (!flags.write) throw new Error("Write operation requires --write.");
     if (operationClass === "destructive" && !flags.yes) throw new Error("Destructive operation requires --write --yes.");

@@ -1,5 +1,5 @@
 ---
-name: wendao
+name: leo-xiecheng-wendao
 description: 查询携程问道获取机票、酒店、行程、景点、美食、签证和交通等旅行建议。
 ---
 

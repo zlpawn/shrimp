@@ -151,29 +151,29 @@ test("queryWendao never leaks response state in API errors", async () => {
 
 test("wendao SKILL.md instructs agents to use the CLI without reading the token", () => {
   const skill = fs.readFileSync(
-    path.join(projectRoot, "lib", "skills", "wendao", "SKILL.md"),
+    path.join(projectRoot, "lib", "skills", "leo-xiecheng-wendao", "SKILL.md"),
     "utf8",
   );
-  assert.match(skill, /^---\nname: wendao\n/u);
+  assert.match(skill, /^---\nname: leo-xiecheng-wendao\n/u);
   assert.match(skill, /wendao "用户的完整问题原文"/u);
   assert.match(skill, /60 秒/u);
   assert.match(skill, /永远不要.*token/u);
   assert.doesNotMatch(skill, /cat .*token|open .*token/u);
 });
 
-test("wendao is a managed skill and installs from the skill library", async () => {
+test("leo-xiecheng-wendao is a managed skill and installs from the skill library", async () => {
   const { SkillInstaller } = await import("../../lib/session-sync/skill-installer.mjs");
-  const managed = SkillInstaller.getManagedSkill("wendao");
-  assert.ok(managed, "wendao must be listed in managed-catalog.json");
+  const managed = SkillInstaller.getManagedSkill("leo-xiecheng-wendao");
+  assert.ok(managed, "leo-xiecheng-wendao must be listed in managed-catalog.json");
   assert.equal(managed.title, "携程问道旅行查询");
   assert.equal(managed.category, "research");
 
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "wendao-skill-test-"));
   try {
-    const installed = SkillInstaller.installBaseSkill(tempDir, "wendao");
+    const installed = SkillInstaller.installBaseSkill(tempDir, "leo-xiecheng-wendao");
     assert.equal(fs.existsSync(installed), true);
     const content = fs.readFileSync(installed, "utf8");
-    assert.match(content, /^---\nname: wendao\n/u);
+    assert.match(content, /^---\nname: leo-xiecheng-wendao\n/u);
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }

@@ -103,8 +103,9 @@ test("policy classifies SQL and Redis operations and enforces authorization", ()
   assert.equal(classifyRedisCommand("SET"), "write");
   assert.equal(classifyRedisCommand("FLUSHALL"), "destructive");
 
+  assert.equal(authorizeOperation({ access: "read", operationClass: "read" }), true);
   assert.throws(
-    () => authorizeOperation({ access: "read", operationClass: "read" }),
+    () => authorizeOperation({ access: "read", operationClass: "write" }),
     /read-only/i,
   );
   assert.equal(authorizeOperation({ access: "readwrite", operationClass: "read" }), true);

@@ -15,6 +15,7 @@
     "desktop/dist",
     "clis/README.md",
     "clis/wendao",
+    "clis/leo-database-hub",
     "lib",
     "scripts",
     "server.js",
@@ -47,7 +48,7 @@
   "scripts": {
     "init": "node scripts/init-config.mjs",
     "start": "node server.js",
-    "check": "node --check server.js && node --check scripts/gateway.mjs && node --check scripts/init-config.mjs && node --check bin/shrimp.js && node --check clis/leo-lantern/index.mjs && node --check mcps/leo-lantern/index.mjs && node --check clis/leo-lantern/lib/cli.mjs && node --check clis/leo-lantern/lib/server.mjs && node --check mcps/leo-lantern/lib/mcp-server.mjs && node --check mcps/leo-lantern/lib/server.mjs && node --check clis/wendao/index.mjs && node --check clis/wendao/wendao.mjs && node --check extensions/leo-cookie-txt-locally/poll-loop.mjs",
+    "check": "node --check server.js && node --check scripts/gateway.mjs && node --check scripts/init-config.mjs && node --check bin/shrimp.js && node --check clis/leo-lantern/index.mjs && node --check mcps/leo-lantern/index.mjs && node --check clis/leo-lantern/lib/cli.mjs && node --check clis/leo-lantern/lib/server.mjs && node --check mcps/leo-lantern/lib/mcp-server.mjs && node --check mcps/leo-lantern/lib/server.mjs && node --check clis/wendao/index.mjs && node --check clis/wendao/wendao.mjs && node --check clis/leo-database-hub/index.mjs && node --check clis/leo-database-hub/lib/cli.mjs && node --check extensions/leo-cookie-txt-locally/poll-loop.mjs",
     "doctor": "node scripts/doctor.mjs",
     "validate:config": "node scripts/validate-config.mjs",
     "codex:catalog": "node scripts/codex-catalog.mjs",
@@ -92,6 +93,8 @@
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
     "https-proxy-agent": "^7.0.6",
+    "ioredis": "^6.0.0",
+    "mysql2": "^3.24.2",
     "node-pty": "^1.1.0",
     "socks-proxy-agent": "^8.0.5",
     "ws": "^8.21.1"
