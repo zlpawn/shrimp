@@ -10,23 +10,23 @@ import {
   readToken,
   saveToken,
   queryWendao,
-} from "../../clis/wendao/wendao.mjs";
+} from "../../clis/leo-wendao/wendao.mjs";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const wendaoDir = path.join(projectRoot, "clis", "wendao");
+const wendaoDir = path.join(projectRoot, "clis", "leo-wendao");
 
 function tempHome() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "wendao-cli-test-"));
 }
 
-test("wendao in-repo CLI is discoverable as a Node CLI", async () => {
+test("leo-wendao in-repo CLI is discoverable as a Node CLI", async () => {
   const { scanInRepoClis } = await import("../../lib/cli-core/discovery.mjs");
-  const cli = scanInRepoClis(projectRoot).find((item) => item.name === "wendao");
+  const cli = scanInRepoClis(projectRoot).find((item) => item.name === "leo-wendao");
 
-  assert.ok(cli, "scanInRepoClis must discover wendao");
+  assert.ok(cli, "scanInRepoClis must discover leo-wendao");
   assert.equal(cli.lang, "node");
   assert.equal(cli.command, "node");
-  assert.equal(cli.args[0], "./clis/wendao/index.mjs");
+  assert.equal(cli.args[0], "./clis/leo-wendao/index.mjs");
   assert.match(cli.description, /携程问道/u);
 });
 
@@ -155,7 +155,7 @@ test("wendao SKILL.md instructs agents to use the CLI without reading the token"
     "utf8",
   );
   assert.match(skill, /^---\nname: leo-xiecheng-wendao\n/u);
-  assert.match(skill, /wendao "用户的完整问题原文"/u);
+  assert.match(skill, /leo-wendao "用户的完整问题原文"/u);
   assert.match(skill, /60 秒/u);
   assert.match(skill, /永远不要.*token/u);
   assert.doesNotMatch(skill, /cat .*token|open .*token/u);

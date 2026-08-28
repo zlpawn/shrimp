@@ -31,10 +31,10 @@ test("npm package ships only the shrimp CLI launcher", async () => {
 
 test("npm package ships the in-repo wendao CLI and managed skill", async () => {
   const pkg = JSON.parse(await readFile(path.join(projectRoot, "package.json"), "utf8"));
-  assert.ok(pkg.files.includes("clis/wendao"));
+  assert.ok(pkg.files.includes("clis/leo-wendao"));
   assert.ok(pkg.files.includes("clis/README.md"));
   assert.equal(pkg.files.includes("clis"), false);
-  assert.ok(fs.existsSync(path.join(projectRoot, "clis", "wendao", "index.mjs")));
+  assert.ok(fs.existsSync(path.join(projectRoot, "clis", "leo-wendao", "index.mjs")));
   assert.ok(fs.existsSync(path.join(projectRoot, "lib", "skills", "leo-xiecheng-wendao", "SKILL.md")));
 });
 
@@ -47,7 +47,7 @@ test("npm package ships the leo database hub CLI and skill", async () => {
 
 test("syntax check covers every shipped in-repo CLI entrypoint", async () => {
   const pkg = JSON.parse(await readFile(path.join(projectRoot, "package.json"), "utf8"));
-  assert.match(pkg.scripts.check, /clis\/wendao\/index\.mjs/u);
+  assert.match(pkg.scripts.check, /clis\/leo-wendao\/index\.mjs/u);
   assert.match(pkg.scripts.check, /clis\/leo-database-hub\/index\.mjs/u);
 });
 

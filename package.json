@@ -14,7 +14,7 @@
     "desktop/index.html",
     "desktop/dist",
     "clis/README.md",
-    "clis/wendao",
+    "clis/leo-wendao",
     "clis/leo-database-hub",
     "lib",
     "scripts",
@@ -48,7 +48,7 @@
   "scripts": {
     "init": "node scripts/init-config.mjs",
     "start": "node server.js",
-    "check": "node --check server.js && node --check scripts/gateway.mjs && node --check scripts/init-config.mjs && node --check bin/shrimp.js && node --check clis/leo-lantern/index.mjs && node --check mcps/leo-lantern/index.mjs && node --check clis/leo-lantern/lib/cli.mjs && node --check clis/leo-lantern/lib/server.mjs && node --check mcps/leo-lantern/lib/mcp-server.mjs && node --check mcps/leo-lantern/lib/server.mjs && node --check clis/wendao/index.mjs && node --check clis/wendao/wendao.mjs && node --check clis/leo-database-hub/index.mjs && node --check clis/leo-database-hub/lib/cli.mjs && node --check extensions/leo-cookie-txt-locally/poll-loop.mjs",
+    "check": "node --check server.js && node --check scripts/gateway.mjs && node --check scripts/init-config.mjs && node --check bin/shrimp.js && node --check clis/leo-lantern/index.mjs && node --check mcps/leo-lantern/index.mjs && node --check clis/leo-lantern/lib/cli.mjs && node --check clis/leo-lantern/lib/server.mjs && node --check mcps/leo-lantern/lib/mcp-server.mjs && node --check mcps/leo-lantern/lib/server.mjs && node --check clis/leo-wendao/index.mjs && node --check clis/leo-wendao/wendao.mjs && node --check clis/leo-database-hub/index.mjs && node --check clis/leo-database-hub/lib/cli.mjs && node --check extensions/leo-cookie-txt-locally/poll-loop.mjs",
     "doctor": "node scripts/doctor.mjs",
     "validate:config": "node scripts/validate-config.mjs",
     "codex:catalog": "node scripts/codex-catalog.mjs",

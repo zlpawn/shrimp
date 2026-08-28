@@ -1,10 +1,10 @@
 {
-  "name": "wendao",
+  "name": "leo-wendao",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "bin": {
-    "wendao": "./index.mjs"
+    "leo-wendao": "./index.mjs"
   },
   "scripts": {
     "test": "node --test ../../tests/unit/wendao-cli.test.mjs"
