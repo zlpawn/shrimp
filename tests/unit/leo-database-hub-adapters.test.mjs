@@ -122,3 +122,27 @@ test("redis adapter scans, reads typed values, classifies commands, and closes",
   await adapter.close(context);
   assert.ok(calls.some(([command]) => command === "DISCONNECT"));
 });
+
+test("redis adapter preserves rediss TLS and database selection", async () => {
+  const factory = redisAdapter.withDependencies({
+    createClient(resolved) {
+      return {
+        options: { ...resolved },
+        async connect() {},
+        async disconnect() {},
+      };
+    },
+  });
+  const context = await factory.connect({
+    id: "cache",
+    type: "redis",
+    host: "cache.example",
+    port: 6380,
+    user: "",
+    password: "secret",
+    database: 2,
+    tls: true,
+  });
+  assert.equal(context.client.options.tls, true);
+  assert.equal(context.client.options.database, 2);
+});

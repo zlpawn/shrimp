@@ -61,7 +61,9 @@ async function defaultCreateClient(resolved) {
     username: resolved.user,
     password: resolved.password,
     db: resolved.database || 0,
+    database: resolved.database || 0,
     lazyConnect: true,
+    tls: resolved.tls ? {} : undefined,
   });
 }
 
