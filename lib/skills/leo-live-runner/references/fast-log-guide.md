@@ -19,8 +19,8 @@
 
 ## ⚡ 底层查询引擎架构与优化细节
 
-1. **接口直连**：
-   * 脚本通过 `ego-browser` 注入环境，直接向 Kibana 网关 `https://fast108-kibana-logcenter-intra.intra.ke.com/internal/search/es` 发起 POST 请求；
+1. **接口直连（Zero Browser Dependency）**：
+   * 采用纯原生 Node.js 内置 `fetch()` 直连各 Kibana ES 网关（如 `https://fast108-kibana-logcenter-intra.intra.ke.com/internal/search/es`），**零外部浏览器依赖**；
    * 请求头必须携带：
      ```json
      {
@@ -36,4 +36,4 @@
 
 3. **自学习持久化存储**：
    * 字典统一保存于 `~/.shrimp/skills/live-runner/service_map.json`；
-   * 支持全公司任意微服务的首次探针探测与长期缓存复用。
+   * 支持全公司任意微服务的首次并发探测与长期缓存复用。

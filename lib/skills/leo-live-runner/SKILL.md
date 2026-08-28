@@ -49,7 +49,7 @@ flowchart TD
 ## 🔍 第一部分：FAST / Kibana 极速日志与 Trace 检索指南
 
 ### 1. 执行脚本快速调用
-AI 可直接通过以下 Node.js 脚本毫秒级直连查询（耗时 < 500ms，自动自学习记录微服务至 `~/.shrimp/skills/live-runner/service_map.json`）：
+AI 可直接通过以下 Node.js 脚本毫秒级直连查询（纯原生 Node.js 内置 fetch 直连，**零外部浏览器依赖**，耗时 < 300ms，自动自学习记录微服务至 `~/.shrimp/skills/live-runner/service_map.json`）：
 
 ```bash
 # 格式: node scripts/fast_query.js [appCode] [query/traceId] [timeRange] [size]
