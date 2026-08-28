@@ -1,0 +1,8 @@
+{
+  "name": "leo-tdx",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": { "leo-tdx": "./index.mjs" },
+  "scripts": { "test": "node --test ../../tests/unit/leo-tdx.test.mjs" }
+}

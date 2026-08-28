@@ -12,6 +12,9 @@ import {
   saveToken,
 } from "../../clis/leo-tdx/lib/token.mjs";
 import { createMcpClient } from "../../clis/leo-tdx/lib/mcp.mjs";
+import { runCli } from "../../clis/leo-tdx/lib/cli.mjs";
+import { scanInRepoClis } from "../../lib/cli-core/discovery.mjs";
+import { SkillInstaller } from "../../lib/session-sync/skill-installer.mjs";
 
 const TOKEN = "TDX-1-test-token";
 
@@ -139,4 +142,44 @@ test("MCP client initializes, captures session, notifies, calls tools, and parse
   assert.equal(requests[1].headers["Mcp-Session-Id"], "session-123");
   assert.equal(requests[2].headers["Mcp-Session-Id"], "session-123");
   assert.equal(requests[2].body.params.name, "tdx_quotes");
+});
+
+test("CLI maps commands, markets, and outputs without exposing credentials", async () => {
+  const calls = [];
+  const transport = {
+    callTool: async (name, args) => {
+      calls.push([name, args]);
+      return JSON.stringify({ tool: name, args });
+    },
+    listTools: async () => [{ name: "tdx_quotes", inputSchema: { type: "object" } }],
+    initialize: async () => ({ serverInfo: { name: "tdx-finance-mcp-server", version: "1.0.0" } }),
+  };
+  const env = { TDX_TOKEN: TOKEN };
+
+  const quote = JSON.parse(await runCli(["quotes", "600519", "--market", "SH"], { env, transport }));
+  assert.deepEqual(calls.at(-1), ["tdx_quotes", { code: "600519", setcode: "1" }]);
+  assert.equal(quote.ok, true);
+
+  await runCli(["kline", "000001", "--market", "SZ", "--period", "day", "--count", "30"], { env, transport });
+  assert.deepEqual(calls.at(-1), ["tdx_kline", { code: "000001", setcode: "0", period: "day", count: 30 }]);
+
+  await runCli(["lookup", "茅台"], { env, transport });
+  assert.deepEqual(calls.at(-1), ["tdx_lookup_stock", { query: "茅台" }]);
+
+  const tools = JSON.parse(await runCli(["tools"], { env, transport }));
+  assert.equal(tools.result.tools[0].name, "tdx_quotes");
+
+  const text = await runCli(["quotes", "600519", "1", "--output", "text"], { env, transport });
+  assert.equal(text, JSON.stringify({ tool: "tdx_quotes", args: { code: "600519", setcode: "1" } }));
+});
+
+
+test("leo-tdx in-repo CLI and managed skill are discoverable", async () => {
+  const cli = scanInRepoClis(process.cwd()).find((item) => item.name === "leo-tdx");
+  assert.ok(cli);
+  assert.equal(cli.args[0], "./clis/leo-tdx/index.mjs");
+
+  const skill = SkillInstaller.getManagedSkill("leo-tdx-stock");
+  assert.ok(skill);
+  assert.ok(fs.existsSync(path.join(process.cwd(), "lib", "skills", "leo-tdx-stock", "SKILL.md")));
 });

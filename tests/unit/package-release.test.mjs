@@ -45,10 +45,22 @@ test("npm package ships the leo database hub CLI and skill", async () => {
   assert.ok(fs.existsSync(path.join(projectRoot, "lib", "skills", "leo-database-hub", "SKILL.md")));
 });
 
+test("npm package ships the leo tdx CLI and managed skill", async () => {
+  const pkg = JSON.parse(await readFile(path.join(projectRoot, "package.json"), "utf8"));
+  assert.ok(pkg.files.includes("clis/leo-tdx"));
+  assert.ok(fs.existsSync(path.join(projectRoot, "clis", "leo-tdx", "index.mjs")));
+  assert.ok(fs.existsSync(path.join(projectRoot, "lib", "skills", "leo-tdx-stock", "SKILL.md")));
+});
+
 test("syntax check covers every shipped in-repo CLI entrypoint", async () => {
   const pkg = JSON.parse(await readFile(path.join(projectRoot, "package.json"), "utf8"));
   assert.match(pkg.scripts.check, /clis\/leo-wendao\/index\.mjs/u);
   assert.match(pkg.scripts.check, /clis\/leo-database-hub\/index\.mjs/u);
+});
+
+test("syntax check covers the leo tdx CLI entrypoint", async () => {
+  const pkg = JSON.parse(await readFile(path.join(projectRoot, "package.json"), "utf8"));
+  assert.match(pkg.scripts.check, new RegExp("clis\\/leo-tdx\\/index\\.mjs"));
 });
 
 test("public package attribution does not expose a local user alias", async () => {
