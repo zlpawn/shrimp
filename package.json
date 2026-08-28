@@ -13,6 +13,7 @@
     "bin",
     "desktop/index.html",
     "desktop/dist",
+    "clis",
     "lib",
     "scripts",
     "server.js",

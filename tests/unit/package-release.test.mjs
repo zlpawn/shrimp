@@ -29,6 +29,13 @@ test("npm package ships only the shrimp CLI launcher", async () => {
   assert.equal(fs.existsSync(path.join(projectRoot, "bin", "shrimp.js")), true);
 });
 
+test("npm package ships the in-repo wendao CLI and managed skill", async () => {
+  const pkg = JSON.parse(await readFile(path.join(projectRoot, "package.json"), "utf8"));
+  assert.ok(pkg.files.includes("clis"));
+  assert.ok(fs.existsSync(path.join(projectRoot, "clis", "wendao", "index.mjs")));
+  assert.ok(fs.existsSync(path.join(projectRoot, "lib", "skills", "wendao", "SKILL.md")));
+});
+
 test("public package attribution does not expose a local user alias", async () => {
   const license = await readFile(path.join(projectRoot, "LICENSE"), "utf8");
   assert.doesNotMatch(license, /\bxtea\b/i);

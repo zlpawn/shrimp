@@ -1,7 +1,32 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-21T00:16:00.000Z",
+  "updatedAt": "2026-08-28T00:00:00.000Z",
   "skills": [
+    {
+      "id": "wendao",
+      "name": "wendao",
+      "title": "携程问道旅行查询",
+      "summary": "通过本地 wendao CLI 查询携程问道，获取机票、酒店、行程、景点、美食、签证与交通等旅行建议。Skill 只指导调用方式，API 重试与 token 安全均由 CLI 处理。",
+      "category": "research",
+      "categoryLabel": "研究与知识",
+      "icon": "🧭",
+      "featured": false,
+      "tags": [
+        "携程",
+        "问道",
+        "旅行",
+        "机票",
+        "酒店",
+        "行程",
+        "景点",
+        "美食",
+        "签证",
+        "交通"
+      ],
+      "requiresDaemon": false,
+      "promoted": true,
+      "managed": true
+    },
     {
       "id": "leo-trend-intelligence",
       "name": "leo-trend-intelligence",
