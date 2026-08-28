@@ -1,0 +1,142 @@
+import assert from "node:assert/strict";
+import crypto from "node:crypto";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import test from "node:test";
+
+import {
+  candidateWorkBuddyRoots,
+  extractWorkBuddyToken,
+  readToken,
+  saveToken,
+} from "../../clis/leo-tdx/lib/token.mjs";
+import { createMcpClient } from "../../clis/leo-tdx/lib/mcp.mjs";
+
+const TOKEN = "TDX-1-test-token";
+
+function tempHome() {
+  return fs.mkdtempSync(path.join(os.tmpdir(), "leo-tdx-"));
+}
+
+test("token file resolves and persists with restricted permissions", () => {
+  const home = tempHome();
+  try {
+    saveToken(TOKEN, { homeDir: home, env: {} });
+    const file = path.join(home, ".shrimp", "secrets", "tdx", "token");
+    assert.equal(fs.readFileSync(file, "utf8"), TOKEN + "\n");
+    if (process.platform !== "win32") {
+      assert.equal(fs.statSync(path.dirname(path.dirname(file))).mode & 0o777, 0o700);
+      assert.equal(fs.statSync(path.dirname(file)).mode & 0o777, 0o700);
+      assert.equal(fs.statSync(file).mode & 0o777, 0o600);
+    }
+    assert.equal(readToken({ homeDir: home, env: {} }), TOKEN);
+    assert.equal(readToken({ homeDir: home, env: { TDX_TOKEN: " " } }), TOKEN);
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("work buddy roots support explicit override, POSIX home, and Windows app data", () => {
+  const home = tempHome();
+  const appData = path.join(home, "AppData", "Roaming");
+  const localAppData = path.join(home, "AppData", "Local");
+  try {
+    const roots = candidateWorkBuddyRoots({
+      homeDir: home,
+      env: {
+        WORKBUDDY_CONNECTORS_DIR: path.join(home, "custom-connectors"),
+        APPDATA: appData,
+        LOCALAPPDATA: localAppData,
+      },
+    });
+    assert.deepEqual(roots, [
+      path.join(home, "custom-connectors"),
+      path.join(home, ".workbuddy", "connectors"),
+      path.join(appData, "WorkBuddy", "connectors"),
+      path.join(localAppData, "WorkBuddy", "connectors"),
+    ]);
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("extracts TDX token from WorkBuddy fixture on both path styles", () => {
+  const home = tempHome();
+  const root = path.join(home, "AppData", "Roaming", "WorkBuddy", "connectors");
+  const userId = "user-001";
+  const userDir = path.join(root, userId);
+  fs.mkdirSync(userDir, { recursive: true });
+
+  const master = crypto.randomBytes(32);
+  const salt = crypto.randomBytes(16);
+  const iv = crypto.randomBytes(12);
+  const key = crypto.hkdfSync("sha256", Buffer.concat([master, Buffer.from(userId)]), salt, "workbuddy-oauth-credentials-v1", 32);
+  const aad = Buffer.from(`${userId}|connector-states:headerOverrides:tdx-connector|Authorization`);
+  const cipher = crypto.createCipheriv("aes-256-gcm", key, iv, { authTagLength: 16 });
+  cipher.setAAD(aad);
+  const ciphertext = Buffer.concat([cipher.update("Bearer " + TOKEN, "utf8"), cipher.final(), cipher.getAuthTag()]);
+  const state = {
+    encryption: {
+      salt: salt.toString("base64"),
+      keyCheck: crypto.createHash("sha256").update(Buffer.concat([master, salt])).digest().subarray(0, 16).toString("base64"),
+    },
+    headerOverrides: {
+      "tdx-connector": {
+        Authorization: {
+          iv: iv.toString("base64"),
+          ct: ciphertext.subarray(0, ciphertext.length - 16).toString("base64"),
+          tag: ciphertext.subarray(ciphertext.length - 16).toString("base64"),
+        },
+      },
+    },
+  };
+  fs.writeFileSync(path.join(userDir, ".master.key"), master);
+  fs.writeFileSync(path.join(userDir, "connector-states.v3.json"), JSON.stringify(state));
+
+  try {
+    const extracted = extractWorkBuddyToken({
+      homeDir: home,
+      env: { APPDATA: path.join(home, "AppData", "Roaming") },
+    });
+    assert.equal(extracted, TOKEN);
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("MCP client initializes, captures session, notifies, calls tools, and parses SSE", async () => {
+  const requests = [];
+  const client = createMcpClient({
+    token: TOKEN,
+    fetchImpl: async (url, init) => {
+      const body = JSON.parse(init.body);
+      requests.push({ headers: init.headers, body });
+      const response = {
+        initialize: {
+          jsonrpc: "2.0", id: body.id, result: { serverInfo: { name: "tdx-finance-mcp-server", version: "1.0.0" } },
+        },
+        "notifications/initialized": null,
+        "tools/call": {
+          jsonrpc: "2.0", id: body.id,
+          result: { content: [{ type: "text", text: "{\"ok\":true}" }] },
+        },
+      };
+      const payload = response[body.method];
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: (name) => name === "Mcp-Session-Id" ? "session-123" : null },
+        text: async () => "event: message\ndata: " + JSON.stringify(payload) + "\n\n",
+      };
+    },
+  });
+
+  const result = await client.callTool("tdx_quotes", { code: "600519", setcode: "1" });
+  assert.deepEqual(JSON.parse(result), { ok: true });
+  assert.equal(requests.length, 3);
+  assert.equal(requests[0].headers.Authorization, "Bearer " + TOKEN);
+  assert.equal(requests[1].headers["Mcp-Session-Id"], "session-123");
+  assert.equal(requests[2].headers["Mcp-Session-Id"], "session-123");
+  assert.equal(requests[2].body.params.name, "tdx_quotes");
+});
