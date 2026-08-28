@@ -85,6 +85,24 @@ test("resolver applies env override, stored URL, structured fields, and env secr
   }, { env: { APP_PASSWORD: "field-secret" } });
   assert.equal(structured.password, "field-secret");
   assert.equal(structured.database, "orders");
+
+  const sqliteUrl = resolveConnection({
+    id: "local",
+    config: { type: "sqlite", url: "sqlite:///tmp/app.db" },
+  }, { env: {} });
+  assert.equal(sqliteUrl.path, "/tmp/app.db");
+
+  const redisTls = resolveConnection({
+    id: "cache",
+    config: { type: "redis", url: "rediss://:secret@cache.example.com:6380/2" },
+  }, { env: {} });
+  assert.equal(redisTls.tls, true);
+  assert.equal(redisTls.database, 2);
+
+  assert.throws(
+    () => resolveConnection({ id: "orders", config: { type: "mysql", url: "redis://127.0.0.1:6379/0" } }, { env: {} }),
+    /expects a mysql/i,
+  );
 });
 
 test("registry exposes adapters by id and family without hard-coding command dependencies", () => {
@@ -98,6 +116,7 @@ test("policy classifies SQL and Redis operations and enforces authorization", ()
   assert.equal(classifySqlCommand("SELECT * FROM users"), "read");
   assert.equal(classifySqlCommand("UPDATE users SET status=1 WHERE id=1"), "write");
   assert.equal(classifySqlCommand("TRUNCATE TABLE users"), "destructive");
+  assert.equal(classifySqlCommand("WITH updated AS (UPDATE users SET x=1 RETURNING *) SELECT * FROM updated"), "write");
 
   assert.equal(classifyRedisCommand("GET"), "read");
   assert.equal(classifyRedisCommand("SET"), "write");

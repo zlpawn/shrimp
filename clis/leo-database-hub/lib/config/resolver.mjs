@@ -26,6 +26,23 @@ export function resolveConnection({ id, config }, { env = process.env } = {}) {
 
 function parseConnectionUrl(type, url, id) {
   const parsed = new URL(url);
+  if (type === "sqlite") return { id, type, path: decodeURIComponent(parsed.pathname) };
+  if (type === "redis") {
+    return {
+      id,
+      type,
+      host: parsed.hostname,
+      port: Number(parsed.port || 6379),
+      user: decodeURIComponent(parsed.username || ""),
+      password: decodeURIComponent(parsed.password || ""),
+      database: Number(parsed.pathname.replace(/^\//, "") || 0),
+      tls: parsed.protocol === "rediss:",
+    };
+  }
+  const expected = type === "mysql" ? /^mysql2?:$/ : new RegExp(`^${type}:`);
+  if (!expected.test(parsed.protocol)) {
+    throw new Error(`Connection '${id}' expects a ${type} URL, but received ${parsed.protocol}//.`);
+  }
   return {
     id,
     type,

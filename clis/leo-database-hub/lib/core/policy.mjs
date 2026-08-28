@@ -8,9 +8,9 @@ const REDIS_WRITE = new Set(["SET", "MSET", "DEL", "UNLINK", "EXPIRE", "PERSIST"
 
 export function classifySqlCommand(sql) {
   const normalized = String(sql || "").trim().replace(/\/s+/g, " ");
+  const writeKeywords = /\b(insert|update|delete|create|alter|drop|truncate|rename|grant|revoke|replace|merge)\b/i;
+  if (writeKeywords.test(normalized)) return DESTRUCTIVE_SQL.test(normalized) ? "destructive" : "write";
   if (READ_SQL.test(normalized)) return "read";
-  if (DESTRUCTIVE_SQL.test(normalized)) return "destructive";
-  if (WRITE_SQL.test(normalized)) return "write";
   return "unknown";
 }
 

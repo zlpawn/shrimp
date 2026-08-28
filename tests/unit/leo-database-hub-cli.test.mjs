@@ -113,3 +113,42 @@ test("CLI supports restricted stdin import and table formatting", async () => {
     fs.rmSync(home, { recursive: true, force: true });
   }
 });
+
+test("CLI import rejects invalid access before writing the secrets file", async () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "leo-db-import-invalid-"));
+  const file = path.join(home, "connections.json");
+  try {
+    await assert.rejects(
+      runCli(["connection", "import", "--stdin"], {
+        configPath: file,
+        stdin: JSON.stringify({
+          version: 1,
+          connections: { local: { type: "sqlite", path: path.join(home, "app.db"), access: "admin" } },
+        }),
+      }),
+      /invalid access/i,
+    );
+    assert.equal(fs.existsSync(file), false);
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test("CLI import reads process stdin when no literal input is injected", async () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "leo-db-import-stream-"));
+  const file = path.join(home, "connections.json");
+  const input = JSON.stringify({
+    version: 1,
+    connections: { local: { type: "sqlite", path: path.join(home, "app.db") } },
+  });
+  try {
+    const imported = JSON.parse(await runCli(["connection", "import", "--stdin"], {
+      configPath: file,
+      readStdin: async () => input,
+    }));
+    assert.equal(imported.connections.local.access, "readwrite");
+    assert.equal(fs.existsSync(file), true);
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+});

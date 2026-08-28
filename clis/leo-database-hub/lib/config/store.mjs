@@ -6,14 +6,19 @@ const ACCESS_MODES = new Set(["read", "readwrite"]);
 export function loadConnectionStore({
   secretsFile = process.env.LEO_DB_CONNECTIONS_FILE,
   registry,
+  object = null,
 } = {}) {
   const file = path.resolve(secretsFile || defaultConnectionsFile());
   let raw;
-  try {
-    raw = JSON.parse(fs.readFileSync(file, "utf8"));
-  } catch (error) {
-    if (error.code === "ENOENT") return { version: 1, connections: {}, file };
-    throw new Error(`Invalid database connection configuration: ${error.message}`);
+  if (object) {
+    raw = object;
+  } else {
+    try {
+      raw = JSON.parse(fs.readFileSync(file, "utf8"));
+    } catch (error) {
+      if (error.code === "ENOENT") return { version: 1, connections: {}, file };
+      throw new Error(`Invalid database connection configuration: ${error.message}`);
+    }
   }
 
   if (raw?.version !== 1) throw new Error("Unsupported connection configuration version. Expected version 1.");
@@ -36,31 +41,18 @@ export function loadConnectionStore({
     connections[id] = { ...value, id, type: value.type, access };
   }
 
-  ensureRestricted(file);
+  if (!object) ensureRestricted(file);
   return { version: 1, connections, file };
 }
 
 export function importConnectionStore(json, { secretsFile, registry }) {
   const parsed = typeof json === "string" ? JSON.parse(json) : json;
-  const store = loadConnectionStoreFromObject(parsed, registry);
+  const store = loadConnectionStore({ secretsFile: "/dev/null", registry, object: parsed });
   const file = path.resolve(secretsFile || defaultConnectionsFile());
   fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
   fs.writeFileSync(file, JSON.stringify(parsed, null, 2) + "\n", { mode: 0o600 });
   ensureRestricted(file);
   return { ...store, file };
-}
-
-function loadConnectionStoreFromObject(raw, registry) {
-  if (raw?.version !== 1) throw new Error("Unsupported connection configuration version. Expected version 1.");
-  if (!raw.connections || typeof raw.connections !== "object" || Array.isArray(raw.connections)) {
-    throw new Error("Connection configuration must contain a connections object.");
-  }
-  const connections = {};
-  for (const [id, value] of Object.entries(raw.connections)) {
-    if (!registry.get(value.type)) throw new Error(`Connection '${id}' uses unsupported type '${value.type}'.`);
-    connections[id] = { ...value, id };
-  }
-  return { version: 1, connections };
 }
 
 export function summarizeConnections(store) {

@@ -28,7 +28,10 @@ export async function runCli(argv, options = {}) {
           capabilities: adapter.capabilities,
         })) }, flags);
       case "connection":
-        if (positional[0] === "import") return output(importConnections({ argv: args, configPath: options.configPath, stdin: options.stdin }), flags);
+        if (positional[0] === "import") {
+          const json = options.stdin ?? await (options.readStdin || readStdin)();
+          return output(await importConnections({ argv: args, configPath: options.configPath, stdin: json }), flags);
+        }
         if (positional[0] !== "test" || !positional[1]) throw new Error("Usage: leo-database-hub connection test <id> | connection import --stdin");
         return output({ connection: positional[1], ok: await testConnection(manager, positional[1], options) }, flags);
       case "tables": {
@@ -110,10 +113,16 @@ function parseFlags(args) {
   return { values, positionals, write: values.write === true, yes: values.yes === true };
 }
 
-function importConnections({ argv, configPath, stdin }) {
+async function importConnections({ argv, configPath, stdin }) {
   if (!argv.includes("--stdin")) throw new Error("connection import requires --stdin.");
   if (!stdin) throw new Error("connection import --stdin received no input.");
   return importConnectionStore(stdin, { secretsFile: configPath, registry: createAdapterRegistry(builtInAdapters) });
+}
+
+async function readStdin() {
+  let text = "";
+  for await (const chunk of process.stdin) text += chunk;
+  return text;
 }
 
 function output(value, flags) {
