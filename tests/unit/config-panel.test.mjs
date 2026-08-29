@@ -813,7 +813,7 @@ test("custom agent nav and sections use clientDisplayName for titles and slug fo
   // renderCustomClientSections checks
   assert.match(
     html,
-    /<h2>\$\{escapeHtml\(clientDisplayName\(client\)\)\} 代理<\/h2>/,
+    /<h2>\$\{escapeHtml\(headerTitle\)\}<\/h2>/,
   );
   assert.match(
     html,

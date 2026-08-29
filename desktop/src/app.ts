@@ -1261,10 +1261,12 @@ function renderCustomClientSections() {
         const eps = config.clients[client].endpoints || [];
         const protocol = config.clients[client].protocol || 'anthropic';
         const detailForThis = inDetail && selectedEndpoint.client === client;
+        const rawName = clientDisplayName(client);
+        const headerTitle = rawName.endsWith('代理') ? rawName : `${rawName} 代理`;
         const header = `
             <div class="section-header custom-client-section-header" id="custom-client-block-${escapeHtml(client)}">
                 <div>
-                    <h2>${escapeHtml(clientDisplayName(client))} 代理</h2>
+                    <h2>${escapeHtml(headerTitle)}</h2>
                     <p>接入协议：${escapeHtml(protocolLabel(protocol))} · 路由标识 <code>/${escapeHtml(client)}/</code></p>
                 </div>
                 <div class="section-header-actions">
@@ -2637,8 +2639,8 @@ function renderCliLibrary() {
                 const fullCmd = item.fullCommand || (item.command + ' ' + item.path);
                 const shimInstalled = isCliShimInstalled(item.name);
                 const shimButton = shimInstalled
-                    ? '<button class="btn" style="padding:4px 10px;font-size:12px;" onclick="uninstallCliShim(\'' + escapeHtml(item.name) + '\')">卸载全局</button>'
-                    : '<button class="btn btn-primary" style="padding:4px 10px;font-size:12px;" onclick="installCliShim(\'' + escapeHtml(item.name) + '\')">安装全局</button>';
+                    ? '<button class="btn" style="padding:4px 10px;font-size:12px;white-space:nowrap;flex-shrink:0;" onclick="uninstallCliShim(\'' + escapeHtml(item.name) + '\')">卸载全局</button>'
+                    : '<button class="btn btn-primary" style="padding:4px 10px;font-size:12px;white-space:nowrap;flex-shrink:0;" onclick="installCliShim(\'' + escapeHtml(item.name) + '\')">安装全局</button>';
 
                 return '<div class="mcp-card" style="cursor:default;padding:12px 14px;background:var(--surface);display:flex;flex-direction:column;gap:8px;">' +
                     '<div class="mcp-card-head">' +
@@ -2649,9 +2651,9 @@ function renderCliLibrary() {
                     '<div class="install-record-cmd" style="margin:2px 0;font-size:11px;background:var(--input-bg);padding:6px 8px;border-radius:4px;border:1px solid var(--border-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="' + escapeHtml(fullCmd) + ' --help">' +
                     '$ ' + escapeHtml(fullCmd) + ' --help' +
                     '</div>' +
-                    '<div class="mcp-card-meta" style="margin-top:auto;padding-top:6px;border-top:1px dashed var(--border-color);display:flex;justify-content:space-between;align-items:center;font-size:11px;">' +
-                    '<span class="mcp-card-status"><span class="dot-on"></span> ' + (shimInstalled ? '已全局可用' : '源码已就绪') + '</span>' +
-                    '<span style="display:flex;gap:6px;align-items:center;color:var(--text-secondary);">入口: <code>' + escapeHtml(item.path) + '</code>' + shimButton + '</span>' +
+                    '<div class="mcp-card-meta" style="margin-top:auto;padding-top:6px;border-top:1px dashed var(--border-color);display:flex;justify-content:space-between;align-items:center;font-size:11px;gap:8px;">' +
+                    '<span class="mcp-card-status" style="white-space:nowrap;flex-shrink:0;"><span class="dot-on"></span> ' + (shimInstalled ? '已全局可用' : '源码已就绪') + '</span>' +
+                    shimButton +
                     '</div>' +
                     '</div>';
             }).join('');
@@ -7394,8 +7396,19 @@ window.updateEndpoint = function(client, index, field, value) {
         if (title) title.textContent = value || `节点 ${index + 1}`;
     }
     if (field === 'api_key') {
-        render();
-        return;
+        const row = document.querySelector(`#ep-${client}-${index} .single-key-row`) || document.querySelector('.single-key-row');
+        const preview = row?.querySelector('.single-key-preview');
+        const statusSpan = document.querySelector(`#ep-${client}-${index} .key-status`) || document.querySelector('.key-status');
+        const hasVal = Boolean(String(value || '').trim());
+        const isConfigured = hasVal || Boolean(endpoint.has_api_key);
+        if (preview) {
+            preview.textContent = hasVal ? '待保存' : (endpoint.has_api_key ? '已配置' : '****');
+            preview.classList.toggle('is-configured', isConfigured);
+        }
+        if (statusSpan) {
+            statusSpan.textContent = isConfigured ? '已配置' : '未配置';
+            statusSpan.className = `key-status ${isConfigured ? 'key-status-set' : 'key-status-unset'}`;
+        }
     }
     updateSelectedDraftIndicators();
 }
@@ -7425,7 +7438,15 @@ window.updateApiKey = function(client, index, credentialId, value) {
     const endpoint = config.clients?.[client]?.endpoints?.[index];
     if (!endpoint) return;
     setCredentialValue(endpoint, credentialId, value);
-    render();
+    const input = document.getElementById(`api-key-${client}-${index}-${credentialId}`);
+    const row = input?.closest('.multi-key-row');
+    const preview = row?.querySelector('.multi-key-preview');
+    const hasVal = Boolean(String(value || '').trim());
+    if (preview) {
+        preview.textContent = hasVal ? '待保存' : '****';
+        preview.classList.toggle('is-configured', hasVal);
+    }
+    updateSelectedDraftIndicators();
 }
 
 window.setEndpointKeyStrategy = function(client, index, strategy) {
@@ -7743,10 +7764,27 @@ window.removeMapping = function(client, index, key) {
     render();
 };
 
-       window.saveNode = async function(client, index) {
-   const endpoint = config.clients?.[client]?.endpoints?.[index];
-   const btn = document.getElementById(`save-node-${client}-${index}`);
-   if (!endpoint || !btn) return;
+window.saveNode = async function(client, index) {
+    const endpoint = config.clients?.[client]?.endpoints?.[index];
+    const btn = document.getElementById(`save-node-${client}-${index}`);
+    if (!endpoint || !btn) return;
+
+    const card = document.getElementById(`ep-${client}-${index}`);
+    if (card) {
+        const nameInput = card.querySelector(`#input-name-${client}-${index}`) as HTMLInputElement | null;
+        if (nameInput) endpoint.name = nameInput.value;
+
+        const singleKeyInput = card.querySelector(`#api-key-${client}-${index}`) as HTMLInputElement | null;
+        if (singleKeyInput && singleKeyInput.value) {
+            endpoint.api_key = singleKeyInput.value;
+        }
+
+        const urlInput = card.querySelector('input.mono[placeholder*="openai.com"]') as HTMLInputElement | null;
+        if (urlInput && urlInput.value) {
+            endpoint.base_url = urlInput.value;
+        }
+    }
+
     if (endpoint.purpose === 'embedding') {
         if (!String(endpoint.base_url || '').trim()) {
             showToast('请先填写向量模型节点的 Base URL', 'error');

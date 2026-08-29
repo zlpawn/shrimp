@@ -170,7 +170,7 @@ function singleKeyEditor(
       <div class="single-key-row">
         <span class="multi-key-preview single-key-preview ${preview.configured ? "is-configured" : ""}">${escapeHtml(preview.preview || "****")}</span>
         <div class="password-input-wrapper">
-          <input class="mono" type="password" id="api-key-${escapeHtml(client)}-${index}" value="${escapeHtml(String(endpoint.api_key || ""))}" placeholder="${escapeHtml(placeholder)}" onchange="updateEndpoint('${escapeHtml(client)}', ${index}, 'api_key', this.value)">
+          <input class="mono" type="password" id="api-key-${escapeHtml(client)}-${index}" value="${escapeHtml(String(endpoint.api_key || ""))}" placeholder="${escapeHtml(placeholder)}" oninput="updateEndpoint('${escapeHtml(client)}', ${index}, 'api_key', this.value)" onchange="updateEndpoint('${escapeHtml(client)}', ${index}, 'api_key', this.value)">
           <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('${escapeHtml(client)}', ${index}, 'api-key-${escapeHtml(client)}-${index}')" title="${preview.configured ? "查看已保存密钥" : "显示/隐藏密钥"}">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -281,7 +281,7 @@ export function renderEndpointKeyEditor(
           return `
             <div class="multi-key-row">
               <span class="multi-key-preview ${preview.configured ? "is-configured" : ""}" title="${escapeHtml(credential.id)}">${escapeHtml(preview.preview || "****")}</span>
-              <input class="mono multi-key-input" type="password" id="${escapeHtml(inputId)}" value="${escapeHtml(endpoint.api_key_values?.[credential.id] || "")}" placeholder="${preview.configured ? KEEP_EXISTING_KEY_PLACEHOLDER : "输入 API Key"}" onchange="updateApiKey('${escapeHtml(client)}', ${index}, '${escapeHtml(credential.id)}', this.value)">
+              <input class="mono multi-key-input" type="password" id="${escapeHtml(inputId)}" value="${escapeHtml(endpoint.api_key_values?.[credential.id] || "")}" placeholder="${preview.configured ? KEEP_EXISTING_KEY_PLACEHOLDER : "输入 API Key"}" oninput="updateApiKey('${escapeHtml(client)}', ${index}, '${escapeHtml(credential.id)}', this.value)" onchange="updateApiKey('${escapeHtml(client)}', ${index}, '${escapeHtml(credential.id)}', this.value)">
               <button type="button" class="multi-key-action" onclick="toggleMultiKeyVisibility('${escapeHtml(client)}', ${index}, '${escapeHtml(credential.id)}', '${escapeHtml(inputId)}')" title="${preview.configured ? "查看已保存密钥" : "显示/隐藏密钥"}" aria-label="${preview.configured ? "查看已保存密钥" : "显示或隐藏密钥"}">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
               </button>

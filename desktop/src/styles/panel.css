@@ -393,6 +393,7 @@ body {
     align-items: center;
     justify-content: center;
     gap: 6px;
+    white-space: nowrap;
 }
 
 .btn:hover:not(:disabled) {
