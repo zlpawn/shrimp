@@ -15,10 +15,14 @@
   ball.type = "button";
   ball.title = "Leo cookie.txt Locally";
 
+  const spinWrapper = document.createElement("div");
+  spinWrapper.className = "leo-lantern-spin-wrapper";
+
   const img = document.createElement("img");
   img.alt = "Leo cookie.txt Locally";
   img.src = chrome.runtime.getURL("icons/icon128.png");
-  ball.appendChild(img);
+  spinWrapper.appendChild(img);
+  ball.appendChild(spinWrapper);
 
   const panel = document.createElement("div");
   panel.id = "leo-lantern-panel";
@@ -101,6 +105,7 @@
   function togglePanel(force) {
     panelOpen = typeof force === "boolean" ? force : !panelOpen;
     panel.classList.toggle("visible", panelOpen);
+    ball.classList.toggle("panel-open", panelOpen);
     if (panelOpen) {
       domainInput.value = domainInput.value || currentDomain();
       placePanel();
