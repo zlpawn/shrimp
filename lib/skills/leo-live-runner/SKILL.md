@@ -87,10 +87,15 @@ node scripts/fast_query.js utopia-scs-saas 'loglevel:ERROR' 15m 10
 4. **事务安全（强制）**：任何写数据库操作，**必须声明 `@Transactional(rollbackFor = Exception.class)`**，框架会自动生成 CGLIB 事务 AOP 代理，遇到未捕获异常自动 100% 回滚；
 5. **参数自适应**：方法形参名称直接对应请求 JSON 中的 key。
 
-### 3. 【必须】提示用户输入域名并确认代码
-⚠️ **安全与网络铁律**：AI 绝对不能臆造或写死生产域名。
-在准备发起 HTTP 调用前，**必须明确提示用户提供目标服务的访问域名或 IP:Port**：
-> 💬 *“代码已生成完毕，请提供目标微服务的域名或访问地址（例如：`http://localhost:8080`、`https://order-service.prod.internal` 或 Pod 直连 IP `http://10.244.1.12:8080`），以及可选的 `X-Live-Token` 密钥（若已开启鉴权）。”*
+### 3. 【核心铁律】代码显式回显与状态变更强制确认 (Human-in-the-Loop)
+⚠️ **AI 动态执行不可违背的安全铁律**：
+1. **完整代码显式回显**：AI 在执行前**必须把完整的 Java 源码输出给用户**，严禁悄悄执行或仅展示代码片段；
+2. **状态变更强制二次确认**：
+   - 凡是涉及 **数据写操作**（MySQL 增删改、Redis 写入/删除、Kafka/RabbitMQ 发消息、调用第三方外部接口等）；
+   - AI 生成完代码后，**必须明确请求用户确认**：
+     > 💬 *“以上是为您生成的动态修复代码。由于包含状态变更/外部调用，请您仔细检查无误后回复‘确认执行’，我将为您发起调用。”*
+   - **未获得用户明确确认前，绝对禁止发起 `POST /execute` 调用！**
+3. **安全沙箱合规**：生成的代码必须符合六大安全规则（禁止无 WHERE 条件的 UPDATE/DELETE、禁止 1=1 注入、禁止 DDL 等，详见 [references/security-rules.md](references/security-rules.md)）。
 
 ---
 
@@ -102,6 +107,7 @@ node scripts/fast_query.js utopia-scs-saas 'loglevel:ERROR' 15m 10
 | **`/internal/live-runner/register`** | `POST` | **注册动态代码**（仅预热编译，常驻内存） | 准备建立长期动态接口 |
 | **`/internal/live-runner/invoke/{key}`** | `POST` | **调用单方法/默认方法**（传纯业务 JSON） | 高频调用单动作接口 |
 | **`/internal/live-runner/invoke/{key}/{method}`** | `POST` | **二级子路径多方法调用**（精确调用指定 public 方法） | 调用动态 Controller 中的子方法 |
+| **`/internal/live-runner/security-rules`** | `GET` | **动态查询当前生效的安全规则列表** | 动态探测目标实例安全边界 |
 | **`/internal/live-runner/list`** | `GET` | **查看已加载脚本与调用指标** | 运维审计与状态检查 |
 | **`/internal/live-runner/unregister/{key}`** | `DELETE` | **彻底卸载脚本与释放 Metaspace 元空间** | 用后清理内存 |
 
@@ -109,12 +115,13 @@ node scripts/fast_query.js utopia-scs-saas 'loglevel:ERROR' 15m 10
 
 ## 📚 规范文档与实战代码模板索引
 
-- **FAST 日志协议与 Lucene 语法速查**：[references/fast-log-guide.md](references/fast-log-guide.md)
+- **六大安全沙箱规约与红线**：[references/security-rules.md](references/security-rules.md)
 - **Live Runner 接口协议与出入参定义**：[references/api-reference.md](references/api-reference.md)
+- **FAST 日志协议与检索兜底指南**：[references/fast-log-guide.md](references/fast-log-guide.md)
 - **Spring 注入与事务代理规范**：[references/injection-rules.md](references/injection-rules.md)
 - **实战示例索引**：
   - [examples/01_one_shot_sql_fix.java](examples/01_one_shot_sql_fix.java) — 一次性应急 SQL 修复（带事务与 SLF4J 日志）
   - [examples/02_mybatis_plus_dynamic.java](examples/02_mybatis_plus_dynamic.java) — MyBatis-Plus Lambda Wrapper 动态条件更新
   - [examples/03_existing_service_facade.java](examples/03_existing_service_facade.java) — 注入宿主工程现有 Service 门面
   - [examples/04_multi_method_controller.java](examples/04_multi_method_controller.java) — 多方法动态 Controller 服务族
-  - [examples/100_trace_and_log_query.md](examples/100_trace_and_log_query.md) — 🆕 FAST 日志与 TraceId 全链路排障实战
+  - [examples/100_trace_and_log_query.md](examples/100_trace_and_log_query.md) — FAST 日志与 TraceId 全链路排障实战

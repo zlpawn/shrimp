@@ -185,3 +185,33 @@
   "costMs": 0
 }
 ```
+
+---
+
+### 3.7 动态查询正在生效的安全规则列表 (`GET /internal/live-runner/security-rules`)
+> 动态嗅探目标 Spring Boot 实例加载的 `LiveRunnerCodeValidator` 与生效的 `SecurityRule` 清单。
+
+- **URL**: `GET http://<user-domain>/internal/live-runner/security-rules`
+- **响应体 (JSON)**:
+```json
+{
+  "code": 200,
+  "success": true,
+  "data": [
+    {
+      "validatorClass": "io.github.zlpawn.liverunner.core.security.DefaultSecurityCheckerValidator",
+      "validatorSimpleName": "DefaultSecurityCheckerValidator",
+      "activeRules": [
+        "SYSTEM_SECURITY",
+        "THREAD_SECURITY",
+        "SPRING_CONFIG_SECURITY",
+        "REDIS_SAFETY",
+        "SQL_DML_SAFETY",
+        "SQL_DDL_SAFETY"
+      ]
+    }
+  ],
+  "msg": "SUCCESS",
+  "costMs": 0
+}
+```

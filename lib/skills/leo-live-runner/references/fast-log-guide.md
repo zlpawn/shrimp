@@ -40,3 +40,7 @@
 3. **跨分片大查询保障 (`wait_for_completion_timeout`)**：
    * 当检索跨多天（如 `48h`、`7d`）日志时，ES 集群并发扫描多达 40+ 个 Shards；
    * 必须在请求参数中设置 `wait_for_completion_timeout: '10s'`，防止 Kibana 在 1 秒时判定为 Async Search 导致前台漏读 Hits 列表。
+
+4. **最后人工干预兜底机制 (Last-Resort Fallback)**：
+   * **触发前提**：仅当“一级通道（直连）”与“二级通道（探针自愈）”**全部失败**时，AI 才可提示用户人工提供 `cluster` 域名与 `index` 索引模式；
+   * 用户提供后，可直接通过 `node scripts/fast_query.js <index> <query>` 检索，结果会自动固化写入本地缓存，后续无需再次人工输入。
