@@ -32,15 +32,15 @@
      }
      ```
 
-2. **二级通道（`ego-browser` 智能自愈探针）**：
-   * 当直连返回异常（如 404/500/集群迁移）或遇到全新微服务时，脚本**自动拉起 `ego-browser` 访问 `https://fast.ke.com/#/search` 权威门户**；
-   * 通过前端级联选择器动态解析最新的 `cluster` 地址与 `index` 索引；
-   * 自动覆写更新本地自学习缓存 `~/.shrimp/skills/live-runner/service_map.json`，并立即自动重试查询，实现 **100% 无人干预的自动纠错自愈**。
+2. **二级通道（跨平台双智能自愈探针）**：
+   * **🍎 macOS 探针（`ego-browser`）**：自动唤起原生 `ego-browser` 访问 `https://fast.ke.com/#/search` 门户解析最新 cluster 与 index；
+   * **🪟 Windows / 通用探针（`Leo Lantern Chrome 扩展`）**：通过本地 `19527` 端口静默借用用户日常 Chrome 提取 cluster 与 index（支持运行 `scripts/setup_chrome_ext.bat` 10 秒一键挂载）；
+   * **自动纠错缓存**：探针提取成功后，自动覆写更新本地缓存 `~/.shrimp/skills/live-runner/service_map.json` 并重试直连，实现 **100% 无人干预的自动纠错自愈**。
 
 3. **跨分片大查询保障 (`wait_for_completion_timeout`)**：
    * 当检索跨多天（如 `48h`、`7d`）日志时，ES 集群并发扫描多达 40+ 个 Shards；
    * 必须在请求参数中设置 `wait_for_completion_timeout: '10s'`，防止 Kibana 在 1 秒时判定为 Async Search 导致前台漏读 Hits 列表。
 
 4. **最后人工干预兜底机制 (Last-Resort Fallback)**：
-   * **触发前提**：仅当“一级通道（直连）”与“二级通道（探针自愈）”**全部失败**时，AI 才可提示用户人工提供 `cluster` 域名与 `index` 索引模式；
+   * **触发前提**：仅当“一级通道（直连）”与“二级通道（跨平台探针自愈）”**全部失败**时，AI 才可提示用户人工提供 `cluster` 域名与 `index` 索引模式；
    * 用户提供后，可直接通过 `node scripts/fast_query.js <index> <query>` 检索，结果会自动固化写入本地缓存，后续无需再次人工输入。

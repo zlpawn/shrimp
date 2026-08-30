@@ -49,7 +49,7 @@ flowchart TD
 ## 🔍 第一部分：FAST / Kibana 极速日志与 Trace 检索指南
 
 ### 1. 执行脚本快速调用
-AI 可直接通过以下 Node.js 脚本毫秒级直连查询（双引擎联动自愈模式：日常纯 HTTP 极速直连 < 200ms；遇新服务/集群变更自动唤起 `ego-browser` 智能探针自愈）：
+AI 可直接通过以下 Node.js 脚本毫秒级直连查询（四级阶梯自愈模式：日常纯 HTTP 极速直连 < 200ms；遇新服务自动唤起 macOS `ego-browser` 或 Windows/Chrome 扩展探针静默自愈）：
 
 ```bash
 # 格式: node scripts/fast_query.js [appCode] [query/traceId] [timeRange] [size]
