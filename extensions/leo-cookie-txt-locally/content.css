@@ -56,9 +56,8 @@
   height: 100%;
   display: block;
   pointer-events: none;
-  object-fit: contain;
+  object-fit: cover;
   transform-origin: 50% 50%;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.18));
 }
 
 @keyframes leo-lantern-spin {
