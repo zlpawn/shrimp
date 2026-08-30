@@ -11,6 +11,16 @@ A Chrome/Edge/Brave extension that exports cookies from the browser to the Shrim
 5. Click "Load unpacked" and select the unzipped folder.
 6. After upgrading to 1.1.0+, click **Reload** on the extension card.
 
+---
+
+> [!IMPORTANT]
+> **📢 AI Agent 与开发者同步规约（Single Source of Truth）**：
+> 1. 本目录 (`extensions/leo-cookie-txt-locally`) 为 Chrome 扩展的**主源目录**。
+> 2. 为保证 `lib/skills/leo-live-runner` 具备独立分发与便携性，其 `resources/chrome_extension` 目录下维护了本扩展的自包含副本。
+> 3. **任何 AI Agent 或开发者在修改本目录代码后，请务必执行 `npm run sync:extension`，确保将最新改动同步到 `lib/skills/leo-live-runner/resources/chrome_extension`！**
+
+---
+
 ## Usage
 
 ### Via agent / skill (Path C)
