@@ -34,7 +34,10 @@ public class MybatisPlusDynamicTask {
         log.info(">>> 用户目前存在待处理订单: {} 笔", count);
 
         if (count == 0) {
-            return Map.of("updatedRows", 0, "msg", "未查询到待处理订单");
+            Map<String, Object> res = new java.util.HashMap<>();
+            res.put("updatedRows", 0);
+            res.put("msg", "未查询到待处理订单");
+            return res;
         }
 
         // 步骤 2: 使用 LambdaUpdateWrapper 批量动态更新
@@ -49,6 +52,9 @@ public class MybatisPlusDynamicTask {
         );
         log.info(">>> 更新成功行数: {}", rows);
 
-        return Map.of("userId", userId, "updatedRows", rows);
+        Map<String, Object> res = new java.util.HashMap<>();
+        res.put("userId", userId);
+        res.put("updatedRows", rows);
+        return res;
     }
 }

@@ -203,6 +203,7 @@
       "validatorSimpleName": "DefaultSecurityCheckerValidator",
       "activeRules": [
         "SYSTEM_SECURITY",
+        "AST_SANDBOX_SECURITY",
         "THREAD_SECURITY",
         "SPRING_CONFIG_SECURITY",
         "REDIS_SAFETY",
@@ -211,6 +212,49 @@
       ]
     }
   ],
+  "msg": "SUCCESS",
+  "costMs": 0
+}
+```
+
+---
+
+### 3.8 动态查看配置与线程池运行时指标 (`GET /internal/live-runner/config`)
+> 查看当前生效的全局配置（超时时间、安全开关、`maxLogBufferSizeKb` 缓冲区大小）以及 Worker 线程池实时运行指标（活跃线程、队列排队量等）。
+
+- **URL**: `GET http://<user-domain>/internal/live-runner/config`
+- **响应体 (JSON)**:
+```json
+{
+  "code": 200,
+  "success": true,
+  "data": {
+    "enabled": true,
+    "securityCheckEnabled": true,
+    "defaultTimeoutSeconds": 60,
+    "maxLogBufferSizeKb": 64,
+    "threadPoolConfig": {
+      "corePoolSize": 2,
+      "maxPoolSize": 10,
+      "queueCapacity": 200,
+      "keepAliveSeconds": 60,
+      "rejectionPolicy": "CALLER_RUNS"
+    },
+    "threadPoolRuntime": {
+      "activeCount": 0,
+      "poolSize": 2,
+      "corePoolSize": 2,
+      "maximumPoolSize": 10,
+      "queueSize": 0,
+      "queueRemainingCapacity": 200
+    },
+    "security": {
+      "enabled": true,
+      "sql": { "allowDdl": false, "allowMissingWhere": false, "maxAffectedRows": 500 },
+      "redis": { "allowDangerousKeys": false },
+      "system": { "allowProcessExec": false, "allowSystemExit": false }
+    }
+  },
   "msg": "SUCCESS",
   "costMs": 0
 }

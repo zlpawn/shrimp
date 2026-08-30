@@ -45,7 +45,11 @@ public class MultiMethodOrderApiController {
                 newStatus, orderId
         );
         log.info("Affected rows: {}", rows);
-        return Map.of("orderId", orderId, "updatedRows", rows, "newStatus", newStatus);
+        Map<String, Object> res = new java.util.HashMap<>();
+        res.put("orderId", orderId);
+        res.put("updatedRows", rows);
+        res.put("newStatus", newStatus);
+        return res;
     }
 
     /**
@@ -59,6 +63,10 @@ public class MultiMethodOrderApiController {
                 "UPDATE t_order SET status = 'CANCELLED', remark = ? WHERE id = ?",
                 cancelReason, orderId
         );
-        return Map.of("orderId", orderId, "status", "CANCELLED", "affectedRows", rows);
+        Map<String, Object> res = new java.util.HashMap<>();
+        res.put("orderId", orderId);
+        res.put("status", "CANCELLED");
+        res.put("affectedRows", rows);
+        return res;
     }
 }

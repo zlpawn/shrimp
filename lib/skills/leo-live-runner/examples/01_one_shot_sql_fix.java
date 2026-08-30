@@ -30,7 +30,10 @@ public class OneShotSqlFixTask {
         log.info(">>> 命中待修复订单数量: {} 条", orders.size());
 
         if (orders.isEmpty()) {
-            return Map.of("updatedCount", 0, "status", "NO_DATA_TO_FIX");
+            Map<String, Object> res = new java.util.HashMap<>();
+            res.put("updatedCount", 0);
+            res.put("status", "NO_DATA_TO_FIX");
+            return res;
         }
 
         // 步骤 2: 批量更新订单状态
@@ -41,10 +44,10 @@ public class OneShotSqlFixTask {
         );
         log.info(">>> 数据库受影响行数: {}", updatedRows);
 
-        return Map.of(
-                "targetStatus", targetStatus,
-                "updatedCount", updatedRows,
-                "sampleOrder", orders.get(0)
-        );
+        Map<String, Object> res = new java.util.HashMap<>();
+        res.put("targetStatus", targetStatus);
+        res.put("updatedCount", updatedRows);
+        res.put("sampleOrder", orders.get(0));
+        return res;
     }
 }

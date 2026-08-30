@@ -27,7 +27,10 @@ public class ExistingServiceFacadeTask {
         log.info(">>> 订单当前状态为: {}", currentStatus);
 
         if (!"PAID".equalsIgnoreCase(currentStatus)) {
-            return Map.of("success", false, "msg", "订单非已支付状态，当前状态为: " + currentStatus);
+            Map<String, Object> err = new java.util.HashMap<>();
+            err.put("success", false);
+            err.put("msg", "订单非已支付状态，当前状态为: " + currentStatus);
+            return err;
         }
 
         log.info(">>> 步骤 2: 调用现有 PaymentService 执行退款与资金冲正, 原因: {}", refundReason);
@@ -39,10 +42,10 @@ public class ExistingServiceFacadeTask {
             orderService.updateOrderStatus(orderId, "REFUNDED");
         }
 
-        return Map.of(
-                "orderId", orderId,
-                "refundSuccess", refundSuccess,
-                "finalStatus", orderService.getOrderStatus(orderId)
-        );
+        Map<String, Object> res = new java.util.HashMap<>();
+        res.put("orderId", orderId);
+        res.put("refundSuccess", refundSuccess);
+        res.put("finalStatus", orderService.getOrderStatus(orderId));
+        return res;
     }
 }

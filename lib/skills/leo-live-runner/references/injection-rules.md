@@ -44,6 +44,9 @@ public class DynamicTask {
 }
 ```
 
+### 策略 3：同类型多候选 Bean 智能择优
+当同一个接口/类在 Spring 容器中存在多个实现时（如多个数据源或策略类），`SpringBeanInjector` 会优先匹配与**字段名（fieldName）一致**的候选 Bean，若无精准同名则尝试 `@Primary` 候选，避免抛出 `NoUniqueBeanDefinitionException`。
+
 ---
 
 ## 2. 宿主工程已支持的基础设施与 ORM 体系
@@ -100,3 +103,19 @@ public class OrderRepairTask {
 1. `SpringBeanInjector` 检测到类或方法包含 `@Transactional`；
 2. 自动从宿主容器中获取 `PlatformTransactionManager`，通过 Spring 官方底层的 `ProxyFactory` 为原生对象织入 `TransactionInterceptor` 切面；
 3. 执行期间一旦抛出异常，**所有涉及该数据源的 SQL 操作全部由 Spring 自动回滚**。
+
+---
+
+## 4. 🎯 方法形参自动注入与强类型自动映射
+
+除了成员变量外，动态方法的形参同样支持智能注入与类型转换：
+
+1. **`LiveLogger` 自动注入**：
+   - 方法形参声明 `LiveLogger log`，引擎自动将当前执行的收集器注入，**无需在 HTTP 请求中传参**；
+2. **`Map<String, Object>` 根上下文注入**：
+   - 方法形参声明 `Map<String, Object> params`，若未指定对应 key，自动注入整个请求参数 Map；
+3. **生产级强类型自动映射**：
+   - **枚举（`Enum`）**：自动支持大小写不敏感匹配与数字序号匹配（如 `OrderStatusEnum.valueOf`）；
+   - **日期时间（`Date` / `LocalDate` / `LocalDateTime` / `LocalTime`）**：自动将前端时间戳或 `"yyyy-MM-dd HH:mm:ss"` 字符串解析为强类型对象；
+   - **集合与数组（`List<T>` / `Set<T>` / `Collection<T>`）**：支持 JSON 数组或逗号分隔字符串自动转换为对应集合；
+   - **基础数值与布尔**：`Long`, `Integer`, `BigDecimal`, `BigInteger`, `Boolean` 等自动安全转换。

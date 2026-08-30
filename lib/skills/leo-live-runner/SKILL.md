@@ -95,7 +95,7 @@ node scripts/fast_query.js utopia-scs-saas 'loglevel:ERROR' 15m 10
    - AI 生成完代码后，**必须明确请求用户确认**：
      > 💬 *“以上是为您生成的动态修复代码。由于包含状态变更/外部调用，请您仔细检查无误后回复‘确认执行’，我将为您发起调用。”*
    - **未获得用户明确确认前，绝对禁止发起 `POST /execute` 调用！**
-3. **安全沙箱合规**：生成的代码必须符合六大安全规则（禁止无 WHERE 条件的 UPDATE/DELETE、禁止 1=1 注入、禁止 DDL 等，详见 [references/security-rules.md](references/security-rules.md)）。
+3. **安全沙箱合规**：生成的代码必须符合七大安全规则族（AST 语法树隔离、禁止无 WHERE 条件的 UPDATE/DELETE、禁止 1=1 注入、禁止 DDL 等，详见 [references/security-rules.md](references/security-rules.md)）。
 
 ---
 
@@ -107,6 +107,7 @@ node scripts/fast_query.js utopia-scs-saas 'loglevel:ERROR' 15m 10
 | **`/internal/live-runner/register`** | `POST` | **注册动态代码**（仅预热编译，常驻内存） | 准备建立长期动态接口 |
 | **`/internal/live-runner/invoke/{key}`** | `POST` | **调用单方法/默认方法**（传纯业务 JSON） | 高频调用单动作接口 |
 | **`/internal/live-runner/invoke/{key}/{method}`** | `POST` | **二级子路径多方法调用**（精确调用指定 public 方法） | 调用动态 Controller 中的子方法 |
+| **`/internal/live-runner/config`** | `GET` | **查看当前生效配置与线程池运行时指标** | 监控 Worker 线程池与调参 |
 | **`/internal/live-runner/security-rules`** | `GET` | **动态查询当前生效的安全规则列表** | 动态探测目标实例安全边界 |
 | **`/internal/live-runner/list`** | `GET` | **查看已加载脚本与调用指标** | 运维审计与状态检查 |
 | **`/internal/live-runner/unregister/{key}`** | `DELETE` | **彻底卸载脚本与释放 Metaspace 元空间** | 用后清理内存 |
@@ -115,7 +116,7 @@ node scripts/fast_query.js utopia-scs-saas 'loglevel:ERROR' 15m 10
 
 ## 📚 规范文档与实战代码模板索引
 
-- **六大安全沙箱规约与红线**：[references/security-rules.md](references/security-rules.md)
+- **七大安全沙箱规约与红线**：[references/security-rules.md](references/security-rules.md)
 - **Live Runner 接口协议与出入参定义**：[references/api-reference.md](references/api-reference.md)
 - **FAST 日志协议与检索兜底指南**：[references/fast-log-guide.md](references/fast-log-guide.md)
 - **Spring 注入与事务代理规范**：[references/injection-rules.md](references/injection-rules.md)
@@ -124,4 +125,5 @@ node scripts/fast_query.js utopia-scs-saas 'loglevel:ERROR' 15m 10
   - [examples/02_mybatis_plus_dynamic.java](examples/02_mybatis_plus_dynamic.java) — MyBatis-Plus Lambda Wrapper 动态条件更新
   - [examples/03_existing_service_facade.java](examples/03_existing_service_facade.java) — 注入宿主工程现有 Service 门面
   - [examples/04_multi_method_controller.java](examples/04_multi_method_controller.java) — 多方法动态 Controller 服务族
+  - [examples/05_advanced_type_and_logger.java](examples/05_advanced_type_and_logger.java) — 生产级全类型自动映射与 LiveLogger 双写实时日志回显
   - [examples/100_trace_and_log_query.md](examples/100_trace_and_log_query.md) — FAST 日志与 TraceId 全链路排障实战
