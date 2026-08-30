@@ -19,13 +19,8 @@
   overflow: hidden;
   cursor: grab;
   pointer-events: auto;
-  /* 🌤️ 经典蓝天白云 + 绿草如茵多重拟物渐变背景 */
-  background:
-    radial-gradient(ellipse 24px 12px at 22% 28%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0) 80%),
-    radial-gradient(ellipse 28px 14px at 78% 24%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0) 75%),
-    radial-gradient(ellipse 18px 9px at 50% 36%, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 75%),
-    linear-gradient(180deg, #4fc3f7 0%, #b3e5fc 35%, #a8e063 46%, #51cf66 70%, #2b8a3e 100%);
-  box-shadow: 0 8px 24px rgba(43, 138, 62, 0.45), 0 2px 6px rgba(0, 0, 0, 0.16);
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28), 0 2px 6px rgba(0, 0, 0, 0.16);
   user-select: none;
   -webkit-user-select: none;
   transition: left 0.28s cubic-bezier(0.2, 0.9, 0.3, 1),
