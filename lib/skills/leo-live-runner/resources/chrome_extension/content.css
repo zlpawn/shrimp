@@ -1,0 +1,106 @@
+#leo-lantern-root {
+  all: initial;
+  position: fixed;
+  z-index: 2147483646;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+#leo-lantern-ball {
+  position: fixed;
+  width: 56px;
+  height: 56px;
+  border: 0;
+  padding: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: grab;
+  pointer-events: auto;
+  background: #1a1a2e;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#leo-lantern-ball:active {
+  cursor: grabbing;
+}
+
+#leo-lantern-ball img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  object-fit: cover;
+  transform-origin: 50% 50%;
+}
+
+#leo-lantern-panel {
+  position: fixed;
+  width: 280px;
+  pointer-events: auto;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  padding: 14px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 13px;
+  display: none;
+}
+
+#leo-lantern-panel.visible {
+  display: block;
+}
+
+#leo-lantern-panel h2 {
+  margin: 0 0 10px;
+  font-size: 14px;
+  color: #7c83ff;
+}
+
+#leo-lantern-panel label {
+  display: block;
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: #a0a0b0;
+}
+
+#leo-lantern-panel input {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+  padding: 6px 8px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: #16213e;
+  color: #e0e0e0;
+}
+
+#leo-lantern-panel button {
+  width: 100%;
+  padding: 8px;
+  border: 0;
+  border-radius: 4px;
+  background: #7c83ff;
+  color: #fff;
+  cursor: pointer;
+}
+
+#leo-lantern-status {
+  margin-top: 8px;
+  min-height: 16px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+#leo-lantern-status.ok {
+  color: #4ade80;
+}
+
+#leo-lantern-status.err {
+  color: #f87171;
+}
