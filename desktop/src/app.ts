@@ -303,7 +303,7 @@ const CLIENT_DISPLAY_NAMES = {
     desktop: 'Claude Desktop',
     codex: 'Codex',
     deeptutor: 'DeepTutor',
-    claude: 'Claude Code',
+    claude: 'Claude Desktop',
     antigravity: 'Antigravity',
     claudeDesktop3p: 'Claude Desktop 3P',
     claude_code: 'Claude Code',

@@ -41,6 +41,7 @@ export interface BriefMetadata {
   high_importance_count?: number;
   high_creator_count?: number;
   rapid_rising_count?: number;
+  event_links?: Record<string, { url?: string; platform_urls?: Record<string, string> }>;
   generated_at?: string;
 }
 
@@ -114,6 +115,53 @@ export const PLATFORM_INFO: Record<string, { name: string; icon: string; categor
   cls: { name: "财联社", icon: "💹", category: "finance", url: "https://www.cls.cn" }
 };
 
+export const TOPIC_PRESETS: { name: string; icon: string; keywords: string[]; rss_sources: string[] }[] = [
+  {
+    name: "人工智能与前沿科技",
+    icon: "🤖",
+    keywords: ["AI", "大模型", "DeepSeek", "算力", "Agent", "OpenAI", "Claude", "英伟达", "具身智能"],
+    rss_sources: ["https://36kr.com/feed"]
+  },
+  {
+    name: "智能汽车与出行",
+    icon: "🚗",
+    keywords: ["智驾", "固态电池", "小米汽车", "特斯拉", "比亚迪", "华为车", "新能源", "自动驾驶"],
+    rss_sources: ["https://36kr.com/feed"]
+  },
+  {
+    name: "全球宏观与财经",
+    icon: "📈",
+    keywords: ["美联储", "PCE", "降息", "非农", "财报", "纳斯达克", "黄金", "关税", "汇率"],
+    rss_sources: ["https://36kr.com/feed"]
+  },
+  {
+    name: "泛科技与出海",
+    icon: "💻",
+    keywords: ["出海", "SaaS", "独立开发", "芯片", "空间计算", "Vision Pro", "独立开发者", "AI应用"],
+    rss_sources: ["https://sspai.com/feed"]
+  },
+  {
+    name: "数字娱乐与游戏",
+    icon: "🎮",
+    keywords: ["Steam", "游戏科学", "黑神话", "虚幻引擎", "AIGC", "二次元", "主机游戏", "Unity"],
+    rss_sources: ["https://sspai.com/feed"]
+  },
+  {
+    name: "跨境电商与消费",
+    icon: "🛍️",
+    keywords: ["TikTok Shop", "Temu", "亚马逊", "独立站", "跨境电商", "品牌出海", "Shein"],
+    rss_sources: ["https://36kr.com/feed"]
+  }
+];
+
+export const RECOMMENDED_RSS_SOURCES = [
+  { name: "36氪快讯", url: "https://36kr.com/feed", icon: "⚡" },
+  { name: "少数派", url: "https://sspai.com/feed", icon: "📱" },
+  { name: "V2EX 技术热议", url: "https://www.v2ex.com/index.xml", icon: "💻" }
+];
+
+export const COMMON_EMOJIS = ["🤖", "🚗", "📈", "💻", "🎮", "🛍️", "⚡", "🏥", "🔬", "📱", "🚀", "🎬", "🎯", "🔥", "💡"];
+
 // --- Module State ---
 
 export type SubView = "brief" | "raw" | "explorer" | "settings";
@@ -184,8 +232,14 @@ export async function loadBrief(date?: string): Promise<void> {
   render();
 
   try {
-    const data = await apiFetch<DailyBrief>(`/v1/trend-intel/brief?date=${encodeURIComponent(targetDate)}`);
+    const [data, rawData] = await Promise.all([
+      apiFetch<DailyBrief>(`/v1/trend-intel/brief?date=${encodeURIComponent(targetDate)}`),
+      apiFetch<{ items: RawItem[]; total: number }>("/v1/trend-intel/raw-items?limit=500").catch(() => ({ items: [], total: 0 }))
+    ]);
     state.brief = data;
+    if (Array.isArray(rawData?.items) && rawData.items.length > 0) {
+      state.rawItems = rawData.items;
+    }
   } catch (err: any) {
     if (err?.status === 404 || (err?.message && (err.message.includes("404") || err.message.includes("not found") || err.message.includes("Not found") || err.message.includes("No brief")))) {
       state.brief = null;
@@ -407,6 +461,8 @@ function renderHeaderNav(): string {
 
 interface ParsedBriefItem {
   title: string;
+  url?: string;
+  platformUrls?: Record<string, string>;
   worldScore?: string;
   creatorScore?: string;
   trendState?: string;
@@ -424,7 +480,75 @@ interface ParsedSection {
   items: ParsedBriefItem[];
 }
 
-function parseMarkdownToSections(md: string): ParsedSection[] {
+function getPlatformMeta(p: string): { id: string; name: string; icon: string; url?: string } {
+  const key = String(p || "").toLowerCase().trim();
+  if (PLATFORM_INFO[key]) return { id: key, ...PLATFORM_INFO[key] };
+  for (const [k, v] of Object.entries(PLATFORM_INFO)) {
+    if (v.name === p || v.name.includes(p) || p.includes(v.name)) return { id: k, ...v };
+  }
+  return { id: key, name: p, icon: "🌐" };
+}
+
+function findDirectUrlForTitle(title: string, platform?: string): string {
+  if (!title || !state.rawItems || state.rawItems.length === 0) return "";
+  const cleanTitle = title.replace(/[^\p{L}\p{N}]/gu, "").toLowerCase();
+  if (!cleanTitle) return "";
+
+  // 1. Try matching within specific platform first
+  if (platform) {
+    const p = platform.toLowerCase().trim();
+    for (const item of state.rawItems) {
+      if (item.platform && item.platform.toLowerCase() === p && item.url && item.title) {
+        const cleanItemTitle = item.title.replace(/[^\p{L}\p{N}]/gu, "").toLowerCase();
+        if (cleanTitle.includes(cleanItemTitle) || cleanItemTitle.includes(cleanTitle)) {
+          return item.url;
+        }
+      }
+    }
+  }
+
+  // 2. Try matching across all platforms
+  for (const item of state.rawItems) {
+    if (item.url && item.title) {
+      const cleanItemTitle = item.title.replace(/[^\p{L}\p{N}]/gu, "").toLowerCase();
+      if (cleanTitle.includes(cleanItemTitle) || cleanItemTitle.includes(cleanTitle)) {
+        return item.url;
+      }
+    }
+  }
+  return "";
+}
+
+function getPlatformSearchUrl(platform: string, title: string, directUrl?: string): string {
+  if (directUrl && /^https?:\/\//i.test(directUrl)) return directUrl;
+  const p = platform.toLowerCase().trim();
+  const directMatch = findDirectUrlForTitle(title, p);
+  if (directMatch) return directMatch;
+
+  const enc = encodeURIComponent(title);
+  switch (p) {
+    case "baidu": return `https://www.baidu.com/s?wd=${enc}`;
+    case "weibo": return `https://s.weibo.com/weibo?q=${enc}`;
+    case "zhihu": return `https://www.zhihu.com/search?type=content&q=${enc}`;
+    case "bilibili": return `https://search.bilibili.com/all?keyword=${enc}`;
+    case "douyin": return `https://www.douyin.com/search/${enc}`;
+    case "toutiao": return `https://www.toutiao.com/search/?keyword=${enc}`;
+    case "github": return `https://github.com/search?q=${enc}&type=repositories`;
+    case "tieba": return `https://tieba.baidu.com/f/search/res?kw=&qw=${enc}`;
+    case "v2ex": return `https://www.google.com/search?q=site:v2ex.com+${enc}`;
+    case "sspai": return `https://sspai.com/search/post/${enc}`;
+    case "36kr":
+    case "wallstreetcn":
+    case "cls":
+    case "thepaper":
+      // For platforms whose internal search breaks on long sentences, use Baidu targeted search
+      return `https://www.baidu.com/s?wd=${encodeURIComponent(p + " " + title)}`;
+    default:
+      return `https://www.baidu.com/s?wd=${enc}`;
+  }
+}
+
+function parseMarkdownToSections(md: string, eventLinks?: Record<string, { url?: string; platform_urls?: Record<string, string> }>): ParsedSection[] {
   if (!md) return [];
   const sections: ParsedSection[] = [];
   const lines = md.split("\n");
@@ -432,13 +556,27 @@ function parseMarkdownToSections(md: string): ParsedSection[] {
   let currentItem: ParsedBriefItem | null = null;
   let inAngles = false;
 
+  const pushItem = () => {
+    if (currentItem && currentSection) {
+      if (currentItem.summary && currentItem.summary.trim() === currentItem.title.trim()) {
+        currentItem.summary = undefined;
+      }
+      if (eventLinks && eventLinks[currentItem.title]) {
+        const linkInfo = eventLinks[currentItem.title];
+        currentItem.url = linkInfo.url || currentItem.url;
+        currentItem.platformUrls = linkInfo.platform_urls || currentItem.platformUrls;
+      }
+      currentSection.items.push(currentItem);
+    }
+  };
+
   for (let i = 0; i < lines.length; i++) {
     const rawLine = lines[i];
     const trimmed = rawLine.trim();
     if (!trimmed) continue;
 
     if (trimmed.startsWith("## ")) {
-      if (currentItem && currentSection) currentSection.items.push(currentItem);
+      pushItem();
       currentItem = null;
       inAngles = false;
       const title = trimmed.replace("## ", "").trim();
@@ -470,7 +608,7 @@ function parseMarkdownToSections(md: string): ParsedSection[] {
     }
 
     if (trimmed.startsWith("- **【")) {
-      if (currentItem && currentSection) currentSection.items.push(currentItem);
+      pushItem();
       inAngles = false;
       
       const titleMatch = trimmed.match(/- \*\*【(.*?)】\*\*(.*)/);
@@ -481,7 +619,8 @@ function parseMarkdownToSections(md: string): ParsedSection[] {
       const creatorMatch = metaPart.match(/创作价值:\s*([\d\.]+(?:\/10)?)/);
       const stateMatch = metaPart.match(/状态:\s*([A-Za-z_]+)/);
       const velMatch = metaPart.match(/速度:\s*([+-]?\d+(?:\.\d+)?(?:\s*排名\/时)?)/);
-      const platMatch = metaPart.match(/平台:\s*([^)]+)/);
+      const platMatch = metaPart.match(/平台:\s*([^)|]+)/);
+      const linkMatch = metaPart.match(/链接:\s*([^\s)]+)/);
       
       const platforms = platMatch 
         ? platMatch[1].split(/[,，]/).map(s => s.trim()).filter(Boolean)
@@ -489,6 +628,7 @@ function parseMarkdownToSections(md: string): ParsedSection[] {
 
       currentItem = {
         title,
+        url: linkMatch ? linkMatch[1] : undefined,
         worldScore: worldMatch ? worldMatch[1].replace("/10", "") : undefined,
         creatorScore: creatorMatch ? creatorMatch[1].replace("/10", "") : undefined,
         trendState: stateMatch ? stateMatch[1] : undefined,
@@ -522,19 +662,17 @@ function parseMarkdownToSections(md: string): ParsedSection[] {
         inAngles = false;
         const text = trimmed
           .replace(/^[-\s*📌]+/, "")
-          .replace(/^(核心事实|动态速递|事件概述|观察聚焦|讨论焦点|赛道要闻)?[：:\s*]*/, "")
+          .replace(/^(核心事实|动态速递|事件概述|观察聚焦|讨论焦点|赛道要闻|观察说明)?[：:\s*]*/, "")
           .replace(/^[：:\s*]+/, "")
           .trim();
-        if (text) {
+        if (text && text !== currentItem.title) {
           currentItem.summary = (currentItem.summary ? currentItem.summary + " " : "") + text;
         }
       }
     }
   }
 
-  if (currentItem && currentSection) {
-    currentSection.items.push(currentItem);
-  }
+  pushItem();
 
   return sections;
 }
@@ -544,7 +682,7 @@ function parseMarkdownToSections(md: string): ParsedSection[] {
 function renderBriefView(): string {
   const brief = state.brief;
   const meta = brief?.metadata || {};
-  const sections = brief?.markdown ? parseMarkdownToSections(brief.markdown) : [];
+  const sections = brief?.markdown ? parseMarkdownToSections(brief.markdown, meta.event_links) : [];
 
   return `
     <div class="trend-intel-view trend-intel-brief-view">
@@ -637,7 +775,7 @@ function renderBriefView(): string {
       ` : `
         <!-- Sections Layout -->
         <div class="trend-intel-sections-layout">
-          ${sections.map((sec, idx) => `
+          ${sections.map((sec) => `
             <div class="trend-intel-section-card ${sec.badgeClass}">
               <div class="trend-intel-section-header">
                 <div class="trend-intel-section-title-wrap">
@@ -647,68 +785,95 @@ function renderBriefView(): string {
                 <span class="trend-intel-section-count">${sec.items.length} 个热点</span>
               </div>
               <div class="trend-intel-section-cards-grid">
-                ${sec.items.length === 0 ? `<p class="trend-intel-sec-empty">本栏目今日暂无突出条目</p>` : sec.items.map(item => `
-                  <div class="trend-intel-brief-card">
-                    <!-- Card Header: Badges & Platforms -->
-                    <div class="trend-intel-card-header">
-                      <div class="trend-intel-card-badges">
-                        ${item.worldScore ? `
-                          <span class="trend-badge badge-world" title="世界重要性：反映事件对宏观社会、经济与行业的影响力">
-                            <span class="badge-dot"></span>重要度 <strong>${escapeHtml(item.worldScore)}</strong>
-                          </span>
-                        ` : ""}
-                        ${item.creatorScore ? `
-                          <span class="trend-badge badge-creator" title="内容创作价值：反映事件是否存在认知差/信息差，适合自媒体选题">
-                            <span class="badge-dot"></span>创作价值 <strong>${escapeHtml(item.creatorScore)}</strong>
-                          </span>
-                        ` : ""}
-                        ${item.trendState ? `
-                          <span class="trend-badge badge-state ${item.trendState === "RAPID_RISING" ? "state-rapid" : ""}">
-                            🚀 ${escapeHtml(item.trendState)} ${item.velocity ? `(${escapeHtml(item.velocity)})` : ""}
-                          </span>
+                ${sec.items.length === 0 ? `<p class="trend-intel-sec-empty">本栏目今日暂无突出条目</p>` : sec.items.map(item => {
+                  const primaryPlatform = item.platforms?.[0] || "";
+                  const directPlatformUrl = primaryPlatform && item.platformUrls?.[primaryPlatform];
+                  const targetUrl = item.url || directPlatformUrl || getPlatformSearchUrl(primaryPlatform, item.title);
+                  const isDuplicateSummary = !item.summary || item.summary.trim() === item.title.trim();
+
+                  return `
+                    <div class="trend-intel-brief-card">
+                      <!-- Card Header: Badges & Platforms -->
+                      <div class="trend-intel-card-header">
+                        <div class="trend-intel-card-badges">
+                          ${item.worldScore ? `
+                            <span class="trend-badge badge-world" title="世界重要性：反映事件对宏观社会、经济与行业的影响力">
+                              <span class="badge-dot"></span>重要度 <strong>${escapeHtml(item.worldScore)}</strong>
+                            </span>
+                          ` : ""}
+                          ${item.creatorScore ? `
+                            <span class="trend-badge badge-creator" title="内容创作价值：反映事件是否存在认知差/信息差，适合自媒体选题">
+                              <span class="badge-dot"></span>创作价值 <strong>${escapeHtml(item.creatorScore)}</strong>
+                            </span>
+                          ` : ""}
+                          ${item.trendState ? `
+                            <span class="trend-badge badge-state ${item.trendState === "RAPID_RISING" ? "state-rapid" : ""}">
+                              🚀 ${escapeHtml(item.trendState)} ${item.velocity ? `(${escapeHtml(item.velocity)})` : ""}
+                            </span>
+                          ` : ""}
+                        </div>
+                        ${item.platforms && item.platforms.length > 0 ? `
+                          <div class="trend-intel-card-platforms">
+                            ${item.platforms.map(p => {
+                              const meta = getPlatformMeta(p);
+                              const pUrl = (item.platformUrls && item.platformUrls[meta.id]) || getPlatformSearchUrl(meta.id, item.title);
+                              return `
+                                <a class="trend-platform-tag clickable" 
+                                   href="javascript:void(0)" 
+                                   onclick="event.stopPropagation(); window.__trendIntelOpenUrl('${escapeHtml(pUrl)}')"
+                                   title="在新标签页查看 ${escapeHtml(meta.name)} 原帖/搜索">
+                                  <span>${meta.icon} ${escapeHtml(meta.name)}</span>
+                                  <span class="tag-ext-icon">↗</span>
+                                </a>
+                              `;
+                            }).join("")}
+                          </div>
                         ` : ""}
                       </div>
-                      ${item.platforms && item.platforms.length > 0 ? `
-                        <div class="trend-intel-card-platforms">
-                          ${item.platforms.map(p => `<span class="trend-platform-tag">${escapeHtml(p)}</span>`).join("")}
+
+                      <!-- Full-Width Card Title (Clickable) -->
+                      <h4 class="trend-intel-card-title has-link" 
+                          onclick="window.__trendIntelOpenUrl('${escapeHtml(targetUrl)}')"
+                          title="点击在新标签页打开原帖：${escapeHtml(item.title)}">
+                        <span class="trend-intel-title-text">${escapeHtml(item.title)}</span>
+                        <span class="trend-intel-title-ext">↗</span>
+                      </h4>
+
+                      <!-- Card Summary (Deduplicated) -->
+                      ${!isDuplicateSummary ? `
+                        <p class="trend-intel-card-summary">${escapeHtml(item.summary!)}</p>
+                      ` : ""}
+
+                      <!-- Angles Callout Box -->
+                      ${item.creatorAngles && item.creatorAngles.length > 0 ? `
+                        <div class="trend-intel-angles-box">
+                          <div class="trend-intel-angles-title">🎯 差异化创作切入角度：</div>
+                          <ul class="trend-intel-angles-list">
+                            ${item.creatorAngles.map(a => `<li>${escapeHtml(a)}</li>`).join("")}
+                          </ul>
                         </div>
                       ` : ""}
-                    </div>
 
-                    <!-- Full-Width Card Title -->
-                    <h4 class="trend-intel-card-title">${escapeHtml(item.title)}</h4>
-
-                    <!-- Card Summary -->
-                    ${item.summary ? `
-                      <p class="trend-intel-card-summary">${escapeHtml(item.summary)}</p>
-                    ` : ""}
-
-                    <!-- Angles Callout Box -->
-                    ${item.creatorAngles && item.creatorAngles.length > 0 ? `
-                      <div class="trend-intel-angles-box">
-                        <div class="trend-intel-angles-title">🎯 差异化创作切入角度：</div>
-                        <ul class="trend-intel-angles-list">
-                          ${item.creatorAngles.map(a => `<li>${escapeHtml(a)}</li>`).join("")}
-                        </ul>
-                      </div>
-                    ` : ""}
-
-                    <!-- Card Footer Actions -->
-                    <div class="trend-intel-card-footer">
-                      ${item.timeWindow ? `
-                        <span class="trend-intel-window-tag" title="建议发布窗口期">⏳ ${escapeHtml(item.timeWindow)}</span>
-                      ` : `<span style="flex:1;"></span>`}
-                      <div class="trend-intel-card-btns">
-                        <button class="btn btn-xs" onclick="window.__trendIntelAnalyzeRaw('${escapeHtml(item.title)}', '全网', 1, '')">
-                          💡 让AI深度解析
-                        </button>
-                        <button class="btn btn-xs btn-primary" onclick="window.__trendIntelIdeateFromBrief('${escapeHtml(item.title)}')">
-                          ✨ 复制选题大纲
-                        </button>
+                      <!-- Card Footer Actions -->
+                      <div class="trend-intel-card-footer">
+                        ${item.timeWindow ? `
+                          <span class="trend-intel-window-tag" title="建议发布窗口期">⏳ ${escapeHtml(item.timeWindow)}</span>
+                        ` : `<span style="flex:1;"></span>`}
+                        <div class="trend-intel-card-btns">
+                          <button class="btn btn-xs btn-outline" onclick="window.__trendIntelOpenUrl('${escapeHtml(targetUrl)}')">
+                            🔗 查阅原帖 ↗
+                          </button>
+                          <button class="btn btn-xs" onclick="window.__trendIntelAnalyzeRaw('${escapeHtml(item.title)}', '全网', 1, '')">
+                            💡 让AI深度解析
+                          </button>
+                          <button class="btn btn-xs btn-primary" onclick="window.__trendIntelIdeateFromBrief('${escapeHtml(item.title)}')">
+                            ✨ 复制选题大纲
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                `).join("")}
+                  `;
+                }).join("")}
               </div>
             </div>
           `).join("")}
@@ -1181,66 +1346,142 @@ function renderSettingsView(): string {
         </div>
 
         <!-- 3. Dynamic Focus Topics Manager (Zero Hardcoding!) -->
-        <div class="card">
-          <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <div class="card trend-intel-focus-topics-card">
+          <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
             <div>
               <h4>🎯 动态重点赛道管理 (Dynamic Focus Topics)</h4>
               <p style="margin:0; font-size:12px; color:var(--text-secondary);">完全由用户动态增删改，自动在简报中产出垂直赛道专栏。</p>
             </div>
-            <button class="btn btn-sm btn-primary" onclick="window.__trendIntelAddFocusTopic()">
-              + 添加新重点赛道
-            </button>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <button class="btn btn-sm" onclick="window.__trendIntelAddFocusTopic()">
+                + 添加空白赛道
+              </button>
+              <button class="btn btn-sm btn-primary" onclick="window.__trendIntelSaveSettings()" ${state.saving ? "disabled" : ""}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                ${state.saving ? "保存中…" : "保存赛道配置"}
+              </button>
+            </div>
           </div>
+
+          <!-- Presets Quick Bar -->
+          <div class="trend-intel-presets-bar">
+            <div class="presets-label">
+              <span>⚡ 一键快速添加预设赛道：</span>
+            </div>
+            <div class="presets-buttons">
+              ${TOPIC_PRESETS.map((p, pIdx) => `
+                <button class="btn btn-xs preset-btn" onclick="window.__trendIntelAddTopicFromPreset(${pIdx})" title="一键导入「${escapeHtml(p.name)}」模板">
+                  <span>${p.icon} + ${escapeHtml(p.name)}</span>
+                </button>
+              `).join("")}
+            </div>
+          </div>
+
           <div class="trend-intel-topics-list">
             ${(d.focus_topics || []).length === 0 ? `
-              <p class="text-muted" style="padding:12px; text-align:center;">暂无自定义赛道，点击上方按钮添加。</p>
-            ` : d.focus_topics.map((topic, idx) => `
-              <div class="trend-intel-topic-item-card">
-                <div class="trend-intel-topic-item-top">
-                  <input 
-                    type="text" 
-                    class="trend-intel-topic-icon-input" 
-                    value="${escapeHtml(topic.icon || "📌")}" 
-                    title="图标 Emoji" 
-                    onchange="window.__trendIntelUpdateTopic(${idx}, 'icon', this.value)" />
-                  <input 
-                    type="text" 
-                    class="trend-intel-topic-name-input" 
-                    value="${escapeHtml(topic.name || "")}" 
-                    placeholder="赛道名称 (如: 人工智能与前沿科技)" 
-                    onchange="window.__trendIntelUpdateTopic(${idx}, 'name', this.value)" />
-                  <label class="trend-intel-switch" title="启用/停用该赛道" style="display:inline-flex; align-items:center; gap:6px;">
-                    <input 
-                      type="checkbox" 
-                      ${topic.enabled !== false ? "checked" : ""} 
-                      onchange="window.__trendIntelUpdateTopic(${idx}, 'enabled', this.checked)" />
-                    <span class="trend-intel-switch-track" aria-hidden="true"></span>
-                    <span style="font-size:12px; color:var(--text-secondary); font-weight:500;">启用</span>
-                  </label>
-                  <button class="btn btn-xs text-danger" onclick="window.__trendIntelRemoveFocusTopic(${idx})" title="删除赛道">
-                    🗑️ 删除
-                  </button>
-                </div>
-                <div class="form-grid" style="margin-top:8px;">
-                  <div class="form-group full">
-                    <label style="font-size:11px;">关键词列表 (逗号分隔)</label>
-                    <input 
-                      type="text" 
-                      value="${escapeHtml((topic.keywords || []).join(', '))}" 
-                      placeholder="AI, 大模型, DeepSeek, Agent, OpenAI" 
-                      onchange="window.__trendIntelUpdateTopic(${idx}, 'keywords', this.value.split(',').map(s => s.trim()).filter(Boolean))" />
-                  </div>
-                  <div class="form-group full">
-                    <label style="font-size:11px;">RSS 数据源地址 (可选，逗号分隔)</label>
-                    <input 
-                      type="text" 
-                      value="${escapeHtml((topic.rss_sources || []).join(', '))}" 
-                      placeholder="https://36kr.com/feed" 
-                      onchange="window.__trendIntelUpdateTopic(${idx}, 'rss_sources', this.value.split(',').map(s => s.trim()).filter(Boolean))" />
-                  </div>
-                </div>
+              <div class="trend-intel-empty-topics">
+                <p>暂无自定义赛道。你可以点击上方按钮一键添加行业预设模板，或点击右上角添加空白赛道。</p>
               </div>
-            `).join("")}
+            ` : d.focus_topics.map((topic, idx) => {
+              const keywords = topic.keywords || [];
+              const rssSources = topic.rss_sources || [];
+              const isEnabled = topic.enabled !== false;
+
+              return `
+                <div class="trend-intel-topic-item-card ${isEnabled ? "enabled" : "disabled"}">
+                  <!-- Header: Emoji, Name, Switch, Delete -->
+                  <div class="trend-intel-topic-item-top">
+                    <div class="topic-emoji-selector-wrap">
+                      <button class="topic-emoji-btn" onclick="window.__trendIntelToggleEmojiPicker(${idx})" title="切换图标 Emoji">
+                        <span>${escapeHtml(topic.icon || "📌")}</span>
+                        <span class="emoji-arrow">▾</span>
+                      </button>
+                      <div class="topic-emoji-palette" id="topic-emoji-palette-${idx}" style="display:none;">
+                        ${COMMON_EMOJIS.map(em => `
+                          <button class="emoji-chip" onclick="window.__trendIntelSelectEmoji(${idx}, '${em}')">${em}</button>
+                        `).join("")}
+                      </div>
+                    </div>
+
+                    <input 
+                      type="text" 
+                      class="trend-intel-topic-name-input" 
+                      value="${escapeHtml(topic.name || "")}" 
+                      placeholder="赛道名称 (如: 人工智能与前沿科技)" 
+                      onchange="window.__trendIntelUpdateTopic(${idx}, 'name', this.value)" />
+
+                    <span class="topic-stat-badge">${keywords.length} 关键词</span>
+                    ${rssSources.length > 0 ? `<span class="topic-stat-badge rss">${rssSources.length} 订阅源</span>` : ""}
+
+                    <label class="trend-intel-switch" title="启用/停用该赛道" style="display:inline-flex; align-items:center; gap:6px;">
+                      <input 
+                        type="checkbox" 
+                        ${isEnabled ? "checked" : ""} 
+                        onchange="window.__trendIntelUpdateTopic(${idx}, 'enabled', this.checked)" />
+                      <span class="trend-intel-switch-track" aria-hidden="true"></span>
+                      <span style="font-size:12px; color:var(--text-secondary); font-weight:500;">${isEnabled ? "已启用" : "已停用"}</span>
+                    </label>
+
+                    <button class="btn btn-xs text-danger" onclick="window.__trendIntelRemoveFocusTopic(${idx})" title="删除赛道">
+                      🗑️ 删除
+                    </button>
+                  </div>
+
+                  <!-- Field 1: Keywords Chips -->
+                  <div class="topic-field-block">
+                    <div class="topic-field-meta">
+                      <span class="topic-field-title">🏷️ 监控关键词 (${keywords.length})：</span>
+                      <span class="topic-field-hint">输入词后按回车/逗号自动添加</span>
+                    </div>
+                    <div class="topic-chips-container">
+                      ${keywords.map((kw, kwIdx) => `
+                        <span class="topic-tag-chip">
+                          <span class="chip-text">${escapeHtml(kw)}</span>
+                          <button class="chip-del-btn" onclick="window.__trendIntelRemoveKeywordFromTopic(${idx}, ${kwIdx})" title="删除">✕</button>
+                        </span>
+                      `).join("")}
+                      <input 
+                        type="text" 
+                        class="topic-inline-tag-input" 
+                        placeholder="+ 输入关键词回车添加..." 
+                        onkeydown="if(event.key === 'Enter' || event.key === ',' || event.key === '，'){ event.preventDefault(); window.__trendIntelAddKeywordFromInput(${idx}, this); }"
+                        onblur="if(this.value.trim()){ window.__trendIntelAddKeywordFromInput(${idx}, this); }" />
+                    </div>
+                  </div>
+
+                  <!-- Field 2: RSS Feeds Chips -->
+                  <div class="topic-field-block">
+                    <div class="topic-field-meta">
+                      <span class="topic-field-title">📡 专属 RSS 订阅源 (${rssSources.length})：</span>
+                      <span class="topic-field-hint">可选，抓取时将额外摄取该源资讯</span>
+                    </div>
+                    <div class="topic-chips-container rss-container">
+                      ${rssSources.map((rss, rssIdx) => `
+                        <span class="topic-tag-chip rss-tag-chip">
+                          <span class="chip-text" title="${escapeHtml(rss)}">${escapeHtml(rss)}</span>
+                          <button class="chip-del-btn" onclick="window.__trendIntelRemoveRssFromTopic(${idx}, ${rssIdx})" title="删除">✕</button>
+                        </span>
+                      `).join("")}
+                      <input 
+                        type="text" 
+                        class="topic-inline-tag-input rss-input" 
+                        placeholder="+ 输入 RSS 地址 (https://...) 回车添加..." 
+                        onkeydown="if(event.key === 'Enter'){ event.preventDefault(); window.__trendIntelAddRssFromInput(${idx}, this); }"
+                        onblur="if(this.value.trim()){ window.__trendIntelAddRssFromInput(${idx}, this); }" />
+                    </div>
+
+                    <div class="curated-rss-bar">
+                      <span class="curated-label">推荐订阅源快捷添加：</span>
+                      ${RECOMMENDED_RSS_SOURCES.map(r => `
+                        <button class="btn btn-xs curated-btn" onclick="window.__trendIntelAddRssToTopic(${idx}, '${r.url}')" title="添加 ${escapeHtml(r.name)} (${escapeHtml(r.url)})">
+                          <span>${r.icon} + ${escapeHtml(r.name)}</span>
+                        </button>
+                      `).join("")}
+                    </div>
+                  </div>
+                </div>
+              `;
+            }).join("")}
           </div>
         </div>
 
@@ -1323,6 +1564,22 @@ function renderSettingsView(): string {
                 value="${escapeHtml(d.data_dir || "output/trend-intel 或 ~/.shrimp/trend-intel")}" />
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Settings Bottom Save Action Bar -->
+      <div class="trend-intel-settings-bottom-bar">
+        <div class="bottom-bar-hint">
+          <span>💡 提示：修改赛道关键词、数据源或模型路由后，请点击右侧按钮保存生效。</span>
+        </div>
+        <div class="bottom-bar-actions">
+          <button class="btn btn-sm" onclick="window.__trendIntelResetSettings()" ${state.saving ? "disabled" : ""}>
+            重置修改
+          </button>
+          <button class="btn btn-sm btn-primary" onclick="window.__trendIntelSaveSettings()" ${state.saving ? "disabled" : ""}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+            ${state.saving ? "保存中…" : "立即保存所有配置"}
+          </button>
         </div>
       </div>
     </div>
@@ -1504,6 +1761,90 @@ export function initTrendIntel(): void {
   render();
 };
 
+(window as any).__trendIntelAddTopicFromPreset = (presetIdx: number) => {
+  if (!state.configDraft) return;
+  const p = TOPIC_PRESETS[presetIdx];
+  if (!p) return;
+  state.configDraft.focus_topics = state.configDraft.focus_topics || [];
+  state.configDraft.focus_topics.push({
+    id: `topic_${Date.now()}`,
+    name: p.name,
+    icon: p.icon,
+    enabled: true,
+    keywords: [...p.keywords],
+    rss_sources: [...p.rss_sources]
+  });
+  render();
+  showToast(`已添加「${p.name}」赛道模板`, "success");
+};
+
+(window as any).__trendIntelAddKeywordFromInput = (topicIdx: number, inputEl: HTMLInputElement) => {
+  if (!state.configDraft?.focus_topics?.[topicIdx]) return;
+  const val = inputEl.value.trim().replace(/^[,，\s]+|[,，\s]+$/g, "");
+  if (!val) return;
+  const topic = state.configDraft.focus_topics[topicIdx];
+  topic.keywords = topic.keywords || [];
+  const newKws = val.split(/[,，]/).map(s => s.trim()).filter(Boolean);
+  for (const kw of newKws) {
+    if (!topic.keywords.includes(kw)) {
+      topic.keywords.push(kw);
+    }
+  }
+  inputEl.value = "";
+  render();
+};
+
+(window as any).__trendIntelRemoveKeywordFromTopic = (topicIdx: number, kwIdx: number) => {
+  if (!state.configDraft?.focus_topics?.[topicIdx]?.keywords) return;
+  state.configDraft.focus_topics[topicIdx].keywords.splice(kwIdx, 1);
+  render();
+};
+
+(window as any).__trendIntelAddRssFromInput = (topicIdx: number, inputEl: HTMLInputElement) => {
+  if (!state.configDraft?.focus_topics?.[topicIdx]) return;
+  const val = inputEl.value.trim();
+  if (!val) return;
+  const topic = state.configDraft.focus_topics[topicIdx];
+  topic.rss_sources = topic.rss_sources || [];
+  if (!topic.rss_sources.includes(val)) {
+    topic.rss_sources.push(val);
+  }
+  inputEl.value = "";
+  render();
+};
+
+(window as any).__trendIntelAddRssToTopic = (topicIdx: number, rssUrl: string) => {
+  if (!state.configDraft?.focus_topics?.[topicIdx]) return;
+  const topic = state.configDraft.focus_topics[topicIdx];
+  topic.rss_sources = topic.rss_sources || [];
+  if (!topic.rss_sources.includes(rssUrl)) {
+    topic.rss_sources.push(rssUrl);
+    render();
+    showToast(`已添加订阅源 ${rssUrl}`, "info");
+  } else {
+    showToast("该订阅源已存在", "info");
+  }
+};
+
+(window as any).__trendIntelRemoveRssFromTopic = (topicIdx: number, rssIdx: number) => {
+  if (!state.configDraft?.focus_topics?.[topicIdx]?.rss_sources) return;
+  state.configDraft.focus_topics[topicIdx].rss_sources.splice(rssIdx, 1);
+  render();
+};
+
+(window as any).__trendIntelToggleEmojiPicker = (topicIdx: number) => {
+  const palette = document.getElementById(`topic-emoji-palette-${topicIdx}`);
+  if (palette) {
+    palette.style.display = palette.style.display === "none" ? "flex" : "none";
+  }
+};
+
+(window as any).__trendIntelSelectEmoji = (topicIdx: number, emoji: string) => {
+  if (!state.configDraft?.focus_topics?.[topicIdx]) return;
+  state.configDraft.focus_topics[topicIdx].icon = emoji;
+  render();
+};
+
 (window as any).__trendIntelRemoveFocusTopic = (idx: number) => {
   if (!state.configDraft?.focus_topics) return;
   state.configDraft.focus_topics.splice(idx, 1);
@@ -1555,6 +1896,12 @@ export function initTrendIntel(): void {
 (window as any).__trendIntelClearError = () => {
   state.error = "";
   render();
+};
+
+(window as any).__trendIntelOpenUrl = (url: string) => {
+  if (url && typeof url === "string") {
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
 };
 
 // Register Tab Lifecycle

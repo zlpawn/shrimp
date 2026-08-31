@@ -657,3 +657,67 @@ test("McpService.distribute and apply writes MCP configuration into custom clien
   }
 });
 
+test("preview generates valid formatSnippet with server keys for all client adapters", () => {
+  const root = makeRoot();
+  try {
+    const { service } = makeService(root);
+    service.upsertServer({
+      name: "craft-mcp",
+      title: "Craft MCP",
+      transport: "remote",
+      url: "https://mcp.craft.do/links/${key}/mcp",
+      distribution: {
+        codex: true,
+        claude: true,
+        claude_code: true,
+        antigravity: true,
+        "work-buddy": true,
+      },
+    });
+
+    const previewRes = service.preview({
+      targets: {
+        codex: true,
+        claude: true,
+        claude_code: true,
+        antigravity: true,
+        "work-buddy": true,
+      },
+      serverName: "craft-mcp",
+      customClientIds: ["work-buddy"],
+    });
+
+    const claudeCodePrev = previewRes.previews.find((p) => p.client === "claude_code");
+    assert.ok(claudeCodePrev);
+    const claudeCodeJson = JSON.parse(claudeCodePrev.snippet);
+    assert.ok(claudeCodeJson.mcpServers && typeof claudeCodeJson.mcpServers === "object" && !Array.isArray(claudeCodeJson.mcpServers));
+    assert.ok(claudeCodeJson.mcpServers["craft-mcp"]);
+    assert.equal(claudeCodeJson.mcpServers["craft-mcp"].url, "https://mcp.craft.do/links/${key}/mcp");
+
+    const antigravityPrev = previewRes.previews.find((p) => p.client === "antigravity");
+    assert.ok(antigravityPrev);
+    const antigravityJson = JSON.parse(antigravityPrev.snippet);
+    assert.ok(antigravityJson.mcpServers && typeof antigravityJson.mcpServers === "object" && !Array.isArray(antigravityJson.mcpServers));
+    assert.ok(antigravityJson.mcpServers["craft-mcp"]);
+
+    const customPrev = previewRes.previews.find((p) => p.client === "work-buddy");
+    assert.ok(customPrev);
+    const customJson = JSON.parse(customPrev.snippet);
+    assert.ok(customJson.mcpServers && typeof customJson.mcpServers === "object" && !Array.isArray(customJson.mcpServers));
+    assert.ok(customJson.mcpServers["craft-mcp"]);
+
+    const claudePrev = previewRes.previews.find((p) => p.client === "claude");
+    assert.ok(claudePrev);
+    const claudeJson = JSON.parse(claudePrev.snippet);
+    assert.ok(Array.isArray(claudeJson.managedMcpServers));
+    assert.equal(claudeJson.managedMcpServers[0].name, "craft-mcp");
+
+    const codexPrev = previewRes.previews.find((p) => p.client === "codex");
+    assert.ok(codexPrev);
+    assert.match(codexPrev.snippet, /\[mcp_servers\.craft-mcp\]/);
+    assert.match(codexPrev.snippet, /url = "https:\/\/mcp\.craft\.do\/links\/\$\{key\}\/mcp"/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+

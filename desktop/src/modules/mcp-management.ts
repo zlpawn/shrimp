@@ -881,9 +881,13 @@ function renderHighlightedCode(code: string, serverNames: string[], isFullMode: 
     } else {
       if (!inTargetBlock) {
         const keyMatch = line.match(/^\s*"([^"]+)":\s*\{/);
+        const nameMatch = line.match(/^\s*"name":\s*"([^"]+)"/);
         if (keyMatch && serverNames.includes(keyMatch[1])) {
           inTargetBlock = true;
           targetBraceBase = braceDepth;
+        } else if (nameMatch && serverNames.includes(nameMatch[1])) {
+          inTargetBlock = true;
+          targetBraceBase = Math.max(0, braceDepth - 1);
         }
       }
       if (inTargetBlock) {
@@ -934,7 +938,9 @@ function renderPreview(): string {
     <div class="mcp-preview-modal">
       <div class="mcp-preview-header-bar">
         <div class="mcp-preview-title-group">
-          <span class="mcp-preview-icon">📄</span>
+          <button class="btn mcp-btn-back" onclick="window.__mcpClosePreview()" title="返回 MCP 列表">
+            <span>←</span> 返回列表
+          </button>
           <div>
             <div class="mcp-section-title">MCP 配置片段与合并预览</div>
             <div class="mcp-muted" style="font-size: 11px;">查看生成的精简配置代码片段，或预览合并写入到各客户端的完整配置文件。</div>
@@ -1090,6 +1096,16 @@ function render(): void {
     return;
   }
 
+  if (state.preview === "active" || state.previewItems.length > 0) {
+    root.innerHTML = `
+      <div class="mcp-page-container">
+        ${state.error ? `<div class="mcp-error-banner">${escapeHtml(state.error)}</div>` : ""}
+        ${renderPreview()}
+      </div>
+    `;
+    return;
+  }
+
   const serverList = servers();
   const hasServers = serverList.length > 0;
 
@@ -1125,7 +1141,6 @@ function render(): void {
     <div class="mcp-page-container">
       ${renderHeader()}
       ${state.error ? `<div class="mcp-error-banner">${escapeHtml(state.error)}</div>` : ""}
-      ${renderPreview()}
       
       <!-- 主配置工作区 -->
       ${mainSection}

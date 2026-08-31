@@ -84,7 +84,7 @@
     "smoke:remote-session": "node scripts/remote-session-smoke.mjs --mode fake",
     "test:trend-intel": "node --test tests/unit/trend-intel-*.test.mjs tests/integration/trend-intel-*.test.mjs",
     "test:leo-lantern": "node --test --test-concurrency=1 clis/leo-lantern/tests/*.test.mjs mcps/leo-lantern/tests/*.test.mjs",
-    "sync:extension": "node -e \"import('node:fs').then(fs => fs.cpSync('extensions/leo-cookie-txt-locally', 'lib/skills/leo-live-runner/resources/chrome_extension', { recursive: true, force: true }))\"",
+    "sync:extension": "node -e \"import('node:fs').then(fs => fs.cpSync('extensions/leo-cookie-txt-locally', 'lib/skills/leo-live-inspector/resources/chrome_extension', { recursive: true, force: true }))\"",
     "test": "npm run test:trend-intel"
   },
   "engines": {
