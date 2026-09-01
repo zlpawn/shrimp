@@ -44,19 +44,15 @@ description: 专业旅行规划师与定制师的交付级生产力工作台。�
 ### 3. 真实网页抓取刚性执行铁律（Non-negotiable Live Scrape）
 * ⚠️ **严禁模拟与虚构（Zero Mocking / Zero Hallucination）**：
   * 制定计划前，**必须实际调用项目内置的 CLI 驱动浏览器抓取小红书素人避坑与一嗨租车真实页面，严禁跳过抓取直接凭空生成！**
-* 🪟 **Windows 环境标准执行步骤（通过 `clis/leo-lantern` 驱动日常 Chrome）**：
-  1. `node ./clis/leo-lantern/index.mjs health`（校验 Chrome 扩展与 19527 桥接在线状态）；
-  2. `node ./clis/leo-lantern/index.mjs tabs`（列出浏览器所有标签页，定位小红书与一嗨 Tab）；
-  3. `node ./clis/leo-lantern/index.mjs start-task --title="travel-scrape" --sameWindow=true`；
-  4. **小红书真实抓取**：
-     - `node ./clis/leo-lantern/index.mjs claim --tabId=<xhsTabId>`；
-     - `node ./clis/leo-lantern/index.mjs goto "https://www.xiaohongshu.com/search_result?keyword=<目的地+避坑>"`；
-     - `node ./clis/leo-lantern/index.mjs wait --selector="section.note-item, .note-card, .title" --timeoutMs=8000`；
-     - `node ./clis/leo-lantern/index.mjs content --maxChars=4000`（提取真实素人笔记标题、作者与核心警示）；
-  5. **一嗨租车真实抓取**：
-     - `node ./clis/leo-lantern/index.mjs claim --tabId=<ehiTabId>`；
-     - `node ./clis/leo-lantern/index.mjs content --maxChars=4000`（提取当期可选 SUV/MPV 真实车型、动力排量与门店配置）；
-  6. `node ./clis/leo-lantern/index.mjs end-task --closeGroup=false`。
+* 🪟 **Windows 环境标准执行步骤（模块化插件架构 + 自动解散标签组）**：
+  * **一键综合抓取（小红书 + 一嗨租车，数据自动固化至 `output/latest_scraped_data.json`）**：
+    ```bash
+    node ./lib/skills/leo-travel-planner/scripts/scrape.mjs --keyword="川西大环线 避坑" --city="成都" --days=10
+    ```
+  * **单平台按需独立运行（极速解耦）**：
+    - **小红书素人笔记独立抓取**：`node ./lib/skills/leo-travel-planner/scripts/scrapers/xhs.mjs --keyword="川西大环线 避坑" --limit=8`
+    - **一嗨租车全险与车型独立抓取**：`node ./lib/skills/leo-travel-planner/scripts/scrapers/ehi.mjs --city="成都" --type="SUV" --days=10`
+  * 🛡️ **无污染退出保证**：底层 `base.mjs` 在 `finally` 中严格执行 `task.end --closeGroup=true`，抓完 100% 自动解散 Chrome 标签组，绝不在用户日常浏览器里残留彩色标签或干扰正常操作！
 * 🍎 **macOS 环境标准执行步骤**：
   * 通过 `ego-browser nodejs` 脚本驱动隔离空间抓取（参考 `references/cross-platform-fallback.md`）。
 * **交付物溯源**：路书中的避坑 Tips 与 Evidence Ledger **必须严格挂载上述实时抓取到的真实笔记作者、真实标题与一嗨车型数据**！
