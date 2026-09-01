@@ -695,6 +695,9 @@ test("command apps module renders complete action states", async () => {
   assert.match(source, /正在检测/);
   assert.match(source, /当前系统暂不支持/);
   assert.match(source, /escapeHtml/);
+  assert.match(source, /配置 LLM/);
+  assert.match(source, /hindsight-embed/);
+  assert.match(source, /Base URL/);
 });
 
 test("video kb ingest form includes collection field", async () => {

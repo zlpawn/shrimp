@@ -25,7 +25,7 @@ test("registry exposes built-in app definitions", () => {
   assert.deepEqual(shrimp.defaultArgs, ["run", "gateway:restart"]);
   assert.deepEqual(shrimp.supportedPlatforms, ["win32", "darwin", "linux"]);
 
-  assert.equal(listCommandApps().length, 2);
+  assert.equal(listCommandApps().length, 3);
 });
 
 test("normalizeCommandAppsConfig keeps only known app settings", () => {
@@ -35,7 +35,7 @@ test("normalizeCommandAppsConfig keeps only known app settings", () => {
       unknown: { executablePath: windowsPath },
     },
   }, { platform: "win32" });
-  assert.deepEqual(Object.keys(config.apps).sort(), ["antigravity", "shrimp"]);
+  assert.deepEqual(Object.keys(config.apps).sort(), ["antigravity", "hindsight", "shrimp"]);
   assert.equal(config.apps.antigravity.manuallyConfigured, false);
 });
 
@@ -310,7 +310,7 @@ test("service listApps isolates individual app errors without breaking other app
   });
 
   const list = await service.listApps();
-  assert.equal(list.length, 2);
+  assert.equal(list.length, 3);
 
   const antigravity = list.find((item) => item.app.id === "antigravity");
   assert.ok(antigravity);
@@ -517,10 +517,180 @@ test("routes handle /v1/command-apps/apps listing and shrimp restart", async () 
   assert.equal(responses[0].status, 200);
   const listBody = JSON.parse(responses[0].body);
   assert.ok(Array.isArray(listBody.apps));
-  assert.equal(listBody.apps.length, 2);
+  assert.equal(listBody.apps.length, 3);
 
   // Test restart route
   await routeCommandAppsRequest(reqFor("POST", "/v1/command-apps/apps/shrimp/restart"), res, null, "/v1/command-apps/apps/shrimp/restart", { service: fx.service });
   assert.equal(responses[1].status, 200);
 });
 
+
+import {
+  parseEnvFile,
+  publicLlmConfig,
+  writeHindsightLlmConfig,
+  sanitizeDaemonEnv,
+} from "../../lib/command-apps/index.mjs";
+
+test("registry exposes hindsight as a cross-platform cli daemon", () => {
+  const app = getCommandApp("hindsight");
+  assert.equal(app.type, "cli-daemon");
+  assert.equal(app.executableName, "hindsight-embed");
+  assert.deepEqual(app.defaultArgs, ["daemon", "start"]);
+  assert.deepEqual(app.supportedPlatforms, ["win32", "darwin", "linux"]);
+});
+
+test("validateAppSettings accepts hindsight-embed without requiring .exe", () => {
+  const app = getCommandApp("hindsight");
+  const unixPath = "/Users/pa/.local/bin/hindsight-embed";
+  const result = validateAppSettings(app, { executablePath: unixPath }, {
+    platform: "darwin",
+    fileExists: (p) => p === unixPath,
+  });
+  assert.equal(result.executablePath, unixPath);
+});
+
+test("discovery finds hindsight-embed on PATH and well-known local bin", async () => {
+  const app = getCommandApp("hindsight");
+  const localBin = "/Users/pa/.local/bin/hindsight-embed";
+  const result = await discoverCommandApp(app, {
+    platform: "darwin",
+    env: { HOME: "/Users/pa", PATH: "/opt/bin:/usr/bin" },
+    fileExists: (p) => p === localBin,
+    statFile: async () => ({ isFile: () => true }),
+    searchPathDirs: async () => ["/opt/bin"],
+  });
+  assert.equal(result.selected.path, localBin);
+  assert.equal(result.selected.strategy, "well-known-local-bin");
+});
+
+test("sanitizeDaemonEnv strips SOCKS and HTTP proxy variables", () => {
+  const env = sanitizeDaemonEnv({
+    ALL_PROXY: "socks5://127.0.0.1:7897",
+    all_proxy: "socks5://127.0.0.1:7897",
+    HTTPS_PROXY: "http://127.0.0.1:7897",
+    PATH: "/usr/bin",
+    NO_PROXY: "example.com",
+  });
+  assert.equal(env.ALL_PROXY, undefined);
+  assert.equal(env.all_proxy, undefined);
+  assert.equal(env.HTTPS_PROXY, undefined);
+  assert.match(env.NO_PROXY, /127\.0\.0\.1/);
+  assert.equal(env.PATH, "/usr/bin");
+});
+
+test("hindsight llm config writes custom base url into embed env", () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "hindsight-embed-"));
+  const configPath = path.join(tmp, "embed");
+  writeHindsightLlmConfig({
+    provider: "openai",
+    baseUrl: "https://your-endpoint.com/v1",
+    model: "gpt-4o-mini",
+    apiKey: "sk-test",
+  }, {
+    configPath,
+    fileExists: () => false,
+    readFile: () => "",
+    writeFile: (filePath, content) => fs.writeFileSync(filePath, content),
+    mkdir: (dirPath) => fs.mkdirSync(dirPath, { recursive: true }),
+  });
+  const saved = parseEnvFile(fs.readFileSync(configPath, "utf8"));
+  assert.equal(saved.HINDSIGHT_API_LLM_PROVIDER, "openai");
+  assert.equal(saved.HINDSIGHT_API_LLM_BASE_URL, "https://your-endpoint.com/v1");
+  assert.equal(saved.HINDSIGHT_API_LLM_MODEL, "gpt-4o-mini");
+  assert.equal(saved.HINDSIGHT_API_LLM_API_KEY, "sk-test");
+  const pub = publicLlmConfig(saved);
+  assert.equal(pub.hasApiKey, true);
+  assert.notEqual(pub.apiKeyMasked, "sk-test");
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test("service launches hindsight via daemon start without SOCKS proxy", async () => {
+  const executable = "/Users/pa/.local/bin/hindsight-embed";
+  const saved = [];
+  const spawnCalls = [];
+  const child = { pid: 4243, unref() { this.unrefed = true; } };
+  let healthy = false;
+  const service = createCommandAppsService({
+    configStore: {
+      get() { return saved.at(-1) || { apps: { hindsight: { executablePath: executable } } }; },
+      save(next) { saved.push(next); return next; },
+    },
+    platform: "darwin",
+    spawnProcess: (file, args, options) => {
+      spawnCalls.push({ file, args, options });
+      healthy = true;
+      return child;
+    },
+    probeHindsight: async () => healthy,
+    fileExists: (value) => value === executable,
+    daemonEnv: () => sanitizeDaemonEnv({
+      ALL_PROXY: "socks5://127.0.0.1:7897",
+      HTTPS_PROXY: "http://127.0.0.1:7897",
+      PATH: "/usr/bin",
+    }),
+    startHindsight: async (app, settings, options) => {
+      const result = await options.spawnProcess(settings.executablePath, [...app.defaultArgs], {
+        env: options.env,
+        detached: true,
+      });
+      return { pid: result.pid, alreadyRunning: false, healthUrl: "http://127.0.0.1:8888/health", mcpUrl: "http://127.0.0.1:8888/mcp/default/", port: 8888 };
+    },
+  });
+  const status = await service.launch("hindsight");
+  assert.equal(status.app.id, "hindsight");
+  assert.equal(spawnCalls[0].file, executable);
+  assert.deepEqual(spawnCalls[0].args, ["daemon", "start"]);
+  assert.equal(spawnCalls[0].options.env.ALL_PROXY, undefined);
+  assert.equal(status.process.status, "running");
+});
+
+test("service updateConfig writes hindsight llm settings without changing args", async () => {
+  const executable = "/Users/pa/.local/bin/hindsight-embed";
+  const writes = [];
+  const service = createCommandAppsService({
+    configStore: {
+      get() { return { apps: { hindsight: { executablePath: executable } } }; },
+      save() {},
+    },
+    platform: "darwin",
+    fileExists: (value) => value === executable,
+    writeHindsightLlm: (patch) => writes.push(patch),
+    readHindsightLlm: () => ({
+      provider: "openai",
+      baseUrl: "https://your-endpoint.com/v1",
+      model: "gpt-4o-mini",
+      hasApiKey: true,
+      apiKeyMasked: "sk-t****test",
+    }),
+    probeHindsight: async () => false,
+  });
+  const status = await service.updateConfig("hindsight", {
+    llm: {
+      provider: "openai",
+      baseUrl: "https://your-endpoint.com/v1",
+      model: "gpt-4o-mini",
+      apiKey: "sk-test",
+    },
+  });
+  assert.deepEqual(writes[0].baseUrl, "https://your-endpoint.com/v1");
+  assert.equal(status.llm.baseUrl, "https://your-endpoint.com/v1");
+  assert.equal(status.llm.hasApiKey, true);
+});
+
+test("hindsight status is launching when lock pid is alive but health is down", async () => {
+  const executable = "/Users/pa/.local/bin/hindsight-embed";
+  const service = createCommandAppsService({
+    configStore: {
+      get() { return { apps: { hindsight: { executablePath: executable, lastLaunchedAt: "2026-09-01T11:31:28.064Z" } } }; },
+      save() {},
+    },
+    platform: "darwin",
+    fileExists: (value) => value === executable,
+    inspectHindsight: async () => ({ status: "launching", pid: 10766 }),
+    probeHindsight: async () => false,
+  });
+  const status = await service.getStatus("hindsight");
+  assert.equal(status.process.status, "launching");
+  assert.equal(status.process.count, 1);
+});
