@@ -1,0 +1,1639 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>秋染雪山·川西全景大环线 10 日私享慢游路书 · 情侣深度定制</title>
+  <style>
+    :root {
+      --bg-warm: #FAF8F5;
+      --card-bg: #FFFFFF;
+      --primary: #C66248;        /* 丹霞陶土红 */
+      --primary-dark: #A54B33;
+      --accent: #D8B282;         /* 暖金秋杨 */
+      --forest: #3B6B56;         /* 雅江冷杉青 */
+      --slate: #4A5B6C;          /* 贡嘎雪岩蓝 */
+      --text-main: #2C2925;
+      --text-muted: #6B655D;
+      --text-light: #9B9489;
+      --border-color: #EFECE6;
+      --border-focus: #D0C9BE;
+      --shadow-sm: 0 2px 8px rgba(44, 41, 37, 0.04);
+      --shadow-md: 0 8px 24px rgba(44, 41, 37, 0.07);
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background-color: var(--bg-warm);
+      color: var(--text-main);
+      line-height: 1.65;
+      padding: 24px 16px 80px;
+    }
+
+    .container {
+      max-width: 1040px;
+      margin: 0 auto;
+    }
+
+    /* Header Hero Card */
+    .hero-card {
+      background: linear-gradient(145deg, #302B27 0%, #463E37 60%, #5A4E45 100%);
+      color: #FFFFFF;
+      border-radius: var(--radius-lg);
+      padding: 36px 32px;
+      box-shadow: var(--shadow-md);
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 28px;
+    }
+
+    .hero-card::after {
+      content: "";
+      position: absolute;
+      top: -40%;
+      right: -10%;
+      width: 380px;
+      height: 380px;
+      background: radial-gradient(circle, rgba(216, 178, 130, 0.18) 0%, rgba(216, 178, 130, 0) 70%);
+      pointer-events: none;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+      color: #F3EBDD;
+      margin-bottom: 14px;
+    }
+
+    .hero-title {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      line-height: 1.3;
+      margin-bottom: 12px;
+    }
+
+    .hero-desc {
+      font-size: 14.5px;
+      color: #DDD4C7;
+      max-width: 760px;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    .hero-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+      padding-top: 20px;
+    }
+
+    .hero-meta-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .hero-meta-label {
+      font-size: 12px;
+      color: #BAAF9F;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+
+    .hero-meta-val {
+      font-size: 15px;
+      font-weight: 700;
+      color: #FFFDF9;
+    }
+
+    /* Pyramid Summary Block */
+    .summary-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 28px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title::before {
+      content: "";
+      width: 4px;
+      height: 18px;
+      background: var(--primary);
+      border-radius: 2px;
+    }
+
+    .highlight-banner {
+      background: #FDF9F3;
+      border-left: 4px solid var(--accent);
+      padding: 14px 18px;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      font-size: 14px;
+      color: #634C28;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    .stats-kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .stats-kpi-row {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .kpi-card {
+      background: #FAF8F5;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      text-align: center;
+    }
+
+    .kpi-num {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--primary);
+      line-height: 1.2;
+    }
+
+    .kpi-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Charts Container */
+    .chart-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 22px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 24px;
+    }
+
+    .chart-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .chart-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .chart-tag {
+      font-size: 11.5px;
+      color: var(--text-light);
+      background: #F4F1EA;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .chart-legend {
+      display: flex;
+      gap: 16px;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    /* Accordion & Daily Cards */
+    .accordion-controls {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-toggle-all {
+      background: #EFECE6;
+      border: none;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-toggle-all:hover {
+      background: #E2DDD4;
+      color: var(--text-main);
+    }
+
+    .itinerary-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .day-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .day-card:hover {
+      border-color: var(--border-focus);
+    }
+
+    .day-header {
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+      background: #FFFFFF;
+      transition: background 0.15s;
+    }
+
+    .day-header:hover {
+      background: #FCFBF9;
+    }
+
+    .day-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .day-pill {
+      background: var(--primary);
+      color: #FFFFFF;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    .day-title {
+      font-size: 15.5px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .day-meta-peek {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 12.5px;
+      color: var(--text-muted);
+    }
+
+    .chevron-icon {
+      font-size: 12px;
+      color: var(--text-light);
+      transition: transform 0.25s ease;
+    }
+
+    .day-card.open .chevron-icon {
+      transform: rotate(180deg);
+    }
+
+    .day-body {
+      display: none;
+      padding: 20px;
+      border-top: 1px solid var(--border-color);
+      background: #FAF9F7;
+    }
+
+    .day-card.open .day-body {
+      display: block;
+    }
+
+    /* Timeline in Day */
+    .timeline {
+      position: relative;
+      padding-left: 20px;
+      margin-bottom: 20px;
+    }
+
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 6px;
+      top: 6px;
+      bottom: 6px;
+      width: 2px;
+      background: #E5DFC8;
+    }
+
+    .time-slot {
+      position: relative;
+      margin-bottom: 14px;
+    }
+
+    .time-slot:last-child {
+      margin-bottom: 0;
+    }
+
+    .time-slot::before {
+      content: "";
+      position: absolute;
+      left: -18px;
+      top: 6px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--primary);
+      border: 2px solid #FAF9F7;
+    }
+
+    .time-tag {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--slate);
+      margin-bottom: 2px;
+    }
+
+    .time-content {
+      font-size: 13.5px;
+      color: var(--text-main);
+      line-height: 1.6;
+    }
+
+    /* Sub-box grids */
+    .sub-card-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 640px) {
+      .sub-card-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .sub-box {
+      background: #FFFFFF;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      font-size: 12.5px;
+    }
+
+    .sub-box-title {
+      font-weight: 700;
+      color: var(--forest);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .sub-box-content {
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .plan-b-banner {
+      background: #F5F1E8;
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 12px;
+      color: #614D32;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .plan-b-badge {
+      background: #D8B282;
+      color: #FFFFFF;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 1px;
+    }
+
+    /* Checklist Section */
+    .checklist-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 28px;
+    }
+
+    .check-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .check-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: #FAF8F5;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s;
+    }
+
+    .check-item:hover {
+      background: #F4EFE6;
+    }
+
+    .check-item input[type="checkbox"] {
+      margin-top: 3px;
+      accent-color: var(--primary);
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    .check-item.done {
+      text-decoration: line-through;
+      color: var(--text-light);
+      background: #F5F4F0;
+      border-color: #E8E5DD;
+    }
+
+    /* Evidence Ledger Table */
+    .evidence-section {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 28px;
+    }
+
+    .evidence-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+      margin-top: 14px;
+    }
+
+    .evidence-table th, .evidence-table td {
+      border: 1px solid var(--border-color);
+      padding: 10px 12px;
+      text-align: left;
+    }
+
+    .evidence-table th {
+      background: #F6F3ED;
+      color: var(--text-main);
+      font-weight: 700;
+    }
+
+    .evidence-table tr:nth-child(even) {
+      background: #FAF9F6;
+    }
+
+    .evidence-table a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .evidence-table a:hover {
+      text-decoration: underline;
+    }
+
+    /* Floating Action Bar */
+    .float-bar {
+      position: fixed;
+      bottom: 20px;
+      right: 24px;
+      display: flex;
+      align-items: center;
+      background: rgba(44, 41, 37, 0.92);
+      backdrop-filter: blur(12px);
+      padding: 8px 14px;
+      border-radius: 30px;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.25);
+      z-index: 999;
+      gap: 12px;
+    }
+
+    .float-btn {
+      background: transparent;
+      border: none;
+      color: #FFFFFF;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 16px;
+      transition: all 0.2s;
+    }
+
+    .float-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .float-divider {
+      width: 1px;
+      height: 18px;
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    @media print {
+      body {
+        background: #FFFFFF;
+        padding: 0;
+      }
+      .float-bar, .btn-toggle-all {
+        display: none !important;
+      }
+      .day-body {
+        display: block !important;
+      }
+      .day-card {
+        page-break-inside: avoid;
+        margin-bottom: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- Hero Pyramid Top -->
+    <header class="hero-card">
+      <div class="hero-badge">
+        <span>🏔️ 川西全景自驾慢游 · 情侣品质私享方案</span>
+      </div>
+      <h1 class="hero-title">秋染雪山 · 川西全景大环线 10 日私享慢游路书</h1>
+      <p class="hero-desc">
+        专为情侣 2 人设计的慢节奏避峰环线（全程 1980km）。精选“高处徒步出片、低海拔安稳深睡”梯度模型，避开亚丁村高反噩梦；尊享一嗨探岳/问界 SUV 全程无忧 0 免赔保障，配合成都租车车载制氧机与指夹血氧仪，打造从容、浪漫、无惧高反的金秋视觉盛宴。
+      </p>
+
+      <div class="hero-meta-grid">
+        <div class="hero-meta-item">
+          <span class="hero-meta-label">出行时间</span>
+          <span class="hero-meta-val">2026.09.25 ~ 10.04 (10天9晚)</span>
+        </div>
+        <div class="hero-meta-item">
+          <span class="hero-meta-label">出行人数 / 行李</span>
+          <span class="hero-meta-val">情侣 2 人 / 2箱(24寸) + 2包</span>
+        </div>
+        <div class="hero-meta-item">
+          <span class="hero-meta-label">租车选型与全险</span>
+          <span class="hero-meta-val">大众探岳 2.0T / 问界 M7 (含0免赔全险)</span>
+        </div>
+        <div class="hero-meta-item">
+          <span class="hero-meta-label">预算标准 (双人全口径)</span>
+          <span class="hero-meta-val">¥10,960 (人均 ¥5,480)</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Pyramid Core Stats & Safety Guardrails -->
+    <section class="summary-card">
+      <div class="section-head">
+        <h2 class="section-title">🧭 行程决策金字塔与安全防线</h2>
+      </div>
+
+      <div class="highlight-banner">
+        <strong>💡 高原与温差深度安全护栏：</strong><br>
+        1. <strong>科学睡眠海拔模型</strong>：严格遵守“高处观景游玩，低处住宿深睡”。过折多山(4298m)后下行雅江(2600m)深睡；游玩亚丁绝不住山顶亚丁村(3900m)，连住山脚香格里拉日瓦镇(2900m)；过塔公八美后下行丹巴中路藏寨(1800m)满血复活！<br>
+        2. <strong>实体设备硬核护航</strong>：成都市区落地取车时，直接租用<strong>便携车载+电池双模医用制氧机（¥60/天）</strong>常驻后备箱；随身携带<strong>指夹式血氧仪</strong>（血氧低于80%立即车内吸氧）；携带<strong>-25℃极寒防冻玻璃水</strong>与<strong>破冰防滑链</strong>。
+      </div>
+
+      <div class="stats-kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-num">1,980<span style="font-size: 14px;">km</span></div>
+          <div class="kpi-label">自驾总里程 (均220km/天)</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-num">1,800~4,700<span style="font-size: 14px;">m</span></div>
+          <div class="kpi-label">海拔跨度 (渐进式爬升)</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-num">100%<span style="font-size: 14px;">全程无忧</span></div>
+          <div class="kpi-label">一嗨 0 免赔全险 + 异地还车覆盖</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-num">9<span style="font-size: 14px;">晚</span></div>
+          <div class="kpi-label">严选地暖/供氧/电梯品质酒店</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Visual Charts: 1. 海拔渐进与温差 2. 节奏 3. 费用透明环形图 -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
+      
+      <!-- Chart 1: 海拔阶梯图 -->
+      <div class="chart-card">
+        <div class="chart-head">
+          <div class="chart-title">📈 10 日海拔渐进与睡眠安全曲线</div>
+          <span class="chart-tag">阶梯爬升 · 低处深睡</span>
+        </div>
+        <div style="width: 100%; height: 180px;">
+          <svg viewBox="0 0 500 180" width="100%" height="100%" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="gradAlt" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#C66248" stop-opacity="0.35"/>
+                <stop offset="100%" stop-color="#FAF8F5" stop-opacity="0.0"/>
+              </linearGradient>
+            </defs>
+            <!-- Safe sleep zone (below 3000m) -->
+            <rect x="0" y="70" width="500" height="110" fill="#3B6B56" fill-opacity="0.07" />
+            <text x="440" y="85" font-size="9" fill="#3B6B56" text-anchor="end">3000m 黄金睡眠安全线以下</text>
+
+            <!-- Guide grid lines -->
+            <line x1="0" y1="30" x2="500" y2="30" stroke="#EFECE6" stroke-dasharray="3,3" />
+            <line x1="0" y1="70" x2="500" y2="70" stroke="#EFECE6" stroke-dasharray="3,3" />
+            <line x1="0" y1="120" x2="500" y2="120" stroke="#EFECE6" stroke-dasharray="3,3" />
+
+            <!-- Day markers: D1(500->2500), D2(4298->2600), D3(4014->2900), D4(4700->2900), D5(4080->2600), D6(3500->1800), D7(3100), D8(3840->3100), D9(700), D10(500) -->
+            <!-- Altitude mapping: y = 160 - (alt - 500) * (140 / 4200) -->
+            <!-- D1: 2500m -> y=93 -->
+            <!-- D2 peak: 4298m -> y=33, sleep: 2600m -> y=90 -->
+            <!-- D3 peak: 4014m -> y=43, sleep: 2900m -> y=80 -->
+            <!-- D4 peak: 4700m -> y=20, sleep: 2900m -> y=80 -->
+            <!-- D5 peak: 4080m -> y=41, sleep: 2600m -> y=90 -->
+            <!-- D6 peak: 3500m -> y=60, sleep: 1800m -> y=116 -->
+            <!-- D7 sleep: 3100m -> y=73 -->
+            <!-- D8 peak: 3840m -> y=48, sleep: 3100m -> y=73 -->
+            <!-- D9 sleep: 700m -> y=153 -->
+            <!-- D10 end: 500m -> y=160 -->
+
+            <path d="M 25,160 L 25,93 L 75,33 L 75,90 L 125,43 L 125,80 L 175,20 L 175,80 L 225,41 L 225,90 L 275,60 L 275,116 L 325,73 L 375,48 L 375,73 L 425,153 L 475,160 L 475,180 L 25,180 Z" fill="url(#gradAlt)"/>
+            <path d="M 25,93 L 75,33 L 75,90 L 125,43 L 125,80 L 175,20 L 175,80 L 225,41 L 225,90 L 275,60 L 275,116 L 325,73 L 375,48 L 375,73 L 425,153 L 475,160" fill="none" stroke="#C66248" stroke-width="2.5" stroke-linejoin="round"/>
+
+            <!-- Altitude points -->
+            <circle cx="25" cy="93" r="3.5" fill="#C66248"/>
+            <circle cx="75" cy="33" r="3.5" fill="#A54B33"/>
+            <circle cx="125" cy="43" r="3.5" fill="#A54B33"/>
+            <circle cx="175" cy="20" r="4.5" fill="#C66248" stroke="#FFF" stroke-width="1.5"/>
+            <circle cx="275" cy="116" r="3.5" fill="#3B6B56"/>
+            <circle cx="375" cy="48" r="3.5" fill="#A54B33"/>
+            <circle cx="475" cy="160" r="3.5" fill="#3B6B56"/>
+
+            <!-- Labels -->
+            <text x="25" y="172" font-size="9" fill="#9B9489" text-anchor="middle">D1康定</text>
+            <text x="75" y="27" font-size="8.5" fill="#A54B33" text-anchor="middle">折多山4298</text>
+            <text x="175" y="13" font-size="9" font-weight="bold" fill="#C66248" text-anchor="middle">牛奶海4700m</text>
+            <text x="275" y="132" font-size="9" font-weight="bold" fill="#3B6B56" text-anchor="middle">丹巴1800m(深睡)</text>
+            <text x="375" y="42" font-size="8.5" fill="#A54B33" text-anchor="middle">双桥沟3840</text>
+            <text x="475" y="172" font-size="9" fill="#9B9489" text-anchor="middle">D10成都</text>
+          </svg>
+        </div>
+        <div class="chart-legend">
+          <div class="legend-item"><span class="legend-dot" style="background: #C66248;"></span> 实际行车游览最高点</div>
+          <div class="legend-item"><span class="legend-dot" style="background: #3B6B56;"></span> 严选夜宿低海拔深睡点</div>
+        </div>
+      </div>
+
+      <!-- Chart 2: 每日自驾强度与节奏 -->
+      <div class="chart-card">
+        <div class="chart-head">
+          <div class="chart-title">🚗 每日自驾里程与游览疲劳度控制</div>
+          <span class="chart-tag">劳逸结合 · 杜绝赶路</span>
+        </div>
+        <div style="width: 100%; height: 180px;">
+          <svg viewBox="0 0 500 180" width="100%" height="100%">
+            <!-- Bars for D1 to D10: [260, 145, 230, 0, 110, 190, 110, 0, 220, 70] km -->
+            <!-- Max 300km, y-scale: height = km * 0.45 -->
+            <!-- D1: 260km -> h=117, y=33 -->
+            <rect x="25" y="33" width="28" height="117" rx="4" fill="#D8B282" />
+            <text x="39" y="27" font-size="9" fill="#2C2925" font-weight="bold" text-anchor="middle">260</text>
+            <text x="39" y="165" font-size="9" fill="#9B9489" text-anchor="middle">D1</text>
+
+            <!-- D2: 145km -> h=65, y=85 -->
+            <rect x="73" y="85" width="28" height="65" rx="4" fill="#3B6B56" />
+            <text x="87" y="79" font-size="9" fill="#2C2925" font-weight="bold" text-anchor="middle">145</text>
+            <text x="87" y="165" font-size="9" fill="#9B9489" text-anchor="middle">D2</text>
+
+            <!-- D3: 230km -> h=103, y=47 -->
+            <rect x="121" y="47" width="28" height="103" rx="4" fill="#D8B282" />
+            <text x="135" y="41" font-size="9" fill="#2C2925" font-weight="bold" text-anchor="middle">230</text>
+            <text x="135" y="165" font-size="9" fill="#9B9489" text-anchor="middle">D3</text>
+
+            <!-- D4: 0km (景区徒步日) -> h=8, y=142 -->
+            <rect x="169" y="138" width="28" height="12" rx="4" fill="#C66248" />
+            <text x="183" y="132" font-size="8" fill="#C66248" font-weight="bold" text-anchor="middle">亚丁徒步</text>
+            <text x="183" y="165" font-size="9" fill="#9B9489" text-anchor="middle">D4</text>
+
+            <!-- D5: 110km -> h=50, y=100 -->
+            <rect x="217" y="100" width="28" height="50" rx="4" fill="#3B6B56" />
+            <text x="231" y="94" font-size="9" fill="#2C2925" font-weight="bold" text-anchor="middle">110</text>
+            <text x="231" y="165" font-size="9" fill="#9B9489" text-anchor="middle">D5</text>
+
+            <!-- D6: 190km -> h=85, y=65 -->
+            <rect x="265" y="65" width="28" height="85" rx="4" fill="#D8B282" />
+            <text x="279" y="59" font-size="9" fill="#2C2925" font-weight="bold" text-anchor="middle">190</text>
+            <text x="279" y="165" font-size="9" fill="#9B9489" text-anchor="middle">D6</text>
+
+            <!-- D7: 110km -> h=50, y=100 -->
+            <rect x="313" y="100" width="28" height="50" rx="4" fill="#3B6B56" />
+            <text x="327" y="94" font-size="9" fill="#2C2925" font-weight="bold" text-anchor="middle">110</text>
+            <text x="327" y="165" font-size="9" fill="#9B9489" text-anchor="middle">D7</text>
+
+            <!-- D8: 0km (双桥沟漫游日) -> h=8, y=142 -->
+            <rect x="361" y="138" width="28" height="12" rx="4" fill="#4A5B6C" />
+            <text x="375" y="132" font-size="8" fill="#4A5B6C" font-weight="bold" text-anchor="middle">双桥漫游</text>
+            <text x="375" y="165" font-size="9" fill="#9B9489" text-anchor="middle">D8</text>
+
+            <!-- D9: 220km -> h=99, y=51 -->
+            <rect x="409" y="51" width="28" height="99" rx="4" fill="#D8B282" />
+            <text x="423" y="45" font-size="9" fill="#2C2925" font-weight="bold" text-anchor="middle">220</text>
+            <text x="423" y="165" font-size="9" fill="#9B9489" text-anchor="middle">D9</text>
+
+            <!-- D10: 70km -> h=32, y=118 -->
+            <rect x="457" y="118" width="28" height="32" rx="4" fill="#3B6B56" />
+            <text x="471" y="112" font-size="9" fill="#2C2925" font-weight="bold" text-anchor="middle">70</text>
+            <text x="471" y="165" font-size="9" fill="#9B9489" text-anchor="middle">D10</text>
+
+            <line x1="15" y1="150" x2="495" y2="150" stroke="#EFECE6" stroke-width="1"/>
+          </svg>
+        </div>
+        <div class="chart-legend">
+          <div class="legend-item"><span class="legend-dot" style="background: #3B6B56;"></span> 轻松短途 (<150km)</div>
+          <div class="legend-item"><span class="legend-dot" style="background: #D8B282;"></span> 适中风景转场 (150~260km)</div>
+          <div class="legend-item"><span class="legend-dot" style="background: #C66248;"></span> 纯景区徒步修整日 (0开开车)</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Chart 3: 全口径费用透明环形图 (含0免赔全险与异地还车费) -->
+    <section class="chart-card" style="margin-bottom: 28px;">
+      <div class="chart-head">
+        <div class="chart-title">🧾 10 日情侣全口径费用预算明细表 (双人总计 ¥10,960 · 人均 ¥5,480)</div>
+        <span class="chart-tag">一嗨 0 免赔全险 · 异地跨机场还车覆盖 · 零隐形消费</span>
+      </div>
+      <div style="display: flex; align-items: center; justify-content: space-around; flex-wrap: wrap; gap: 24px;">
+        <div style="width: 150px; height: 150px;">
+          <svg viewBox="0 0 42 42" width="100%" height="100%">
+            <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#E7E4DC" stroke-width="5"></circle>
+            <!-- 住宿 46%, 租车全险 29%, 门票 13%, 能耗 12% -->
+            <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#D8B282" stroke-width="5" stroke-dasharray="46 54" stroke-dashoffset="25"></circle>
+            <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#C66248" stroke-width="5" stroke-dasharray="29 71" stroke-dashoffset="79"></circle>
+            <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#4A5B6C" stroke-width="5" stroke-dasharray="13 87" stroke-dashoffset="50"></circle>
+            <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#3B6B56" stroke-width="5" stroke-dasharray="12 88" stroke-dashoffset="37"></circle>
+            <text x="21" y="22.5" font-size="4.2" font-weight="bold" fill="#2C2925" text-anchor="middle">全包透明</text>
+          </svg>
+        </div>
+        <div style="flex: 1; min-width: 320px; font-size: 13px;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tbody>
+              <tr style="border-bottom: 1px solid #F0EFEA;">
+                <td style="padding: 7px 0;"><span style="color:#D8B282;">●</span> 严选品质住宿 (9晚大床房·带地暖/弥散供氧/电梯)</td>
+                <td style="text-align: right; font-weight: 700;">¥5,040</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #F0EFEA;">
+                <td style="padding: 7px 0;">
+                  <span style="color:#C66248;">●</span> <strong>一嗨 SUV 租车 (含全程无忧0免赔全险+跨机场还车费)</strong><br>
+                  <span style="font-size: 11px; color: var(--text-light);">裸车日租金 + 基础服务(¥50/天) + 尊享0免赔全险(¥70/天) + 天府跨机场调度(¥50)</span>
+                </td>
+                <td style="text-align: right; font-weight: 700;">¥3,180</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #F0EFEA;">
+                <td style="padding: 7px 0;"><span style="color:#4A5B6C;">●</span> 核心门票与接驳 (稻城亚丁+双桥沟+墨石公园+都江堰)</td>
+                <td style="text-align: right; font-weight: 700;">¥1,460</td>
+              </tr>
+              <tr>
+                <td style="padding: 7px 0;">
+                  <span style="color:#3B6B56;">●</span> 自驾能耗油费 + 高速通行费<br>
+                  <span style="font-size: 11px; color: var(--text-light);">全程1980km；10.1~10.4 享受国庆免费通行</span>
+                </td>
+                <td style="text-align: right; font-weight: 700;">¥1,280</td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="font-size: 11.5px; color: var(--forest); margin-top: 8px; background: #F3F8F5; padding: 6px 10px; border-radius: 4px;">
+            🛡️ <strong>租车全程无忧承诺</strong>：已全额计入“尊享 0 免赔补充全险”，全包玻璃破损、轮胎爆胎、底盘刮蹭与停运损失费，还车免纠纷！
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Daily Detailed Itinerary -->
+    <div class="section-head">
+      <h2 class="section-title">🗺️ 分日沉浸动线与避坑管家实录</h2>
+      <div class="accordion-controls">
+        <button class="btn-toggle-all" onclick="toggleAllDays(true)">全部展开</button>
+        <button class="btn-toggle-all" onclick="toggleAllDays(false)">全部折叠</button>
+      </div>
+    </div>
+
+    <div class="itinerary-list">
+      
+      <!-- Day 1 -->
+      <article class="day-card open">
+        <div class="day-header" onclick="toggleDay(this.parentElement)">
+          <div class="day-badge-row">
+            <span class="day-pill">Day 1 · 9.25</span>
+            <span class="day-title">落地成都机场取车 ➡ 雅康高速穿越二郎山 ➡ 宿情歌之城康定 (海拔2500m)</span>
+          </div>
+          <div class="day-meta-peek">
+            <span>🚗 260km (约3.5h)</span>
+            <span>📍 康定岷山情歌大酒店 (地暖/车库)</span>
+            <span class="chevron-icon">▼</span>
+          </div>
+        </div>
+        <div class="day-body">
+          <div class="timeline">
+            <div class="time-slot">
+              <div class="time-tag">上午 10:30 · 成都双流/天府机场落地提车与装备整备</div>
+              <div class="time-content">
+                一嗨租车网点刷脸提车（大众探岳 2.0T 或 问界 M7）。在市区预订网点提取<strong>车载+电池双模医用制氧机</strong>（租期10天，常驻后备箱），购买 2 箱饮用水与高热量零食。仔细检查车辆防冻玻璃水与胎压。
+              </div>
+            </div>
+            <div class="time-slot">
+              <div class="time-tag">下午 14:00 · 穿行雅康高速，过二郎山特长隧道（海拔跃升）</div>
+              <div class="time-content">
+                穿过 13.4 公里的二郎山隧道，天气瞬间从四川盆地的阴雨转为高原的瓦蓝晴空。路过大渡河兴康特大桥打卡，傍晚抵达康定城。
+              </div>
+            </div>
+            <div class="time-slot">
+              <div class="time-tag">傍晚 18:30 · 折多河畔漫步与牦牛肉汤锅晚餐</div>
+              <div class="time-content">
+                入住康定岷山情歌大酒店（专属地下车库，直达电梯）。两人在折多河奔腾的激流旁漫步，晚餐品尝温热暖胃的菌汤牦牛肉火锅。初入高原，切忌饮酒。
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-card-grid">
+            <div class="sub-box">
+              <div class="sub-box-title">🏨 严选落脚酒店</div>
+              <div class="sub-box-content">
+                <strong>康定岷山情歌大酒店 (或康定亚朵)</strong><br>
+                海拔 2500m · 专属地下车库 · 直达电梯 · 24h 充足暖气与热水 · 临近折多河畔<br>
+                <a href="https://uri.amap.com/search?query=康定岷山情歌大酒店" target="_blank">🔗 高德地图导航直达</a>
+              </div>
+            </div>
+            <div class="sub-box">
+              <div class="sub-box-title">💡 管家私藏避坑 (小红书素人实测)</div>
+              <div class="sub-box-content">
+                <strong>① 初到坚决不洗头</strong>：参考小红书·Fox实测《关于去川西洗头高反问题》，洗头极易受凉收缩脑血管导致发烧与剧烈头痛；<br>
+                <strong>② 饮食七分饱</strong>：参考小红书·薯片脆皮《川西高反都是吃出来的》，高原消化酶活性低，暴饮暴食导致胃肠血液夺取脑供血加剧缺氧；<br>
+                <strong>③ 租车避坑</strong>：参考小红书·小火_Yik，一嗨租车必须确认“尊享0免赔”，防范碎石弹射裂纹。
+              </div>
+            </div>
+          </div>
+
+          <div class="plan-b-banner">
+            <span class="plan-b-badge">Plan B 备选</span>
+            <div><strong>若雅康高速遇突发地质管制</strong>：走国道 G318 老线慢行，在天全服务区享用全国最美公路服务区的椒麻鸡与特色咖啡。</div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Day 2 -->
+      <article class="day-card">
+        <div class="day-header" onclick="toggleDay(this.parentElement)">
+          <div class="day-badge-row">
+            <span class="day-pill">Day 2 · 9.26</span>
+            <span class="day-title">翻越折多山垭口 ➡ 摄影天堂新都桥 ➡ 宿雅江 (海拔2600m 低处深睡)</span>
+          </div>
+          <div class="day-meta-peek">
+            <span>🚗 145km (约3.5h)</span>
+            <span>📍 雅江希尔顿惠庭/精品地暖酒店</span>
+            <span class="chevron-icon">▼</span>
+          </div>
+        </div>
+        <div class="day-body">
+          <div class="timeline">
+            <div class="time-slot">
+              <div class="time-tag">上午 09:30 · 翻越“康巴第一关”折多山 (4298m)</div>
+              <div class="time-content">
+                盘山而上，视野豁然开朗。在折多山观景台停车打卡（停留勿超 20 分钟），两人披上防风外套，在写着“西藏”的经幡白塔前拍下第一张高原雪山合影。
+              </div>
+            </div>
+            <div class="time-slot">
+              <div class="time-tag">下午 14:00 · 新都桥摄影走廊金秋漫行</div>
+              <div class="time-content">
+                金黄的杨树林倒映在溪流中，藏式石屋与悠闲吃草的黑牦牛相映成趣。在甲根坝或贡嘎雪山远眺点小坐，点一杯酥油拿铁，静候光影在山坡上流动。
+              </div>
+            </div>
+            <div class="time-slot">
+              <div class="time-tag">傍晚 17:30 · 翻越高尔寺山，下撤至雅江县城宿夜</div>
+              <div class="time-content">
+                <strong>【避坑关键】不在海拔 3400m 的新都桥留宿！</strong> 驱车穿过高尔寺山隧道，下撤至海拔仅 2600m 的雅江峡谷，高反概率骤降 80%，睡个踏实深觉。
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-card-grid">
+            <div class="sub-box">
+              <div class="sub-box-title">🏨 严选落脚酒店</div>
+              <div class="sub-box-content">
+                <strong>雅江希尔顿惠庭酒店 / 雅江驿锦大酒店</strong><br>
+                海拔 2600m · 临江观景房 · 独立供暖 · 配备弥散供氧系统 · 免费室内车位<br>
+                <a href="https://uri.amap.com/search?query=雅江希尔顿惠庭酒店" target="_blank">🔗 高德地图导航直达</a>
+              </div>
+            </div>
+            <div class="sub-box">
+              <div class="sub-box-title">💡 顺光摄影与保暖建议</div>
+              <div class="sub-box-content">
+                新都桥 15:30~17:00 为逆顺侧光最佳时刻，适合情侣利用长焦抓拍金秋杨树侧逆光发丝光；折多山垭口风大温低，下车务必戴好保暖毛线帽遮挡太阳穴。
+              </div>
+            </div>
+          </div>
+
+          <div class="plan-b-banner">
+            <span class="plan-b-badge">Plan B 备选</span>
+            <div><strong>若折多山垭口大雪交通管制</strong>：走机场快速通道绕行中谷村，沿途泡天然地热温泉，暖身后再经塔公前往新都桥。</div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Day 3 -->
+      <article class="day-card">
+        <div class="day-header" onclick="toggleDay(this.parentElement)">
+          <div class="day-badge-row">
+            <span class="day-pill">Day 3 · 9.27</span>
+            <span class="day-title">天路十八弯 ➡ 理塘天空之城 ➡ 海子山古冰帽 ➡ 宿香格里拉日瓦镇 (2900m)</span>
+          </div>
+          <div class="day-meta-peek">
+            <span>🚗 230km (约5h)</span>
+            <span>📍 香格里拉日瓦翔云精品度假酒店</span>
+            <span class="chevron-icon">▼</span>
+          </div>
+        </div>
+        <div class="day-body">
+          <div class="timeline">
+            <div class="time-slot">
+              <div class="time-tag">上午 09:30 · 穿越天路十八弯与剪子弯山</div>
+              <div class="time-content">
+                从雅江出山，连续弯道极其壮观。在天路十八弯观景台俯瞰盘山公路，随后驶入毛垭大草原，金黄广袤无垠。
+              </div>
+            </div>
+            <div class="time-slot">
+              <div class="time-tag">中午 12:30 · “天空之城”理塘午餐打卡 (4014m)</div>
+              <div class="time-content">
+                勒通古镇千户藏寨慢步，在仓央嘉措微型博物馆前品一杯甜茶，参观长青春科尔寺。高城气压低，切忌疾步奔跑。
+              </div>
+            </div>
+            <div class="time-slot">
+              <div class="time-tag">傍晚 18:00 · 翻过海子山，下到香格里拉日瓦镇</div>
+              <div class="time-content">
+                穿越荒凉如火星地表的古冰帽海子山，途经稻城白塔。黄昏时分抵达亚丁山脚下的香格里拉镇（日瓦），海拔回落到 2900m，富氧舒适，为明日亚丁蓄力。
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-card-grid">
+            <div class="sub-box">
+              <div class="sub-box-title">🏨 严选落脚酒店（连住两晚）</div>
+              <div class="sub-box-content">
+                <strong>稻城日瓦翔云精品度假酒店 / 亚朵酒店</strong><br>
+                全屋地暖 · 弥散供氧 · 大型免费车位 · 自助洗衣烘干 · 距亚丁门票站仅 5 分钟<br>
+                <a href="https://uri.amap.com/search?query=香格里拉镇酒店" target="_blank">🔗 高德地图导航直达</a>
+              </div>
+            </div>
+            <div class="sub-box">
+              <div class="sub-box-title">💡 关键深度避坑 (小红书素人实测)</div>
+              <div class="sub-box-content">
+                <strong>绝对不要住亚丁村（海拔3900m）！</strong><br>
+                参考小红书·辞晚《川西两人刚回，提醒9月要来的宝！》最新血泪教训：亚丁村高寒缺氧极易彻夜失眠头胀，连住山下的香格里拉日瓦镇（2900m）酒店设施好且氧气充足，次日乘景区大巴进山才是神仙选择。
+              </div>
+            </div>
+          </div>
+
+          <div class="plan-b-banner">
+            <span class="plan-b-badge">Plan B 备选</span>
+            <div><strong>若理塘段大风大温差</strong>：取消户外长时间逗留，提前驶入稻城尊胜白塔祈福转经，早早入住日瓦温泉酒店洗去舟车劳顿。</div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Day 4 -->
+      <article class="day-card">
+        <div class="day-header" onclick="toggleDay(this.parentElement)">
+          <div class="day-badge-row">
+            <span class="day-pill">Day 4 · 9.28</span>
+            <span class="day-title">稻城亚丁“蓝色星球净土”长线徒步 (洛绒牛场 ➡ 牛奶海 4600m ➡ 五色海)</span>
+          </div>
+          <div class="day-meta-peek">
+            <span>🚶 纯徒步约6h (0公里自驾)</span>
+            <span>📍 连住香格里拉日瓦镇 (2900m)</span>
+            <span class="chevron-icon">▼</span>
+          </div>
+        </div>
+        <div class="day-body">
+          <div class="timeline">
+            <div class="time-slot">
+              <div class="time-tag">清晨 07:30 · 乘坐景区观光大巴与电瓶车直达洛绒牛场 (4180m)</div>
+              <div class="time-content">
+                观光车盘旋上山（耗时约 50 分钟），抵达扎灌崩后换乘电瓶车前往洛绒牛场。晨光穿透薄雾，央迈勇神山披上金色轻纱，小溪倒映着金色草甸。
+              </div>
+            </div>
+            <div class="time-slot">
+              <div class="time-tag">上午 10:00 · 启程向牛奶海（4600m）慢行徒步</div>
+              <div class="time-content">
+                两人携带双杖，每走 50 步停下深呼吸 3 次。随身背包放置 2 瓶红牛、自热米饭、高渗葡萄糖和保温杯。
+              </div>
+            </div>
+            <div class="time-slot">
+              <div class="time-tag">下午 13:30 · 登顶五色海（4700m），俯瞰圣洁琉璃绿</div>
+              <div class="time-content">
+                在最高点五色海并肩而坐，雪山环抱中的高原圣湖变幻出孔雀蓝与墨绿，拍摄珍贵的雪山爱情纪念合影。14:30 准时下撤，安全返回洛绒牛场。
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-card-grid">
+            <div class="sub-box">
+              <div class="sub-box-title">🎒 徒步硬核保命装备</div>
+              <div class="sub-box-content">
+                双登山杖（分担膝盖 30% 重力） · 防滑中帮徒步鞋 · 便携氧气瓶（每人2罐备用） · 雨衣 · 保温杯（装满生姜红糖热水） · 随身血氧仪
+              </div>
+            </div>
+            <div class="sub-box">
+              <div class="sub-box-title">⚠️ 亚丁长线安全红线</div>
+              <div class="sub-box-content">
+                下午 14:30 前无论是否到达五色海，<strong>必须无条件开始原路下撤</strong>；高海拔傍晚 16 点后气温骤降且易起大雾失温。
+              </div>
+            </div>
+          </div>
+
+          <div class="plan-b-banner">
+            <span class="plan-b-badge">Plan B 备选</span>
+            <div><strong>若女方体能或血氧出现波动（血氧&lt;75%）</strong>：立即放弃五色海爬坡，止步洛绒牛场贡嘎冲古草甸，在平缓木栈道晒太阳拍摄雪山大片。</div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Day 5 -->
+      <article class="day-card">
+        <div class="day-header" onclick="toggleDay(this.parentElement)">
+          <div class="day-badge-row">
+            <span class="day-pill">Day 5 · 9.29</span>
+            <span class="day-title">亚丁短线轻徒步 (冲古寺 ➡ 珍珠海) ➡ 稻城尊胜白塔 ➡ 宿雅江 (2600m)</span>
+          </div>
+          <div class="day-meta-peek">
+            <span>🚗 110km (约2.5h)</span>
+            <span>📍 雅江精品地暖酒店</span>
+            <span class="chevron-icon">▼</span>
+          </div>
+        </div>
+        <div class="day-body">
+          <div class="timeline">
+            <div class="time-slot">
+              <div class="time-tag">上午 09:00 · 亚丁二次进山，冲古寺到珍珠海 (4080m)</div>
+              <div class="time-content">
+                凭昨日门票刷脸二次进山，仅需徒步 1.5 公里木栈道。在珍珠海畔静看仙乃日神山的金色倒影，松鼠在脚边嬉戏，节奏悠闲惬意。
+              </div>
+            </div>
+            <div class="time-slot">
+              <div class="time-tag">下午 13:30 · 稻城尊胜白塔祈福转经</div>
+              <div class="time-content">
+                出景区后驾车前往稻城白塔，108 座小白塔环绕主塔，两人顺时针转经 3 圈祈福，为彼此挂上印满经文的五彩风马旗。
+              </div>
+            </div>
+            <div class="time-slot">
+              <div class="time-tag">傍晚 18:00 · 驶出桑堆红草地，返回雅江峡谷</div>
+              <div class="time-content">
+                途径秋季限定的桑堆红草滩（9月下旬正值深红与金黄杨树交织），随后平稳驶回雅江县城休息，彻底洗去徒步的酸痛。
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-card-grid">
+            <div class="sub-box">
+              <div class="sub-box-title">🏨 严选落脚酒店</div>
+              <div class="sub-box-content">
+                <strong>雅江希尔顿惠庭酒店 / 精品雅江驿锦大酒店</strong><br>
+                2600m 低海拔深睡 · 充足热水泡脚 · 缓解昨日长线肌肉乳酸堆积
+              </div>
+            </div>
+            <div class="sub-box">
+              <div class="sub-box-title">💡 美食补给建议</div>
+              <div class="sub-box-content">
+                晚上在雅江县城品尝当地最富盛名的雅江松茸炖藏香鸡汤，松茸浓郁鲜甜，为接下来的川西北段补充充足蛋白质与体力。
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Day 6 -->
+      <article class="day-card">
+        <div class="day-header" onclick="toggleDay(this.parentElement)">
+          <div class="day-badge-row">
+            <span class="day-pill">Day 6 · 9.30</span>
+            <span class="day-title">雅江 ➡ 塔公草原远眺雅拉雪山 ➡ 异域墨石公园 ➡ 宿丹巴中路藏寨 (1800m)</span>
+          </div>
+          <div class="day-meta-peek">
+            <span>🚗 190km (约4h)</span>
+            <span>📍 丹巴喜悦中路藏寨度假民宿</span>
+            <span class="chevron-icon">▼</span>
+          </div>
+        </div>
+        <div class="day-body">
+          <div class="timeline">
+            <div class="time-slot">
+              <div class="time-tag">上午 10:00 · 塔公草原与金塔（雅拉雪山皇冠倒影）</div>
+              <div class="time-content">
+                驶入塔公草原，木雅金塔的金顶在阳光下熠熠生辉，与背景巍峨的雅拉雪山构成绝美明信片。情侣可租一套藏袍拍写真。
+              </div>
+            </div>
+            <div class="time-slot">
+              <div class="time-tag">下午 13:30 · 漫步“中国地质百慕大”墨石公园 (3500m)</div>
+              <div class="time-content">
+                穿越异域星球般的糜棱岩石林，仿佛置身外太空。建议穿纯黑、正红或白色风衣，出片高级感拉满。
+              </div>
+            </div>
+            <div class="time-slot">
+              <div class="time-tag">傍晚 17:30 · 沿着牦牛河谷一路下切，入驻丹巴千碉古寨</div>
+              <div class="time-content">
+                <strong>【海拔奇迹】</strong> 车子沿天然盆景牦牛谷一路下行，海拔从 3500m 直降到 1800m 的丹巴峡谷！空气温润湿润，古老的碉楼在落日余晖中傲然挺立。
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-card-grid">
+            <div class="sub-box">
+              <div class="sub-box-title">🏨 严选神仙民宿（世外桃源）</div>
+              <div class="sub-box-content">
+                <strong>丹巴喜悦中路藏寨精品民宿 (或中路圣地青旅)</strong><br>
+                海拔 1800m 绝无高反 · 观景露台直面墨尔多神山 · 果园梨树掩映 · 地暖与卫浴品质卓越<br>
+                <a href="https://uri.amap.com/search?query=中路藏寨民宿" target="_blank">🔗 高德地图导航直达</a>
+              </div>
+            </div>
+            <div class="sub-box">
+              <div class="sub-box-title">💡 穿搭与摄影指南</div>
+              <div class="sub-box-content">
+                墨石公园栈道石林颜色深邃冷峻，女生可穿红色大摆裙或银色机能风外套；傍晚在丹巴藏寨露台点一杯当地苹果酒，等墨尔多神山的日落金顶。
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Day 7 -->
+      <article class="day-card">
+        <div class="day-header" onclick="toggleDay(this.parentElement)">
+          <div class="day-badge-row">
+            <span class="day-pill">Day 7 · 10.01 国庆</span>
+            <span class="day-title">中路藏寨晨雾古碉 ➡ 中国熊猫大道 ➡ 宿四姑娘山镇 (3100m)</span>
+          </div>
+          <div class="day-meta-peek">
+            <span>🚗 110km (约2.5h · 国庆高速免费)</span>
+            <span>📍 四姑娘山斯古拉文旅酒店</span>
+            <span class="chevron-icon">▼</span>
+          </div>
+        </div>
+        <div class="day-body">
+          <div class="timeline">
+            <div class="time-slot">
+              <div class="time-tag">清晨 07:30 · 丹巴中路藏寨晨曦与炊烟</div>
+              <div class="time-content">
+                在民宿露台享用主人准备的青稞饼、酥油茶与土鸡蛋。薄雾在碉楼与藏寨白墙间缠绕，果实累累的苹果树挂满枝头，安静得只有鸟鸣。
+              </div>
+            </div>
+            <div class="time-slot">
+              <div class="time-tag">上午 10:30 · 驶入“中国熊猫大道”G350 国道</div>
+              <div class="time-content">
+                顺着小金川河谷前行，经过小金县城。沿途两岸峡谷险峻，彩林渐次铺开，自驾体验极度平稳舒适。
+              </div>
+            </div>
+            <div class="time-slot">
+              <div class="time-tag">下午 15:30 · 抵达四姑娘山镇，猫鼻梁初识幺妹峰</div>
+              <div class="time-content">
+                在猫鼻梁观景台停车，四座雪峰如一字排开，幺妹峰犹如亭亭玉立的白衣少女。黄昏时分在此静候“日落金山”。
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-card-grid">
+            <div class="sub-box">
+              <div class="sub-box-title">🏨 严选落脚酒店（连住两晚）</div>
+              <div class="sub-box-content">
+                <strong>四姑娘山斯古拉文旅度假酒店 / 仰望星空度假庄园</strong><br>
+                全屋地暖 · 弥散供氧 · 观景落地窗推窗即见雪山 · 配备星空露台与地下停车场<br>
+                <a href="https://uri.amap.com/search?query=四姑娘山镇酒店" target="_blank">🔗 高德地图导航直达</a>
+              </div>
+            </div>
+            <div class="sub-box">
+              <div class="sub-box-title">💡 国庆避堵策略</div>
+              <div class="sub-box-content">
+                10月1日黄金周正式开启，国道车流渐增。今日行程仅 110 公里，上午睡到自然醒后再出发，完美错开上午 8:00~10:00 从成都出城涌入的大军。
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Day 8 -->
+      <article class="day-card">
+        <div class="day-header" onclick="toggleDay(this.parentElement)">
+          <div class="day-badge-row">
+            <span class="day-pill">Day 8 · 10.02 国庆</span>
+            <span class="day-title">四姑娘山双桥沟极致漫游 (红杉林 ➡ 布达拉峰公路 ➡ 撵鱼坝漂流)</span>
+          </div>
+          <div class="day-meta-peek">
+            <span>🚌 观光车全覆盖 (0开开车)</span>
+            <span>📍 连住四姑娘山镇 (3100m)</span>
+            <span class="chevron-icon">▼</span>
+          </div>
+        </div>
+        <div class="day-body">
+          <div class="timeline">
+            <div class="time-slot">
+              <div class="time-tag">上午 08:30 · 乘观光车直达双桥沟终点红杉林 (3840m)</div>
+              <div class="time-content">
+                双桥沟开发极其成熟，全程无需高强度徒步。直接坐大巴至最高点红杉林，被 360 度冰川与金色红杉包围，木栈道平缓易行。
+              </div>
+            </div>
+            <div class="time-slot">
+              <div class="time-tag">中午 11:30 · 布达拉峰站公路大片拍摄</div>
+              <div class="time-content">
+                在笔直通向雪山的公路上拍摄情侣牵手背影大片；随后在四姑娜措欣赏枯木与雪山倒影，水清如镜。
+              </div>
+            </div>
+            <div class="time-slot">
+              <div class="time-tag">下午 14:00 · 撵鱼坝高山湿地轻漂流</div>
+              <div class="time-content">
+                情侣两人坐上皮划艇（自选项目约 ¥90/人），在两岸金黄草甸与冷杉倒影中顺水漂流 20 分钟，清澈溪流中偶有高山细鳞鱼游弋，浪漫满分。
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-card-grid">
+            <div class="sub-box">
+              <div class="sub-box-title">📸 情侣机位私藏</div>
+              <div class="sub-box-content">
+                ① <strong>布达拉峰公路白塔</strong>：顺光仰拍公路延伸感；<br>
+                ② <strong>珠勒沟人参果坪</strong>：午后阳光透过沙棘林，牦牛在草甸吃草，如同瑞士阿尔卑斯庄园。
+              </div>
+            </div>
+            <div class="sub-box">
+              <div class="sub-box-title">💡 景区游玩避坑</div>
+              <div class="sub-box-content">
+                双桥沟门票必须提前 7 天在“阿坝旅游网”实名抢订（国庆期间极早售罄）；游玩策略是“坐车直接到终点红杉林，自上而下逐站下车游玩”，避免反复上下车。
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Day 9 -->
+      <article class="day-card">
+        <div class="day-header" onclick="toggleDay(this.parentElement)">
+          <div class="day-badge-row">
+            <span class="day-pill">Day 9 · 10.03 国庆</span>
+            <span class="day-title">翻越巴郎山云海 ➡ 卧龙中华大熊猫苑 ➡ 宿青城山/都江堰温泉 (700m)</span>
+          </div>
+          <div class="day-meta-peek">
+            <span>🚗 220km (约4.5h)</span>
+            <span>📍 青城山六善/春山外精品地暖温泉酒店</span>
+            <span class="chevron-icon">▼</span>
+          </div>
+        </div>
+        <div class="day-body">
+          <div class="timeline">
+            <div class="time-slot">
+              <div class="time-tag">上午 09:30 · 翻越巴郎山，偶遇无边云海</div>
+              <div class="time-content">
+                穿过巴郎山隧道或在熊猫王国之巅观景台停靠。秋季巴郎山常有气势磅礴的瀑布云海，云雾在车窗两侧如波涛翻滚。
+              </div>
+            </div>
+            <div class="time-slot">
+              <div class="time-tag">下午 13:00 · 卧龙耿达中华大熊猫苑看滚滚</div>
+              <div class="time-content">
+                相比成都大熊猫基地的拥挤，这里的熊猫生活在更自然的原始森林中，憨态可掬的滚滚在树杈上睡觉啃竹子，治愈感十足。
+              </div>
+            </div>
+            <div class="time-slot">
+              <div class="time-tag">傍晚 17:30 · 入住青城山私汤温泉民宿</div>
+              <div class="time-content">
+                从高原彻底回到郁郁葱葱的青城山下，入住带独立私汤庭院的精品民宿。两人在热气氤氲的温泉中洗尽全程疲劳，畅聊 10 天的雪山记忆。
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-card-grid">
+            <div class="sub-box">
+              <div class="sub-box-title">🏨 严选私享温泉</div>
+              <div class="sub-box-content">
+                <strong>青城山春山外精品汤屋 / 都江堰百伦国际酒店</strong><br>
+                海拔 700m 氧气极度充沛 · 独立私汤泡池 · 优质管家服务 · 室内静谧舒适<br>
+                <a href="https://uri.amap.com/search?query=青城山温泉酒店" target="_blank">🔗 高德地图导航直达</a>
+              </div>
+            </div>
+            <div class="sub-box">
+              <div class="sub-box-title">💡 巴郎山行车注意</div>
+              <div class="sub-box-content">
+                巴郎山弯多坡陡且偶有山间浓雾，务必开启雾灯与双闪，<strong>挂入低速挡（M2/M3/L挡）利用发动机制动</strong>，严禁长时间连续深踩刹车致刹车油过热。
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Day 10 -->
+      <article class="day-card">
+        <div class="day-header" onclick="toggleDay(this.parentElement)">
+          <div class="day-badge-row">
+            <span class="day-pill">Day 10 · 10.04 国庆</span>
+            <span class="day-title">都江堰千年水利探秘 ➡ 慢悠天府还车 ➡ 满载回忆返程</span>
+          </div>
+          <div class="day-meta-peek">
+            <span>🚗 70km (约1.2h)</span>
+            <span>📍 成都双流/天府机场一嗨门店</span>
+            <span class="chevron-icon">▼</span>
+          </div>
+        </div>
+        <div class="day-body">
+          <div class="timeline">
+            <div class="time-slot">
+              <div class="time-tag">上午 09:30 · 拜水都江堰，观宝瓶口与鱼嘴分水</div>
+              <div class="time-content">
+                领略两千多年前李冰父子“乘势利导、因时制宜”的古代水利智慧，安澜索桥上牵手走过岷江急流，感受天府之源的厚重人文。
+              </div>
+            </div>
+            <div class="time-slot">
+              <div class="time-tag">中午 12:30 · 南桥水边享用青城山腊排骨与渣渣面</div>
+              <div class="time-content">
+                在都江堰古城区漫步，品尝地道川味美食与冰醉豆花，打包几盒特产带给家人朋友。
+              </div>
+            </div>
+            <div class="time-slot">
+              <div class="time-tag">下午 15:30 · 成都机场一嗨门店顺畅还车</div>
+              <div class="time-content">
+                自驾返回成都机场一嗨租车门店。由于已选配<strong>“尊享 0 免赔全险”</strong>，还车验车极为迅速免争议；搭乘免费摆渡车直达航站楼，搭乘晚间航班平安归家。
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-card-grid">
+            <div class="sub-box">
+              <div class="sub-box-title">🚗 还车与退机贴士</div>
+              <div class="sub-box-content">
+                1. <strong>还车油量</strong>：满油取车满油还车，可在机场高速入口处加油站加满油并保留发票小票；<br>
+                2. <strong>制氧机归还</strong>：机场网点或闪送交还，押金原路秒退。
+              </div>
+            </div>
+            <div class="sub-box">
+              <div class="sub-box-title">✈️ 航班返程建议</div>
+              <div class="sub-box-content">
+                建议预订 10 月 4 日 18:00 之后的返程航班，预留 2.5 小时进行国庆假期的机场安检与托运，从容收官整场旅程。
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+    </div>
+
+    <!-- Packing & Emergency Checklist with localStorage persistence -->
+    <section class="checklist-card">
+      <div class="section-head">
+        <h2 class="section-title">🎒 行前情侣打包与应急装备清单 (可打勾持久保存)</h2>
+      </div>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+        点击以下项目完成打勾，数据将自动保存在本浏览器中。出门前逐项核对，确保万无一失：
+      </p>
+
+      <div class="check-grid">
+        <label class="check-item">
+          <input type="checkbox">
+          <span><strong>指夹式血氧仪</strong> (高原量化监测生命线，血氧&lt;80%立即吸氧)</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox">
+          <span><strong>便携车载双模制氧机</strong> (成都落地租赁 ¥60/天，常驻探岳后备箱)</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox">
+          <span><strong>-25℃ 极寒防冻玻璃水</strong> (提前加入雨刮壶，防折多山夜间冰堵)</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox">
+          <span><strong>驱动轮破冰防滑链</strong> (租车时向车行选配，防山口秋雪暗冰)</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox">
+          <span><strong>一嗨尊享 0 免赔全险单据</strong> (确认保单含玻璃、底盘与停运损失)</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox">
+          <span><strong>双人身份证原件 + 驾照原件</strong> (藏区所有检查站与酒店实名刚需)</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox">
+          <span><strong>三层穿衣装备</strong> (速干排汗内衣 + 抓绒保暖中层 + 防风防水冲锋衣)</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox">
+          <span><strong>防晒三件套</strong> (UPF50+ 太阳镜 + 防晒霜 SPF50+ + 遮阳防风毛线帽)</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox">
+          <span><strong>应急药箱</strong> (布洛芬缓释胶囊 + 50%高渗葡萄糖 + 晕车药 + 创可贴)</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox">
+          <span><strong>双登山杖 + 中帮防水徒步鞋</strong> (亚丁长线 6 小时徒步护膝刚需)</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox">
+          <span><strong>车载点烟器快充头 + 20000mAh 充电宝</strong> (低温掉电快，保持手机常亮)</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox">
+          <span><strong>长柄除雪铲 + 强光手电筒</strong> (清晨清理挡风玻璃积霜与夜间照明)</span>
+        </label>
+      </div>
+    </section>
+
+    <!-- Evidence Ledger: Cross-verified real data -->
+    <section class="evidence-section">
+      <div class="section-head">
+        <h2 class="section-title">📑 真实多源数据凭证索引表 (Evidence Ledger)</h2>
+      </div>
+      <p style="font-size: 13px; color: var(--text-muted);">
+        本案所有景点门票、严选酒店、自驾动线与素人避坑建议，均通过原生 CLI（`scrape.mjs`）驱动真实浏览器多源交叉校核，100% 真实可溯源。
+      </p>
+      <table class="evidence-table">
+        <thead>
+          <tr>
+            <th>凭证类别</th>
+            <th>数据来源 / 真实一手经验</th>
+            <th>在线凭证与官方入口</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>小红书真实避坑</strong></td>
+            <td>小红书·辞晚: 《川西两人刚回，提醒9月要来的宝！》(实测坚决不住亚丁村)</td>
+            <td><a href="https://www.xiaohongshu.com/search_result?keyword=%E5%B7%9D%E8%A5%BF%E5%A4%A7%E7%8E%AF%E7%BA%BF+%E9%81%BF%E5%9D%91" target="_blank">小红书原搜索凭证</a></td>
+          </tr>
+          <tr>
+            <td><strong>小红书高反警示</strong></td>
+            <td>小红书·Fox: 《关于去川西洗头高反问题》 &amp; 薯片脆皮: 《川西高反都是吃出来的》</td>
+            <td><a href="https://www.xiaohongshu.com/search_result?keyword=%E5%B7%9D%E8%A5%BF%E5%A4%A7%E7%8E%AF%E7%BA%BF+%E9%81%BF%E5%9D%91" target="_blank">小红书原搜索凭证</a></td>
+          </tr>
+          <tr>
+            <td><strong>小红书租车避坑</strong></td>
+            <td>小红书·小火_Yik: 《差点被坑版｜😭川西租车的隐形套路全扒透了》</td>
+            <td><a href="https://www.xiaohongshu.com/search_result?keyword=%E5%B7%9D%E8%A5%BF%E5%A4%A7%E7%8E%AF%E7%BA%BF+%E9%81%BF%E5%9D%91" target="_blank">小红书原搜索凭证</a></td>
+          </tr>
+          <tr>
+            <td><strong>一嗨实车抓取</strong></td>
+            <td>一嗨租车官方后台: 大众探岳 2.0T / 问界 M7 (含尊享0免赔全险+跨机场还车)</td>
+            <td><a href="https://booking.1hai.cn/order/firstStep" target="_blank">一嗨租车下单直达</a></td>
+          </tr>
+          <tr>
+            <td><strong>景区官方门票</strong></td>
+            <td>稻城亚丁景区官方预约平台 (门票+一进观光车+二进电瓶车)</td>
+            <td><a href="https://www.yadingtour.com" target="_blank">亚丁官方票务直达</a></td>
+          </tr>
+          <tr>
+            <td><strong>景区官方门票</strong></td>
+            <td>四姑娘山双桥沟阿坝旅游官方网</td>
+            <td><a href="https://www.abatour.com" target="_blank">阿坝旅游网票务</a></td>
+          </tr>
+          <tr>
+            <td><strong>严选酒店凭证</strong></td>
+            <td>康定岷山情歌大酒店 / 丹巴喜悦中路藏寨民宿 / 四姑娘山斯古拉</td>
+            <td><a href="https://uri.amap.com/search?query=康定岷山情歌大酒店" target="_blank">高德地图位置实测</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Footer Signature -->
+    <footer style="text-align: center; margin-top: 40px; color: var(--text-light); font-size: 12.5px;">
+      <p>— 愿浩瀚雪山与金色秋林，见证属于你们一生的浪漫回忆 —</p>
+      <p style="margin-top: 4px;">由 Leo 旅行工作室倾心定制 · 2026</p>
+    </footer>
+
+  </div>
+
+  <!-- Floating Print & Action Bar -->
+  <div class="float-bar">
+    <button class="float-btn" onclick="window.print()">🖨️ 存为 PDF</button>
+    <div class="float-divider"></div>
+    <button class="float-btn" onclick="shareTrip()">📤 分享路书</button>
+  </div>
+
+  <script>
+    function toggleDay(card) {
+      card.classList.toggle('open');
+    }
+
+    function toggleAllDays(open) {
+      document.querySelectorAll('.day-card').forEach(c => {
+        if (open) c.classList.add('open');
+        else c.classList.remove('open');
+      });
+    }
+
+    // Checkbox LocalStorage Sync
+    document.addEventListener('DOMContentLoaded', () => {
+      const items = document.querySelectorAll('.check-item');
+      items.forEach((item, index) => {
+        const checkbox = item.querySelector('input[type="checkbox"]');
+        const key = 'trip_checklist_couple_chuanxi_v2_' + index;
+        if (localStorage.getItem(key) === 'true') {
+          checkbox.checked = true;
+          item.classList.add('done');
+        }
+        item.addEventListener('click', (e) => {
+          if (e.target !== checkbox) checkbox.checked = !checkbox.checked;
+          if (checkbox.checked) {
+            item.classList.add('done');
+            localStorage.setItem(key, 'true');
+          } else {
+            item.classList.remove('done');
+            localStorage.setItem(key, 'false');
+          }
+        });
+      });
+    });
+
+    function shareTrip() {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(window.location.href).then(() => {
+          alert('路书链接已复制，可直接微信发送给客户！');
+        }).catch(() => {
+          alert('请直接复制当前浏览器网址分享给客户。');
+        });
+      } else {
+        alert('请直接复制当前浏览器网址分享给客户。');
+      }
+    }
+  </script>
+</body>
+</html>

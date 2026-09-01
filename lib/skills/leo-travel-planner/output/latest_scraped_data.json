@@ -1,0 +1,122 @@
+{
+  "scrapedAt": "2026-09-01T16:12:30.724Z",
+  "params": {
+    "platform": "all",
+    "keyword": "川西大环线 避坑",
+    "city": "成都",
+    "type": "SUV",
+    "days": 10,
+    "save": true
+  },
+  "results": {
+    "xiaohongshu": {
+      "keyword": "川西大环线 避坑",
+      "scrapedAt": "2026-09-01T16:10:31.703Z",
+      "total": 6,
+      "notes": [
+        {
+          "title": "首页 点点 ai RED 直播 发布 通知 消息 我 沪ICP备13030189号 | 营业执照 | 2026沪公网安备31010102002533号 | 增值电信业务经营许可证：沪B2-20150021 | 医疗器械网络交易服务第三方平台备案：(沪)网械平台备字[2019]第00006号 | 互联网药品信息服务资格证书：(沪)-经营性-2023-0144 | 违法不良信息举报电话：4006676810 | 上海市互联网举报中心 | 网上有害信息举报专区 | 自营经营者信息 | 网络文化经营许可证：沪网文[2021]1545-113号 | 个性化推荐算法 网信算备310101216601302230019号 © 2014-2026 行吟信息科技（上海）有限公司 地址：上海市黄浦区马当路388号C座 电话：9501-3888 更多 关于我们 沪ICP备13030189号 | 营业执照 | 2026沪公网安备31010102002533号 | 增值电信业务经营许可证：沪B2-20150021 | 医疗器械网络交易服务第三方平台备案：(沪)网械平台备字[2019]第00006号 | 互联网药品信息服务资格证书：(沪)-经营性-2023-0144 | 违法不良信息举报电话：4006676810 | 上海市互联网举报中心 | 网上有害信息举报专区 | 自营经营者信息 | 网络文化经营许可证：沪网文[2021]1545-113号 | 个性化推荐算法 网信算备310101216601302230019号 © 2014-2026 行吟信息科技（上海）有限公司 地址：上海市黄浦区马当路388号C座 电话：9501-3888 全部 图文 视频 用户 筛选 川西自驾踩坑实录｜藏区保命干货全汇总",
+          "author": "十一的长镜头",
+          "date": "07-19",
+          "likes": 144,
+          "sourceUrl": "https://www.xiaohongshu.com/search_result?keyword=%E5%B7%9D%E8%A5%BF%E5%A4%A7%E7%8E%AF%E7%BA%BF%20%E9%81%BF%E5%9D%91&type=51",
+          "platform": "小红书"
+        },
+        {
+          "title": "川西高反都是吃出来的（血泪教训）",
+          "author": "薯片脆皮",
+          "date": "4天前",
+          "likes": 12,
+          "sourceUrl": "https://www.xiaohongshu.com/search_result?keyword=%E5%B7%9D%E8%A5%BF%E5%A4%A7%E7%8E%AF%E7%BA%BF%20%E9%81%BF%E5%9D%91&type=51",
+          "platform": "小红书"
+        },
+        {
+          "title": "总结出发川西环线需要提前注意的几个点⚠️",
+          "author": "跟你去远游",
+          "date": "07-16",
+          "likes": 30,
+          "sourceUrl": "https://www.xiaohongshu.com/search_result?keyword=%E5%B7%9D%E8%A5%BF%E5%A4%A7%E7%8E%AF%E7%BA%BF%20%E9%81%BF%E5%9D%91&type=51",
+          "platform": "小红书"
+        },
+        {
+          "title": "大家都在搜 川西10天大环线攻略 川西旅游踩大雷 川西大环线路况 川西大环线8天7晚 川西大环线9天完整版｜全程实测+避坑攻略",
+          "author": "小明同学📸",
+          "date": "08-21",
+          "likes": 4,
+          "sourceUrl": "https://www.xiaohongshu.com/search_result?keyword=%E5%B7%9D%E8%A5%BF%E5%A4%A7%E7%8E%AF%E7%BA%BF%20%E9%81%BF%E5%9D%91&type=51",
+          "platform": "小红书"
+        },
+        {
+          "title": "月川西听劝｜避雷清单+两条省心秋线",
+          "author": "领队Leo-（川西📷ing）",
+          "date": "1天前",
+          "likes": 21,
+          "sourceUrl": "https://www.xiaohongshu.com/search_result?keyword=%E5%B7%9D%E8%A5%BF%E5%A4%A7%E7%8E%AF%E7%BA%BF%20%E9%81%BF%E5%9D%91&type=51",
+          "platform": "小红书"
+        },
+        {
+          "title": "川西两人刚回，提醒9月要来的宝！",
+          "author": "辞晚",
+          "date": "4天前",
+          "likes": 93,
+          "sourceUrl": "https://www.xiaohongshu.com/search_result?keyword=%E5%B7%9D%E8%A5%BF%E5%A4%A7%E7%8E%AF%E7%BA%BF%20%E9%81%BF%E5%9D%91&type=51",
+          "platform": "小红书"
+        }
+      ],
+      "fromCache": true,
+      "cacheAgeHours": 0
+    },
+    "ehiRental": {
+      "city": "成都",
+      "filterType": "SUV",
+      "rentalDays": 10,
+      "loggedInUser": "张林",
+      "sourceUrl": "https://booking.1hai.cn/order/firstStep",
+      "insurancePlan": {
+        "mandatoryBasicInsurancePerDay": 50,
+        "zeroDeductibleFullInsurancePerDay": 70,
+        "coverage": [
+          "前挡风玻璃碎裂全包",
+          "轮胎爆胎全包",
+          "底盘刮蹭全包",
+          "百万三者险",
+          "免收停运损失费"
+        ]
+      },
+      "dropOffPolicy": {
+        "sameCityAirportToAirportFee": 50,
+        "crossCityDropOffFee": 1200
+      },
+      "vehicles": [
+        {
+          "model": "大众探岳 380TSI",
+          "body": "自动",
+          "carType": "SUV",
+          "seats": "5座",
+          "isRecommendedForPlateau": true
+        },
+        {
+          "model": "大众途观L 330TSI",
+          "body": "自动",
+          "carType": "SUV",
+          "seats": "5座",
+          "isRecommendedForPlateau": true
+        },
+        {
+          "model": "问界 M7 增程版",
+          "body": "自动",
+          "carType": "SUV",
+          "seats": "5座",
+          "isRecommendedForPlateau": true
+        },
+        {
+          "model": "别克 GL8 陆尊",
+          "body": "自动",
+          "carType": "MPV",
+          "seats": "7座",
+          "isRecommendedForPlateau": true
+        }
+      ]
+    }
+  }
+}
