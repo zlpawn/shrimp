@@ -799,7 +799,7 @@
           "is_default": false
         }
       ],
-      "display_name": "Hindsight",
+      "display_name": "Hindsight 代理",
       "protocol": "openai"
     }
   },

@@ -175,7 +175,7 @@ body {
     text-decoration: none;
     font-size: 13px;
     font-weight: 500;
-    line-height: 1;
+    line-height: 1.35;
     transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
     cursor: pointer;
 }
@@ -2564,9 +2564,13 @@ input:focus, select:focus {
     background: var(--surface-hover);
 }
 .nav-item-custom .nav-item-name {
+    flex: 1;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    line-height: 1.35;
+    padding-bottom: 2px;
 }
 .nav-item-custom .nav-item-badge {
     font-size: 10px;
