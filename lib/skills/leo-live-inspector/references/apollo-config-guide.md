@@ -4,16 +4,28 @@
 
 ---
 
-## 🌐 1. 底层 HTTP 接口协议规范
+## 🌐 1. 底层 HTTP 接口协议与多环境地址矩阵
 
-Apollo 客户端在拉取配置时，本质上是通过纯 HTTP REST 接口与 **Apollo ConfigService** 通信。AI 可直接调用该接口免鉴权读取微服务的全量实时配置，响应耗时通常 < 100ms。
+Apollo 客户端在拉取配置时，本质上是通过纯 HTTP REST 接口与目标环境的 **Apollo ConfigService** 通信。AI 可直接调用该接口免鉴权读取微服务的全量实时配置，响应耗时通常 < 100ms。
+
+### 🏢 全环境官方 ConfigService 服务端地址矩阵
+
+| 环境分类 | 环境标识 (`--env`) | Apollo ConfigService 根地址 | 说明 |
+| :--- | :--- | :--- | :--- |
+| 🟡 **测试环境 (TEST)** | `test` / `qa` | `http://test.config.apollo.ke.com` | 测试环境微服务实时配置中心 |
+| 🟠 **预发环境 (PREVIEW)** | `preview` / `prev` / `pre` | `http://prev.config.apollo.ke.com` | 预发/仿真环境微服务配置中心 |
+| 🔴 **生产环境 (PROD)** | `prod` (默认) | `http://prod.config.apollo.ke.com`<br>*(备用: `http://apollo.configservice.life.ke.com`)* | 线上生产正式配置中心 |
+| 🟢 **开发环境 (DEV)** | `dev` | `http://dev.config.apollo.ke.com` | 本地与开发联调配置中心 |
+
+---
 
 ### 核心接口 1：JSON 配置字典接口（最推荐 ⭐⭐⭐⭐⭐）
 ```http
-GET http://apollo.configservice.life.ke.com/configfiles/json/{appId}/{cluster}/{namespace}
+GET {apolloServer}/configfiles/json/{appId}/{cluster}/{namespace}
 ```
 
 * **URL 参数说明**：
+  * `{apolloServer}`: 根据目标环境选择对应的 ConfigService 地址（如测试环境为 `http://test.config.apollo.ke.com`）；
   * `{appId}`: 微服务的唯一应用 ID（如 `zulin-iot-platform`, `utopia-scs-saas`）；
   * `{cluster}`: 集群名称，默认传入 `default`；
   * `{namespace}`: 命名空间，默认多为 `application` 或 `application.properties`，若有自定义命名空间可直接传入。
@@ -30,7 +42,7 @@ GET http://apollo.configservice.life.ke.com/configfiles/json/{appId}/{cluster}/{
 
 ### 核心接口 2：Apollo 元数据完整接口
 ```http
-GET http://apollo.configservice.life.ke.com/configs/{appId}/{cluster}/{namespace}
+GET {apolloServer}/configs/{appId}/{cluster}/{namespace}
 ```
 * **响应格式**：包含发布 releaseKey、集群名与配置字典：
   ```json

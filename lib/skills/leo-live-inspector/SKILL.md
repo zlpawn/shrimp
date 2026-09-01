@@ -31,7 +31,9 @@ description: 线上与测试环境全场景数据探查、日志检索、TraceId
 | *“根据 TraceId 361922-10... 抓下调用链路”* | `node scripts/fast_query.js -a <app> --traceId "361922-10..."` | **必须输出 Mermaid 时序交互图** 与关键调用耗时 |
 | *“查下今天 14:00~14:30 之间的门锁操作”* | `node scripts/fast_query.js -a <app> --from "2026-08-31 14:00:00" --to "2026-08-31 14:30:00" -q "门锁"` | 该时间段内的事件时序分析 |
 | *“抓取 /api/sync/lockDetail 接口的真实响应数据”* | `node scripts/fast_query.js -a <app> --uri "/api/sync/lockDetail" --bltag request_out --slim -n 5` | 提取并格式化脱敏后的出参 JSON |
-| **“查下 iot-platform 在 Apollo 上的配置”** | `node scripts/apollo_query.js iot-platform` | 微服务全量配置项概览（自动扫描并去重） |
+| **“查下 iot-platform 在 Apollo 上的配置”** | `node scripts/apollo_query.js iot-platform` | 微服务全量配置项概览（默认线上环境，自动去重） |
+| **“查下【测试环境】saas 的 Apollo 配置或开关”** | `node scripts/apollo_query.js saas -e test` | 测试环境 (test.config.apollo.ke.com) 实时配置 |
+| **“查下【预发环境】saas 的超时配置 timeout”** | `node scripts/apollo_query.js saas -e preview timeout` | 预发环境 (prev.config.apollo.ke.com) 超时参数明细 |
 | **“看下 iot-platform 上的 lockAuth 开关或白名单”** | `node scripts/apollo_query.js iot-platform lockAuth` | 匹配到的业务开关、白名单及解析后的格式化 JSON |
 | **“排查 utopia-scs-saas 的超时配置 / timeout”** | `node scripts/apollo_query.js utopia-scs-saas timeout` | Feign/Ribbon/Redis 超时时间列表 |
 | **“查下 Apollo application.properties 里的 weitang 配置”** | `node scripts/apollo_query.js iot-platform application.properties weitang` | 指定命名空间下的精准配置项 |
@@ -82,17 +84,18 @@ AI 后台执行 `node scripts/fast_query.js [flags]`：
 ---
 
 ## ⚙️ 2. Apollo 配置探查内部 CLI 参数速查
-AI 后台执行 `node scripts/apollo_query.js <appId> [namespace|keyKeyword] [keyKeyword] [options]`：
+AI 后台执行 `node scripts/apollo_query.js <appId|alias> [namespace|keyKeyword] [keyKeyword] [options]`：
 
-| 参数/选项 | 默认值 | 说明 |
-| :--- | :--- | :--- |
-| `<appId>` | 必填 | 目标微服务唯一 ID (如 `zulin-iot-platform`) |
-| `[namespace\|keyword]` | 可选 | 命名空间（若含 `.` 或等于 `application`）或 key 检索词 |
-| `[keyKeyword]` | 可选 | 当第 2 个参数为命名空间时，此参数为 key 关键词 |
-| `--exact` | `false` | 精确匹配 key（默认采用不区分大小写的模糊包含） |
-| `--cluster` | `default` | 集群名称 |
-| `--server` | `http://apollo.configservice.life.ke.com` | Apollo ConfigService 服务端地址 |
-| `--json` | `false` | 输出纯 JSON 格式 |
+| 参数/选项 | 简写 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `<appId\|alias>` | - | 必填 | 目标微服务唯一 ID 或口语别名 (如 `saas`, `platform`, `iot`) |
+| `[namespace\|keyword]` | - | 可选 | 命名空间（若含 `.` 或等于 `application`）或 key 检索词 |
+| `[keyKeyword]` | - | 可选 | 当第 2 个参数为命名空间时，此参数为 key 关键词 |
+| `--env` | `-e` | `prod` | **目标环境**: `test` (测试), `preview` (预发), `prod` (生产), `dev` (开发) |
+| `--exact` | - | `false` | 精确匹配 key（默认采用不区分大小写的模糊包含） |
+| `--cluster` | - | `default` | 集群名称 |
+| `--server` | - | 动态匹配 | 显式覆盖 Apollo ConfigService 服务端地址 |
+| `--json` | - | `false` | 输出纯 JSON 格式 |
 
 ---
 
