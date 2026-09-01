@@ -773,6 +773,34 @@
       ],
       "protocol": "openai",
       "display_name": "WorkBuddy 代理"
+    },
+    "hindsight": {
+      "endpoints": [
+        {
+          "id": "ep_6223a6e5-2aff-419d-a788-496f20b35689",
+          "name": "智谱",
+          "type": "openai-chat",
+          "base_url": "https://open.bigmodel.cn/api/coding/paas/v4",
+          "auth": "bearer",
+          "models": [],
+          "model_mapping": {
+            "glm-5.3-zp": "GLM-5.3",
+            "glm-5.2-zp": "GLM-5.2"
+          },
+          "capabilities": {
+            "input_modalities": [
+              "text",
+              "image"
+            ],
+            "reasoning": true,
+            "tools": true,
+            "sanitize_dangling_tool_calls": true
+          },
+          "is_default": false
+        }
+      ],
+      "display_name": "Hindsight",
+      "protocol": "openai"
     }
   },
   "tools": {

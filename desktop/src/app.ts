@@ -1150,7 +1150,7 @@ window.submitCreateClient = async function() {
         }
         await loadConfig();
         window.closeClientCreateModal();
-        switchTab('custom-clients');
+        switchTab(client);
         const finalDisplayName = displayName || client;
         showToast(`已创建代理节点「${finalDisplayName}」`, 'success');
     } catch (e) {
@@ -1212,11 +1212,17 @@ window.removeCustomClient = async function(client) {
             showToast(data.error || '删除代理节点失败', 'error');
             return;
         }
-        if (activeClient === client) {
-            activeClient = 'custom-clients';
-        }
         await loadConfig();
-        render();
+        const remaining = customClientNames();
+        if (activeClient === client) {
+            if (remaining.length) {
+                switchTab(remaining[0]);
+            } else {
+                switchTab('code');
+            }
+        } else {
+            render();
+        }
         showToast(`已删除代理节点「${clientDisplayName(client)} (${client})」`, 'success');
     } catch (e) {
         showToast('删除代理节点失败：网络错误', 'error');
@@ -1236,6 +1242,8 @@ function renderCustomClientNav() {
             <span class="nav-item-badge">自定义</span>
         </a>
     `).join('');
+    const activeNav = container.querySelector(`.nav-item[href="#${activeClient}"]`);
+    if (activeNav) activeNav.classList.add('active');
 }
 
 // Render the body of the custom-clients section: each custom group uses the
@@ -1257,98 +1265,106 @@ function renderCustomClientSections() {
         return;
     }
 
-    container.innerHTML = names.map(client => {
-        const eps = config.clients[client].endpoints || [];
-        const protocol = config.clients[client].protocol || 'anthropic';
-        const detailForThis = inDetail && selectedEndpoint.client === client;
-        const rawName = clientDisplayName(client);
-        const headerTitle = rawName.endsWith('代理') ? rawName : `${rawName} 代理`;
-        const header = `
-            <div class="section-header custom-client-section-header" id="custom-client-block-${escapeHtml(client)}">
-                <div>
-                    <h2>${escapeHtml(headerTitle)}</h2>
-                    <p>接入协议：${escapeHtml(protocolLabel(protocol))} · 路由标识 <code>/${escapeHtml(client)}/</code></p>
+    let targetClient = inDetail ? selectedEndpoint.client : activeClient;
+    if (!names.includes(targetClient)) {
+        targetClient = names[0];
+        activeClient = targetClient;
+        history.replaceState(null, '', '#' + targetClient);
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        document.querySelector(`.nav-item[href="#${targetClient}"]`)?.classList.add('active');
+    }
+
+    const client = targetClient;
+    const eps = config.clients[client]?.endpoints || [];
+    const protocol = config.clients[client]?.protocol || 'anthropic';
+    const detailForThis = inDetail && selectedEndpoint.client === client;
+    const rawName = clientDisplayName(client);
+    const headerTitle = rawName.endsWith('代理') ? rawName : `${rawName} 代理`;
+    const header = `
+        <div class="section-header custom-client-section-header" id="custom-client-block-${escapeHtml(client)}">
+            <div>
+                <h2>${escapeHtml(headerTitle)}</h2>
+                <p>接入协议：${escapeHtml(protocolLabel(protocol))} · 路由标识 <code>/${escapeHtml(client)}/</code></p>
+            </div>
+            <div class="section-header-actions">
+                <select class="custom-client-protocol-select" title="切换接入协议" onchange="setCustomClientProtocol('${escapeHtml(client)}', this.value)">
+                    <option value="anthropic" ${protocol !== 'openai' ? 'selected' : ''}>Anthropic</option>
+                    <option value="openai" ${protocol === 'openai' ? 'selected' : ''}>OpenAI 兼容</option>
+                </select>
+                <button
+                    type="button"
+                    class="btn copy-node-trigger"
+                    style="${detailForThis ? 'display:none' : ''}"
+                    onclick="openCopyNodeModalForClient('${escapeHtml(client)}')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    复制节点
+                </button>
+                <div class="add-node-dropdown" id="add-node-dropdown-${escapeHtml(client)}" style="${detailForThis ? 'display:none' : ''}">
+                    <button type="button" class="btn add-node-trigger" aria-expanded="false" aria-haspopup="menu" onclick="toggleAddNodeMenu('${escapeHtml(client)}', event)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        添加节点
+                        <svg class="add-node-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                    <div class="add-node-popover" role="menu" data-client="${escapeHtml(client)}"></div>
                 </div>
-                <div class="section-header-actions">
-                    <select class="custom-client-protocol-select" title="切换接入协议" onchange="setCustomClientProtocol('${escapeHtml(client)}', this.value)">
-                        <option value="anthropic" ${protocol !== 'openai' ? 'selected' : ''}>Anthropic</option>
-                        <option value="openai" ${protocol === 'openai' ? 'selected' : ''}>OpenAI 兼容</option>
-                    </select>
-                    <button
-                        type="button"
-                        class="btn copy-node-trigger"
-                        style="${detailForThis ? 'display:none' : ''}"
-                        onclick="openCopyNodeModalForClient('${escapeHtml(client)}')">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                        复制节点
-                    </button>
-                    <div class="add-node-dropdown" id="add-node-dropdown-${escapeHtml(client)}" style="${detailForThis ? 'display:none' : ''}">
-                        <button type="button" class="btn add-node-trigger" aria-expanded="false" aria-haspopup="menu" onclick="toggleAddNodeMenu('${escapeHtml(client)}', event)">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                            添加节点
-                            <svg class="add-node-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                        </button>
-                        <div class="add-node-popover" role="menu" data-client="${escapeHtml(client)}"></div>
-                    </div>
-                    <button class="btn btn-sm" title="重命名此代理" onclick="renameCustomClient('${escapeHtml(client)}')" aria-label="重命名此代理">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                        重命名
-                    </button>
-                    <button class="btn btn-sm btn-danger" title="删除此代理节点" onclick="removeCustomClient('${escapeHtml(client)}')" aria-label="删除此代理节点">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                        删除代理节点
-                    </button>
+                <button class="btn btn-sm" title="重命名此代理" onclick="renameCustomClient('${escapeHtml(client)}')" aria-label="重命名此代理">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    重命名
+                </button>
+                <button class="btn btn-sm btn-danger" title="删除此代理节点" onclick="removeCustomClient('${escapeHtml(client)}')" aria-label="删除此代理节点">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    删除代理节点
+                </button>
+            </div>
+        </div>
+    `;
+    // Connection guide mirrors the built-in agents: show the base_url with
+    // a copy button. Only render it in list view (hidden in detail mode).
+    // Show a separate embedding base_url when the group has an embedding node.
+    const showGuide = !detailForThis;
+    const hasEmbedding = eps.some(ep => ep.purpose === 'embedding');
+    const copyIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+    const copyBtn = `<button type="button" class="code-snippet-copy" title="复制" onclick="copyCodeSnippet(this)" aria-label="复制">${copyIcon}</button>`;
+    const preAttr = 'style="margin: 0; color: inherit; font-family: inherit; font-size: inherit; background: transparent; padding: 0; overflow-x: auto;"';
+    const chatSnippet = `
+        <div class="code-snippet">
+            ${copyBtn}
+            <pre ${preAttr}>大语言模型 base_url：http://<span class="cfg-host">127.0.0.1</span>:<span class="cfg-port">8787</span>/${escapeHtml(client)}/</pre>
+        </div>`;
+    const embeddingSnippet = hasEmbedding ? `
+        <div class="code-snippet">
+            ${copyBtn}
+            <pre ${preAttr}>向量模型 base_url：http://<span class="cfg-host">127.0.0.1</span>:<span class="cfg-port">8787</span>/${escapeHtml(client)}/emb/embeddings</pre>
+        </div>` : '';
+    const guide = showGuide ? `
+        <div class="usage-guide">
+            <h3>🚀 如何连接此网关？</h3>
+            <p>${escapeHtml(clientDisplayName(client))} 走 ${escapeHtml(protocolLabel(protocol))} 协议。把下面的地址填入客户端作为 API 入口：</p>
+            <div style="display:flex; flex-direction:column; gap:8px; margin-top: 10px;">
+                ${chatSnippet}
+                ${embeddingSnippet}
+            </div>
+            <p style="font-size: 12px; margin-top: 8px; margin-bottom: 0; color: var(--text-secondary);">保存节点配置后即时生效。客户端若已连接，重启或重载后可见。${hasEmbedding ? '' : '尚未配置向量节点，向量模型路径暂不展示。'}</p>
+        </div>
+    ` : '';
+    let body;
+    const gridId = `${client}-endpoints`;
+    if (detailForThis) {
+        const ep = eps[selectedEndpoint.index];
+        body = `<div id="${gridId}" class="node-groups">${ep ? createEndpointDetailHTML(client, selectedEndpoint.index, ep) : ''}</div>`;
+    } else if (!eps.length) {
+        body = guide + `
+            <div id="${gridId}" class="node-groups">
+                <div class="empty-state">
+                    <p>${escapeHtml(clientDisplayName(client))} 尚未配置任何节点。</p>
+                    <button class="btn" onclick="addEndpoint('${escapeHtml(client)}')">创建第一个节点</button>
                 </div>
             </div>
         `;
-        // Connection guide mirrors the built-in agents: show the base_url with
-        // a copy button. Only render it in list view (hidden in detail mode).
-        // Show a separate embedding base_url when the group has an embedding node.
-        const showGuide = !detailForThis;
-        const hasEmbedding = eps.some(ep => ep.purpose === 'embedding');
-        const copyIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
-        const copyBtn = `<button type="button" class="code-snippet-copy" title="复制" onclick="copyCodeSnippet(this)" aria-label="复制">${copyIcon}</button>`;
-        const preAttr = 'style="margin: 0; color: inherit; font-family: inherit; font-size: inherit; background: transparent; padding: 0; overflow-x: auto;"';
-        const chatSnippet = `
-            <div class="code-snippet">
-                ${copyBtn}
-                <pre ${preAttr}>大语言模型 base_url：http://<span class="cfg-host">127.0.0.1</span>:<span class="cfg-port">8787</span>/${escapeHtml(client)}/</pre>
-            </div>`;
-        const embeddingSnippet = hasEmbedding ? `
-            <div class="code-snippet">
-                ${copyBtn}
-                <pre ${preAttr}>向量模型 base_url：http://<span class="cfg-host">127.0.0.1</span>:<span class="cfg-port">8787</span>/${escapeHtml(client)}/emb/embeddings</pre>
-            </div>` : '';
-        const guide = showGuide ? `
-            <div class="usage-guide">
-                <h3>🚀 如何连接此网关？</h3>
-                <p>${escapeHtml(clientDisplayName(client))} 走 ${escapeHtml(protocolLabel(protocol))} 协议。把下面的地址填入客户端作为 API 入口：</p>
-                <div style="display:flex; flex-direction:column; gap:8px; margin-top: 10px;">
-                    ${chatSnippet}
-                    ${embeddingSnippet}
-                </div>
-                <p style="font-size: 12px; margin-top: 8px; margin-bottom: 0; color: var(--text-secondary);">保存节点配置后即时生效。客户端若已连接，重启或重载后可见。${hasEmbedding ? '' : '尚未配置向量节点，向量模型路径暂不展示。'}</p>
-            </div>
-        ` : '';
-        let body;
-        const gridId = `${client}-endpoints`;
-        if (detailForThis) {
-            const ep = eps[selectedEndpoint.index];
-            body = `<div id="${gridId}" class="node-groups">${ep ? createEndpointDetailHTML(client, selectedEndpoint.index, ep) : ''}</div>`;
-        } else if (!eps.length) {
-            body = guide + `
-                <div id="${gridId}" class="node-groups">
-                    <div class="empty-state">
-                        <p>${escapeHtml(clientDisplayName(client))} 尚未配置任何节点。</p>
-                        <button class="btn" onclick="addEndpoint('${escapeHtml(client)}')">创建第一个节点</button>
-                    </div>
-                </div>
-            `;
-        } else {
-            body = guide + `<div id="${gridId}" class="node-groups">${createEndpointGroupsHTML(client, eps)}</div>`;
-        }
-        return header + body;
-    }).join('');
+    } else {
+        body = guide + `<div id="${gridId}" class="node-groups">${createEndpointGroupsHTML(client, eps)}</div>`;
+    }
+    container.innerHTML = header + body;
 
     // Populate add-node popovers for the freshly rendered custom blocks.
     renderAddNodeMenus();
@@ -1977,7 +1993,12 @@ async function init() {
         console.warn('加载初始配置失败，使用默认配置。');
     }
     await loadSyncStatus();
-    render();
+    const initialHash = window.location.hash.replace('#', '');
+    if (initialHash && isCustomClient(initialHash)) {
+        switchTab(initialHash);
+    } else {
+        render();
+    }
 }
 
 function setDatePreset(preset) {
@@ -4482,6 +4503,13 @@ window.switchTab = function(tabId) {
         if (skillsSection && skillsSection.style.display !== 'none' && navItem && navItem.classList.contains('active')) {
             const g = document.getElementById('nav-skills-group');
             if (g) g.classList.toggle('open');
+            return;
+        }
+    }
+    if (tabId === 'custom-clients') {
+        const names = customClientNames();
+        if (names.length) {
+            switchTab(names[0]);
             return;
         }
     }
@@ -7101,7 +7129,8 @@ window.addEventListener('load', () => {
 
 window.addEndpoint = function(client) {
     config.clients[client].endpoints = config.clients[client].endpoints || [];
-    const type = client === 'codex' ? 'openai-responses' : 'anthropic';
+    const protocol = config.clients[client]?.protocol;
+    const type = client === 'codex' ? 'openai-responses' : (protocol === 'openai' ? 'openai-chat' : 'anthropic');
     config.clients[client].endpoints.unshift({
         id: `ep_${crypto.randomUUID()}`,
         name: "新服务商",

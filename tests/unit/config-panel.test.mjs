@@ -971,4 +971,20 @@ test("Server distribution checklist in MCP Hub includes custom client checkbox w
   assert.match(mcpTs, /return "⚪"/);
 });
 
+test("custom client renders each proxy node on a separate page instead of stacking all nodes", async () => {
+  const ts = await readFile(path.join(ROOT, "desktop", "src", "app.ts"), "utf8");
+
+  // Verify submitCreateClient switches to the newly created client
+  assert.match(ts, /switchTab\(client\);/);
+
+  // Verify renderCustomClientSections selects targetClient rather than concatenating all clients
+  assert.match(ts, /let targetClient = inDetail \? selectedEndpoint\.client : activeClient;/);
+  assert.match(ts, /const client = targetClient;/);
+  assert.doesNotMatch(ts, /container\.innerHTML = names\.map\(client =>/);
+
+  // Verify removeCustomClient falls back to remaining client or code tab
+  assert.match(ts, /const remaining = customClientNames\(\);/);
+  assert.match(ts, /switchTab\(remaining\[0\]\);/);
+});
+
 
