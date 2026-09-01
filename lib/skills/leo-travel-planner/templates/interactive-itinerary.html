@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>{{TRIP_TITLE}} · 私享定制路书</title>
+  <style>
+    :root {
+      --bg-warm: #F9F8F5;
+      --bg-card: #FFFFFF;
+      --bg-subtle: #F3F1EB;
+      --text-main: #2C2925;
+      --text-muted: #726E67;
+      --text-light: #A39E95;
+      --brand-green: #3B6B56;
+      --brand-green-light: #EBF2EE;
+      --brand-terracotta: #C66248;
+      --brand-terracotta-light: #FAECE8;
+      --brand-sand: #D8B282;
+      --brand-sand-light: #FAF5EE;
+      --border-color: #E7E4DC;
+      --shadow-sm: 0 2px 8px rgba(44, 41, 37, 0.04);
+      --shadow-md: 0 6px 20px rgba(44, 41, 37, 0.07);
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      background-color: var(--bg-warm);
+      color: var(--text-main);
+      font-family: var(--font-family);
+      line-height: 1.6;
+      font-size: 15px;
+      padding-bottom: 60px;
+    }
+
+    .container {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+
+    /* Header & Brand Bar */
+    .top-brand-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 0;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 24px;
+    }
+    .brand-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--brand-green-light);
+      color: var(--brand-green);
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 99px;
+      font-size: 12px;
+    }
+
+    /* Hero Section (金字塔顶 / 结论先行) */
+    .hero-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 28px 24px;
+      box-shadow: var(--shadow-md);
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-card::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 5px;
+      background: linear-gradient(90deg, var(--brand-green), var(--brand-sand), var(--brand-terracotta));
+    }
+    .client-salute {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--brand-terracotta);
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .trip-main-title {
+      font-size: 26px;
+      font-weight: 800;
+      line-height: 1.3;
+      margin-bottom: 12px;
+      color: var(--text-main);
+    }
+    .warm-letter {
+      color: var(--text-muted);
+      font-size: 14.5px;
+      line-height: 1.7;
+      margin-bottom: 22px;
+      padding-left: 14px;
+      border-left: 3px solid var(--brand-sand);
+      background: var(--brand-sand-light);
+      padding: 12px 14px;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    }
+
+    /* Highlight Pills */
+    .highlight-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 22px;
+    }
+    .chip {
+      padding: 5px 12px;
+      border-radius: 99px;
+      font-size: 12.5px;
+      font-weight: 500;
+      background: var(--bg-subtle);
+      color: var(--text-main);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .chip-accent { background: var(--brand-terracotta-light); color: var(--brand-terracotta); font-weight: 600; }
+    .chip-green { background: var(--brand-green-light); color: var(--brand-green); font-weight: 600; }
+
+    /* Key Facts Grid */
+    .facts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 12px;
+      background: var(--bg-warm);
+      padding: 16px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+    }
+    .fact-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .fact-label { font-size: 11.5px; color: var(--text-light); text-transform: uppercase; font-weight: 600; }
+    .fact-value { font-size: 17px; font-weight: 800; color: var(--text-main); }
+    .fact-sub { font-size: 11px; color: var(--text-muted); }
+
+    /* Section Headings */
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 32px 0 16px;
+    }
+    .section-title {
+      font-size: 19px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-subtitle { font-size: 12.5px; color: var(--text-muted); font-weight: normal; }
+
+    /* Dashboard & Charts Grid */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 768px) {
+      .dashboard-grid { grid-template-columns: 1fr; }
+    }
+
+    .chart-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 18px 20px;
+      box-shadow: var(--shadow-sm);
+    }
+    .chart-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .chart-title { font-size: 14px; font-weight: 700; }
+    .chart-tag { font-size: 11px; color: var(--text-light); }
+
+    /* SVG Chart Helpers */
+    .svg-chart-box {
+      width: 100%;
+      overflow-x: auto;
+    }
+    .chart-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 10px;
+      font-size: 11.5px;
+      color: var(--text-muted);
+    }
+    .legend-item { display: inline-flex; align-items: center; gap: 4px; }
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    /* Luggage Physics Card */
+    .luggage-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 18px 20px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .luggage-icon-box {
+      width: 52px; height: 52px;
+      border-radius: 12px;
+      background: var(--brand-sand-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+    .luggage-info { flex: 1; min-width: 220px; }
+    .luggage-title { font-size: 14.5px; font-weight: 700; margin-bottom: 4px; }
+    .luggage-desc { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+    .trunk-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: var(--brand-green-light);
+      color: var(--brand-green);
+      font-weight: 700;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+    }
+
+    /* Itinerary Accordion */
+    .accordion-controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .btn-toggle-all {
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      padding: 5px 12px;
+      border-radius: 99px;
+      font-size: 12px;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-toggle-all:hover { background: var(--bg-subtle); color: var(--text-main); }
+
+    .day-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      margin-bottom: 14px;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      transition: border-color 0.2s ease;
+    }
+    .day-card:hover { border-color: var(--brand-sand); }
+    .day-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      cursor: pointer;
+      user-select: none;
+      background: var(--bg-card);
+      transition: background 0.15s ease;
+    }
+    .day-header:hover { background: var(--bg-subtle); }
+    .day-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .day-pill {
+      background: var(--brand-green);
+      color: #fff;
+      font-weight: 800;
+      font-size: 12px;
+      padding: 3px 9px;
+      border-radius: 6px;
+    }
+    .day-title {
+      font-size: 15.5px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    .day-meta-peek {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .chevron-icon {
+      font-size: 12px;
+      color: var(--text-light);
+      transition: transform 0.25s ease;
+    }
+    .day-card.open .chevron-icon { transform: rotate(180deg); }
+
+    .day-body {
+      display: none;
+      padding: 0 20px 20px;
+      border-top: 1px dashed var(--border-color);
+    }
+    .day-card.open .day-body { display: block; }
+
+    /* Timeline within Day */
+    .timeline {
+      position: relative;
+      padding-left: 20px;
+      margin: 16px 0;
+    }
+    .timeline::before {
+      content: "";
+      position: absolute;
+      top: 6px; bottom: 6px; left: 6px;
+      width: 2px;
+      background: var(--border-color);
+    }
+    .time-slot {
+      position: relative;
+      margin-bottom: 16px;
+    }
+    .time-slot:last-child { margin-bottom: 0; }
+    .time-slot::before {
+      content: "";
+      position: absolute;
+      left: -20px; top: 5px;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--brand-sand);
+      border: 2px solid #fff;
+      box-shadow: 0 0 0 1px var(--brand-sand);
+    }
+    .time-tag {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--brand-terracotta);
+      margin-bottom: 4px;
+    }
+    .time-content {
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text-main);
+    }
+
+    /* Sub-cards within Day */
+    .sub-card-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    @media (max-width: 680px) {
+      .sub-card-grid { grid-template-columns: 1fr; }
+    }
+    .sub-box {
+      background: var(--bg-warm);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+    }
+    .sub-box-title {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    .sub-box-content {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .sub-box-content a {
+      color: var(--brand-green);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .sub-box-content a:hover { text-decoration: underline; }
+
+    /* Plan B Alert Box */
+    .plan-b-banner {
+      margin-top: 14px;
+      padding: 12px 14px;
+      background: #FFF9F2;
+      border: 1px solid #FFE3C2;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      color: #944D0A;
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      line-height: 1.5;
+    }
+    .plan-b-badge {
+      background: #E87A1E;
+      color: #fff;
+      font-size: 10.5px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    /* Checklist & Emergency Footer */
+    .toolkit-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 16px;
+      margin-top: 20px;
+    }
+    @media (max-width: 768px) {
+      .toolkit-grid { grid-template-columns: 1fr; }
+    }
+    .checklist-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+    .check-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--bg-subtle);
+      font-size: 13.5px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .check-item:last-child { border-bottom: 0; }
+    .check-item input[type="checkbox"] {
+      width: 16px; height: 16px;
+      accent-color: var(--brand-green);
+      cursor: pointer;
+    }
+    .check-item.done span {
+      text-decoration: line-through;
+      color: var(--text-light);
+    }
+
+    .emergency-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+    .emergency-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px dashed var(--border-color);
+      font-size: 13px;
+    }
+    .emergency-item:last-child { border-bottom: 0; }
+    .emergency-tel {
+      font-weight: 700;
+      color: var(--brand-terracotta);
+      font-family: monospace;
+      font-size: 14px;
+      text-decoration: none;
+      background: var(--brand-terracotta-light);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    /* Evidence Ledger */
+    .evidence-box {
+      margin-top: 24px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+    .evidence-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+      margin-top: 10px;
+    }
+    .evidence-table th, .evidence-table td {
+      padding: 8px 10px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .evidence-table th { color: var(--text-muted); font-weight: 600; background: var(--bg-warm); }
+    .evidence-table a { color: var(--brand-green); text-decoration: none; font-weight: 500; }
+    .evidence-table a:hover { text-decoration: underline; }
+
+    /* Print & Share Floating Bar */
+    .float-bar {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(44, 41, 37, 0.92);
+      backdrop-filter: blur(10px);
+      padding: 8px 18px;
+      border-radius: 99px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+      z-index: 999;
+    }
+    .float-btn {
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .float-divider { width: 1px; height: 14px; background: rgba(255,255,255,0.25); }
+
+    @media print {
+      body { background: #fff; padding: 0; }
+      .float-bar, .accordion-controls { display: none !important; }
+      .day-body { display: block !important; }
+      .day-card { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    
+    <!-- Top Brand Bar -->
+    <header class="top-brand-bar">
+      <div>🌿 <strong>{{PLANNER_NAME}}</strong> · 私享专属旅行规划</div>
+      <div class="brand-tag">交付级路书 · 专人精编</div>
+    </header>
+
+    <!-- Hero Card (金字塔顶 / 结论先行) -->
+    <section class="hero-card">
+      <div class="client-salute">{{CLIENT_NAME}} 专属旅行提案</div>
+      <h1 class="trip-main-title">{{TRIP_TITLE}}</h1>
+      
+      <div class="warm-letter">
+        {{WARM_WELCOME_LETTER}}
+      </div>
+
+      <div class="highlight-chips">
+        {{#EACH HIGHLIGHT_TAGS}}
+        <span class="chip chip-accent">✨ {{this}}</span>
+        {{/EACH}}
+      </div>
+
+      <div class="facts-grid">
+        <div class="fact-item">
+          <span class="fact-label">行程天数</span>
+          <span class="fact-value">{{TOTAL_DAYS}} 天</span>
+          <span class="fact-sub">{{TOTAL_NIGHTS}} 晚品质住宿</span>
+        </div>
+        <div class="fact-item">
+          <span class="fact-label">总自驾里程</span>
+          <span class="fact-value">{{TOTAL_MILEAGE}} km</span>
+          <span class="fact-sub">日均约 {{DAILY_AVG_KM}} km</span>
+        </div>
+        <div class="fact-item">
+          <span class="fact-label">推荐优选车型</span>
+          <span class="fact-value">{{RECOMMENDED_CAR_MODEL}}</span>
+          <span class="fact-sub">{{CAR_SEAT_TRUNK_SPEC}}</span>
+        </div>
+        <div class="fact-item">
+          <span class="fact-label">全包预算参考</span>
+          <span class="fact-value">¥{{BUDGET_PER_PERSON}}</span>
+          <span class="fact-sub">人均 (整车 ¥{{BUDGET_TOTAL}})</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 租车与行李空间保障卡片 -->
+    <section class="luggage-card">
+      <div class="luggage-icon-box">🧳</div>
+      <div class="luggage-info">
+        <div class="luggage-title">🚗 行李空间与动力底盘保障（已为您实测校核）</div>
+        <div class="luggage-desc">{{LUGGAGE_PHYSICS_SUMMARY}}</div>
+      </div>
+      <div class="trunk-badge">
+        <span>✅ 后备箱满载无忧</span>
+      </div>
+    </section>
+
+    <!-- Visual Dashboard (时空与费用交互仪表盘) -->
+    <div class="section-head">
+      <h2 class="section-title">📊 行程节奏与全口径账单总览</h2>
+      <span class="section-subtitle">时空平衡 · 费用透明</span>
+    </div>
+
+    <div class="dashboard-grid">
+      
+      <!-- Chart 1: 每日车程与游玩节奏分布 -->
+      <div class="chart-card">
+        <div class="chart-head">
+          <div class="chart-title">🚗 每日车程 vs 游玩时长 (小时)</div>
+          <span class="chart-tag">拒绝疲劳驾驶</span>
+        </div>
+        <div class="svg-chart-box">
+          <svg viewBox="0 0 400 160" width="100%" height="160">
+            <!-- Grid Lines -->
+            <line x1="40" y1="20" x2="380" y2="20" stroke="#EFEFEF" stroke-dasharray="3"/>
+            <line x1="40" y1="60" x2="380" y2="60" stroke="#EFEFEF" stroke-dasharray="3"/>
+            <line x1="40" y1="100" x2="380" y2="100" stroke="#EFEFEF" stroke-dasharray="3"/>
+            <line x1="40" y1="130" x2="380" y2="130" stroke="#DDD"/>
+            
+            <!-- Y Labels -->
+            <text x="30" y="24" font-size="10" fill="#999" text-anchor="end">8h</text>
+            <text x="30" y="64" font-size="10" fill="#999" text-anchor="end">5h</text>
+            <text x="30" y="104" font-size="10" fill="#999" text-anchor="end">2h</text>
+
+            <!-- Dynamic SVG Bars Placeholder -->
+            {{PACE_BARS_SVG}}
+          </svg>
+        </div>
+        <div class="chart-legend">
+          <div class="legend-item"><span class="legend-dot" style="background: var(--brand-green);"></span> 游玩探索时长</div>
+          <div class="legend-item"><span class="legend-dot" style="background: var(--brand-sand);"></span> 景观公路车程</div>
+        </div>
+      </div>
+
+      <!-- Chart 2: 海拔爬升与昼夜温差走势 -->
+      <div class="chart-card">
+        <div class="chart-head">
+          <div class="chart-title">📈 全程海拔 (m) 与最高/最低温 (°C)</div>
+          <span class="chart-tag">阶梯爬升防高反</span>
+        </div>
+        <div class="svg-chart-box">
+          <svg viewBox="0 0 400 160" width="100%" height="160">
+            <line x1="40" y1="20" x2="380" y2="20" stroke="#EFEFEF" stroke-dasharray="3"/>
+            <line x1="40" y1="75" x2="380" y2="75" stroke="#EFEFEF" stroke-dasharray="3"/>
+            <line x1="40" y1="130" x2="380" y2="130" stroke="#DDD"/>
+
+            <!-- Dynamic SVG Elevation & Temperature Lines -->
+            {{ELEVATION_TEMP_SVG}}
+          </svg>
+        </div>
+        <div class="chart-legend">
+          <div class="legend-item"><span class="legend-dot" style="background: #4A90E2;"></span> 海拔高度 (m)</div>
+          <div class="legend-item"><span class="legend-dot" style="background: #E87A1E;"></span> 昼间最高温 (°C)</div>
+          <div class="legend-item"><span class="legend-dot" style="background: #8B572A;"></span> 夜间最低温 (°C)</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Chart 3: 全口径费用透明环形图 -->
+    <div class="chart-card" style="margin-bottom: 24px;">
+      <div class="chart-head">
+        <div class="chart-title">🧾 全口径预算构成 (人均 ¥{{BUDGET_PER_PERSON}} · 零隐形消费)</div>
+        <span class="chart-tag">明细公开透明</span>
+      </div>
+      <div style="display: flex; align-items: center; justify-content: space-around; flex-wrap: wrap; gap: 20px;">
+        <div style="width: 140px; height: 140px;">
+          <svg viewBox="0 0 42 42" width="100%" height="100%">
+            <!-- SVG Donut Slices -->
+            {{BUDGET_DONUT_SVG}}
+          </svg>
+        </div>
+        <div style="flex: 1; min-width: 260px; font-size: 13px;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tbody>
+              {{BUDGET_TABLE_ROWS}}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Daily Detailed Itinerary -->
+    <div class="section-head">
+      <h2 class="section-title">🗺️ 分日沉浸路书与顺光动线</h2>
+      <div class="accordion-controls">
+        <button class="btn-toggle-all" onclick="toggleAllDays(true)">全部展开</button>
+        <button class="btn-toggle-all" onclick="toggleAllDays(false)">全部折叠</button>
+      </div>
+    </div>
+
+    <div class="itinerary-list">
+      {{#EACH DAYS}}
+      <!-- Day Card -->
+      <article class="day-card {{#IF @first}}open{{/IF}}">
+        <div class="day-header" onclick="toggleDay(this.parentElement)">
+          <div class="day-badge-row">
+            <span class="day-pill">Day {{dayNum}}</span>
+            <span class="day-title">{{dayTitle}}</span>
+          </div>
+          <div class="day-meta-peek">
+            <span>🚗 {{driveDistance}}km (约{{driveDuration}}h)</span>
+            <span>📍 {{stayLocation}}</span>
+            <span class="chevron-icon">▼</span>
+          </div>
+        </div>
+
+        <div class="day-body">
+          <!-- Timeline -->
+          <div class="timeline">
+            {{#EACH scheduleSlots}}
+            <div class="time-slot">
+              <div class="time-tag">{{time}} · {{theme}}</div>
+              <div class="time-content">{{description}}</div>
+            </div>
+            {{/EACH}}
+          </div>
+
+          <!-- Sub-cards: 严选住宿 & 景点门票 -->
+          <div class="sub-card-grid">
+            <div class="sub-box">
+              <div class="sub-box-title">🏨 严选落脚酒店（车位+洗衣房+电梯）</div>
+              <div class="sub-box-content">
+                <strong>{{hotelName}}</strong><br>
+                {{hotelFeatures}}<br>
+                <a href="{{hotelBookingUrl}}" target="_blank">🔗 飞猪直达预订 / 查看房型</a>
+              </div>
+            </div>
+
+            <div class="sub-box">
+              <div class="sub-box-title">🎟️ 核心景区与抢票提醒</div>
+              <div class="sub-box-content">
+                <strong>{{scenicSpotName}}</strong>（门票+区间车约 ¥{{ticketPrice}}）<br>
+                {{ticketBookingWindow}}<br>
+                <a href="{{scenicBookingUrl}}" target="_blank">🔗 官方门票直达预订</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- 管家私藏避坑 & 摄影机位 -->
+          <div class="sub-card-grid" style="margin-top: 10px;">
+            <div class="sub-box">
+              <div class="sub-box-title">💡 规划师私藏避坑 Tips</div>
+              <div class="sub-box-content">
+                {{conciergeTips}}
+              </div>
+            </div>
+            <div class="sub-box">
+              <div class="sub-box-title">📸 顺光机位与味蕾推荐</div>
+              <div class="sub-box-content">
+                {{photoDiningTips}}
+              </div>
+            </div>
+          </div>
+
+          <!-- 恶劣天气与突发封路 Plan B -->
+          <div class="plan-b-banner">
+            <span class="plan-b-badge">Plan B 备选</span>
+            <div><strong>若遇恶劣天气/封路保障</strong>：{{planBDetails}}</div>
+          </div>
+
+        </div>
+      </article>
+      {{/EACH}}
+    </div>
+
+    <!-- Toolkit: Checklist & Emergency Contacts -->
+    <div class="section-head">
+      <h2 class="section-title">🧰 贴心行前备忘与 24h 应急底座</h2>
+      <span class="section-subtitle">有备无患 · 安心度假</span>
+    </div>
+
+    <div class="toolkit-grid">
+      <!-- Checklist -->
+      <div class="checklist-card">
+        <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 12px;">✅ 环境自适应行李打包清单 (点击打勾备忘)</h3>
+        <div id="checklist-container">
+          {{CHECKLIST_ITEMS_HTML}}
+        </div>
+      </div>
+
+      <!-- Emergency -->
+      <div class="emergency-card">
+        <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 12px;">🚨 24h 紧急救援与保障通讯录</h3>
+        <div class="emergency-item">
+          <span>全国统一报警求助</span>
+          <a class="emergency-tel" href="tel:110">110</a>
+        </div>
+        <div class="emergency-item">
+          <span>全国统一医疗急救</span>
+          <a class="emergency-tel" href="tel:120">120</a>
+        </div>
+        <div class="emergency-item">
+          <span>全国高速公路救援</span>
+          <a class="emergency-tel" href="tel:12122">12122</a>
+        </div>
+        <div class="emergency-item">
+          <span>一嗨租车 24h 救援</span>
+          <a class="emergency-tel" href="tel:4008886608">400-888-6608</a>
+        </div>
+        <div class="emergency-item">
+          <span>气象灾害与预警查询</span>
+          <a class="emergency-tel" href="tel:12121">12121</a>
+        </div>
+        <p style="font-size: 11.5px; color: var(--text-light); margin-top: 12px; line-height: 1.4;">
+          * 温馨提示：如在偏远山区遭遇无基站信号状态，请尝试拨打 112 寻求紧急呼救。
+        </p>
+      </div>
+    </div>
+
+    <!-- Evidence Ledger -->
+    <section class="evidence-box">
+      <h3 style="font-size: 14.5px; font-weight: 700; margin-bottom: 8px;">🔗 数据来源与真实参考凭证索引 (Evidence Ledger)</h3>
+      <p style="font-size: 12.5px; color: var(--text-muted);">
+        本案所有景点门票、严选酒店、自驾动线与素人避坑建议，均由规划师团队通过 FlyAI、高德地图、小红书真实素人经验多源交叉校核。
+      </p>
+      <table class="evidence-table">
+        <thead>
+          <tr>
+            <th>类别</th>
+            <th>凭证名称 / 经验来源</th>
+            <th>直达链接</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{EVIDENCE_LEDGER_ROWS}}
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Footer Signature -->
+    <footer style="text-align: center; margin-top: 40px; color: var(--text-light); font-size: 12.5px;">
+      <p>— 愿这场精心策划的旅途，为您与家人留下一生的金色回忆 —</p>
+      <p style="margin-top: 4px;">由 {{PLANNER_NAME}} 倾心定制 · {{CREATION_DATE}}</p>
+    </footer>
+
+  </div>
+
+  <!-- Floating Print & Action Bar -->
+  <div class="float-bar">
+    <button class="float-btn" onclick="window.print()">🖨️ 打印 / 存为 PDF</button>
+    <div class="float-divider"></div>
+    <button class="float-btn" onclick="shareTrip()">📤 复制分享链接</button>
+  </div>
+
+  <script>
+    // Toggle Day Card Accordion
+    function toggleDay(card) {
+      card.classList.toggle('open');
+    }
+
+    function toggleAllDays(open) {
+      document.querySelectorAll('.day-card').forEach(c => {
+        if (open) c.classList.add('open');
+        else c.classList.remove('open');
+      });
+    }
+
+    // Interactive Checklist with LocalStorage Persistence
+    document.addEventListener('DOMContentLoaded', () => {
+      const items = document.querySelectorAll('.check-item');
+      items.forEach((item, index) => {
+        const checkbox = item.querySelector('input[type="checkbox"]');
+        const key = 'trip_checklist_' + index;
+        if (localStorage.getItem(key) === 'true') {
+          checkbox.checked = true;
+          item.classList.add('done');
+        }
+        item.addEventListener('click', (e) => {
+          if (e.target !== checkbox) checkbox.checked = !checkbox.checked;
+          if (checkbox.checked) {
+            item.classList.add('done');
+            localStorage.setItem(key, 'true');
+          } else {
+            item.classList.remove('done');
+            localStorage.setItem(key, 'false');
+          }
+        });
+      });
+    });
+
+    function shareTrip() {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(window.location.href).then(() => {
+          alert('路书链接已复制到剪贴板，可直接粘贴发送给客户！');
+        }).catch(() => {
+          alert('请直接复制当前浏览器网址分享给客户。');
+        });
+      } else {
+        alert('请直接复制当前浏览器网址分享给客户。');
+      }
+    }
+  </script>
+</body>
+</html>

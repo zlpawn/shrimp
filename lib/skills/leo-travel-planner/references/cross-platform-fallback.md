@@ -67,72 +67,33 @@ EOF
 
 ## 2. 🪟 Windows 轨道：Chrome 插件（Leo Lantern 19527 端口）执行规范
 
-在 Windows 上由于无法运行 `ego-browser` CLI，Agent 借用项目内置的 **Leo Lantern 扩展体系**（监听本地 `127.0.0.1:19527` 端口），向用户后台运行的 Chrome 派发自动化任务。
+在 Windows 上，项目内置了专门的自动化控制 CLI：`clis/leo-lantern/index.mjs`。通过该 CLI 可直接向用户日常 Chrome（已加载 `extensions/leo-cookie-txt-locally`）派发指令，完全复用登录态。
 
-### 核心接口契约 (Bridge Contract)：
-* **健康探针**：`GET http://127.0.0.1:19527/health`（验证插件和 Bridge 是否在线）；
-* **指令派发**：`POST http://127.0.0.1:19527/cmd`，请求体格式：
-  ```json
-  {
-    "type": "task.start | tabs.navigate | dom.wait | dom.eval | task.end",
-    "params": { ... },
-    "timeoutMs": 15000
-  }
-  ```
+### 原生 CLI 标准操作流水线 (Production CLI Pipeline)：
 
-### Windows 下 Node.js 调度脚本实现模板（可作为后台脚本静默运行）：
+```bash
+# 1. 检查扩展与 Bridge 连通状态
+node ./clis/leo-lantern/index.mjs health
 
-```javascript
-const BRIDGE_URL = 'http://127.0.0.1:19527';
+# 2. 列出浏览器中打开的 Tab (识别小红书与一嗨页面)
+node ./clis/leo-lantern/index.mjs tabs
 
-async function sendCmd(type, params = {}, timeoutMs = 15000) {
-  const resp = await fetch(`${BRIDGE_URL}/cmd`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type, params, timeoutMs })
-  });
-  return await resp.json();
-}
+# 3. 开启工作区任务
+node ./clis/leo-lantern/index.mjs start-task --title="travel-scrape" --sameWindow=true
 
-async function searchXhsOnWindows(keyword) {
-  // 1. 探针检查
-  const health = await fetch(`${BRIDGE_URL}/health`).catch(() => null);
-  if (!health || !health.ok) {
-    throw new Error('未连接到 Chrome 插件 (127.0.0.1:19527 离线，请确保日常 Chrome 已启动且加载扩展)');
-  }
+# 4. 小红书真实检索与素人笔记抓取
+node ./clis/leo-lantern/index.mjs claim --tabId=<xhsTabId>
+node ./clis/leo-lantern/index.mjs goto "https://www.xiaohongshu.com/search_result?keyword=川西大环线%20避坑"
+node ./clis/leo-lantern/index.mjs wait --selector="section.note-item, .note-card, .title" --timeoutMs=8000
+node ./clis/leo-lantern/index.mjs content --maxChars=4000
 
-  // 2. 开启后台任务（不抢焦点）
-  await sendCmd('task.start', { title: 'travel-xhs-probe', focus: false, sameWindow: true });
-  
-  // 3. 导航至小红书搜索页
-  const targetUrl = `https://www.xiaohongshu.com/search_result?keyword=${encodeURIComponent(keyword)}`;
-  await sendCmd('tabs.navigate', { url: targetUrl, focus: false });
-  await sendCmd('dom.wait', { selector: 'section.note-item, .note-card', timeoutMs: 10000 });
+# 5. 一嗨租车真实车型与门店信息抓取
+node ./clis/leo-lantern/index.mjs claim --tabId=<ehiTabId>
+node ./clis/leo-lantern/index.mjs content --maxChars=4000
 
-  // 4. 执行 JS 提取素人笔记并过滤黑名单
-  const evalResult = await sendCmd('dom.eval', {
-    script: `
-      (() => {
-        const cards = Array.from(document.querySelectorAll('section.note-item, .note-card, div.feeds-container section'));
-        const blackList = ['私信', '定制游', '纯玩团', '小团', '拼车', '包车师傅', '旅行社', '报团', '私聊'];
-        return cards.map(c => ({
-          title: c.querySelector('.title, a.title, .footer .title')?.innerText || '',
-          author: c.querySelector('.author, .user-name, .name')?.innerText || '',
-          href: c.querySelector('a')?.href || ''
-        })).filter(n => n.title && n.href && !blackList.some(bw => n.title.includes(bw))).slice(0, 6);
-      })()
-    `
-  });
-
-  // 5. 关闭任务标签页
-  await sendCmd('task.end');
-  return evalResult.data;
-}
+# 6. 结束任务
+node ./clis/leo-lantern/index.mjs end-task --closeGroup=false
 ```
-
-### 一嗨租车查询（Windows 插件模式）：
-同理，导航至 `https://booking.1hai.cn/order/firstStep`，通过 `dom.eval` 提取车辆列表与价格，任务完成后执行 `task.end`。
-
 ---
 
 ## 3. 跨平台路由决策表
