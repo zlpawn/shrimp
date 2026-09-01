@@ -330,6 +330,30 @@
       "requiresDaemon": false,
       "promoted": true,
       "managed": true
+    },
+    {
+      "id": "leo-travel-planner",
+      "name": "leo-travel-planner",
+      "title": "Leo 旅行自驾规划",
+      "summary": "多源协同专业旅行路书规划助手。整合 FlyAI 机酒直订、高德地图 MCP 动线与充电补能评估、ego-browser 小红书素人避险避坑与一嗨租车比价。支持全口径费用预算测算、多风格方案对比（特种兵/慢调/小众避堵）、环境安全自适应防御（高反/极温/无人区/山路制动/边防证）以及全程源链接可溯源追溯。",
+      "category": "workflow",
+      "categoryLabel": "工作流与规划",
+      "icon": "🚗",
+      "featured": true,
+      "tags": [
+        "travel",
+        "roadtrip",
+        "flyai",
+        "amap",
+        "xiaohongshu",
+        "ehi",
+        "自驾",
+        "旅行规划",
+        "路书"
+      ],
+      "requiresDaemon": false,
+      "promoted": true,
+      "managed": true
     }
   ]
 }
