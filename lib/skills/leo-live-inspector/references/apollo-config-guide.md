@@ -47,15 +47,21 @@ GET http://apollo.configservice.life.ke.com/configs/{appId}/{cluster}/{namespace
 
 ## 🚀 2. 脚本快速调用指南 (`scripts/apollo_query.js`)
 
-AI 或用户可直接执行本地脚本进行秒级探查：
+AI 或用户可直接执行本地脚本进行秒级探查（**内置智能别名与模糊匹配，支持口语化简称**）：
 
 ```bash
-# 格式: node scripts/apollo_query.js <appId> [namespace|keyKeyword] [keyKeyword] [options]
+# 格式: node scripts/apollo_query.js <appId|alias> [namespace|keyKeyword] [keyKeyword] [options]
 
-# 1. 查询服务全部配置项 (自动扫描 application 与 application.properties 并智能去重)
+# 1. 口语化简称自动映射 (如 platform 自动解析为 zulin-iot-platform, saas 解析为 utopia-scs-saas)
+node scripts/apollo_query.js platform lockAuth
+node scripts/apollo_query.js saas timeout
+node scripts/apollo_query.js iot lockVersion
+node scripts/apollo_query.js warehouse
+
+# 2. 查询服务全部配置项 (自动扫描 application 与 application.properties 并智能去重)
 node scripts/apollo_query.js zulin-iot-platform
 
-# 2. 模糊检索指定配置项 (如查找白名单、超时时间、动态开关)
+# 3. 模糊检索指定配置项 (如查找白名单、超时时间、动态开关)
 node scripts/apollo_query.js zulin-iot-platform lockAuth
 node scripts/apollo_query.js utopia-scs-saas timeout
 node scripts/apollo_query.js zulin-iot-platform switch
