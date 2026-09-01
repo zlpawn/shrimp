@@ -42,6 +42,9 @@ function ensureClient(target, source, client) {
   if (source?.clients?.[client]?.protocol !== undefined) {
     target.clients[client].protocol = source.clients[client].protocol;
   }
+  if (source?.clients?.[client]?.icon !== undefined) {
+    target.clients[client].icon = source.clients[client].icon;
+  }
   return target.clients[client];
 }
 
@@ -282,6 +285,9 @@ export function buildScopedSaveConfig(persisted, working, options = {}) {
         }
         if (clientBody?.protocol !== undefined) {
           next.clients[name].protocol = clientBody.protocol;
+        }
+        if (clientBody?.icon !== undefined) {
+          next.clients[name].icon = clientBody.icon;
         }
       }
     }

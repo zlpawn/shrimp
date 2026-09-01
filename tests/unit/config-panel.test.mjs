@@ -311,8 +311,8 @@ test("DeepTutor client has a nav tab and a node section mirroring Codex", async 
 
 test("DeepTutor section keeps a connection guide without generic client copy controls", async () => {
   const html = await readHtml();
-  assert.match(html, /大语言模型 base_url：[\s\S]*?\/deeptutor\//);
-  assert.match(html, /向量模型 base_url：[\s\S]*?\/deeptutor\/emb\/embeddings/);
+  assert.match(html, /大语言模型 base_url[\s\S]*?\/deeptutor\//);
+  assert.match(html, /向量模型 base_url[\s\S]*?\/deeptutor\/emb\/embeddings/);
   assert.doesNotMatch(html, /id="global-copy-panel"/);
   assert.doesNotMatch(html, /id="global-copy-btn"/);
   assert.doesNotMatch(html, /copyClientEndpointsGeneric/);
@@ -829,7 +829,7 @@ test("custom agent nav and sections use clientDisplayName for titles and slug fo
   );
   assert.match(
     html,
-    /大语言模型 base_url：http:\/\/<span class="cfg-host">127\.0\.0\.1<\/span>:<span class="cfg-port">8787<\/span>\/\$\{escapeHtml\(client\)\}\//,
+    /<span class="url-snippet-label">大语言模型 base_url<\/span>[\s\S]*?<pre class="snippet-url"[^>]*>http:\/\/<span class="cfg-host">127\.0\.0\.1<\/span>:<span class="cfg-port">8787<\/span>\/\$\{escapeHtml\(client\)\}\//,
   );
 });
 
@@ -986,5 +986,79 @@ test("custom client renders each proxy node on a separate page instead of stacki
   assert.match(ts, /const remaining = customClientNames\(\);/);
   assert.match(ts, /switchTab\(remaining\[0\]\);/);
 });
+
+test("URL snippet rows separate labels and pure URLs across Custom Clients, DeepTutor, and Codex", async () => {
+  const [appTs, indexHtml, css] = await Promise.all([
+    readFile(path.join(ROOT, "desktop", "src", "app.ts"), "utf8"),
+    readFile(path.join(ROOT, "desktop", "index.html"), "utf8"),
+    readFile(path.join(ROOT, "desktop", "src", "styles", "panel.css"), "utf8"),
+  ]);
+
+  // CSS styles
+  assert.match(css, /\.url-snippet\s*\{/);
+  assert.match(css, /\.url-snippet\s+\.url-snippet-label\s*\{/);
+  assert.match(css, /user-select:\s*none/);
+  assert.match(css, /\.url-snippet\s+\.snippet-url\s*\{/);
+  assert.match(css, /user-select:\s*all/);
+
+  // Custom clients in app.ts
+  assert.match(appTs, /class="url-snippet code-snippet"/);
+  assert.match(appTs, /<span class="url-snippet-label">大语言模型 base_url<\/span>/);
+  assert.match(appTs, /<span class="url-snippet-label">向量模型 base_url<\/span>/);
+  assert.match(appTs, /<pre class="snippet-url" \$\{preAttr\}>http:\/\/<span class="cfg-host">127\.0\.0\.1<\/span>:<span class="cfg-port">8787<\/span>\/\$\{escapeHtml\(client\)\}\/<\/pre>/);
+
+  // DeepTutor in index.html
+  assert.match(indexHtml, /id="section-deeptutor"[\s\S]*?<span class="url-snippet-label">大语言模型 base_url<\/span>[\s\S]*?<pre class="snippet-url"[^>]*>http:\/\/<span class="cfg-host">127\.0\.0\.1<\/span>:<span class="cfg-port">8787<\/span>\/deeptutor\/<\/pre>/);
+  assert.match(indexHtml, /id="section-deeptutor"[\s\S]*?<span class="url-snippet-label">向量模型 base_url<\/span>[\s\S]*?<pre class="snippet-url"[^>]*>http:\/\/<span class="cfg-host">127\.0\.0\.1<\/span>:<span class="cfg-port">8787<\/span>\/deeptutor\/emb\/embeddings<\/pre>/);
+
+  // Codex in index.html
+  assert.match(indexHtml, /id="section-codex"[\s\S]*?<span class="url-snippet-label">Codex API base_url<\/span>[\s\S]*?<pre class="snippet-url"[^>]*>http:\/\/<span class="cfg-host">127\.0\.0\.1<\/span>:<span class="cfg-port">8787<\/span>\/codex\/v1<\/pre>/);
+
+  // copyCodeSnippet extracts pure URL (.snippet-url) first
+  assert.match(appTs, /window\.copyCodeSnippet = async function\(btn\)/);
+  assert.match(appTs, /snippet\?\.querySelector\('\.snippet-url, pre\.url, code\.url'\)/);
+});
+
+test("custom client navigation dynamically renders distinctive icons per client name", async () => {
+  const appTs = await readFile(path.join(ROOT, "desktop", "src", "app.ts"), "utf8");
+
+  assert.match(appTs, /const CLIENT_ICON_SVGS/);
+  assert.match(appTs, /brain:/);
+  assert.match(appTs, /briefcase:/);
+  assert.match(appTs, /function getCustomClientIcon/);
+  assert.match(appTs, /renderCustomClientNav[\s\S]*?\$\{getCustomClientIcon\(name\)\}/);
+
+  // Execute getCustomClientIcon in isolated context to verify naming rules
+  const sandbox = {
+    config: {
+      clients: {
+        hindsight: { display_name: "Hindsight" },
+        "work-buddy": { display_name: "WorkBuddy" },
+        "custom-emoji": { display_name: "Custom", icon: "🚀" },
+      },
+    },
+    clientDisplayName: (c) => sandbox.config.clients[c]?.display_name || c,
+    escapeHtml: (s) => s,
+    window: {},
+  };
+  const scriptMatch = appTs.match(/const CLIENT_ICON_SVGS[\s\S]*?\nfunction getCustomClientIcon[\s\S]*?\n\}/);
+  assert.ok(scriptMatch, "getCustomClientIcon implementation should be extractable");
+  // Strip TypeScript type annotations for vm evaluation
+  const jsCode = scriptMatch[0]
+    .replace(/:\s*Record<string,\s*string>/g, "")
+    .replace(/:\s*string/g, "");
+  vm.createContext(sandbox);
+  vm.runInContext(jsCode + "\nwindow.getCustomClientIcon = getCustomClientIcon;", sandbox);
+
+  const hindsightIcon = sandbox.window.getCustomClientIcon("hindsight");
+  const workbuddyIcon = sandbox.window.getCustomClientIcon("work-buddy");
+  const emojiIcon = sandbox.window.getCustomClientIcon("custom-emoji");
+
+  assert.match(hindsightIcon, /<svg/);
+  assert.match(workbuddyIcon, /<svg/);
+  assert.notEqual(hindsightIcon, workbuddyIcon, "Hindsight and WorkBuddy must receive distinct icons");
+  assert.match(emojiIcon, /🚀/, "Explicit icon configuration should be rendered");
+});
+
 
 

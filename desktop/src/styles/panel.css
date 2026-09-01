@@ -1810,6 +1810,47 @@ input:focus, select:focus {
     color: var(--success);
 }
 
+.url-snippet {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 8px 6px 10px;
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    user-select: auto;
+}
+.url-snippet .url-snippet-label {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.2;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: var(--surface-hover);
+    color: var(--text-secondary);
+    user-select: none;
+    letter-spacing: 0.2px;
+}
+.url-snippet .snippet-url {
+    flex: 1;
+    margin: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 12px;
+    color: var(--text-primary);
+    overflow-x: auto;
+    white-space: nowrap;
+    user-select: all;
+    background: transparent;
+    padding: 0;
+}
+.url-snippet .code-snippet-copy {
+    position: static;
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+}
+
 .model-slots-panel {
     margin-bottom: 20px;
     padding: 14px 16px 16px;

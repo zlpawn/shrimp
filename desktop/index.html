@@ -271,7 +271,12 @@
                 <div class="usage-guide">
                     <h3>🚀 如何连接此网关？</h3>
                     <p>对于独立的 Codex 桌面端或命令行：保存本页配置后，网关会自动生成模型目录文件 <code class="cfg-catalog-path">~/.codex/gateway-model-catalog.json</code>（官方模型 + 下方 Codex 节点里的第三方模型）。把下面片段贴到 <code>~/.codex/config.toml</code>，并确保放在第一个 <code>[section]</code> 之前：</p>
-                    <div class="code-snippet" style="margin-top: 10px;">
+                    <div class="url-snippet code-snippet" style="margin-top: 10px;">
+                        <span class="url-snippet-label">Codex API base_url</span>
+                        <pre class="snippet-url" style="margin: 0; color: inherit; font-family: inherit; font-size: inherit; background: transparent; padding: 0; overflow-x: auto;">http://<span class="cfg-host">127.0.0.1</span>:<span class="cfg-port">8787</span>/codex/v1</pre>
+                        <button type="button" class="code-snippet-copy" title="复制 URL" onclick="copyCodeSnippet(this)" aria-label="复制 URL"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+                    </div>
+                    <div class="code-snippet" style="margin-top: 8px;">
                         <button type="button" class="code-snippet-copy" title="复制" onclick="copyCodeSnippet(this)" aria-label="复制"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
                         <pre style="margin: 0; color: inherit; font-family: inherit; font-size: inherit; background: transparent; padding: 0; overflow-x: auto;">
 model_provider = "custom"
@@ -319,13 +324,15 @@ experimental_bearer_token = "dummy"</pre>
                     <h3>🚀 如何连接此网关？</h3>
                     <p>DeepTutor 走 OpenAI 兼容协议。大语言模型 base_url 填 API 根路径；向量模型 base_url 填完整 embeddings 端点（DeepTutor 会直接 POST 到该地址）：</p>
                     <div style="display:flex; flex-direction:column; gap:8px; margin-top: 10px;">
-                        <div class="code-snippet">
-                            <button type="button" class="code-snippet-copy" title="复制" onclick="copyCodeSnippet(this)" aria-label="复制"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
-                            <pre style="margin: 0; color: inherit; font-family: inherit; font-size: inherit; background: transparent; padding: 0; overflow-x: auto;">大语言模型 base_url：http://<span class="cfg-host">127.0.0.1</span>:<span class="cfg-port">8787</span>/deeptutor/</pre>
+                        <div class="url-snippet code-snippet">
+                            <span class="url-snippet-label">大语言模型 base_url</span>
+                            <pre class="snippet-url" style="margin: 0; color: inherit; font-family: inherit; font-size: inherit; background: transparent; padding: 0; overflow-x: auto;">http://<span class="cfg-host">127.0.0.1</span>:<span class="cfg-port">8787</span>/deeptutor/</pre>
+                            <button type="button" class="code-snippet-copy" title="复制 URL" onclick="copyCodeSnippet(this)" aria-label="复制 URL"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
                         </div>
-                        <div class="code-snippet">
-                            <button type="button" class="code-snippet-copy" title="复制" onclick="copyCodeSnippet(this)" aria-label="复制"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
-                            <pre style="margin: 0; color: inherit; font-family: inherit; font-size: inherit; background: transparent; padding: 0; overflow-x: auto;">向量模型 base_url：http://<span class="cfg-host">127.0.0.1</span>:<span class="cfg-port">8787</span>/deeptutor/emb/embeddings</pre>
+                        <div class="url-snippet code-snippet">
+                            <span class="url-snippet-label">向量模型 base_url</span>
+                            <pre class="snippet-url" style="margin: 0; color: inherit; font-family: inherit; font-size: inherit; background: transparent; padding: 0; overflow-x: auto;">http://<span class="cfg-host">127.0.0.1</span>:<span class="cfg-port">8787</span>/deeptutor/emb/embeddings</pre>
+                            <button type="button" class="code-snippet-copy" title="复制 URL" onclick="copyCodeSnippet(this)" aria-label="复制 URL"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
                         </div>
                     </div>
                     <p style="font-size: 12px; margin-top: 8px; margin-bottom: 0; color: var(--text-secondary);">首次进入时若 DeepTutor 为空，网关会自动从 Codex 复制节点与密钥。</p>
