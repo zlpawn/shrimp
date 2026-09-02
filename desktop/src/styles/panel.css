@@ -6128,6 +6128,18 @@ input:focus, select:focus {
 .command-apps-meta dd { margin: 0; font-size: 13px; word-break: break-word; }
 .command-apps-path { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; }
 .command-apps-badge, .command-apps-arg { display: inline-flex; align-items: center; margin-top: 8px; margin-right: 6px; padding: 2px 7px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 11px; color: var(--text-secondary); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+.command-apps-badge.is-codex { color: #2563eb; border-color: rgba(37, 99, 235, 0.35); background: rgba(37, 99, 235, 0.1); }
+.command-apps-detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.command-apps-detail-head h3 { margin: 0 0 4px; font-size: 18px; }
+.command-apps-detail-head p { margin: 0; color: var(--text-secondary); font-size: 13px; line-height: 1.5; max-width: 52em; }
+.command-apps-profile-list { display: flex; flex-direction: column; gap: 14px; }
+
 .command-apps-args { margin-top: 14px; }
 .command-apps-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
 .command-apps-actions .btn:active:not(:disabled) { transform: translateY(1px); }

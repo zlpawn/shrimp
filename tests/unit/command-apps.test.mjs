@@ -310,7 +310,7 @@ test("service listApps isolates individual app errors without breaking other app
   });
 
   const list = await service.listApps();
-  assert.equal(list.length, 3);
+  assert.ok(list.length >= 3);
 
   const antigravity = list.find((item) => item.app.id === "antigravity");
   assert.ok(antigravity);
@@ -517,7 +517,7 @@ test("routes handle /v1/command-apps/apps listing and shrimp restart", async () 
   assert.equal(responses[0].status, 200);
   const listBody = JSON.parse(responses[0].body);
   assert.ok(Array.isArray(listBody.apps));
-  assert.equal(listBody.apps.length, 3);
+  assert.ok(listBody.apps.length >= 3);
 
   // Test restart route
   await routeCommandAppsRequest(reqFor("POST", "/v1/command-apps/apps/shrimp/restart"), res, null, "/v1/command-apps/apps/shrimp/restart", { service: fx.service });
@@ -530,6 +530,11 @@ import {
   publicLlmConfig,
   writeHindsightLlmConfig,
   sanitizeDaemonEnv,
+  listHindsightProfileFiles,
+  hindsightDaemonArgs,
+  defaultHindsightConfigPath,
+  readCodingAgentPluginConfig,
+  writeCodingAgentPluginConfig,
 } from "../../lib/command-apps/index.mjs";
 import { inspectHindsightDaemon } from "../../lib/command-apps/infra/hindsight-daemon.mjs";
 
@@ -806,6 +811,182 @@ test("hindsight default profile stores gateway source references and renders env
   assert.equal(status.llm.provider, "openai");
 });
 
+test("saving gateway llm with local embeddings does not force openai embeddings", async () => {
+  const executable = "/Users/pa/.local/bin/hindsight-embed";
+  const saved = [];
+  const envWrites = [];
+  const service = createCommandAppsService({
+    configStore: {
+      get() { return saved.at(-1) || { apps: { hindsight: { executablePath: executable } } }; },
+      save(next) { saved.push(next); return next; },
+    },
+    platform: "darwin",
+    fileExists: (value) => value === executable,
+    writeHindsightLlm: (patch) => envWrites.push({ ...patch }),
+    readHindsightLlm: () => ({
+      provider: "openai",
+      baseUrl: "http://127.0.0.1:8787/hindsight/",
+      model: "glm-5.3-zp",
+      hasApiKey: true,
+      apiKeyMasked: "all",
+      embeddingsProvider: "local",
+      hasEmbeddingsApiKey: false,
+    }),
+    probeHindsight: async () => false,
+    inspectHindsight: async () => ({ status: "stopped", pid: null }),
+  });
+  const status = await service.updateConfig("hindsight:coding-agent", {
+    llm: {
+      provider: "openai",
+      baseUrl: "http://127.0.0.1:8787/hindsight/",
+      model: "glm-5.3-zp",
+      embeddingsProvider: "local",
+      embeddingsModel: "",
+      embeddingsApiKey: "",
+    },
+    llmSource: {
+      type: "gateway",
+      client: "hindsight",
+      endpointId: null,
+      model: "glm-5.3-zp",
+    },
+    embeddingSource: {
+      type: "local",
+      client: "",
+      endpointId: null,
+      model: "",
+    },
+  });
+  assert.equal(saved.at(-1).hindsightProfiles["coding-agent"].embeddingSource.type, "local");
+  const merged = Object.assign({}, ...envWrites);
+  assert.equal(merged.embeddingsProvider, "local");
+  assert.notEqual(merged.embeddingsProvider, "openai");
+  assert.ok(!merged.embeddingsApiKey);
+  assert.equal(status.llm.embeddingsProvider, "local");
+  assert.deepEqual(status.llmSource, {
+    type: "gateway",
+    client: "hindsight",
+    endpointId: null,
+    model: "glm-5.3-zp",
+  });
+  assert.equal(status.embeddingSource.type, "local");
+});
+
+test("gateway source status round-trips client and model after save", async () => {
+  const executable = "/Users/pa/.local/bin/hindsight-embed";
+  const saved = [];
+  const envWrites = [];
+  const service = createCommandAppsService({
+    configStore: {
+      get() { return saved.at(-1) || { apps: { hindsight: { executablePath: executable } } }; },
+      save(next) { saved.push(next); return next; },
+    },
+    platform: "darwin",
+    fileExists: (value) => value === executable,
+    writeHindsightLlm: (patch) => envWrites.push({ ...patch }),
+    readHindsightLlm: () => {
+      const last = envWrites.at(-1) || {};
+      return {
+        provider: last.provider || "openai",
+        baseUrl: last.baseUrl || "http://127.0.0.1:8787/hindsight/",
+        model: last.model || "glm-5.3-zp",
+        hasApiKey: true,
+        apiKeyMasked: "all",
+        embeddingsProvider: last.embeddingsProvider || "local",
+        hasEmbeddingsApiKey: false,
+      };
+    },
+    probeHindsight: async () => false,
+    inspectHindsight: async () => ({ status: "stopped", pid: null }),
+  });
+  await service.updateConfig("hindsight:coding-agent", {
+    llm: {
+      provider: "openai",
+      baseUrl: "http://127.0.0.1:8787/hindsight/",
+      model: "glm-5.3-zp",
+      embeddingsProvider: "local",
+      embeddingsModel: "",
+      embeddingsApiKey: "",
+    },
+    llmSource: {
+      type: "gateway",
+      client: "codex",
+      endpointId: null,
+      model: "deepseek-v4-pro-jiyuan",
+    },
+    embeddingSource: {
+      type: "local",
+      client: "",
+      endpointId: null,
+      model: "",
+    },
+  });
+  const status = await service.getStatus("hindsight:coding-agent");
+  assert.deepEqual(status.llmSource, {
+    type: "gateway",
+    client: "codex",
+    endpointId: null,
+    model: "deepseek-v4-pro-jiyuan",
+  });
+  assert.equal(status.embeddingSource.type, "local");
+  const merged = Object.assign({}, ...envWrites);
+  assert.equal(merged.model, "deepseek-v4-pro-jiyuan");
+  assert.equal(merged.baseUrl, "http://127.0.0.1:8787/codex/");
+  assert.equal(merged.apiKey, "all");
+  assert.equal(merged.embeddingsProvider, "local");
+});
+
+
+test("gateway llm source keeps pointing at the stable local gateway even on a worktree port", async () => {
+  const executable = "/Users/pa/.local/bin/hindsight-embed";
+  const saved = [];
+  const envWrites = [];
+  const previousPort = process.env.GATEWAY_PORT;
+  process.env.GATEWAY_PORT = "8788";
+  try {
+    const service = createCommandAppsService({
+      configStore: {
+        get() { return saved.at(-1) || { apps: { hindsight: { executablePath: executable } } }; },
+        save(next) { saved.push(next); return next; },
+      },
+      platform: "darwin",
+      fileExists: (value) => value === executable,
+      writeHindsightLlm: (patch) => envWrites.push({ ...patch }),
+      readHindsightLlm: () => ({
+        provider: "openai",
+        baseUrl: envWrites.at(-1)?.baseUrl || "",
+        model: envWrites.at(-1)?.model || "",
+        hasApiKey: true,
+        apiKeyMasked: "all",
+        embeddingsProvider: "local",
+        hasEmbeddingsApiKey: false,
+      }),
+      probeHindsight: async () => false,
+      inspectHindsight: async () => ({ status: "stopped", pid: null }),
+    });
+    await service.updateConfig("hindsight:coding-agent", {
+      llmSource: {
+        type: "gateway",
+        client: "codex",
+        endpointId: null,
+        model: "deepseek-v4-pro-jiyuan",
+      },
+      embeddingSource: {
+        type: "local",
+        client: "",
+        endpointId: null,
+        model: "",
+      },
+    });
+    assert.equal(envWrites[0].baseUrl, "http://127.0.0.1:8787/codex/");
+    assert.equal(envWrites[0].model, "deepseek-v4-pro-jiyuan");
+    assert.equal(envWrites[0].apiKey, "all");
+  } finally {
+    if (previousPort === undefined) delete process.env.GATEWAY_PORT;
+    else process.env.GATEWAY_PORT = previousPort;
+  }
+});
+
 test("hindsight status is launching when lock pid is alive but health is down", async () => {
   const executable = "/Users/pa/.local/bin/hindsight-embed";
   const lastLaunchedAt = new Date().toISOString();
@@ -834,4 +1015,127 @@ test("hindsight stops reporting launching after the startup deadline", async () 
   });
   assert.equal(inspected.status, "stopped");
   assert.equal(inspected.pid, null);
+});
+
+test("hindsight profile files and daemon args stay isolated", () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "hindsight-profiles-"));
+  fs.mkdirSync(path.join(tmp, ".hindsight", "profiles"), { recursive: true });
+  fs.writeFileSync(path.join(tmp, ".hindsight", "embed"), "HINDSIGHT_API_LLM_MODEL=default-model\n");
+  fs.writeFileSync(path.join(tmp, ".hindsight", "profiles", "coding-agent.env"), "HINDSIGHT_API_LLM_MODEL=codex-model\n");
+  const profiles = listHindsightProfileFiles({
+    homeDir: tmp,
+    fileExists: (filePath) => fs.existsSync(filePath),
+    readDir: (dirPath) => fs.readdirSync(dirPath),
+  });
+  assert.deepEqual(profiles.map((item) => item.name).sort(), ["coding-agent", "default"]);
+  assert.equal(defaultHindsightConfigPath(tmp, "default"), path.join(tmp, ".hindsight", "embed"));
+  assert.equal(defaultHindsightConfigPath(tmp, "coding-agent"), path.join(tmp, ".hindsight", "profiles", "coding-agent.env"));
+  assert.deepEqual(hindsightDaemonArgs("start", "default"), ["daemon", "start"]);
+  assert.deepEqual(hindsightDaemonArgs("start", "coding-agent"), ["-p", "coding-agent", "daemon", "start"]);
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test("service lists each on-disk hindsight profile as its own card", async () => {
+  const executable = "/Users/pa/.local/bin/hindsight-embed";
+  const service = createCommandAppsService({
+    configStore: {
+      get() { return { apps: { hindsight: { executablePath: executable } } }; },
+      save() {},
+    },
+    platform: "darwin",
+    fileExists: (value) => value === executable,
+    listHindsightProfiles: () => ([
+      { name: "default", configPath: "/tmp/.hindsight/embed", port: 8888 },
+      { name: "coding-agent", configPath: "/tmp/.hindsight/profiles/coding-agent.env", port: 9077 },
+    ]),
+    readHindsightLlm: (profileName = "default") => ({
+      provider: "openai",
+      model: profileName === "coding-agent" ? "codex-model" : "default-model",
+      baseUrl: profileName === "coding-agent" ? "http://127.0.0.1:9077" : "http://127.0.0.1:8888",
+      hasApiKey: false,
+      apiKeyMasked: null,
+    }),
+    probeHindsight: async () => false,
+    inspectHindsight: async () => ({ status: "stopped", pid: null }),
+  });
+  const list = await service.listApps();
+  const cards = list.filter((item) => String(item.app.id).startsWith("hindsight"));
+  assert.equal(cards.length, 2);
+  assert.equal(cards[0].app.id, "hindsight");
+  assert.equal(cards[0].profileName, "default");
+  assert.equal(cards[1].app.id, "hindsight:coding-agent");
+  assert.equal(cards[1].profileName, "coding-agent");
+  assert.equal(cards[1].llm.model, "codex-model");
+});
+
+test("coding-agent plugin profile is listed even before its env file exists", () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "hindsight-plugin-"));
+  fs.mkdirSync(path.join(tmp, ".hindsight"), { recursive: true });
+  fs.writeFileSync(path.join(tmp, ".hindsight", "embed"), "HINDSIGHT_API_LLM_MODEL=default-model\n");
+  fs.writeFileSync(path.join(tmp, ".hindsight", "coding-agent.json"), JSON.stringify({ serverMode: "daemon" }));
+  const profiles = listHindsightProfileFiles({
+    homeDir: tmp,
+    fileExists: (filePath) => fs.existsSync(filePath),
+    readDir: (dirPath) => fs.existsSync(dirPath) ? fs.readdirSync(dirPath) : [],
+    readFile: (filePath) => fs.readFileSync(filePath, "utf8"),
+  });
+  assert.deepEqual(profiles.map((item) => item.name).sort(), ["coding-agent", "default"]);
+  const pluginProfile = profiles.find((item) => item.name === "coding-agent");
+  assert.equal(pluginProfile.declaredByPlugin, true);
+  assert.equal(pluginProfile.port, 9077);
+  assert.equal(pluginProfile.exists, false);
+  const plugin = readCodingAgentPluginConfig({
+    homeDir: tmp,
+    fileExists: (filePath) => fs.existsSync(filePath),
+    readFile: (filePath) => fs.readFileSync(filePath, "utf8"),
+  });
+  assert.equal(plugin.daemonProfile, "coding-agent");
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test("service always lists coding-agent and can point Codex at another profile", async () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "hindsight-plugin-bind-"));
+  const home = path.join(tmp, ".hindsight");
+  fs.mkdirSync(home, { recursive: true });
+  fs.writeFileSync(path.join(home, "embed"), "HINDSIGHT_API_LLM_MODEL=default-model\n");
+  fs.writeFileSync(path.join(home, "coding-agent.json"), JSON.stringify({ serverMode: "daemon", retainTags: ["keep-me"] }));
+  const executable = "/Users/pa/.local/bin/hindsight-embed";
+  const originalHome = process.env.HOME;
+  process.env.HOME = tmp;
+  try {
+    const service = createCommandAppsService({
+      configStore: {
+        get() { return { apps: { hindsight: { executablePath: executable } } }; },
+        save() {},
+      },
+      platform: "darwin",
+      fileExists: (value) => value === executable || fs.existsSync(value),
+      probeHindsight: async () => false,
+      inspectHindsight: async () => ({ status: "stopped", pid: null }),
+    });
+    const listed = await service.listApps();
+    const cards = listed.filter((item) => String(item.app.id).startsWith("hindsight"));
+    assert.equal(cards.length, 2);
+    const coding = cards.find((item) => item.profileName === "coding-agent");
+    const fallback = cards.find((item) => item.profileName === "default");
+    assert.equal(coding.app.id, "hindsight:coding-agent");
+    assert.equal(coding.plugin.usedByCodex, true);
+    assert.equal(coding.plugin.daemonProfile, "coding-agent");
+    assert.equal(fallback.plugin.usedByCodex, false);
+
+    const updated = await service.updateConfig("hindsight", { daemonProfile: "default" });
+    assert.equal(updated.plugin.usedByCodex, true);
+    assert.equal(updated.plugin.daemonProfile, "default");
+    const after = await service.listApps();
+    const afterCards = after.filter((item) => String(item.app.id).startsWith("hindsight"));
+    assert.deepEqual(afterCards.map((item) => item.profileName).sort(), ["coding-agent", "default"]);
+    assert.equal(afterCards.find((item) => item.profileName === "default").plugin.usedByCodex, true);
+    assert.equal(afterCards.find((item) => item.profileName === "coding-agent").plugin.usedByCodex, false);
+    const raw = JSON.parse(fs.readFileSync(path.join(home, "coding-agent.json"), "utf8"));
+    assert.equal(raw.daemonProfile, "default");
+    assert.deepEqual(raw.retainTags, ["keep-me"]);
+  } finally {
+    process.env.HOME = originalHome;
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
 });

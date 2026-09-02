@@ -2,6 +2,13 @@ import { registerTab } from "../core/navigation";
 import { showToast } from "../core/ui";
 import { escapeHtml } from "../core/dom";
 
+type ModelSource = {
+  type: "custom" | "gateway" | "local";
+  client: string;
+  endpointId: string | null;
+  model: string;
+};
+
 type CommandAppLlm = {
   provider?: string;
   baseUrl?: string;
@@ -31,7 +38,17 @@ type CommandAppStatus = {
     args?: string[];
     supported?: boolean;
     configurableLlm?: boolean;
+    profileName?: string;
   };
+  profileName?: string;
+  configPath?: string;
+  plugin?: {
+    exists?: boolean;
+    serverMode?: string | null;
+    daemonProfile?: string;
+    apiPort?: number;
+    usedByCodex?: boolean;
+  } | null;
   configured?: boolean;
   executablePath?: string;
   manuallyConfigured?: boolean;
@@ -43,18 +60,13 @@ type CommandAppStatus = {
     launchedByPanel?: boolean;
   };
   llm?: CommandAppLlm | null;
+  llmSource?: ModelSource | null;
+  embeddingSource?: ModelSource | null;
   endpoints?: {
     healthUrl?: string;
     mcpUrl?: string;
     port?: number;
   } | null;
-};
-
-type ModelSource = {
-  type: "custom" | "gateway" | "local";
-  client: string;
-  endpointId: string | null;
-  model: string;
 };
 
 const state: {
@@ -67,6 +79,7 @@ const state: {
   llmDrafts: Record<string, Required<CommandAppLlm>>;
   modelSources: Record<string, { llm: ModelSource; embedding: ModelSource }>;
   actionBusy: Record<string, "" | "launch" | "restart" | "stop" | "rescan" | "save" | "save-llm">;
+  view: "list" | "hindsight";
 } = {
   loading: false,
   error: "",
@@ -77,6 +90,7 @@ const state: {
   llmDrafts: {},
   modelSources: {},
   actionBusy: {},
+  view: "list",
 };
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -160,7 +174,30 @@ function llmDraftFromStatus(llm?: CommandAppLlm | null): Required<CommandAppLlm>
 }
 
 function defaultModelSource(type: ModelSource["type"] = "gateway"): ModelSource {
-  return { type, client: "codex", endpointId: null, model: "" };
+  return { type, client: type === "local" ? "" : (clientNames()[0] || "codex"), endpointId: null, model: "" };
+}
+
+function normalizeModelSource(raw?: ModelSource | null, fallbackType: ModelSource["type"] = "gateway"): ModelSource {
+  const type = raw?.type || fallbackType;
+  return {
+    type,
+    client: String(raw?.client || (type === "gateway" ? (clientNames()[0] || "codex") : "")),
+    endpointId: raw?.endpointId || null,
+    model: String(raw?.model || ""),
+  };
+}
+
+function sourcesFromStatus(status?: CommandAppStatus | null): { llm: ModelSource; embedding: ModelSource } {
+  const llm = normalizeModelSource(status?.llmSource, "gateway");
+  const embedding = normalizeModelSource(status?.embeddingSource, "local");
+  if (llm.type === "gateway") llm.model = resolvedGatewayModel(llm);
+  if (embedding.type === "gateway") embedding.model = resolvedGatewayModel(embedding, "embedding");
+  return { llm, embedding };
+}
+
+function resolvedGatewayModel(source: ModelSource, purpose?: string): string {
+  if (source.model && modelOptionsFor(source, purpose).includes(source.model)) return source.model;
+  return modelOptionsFor(source, purpose)[0] || source.model || "";
 }
 
 function modeButtons(appId: string, kind: "llm" | "embedding", source: ModelSource): string {
@@ -206,6 +243,52 @@ function modelOptionsFor(source: ModelSource, purpose?: string): string[] {
   return [...new Set(models)];
 }
 
+function isHindsightApp(status: CommandAppStatus): boolean {
+  return Boolean(status.app?.id && String(status.app.id).startsWith("hindsight"));
+}
+
+function hindsightApps(): CommandAppStatus[] {
+  return state.apps.filter(isHindsightApp);
+}
+
+function otherApps(): CommandAppStatus[] {
+  return state.apps.filter((item) => !isHindsightApp(item));
+}
+
+function activeHindsight(): CommandAppStatus | null {
+  const apps = hindsightApps();
+  return apps.find((item) => item.plugin?.usedByCodex) || apps.find((item) => item.profileName === "coding-agent") || apps[0] || null;
+}
+
+function currentHashView(): "list" | "hindsight" {
+  const hash = String(window.location.hash || "").replace(/^#/, "");
+  const parts = hash.split("/");
+  return parts[0] === "command-apps" && parts[1] === "hindsight" ? "hindsight" : "list";
+}
+
+function setView(view: "list" | "hindsight", { replace = false }: { replace?: boolean } = {}): void {
+  state.view = view;
+  const next = view === "hindsight" ? "#command-apps/hindsight" : "#command-apps";
+  if (replace) history.replaceState(null, "", next);
+  else if (window.location.hash !== next) history.pushState(null, "", next);
+  render();
+}
+
+function profileLabel(status: CommandAppStatus): string {
+  return status.profileName || status.app?.profileName || "default";
+}
+
+function daemonDescription(status: CommandAppStatus): string {
+  const profileName = status.profileName || status.app?.profileName || "default";
+  if (profileName === "coding-agent") {
+    return "编码 Agent 插件默认使用的记忆库。给它配置 LLM 后，Codex / Antigravity 才会走这套模型和端口。";
+  }
+  if (status.plugin?.usedByCodex) {
+    return "当前被编码 Agent 插件使用的记忆服务。页面上的 LLM / Base URL 会写入这个 profile。";
+  }
+  return "本地记忆服务。可配置自定义 LLM 中转，并由网关托管 daemon。";
+}
+
 function renderCard(status: CommandAppStatus): string {
   const appId = status.app?.id || "unknown";
   const isProject = status.app?.type === "project";
@@ -225,10 +308,7 @@ function renderCard(status: CommandAppStatus): string {
     : status.manuallyConfigured ? "手动路径" : "自动检测";
   const draft = state.pathDrafts[appId] ?? (status.executablePath || "");
   const llm = llmDraftFor(status);
-  const sources = state.modelSources[appId] || {
-    llm: defaultModelSource(),
-    embedding: defaultModelSource(),
-  };
+  const sources = state.modelSources[appId] || sourcesFromStatus(status);
   const llmModelOptions = modelOptionsFor(sources.llm);
   const embeddingModelOptions = modelOptionsFor(sources.embedding, "embedding");
 
@@ -247,14 +327,20 @@ function renderCard(status: CommandAppStatus): string {
           <dt>MCP</dt>
           <dd class="command-apps-path">${escapeHtml(status.endpoints?.mcpUrl || "http://127.0.0.1:8888/mcp/default/")}</dd>
           <span class="command-apps-badge">:${Number(status.endpoints?.port || 8888)}</span>
+        </div>
+        <div>
+          <dt>Profile</dt>
+          <dd class="command-apps-path">${escapeHtml(status.profileName || status.app?.profileName || "default")}</dd>
+          <span class="command-apps-badge">${escapeHtml(status.configPath || (status.profileName && status.profileName !== "default" ? `~/.hindsight/profiles/${status.profileName}.env` : "~/.hindsight/embed"))}</span>
+          ${status.plugin?.usedByCodex ? `<span class="command-apps-badge is-codex">插件正在使用</span>` : ""}
         </div>` : "";
 
   return `
     <div class="command-apps-card${running ? " is-running" : ""}${!isSupported ? " is-unsupported" : ""}${hasError ? " is-card-error" : ""}" data-app-id="${escapeHtml(appId)}">
       <div class="command-apps-header">
         <div>
-          <h3>${escapeHtml(status.app?.displayName || appId)}</h3>
-          <p>${escapeHtml(status.app?.description || (isProject ? "本地网关服务，支持热重启与服务状态监控。" : (isDaemon ? "本地记忆服务。可配置自定义 LLM 中转，并由网关托管 daemon。" : "Windows 兼容模式启动，避免每次打开终端。")))}</p>
+          <h3>${escapeHtml(isDaemon && state.view === "hindsight" ? profileLabel(status) : (status.app?.displayName || appId))}</h3>
+          <p>${escapeHtml(isDaemon ? daemonDescription(status) : (status.app?.description || (isProject ? "本地网关服务，支持热重启与服务状态监控。" : "Windows 兼容模式启动，避免每次打开终端。")))}</p>
         </div>
         <span class="command-apps-status ${meta.className}" role="status">
           <span class="command-apps-dot" aria-hidden="true"></span>${escapeHtml(meta.text)}
@@ -303,10 +389,11 @@ ${sources.llm.type === "gateway" ? `
           <select id="command-apps-llm-source-model-${escapeHtml(appId)}" onchange="window.__commandAppsSourceChange('${escapeHtml(appId)}', 'llm', 'model', this.value)" ${llmModelOptions.length ? "" : "disabled"}>
             ${llmModelOptions.map((model) => `<option value="${escapeHtml(model)}" ${sources.llm.model === model ? "selected" : ""}>${escapeHtml(model)}</option>`).join("") || `<option value="">无可用模型</option>`}
           </select>
-          <div class="command-apps-field-help">选择具体节点后，模型来自该节点映射模型和模型列表；自动路由会列出该 Client 全部可用模型。</div>
+          <div class="command-apps-field-help">选择具体节点后，模型来自该节点映射模型和模型列表；自动路由会列出该 Client 全部可用模型。点保存后会写入当前筛选项。</div>
 ` : `
           <div class="command-apps-hint">自定义模式会直接使用下方 Provider、Base URL、模型和 API Key，不再走本网关。</div>
 `}
+${sources.llm.type === "custom" ? `
           <label for="command-apps-llm-provider-${escapeHtml(appId)}">Provider</label>
           <input id="command-apps-llm-provider-${escapeHtml(appId)}" type="text" spellcheck="false" autocomplete="off" value="${escapeHtml(llm.provider)}" placeholder="openai" />
           <div class="command-apps-field-help">记忆抽取、反思和整理使用的模型协议，例如 openai、anthropic、deepseek、zai、ollama。</div>
@@ -318,7 +405,8 @@ ${sources.llm.type === "gateway" ? `
           <div class="command-apps-field-help">用于事实抽取、记忆反思和回答综合的模型。</div>
           <label for="command-apps-llm-apikey-${escapeHtml(appId)}">API Key${status.llm?.hasApiKey ? `（已保存 ${escapeHtml(status.llm?.apiKeyMasked || "****")}，留空则保持不变）` : ""}</label>
           <input id="command-apps-llm-apikey-${escapeHtml(appId)}" type="password" spellcheck="false" autocomplete="off" value="${escapeHtml(llm.apiKey)}" placeholder="sk-..." />
-          <div class="command-apps-field-help">密钥只写入本机 ~/.hindsight/embed，不会回传给浏览器。</div>
+          <div class="command-apps-field-help">密钥只写入该 profile 自己的配置文件，不会回传给浏览器。</div>
+` : ""}
 
           <div class="command-apps-form-title">网络与端口</div>
           <label for="command-apps-llm-host-${escapeHtml(appId)}">服务监听地址</label>
@@ -365,6 +453,7 @@ ${sources.embedding.type === "gateway" ? `
 ` : `
           <div class="command-apps-hint">自定义模式会直接使用下方 Provider、模型和 API Key，不再走本网关。</div>
 `}
+${sources.embedding.type === "custom" ? `
           <label for="command-apps-llm-embed-provider-${escapeHtml(appId)}">Embedding Provider</label>
           <input id="command-apps-llm-embed-provider-${escapeHtml(appId)}" type="text" spellcheck="false" autocomplete="off" value="${escapeHtml(llm.embeddingsProvider)}" placeholder="local" />
           <div class="command-apps-field-help">local 使用本机模型；openai 使用 OpenAI-compatible embedding 服务；留空使用默认 local。</div>
@@ -374,6 +463,7 @@ ${sources.embedding.type === "gateway" ? `
           <label for="command-apps-llm-embed-apikey-${escapeHtml(appId)}">Embedding API Key${status.llm?.hasEmbeddingsApiKey ? `（已保存，留空则保持不变）` : ""}</label>
           <input id="command-apps-llm-embed-apikey-${escapeHtml(appId)}" type="password" spellcheck="false" autocomplete="off" value="${escapeHtml(llm.embeddingsApiKey)}" placeholder="sk-..." />
           <div class="command-apps-field-help">独立于主 LLM Key；仅在使用云端 embedding 服务时需要。</div>
+` : ""}
 
           <div class="command-apps-form-title">重排模型（Reranker）</div>
           <label for="command-apps-llm-rerank-provider-${escapeHtml(appId)}">Reranker Provider</label>
@@ -382,7 +472,7 @@ ${sources.embedding.type === "gateway" ? `
           <label for="command-apps-llm-rerank-model-${escapeHtml(appId)}">Reranker 模型名</label>
           <input id="command-apps-llm-rerank-model-${escapeHtml(appId)}" type="text" spellcheck="false" autocomplete="off" value="${escapeHtml(llm.rerankerModel)}" placeholder="BAAI/bge-reranker-v2-m3" />
           <div class="command-apps-field-help">local 填本地模型名；siliconflow 填托管模型名。云端 Provider 的 API Key 仍需在 env 文件中配置。</div>
-          <div class="command-apps-hint">保存后写入 ~/.hindsight/embed。已运行的 daemon 需要重启后才会使用新的中转配置。启动时会剥离 SOCKS 代理，避免 httpx 缺少 socksio。</div>
+          <div class="command-apps-hint">保存后写入 ${escapeHtml(status.configPath || "~/.hindsight/embed")}。已运行的 daemon 需要重启后才会使用新的中转配置。启动时会剥离 SOCKS 代理，避免 httpx 缺少 socksio。</div>
           <div class="command-apps-actions">
             <button class="btn btn-primary" type="submit" ${isBusy ? "disabled" : ""}>${busyAction === "save-llm" ? "保存中..." : "保存 LLM 配置"}</button>
             <button class="btn" type="button" onclick="window.__commandAppsCancelLlm('${escapeHtml(appId)}')" ${isBusy ? "disabled" : ""}>取消</button>
@@ -414,6 +504,73 @@ ${sources.embedding.type === "gateway" ? `
   `;
 }
 
+function renderHindsightSummary(): string {
+  const profiles = hindsightApps();
+  if (!profiles.length) return "";
+  const active = activeHindsight();
+  const runningCount = profiles.filter((item) => item.process?.status === "running").length;
+  const launching = profiles.some((item) => item.process?.status === "launching");
+  const hasError = profiles.some((item) => item.error || item.process?.status === "error");
+  const meta = hasError
+    ? { className: "is-error", text: "加载异常" }
+    : launching
+      ? { className: "is-neutral", text: "启动中" }
+      : runningCount
+        ? { className: "is-running", text: runningCount > 1 ? `${runningCount} 个记忆库运行中` : "运行中" }
+        : { className: "is-stopped", text: "已停止" };
+  const activeName = active ? profileLabel(active) : "coding-agent";
+  const port = active?.endpoints?.port || 9077;
+  const model = active?.llm?.model || "未配置模型";
+  return `
+    <div class="command-apps-card${runningCount ? " is-running" : ""}${hasError ? " is-card-error" : ""}" data-app-id="hindsight">
+      <div class="command-apps-header">
+        <div>
+          <h3>Hindsight</h3>
+          <p>本地记忆服务。编码 Agent 共用插件记忆库；LLM 按记忆库分开配置。</p>
+        </div>
+        <span class="command-apps-status ${meta.className}" role="status">
+          <span class="command-apps-dot" aria-hidden="true"></span>${escapeHtml(meta.text)}
+        </span>
+      </div>
+      <dl class="command-apps-meta">
+        <div>
+          <dt>插件记忆库</dt>
+          <dd class="command-apps-path">${escapeHtml(activeName)}</dd>
+          <span class="command-apps-badge is-codex">:${Number(port)}</span>
+          <span class="command-apps-badge">${escapeHtml(model)}</span>
+        </div>
+        <div>
+          <dt>记忆库</dt>
+          <dd>${profiles.length} 个 profile</dd>
+          <span class="command-apps-badge">${profiles.map((item) => escapeHtml(profileLabel(item))).join(" · ")}</span>
+        </div>
+      </dl>
+      <div class="command-apps-actions">
+        <button class="btn btn-primary" onclick="window.__commandAppsOpenHindsight()">打开记忆库</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderHindsightDetail(): string {
+  const profiles = hindsightApps();
+  const active = activeHindsight();
+  const activeName = active ? profileLabel(active) : "coding-agent";
+  return `
+    <button class="btn" type="button" onclick="window.__commandAppsBackToList()" style="margin-bottom:16px">← 返回命令行程序</button>
+    <div class="command-apps-detail-head">
+      <div>
+        <h3>Hindsight 记忆服务</h3>
+        <p>每个 profile 有自己的端口和 LLM 配置。Codex / Antigravity 共用当前这间插件记忆库，不需要再点切换。</p>
+      </div>
+      <span class="command-apps-badge is-codex">插件当前使用 ${escapeHtml(activeName)}</span>
+    </div>
+    <div class="command-apps-profile-list">
+      ${profiles.map((item) => renderCard(item)).join("")}
+    </div>
+  `;
+}
+
 function render(): void {
   const root = rootEl();
   if (!root) return;
@@ -430,11 +587,13 @@ function render(): void {
     return;
   }
 
+  const detail = state.view === "hindsight";
   root.innerHTML = `
     ${state.error ? `<div class="command-apps-error" role="alert" style="margin-bottom: 16px;">${escapeHtml(state.error)}</div>` : ""}
-    <div style="display: flex; flex-direction: column; gap: 16px;">
-      ${state.apps.map((app) => renderCard(app)).join("")}
-    </div>
+    ${detail ? renderHindsightDetail() : `<div style="display: flex; flex-direction: column; gap: 16px;">
+      ${otherApps().map((app) => renderCard(app)).join("")}
+      ${renderHindsightSummary()}
+    </div>`}
   `;
 }
 
@@ -447,10 +606,12 @@ async function load(): Promise<void> {
   try {
     const data = await api<{ apps: CommandAppStatus[] }>("/v1/command-apps/apps");
     state.apps = data.apps || [];
+    state.view = currentHashView();
     for (const app of state.apps) {
       if (app.app?.id) {
         state.pathDrafts[app.app.id] = app.executablePath || "";
         state.llmDrafts[app.app.id] = llmDraftFromStatus(app.llm);
+        state.modelSources[app.app.id] = sourcesFromStatus(app);
       }
     }
   } catch (error: any) {
@@ -492,6 +653,9 @@ function updateAppStatus(status: CommandAppStatus): void {
     state.apps.push(status);
   }
   state.pathDrafts[appId] = status.executablePath || "";
+  if (state.editingLlmAppId !== appId) {
+    state.modelSources[appId] = sourcesFromStatus(status);
+  }
 }
 
 async function launch(appId: string = "antigravity"): Promise<void> {
@@ -573,10 +737,7 @@ async function savePath(event: Event, appId: string = "antigravity"): Promise<vo
 function editLlm(appId: string = "hindsight"): void {
   const current = state.apps.find((a) => a.app?.id === appId);
   state.llmDrafts[appId] = llmDraftFromStatus(current?.llm);
-  state.modelSources[appId] ||= {
-    llm: defaultModelSource(),
-    embedding: defaultModelSource(),
-  };
+  state.modelSources[appId] = sourcesFromStatus(current);
   state.editingLlmAppId = appId;
   state.editingAppId = null;
   state.error = "";
@@ -586,13 +747,13 @@ function editLlm(appId: string = "hindsight"): void {
 function sourceChange(appId: string, kind: "llm" | "embedding", field: "client" | "endpoint" | "model", value: string): void {
   const sources = state.modelSources[appId] || {
     llm: defaultModelSource(),
-    embedding: defaultModelSource(),
+    embedding: defaultModelSource("local"),
   };
   const next = { ...sources[kind] };
   if (field === "client") {
     next.client = value;
     next.endpointId = null;
-    next.model = "";
+    next.model = resolvedGatewayModel({ ...next, client: value, endpointId: null, model: "" }, kind === "embedding" ? "embedding" : undefined);
   } else if (field === "endpoint") {
     next.endpointId = value || null;
     const endpoint = endpointsFor(next.client, kind === "embedding" ? "embedding" : undefined)
@@ -616,7 +777,7 @@ function sourceModeChange(appId: string, kind: "llm" | "embedding", type: ModelS
   if (type === "gateway") {
     next.client = next.client || clientNames()[0] || "codex";
     next.endpointId = null;
-    next.model = "";
+    next.model = resolvedGatewayModel({ ...next, type: "gateway" }, kind === "embedding" ? "embedding" : undefined);
   } else if (type === "local") {
     next.client = "";
     next.endpointId = null;
@@ -630,6 +791,7 @@ function cancelLlm(appId: string = "hindsight"): void {
   if (state.editingLlmAppId === appId) state.editingLlmAppId = null;
   const current = state.apps.find((a) => a.app?.id === appId);
   state.llmDrafts[appId] = llmDraftFromStatus(current?.llm);
+  state.modelSources[appId] = sourcesFromStatus(current);
   render();
 }
 
@@ -638,6 +800,18 @@ async function saveLlm(event: Event, appId: string = "hindsight"): Promise<void>
   const draft = llmDraftFor({ app: { id: appId }, llm: state.llmDrafts[appId] });
   const sources = state.modelSources[appId];
   await runAction(appId, "save-llm", async () => {
+    const embeddingMode = sources?.embedding?.type || "local";
+    const llmMode = sources?.llm?.type || "custom";
+    const llmSource = sources?.llm ? {
+      ...sources.llm,
+      type: llmMode,
+      model: llmMode === "gateway" ? resolvedGatewayModel(sources.llm) : sources.llm.model,
+    } : null;
+    const embeddingSource = sources?.embedding ? {
+      ...sources.embedding,
+      type: embeddingMode,
+      model: embeddingMode === "gateway" ? resolvedGatewayModel(sources.embedding, "embedding") : sources.embedding.model,
+    } : null;
     const llm: Record<string, unknown> = {
       provider: draft.provider.trim(),
       baseUrl: draft.baseUrl.trim(),
@@ -648,24 +822,26 @@ async function saveLlm(event: Event, appId: string = "hindsight"): Promise<void>
       reasoningEffort: draft.reasoningEffort.trim(),
       temperature: draft.temperature.trim(),
       strictSchema: draft.strictSchema.trim(),
-      embeddingsProvider: draft.embeddingsProvider.trim(),
-      embeddingsModel: draft.embeddingsModel.trim(),
+      embeddingsProvider: embeddingMode === "local" ? "local" : draft.embeddingsProvider.trim(),
+      embeddingsModel: embeddingMode === "local" ? "" : draft.embeddingsModel.trim(),
       rerankerProvider: draft.rerankerProvider.trim(),
       rerankerModel: draft.rerankerModel.trim(),
     };
     if (draft.apiKey.trim()) llm.apiKey = draft.apiKey.trim();
-    if (draft.embeddingsApiKey.trim()) llm.embeddingsApiKey = draft.embeddingsApiKey.trim();
+    if (embeddingMode !== "local" && draft.embeddingsApiKey.trim()) llm.embeddingsApiKey = draft.embeddingsApiKey.trim();
+    if (embeddingMode === "local") llm.embeddingsApiKey = "";
     const status = await api<CommandAppStatus>(`/v1/command-apps/apps/${encodeURIComponent(appId)}/config`, {
       method: "PUT",
       body: JSON.stringify({
         llm,
-        ...(sources ? {
-          llmSource: { type: "gateway", ...sources.llm },
-          embeddingSource: { type: "gateway", ...sources.embedding },
+        ...(llmSource && embeddingSource ? {
+          llmSource,
+          embeddingSource,
         } : {}),
       }),
     });
     updateAppStatus(status);
+    state.modelSources[appId] = sourcesFromStatus(status);
     if (state.editingLlmAppId === appId) state.editingLlmAppId = null;
     state.llmDrafts[appId] = {
       ...llmDraftFromStatus(status.llm),
@@ -753,6 +929,11 @@ async function refreshQuietly(): Promise<void> {
   try {
     const data = await api<{ apps: CommandAppStatus[] }>("/v1/command-apps/apps");
     state.apps = data.apps || [];
+    for (const app of state.apps) {
+      const appId = app.app?.id;
+      if (!appId || state.editingLlmAppId === appId) continue;
+      state.modelSources[appId] = sourcesFromStatus(app);
+    }
     render();
     if (!shouldPoll()) stopPolling();
   } catch {
@@ -760,7 +941,35 @@ async function refreshQuietly(): Promise<void> {
   }
 }
 
+(window as any).__commandAppsOpenHindsight = function openHindsight(): void {
+  setView("hindsight");
+};
+(window as any).__commandAppsBackToList = function backToList(): void {
+  state.editingAppId = null;
+  state.editingLlmAppId = null;
+  setView("list");
+};
+(window as any).__commandAppsOpenSubView = function openSubView(subView?: string): void {
+  setView(subView === "hindsight" ? "hindsight" : "list", { replace: true });
+};
+
+window.addEventListener("popstate", () => {
+  if (!String(window.location.hash || "").startsWith("#command-apps")) return;
+  const next = currentHashView();
+  if (next !== state.view) {
+    state.view = next;
+    if (next === "list") {
+      state.editingAppId = null;
+      state.editingLlmAppId = null;
+    }
+    render();
+  }
+});
+
 registerTab("command-apps", {
-  onEnter: () => { void load(); },
+  onEnter: () => {
+    state.view = currentHashView();
+    void load();
+  },
   onLeave: () => { stopPolling(); },
 });
