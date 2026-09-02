@@ -125,21 +125,54 @@ AI 后台执行 `node scripts/cloud_mysql_query.js <appId|port> [database|sql] [
 
 ---
 
-## 🔌 5. 服务云 Token 凭证获取与 Chrome 插件引导规范
+## 🔌 5. 跨平台 Token/Cookie 凭证获取与 Chrome 插件引导规范
 
-当执行查库遇到 **Token 缺失** 或 **Token 过期（HTTP 302 重定向至登录页）** 时，AI 必须主动向用户提供友好引导，严禁仅抛出冷冰冰的报错：
+当执行查库或日志自愈遇到 **凭证缺失** 或 **凭证过期（302 重定向）** 时，AI 必须根据用户操作系统（Mac / Windows）主动提供清晰、精准的引导，严禁仅抛出冷冰冰的报错或模糊的 F12 指引：
 
-1. **首选推荐：引导安装/使用内置通用 Chrome 插件 (`Leo cookie.txt Locally`)**
-   * **插件绝对路径**：
-     * Skill 内置目录：`resources/chrome_extension`（或 `~/.agents/skills/leo-live-inspector/resources/chrome_extension`）
-     * 源码主目录：`extensions/leo-cookie-txt-locally`
-   * **一键引导脚本**：可直接在 Mac 执行 `bash scripts/setup_chrome_ext.sh`（自动复制路径至剪贴板并打开 Chrome 扩展管理页）；
-   * **手动 3 步**：打开 `chrome://extensions` ➔ 开启【开发者模式】➔ 点击【加载已解压的扩展程序】➔ 粘贴上述路径。
-   * **提取 Token**：在服务云页面点击插件图标，直接点【复制】单项 Token 或点【📥 下载 cookies.txt】（脚本自动监听 Downloads 目录，下载后立即可查）。
+### 🔑 核心凭证 Key 速查
+* **服务云 MySQL 查库**：目标页面 `https://cloud.intra.ke.com/database/mysql/self-check` ➔ 核心 Key: **`cloud_console_token_egg`**（`2.0...` 开头长串）
+* **FAST 日志全量自愈**：目标页面 `https://fast.ke.com` ➔ 核心 Key: **`_secondx`**（32位十六进制字符串）
 
-2. **备选方案：无插件场景下的 F12 手动提取**
-   * 引导用户在已登录的服务云页面按 `F12` ➔【Application (应用)】➔【Cookies】➔【cloud.intra.ke.com】；
-   * 复制 `cloud_console_token_egg` 的值并在聊天框发给 AI。
+---
+
+### 🖥️ 分平台 Chrome 插件安装与引导流程（首选推荐）
+
+#### 🍏 macOS 用户引导指引：
+1. **一键自动安装（最推荐）**：在终端执行：
+   ```bash
+   bash ~/.agents/skills/leo-live-inspector/scripts/setup_chrome_ext.sh
+   ```
+   *脚本会自动定位插件目录并复制到剪贴板，同时替您打开 Chrome 扩展管理页。*
+2. **或者手动在 Chrome 加载**：
+   * 打开 `chrome://extensions/` 并开启右上角【开发者模式】；
+   * 点击左上角【加载已解压的扩展程序】；
+   * 按快捷键 `Cmd + Shift + G`，粘贴插件路径：
+     `~/.agents/skills/leo-live-inspector/resources/chrome_extension`（或工程下的 `resources/chrome_extension`），回车并确认。
+3. **获取凭证**：
+   * 打开目标页面（服务云或 FAST）；
+   * 点击浏览器右上角拼图中的 **Leo cookie.txt Locally** 图标；
+   * 在列表中找到对应 Key（**`cloud_console_token_egg`** 或 **`_secondx`**），点击右侧 **【复制】** 发给 AI；
+   * *（或者直接点击【📥 下载 cookies.txt】，脚本会自动从 Downloads 目录读取，免手动粘贴）*。
+
+#### 🪟 Windows 用户引导指引：
+1. **一键自动安装（最推荐）**：
+   * 双击运行 Skill 目录下的 `scripts\setup_chrome_ext.bat`；
+   * *批处理脚本会自动通过 `%~dp0` 动态获取当前盘符的绝对路径并塞入 Windows 剪贴板，同时打开 Chrome 扩展页。*
+2. **或者手动在 Chrome 加载**：
+   * 打开 `chrome://extensions/` 并开启右上角【开发者模式】；
+   * 点击左上角【加载已解压的扩展程序】；
+   * 在弹窗路径栏直接按 `Ctrl + V` 粘贴剪贴板中的路径并回车确认。
+3. **获取凭证**：
+   * 打开服务云或 FAST 页面，点击插件图标；
+   * 对应 Key 点击 **【复制】** 发给 AI（或点击【📥 下载 cookies.txt】）。
+
+---
+
+### 🛠️ 备选方案：无插件场景下的 F12 手动提取（受限环境）
+如果用户由于安全策略无法安装插件，AI 指引其按以下步骤手动复制：
+1. 在已登录的目标页面按 `F12` 打开控制台；
+2. 切换到【Application (应用)】➔ 左侧展开【Cookies】➔ 点击对应域名；
+3. 搜索并双击复制对应的 Key（查库找 `cloud_console_token_egg`，日志找 `_secondx`），复制后发给 AI。
 
 ---
 
