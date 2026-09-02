@@ -4540,9 +4540,14 @@ window.discardEndpointDraft = function(client, index) {
 };
 
 window.switchTab = function(tabId) {
-    // Update URL hash so refresh keeps the current tab
+    // Update URL hash so refresh keeps the current tab. Keep in-tab subviews
+    // such as #command-apps/hindsight when the same top-level tab is re-entered.
+    const currentHash = String(window.location.hash || '').replace(/^#/, '');
+    const currentTab = currentHash.split('/')[0];
     if (tabId && tabId !== 'code') {
-        history.replaceState(null, '', '#' + tabId);
+        if (!(tabId === currentTab && currentHash.includes('/'))) {
+            history.replaceState(null, '', '#' + tabId);
+        }
     } else {
         history.replaceState(null, '', window.location.pathname);
     }
@@ -7176,6 +7181,8 @@ window.addEventListener('load', () => {
                 setTimeout(() => window.openTool(parts[1]), 100);
             } else if (tabId === 'extensions') {
                 setTimeout(() => window.openExtension(parts[1]), 100);
+            } else if (tabId === 'command-apps') {
+                setTimeout(() => (window as any).__commandAppsOpenSubView?.(parts[1]), 100);
             }
         }
     }
