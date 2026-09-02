@@ -35,8 +35,10 @@ description: 线上与测试环境全场景数据探查、日志检索、TraceId
 | **“查下【测试环境】saas 的 Apollo 配置或开关”** | `node scripts/apollo_query.js saas -e test` | 测试环境 (test.config.apollo.ke.com) 实时配置 |
 | **“查下【预发环境】saas 的超时配置 timeout”** | `node scripts/apollo_query.js saas -e preview timeout` | 预发环境 (prev.config.apollo.ke.com) 超时参数明细 |
 | **“看下 iot-platform 上的 lockAuth 开关或白名单”** | `node scripts/apollo_query.js iot-platform lockAuth` | 匹配到的业务开关、白名单及解析后的格式化 JSON |
-| **“排查 utopia-scs-saas 的超时配置 / timeout”** | `node scripts/apollo_query.js utopia-scs-saas timeout` | Feign/Ribbon/Redis 超时时间列表 |
 | **“查下 Apollo application.properties 里的 weitang 配置”** | `node scripts/apollo_query.js iot-platform application.properties weitang` | 指定命名空间下的精准配置项 |
+| **“查下 recorder 最新的 5 条图片数据”** | `node scripts/cloud_mysql_query.js recorder "SELECT id, source, ctime FROM image_understanding_detail ORDER BY id DESC LIMIT 5"` | 数据库实时表数据表格，含耗时与行数 |
+| **“查下 saas 库的租户配置或订单”** | `node scripts/cloud_mysql_query.js saas "SELECT * FROM algo_detect_report ORDER BY id DESC LIMIT 5"` | SaaS 租户库表数据明细 |
+| **“指定端口 6763 和库名查 SQL”** | `node scripts/cloud_mysql_query.js 6763 utopia_scs_recorder "SELECT count(*) FROM image_understanding_detail"` | 自定义端口与库名统计输出 |
 
 ---
 
@@ -99,7 +101,22 @@ AI 后台执行 `node scripts/apollo_query.js <appId|alias> [namespace|keyKeywor
 
 ---
 
-## 📊 3. AI 交付呈现规范
+## 🗄️ 3. 服务云 MySQL 自助查询内部 CLI 参数速查
+AI 后台执行 `node scripts/cloud_mysql_query.js <appId|port> [database|sql] [sql] [options]`：
+
+| 参数/选项 | 简写 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `<appId\|port>` | - | 必填 | 目标微服务别名 (如 `recorder`, `saas`, `algo`) 或端口号 (如 `6763`) |
+| `[database\|sql]` | - | 必填 | 库名（当第 1 参数为端口时）或待执行的 SQL（当第 1 参数为服务别名时） |
+| `[sql]` | - | 可选 | 待执行的 SQL 语句（当第 1 参数为端口号时） |
+| `--role` | - | `Slave` | 查询角色: `Slave` (从库只读) 或 `Master` (主库) |
+| `--set-token` | - | - | 保存更新服务云 `cloud_console_token_egg` 凭证至本地缓存 |
+| `--token` | - | - | 临时覆盖 Token |
+| `--json` | - | `false` | 输出纯 JSON 数据结果 |
+
+---
+
+## 📊 4. AI 交付呈现规范
 
 1. **日志排查交付**：概况元信息 ➕ 结构化明细表格 ➕ 异常原因与堆栈分析；
 2. **TraceId 追溯交付**：**强制绘制清晰的 Mermaid 时序交互图**（展示 上游 -> 微服务 -> DB/Redis/下游）；
