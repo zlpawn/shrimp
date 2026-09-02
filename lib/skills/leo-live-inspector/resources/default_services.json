@@ -25,13 +25,13 @@
     "realAppId": "zulin-iot-platform"
   },
   "saas": {
-    "index": "index-8481-7703*",
-    "cluster": "https://fast108-kibana-logcenter-intra.intra.ke.com",
+    "index": "index-9592-8939*",
+    "cluster": "https://fast105-kibana-logcenter-intra.intra.ke.com",
     "realAppId": "utopia-scs-saas"
   },
   "scs": {
-    "index": "index-8481-7703*",
-    "cluster": "https://fast108-kibana-logcenter-intra.intra.ke.com",
+    "index": "index-9592-8939*",
+    "cluster": "https://fast105-kibana-logcenter-intra.intra.ke.com",
     "realAppId": "utopia-scs-saas"
   },
   "adaptor": {
@@ -161,8 +161,8 @@
     "cluster": "https://fast108-kibana-logcenter-intra.intra.ke.com"
   },
   "utopia-scs-saas": {
-    "index": "index-8481-7703*",
-    "cluster": "https://fast108-kibana-logcenter-intra.intra.ke.com"
+    "index": "index-9592-8939*",
+    "cluster": "https://fast105-kibana-logcenter-intra.intra.ke.com"
   },
   "beijia-basic-core": {
     "index": "index-8481-7703*",
