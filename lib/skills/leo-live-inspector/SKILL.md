@@ -125,6 +125,24 @@ AI 后台执行 `node scripts/cloud_mysql_query.js <appId|port> [database|sql] [
 
 ---
 
+## 🔌 5. 服务云 Token 凭证获取与 Chrome 插件引导规范
+
+当执行查库遇到 **Token 缺失** 或 **Token 过期（HTTP 302 重定向至登录页）** 时，AI 必须主动向用户提供友好引导，严禁仅抛出冷冰冰的报错：
+
+1. **首选推荐：引导安装/使用内置通用 Chrome 插件 (`Leo cookie.txt Locally`)**
+   * **插件绝对路径**：
+     * Skill 内置目录：`resources/chrome_extension`（或 `~/.agents/skills/leo-live-inspector/resources/chrome_extension`）
+     * 源码主目录：`extensions/leo-cookie-txt-locally`
+   * **一键引导脚本**：可直接在 Mac 执行 `bash scripts/setup_chrome_ext.sh`（自动复制路径至剪贴板并打开 Chrome 扩展管理页）；
+   * **手动 3 步**：打开 `chrome://extensions` ➔ 开启【开发者模式】➔ 点击【加载已解压的扩展程序】➔ 粘贴上述路径。
+   * **提取 Token**：在服务云页面点击插件图标，直接点【复制】单项 Token 或点【📥 下载 cookies.txt】（脚本自动监听 Downloads 目录，下载后立即可查）。
+
+2. **备选方案：无插件场景下的 F12 手动提取**
+   * 引导用户在已登录的服务云页面按 `F12` ➔【Application (应用)】➔【Cookies】➔【cloud.intra.ke.com】；
+   * 复制 `cloud_console_token_egg` 的值并在聊天框发给 AI。
+
+---
+
 ## 📚 规范与实战文档索引
 
 - **Apollo 配置探查协议与实战手册**：[references/apollo-config-guide.md](references/apollo-config-guide.md)
