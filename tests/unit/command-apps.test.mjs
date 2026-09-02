@@ -531,6 +531,7 @@ import {
   writeHindsightLlmConfig,
   sanitizeDaemonEnv,
 } from "../../lib/command-apps/index.mjs";
+import { inspectHindsightDaemon } from "../../lib/command-apps/infra/hindsight-daemon.mjs";
 
 test("registry exposes hindsight as a cross-platform cli daemon", () => {
   const app = getCommandApp("hindsight");
@@ -602,6 +603,85 @@ test("hindsight llm config writes custom base url into embed env", () => {
   const pub = publicLlmConfig(saved);
   assert.equal(pub.hasApiKey, true);
   assert.notEqual(pub.apiKeyMasked, "sk-test");
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test("command apps settings support future hindsight profiles while normalizing default", () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "command-apps-profiles-"));
+  const store = createCommandAppsSqliteStore({
+    dbPath: path.join(tmp, "gateway.db"),
+    platform: "win32",
+  });
+  const source = {
+    type: "gateway",
+    client: "work-buddy",
+    endpointId: null,
+    model: "glm-5.2",
+  };
+  store.save({
+    apps: {
+      hindsight: {
+        executablePath: "C:\Users\pa\.local\bin\hindsight-embed.exe",
+      },
+    },
+    hindsightProfiles: {
+      default: {
+        displayName: "Default memory",
+        llmSource: source,
+      },
+      research: {
+        displayName: "Research memory",
+        port: 9101,
+        llmSource: source,
+      },
+    },
+  });
+  const saved = store.get();
+  assert.equal(saved.hindsightProfiles.default.llmSource.model, "glm-5.2");
+  assert.equal(saved.hindsightProfiles.research.port, 9101);
+  assert.equal(saved.apps.hindsight.executablePath, "C:\Users\pa\.local\bin\hindsight-embed.exe");
+  store.close();
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test("hindsight llm config writes important runtime and retrieval settings", () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "hindsight-embed-"));
+  const configPath = path.join(tmp, "embed");
+  writeHindsightLlmConfig({
+    provider: "openai",
+    baseUrl: "https://your-endpoint.com/v1",
+    model: "gpt-4o-mini",
+    apiKey: "sk-test",
+    host: "127.0.0.1",
+    port: 9100,
+    logLevel: "debug",
+    reasoningEffort: "low",
+    temperature: "0.2",
+    strictSchema: "true",
+    embeddingsProvider: "openai",
+    embeddingsModel: "text-embedding-3-small",
+    rerankerProvider: "siliconflow",
+    rerankerModel: "BAAI/bge-reranker-v2-m3",
+    embeddingsApiKey: "sk-embed-test",
+  }, {
+    configPath,
+    fileExists: () => false,
+    readFile: () => "",
+    writeFile: (filePath, content) => fs.writeFileSync(filePath, content),
+    mkdir: (dirPath) => fs.mkdirSync(dirPath, { recursive: true }),
+  });
+  const saved = parseEnvFile(fs.readFileSync(configPath, "utf8"));
+  assert.equal(saved.HINDSIGHT_API_HOST, "127.0.0.1");
+  assert.equal(saved.HINDSIGHT_API_PORT, "9100");
+  assert.equal(saved.HINDSIGHT_API_LOG_LEVEL, "debug");
+  assert.equal(saved.HINDSIGHT_API_LLM_REASONING_EFFORT, "low");
+  assert.equal(saved.HINDSIGHT_API_LLM_TEMPERATURE, "0.2");
+  assert.equal(saved.HINDSIGHT_API_LLM_STRICT_SCHEMA, "true");
+  assert.equal(saved.HINDSIGHT_API_EMBEDDINGS_PROVIDER, "openai");
+  assert.equal(saved.HINDSIGHT_API_EMBEDDINGS_OPENAI_MODEL, "text-embedding-3-small");
+  assert.equal(saved.HINDSIGHT_API_EMBEDDINGS_OPENAI_API_KEY, "sk-embed-test");
+  assert.equal(saved.HINDSIGHT_API_RERANKER_PROVIDER, "siliconflow");
+  assert.equal(saved.HINDSIGHT_API_RERANKER_SILICONFLOW_MODEL, "BAAI/bge-reranker-v2-m3");
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
@@ -678,11 +758,60 @@ test("service updateConfig writes hindsight llm settings without changing args",
   assert.equal(status.llm.hasApiKey, true);
 });
 
-test("hindsight status is launching when lock pid is alive but health is down", async () => {
+test("hindsight default profile stores gateway source references and renders env snapshot", async () => {
   const executable = "/Users/pa/.local/bin/hindsight-embed";
+  const saved = [];
+  const envWrites = [];
   const service = createCommandAppsService({
     configStore: {
-      get() { return { apps: { hindsight: { executablePath: executable, lastLaunchedAt: "2026-09-01T11:31:28.064Z" } } }; },
+      get() { return saved.at(-1) || { apps: { hindsight: { executablePath: executable } } }; },
+      save(next) { saved.push(next); return next; },
+    },
+    platform: "darwin",
+    fileExists: (value) => value === executable,
+    writeHindsightLlm: (patch) => envWrites.push(patch),
+    readHindsightLlm: () => ({
+      provider: "openai",
+      baseUrl: "http://127.0.0.1:8787/work-buddy/",
+      model: "glm-5.2",
+      hasApiKey: true,
+      apiKeyMasked: "all",
+    }),
+    probeHindsight: async () => false,
+  });
+  const status = await service.updateConfig("hindsight", {
+    llmSource: {
+      type: "gateway",
+      client: "work-buddy",
+      endpointId: null,
+      model: "glm-5.2",
+    },
+    embeddingSource: {
+      type: "gateway",
+      client: "work-buddy",
+      endpointId: null,
+      model: "text-embedding-3-small",
+    },
+  });
+  assert.deepEqual(saved.at(-1).hindsightProfiles.default.llmSource, {
+    type: "gateway",
+    client: "work-buddy",
+    endpointId: null,
+    model: "glm-5.2",
+  });
+  assert.equal(envWrites[0].provider, "openai");
+  assert.equal(envWrites[0].baseUrl, "http://127.0.0.1:8787/work-buddy/");
+  assert.equal(envWrites[0].model, "glm-5.2");
+  assert.equal(envWrites[0].apiKey, "all");
+  assert.equal(status.llm.provider, "openai");
+});
+
+test("hindsight status is launching when lock pid is alive but health is down", async () => {
+  const executable = "/Users/pa/.local/bin/hindsight-embed";
+  const lastLaunchedAt = new Date().toISOString();
+  const service = createCommandAppsService({
+    configStore: {
+      get() { return { apps: { hindsight: { executablePath: executable, lastLaunchedAt } } }; },
       save() {},
     },
     platform: "darwin",
@@ -693,4 +822,16 @@ test("hindsight status is launching when lock pid is alive but health is down", 
   const status = await service.getStatus("hindsight");
   assert.equal(status.process.status, "launching");
   assert.equal(status.process.count, 1);
+});
+
+test("hindsight stops reporting launching after the startup deadline", async () => {
+  const app = getCommandApp("hindsight");
+  const lastLaunchedAt = new Date(Date.now() - 181000).toISOString();
+  const inspected = await inspectHindsightDaemon(app, { lastLaunchedAt }, {
+    probe: async () => false,
+    lockPid: 4242,
+    isPidAlive: () => true,
+  });
+  assert.equal(inspected.status, "stopped");
+  assert.equal(inspected.pid, null);
 });

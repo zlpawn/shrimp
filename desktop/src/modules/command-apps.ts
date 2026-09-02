@@ -8,6 +8,17 @@ type CommandAppLlm = {
   model?: string;
   hasApiKey?: boolean;
   apiKeyMasked?: string | null;
+  host?: string;
+  port?: string;
+  logLevel?: string;
+  reasoningEffort?: string;
+  temperature?: string;
+  strictSchema?: string;
+  embeddingsProvider?: string;
+  embeddingsModel?: string;
+  hasEmbeddingsApiKey?: boolean;
+  rerankerProvider?: string;
+  rerankerModel?: string;
 };
 
 type CommandAppStatus = {
@@ -39,6 +50,13 @@ type CommandAppStatus = {
   } | null;
 };
 
+type ModelSource = {
+  type: "custom" | "gateway" | "local";
+  client: string;
+  endpointId: string | null;
+  model: string;
+};
+
 const state: {
   loading: boolean;
   error: string;
@@ -46,7 +64,8 @@ const state: {
   editingAppId: string | null;
   editingLlmAppId: string | null;
   pathDrafts: Record<string, string>;
-  llmDrafts: Record<string, { provider: string; baseUrl: string; model: string; apiKey: string }>;
+  llmDrafts: Record<string, Required<CommandAppLlm>>;
+  modelSources: Record<string, { llm: ModelSource; embedding: ModelSource }>;
   actionBusy: Record<string, "" | "launch" | "restart" | "stop" | "rescan" | "save" | "save-llm">;
 } = {
   loading: false,
@@ -56,6 +75,7 @@ const state: {
   editingLlmAppId: null,
   pathDrafts: {},
   llmDrafts: {},
+  modelSources: {},
   actionBusy: {},
 };
 
@@ -114,14 +134,76 @@ function renderLoading(): string {
   `;
 }
 
-function llmDraftFor(status: CommandAppStatus) {
+function llmDraftFor(status: CommandAppStatus): Required<CommandAppLlm> {
   const appId = status.app?.id || "unknown";
-  return state.llmDrafts[appId] || {
-    provider: status.llm?.provider || "openai",
-    baseUrl: status.llm?.baseUrl || "",
-    model: status.llm?.model || "",
+  return state.llmDrafts[appId] || llmDraftFromStatus(status.llm);
+}
+
+function llmDraftFromStatus(llm?: CommandAppLlm | null): Required<CommandAppLlm> {
+  return {
+    provider: llm?.provider || "openai",
+    baseUrl: llm?.baseUrl || "",
+    model: llm?.model || "",
     apiKey: "",
+    host: llm?.host || "",
+    port: llm?.port || "",
+    logLevel: llm?.logLevel || "",
+    reasoningEffort: llm?.reasoningEffort || "",
+    temperature: llm?.temperature || "",
+    strictSchema: llm?.strictSchema || "",
+    embeddingsProvider: llm?.embeddingsProvider || "",
+    embeddingsModel: llm?.embeddingsModel || "",
+    embeddingsApiKey: "",
+    rerankerProvider: llm?.rerankerProvider || "",
+    rerankerModel: llm?.rerankerModel || "",
   };
+}
+
+function defaultModelSource(type: ModelSource["type"] = "gateway"): ModelSource {
+  return { type, client: "codex", endpointId: null, model: "" };
+}
+
+function modeButtons(appId: string, kind: "llm" | "embedding", source: ModelSource): string {
+  const modes = kind === "llm"
+    ? [["gateway", "使用网关模型"], ["custom", "自定义上游"]]
+    : [["gateway", "使用网关模型"], ["local", "本地默认"], ["custom", "自定义上游"]];
+  return modes.map(([value, label]) => `
+    <button type="button" class="command-apps-mode-btn ${source.type === value ? "active" : ""}" onclick="window.__commandAppsSourceModeChange('${escapeHtml(appId)}', '${kind}', '${value}')">${label}</button>
+  `).join("");
+}
+
+function gatewayConfig(): any {
+  const getConfig = (window as any).__gatewayConfig;
+  return typeof getConfig === "function" ? getConfig() : { clients: {} };
+}
+
+function publicModelsFor(endpoint?: any): string[] {
+  return [...new Set([
+    ...(Array.isArray(endpoint?.models) ? endpoint.models : []),
+    ...Object.keys(endpoint?.model_mapping || {}),
+  ].filter(Boolean))];
+}
+
+function clientNames(): string[] {
+  return Object.keys(gatewayConfig()?.clients || {});
+}
+
+function endpointsFor(client: string, purpose?: string): any[] {
+  const endpoints = gatewayConfig()?.clients?.[client]?.endpoints || [];
+  return endpoints.filter((endpoint) => {
+    if (endpoint.enabled === false) return false;
+    if (!purpose) return !endpoint.purpose;
+    return endpoint.purpose === purpose;
+  });
+}
+
+function modelOptionsFor(source: ModelSource, purpose?: string): string[] {
+  if (source.endpointId) {
+    const endpoint = endpointsFor(source.client, purpose).find((item) => item.id === source.endpointId);
+    return publicModelsFor(endpoint);
+  }
+  const models = endpointsFor(source.client, purpose).flatMap((endpoint) => publicModelsFor(endpoint));
+  return [...new Set(models)];
 }
 
 function renderCard(status: CommandAppStatus): string {
@@ -143,6 +225,12 @@ function renderCard(status: CommandAppStatus): string {
     : status.manuallyConfigured ? "手动路径" : "自动检测";
   const draft = state.pathDrafts[appId] ?? (status.executablePath || "");
   const llm = llmDraftFor(status);
+  const sources = state.modelSources[appId] || {
+    llm: defaultModelSource(),
+    embedding: defaultModelSource(),
+  };
+  const llmModelOptions = modelOptionsFor(sources.llm);
+  const embeddingModelOptions = modelOptionsFor(sources.embedding, "embedding");
 
   const commandBadges = isProject
     ? `<span class="command-apps-arg">${escapeHtml(status.app?.command || "npm run gateway:restart")}</span>`
@@ -197,14 +285,103 @@ function renderCard(status: CommandAppStatus): string {
 
       ${isEditingLlm ? `
         <form class="command-apps-manual" onsubmit="window.__commandAppsSaveLlm(event, '${escapeHtml(appId)}')">
+          <div class="command-apps-form-title">模型服务（LLM）</div>
+          <label>配置方式</label>
+          <div class="command-apps-mode-row">${modeButtons(appId, "llm", sources.llm)}</div>
+          <div class="command-apps-field-help">网关模式由网关托管模型和密钥；自定义模式才需要填写 Provider、Base URL 和 API Key。</div>
+${sources.llm.type === "gateway" ? `
+          <label for="command-apps-llm-source-client-${escapeHtml(appId)}">使用网关模型 · Client</label>
+          <select id="command-apps-llm-source-client-${escapeHtml(appId)}" onchange="window.__commandAppsSourceChange('${escapeHtml(appId)}', 'llm', 'client', this.value)">
+            ${clientNames().map((client) => `<option value="${escapeHtml(client)}" ${sources.llm.client === client ? "selected" : ""}>${escapeHtml(client)}</option>`).join("")}
+          </select>
+          <label for="command-apps-llm-source-endpoint-${escapeHtml(appId)}">代理节点</label>
+          <select id="command-apps-llm-source-endpoint-${escapeHtml(appId)}" onchange="window.__commandAppsSourceChange('${escapeHtml(appId)}', 'llm', 'endpoint', this.value)">
+            <option value="">自动路由</option>
+            ${endpointsFor(sources.llm.client).map((endpoint) => `<option value="${escapeHtml(endpoint.id)}" ${sources.llm.endpointId === endpoint.id ? "selected" : ""}>${escapeHtml(endpoint.name || endpoint.id)} · ${publicModelsFor(endpoint)[0] || "未设置模型"}</option>`).join("")}
+          </select>
+          <label for="command-apps-llm-source-model-${escapeHtml(appId)}">模型</label>
+          <select id="command-apps-llm-source-model-${escapeHtml(appId)}" onchange="window.__commandAppsSourceChange('${escapeHtml(appId)}', 'llm', 'model', this.value)" ${llmModelOptions.length ? "" : "disabled"}>
+            ${llmModelOptions.map((model) => `<option value="${escapeHtml(model)}" ${sources.llm.model === model ? "selected" : ""}>${escapeHtml(model)}</option>`).join("") || `<option value="">无可用模型</option>`}
+          </select>
+          <div class="command-apps-field-help">选择具体节点后，模型来自该节点映射模型和模型列表；自动路由会列出该 Client 全部可用模型。</div>
+` : `
+          <div class="command-apps-hint">自定义模式会直接使用下方 Provider、Base URL、模型和 API Key，不再走本网关。</div>
+`}
           <label for="command-apps-llm-provider-${escapeHtml(appId)}">Provider</label>
           <input id="command-apps-llm-provider-${escapeHtml(appId)}" type="text" spellcheck="false" autocomplete="off" value="${escapeHtml(llm.provider)}" placeholder="openai" />
+          <div class="command-apps-field-help">记忆抽取、反思和整理使用的模型协议，例如 openai、anthropic、deepseek、zai、ollama。</div>
           <label for="command-apps-llm-baseurl-${escapeHtml(appId)}">Base URL</label>
           <input id="command-apps-llm-baseurl-${escapeHtml(appId)}" type="text" spellcheck="false" autocomplete="off" value="${escapeHtml(llm.baseUrl)}" placeholder="https://your-endpoint.com/v1" />
+          <div class="command-apps-field-help">兼容 OpenAI 的中转地址；直连官方服务时可留空。</div>
           <label for="command-apps-llm-model-${escapeHtml(appId)}">模型名称</label>
           <input id="command-apps-llm-model-${escapeHtml(appId)}" type="text" spellcheck="false" autocomplete="off" value="${escapeHtml(llm.model)}" placeholder="your-model-name" />
+          <div class="command-apps-field-help">用于事实抽取、记忆反思和回答综合的模型。</div>
           <label for="command-apps-llm-apikey-${escapeHtml(appId)}">API Key${status.llm?.hasApiKey ? `（已保存 ${escapeHtml(status.llm?.apiKeyMasked || "****")}，留空则保持不变）` : ""}</label>
           <input id="command-apps-llm-apikey-${escapeHtml(appId)}" type="password" spellcheck="false" autocomplete="off" value="${escapeHtml(llm.apiKey)}" placeholder="sk-..." />
+          <div class="command-apps-field-help">密钥只写入本机 ~/.hindsight/embed，不会回传给浏览器。</div>
+
+          <div class="command-apps-form-title">网络与端口</div>
+          <label for="command-apps-llm-host-${escapeHtml(appId)}">服务监听地址</label>
+          <input id="command-apps-llm-host-${escapeHtml(appId)}" type="text" spellcheck="false" autocomplete="off" value="${escapeHtml(llm.host)}" placeholder="127.0.0.1" />
+          <div class="command-apps-field-help">默认 0.0.0.0 会监听所有网卡；仅本机使用建议填 127.0.0.1。</div>
+          <label for="command-apps-llm-port-${escapeHtml(appId)}">API 端口</label>
+          <input id="command-apps-llm-port-${escapeHtml(appId)}" type="text" spellcheck="false" autocomplete="off" value="${escapeHtml(llm.port)}" placeholder="8888" />
+          <div class="command-apps-field-help">Hindsight daemon 的 HTTP/MCP 端口；修改后需重启 daemon 生效。</div>
+          <label for="command-apps-llm-loglevel-${escapeHtml(appId)}">日志级别</label>
+          <input id="command-apps-llm-loglevel-${escapeHtml(appId)}" type="text" spellcheck="false" autocomplete="off" value="${escapeHtml(llm.logLevel)}" placeholder="info" />
+          <div class="command-apps-field-help">常用 debug、info、warning、error；排查启动失败时用 debug。</div>
+
+          <div class="command-apps-form-title">LLM 高级选项</div>
+          <label for="command-apps-llm-reasoning-${escapeHtml(appId)}">推理强度</label>
+          <input id="command-apps-llm-reasoning-${escapeHtml(appId)}" type="text" spellcheck="false" autocomplete="off" value="${escapeHtml(llm.reasoningEffort)}" placeholder="low" />
+          <div class="command-apps-field-help">支持 none、low、medium、high、xhigh；留空表示使用模型默认。</div>
+          <label for="command-apps-llm-temperature-${escapeHtml(appId)}">全局温度</label>
+          <input id="command-apps-llm-temperature-${escapeHtml(appId)}" type="text" spellcheck="false" autocomplete="off" value="${escapeHtml(llm.temperature)}" placeholder="none" />
+          <div class="command-apps-field-help">可填 0.0-2.0 或 none；部分模型拒绝显式温度时必须填 none。</div>
+          <label for="command-apps-llm-strict-${escapeHtml(appId)}">强制结构化输出</label>
+          <input id="command-apps-llm-strict-${escapeHtml(appId)}" type="text" spellcheck="false" autocomplete="off" value="${escapeHtml(llm.strictSchema)}" placeholder="false" />
+          <div class="command-apps-field-help">本地模型输出废话或 JSON 不稳定时设为 true。</div>
+
+          <div class="command-apps-form-title">向量模型（Embedding）</div>
+          <label>配置方式</label>
+          <div class="command-apps-mode-row">${modeButtons(appId, "embedding", sources.embedding)}</div>
+${sources.embedding.type === "gateway" ? `
+          <label for="command-apps-embed-source-client-${escapeHtml(appId)}">使用网关模型 · Client</label>
+          <select id="command-apps-embed-source-client-${escapeHtml(appId)}" onchange="window.__commandAppsSourceChange('${escapeHtml(appId)}', 'embedding', 'client', this.value)">
+            ${clientNames().map((client) => `<option value="${escapeHtml(client)}" ${sources.embedding.client === client ? "selected" : ""}>${escapeHtml(client)}</option>`).join("")}
+          </select>
+          <label for="command-apps-embed-source-endpoint-${escapeHtml(appId)}">向量节点</label>
+          <select id="command-apps-embed-source-endpoint-${escapeHtml(appId)}" onchange="window.__commandAppsSourceChange('${escapeHtml(appId)}', 'embedding', 'endpoint', this.value)">
+            <option value="">自动路由</option>
+            ${endpointsFor(sources.embedding.client, "embedding").map((endpoint) => `<option value="${escapeHtml(endpoint.id)}" ${sources.embedding.endpointId === endpoint.id ? "selected" : ""}>${escapeHtml(endpoint.name || endpoint.id)} · ${escapeHtml(endpoint.embedding_model || publicModelsFor(endpoint)[0] || "未设置模型")}</option>`).join("")}
+          </select>
+          <label for="command-apps-embed-source-model-${escapeHtml(appId)}">模型</label>
+          <select id="command-apps-embed-source-model-${escapeHtml(appId)}" onchange="window.__commandAppsSourceChange('${escapeHtml(appId)}', 'embedding', 'model', this.value)" ${embeddingModelOptions.length ? "" : "disabled"}>
+            ${embeddingModelOptions.map((model) => `<option value="${escapeHtml(model)}" ${sources.embedding.model === model ? "selected" : ""}>${escapeHtml(model)}</option>`).join("") || `<option value="">无可用模型</option>`}
+          </select>
+          <div class="command-apps-field-help">选择具体向量节点后，模型来自该节点的默认向量和模型列表；网关会使用节点配置的 Key。</div>
+` : sources.embedding.type === "local" ? `
+          <div class="command-apps-hint">使用 Hindsight 自带的本地向量模型，不请求外部服务；首次启动可能需要下载模型。</div>
+` : `
+          <div class="command-apps-hint">自定义模式会直接使用下方 Provider、模型和 API Key，不再走本网关。</div>
+`}
+          <label for="command-apps-llm-embed-provider-${escapeHtml(appId)}">Embedding Provider</label>
+          <input id="command-apps-llm-embed-provider-${escapeHtml(appId)}" type="text" spellcheck="false" autocomplete="off" value="${escapeHtml(llm.embeddingsProvider)}" placeholder="local" />
+          <div class="command-apps-field-help">local 使用本机模型；openai 使用 OpenAI-compatible embedding 服务；留空使用默认 local。</div>
+          <label for="command-apps-llm-embed-model-${escapeHtml(appId)}">OpenAI-compatible 模型名</label>
+          <input id="command-apps-llm-embed-model-${escapeHtml(appId)}" type="text" spellcheck="false" autocomplete="off" value="${escapeHtml(llm.embeddingsModel)}" placeholder="text-embedding-3-small" />
+          <div class="command-apps-field-help">Provider 为 openai 时生效；local 模型请在 env 文件中高级配置。</div>
+          <label for="command-apps-llm-embed-apikey-${escapeHtml(appId)}">Embedding API Key${status.llm?.hasEmbeddingsApiKey ? `（已保存，留空则保持不变）` : ""}</label>
+          <input id="command-apps-llm-embed-apikey-${escapeHtml(appId)}" type="password" spellcheck="false" autocomplete="off" value="${escapeHtml(llm.embeddingsApiKey)}" placeholder="sk-..." />
+          <div class="command-apps-field-help">独立于主 LLM Key；仅在使用云端 embedding 服务时需要。</div>
+
+          <div class="command-apps-form-title">重排模型（Reranker）</div>
+          <label for="command-apps-llm-rerank-provider-${escapeHtml(appId)}">Reranker Provider</label>
+          <input id="command-apps-llm-rerank-provider-${escapeHtml(appId)}" type="text" spellcheck="false" autocomplete="off" value="${escapeHtml(llm.rerankerProvider)}" placeholder="local" />
+          <div class="command-apps-field-help">Reranker 用于对召回的记忆做二次精排，让真正相关的记忆排到前面。常用 local、flashrank、tei、cohere、siliconflow、alibaba、rrf。</div>
+          <label for="command-apps-llm-rerank-model-${escapeHtml(appId)}">Reranker 模型名</label>
+          <input id="command-apps-llm-rerank-model-${escapeHtml(appId)}" type="text" spellcheck="false" autocomplete="off" value="${escapeHtml(llm.rerankerModel)}" placeholder="BAAI/bge-reranker-v2-m3" />
+          <div class="command-apps-field-help">local 填本地模型名；siliconflow 填托管模型名。云端 Provider 的 API Key 仍需在 env 文件中配置。</div>
           <div class="command-apps-hint">保存后写入 ~/.hindsight/embed。已运行的 daemon 需要重启后才会使用新的中转配置。启动时会剥离 SOCKS 代理，避免 httpx 缺少 socksio。</div>
           <div class="command-apps-actions">
             <button class="btn btn-primary" type="submit" ${isBusy ? "disabled" : ""}>${busyAction === "save-llm" ? "保存中..." : "保存 LLM 配置"}</button>
@@ -273,12 +450,7 @@ async function load(): Promise<void> {
     for (const app of state.apps) {
       if (app.app?.id) {
         state.pathDrafts[app.app.id] = app.executablePath || "";
-        state.llmDrafts[app.app.id] = {
-          provider: app.llm?.provider || "openai",
-          baseUrl: app.llm?.baseUrl || "",
-          model: app.llm?.model || "",
-          apiKey: "",
-        };
+        state.llmDrafts[app.app.id] = llmDraftFromStatus(app.llm);
       }
     }
   } catch (error: any) {
@@ -400,11 +572,10 @@ async function savePath(event: Event, appId: string = "antigravity"): Promise<vo
 
 function editLlm(appId: string = "hindsight"): void {
   const current = state.apps.find((a) => a.app?.id === appId);
-  state.llmDrafts[appId] = {
-    provider: current?.llm?.provider || "openai",
-    baseUrl: current?.llm?.baseUrl || "",
-    model: current?.llm?.model || "",
-    apiKey: "",
+  state.llmDrafts[appId] = llmDraftFromStatus(current?.llm);
+  state.modelSources[appId] ||= {
+    llm: defaultModelSource(),
+    embedding: defaultModelSource(),
   };
   state.editingLlmAppId = appId;
   state.editingAppId = null;
@@ -412,35 +583,92 @@ function editLlm(appId: string = "hindsight"): void {
   render();
 }
 
+function sourceChange(appId: string, kind: "llm" | "embedding", field: "client" | "endpoint" | "model", value: string): void {
+  const sources = state.modelSources[appId] || {
+    llm: defaultModelSource(),
+    embedding: defaultModelSource(),
+  };
+  const next = { ...sources[kind] };
+  if (field === "client") {
+    next.client = value;
+    next.endpointId = null;
+    next.model = "";
+  } else if (field === "endpoint") {
+    next.endpointId = value || null;
+    const endpoint = endpointsFor(next.client, kind === "embedding" ? "embedding" : undefined)
+      .find((item) => item.id === next.endpointId);
+    next.model = kind === "embedding"
+      ? (endpoint?.embedding_model || publicModelsFor(endpoint)[0] || "")
+      : publicModelsFor(endpoint)[0] || "";
+  } else {
+    next.model = value;
+  }
+  state.modelSources[appId] = { ...sources, [kind]: next };
+  render();
+}
+
+function sourceModeChange(appId: string, kind: "llm" | "embedding", type: ModelSource["type"]): void {
+  const sources = state.modelSources[appId] || {
+    llm: defaultModelSource(),
+    embedding: defaultModelSource("local"),
+  };
+  const next = { ...sources[kind], type };
+  if (type === "gateway") {
+    next.client = next.client || clientNames()[0] || "codex";
+    next.endpointId = null;
+    next.model = "";
+  } else if (type === "local") {
+    next.client = "";
+    next.endpointId = null;
+    next.model = "";
+  }
+  state.modelSources[appId] = { ...sources, [kind]: next };
+  render();
+}
+
 function cancelLlm(appId: string = "hindsight"): void {
   if (state.editingLlmAppId === appId) state.editingLlmAppId = null;
   const current = state.apps.find((a) => a.app?.id === appId);
-  state.llmDrafts[appId] = {
-    provider: current?.llm?.provider || "openai",
-    baseUrl: current?.llm?.baseUrl || "",
-    model: current?.llm?.model || "",
-    apiKey: "",
-  };
+  state.llmDrafts[appId] = llmDraftFromStatus(current?.llm);
   render();
 }
 
 async function saveLlm(event: Event, appId: string = "hindsight"): Promise<void> {
   event.preventDefault();
-  const draft = state.llmDrafts[appId] || { provider: "openai", baseUrl: "", model: "", apiKey: "" };
+  const draft = llmDraftFor({ app: { id: appId }, llm: state.llmDrafts[appId] });
+  const sources = state.modelSources[appId];
   await runAction(appId, "save-llm", async () => {
     const llm: Record<string, unknown> = {
       provider: draft.provider.trim(),
       baseUrl: draft.baseUrl.trim(),
       model: draft.model.trim(),
+      host: draft.host.trim(),
+      port: draft.port.trim(),
+      logLevel: draft.logLevel.trim(),
+      reasoningEffort: draft.reasoningEffort.trim(),
+      temperature: draft.temperature.trim(),
+      strictSchema: draft.strictSchema.trim(),
+      embeddingsProvider: draft.embeddingsProvider.trim(),
+      embeddingsModel: draft.embeddingsModel.trim(),
+      rerankerProvider: draft.rerankerProvider.trim(),
+      rerankerModel: draft.rerankerModel.trim(),
     };
     if (draft.apiKey.trim()) llm.apiKey = draft.apiKey.trim();
+    if (draft.embeddingsApiKey.trim()) llm.embeddingsApiKey = draft.embeddingsApiKey.trim();
     const status = await api<CommandAppStatus>(`/v1/command-apps/apps/${encodeURIComponent(appId)}/config`, {
       method: "PUT",
-      body: JSON.stringify({ llm }),
+      body: JSON.stringify({
+        llm,
+        ...(sources ? {
+          llmSource: { type: "gateway", ...sources.llm },
+          embeddingSource: { type: "gateway", ...sources.embedding },
+        } : {}),
+      }),
     });
     updateAppStatus(status);
     if (state.editingLlmAppId === appId) state.editingLlmAppId = null;
     state.llmDrafts[appId] = {
+      ...llmDraftFromStatus(status.llm),
       provider: status.llm?.provider || draft.provider,
       baseUrl: status.llm?.baseUrl || draft.baseUrl,
       model: status.llm?.model || draft.model,
@@ -458,6 +686,8 @@ async function saveLlm(event: Event, appId: string = "hindsight"): Promise<void>
 (window as any).__commandAppsCancelEdit = cancelEdit;
 (window as any).__commandAppsSave = savePath;
 (window as any).__commandAppsEditLlm = editLlm;
+(window as any).__commandAppsSourceChange = sourceChange;
+(window as any).__commandAppsSourceModeChange = sourceModeChange;
 (window as any).__commandAppsCancelLlm = cancelLlm;
 (window as any).__commandAppsSaveLlm = saveLlm;
 
@@ -469,17 +699,28 @@ document.addEventListener("input", (event) => {
   } else if (target?.id === "command-apps-path") {
     state.pathDrafts["antigravity"] = target.value;
   } else if (target && target.id && target.id.startsWith("command-apps-llm-")) {
-    const match = target.id.match(/^command-apps-llm-(provider|baseurl|model|apikey)-(.*)$/);
+    const match = target.id.match(/^command-apps-llm-(provider|baseurl|model|apikey|host|port|loglevel|reasoning|temperature|strict|embed-provider|embed-model|embed-apikey|rerank-provider|rerank-model)-(.*)$/);
     if (!match) return;
     const field = match[1];
     const appId = match[2];
-    const current = state.llmDrafts[appId] || { provider: "openai", baseUrl: "", model: "", apiKey: "" };
+    const current = state.llmDrafts[appId] || llmDraftFromStatus(null);
     state.llmDrafts[appId] = {
       ...current,
       provider: field === "provider" ? target.value : current.provider,
       baseUrl: field === "baseurl" ? target.value : current.baseUrl,
       model: field === "model" ? target.value : current.model,
       apiKey: field === "apikey" ? target.value : current.apiKey,
+      host: field === "host" ? target.value : current.host,
+      port: field === "port" ? target.value : current.port,
+      logLevel: field === "loglevel" ? target.value : current.logLevel,
+      reasoningEffort: field === "reasoning" ? target.value : current.reasoningEffort,
+      temperature: field === "temperature" ? target.value : current.temperature,
+      strictSchema: field === "strict" ? target.value : current.strictSchema,
+      embeddingsProvider: field === "embed-provider" ? target.value : current.embeddingsProvider,
+      embeddingsModel: field === "embed-model" ? target.value : current.embeddingsModel,
+      embeddingsApiKey: field === "embed-apikey" ? target.value : current.embeddingsApiKey,
+      rerankerProvider: field === "rerank-provider" ? target.value : current.rerankerProvider,
+      rerankerModel: field === "rerank-model" ? target.value : current.rerankerModel,
     };
   }
 });

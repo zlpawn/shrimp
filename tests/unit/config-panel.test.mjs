@@ -698,6 +698,19 @@ test("command apps module renders complete action states", async () => {
   assert.match(source, /配置 LLM/);
   assert.match(source, /hindsight-embed/);
   assert.match(source, /Base URL/);
+  assert.match(source, /网络与端口/);
+  assert.match(source, /服务监听地址/);
+  assert.match(source, /API 端口/);
+  assert.match(source, /LLM 高级选项/);
+  assert.match(source, /向量模型（Embedding）/);
+  assert.match(source, /重排模型（Reranker）/);
+  assert.match(source, /Reranker 用于对召回的记忆做二次精排/);
+  assert.match(source, /使用网关模型/);
+  assert.match(source, /自定义上游/);
+  assert.match(source, /本地默认/);
+  assert.match(source, /配置方式/);
+  assert.match(source, /代理节点/);
+  assert.match(source, /选择具体节点后，模型来自该节点映射模型和模型列表/);
 });
 
 test("video kb ingest form includes collection field", async () => {

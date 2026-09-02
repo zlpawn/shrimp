@@ -6135,6 +6135,11 @@ input:focus, select:focus {
 .command-apps-manual label { font-size: 12px; color: var(--text-secondary); }
 .command-apps-manual input { width: 100%; padding: 9px 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--input-bg); color: var(--text-primary); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; }
 .command-apps-manual input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.command-apps-form-title { margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--border-color); font-size: 12px; font-weight: 650; color: var(--text-primary); }
+.command-apps-field-help { margin-top: -4px; font-size: 11px; line-height: 1.5; color: var(--text-secondary); }
+.command-apps-mode-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.command-apps-mode-btn { padding: 7px 10px; border: 1px solid var(--border-color); border-radius: 999px; background: var(--input-bg); color: var(--text-secondary); font-size: 12px; cursor: pointer; }
+.command-apps-mode-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(59, 130, 246, 0.12); }
 .command-apps-hint, .command-apps-error { margin-top: 14px; padding: 9px 11px; border-radius: 8px; font-size: 12px; }
 .command-apps-hint { border: 1px solid rgba(245, 158, 11, 0.32); color: #d97706; background: rgba(245, 158, 11, 0.08); }
 .command-apps-error { border: 1px solid var(--danger); color: var(--danger); background: rgba(239, 68, 68, 0.08); }
