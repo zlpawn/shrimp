@@ -2,7 +2,10 @@
   "zulin-iot-platform": {
     "index": "index-8172-7302*",
     "cluster": "https://fast108-kibana-logcenter-intra.intra.ke.com",
-    "realAppId": "zulin-iot-platform"
+    "realAppId": "zulin-iot-platform",
+    "port": "6384",
+    "database": "iot_plat",
+    "dbDesc": "IoT平台主库"
   },
   "zulin-iot-platform:prod": {
     "index": "index-8172-7302*",
@@ -12,22 +15,34 @@
   "iot-platform": {
     "index": "index-8172-7302*",
     "cluster": "https://fast108-kibana-logcenter-intra.intra.ke.com",
-    "realAppId": "zulin-iot-platform"
+    "realAppId": "zulin-iot-platform",
+    "port": "6384",
+    "database": "iot_plat",
+    "dbDesc": "IoT平台主库"
   },
   "platform": {
     "index": "index-8172-7302*",
     "cluster": "https://fast108-kibana-logcenter-intra.intra.ke.com",
-    "realAppId": "zulin-iot-platform"
+    "realAppId": "zulin-iot-platform",
+    "port": "6384",
+    "database": "iot_plat",
+    "dbDesc": "IoT平台主库"
   },
   "iot": {
     "index": "index-8172-7302*",
     "cluster": "https://fast108-kibana-logcenter-intra.intra.ke.com",
-    "realAppId": "zulin-iot-platform"
+    "realAppId": "zulin-iot-platform",
+    "port": "6384",
+    "database": "iot_plat",
+    "dbDesc": "IoT平台主库"
   },
   "saas": {
     "index": "index-9592-8939*",
     "cluster": "https://fast105-kibana-logcenter-intra.intra.ke.com",
-    "realAppId": "utopia-scs-saas"
+    "realAppId": "utopia-scs-saas",
+    "port": "6763",
+    "database": "scs_tenant_1",
+    "dbDesc": "智慧工地SaaS租户1库"
   },
   "scs": {
     "index": "index-9592-8939*",
@@ -46,15 +61,24 @@
   },
   "智能客服生产日志": {
     "index": "index-17376-17615*",
-    "cluster": "https://fast104-kibana-logcenter-intra.intra.ke.com"
+    "cluster": "https://fast104-kibana-logcenter-intra.intra.ke.com",
+    "port": "7921",
+    "database": "ai_chatbot",
+    "dbDesc": "AI智能客服问答库"
   },
   "智能客服": {
     "index": "index-17376-17615*",
-    "cluster": "https://fast104-kibana-logcenter-intra.intra.ke.com"
+    "cluster": "https://fast104-kibana-logcenter-intra.intra.ke.com",
+    "port": "7921",
+    "database": "ai_chatbot",
+    "dbDesc": "AI智能客服问答库"
   },
   "智慧工地-品控头戴式记录仪": {
     "index": "index-13401-13764*",
-    "cluster": "https://fast101-kibana-logcenter-intra.intra.ke.com"
+    "cluster": "https://fast101-kibana-logcenter-intra.intra.ke.com",
+    "port": "6763",
+    "database": "utopia_scs_recorder",
+    "dbDesc": "智慧工地记录仪从库"
   },
   "品控头戴式记录仪": {
     "index": "index-13401-13764*",
@@ -62,7 +86,10 @@
   },
   "recorder": {
     "index": "index-13401-13764*",
-    "cluster": "https://fast101-kibana-logcenter-intra.intra.ke.com"
+    "cluster": "https://fast101-kibana-logcenter-intra.intra.ke.com",
+    "port": "6763",
+    "database": "utopia_scs_recorder",
+    "dbDesc": "智慧工地记录仪从库"
   },
   "头戴式记录仪": {
     "index": "index-13401-13764*",
@@ -74,11 +101,17 @@
   },
   "utopia-scs-recorder": {
     "index": "index-13401-13764*",
-    "cluster": "https://fast101-kibana-logcenter-intra.intra.ke.com"
+    "cluster": "https://fast101-kibana-logcenter-intra.intra.ke.com",
+    "port": "6763",
+    "database": "utopia_scs_recorder",
+    "dbDesc": "智慧工地记录仪从库"
   },
   "智慧工地-算法框架日志": {
     "index": "index-14970-15471*",
-    "cluster": "https://fast105-kibana-logcenter-intra.intra.ke.com"
+    "cluster": "https://fast105-kibana-logcenter-intra.intra.ke.com",
+    "port": "6763",
+    "database": "utopia_scs_algo",
+    "dbDesc": "智慧工地算法库"
   },
   "算法框架日志": {
     "index": "index-14970-15471*",
@@ -86,7 +119,10 @@
   },
   "algo": {
     "index": "index-14970-15471*",
-    "cluster": "https://fast105-kibana-logcenter-intra.intra.ke.com"
+    "cluster": "https://fast105-kibana-logcenter-intra.intra.ke.com",
+    "port": "6763",
+    "database": "utopia_scs_algo",
+    "dbDesc": "智慧工地算法库"
   },
   "智慧工地saas全量日志": {
     "index": "index-9592-8939*",
@@ -94,7 +130,10 @@
   },
   "智慧工地saas": {
     "index": "index-9592-8939*",
-    "cluster": "https://fast105-kibana-logcenter-intra.intra.ke.com"
+    "cluster": "https://fast105-kibana-logcenter-intra.intra.ke.com",
+    "port": "6763",
+    "database": "scs_tenant_1",
+    "dbDesc": "智慧工地SaaS租户1库"
   },
   "智慧工地saas:error": {
     "index": "index-9592-13329*",
@@ -126,11 +165,17 @@
   },
   "iot-erp-core:prod": {
     "index": "index-15409-15829*",
-    "cluster": "https://fast101-kibana-logcenter-intra.intra.ke.com"
+    "cluster": "https://fast101-kibana-logcenter-intra.intra.ke.com",
+    "port": "7039",
+    "database": "iot_erp_core",
+    "dbDesc": "IoT ERP核心业务库"
   },
   "iot-erp-core": {
     "index": "index-15409-15829*",
-    "cluster": "https://fast101-kibana-logcenter-intra.intra.ke.com"
+    "cluster": "https://fast101-kibana-logcenter-intra.intra.ke.com",
+    "port": "7039",
+    "database": "iot_erp_core",
+    "dbDesc": "IoT ERP核心业务库"
   },
   "iot-ero-finance:prod": {
     "index": "index-16665-16895*",
@@ -138,11 +183,17 @@
   },
   "iot-erp-finance:prod": {
     "index": "index-16665-16895*",
-    "cluster": "https://fast109-kibana-logcenter-intra.intra.ke.com"
+    "cluster": "https://fast109-kibana-logcenter-intra.intra.ke.com",
+    "port": "7039",
+    "database": "iot_erp_finance",
+    "dbDesc": "IoT ERP财务库"
   },
   "iot-erp-finance": {
     "index": "index-16665-16895*",
-    "cluster": "https://fast109-kibana-logcenter-intra.intra.ke.com"
+    "cluster": "https://fast109-kibana-logcenter-intra.intra.ke.com",
+    "port": "7039",
+    "database": "iot_erp_finance",
+    "dbDesc": "IoT ERP财务库"
   },
   "zulin-iot-device-adaptor": {
     "index": "index-8168-7299*",
@@ -162,10 +213,16 @@
   },
   "utopia-scs-saas": {
     "index": "index-9592-8939*",
-    "cluster": "https://fast105-kibana-logcenter-intra.intra.ke.com"
+    "cluster": "https://fast105-kibana-logcenter-intra.intra.ke.com",
+    "port": "6763",
+    "database": "scs_tenant_1",
+    "dbDesc": "智慧工地SaaS租户1库"
   },
   "beijia-basic-core": {
     "index": "index-8481-7703*",
-    "cluster": "https://fast108-kibana-logcenter-intra.intra.ke.com"
+    "cluster": "https://fast108-kibana-logcenter-intra.intra.ke.com",
+    "port": "6496",
+    "database": "basic_core",
+    "dbDesc": "基础核心库"
   }
 }
