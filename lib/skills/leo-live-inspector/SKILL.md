@@ -36,9 +36,15 @@ description: 线上与测试环境全场景数据探查、日志检索、TraceId
 | **“查下【预发环境】saas 的超时配置 timeout”** | `node scripts/apollo_query.js saas -e preview timeout` | 预发环境 (prev.config.apollo.ke.com) 超时参数明细 |
 | **“看下 iot-platform 上的 lockAuth 开关或白名单”** | `node scripts/apollo_query.js iot-platform lockAuth` | 匹配到的业务开关、白名单及解析后的格式化 JSON |
 | **“查下 Apollo application.properties 里的 weitang 配置”** | `node scripts/apollo_query.js iot-platform application.properties weitang` | 指定命名空间下的精准配置项 |
-| **“查下 recorder 最新的 5 条图片数据”** | `node scripts/cloud_mysql_query.js recorder "SELECT id, source, ctime FROM image_understanding_detail ORDER BY id DESC LIMIT 5"` | 数据库实时表数据表格，含耗时与行数 |
-| **“查下 saas 库的租户配置或订单”** | `node scripts/cloud_mysql_query.js saas "SELECT * FROM algo_detect_report ORDER BY id DESC LIMIT 5"` | SaaS 租户库表数据明细 |
-| **“指定端口 6763 和库名查 SQL”** | `node scripts/cloud_mysql_query.js 6763 utopia_scs_recorder "SELECT count(*) FROM image_understanding_detail"` | 自定义端口与库名统计输出 |
+| *“查下【测试环境】warehouse 最新的 10 条日志”* | `node scripts/test_log_query.js warehouse -n 10` | 测试环境容器日志表格，含 Pod 与泳道名 |
+| *“看下【测试环境】algo 的 500 报错或异常堆栈”* | `node scripts/test_log_query.js algo --level ERROR -t 30m` | 大禹泳道 Pod 异常原因与堆栈解析 |
+| *“根据 TraceId 361922... 查测试环境链路”* | `node scripts/test_log_query.js <app> --traceId "361922..."` | 跨测试容器追溯出入参与请求生命周期 |
+| *“查下大禹泳道 lixiaojing03 上部署的 algo 日志”* | `node scripts/test_log_query.js algo --lane lixiaojing03 -n 10` | 多泳道动态感知与日志过滤 |
+| **“查下 recorder 最新的 5 条图片数据 (线上)”** | `node scripts/cloud_mysql_query.js recorder "SELECT id, source, ctime FROM image_understanding_detail ORDER BY id DESC LIMIT 5"` | 线上数据库实时表数据表格，含耗时与行数 |
+| **“查下【测试环境】saas 库的订单数据”** | `node scripts/test_mysql_query.js saas "SELECT * FROM algo_detect_report ORDER BY id DESC LIMIT 5"` | 测试环境默认主库直连表格，毫秒级响应 |
+| **“查下【测试环境】saas 租户 1 库 (tenant1) 的数据”** | `node scripts/test_mysql_query.js saas tenant1 "SELECT * FROM algo_detect_report LIMIT 5"` | 多数据源精准切换，支持租户分库查验 |
+| **“查看仓颉系统测试环境有哪些数据源”** | `node scripts/test_mysql_query.js cangjie --list-ds` | 列出该微服务下所有已配置的多数据源及默认库 |
+| **“指定端口 6763 和库名查线上 SQL”** | `node scripts/cloud_mysql_query.js 6763 utopia_scs_recorder "SELECT count(*) FROM image_understanding_detail"` | 线上自定义端口与库名统计输出 |
 
 ---
 
@@ -46,19 +52,22 @@ description: 线上与测试环境全场景数据探查、日志检索、TraceId
 
 ```mermaid
 flowchart TD
-    A["用户提出自然语言诉求 (查日志 / 查配置 / 追链路)"] --> B{"意图类型判定"}
+    A["用户提出自然语言诉求 (查日志 / 查配置 / 追链路 / 查数据库)"] --> B{"意图类型判定"}
     
     B -->|"查日志 / 500 报错"| C1["后台执行 scripts/fast_query.js (-a, --level ERROR)"]
     B -->|"追溯 TraceId"| C2["后台执行 scripts/fast_query.js (--traceId)"]
     B -->|"查 Apollo 配置/开关"| C3["后台执行 scripts/apollo_query.js (appId, keyword)"]
-    B -->|"后台页面点击探查"| C4["通过 Chrome 扩展探针访问后台页面检索"]
+    B -->|"查线上生产数据库"| C4["后台执行 scripts/cloud_mysql_query.js (appId, sql)"]
+    B -->|"查线下/测试数据库"| C5["后台执行 scripts/test_mysql_query.js (appId, [ds], sql)"]
+    B -->|"后台页面点击探查"| C6["通过 Chrome 扩展探针访问后台页面检索"]
 
     C1 --> D1["提取 URI, 状态码, 耗时, 错误堆栈"]
     C2 --> D2["按时间正序排列，自动绘制 Mermaid 时序图"]
     C3 --> D3["结构化提取配置 Key，美化内嵌 JSON 对象"]
-    C4 --> D4["解析页面 DOM / Network 返回数据"]
+    C4 & C5 --> D4["格式化 Markdown 数据表格，标注耗时与行数"]
+    C6 --> D5["解析页面 DOM / Network 返回数据"]
 
-    D1 & D2 & D3 & D4 --> E["向用户交付高可读性诊断报告与结论"]
+    D1 & D2 & D3 & D4 & D5 --> E["向用户交付高可读性诊断报告与结论"]
     E -.-> F["💡 若需免发版订正脏数据，主动引导唤起 leo-live-runner"]
 ```
 
@@ -83,6 +92,25 @@ AI 后台执行 `node scripts/fast_query.js [flags]`：
 | `--slim` | - | `false` | 瘦身模式，截断超长报文与堆栈 JSON |
 | `--format` | `-f` | `json` | 输出格式: `json`, `brief`, `table` |
 
+### 1.2 线下/测试环境：Paoding Loki 容器与泳道日志检索
+AI 后台执行 `node scripts/test_log_query.js <appId> [options]`：
+
+| 参数 Flag | 简写 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `<appId>` | - | 必填 | 目标微服务别名 (如 `saas`, `algo`, `warehouse`, `iot`) |
+| `--query` | `-q` | `*` | 关键词或报错过滤短语 (如 `NullPointer`, `Timeout`) |
+| `--level` | `-l` | `null` | 日志级别: `ERROR`, `WARN`, `INFO`, `DEBUG` |
+| `--traceId` | `--tid` | `null` | 指定 TraceId 过滤与调用链回溯 |
+| `--lane` | `--ns` | `null` | 指定大禹泳道名或命名空间 (如 `lixiaojing02`, `lixiaojing03`) |
+| `--pod` | - | `null` | 显式指定 Pod 实例名称 |
+| `--time` | `-t` | `1h` | 相对时间跨度 (如 `15m`, `30m`, `1h`, `2h`) |
+| `--size` | `-n` | `20` (Trace: `50`) | 最大返回日志条数 |
+| `--format` | `-f` | `table` | 输出格式: `table` (表格), `brief` (紧凑), `json` |
+| `--slim` | - | `false` | 瘦身模式，截断超长堆栈或报文 |
+| `--set-cookie`| - | - | 保存更新 Paoding 登录 Cookie 凭证至本地缓存 |
+
+> 💡 **自动分流支持**：在 `fast_query.js` 中指定 `--env test` 时，底层会自动委派至 `test_log_query.js` 容器直连通道。
+
 ---
 
 ## ⚙️ 2. Apollo 配置探查内部 CLI 参数速查
@@ -101,7 +129,9 @@ AI 后台执行 `node scripts/apollo_query.js <appId|alias> [namespace|keyKeywor
 
 ---
 
-## 🗄️ 3. 服务云 MySQL 自助查询内部 CLI 参数速查
+## 🗄️ 3. 数据库查询内部 CLI 参数速查 (线上云网关 / 线下直连双模)
+
+### 3.1 线上生产环境：服务云 MySQL 自助查询
 AI 后台执行 `node scripts/cloud_mysql_query.js <appId|port> [database|sql] [sql] [options]`：
 
 | 参数/选项 | 简写 | 默认值 | 说明 |
@@ -110,9 +140,29 @@ AI 后台执行 `node scripts/cloud_mysql_query.js <appId|port> [database|sql] [
 | `[database\|sql]` | - | 必填 | 库名（当第 1 参数为端口时）或待执行的 SQL（当第 1 参数为服务别名时） |
 | `[sql]` | - | 可选 | 待执行的 SQL 语句（当第 1 参数为端口号时） |
 | `--role` | - | `Slave` | 查询角色: `Slave` (从库只读) 或 `Master` (主库) |
+| `--env` | `-e` | `prod` | 环境控制，指定 `test` / `dev` 时自动委派给 `test_mysql_query.js` |
 | `--set-token` | - | - | 保存更新服务云 `cloud_console_token_egg` 凭证至本地缓存 |
 | `--token` | - | - | 临时覆盖 Token |
 | `--json` | - | `false` | 输出纯 JSON 数据结果 |
+
+### 3.2 线下/测试环境：MySQL 本地直连查询 (零外部依赖、多数据源支持)
+AI 后台执行 `node scripts/test_mysql_query.js <service|host> [datasource|sql] [sql] [options]`：
+
+| 参数/选项 | 简写 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `<service\|host>` | - | 必填 | 微服务别名 (如 `saas`, `iot`, `recorder`, `cangjie`) 或测试库 Host/Port |
+| `[datasource]` | - | 可选 | 多数据源别名 (如 `tenant0`, `tenant1`, `base`)，未填自动走默认主库 |
+| `[sql]` | - | 必填 | 待执行的 SQL (以 `SELECT`/`SHOW`/`DESC` 开头) |
+| `--ds <alias>` | - | 自动匹配 | 显式指定数据源名称 |
+| `--list-ds` | - | `false` | 列出该服务下全部已注册的测试数据源与默认库 |
+| `-p, --password` | - | 动态嗅探 | 临时提供密码（握手验通后自动静默持久化至 `~/.shrimp`） |
+| `--max-rows` | - | `50` | 最大返回数据行数 |
+| `--json` | - | `false` | 输出格式化 JSON |
+
+> 💡 **测试库密码安全机制**：
+> 1. **零硬编码**：Skill 仓库内绝无任何明文密码；
+> 2. **智能目录引导**：若缺少密码，AI 主动引导用户切换至该项目的本地代码根目录（例如 `cd /Users/pa/project/JZ/utopia-scs-saas`），脚本将自动就地从 `application-test.yml` / `.env.test` 解析密码并直连；
+> 3. **验通即静默沉淀**：一旦握手测试成功，系统无感沉淀至 `~/.shrimp/skills/live-inspector/test_databases.json`，后续永久免输。
 
 ---
 

@@ -1,0 +1,293 @@
+{
+  "iot-ecology-platform": {
+    "serviceName": "iot-ecology-platform",
+    "defaultDatasource": "default",
+    "datasources": {
+      "default": {
+        "alias": "default",
+        "database": "iot_ecology",
+        "host": "m10155.mars.test.mysql.ljnode.com",
+        "port": 10155,
+        "user": "root"
+      }
+    }
+  },
+  "iot-platform": {
+    "serviceName": "iot-platform",
+    "defaultDatasource": "cp1",
+    "datasources": {
+      "cp1": {
+        "alias": "cp1",
+        "database": "iot_plat",
+        "host": "m10155.mars.test.mysql.ljnode.com",
+        "port": 10155,
+        "user": "root"
+      }
+    }
+  },
+  "beijia-iot-warehouse": {
+    "serviceName": "beijia-iot-warehouse",
+    "defaultDatasource": "default",
+    "datasources": {
+      "default": {
+        "alias": "default",
+        "database": "iot_houseware",
+        "host": "m10155.mars.test.mysql.ljnode.com",
+        "port": 10155,
+        "user": "root"
+      }
+    }
+  },
+  "iot-erp-core": {
+    "serviceName": "iot-erp-core",
+    "defaultDatasource": "default",
+    "datasources": {
+      "default": {
+        "alias": "default",
+        "database": "iot_erp_core",
+        "host": "m10155.mars.test.mysql.ljnode.com",
+        "port": 10155,
+        "user": "root"
+      }
+    }
+  },
+  "iot-erp-finance": {
+    "serviceName": "iot-erp-finance",
+    "defaultDatasource": "default",
+    "datasources": {
+      "default": {
+        "alias": "default",
+        "database": "iot_erp_finance",
+        "host": "m10155.mars.test.mysql.ljnode.com",
+        "port": 10155,
+        "user": "root"
+      }
+    }
+  },
+  "rent-ai-chat": {
+    "serviceName": "rent-ai-chat",
+    "defaultDatasource": "slave",
+    "datasources": {
+      "slave": {
+        "alias": "slave",
+        "database": "ai-chatbot",
+        "host": "m10038.mars.test.mysql.ljnode.com",
+        "port": 10038,
+        "user": "root"
+      }
+    }
+  },
+  "huiju-iot-cloud-plat": {
+    "serviceName": "huiju-iot-cloud-plat",
+    "defaultDatasource": "default",
+    "datasources": {
+      "default": {
+        "alias": "default",
+        "database": "iot_cloud",
+        "host": "m10155.mars.test.mysql.ljnode.com",
+        "port": 10155,
+        "user": "root"
+      }
+    }
+  },
+  "iot-device-adaptor": {
+    "serviceName": "iot-device-adaptor",
+    "defaultDatasource": "iot_device_adaptor",
+    "datasources": {
+      "iot_device_adaptor": {
+        "alias": "iot_device_adaptor",
+        "database": "iot_device_adaptor",
+        "host": "m10155.mars.test.mysql.ljnode.com",
+        "port": 10155,
+        "user": "root"
+      },
+      "apollo": {
+        "alias": "apollo",
+        "database": "iot_device",
+        "host": "m10155.mars.test.mysql.ljnode.com",
+        "port": 10155,
+        "user": "root"
+      }
+    }
+  },
+  "utopia-scs-algo": {
+    "serviceName": "utopia-scs-algo",
+    "defaultDatasource": "default",
+    "datasources": {
+      "default": {
+        "alias": "default",
+        "database": "scs_base",
+        "host": "m10665.mars.test.mysql.ljnode.com",
+        "port": 10665,
+        "user": "root"
+      }
+    }
+  },
+  "utopia-scs-recorder": {
+    "serviceName": "utopia-scs-recorder",
+    "defaultDatasource": "default",
+    "datasources": {
+      "default": {
+        "alias": "default",
+        "database": "utopia_scs_recorder",
+        "host": "m10665.mars.test.mysql.ljnode.com",
+        "port": 10665,
+        "user": "root"
+      }
+    }
+  },
+  "utopia-scs-saas": {
+    "serviceName": "utopia-scs-saas",
+    "defaultDatasource": "base",
+    "datasources": {
+      "base": {
+        "alias": "base",
+        "database": "scs_base",
+        "host": "m10665.mars.test.mysql.ljnode.com",
+        "port": 10665,
+        "user": "root"
+      },
+      "tenant0": {
+        "alias": "tenant0",
+        "database": "smart_construction_site",
+        "host": "m10665.mars.test.mysql.ljnode.com",
+        "port": 10665,
+        "user": "root"
+      },
+      "tenant1": {
+        "alias": "tenant1",
+        "database": "scs_tenant_1",
+        "host": "m10665.mars.test.mysql.ljnode.com",
+        "port": 10665,
+        "user": "root"
+      },
+      "logical": {
+        "alias": "logical",
+        "database": "scs_tenant_99",
+        "host": "s10665.mars.test.mysql.ljnode.com",
+        "port": 10665,
+        "user": "root"
+      }
+    }
+  },
+  "utopia-viper": {
+    "serviceName": "utopia-viper",
+    "defaultDatasource": "scs_base",
+    "datasources": {
+      "scs_base": {
+        "alias": "scs_base",
+        "database": "scs_base",
+        "host": "m10665.mars.test.mysql.ljnode.com",
+        "port": 10665,
+        "user": "root"
+      }
+    }
+  },
+  "cangjie": {
+    "serviceName": "cangjie",
+    "defaultDatasource": "default-slave",
+    "datasources": {
+      "default-slave": {
+        "alias": "default-slave",
+        "database": "cangjie",
+        "host": "m10666.mars.test.mysql.ljnode.com",
+        "port": 10666,
+        "user": "root"
+      },
+      "diting-slave": {
+        "alias": "diting-slave",
+        "database": "utopia_diting",
+        "host": "s10666.mars.test.mysql.ljnode.com",
+        "port": 10666,
+        "user": "root"
+      },
+      "cangjie-data-hub-slave": {
+        "alias": "cangjie-data-hub-slave",
+        "database": "cangjie_data_hub",
+        "host": "m10666.mars.test.mysql.ljnode.com",
+        "port": 10666,
+        "user": "root"
+      }
+    }
+  },
+  "cangjie-data-hub": {
+    "serviceName": "cangjie-data-hub",
+    "defaultDatasource": "default",
+    "datasources": {
+      "default": {
+        "alias": "default",
+        "database": "cangjie_data_hub",
+        "host": "m10666.mars.test.mysql.ljnode.com",
+        "port": 10666,
+        "user": "root"
+      }
+    }
+  },
+  "dial-insight-memory": {
+    "serviceName": "dial-insight-memory",
+    "defaultDatasource": "dial_insight_memory",
+    "datasources": {
+      "dial_insight_memory": {
+        "alias": "dial_insight_memory",
+        "database": "dial_insight_memory",
+        "host": "m10844.mars.test.mysql.ljnode.com",
+        "port": 10844,
+        "user": "root"
+      },
+      "dial_insight_memory_1": {
+        "alias": "dial_insight_memory_1",
+        "database": "dial_insight_memory_1",
+        "host": "m10666.mars.test.mysql.ljnode.com",
+        "port": 10666,
+        "user": "root"
+      },
+      "dial_insight_memory_2": {
+        "alias": "dial_insight_memory_2",
+        "database": "dial_insight_memory_2",
+        "host": "m10665.mars.test.mysql.ljnode.com",
+        "port": 10665,
+        "user": "root"
+      },
+      "diagnose": {
+        "alias": "diagnose",
+        "database": "diagnose",
+        "host": "m10905.mars.test.mysql.ljnode.com",
+        "port": 10905,
+        "user": "root"
+      }
+    }
+  },
+  "iot-power-core": {
+    "serviceName": "iot-power-core",
+    "defaultDatasource": "ai_workbench",
+    "datasources": {
+      "ai_workbench": {
+        "alias": "ai_workbench",
+        "database": "ai_workbench",
+        "host": "m10155.mars.test.mysql.ljnode.com",
+        "port": 10155,
+        "user": "root"
+      },
+      "cangjie": {
+        "alias": "cangjie",
+        "database": "cangjie",
+        "host": "m10666.mars.test.mysql.ljnode.com",
+        "port": 10666,
+        "user": "root"
+      }
+    }
+  },
+  "iot-black-pearl": {
+    "serviceName": "iot-black-pearl",
+    "defaultDatasource": "default",
+    "datasources": {
+      "default": {
+        "alias": "default",
+        "database": "iot_black_pearl",
+        "host": "m10665.mars.test.mysql.ljnode.com",
+        "port": 10665,
+        "user": "root"
+      }
+    }
+  }
+}
