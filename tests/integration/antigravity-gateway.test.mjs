@@ -140,18 +140,22 @@ async function startGateway(t, { grpcPort, restPort, tempDir }) {
 
   // Write config with an antigravity endpoint
   const configPath = path.join(tempDir, "gateway.config.json");
+  const antigravityEndpoint = {
+    id: "ep_antigravity",
+    name: "Antigravity",
+    type: "antigravity",
+    models: ["gemini-pro-agent", "gemini-3-flash"],
+    model_mapping: {},
+    capabilities: { input_modalities: ["text"], reasoning: true, tools: true },
+  };
   await writeFile(configPath, JSON.stringify({
     server: { host: "127.0.0.1", port: gatewayPort },
     clients: {
       codex: {
-        endpoints: [{
-          id: "ep_antigravity",
-          name: "Antigravity",
-          type: "antigravity",
-          models: ["gemini-pro-agent", "gemini-3-flash"],
-          model_mapping: {},
-          capabilities: { input_modalities: ["text"], reasoning: true, tools: true },
-        }],
+        endpoints: [antigravityEndpoint],
+      },
+      hindsight: {
+        endpoints: [{ ...antigravityEndpoint, id: "ep_hindsight_antigravity" }],
       },
     },
   }));
@@ -234,6 +238,50 @@ test("non-streaming /v1/responses routes through antigravity gRPC", async (t) =>
   assert.equal(data.output_text, "Hello from mock!");
   assert.equal(data.usage.input_tokens, 10);
   assert.equal(data.usage.output_tokens, 5);
+});
+
+test("non-streaming /hindsight/chat/completions adapts antigravity response to chat format", async (t) => {
+  const tempDir = await mkdtemp(path.join(tmpdir(), "antigravity-chat-int-"));
+  t.after(async () => rm(tempDir, { recursive: true, force: true }));
+
+  const restServer = createMockRestServer("proj-chat-mock");
+  const restPort = await listen(restServer);
+  t.after(() => closeServer(restServer));
+
+  const grpcServer = createMockGrpcServer(() =>
+    makeGrpcResponse("Hello from Hindsight!", {
+      finishReason: "STOP",
+      usageMetadata: { promptTokenCount: 12, candidatesTokenCount: 4, totalTokenCount: 16 },
+    }),
+  );
+  const grpcPort = await listen(grpcServer);
+  t.after(() => closeServer(grpcServer));
+
+  const { gatewayPort, logPath } = await startGateway(t, { grpcPort, restPort, tempDir });
+
+  const res = await fetch(`http://127.0.0.1:${gatewayPort}/hindsight/chat/completions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "gemini-3-flash",
+      stream: false,
+      messages: [{ role: "user", content: "Say hi" }],
+    }),
+  });
+
+  assert.equal(res.status, 200);
+  const data = await res.json();
+  assert.equal(data.object, "chat.completion");
+  assert.equal(data.model, "gemini-3-flash");
+  assert.equal(data.choices[0].message.role, "assistant");
+  assert.equal(data.choices[0].message.content, "Hello from Hindsight!");
+  assert.equal(data.usage.prompt_tokens, 12);
+  assert.equal(data.usage.completion_tokens, 4);
+
+  const logEntry = await waitForLogEvent(logPath, "antigravity_chat_response");
+  assert.equal(logEntry.status, 200);
+  assert.equal(logEntry.client, "hindsight");
+  assert.equal(logEntry.model, "gemini-3-flash");
 });
 
 test("streaming /v1/responses routes through antigravity gRPC", async (t) => {

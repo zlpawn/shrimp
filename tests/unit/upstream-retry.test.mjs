@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 
 import {
   isDeterministicQuotaError,
@@ -110,4 +111,18 @@ test("credential failover enforces per-attempt and total deadlines", async () =>
     limits: { perAttemptMs: 20, maxAttempts: 3, totalMs: 35 },
   }));
   assert.ok(Date.now() - started < 150);
+});
+
+test("openai chat routing adapts antigravity responses without requiring base_url", async () => {
+  const source = await readFile(new URL("../../server.js", import.meta.url), "utf8");
+  const chatRouteMatch = source.match(/async function forwardOpenAIChatCompletionsResolved\([\s\S]*?\nasync function /);
+  const chatRoute = chatRouteMatch?.[0] || "";
+  assert.ok(chatRoute);
+  const allowedTypes = chatRoute.match(/const route = resolveConfiguredModel\(\s*requestedModel,\s*\[([^\]]+)\]/);
+  assert.ok(allowedTypes);
+  assert.match(allowedTypes[1], /["']antigravity["']/);
+  assert.match(
+    chatRoute,
+    /if \(route\?\.provider\?\.type === ["']antigravity["']\) \{[\s\S]*?openAIChatCompletionsToResponses\(body, resolvedModel\)[\s\S]*?responseFormat: ["']chat["'][\s\S]*?return;/,
+  );
 });

@@ -777,6 +777,26 @@
     "hindsight": {
       "endpoints": [
         {
+          "id": "ep_968287c1-f487-4028-b6e8-42a9e9d8e793",
+          "name": "Antigravity",
+          "type": "antigravity",
+          "models": [
+            "gemini-3.6-flash-high",
+            "gemini-3.7-flash-high",
+            "gemini-3.8-flash-high"
+          ],
+          "model_mapping": {},
+          "capabilities": {
+            "input_modalities": [
+              "text",
+              "image"
+            ],
+            "reasoning": true,
+            "tools": true
+          },
+          "is_default": false
+        },
+        {
           "id": "ep_6721b209-f2ce-4acf-a161-77953be8f73e",
           "name": "grok-subscription",
           "type": "grok",

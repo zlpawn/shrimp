@@ -5084,7 +5084,7 @@ async function forwardOpenAIChatCompletionsResolved(body, clientReq, clientRes, 
   ).trim() || null;
   const route = resolveConfiguredModel(
     requestedModel,
-    ["anthropic", "openai-chat", "openai-responses", "grok", "codex-subscription", "chatgpt-codex"],
+    ["anthropic", "openai-chat", "openai-responses", "grok", "antigravity", "codex-subscription", "chatgpt-codex"],
     context.client,
     preferredEndpointId,
   );
@@ -5098,6 +5098,7 @@ async function forwardOpenAIChatCompletionsResolved(body, clientReq, clientRes, 
 
   const canUseGatewaySearch = Boolean(route?.provider)
     && route.provider?.type !== "grok"
+    && route.provider?.type !== "antigravity"
     && !isCodexSubscriptionProvider(route.provider);
   const injectedSearch = canUseGatewaySearch
     ? maybeInjectGatewayWebSearch(body, {
@@ -5435,6 +5436,18 @@ async function forwardOpenAIChatCompletionsResolved(body, clientReq, clientRes, 
     return;
   }
 
+  if (route?.provider?.type === "antigravity") {
+    await proxyAntigravityResponse(
+      openAIChatCompletionsToResponses(body, resolvedModel),
+      clientRes,
+      context,
+      requestedModel,
+      resolvedModel,
+      { provider: route.provider, responseFormat: "chat" },
+    );
+    return;
+  }
+
   let upstream =
     route?.provider?.type === "anthropic"
       ? await fetchConfiguredAnthropic(route.provider, upstreamBody, clientReq)
@@ -5596,7 +5609,14 @@ function antigravityErrorType(err) {
   return "antigravity_error";
 }
 
-async function proxyAntigravityResponse(body, clientRes, context, requestedModel, resolvedModel) {
+async function proxyAntigravityResponse(
+  body,
+  clientRes,
+  context,
+  requestedModel,
+  resolvedModel,
+  { provider = null, responseFormat = "responses" } = {},
+) {
   let fresh;
   try {
     const creds = getAntigravityCreds();
@@ -5614,7 +5634,7 @@ async function proxyAntigravityResponse(body, clientRes, context, requestedModel
 
   // Resolve proxy: endpoint config takes precedence, then env vars.
   // Mirrors the Grok provider pattern (server.js grokProxyAgentFor).
-  const proxyUrl = configuredOutboundProxyUrl(route?.provider || {}) || null;
+  const proxyUrl = configuredOutboundProxyUrl(provider || {}) || null;
   // Proxy-aware fetch for the REST loadCodeAssist call.
   const proxyFetch = proxyUrl
     ? (url, opts) => fetchWithOptionalProxy(url, { ...opts, proxyUrl })
@@ -5649,7 +5669,52 @@ async function proxyAntigravityResponse(body, clientRes, context, requestedModel
     project,
     proxy: proxyUrl || null,
     stream: Boolean(body.stream),
+    response_format: responseFormat,
   });
+
+  if (responseFormat === "chat") {
+    const events = [];
+    const writer = new ResponsesWriter({
+      model: requestedModel || "antigravity",
+      emit(_event, payload) { events.push(payload); },
+    });
+    try {
+      const responses = antigravityGenerate({ accessToken: fresh.access_token, body: antigravityBody, proxyUrl });
+      await streamAntigravityResponses(responses, writer, antigravitySessionFp);
+    } catch (err) {
+      const httpStatus = antigravityErrorStatus(err);
+      const headers = {
+        "Content-Type": "application/json; charset=utf-8",
+        "Access-Control-Allow-Origin": "*",
+      };
+      if (httpStatus === 429) headers["Retry-After"] = "60";
+      clientRes.writeHead(httpStatus, headers);
+      clientRes.end(JSON.stringify({
+        error: { type: antigravityErrorType(err), message: err?.message || String(err) },
+      }, null, 2));
+      logError("antigravity_stream_failed", err, context);
+      return;
+    }
+    const response = buildResponseFromEvents(events, requestedModel);
+    const completion = openAIResponseToChatCompletion(response, requestedModel || resolvedModel);
+    logInfo("antigravity_chat_response", {
+      request_id: context.requestId,
+      client: context.client,
+      status: 200,
+      model: requestedModel,
+      stream: Boolean(body.stream),
+    });
+    if (body.stream) {
+      streamFinalChatCompletion(clientRes, completion, requestedModel);
+    } else {
+      clientRes.writeHead(200, {
+        "Content-Type": "application/json; charset=utf-8",
+        "Access-Control-Allow-Origin": "*",
+      });
+      clientRes.end(JSON.stringify(completion));
+    }
+    return;
+  }
 
   if (body.stream) {
     // Defer writeHead(200) until the first SSE event is actually emitted, so
@@ -5878,7 +5943,6 @@ async function forwardResolvedCodexResponse({
           ...body,
           model: resolvedModel,
         };
-
 
   logInfo("openai_responses_request", {
     request_id: context.requestId,
@@ -12771,5 +12835,3 @@ async function readText(req) {
     req.on("error", reject);
   });
 }
-
-
