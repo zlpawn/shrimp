@@ -1,6 +1,7 @@
 import { registerTab } from "../core/navigation";
 import { showToast } from "../core/ui";
 import { escapeHtml } from "../core/dom";
+import { loadCodexhostRuntime, renderCodexhostRuntime, stopCodexhostPolling } from "./codexhost-runtime";
 
 type ModelSource = {
   type: "custom" | "gateway" | "local";
@@ -594,6 +595,7 @@ function render(): void {
   root.innerHTML = `
     ${state.error ? `<div class="command-apps-error" role="alert" style="margin-bottom: 16px;">${escapeHtml(state.error)}</div>` : ""}
     ${detail ? renderHindsightDetail() : `<div style="display: flex; flex-direction: column; gap: 16px;">
+      <div id="codexhost-runtime-root">${renderCodexhostRuntime()}</div>
       ${otherApps().map((app) => renderCard(app)).join("")}
       ${renderHindsightSummary()}
     </div>`}
@@ -622,6 +624,7 @@ async function load(): Promise<void> {
   } finally {
     state.loading = false;
     render();
+    void loadCodexhostRuntime();
     if (shouldPoll()) startPolling();
   }
 }
@@ -995,6 +998,10 @@ registerTab("command-apps", {
   onEnter: () => {
     state.view = currentHashView();
     void load();
+    void loadCodexhostRuntime();
   },
-  onLeave: () => { stopPolling(); },
+  onLeave: () => {
+    stopPolling();
+    stopCodexhostPolling();
+  },
 });

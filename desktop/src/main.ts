@@ -3,6 +3,7 @@ import "./modules/dream-skin";
 import "./modules/nat-traversal";
 import "./modules/remote-session";
 import "./modules/command-apps";
+import "./modules/codexhost-runtime";
 import "./modules/session-kanban";
 import "./modules/mcp-management";
 import "./modules/clip-player";
