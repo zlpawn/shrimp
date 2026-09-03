@@ -537,6 +537,7 @@ import {
   writeCodingAgentPluginConfig,
 } from "../../lib/command-apps/index.mjs";
 import { inspectHindsightDaemon } from "../../lib/command-apps/infra/hindsight-daemon.mjs";
+import { ensureHindsightControlPlane } from "../../lib/command-apps/infra/hindsight-control-plane.mjs";
 
 test("registry exposes hindsight as a cross-platform cli daemon", () => {
   const app = getCommandApp("hindsight");
@@ -1033,6 +1034,133 @@ test("hindsight profile files and daemon args stay isolated", () => {
   assert.deepEqual(hindsightDaemonArgs("start", "default"), ["daemon", "start"]);
   assert.deepEqual(hindsightDaemonArgs("start", "coding-agent"), ["-p", "coding-agent", "daemon", "start"]);
   fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test("hindsight control plane reuses a healthy server and returns a bank deep link", async () => {
+  const result = await ensureHindsightControlPlane({
+    apiUrl: "http://127.0.0.1:9077",
+    port: 19077,
+    bankId: "coding-agent::local-ai-gateway",
+    probe: async (url) => url === "http://127.0.0.1:19077/api/health",
+    spawnProcess: () => {
+      throw new Error("should not spawn when already healthy");
+    },
+  });
+  assert.deepEqual(result, {
+    running: true,
+    alreadyRunning: true,
+    port: 19077,
+    apiUrl: "http://127.0.0.1:9077",
+    bankId: "coding-agent::local-ai-gateway",
+    url: "http://127.0.0.1:19077/banks/coding-agent%3A%3Alocal-ai-gateway",
+  });
+});
+
+test("hindsight control plane starts on 0.0.0.0 to avoid the loopback redirect bug", async () => {
+  const spawnCalls = [];
+  let healthy = false;
+  const child = { pid: 99123, unref() { this.unrefed = true; }, unrefed: false };
+  const result = await ensureHindsightControlPlane({
+    apiUrl: "http://127.0.0.1:9077",
+    port: 19077,
+    bankId: "coding-agent::local-ai-gateway",
+    probe: async () => healthy,
+    spawnProcess: (...args) => {
+      spawnCalls.push(args);
+      healthy = true;
+      return child;
+    },
+    waitMs: async () => {},
+  });
+  assert.equal(result.alreadyRunning, false);
+  assert.equal(result.running, true);
+  assert.equal(result.url, "http://127.0.0.1:19077/banks/coding-agent%3A%3Alocal-ai-gateway");
+  assert.equal(spawnCalls.length, 1);
+  assert.equal(spawnCalls[0][0], "npx");
+  assert.deepEqual(spawnCalls[0][1], [
+    "@vectorize-io/hindsight-control-plane@0.9.2",
+    "--port",
+    "19077",
+    "--hostname",
+    "0.0.0.0",
+    "--api-url",
+    "http://127.0.0.1:9077",
+  ]);
+  assert.equal(spawnCalls[0][2].detached, true);
+  assert.equal(spawnCalls[0][2].stdio, "ignore");
+  assert.equal(child.unrefed, true);
+});
+
+test("command apps service opens the coding-agent control plane deep link", async () => {
+  const service = createCommandAppsService({
+    configStore: { get: () => ({}), save() {} },
+    platform: "darwin",
+    ensureControlPlane: async ({ bankId }) => ({
+      running: true,
+      alreadyRunning: true,
+      port: 19077,
+      apiUrl: "http://127.0.0.1:9077",
+      bankId,
+      url: "http://127.0.0.1:19077/banks/" + encodeURIComponent(bankId),
+    }),
+  });
+  const result = await service.openHindsightControlPlane({ bankId: "coding-agent::local-ai-gateway" });
+  assert.equal(result.bankId, "coding-agent::local-ai-gateway");
+  assert.equal(result.url, "http://127.0.0.1:19077/banks/coding-agent%3A%3Alocal-ai-gateway");
+});
+
+test("opening the memory page ensures the Hindsight daemon is healthy first", async () => {
+  const calls = [];
+  const service = createCommandAppsService({
+    configStore: { get: () => ({}), save() {} },
+    platform: "darwin",
+    probeHindsight: async (app, settings) => {
+      calls.push(["probe", settings.profileName, settings.port]);
+      return true;
+    },
+    ensureControlPlane: async ({ apiUrl, bankId }) => {
+      calls.push(["control-plane", apiUrl, bankId]);
+      return {
+        running: true,
+        alreadyRunning: true,
+        port: 19077,
+        apiUrl,
+        bankId,
+        url: "http://127.0.0.1:19077/banks/" + encodeURIComponent(bankId),
+      };
+    },
+  });
+  await service.openHindsightControlPlane({ bankId: "coding-agent::local-ai-gateway" });
+  assert.deepEqual(calls[0], ["probe", "coding-agent", 9077]);
+  assert.deepEqual(calls[1], ["control-plane", "http://127.0.0.1:9077", "coding-agent::local-ai-gateway"]);
+});
+
+test("routes open a Hindsight Control Plane bank page", async () => {
+  const { fx, reqFor, res, responses } = createRouteFixture();
+  const original = fx.service.openHindsightControlPlane;
+  fx.service.openHindsightControlPlane = async (body) => ({
+    running: true,
+    alreadyRunning: true,
+    port: 19077,
+    apiUrl: "http://127.0.0.1:9077",
+    bankId: body.bankId,
+    url: "http://127.0.0.1:19077/banks/" + encodeURIComponent(body.bankId),
+  });
+  try {
+    await routeCommandAppsRequest(
+      reqFor("POST", "/v1/command-apps/hindsight/control-plane", { bankId: "coding-agent::local-ai-gateway" }),
+      res,
+      null,
+      "/v1/command-apps/hindsight/control-plane",
+      { service: fx.service },
+    );
+  } finally {
+    fx.service.openHindsightControlPlane = original;
+  }
+  assert.equal(responses[0].status, 200);
+  const body = JSON.parse(responses[0].body);
+  assert.equal(body.bankId, "coding-agent::local-ai-gateway");
+  assert.equal(body.url, "http://127.0.0.1:19077/banks/coding-agent%3A%3Alocal-ai-gateway");
 });
 
 test("service lists each on-disk hindsight profile as its own card", async () => {

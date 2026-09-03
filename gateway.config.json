@@ -777,6 +777,34 @@
     "hindsight": {
       "endpoints": [
         {
+          "id": "ep_6721b209-f2ce-4acf-a161-77953be8f73e",
+          "name": "grok-subscription",
+          "type": "grok",
+          "base_url": "https://cli-chat-proxy.grok.com/v1",
+          "models": [
+            "grok-4.5",
+            "grok-4.6"
+          ],
+          "model_mapping": {},
+          "capabilities": {
+            "input_modalities": [
+              "text",
+              "image"
+            ],
+            "reasoning": true,
+            "tools": true
+          },
+          "model_capabilities": {
+            "grok-4.5": {
+              "context_window": 500000
+            },
+            "grok-4.6": {
+              "context_window": 500000
+            }
+          },
+          "is_default": false
+        },
+        {
           "id": "ep_6223a6e5-2aff-419d-a788-496f20b35689",
           "name": "智谱",
           "type": "openai-chat",
@@ -800,6 +828,63 @@
         }
       ],
       "display_name": "Hindsight 代理",
+      "protocol": "openai"
+    },
+    "deepseek": {
+      "endpoints": [
+        {
+          "id": "ep_b11495f6-e1dd-4b25-95c2-38482bce471e",
+          "name": "grok-subscription",
+          "type": "grok",
+          "base_url": "https://cli-chat-proxy.grok.com/v1",
+          "models": [
+            "grok-4.5",
+            "grok-4.6"
+          ],
+          "model_mapping": {},
+          "capabilities": {
+            "input_modalities": [
+              "text",
+              "image"
+            ],
+            "reasoning": true,
+            "tools": true
+          },
+          "model_capabilities": {
+            "grok-4.5": {
+              "context_window": 500000
+            },
+            "grok-4.6": {
+              "context_window": 500000
+            }
+          },
+          "is_default": false
+        },
+        {
+          "id": "ep_925cd7e5-2146-4094-b542-7e202e9247ba",
+          "name": "智谱",
+          "type": "openai-responses",
+          "base_url": "https://open.bigmodel.cn/api/v1",
+          "auth": "bearer",
+          "models": [],
+          "model_mapping": {
+            "glm-5.3-zp": "GLM-5.3",
+            "glm-5.2-zp": "GLM-5.2",
+            "glm-5.3-flash-zp": "GLM-5.3-Flash"
+          },
+          "capabilities": {
+            "input_modalities": [
+              "text",
+              "image"
+            ],
+            "reasoning": true,
+            "tools": true,
+            "sanitize_dangling_tool_calls": true
+          },
+          "is_default": false
+        }
+      ],
+      "display_name": "DeepSeek",
       "protocol": "openai"
     }
   },

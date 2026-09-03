@@ -713,6 +713,15 @@ test("command apps module renders complete action states", async () => {
   assert.match(source, /选择具体节点后，模型来自该节点映射模型和模型列表/);
 });
 
+test("Hindsight summary opens the auto-managed Control Plane page", async () => {
+  const source = await readFile(path.join(ROOT, "desktop", "src", "modules", "command-apps.ts"), "utf8");
+  assert.match(source, /__commandAppsOpenMemoryPage/);
+  assert.match(source, /\/v1\/command-apps\/hindsight\/control-plane/);
+  assert.match(source, /bankId/);
+  assert.match(source, /window\.open\(data\.url/);
+  assert.match(source, /打开记忆页面/);
+});
+
 test("video kb ingest form includes collection field", async () => {
   const src = await readFile(path.join(ROOT, "desktop", "src", "modules", "video-kb.ts"), "utf8");
   assert.match(src, /vk-collection/);
@@ -1075,6 +1084,5 @@ test("custom client navigation dynamically renders distinctive icons per client 
   assert.notEqual(hindsightIcon, workbuddyIcon, "Hindsight and WorkBuddy must receive distinct icons");
   assert.match(emojiIcon, /🚀/, "Explicit icon configuration should be rendered");
 });
-
 
 

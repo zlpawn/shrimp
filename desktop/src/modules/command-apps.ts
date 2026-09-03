@@ -79,6 +79,7 @@ const state: {
   llmDrafts: Record<string, Required<CommandAppLlm>>;
   modelSources: Record<string, { llm: ModelSource; embedding: ModelSource }>;
   actionBusy: Record<string, "" | "launch" | "restart" | "stop" | "rescan" | "save" | "save-llm">;
+  memoryPageBusy: boolean;
   view: "list" | "hindsight";
 } = {
   loading: false,
@@ -90,6 +91,7 @@ const state: {
   llmDrafts: {},
   modelSources: {},
   actionBusy: {},
+  memoryPageBusy: false,
   view: "list",
 };
 
@@ -547,6 +549,7 @@ function renderHindsightSummary(): string {
       </dl>
       <div class="command-apps-actions">
         <button class="btn btn-primary" onclick="window.__commandAppsOpenHindsight()">打开记忆库</button>
+        <button class="btn" type="button" onclick="window.__commandAppsOpenMemoryPage()" ${state.memoryPageBusy ? "disabled" : ""}>${state.memoryPageBusy ? "正在打开..." : "打开记忆页面"}</button>
       </div>
     </div>
   `;
@@ -854,6 +857,27 @@ async function saveLlm(event: Event, appId: string = "hindsight"): Promise<void>
   });
 }
 
+async function openMemoryPage(): Promise<void> {
+  if (state.memoryPageBusy) return;
+  state.memoryPageBusy = true;
+  state.error = "";
+  render();
+  try {
+    const data = await api<{ url: string }>("/v1/command-apps/hindsight/control-plane", {
+      method: "POST",
+      body: JSON.stringify({ bankId: "coding-agent::local-ai-gateway" }),
+    });
+    window.open(data.url, "_blank", "noopener,noreferrer");
+    showToast("记忆页面已打开", "success");
+  } catch (error: any) {
+    state.error = error?.message || String(error);
+    showToast("记忆页面打开失败", "danger");
+  } finally {
+    state.memoryPageBusy = false;
+    render();
+  }
+}
+
 (window as any).__commandAppsLaunch = launch;
 (window as any).__commandAppsRestart = restart;
 (window as any).__commandAppsStop = stop;
@@ -866,6 +890,7 @@ async function saveLlm(event: Event, appId: string = "hindsight"): Promise<void>
 (window as any).__commandAppsSourceModeChange = sourceModeChange;
 (window as any).__commandAppsCancelLlm = cancelLlm;
 (window as any).__commandAppsSaveLlm = saveLlm;
+(window as any).__commandAppsOpenMemoryPage = openMemoryPage;
 
 document.addEventListener("input", (event) => {
   const target = event.target as HTMLInputElement | null;
