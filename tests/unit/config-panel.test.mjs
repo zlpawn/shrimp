@@ -722,6 +722,21 @@ test("Hindsight summary opens the auto-managed Control Plane page", async () => 
   assert.match(source, /打开记忆页面/);
 });
 
+test("Hindsight summary exposes uv installation and update controls", async () => {
+  const source = await readFile(path.join(ROOT, "desktop", "src", "modules", "command-apps.ts"), "utf8");
+  assert.match(source, /\/v1\/command-apps\/hindsight\/tool/);
+  assert.match(source, /\/v1\/command-apps\/hindsight\/install/);
+  assert.match(source, /\/v1\/command-apps\/hindsight\/update/);
+  assert.match(source, /安装 Hindsight/);
+  assert.match(source, /更新 Hindsight/);
+  assert.match(source, /uv tool install hindsight-embed/);
+  assert.match(source, /uv tool upgrade hindsight-embed/);
+  assert.match(source, /api<HindsightToolStatus>\("\/v1\/command-apps\/hindsight\/tool"\)\.catch/);
+  assert.match(source, /工具状态检测失败/);
+  assert.match(source, /检测到非 uv 安装/);
+  assert.match(source, /managedByUv/);
+});
+
 test("video kb ingest form includes collection field", async () => {
   const src = await readFile(path.join(ROOT, "desktop", "src", "modules", "video-kb.ts"), "utf8");
   assert.match(src, /vk-collection/);
@@ -1088,5 +1103,3 @@ test("custom client navigation dynamically renders distinctive icons per client 
   assert.notEqual(hindsightIcon, workbuddyIcon, "Hindsight and WorkBuddy must receive distinct icons");
   assert.match(emojiIcon, /🚀/, "Explicit icon configuration should be rendered");
 });
-
-

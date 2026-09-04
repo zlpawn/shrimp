@@ -70,6 +70,21 @@ type CommandAppStatus = {
   } | null;
 };
 
+type HindsightToolStatus = {
+  uvAvailable: boolean;
+  installed: boolean;
+  managedByUv: boolean;
+  version: string | null;
+  executablePath: string | null;
+  installCommand: string;
+  updateCommand: string;
+};
+
+const HINDSIGHT_TOOL_ACTION_ENDPOINTS = {
+  install: "/v1/command-apps/hindsight/install",
+  update: "/v1/command-apps/hindsight/update",
+} as const;
+
 const state: {
   loading: boolean;
   error: string;
@@ -80,6 +95,9 @@ const state: {
   llmDrafts: Record<string, Required<CommandAppLlm>>;
   modelSources: Record<string, { llm: ModelSource; embedding: ModelSource }>;
   actionBusy: Record<string, "" | "launch" | "restart" | "stop" | "rescan" | "save" | "save-llm">;
+  hindsightTool: HindsightToolStatus | null;
+  hindsightToolError: string;
+  hindsightToolBusy: "" | "install" | "update";
   memoryPageBusy: boolean;
   view: "list" | "hindsight";
 } = {
@@ -92,6 +110,9 @@ const state: {
   llmDrafts: {},
   modelSources: {},
   actionBusy: {},
+  hindsightTool: null,
+  hindsightToolError: "",
+  hindsightToolBusy: "",
   memoryPageBusy: false,
   view: "list",
 };
@@ -514,7 +535,11 @@ function renderHindsightSummary(): string {
   const runningCount = profiles.filter((item) => item.process?.status === "running").length;
   const launching = profiles.some((item) => item.process?.status === "launching");
   const hasError = profiles.some((item) => item.error || item.process?.status === "error");
-  const meta = hasError
+  const tool = state.hindsightTool;
+  const installed = tool ? tool.installed : hindsightApps().some((item) => item.configured);
+  const meta = tool && !tool.installed
+    ? { className: "is-stopped", text: "未安装" }
+    : hasError
     ? { className: "is-error", text: "加载异常" }
     : launching
       ? { className: "is-neutral", text: "启动中" }
@@ -524,6 +549,26 @@ function renderHindsightSummary(): string {
   const activeName = active ? profileLabel(active) : "coding-agent";
   const port = active?.endpoints?.port || 9077;
   const model = active?.llm?.model || "未配置模型";
+  const toolBusy = Boolean(state.hindsightToolBusy);
+  const versionText = state.hindsightToolError
+    ? "工具状态检测失败"
+    : tool?.installed && !tool.managedByUv
+      ? "检测到非 uv 安装"
+    : tool?.installed
+      ? `hindsight-embed v${tool.version || "未知"}`
+    : tool
+      ? (tool.uvAvailable === false ? "未检测到 uv" : "hindsight-embed 未安装")
+      : "正在检测工具版本";
+  const installCommand = tool?.installCommand || "uv tool install hindsight-embed";
+  const updateCommand = tool?.updateCommand || "uv tool upgrade hindsight-embed";
+  const toolManagerText = !tool
+    ? "状态未知"
+    : tool.managedByUv
+      ? "uv 管理"
+      : tool.installed
+        ? "外部安装"
+        : "尚未安装";
+  const toolCommand = tool?.managedByUv ? updateCommand : installCommand;
   return `
     <div class="command-apps-card${runningCount ? " is-running" : ""}${hasError ? " is-card-error" : ""}" data-app-id="hindsight">
       <div class="command-apps-header">
@@ -547,11 +592,25 @@ function renderHindsightSummary(): string {
           <dd>${profiles.length} 个 profile</dd>
           <span class="command-apps-badge">${profiles.map((item) => escapeHtml(profileLabel(item))).join(" · ")}</span>
         </div>
+        <div>
+          <dt>本地工具</dt>
+          <dd class="command-apps-path">${escapeHtml(versionText)}</dd>
+          <span class="command-apps-badge" title="${escapeHtml(toolCommand)}">${toolManagerText}</span>
+        </div>
       </dl>
       <div class="command-apps-actions">
-        <button class="btn btn-primary" onclick="window.__commandAppsOpenHindsight()">打开记忆库</button>
-        <button class="btn" type="button" onclick="window.__commandAppsOpenMemoryPage()" ${state.memoryPageBusy ? "disabled" : ""}>${state.memoryPageBusy ? "正在打开..." : "打开记忆页面"}</button>
+        ${tool?.installed === false
+          ? `<button class="btn btn-primary" type="button" onclick="window.__commandAppsInstallHindsight()" ${toolBusy || tool.uvAvailable === false ? "disabled" : ""}>${state.hindsightToolBusy === "install" ? "正在安装..." : "安装 Hindsight"}</button>`
+          : tool?.installed === true && tool.managedByUv
+            ? `<button class="btn" type="button" onclick="window.__commandAppsUpdateHindsight()" ${toolBusy || tool.uvAvailable === false ? "disabled" : ""}>${state.hindsightToolBusy === "update" ? "正在更新..." : "更新 Hindsight"}</button>`
+            : tool?.installed === true
+              ? `<button class="btn" type="button" disabled>非 uv 安装</button>`
+            : `<button class="btn" type="button" disabled>工具状态检测失败</button>`}
+        <button class="btn btn-primary" onclick="window.__commandAppsOpenHindsight()" ${installed ? "" : "disabled"}>打开记忆库</button>
+        <button class="btn" type="button" onclick="window.__commandAppsOpenMemoryPage()" ${state.memoryPageBusy || !installed ? "disabled" : ""}>${state.memoryPageBusy ? "正在打开..." : "打开记忆页面"}</button>
       </div>
+      ${tool?.uvAvailable === false ? `<div class="command-apps-hint">安装和更新 Hindsight 需要先安装 uv。准备好后执行 <code>${escapeHtml(installCommand)}</code>。</div>` : ""}
+      ${tool?.installed && !tool.managedByUv ? `<div class="command-apps-hint">当前 hindsight-embed 不由 uv 管理，原有启停功能仍可使用。请先手动迁移到 uv，再使用页面更新。</div>` : ""}
     </div>
   `;
 }
@@ -609,8 +668,20 @@ async function load(): Promise<void> {
   state.editingLlmAppId = null;
   render();
   try {
-    const data = await api<{ apps: CommandAppStatus[] }>("/v1/command-apps/apps");
+    const [data, toolResult] = await Promise.all([
+      api<{ apps: CommandAppStatus[] }>("/v1/command-apps/apps"),
+      api<HindsightToolStatus>("/v1/command-apps/hindsight/tool").catch((error: any) => ({
+        error: error?.message || "工具状态检测失败",
+      })),
+    ]);
     state.apps = data.apps || [];
+    if ("error" in toolResult) {
+      state.hindsightTool = null;
+      state.hindsightToolError = toolResult.error;
+    } else {
+      state.hindsightTool = toolResult;
+      state.hindsightToolError = "";
+    }
     state.view = currentHashView();
     for (const app of state.apps) {
       if (app.app?.id) {
@@ -627,6 +698,47 @@ async function load(): Promise<void> {
     void loadCodexhostRuntime();
     if (shouldPoll()) startPolling();
   }
+}
+
+function replaceAppStatuses(apps: CommandAppStatus[]): void {
+  state.apps = apps || [];
+  for (const app of state.apps) {
+    if (!app.app?.id) continue;
+    state.pathDrafts[app.app.id] = app.executablePath || "";
+    state.llmDrafts[app.app.id] = llmDraftFromStatus(app.llm);
+    state.modelSources[app.app.id] = sourcesFromStatus(app);
+  }
+}
+
+async function runHindsightToolAction(action: "install" | "update"): Promise<void> {
+  if (state.hindsightToolBusy) return;
+  state.hindsightToolBusy = action;
+  state.error = "";
+  render();
+  try {
+    const result = await api<{ tool: HindsightToolStatus; apps: CommandAppStatus[] }>(
+      HINDSIGHT_TOOL_ACTION_ENDPOINTS[action],
+      { method: "POST", body: "{}" },
+    );
+    state.hindsightTool = result.tool;
+    replaceAppStatuses(result.apps);
+    showToast(action === "install" ? "Hindsight 安装完成" : "Hindsight 更新完成", "success");
+    if (shouldPoll()) startPolling();
+  } catch (error: any) {
+    state.error = error?.message || String(error);
+    showToast(action === "install" ? "Hindsight 安装失败" : "Hindsight 更新失败", "danger");
+  } finally {
+    state.hindsightToolBusy = "";
+    render();
+  }
+}
+
+async function installHindsight(): Promise<void> {
+  await runHindsightToolAction("install");
+}
+
+async function updateHindsight(): Promise<void> {
+  await runHindsightToolAction("update");
 }
 
 async function runAction(
@@ -894,6 +1006,8 @@ async function openMemoryPage(): Promise<void> {
 (window as any).__commandAppsCancelLlm = cancelLlm;
 (window as any).__commandAppsSaveLlm = saveLlm;
 (window as any).__commandAppsOpenMemoryPage = openMemoryPage;
+(window as any).__commandAppsInstallHindsight = installHindsight;
+(window as any).__commandAppsUpdateHindsight = updateHindsight;
 
 document.addEventListener("input", (event) => {
   const target = event.target as HTMLInputElement | null;
