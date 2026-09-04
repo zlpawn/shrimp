@@ -252,8 +252,8 @@ AI 后台执行 `node scripts/test_mysql_query.js <service|host> [datasource|sql
 | `--json` | - | `false` | 输出格式化 JSON |
 
 > ⚡ **DML/DDL 写入安全规则**：
-> 1. **无 WHERE 保护**：`UPDATE`/`DELETE` 不含 WHERE 条件时自动拦截，需显式传入 `--force` 才能执行全表操作；
-> 2. **结构化反馈**：DML 操作返回 `affectedRows`、`insertId`、`changedRows` 等结构化指标，DDL 返回执行结果；
+> 1. **顶层 WHERE 保护**：`UPDATE`/`DELETE` 必须明确包含顶层 `WHERE`；字符串、注释、反引号标识符、嵌套子查询中的伪 `WHERE` 不算，多语句或无法可靠分析的 SQL 默认阻断，需显式传入 `--force`；
+> 2. **结构化反馈**：DML 操作返回 `affectedRows`、`insertId`、`changedRows` 等结构化指标；DDL 返回执行结果，并在可识别时明确提示目标表名；
 > 3. **仅限测试环境**：本脚本仅连接测试/线下内网数据库，不可用于生产环境。
 
 > 💡 **测试库密码安全机制**：
