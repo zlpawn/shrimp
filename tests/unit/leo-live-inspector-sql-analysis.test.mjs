@@ -69,6 +69,16 @@ test('reports indeterminate guarding when the statement has unbalanced syntax', 
   assert.deepEqual(analyzeSql(sql), expected('DELETE', 'DML', true, true, null));
 });
 
+test('reports guarded analysis as indeterminate when multiple top-level statements are supplied', () => {
+  const sql = 'UPDATE users SET active = 1 WHERE id = 7; DELETE FROM users';
+  assert.deepEqual(analyzeSql(sql), expected('UPDATE', 'DML', true, true, null));
+});
+
+test('accepts one trailing semicolon and ignores semicolons inside SQL text', () => {
+  const sql = `UPDATE \`semi;table\` SET note = 'first;second' /* ; comment */ WHERE id = 7;`;
+  assert.deepEqual(analyzeSql(sql), expected('UPDATE', 'DML', true, true, true));
+});
+
 test('extracts straightforward DDL table names without rewriting the input SQL', () => {
   const statements = [
     ['CREATE TABLE IF NOT EXISTS `iot_sms`.`tmp_table` (id INT)', 'iot_sms.tmp_table'],
