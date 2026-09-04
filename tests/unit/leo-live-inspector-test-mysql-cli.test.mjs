@@ -35,7 +35,8 @@ function runCli(sql, options = {}) {
     env: {
       HOME: home,
       LEO_TEST_MYSQL_MODULE: fakeMysqlUrl,
-      LEO_TEST_MYSQL_EVENT_FILE: eventFile
+      LEO_TEST_MYSQL_EVENT_FILE: eventFile,
+      ...(options.env || {})
     },
     encoding: 'utf8'
   });
@@ -161,4 +162,15 @@ test('preserves existing SELECT table output', () => {
   assert.match(result.stdout, /状态: 查询成功/);
   assert.match(result.stdout, /\| id \| name \|/);
   assert.match(result.stdout, /\| 7 \| Ada \|/);
+});
+
+test('can disable credential-cache persistence for disposable verification runs', () => {
+  const result = runCli('SELECT id, name FROM people', {
+    env: { LEO_TEST_MYSQL_NO_PERSIST: '1' }
+  });
+  assertConnectedWithOriginalSql(result, 'SELECT id, name FROM people');
+  assert.equal(
+    fs.existsSync(path.join(result.home, '.shrimp', 'skills', 'live-inspector', 'test_databases.json')),
+    false
+  );
 });
