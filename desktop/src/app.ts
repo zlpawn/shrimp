@@ -1419,12 +1419,10 @@ function renderCustomClientSections() {
     const eps = config.clients[client]?.endpoints || [];
     const protocol = config.clients[client]?.protocol || 'anthropic';
     const detailForThis = inDetail && selectedEndpoint.client === client;
-    const rawName = clientDisplayName(client);
-    const headerTitle = rawName.endsWith('代理') ? rawName : `${rawName} 代理`;
     const header = `
         <div class="section-header custom-client-section-header" id="custom-client-block-${escapeHtml(client)}">
             <div>
-                <h2>${escapeHtml(headerTitle)}</h2>
+                <h2>${escapeHtml(clientDisplayName(client))}</h2>
                 <p>接入协议：${escapeHtml(protocolLabel(protocol))} · 路由标识 <code>/${escapeHtml(client)}/</code></p>
             </div>
             <div class="section-header-actions">
@@ -8486,4 +8484,3 @@ document.addEventListener('keydown', (e) => {
         closeEndpointDetail();
     }
 });
-
