@@ -506,6 +506,7 @@ test("LangBot start passes fixed instance directory and env", async () => {
       PATH: "/bin",
       ALL_PROXY: "socks5://127.0.0.1:7890",
       HTTP_PROXY: "http://127.0.0.1:7897",
+      HTTPS_PROXY: "http://127.0.0.1:7897",
     },
   });
   assert.equal(result.pid, 4242);
@@ -515,8 +516,9 @@ test("LangBot start passes fixed instance directory and env", async () => {
   assert.deepEqual(spawnCalls[0][1], []);
   assert.equal(spawnCalls[0][2].cwd, settings.cwd);
   assert.equal(spawnCalls[0][2].env.LANGBOT_DATA_ROOT, settings.dataRoot);
-  assert.equal(spawnCalls[0][2].env.ALL_PROXY, "socks5://127.0.0.1:7890");
+  assert.equal(spawnCalls[0][2].env.ALL_PROXY, undefined);
   assert.equal(spawnCalls[0][2].env.HTTP_PROXY, "http://127.0.0.1:7897");
+  assert.equal(spawnCalls[0][2].env.HTTPS_PROXY, "http://127.0.0.1:7897");
   assert.equal(child.unrefed, true);
 });
 
