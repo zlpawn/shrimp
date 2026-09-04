@@ -828,7 +828,7 @@ async function updateHindsight(): Promise<void> {
 
 async function runAction(
   appId: string,
-  action: "launch" | "restart" | "stop" | "rescan" | "save" | "save-llm",
+  action: "launch" | "restart" | "stop" | "rescan" | "save" | "save-llm" | "install" | "update",
   fn: () => Promise<void>,
 ): Promise<void> {
   if (state.actionBusy[appId]) return;
@@ -892,6 +892,7 @@ async function stop(appId: string = "antigravity"): Promise<void> {
 
 async function packageAction(appId: "langbot", action: "install" | "update"): Promise<void> {
   await runAction(appId, action, async () => {
+    showToast(action === "install" ? "LangBot 安装中" : "LangBot 更新中", "info");
     const status = await api<CommandAppStatus>(`/v1/command-apps/apps/${encodeURIComponent(appId)}/${action}`, { method: "POST" });
     updateAppStatus(status);
     showToast(action === "install" ? "LangBot 安装完成" : "LangBot 更新完成", "success");

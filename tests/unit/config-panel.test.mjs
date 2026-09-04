@@ -737,6 +737,13 @@ test("Hindsight summary exposes uv installation and update controls", async () =
   assert.match(source, /managedByUv/);
 });
 
+test("LangBot install and update actions use managed busy states", async () => {
+  const source = await readFile(path.join(ROOT, "desktop", "src", "modules", "command-apps.ts"), "utf8");
+  assert.match(source, /action: "launch" \| "restart" \| "stop" \| "rescan" \| "save" \| "save-llm" \| "install" \| "update"/);
+  assert.match(source, /await runAction\(appId, action, async \(\) =>/);
+  assert.match(source, /showToast\(action === "install" \? "LangBot 安装中" : "LangBot 更新中", "info"\)/);
+});
+
 test("video kb ingest form includes collection field", async () => {
   const src = await readFile(path.join(ROOT, "desktop", "src", "modules", "video-kb.ts"), "utf8");
   assert.match(src, /vk-collection/);
