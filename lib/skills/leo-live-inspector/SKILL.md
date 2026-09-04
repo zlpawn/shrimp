@@ -53,6 +53,10 @@ description: 线上与测试环境全场景数据探查、日志检索、TraceId
 | **“查下【测试环境】saas 库的订单数据”** | `node scripts/test_mysql_query.js saas "SELECT * FROM algo_detect_report ORDER BY id DESC LIMIT 5"` | 测试环境默认主库直连表格，毫秒级响应 |
 | **“查下【测试环境】saas 租户 1 库 (tenant1) 的数据”** | `node scripts/test_mysql_query.js saas tenant1 "SELECT * FROM algo_detect_report LIMIT 5"` | 多数据源精准切换，支持租户分库查验 |
 | **“查看仓颉系统测试环境有哪些数据源”** | `node scripts/test_mysql_query.js cangjie --list-ds` | 列出该微服务下所有已配置的多数据源及默认库 |
+| **"往测试环境 saas 库插一条配置数据"** | `node scripts/test_mysql_query.js saas "INSERT INTO t_config (key_name, value) VALUES ('test_key', 'val')"` | DML 写入，返回 affectedRows + insertId |
+| **"更新测试环境 iot 库的设备状态"** | `node scripts/test_mysql_query.js iot "UPDATE t_device SET status = 0 WHERE sn = 'abc123'"` | 有 WHERE 条件直接执行，返回 changedRows |
+| **"删除测试环境 saas 的过期临时数据"** | `node scripts/test_mysql_query.js saas "DELETE FROM t_temp WHERE created_at < '2026-01-01'"` | 有 WHERE 条件直接执行 |
+| **"在测试环境 saas 建一张临时表"** | `node scripts/test_mysql_query.js saas "CREATE TABLE t_tmp (id BIGINT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(64))"` | DDL 结构变更，返回执行结果 |
 | **“指定端口 6763 和库名查线上 SQL”** | `node scripts/cloud_mysql_query.js 6763 utopia_scs_recorder "SELECT count(*) FROM image_understanding_detail"` | 线上自定义端口与库名统计输出 |
 
 ---
@@ -232,19 +236,25 @@ AI 后台执行 `node scripts/cloud_mysql_query.js <appId|port> [database|sql] [
 | `--token` | - | - | 临时覆盖 Token |
 | `--json` | - | `false` | 输出纯 JSON 数据结果 |
 
-### 3.2 线下/测试环境：MySQL 本地直连查询 (零外部依赖、多数据源支持)
+### 3.2 线下/测试环境：MySQL 本地直连查询与写入 (零外部依赖、多数据源支持)
 AI 后台执行 `node scripts/test_mysql_query.js <service|host> [datasource|sql] [sql] [options]`：
 
 | 参数/选项 | 简写 | 默认值 | 说明 |
 | :--- | :--- | :--- | :--- |
 | `<service\|host>` | - | 必填 | 微服务别名 (如 `saas`, `iot`, `recorder`, `cangjie`) 或测试库 Host/Port |
 | `[datasource]` | - | 可选 | 多数据源别名 (如 `tenant0`, `tenant1`, `base`)，未填自动走默认主库 |
-| `[sql]` | - | 必填 | 待执行的 SQL (以 `SELECT`/`SHOW`/`DESC` 开头) |
+| `[sql]` | - | 必填 | 待执行的 SQL：查询 (`SELECT`/`SHOW`/`DESC`/`EXPLAIN`)、写入 (`INSERT`/`UPDATE`/`DELETE`/`REPLACE`)、结构 (`CREATE`/`ALTER`/`DROP`/`TRUNCATE`) |
 | `--ds <alias>` | - | 自动匹配 | 显式指定数据源名称 |
 | `--list-ds` | - | `false` | 列出该服务下全部已注册的测试数据源与默认库 |
+| `--force` | - | `false` | 强制执行无 WHERE 条件的 UPDATE/DELETE（默认拦截，防止全表误操作） |
 | `-p, --password` | - | 动态嗅探 | 临时提供密码（握手验通后自动静默持久化至 `~/.shrimp`） |
 | `--max-rows` | - | `50` | 最大返回数据行数 |
 | `--json` | - | `false` | 输出格式化 JSON |
+
+> ⚡ **DML/DDL 写入安全规则**：
+> 1. **无 WHERE 保护**：`UPDATE`/`DELETE` 不含 WHERE 条件时自动拦截，需显式传入 `--force` 才能执行全表操作；
+> 2. **结构化反馈**：DML 操作返回 `affectedRows`、`insertId`、`changedRows` 等结构化指标，DDL 返回执行结果；
+> 3. **仅限测试环境**：本脚本仅连接测试/线下内网数据库，不可用于生产环境。
 
 > 💡 **测试库密码安全机制**：
 > 1. **零硬编码**：Skill 仓库内绝无任何明文密码；
