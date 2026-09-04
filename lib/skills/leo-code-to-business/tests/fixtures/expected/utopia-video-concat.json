@@ -1,0 +1,118 @@
+{
+  "scenario": "video-concat",
+  "minimum_confirmed_use_cases": 2,
+  "scenario_depth_requirements": {
+    "use_cases": [
+      {
+        "id": "UC-upload-linjing-video",
+        "minimum_stages": 3,
+        "minimum_atomic_steps": 7,
+        "require_branch_matrix": true,
+        "require_failure_recovery": true,
+        "require_worked_examples": true
+      },
+      {
+        "id": "UC-concat-linjing-video",
+        "minimum_stages": 5,
+        "minimum_atomic_steps": 12,
+        "require_branch_matrix": true,
+        "require_failure_recovery": true,
+        "require_worked_examples": true
+      }
+    ]
+  },
+  "required_evidence": [
+    {
+      "id": "device-upload-entry",
+      "path_contains": "LinjingDeviceController.java",
+      "symbol_contains": "upload"
+    },
+    {
+      "id": "concat-start",
+      "path_contains": "VideoContactTaskServiceImpl.java",
+      "symbol_contains": "contactVideoByFolder"
+    },
+    {
+      "id": "concat-callback",
+      "path_contains": "LinjingVideoProcess",
+      "symbol_contains": "callback"
+    },
+    {
+      "id": "concat-retry",
+      "path_contains": "VideoContactTaskServiceImpl.java",
+      "symbol_contains": "retryContactVideoByFolder"
+    },
+    {
+      "id": "concat-success-update",
+      "path_contains": "VideoContactTaskServiceImpl.java",
+      "symbol_contains": "updateTaskSuccess"
+    }
+  ],
+  "required_business_concepts": [],
+  "required_business_flow_concepts": [
+    {
+      "id": "device-upload-recorded",
+      "any_of": ["临境设备上传的视频被登记", "linjing device upload is recorded"]
+    },
+    {
+      "id": "folder-device-group",
+      "any_of": ["同一文件夹和设备序列号的视频组成待拼接组", "folder and device serial identify the footage group"]
+    },
+    {
+      "id": "eligible-files-selected",
+      "any_of": ["系统选择可用于拼接的已上传稳像视频", "eligible uploaded stabilized footage is selected"]
+    },
+    {
+      "id": "bitrate-task-decision",
+      "any_of": ["码率选择决定创建高清、低清或两类拼接任务", "bitrate selection determines high, low, or both tasks"]
+    },
+    {
+      "id": "async-task-started",
+      "any_of": ["拼接任务提交到异步处理并进入已开始状态", "concatenation is submitted asynchronously and enters started state"]
+    },
+    {
+      "id": "callback-advances-result",
+      "any_of": ["拼接回调推进任务成功或失败状态", "callback advances the task to success or failure"]
+    },
+    {
+      "id": "success-updates-folder-videos",
+      "any_of": ["成功结果更新同一视频组并可供后续业务使用", "success updates the footage group for downstream use"]
+    },
+    {
+      "id": "retry-replaces-task",
+      "any_of": ["重试创建新任务并使原任务失效", "retry creates a new task and invalidates the old task"]
+    },
+    {
+      "id": "operations-repair-family",
+      "any_of": ["待处理、已开始和失败任务具有独立修复路径", "pending, started, and failed tasks have repair paths"]
+    }
+  ],
+  "technical_fact_placements": [],
+  "required_unknowns": [],
+  "required_family_members": [
+    {
+      "id": "device-upload",
+      "any_of": ["临境设备视频上传", "linjing device video upload"]
+    },
+    {
+      "id": "concat-callback",
+      "any_of": ["视频拼接回调", "video concatenation callback"]
+    },
+    {
+      "id": "pending-retry",
+      "any_of": ["待处理拼接任务重试", "pending concatenation retry"]
+    },
+    {
+      "id": "started-retry",
+      "any_of": ["已开始拼接任务重试", "started concatenation retry"]
+    },
+    {
+      "id": "failure-retry",
+      "any_of": ["失败拼接任务重试", "failed concatenation retry"]
+    },
+    {
+      "id": "low-replaces-high",
+      "any_of": ["低清结果替代高清", "low bitrate result replaces high bitrate"]
+    }
+  ]
+}

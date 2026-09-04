@@ -354,7 +354,7 @@ def resolve_workspace_root(
             raise ValidationError(
                 "explicit external --workspace is required for " + ", ".join(reasons)
             )
-        return repo / "_leo_business"
+        return repo / ".leo_business"
 
     raw_output = Path(output_root).expanduser()
     if not raw_output.is_absolute():
@@ -848,6 +848,9 @@ def validate_inventory(records: list[dict[str, Any]]) -> dict[str, Any]:
 def validate_evidence(
     records: list[dict[str, Any]],
     snapshot_id: str,
+    *,
+    require_verified_hash: bool = False,
+    repository_snapshot: dict[str, Any] | None = None,
 ) -> tuple[set[str], dict[str, dict[str, Any]]]:
     ids: set[str] = set()
     by_id: dict[str, dict[str, Any]] = {}
@@ -873,9 +876,60 @@ def validate_evidence(
             raise ValidationError(f"duplicate evidence id: {record['id']}")
         if record["snapshot_id"] != snapshot_id:
             raise ValidationError(f"evidence {record['id']} snapshot mismatch")
+        if (
+            require_verified_hash
+            and record.get("source_verified") is True
+            and not str(record.get("content_sha256", "")).strip()
+        ):
+            raise ValidationError(
+                f"evidence {record['id']} source_verified requires content_sha256"
+            )
+        if require_verified_hash and record.get("source_verified") is True:
+            _validate_evidence_against_snapshot(record, repository_snapshot or {})
         ids.add(record["id"])
         by_id[record["id"]] = record
     return ids, by_id
+
+
+def _validate_evidence_against_snapshot(
+    record: dict[str, Any],
+    repository_snapshot: dict[str, Any],
+) -> None:
+    relative = str(record.get("repository_relative_path", "")).replace("\\", "/")
+    relative_path = Path(relative)
+    if not relative or relative_path.is_absolute() or ".." in relative_path.parts:
+        raise ValidationError(
+            f"evidence {record['id']} has invalid repository-relative path"
+        )
+    files = repository_snapshot.get("files")
+    if not isinstance(files, dict):
+        return
+    metadata = files.get(relative)
+    if not isinstance(metadata, dict):
+        raise ValidationError(
+            f"evidence {record['id']} path is not present in frozen snapshot: {relative}"
+        )
+    if record.get("source_kind") != "current_source":
+        return
+    evidence_hash = str(record.get("content_sha256", "")).strip()
+    frozen_file_hash = str(metadata.get("sha256", "")).strip()
+    if evidence_hash == frozen_file_hash:
+        return
+
+    canonical_root = repository_snapshot.get("canonical_root")
+    source_path = Path(str(canonical_root)) / relative if canonical_root else None
+    if source_path is not None and source_path.is_file():
+        payload = source_path.read_bytes()
+        if hashlib.sha256(payload).hexdigest() == frozen_file_hash:
+            start_line = max(1, int(record.get("start_line") or 1))
+            end_line = max(start_line, int(record.get("end_line") or start_line))
+            lines = payload.splitlines(keepends=True)
+            selected = b"".join(lines[start_line - 1 : end_line])
+            if hashlib.sha256(selected).hexdigest() == evidence_hash:
+                return
+    raise ValidationError(
+        f"evidence {record['id']} content hash does not match frozen snapshot"
+    )
 
 
 def validate_investigations(
@@ -1123,7 +1177,12 @@ def canonical_revision_sha256(revision_dir: Path) -> str:
 
 
 def semantic_change_impact_payload(change_impact: dict[str, Any]) -> dict[str, Any]:
-    if change_impact.get("schema_version") == contract.V2_SCHEMA_VERSION:
+    if change_impact.get("schema_version") in {
+        contract.V2_SCHEMA_VERSION,
+        contract.V3_SCHEMA_VERSION,
+        contract.V31_SCHEMA_VERSION,
+        contract.V32_SCHEMA_VERSION,
+    }:
         payload = change_impact.get("semantic_inputs")
         if not isinstance(payload, dict):
             raise ValidationError("v2 change-impact semantic_inputs must be an object")
@@ -1146,9 +1205,60 @@ def canonical_revision_sha256_v2(revision_dir: Path) -> str:
     return contract.canonical_sha256(payload, sort_records=True)
 
 
+def canonical_revision_sha256_v3(revision_dir: Path) -> str:
+    payload: dict[str, Any] = {}
+    for name, kind in contract.V3_CANONICAL_FILE_KINDS.items():
+        path = revision_dir / name
+        if not path.is_file():
+            raise ValidationError(f"v3 semantic artifact is missing: {name}")
+        if kind == "jsonl":
+            payload[name] = read_jsonl(path)
+        elif kind == "semantic_json":
+            payload[name] = semantic_change_impact_payload(read_json(path))
+        else:
+            payload[name] = read_json(path)
+    return contract.canonical_sha256(payload, sort_records=True)
+
+
+def canonical_revision_sha256_v31(revision_dir: Path) -> str:
+    payload: dict[str, Any] = {}
+    for name, kind in contract.V31_CANONICAL_FILE_KINDS.items():
+        path = revision_dir / name
+        if not path.is_file():
+            raise ValidationError(f"v3.1 semantic artifact is missing: {name}")
+        if kind == "jsonl":
+            payload[name] = read_jsonl(path)
+        elif kind == "semantic_json":
+            payload[name] = semantic_change_impact_payload(read_json(path))
+        else:
+            payload[name] = read_json(path)
+    return contract.canonical_sha256(payload, sort_records=True)
+
+
+def canonical_revision_sha256_v32(revision_dir: Path) -> str:
+    payload: dict[str, Any] = {}
+    for name, kind in contract.V32_CANONICAL_FILE_KINDS.items():
+        path = revision_dir / name
+        if not path.is_file():
+            raise ValidationError(f"v3.2 semantic artifact is missing: {name}")
+        if kind == "jsonl":
+            payload[name] = read_jsonl(path)
+        elif kind == "semantic_json":
+            payload[name] = semantic_change_impact_payload(read_json(path))
+        else:
+            payload[name] = read_json(path)
+    return contract.canonical_sha256(payload, sort_records=True)
+
+
 def revision_canonical_sha256(revision_dir: Path | str) -> str:
     root = Path(revision_dir)
     manifest = read_json(root / "manifest.json")
+    if manifest.get("schema_version") == contract.V32_SCHEMA_VERSION:
+        return canonical_revision_sha256_v32(root)
+    if manifest.get("schema_version") == contract.V31_SCHEMA_VERSION:
+        return canonical_revision_sha256_v31(root)
+    if manifest.get("schema_version") == contract.V3_SCHEMA_VERSION:
+        return canonical_revision_sha256_v3(root)
     if manifest.get("schema_version") == contract.V2_SCHEMA_VERSION:
         return canonical_revision_sha256_v2(root)
     return canonical_revision_sha256(root)
@@ -1357,6 +1467,895 @@ def validate_candidates(
     }
 
 
+def _require_nonempty_fields(
+    record: dict[str, Any],
+    fields: Iterable[str],
+    label: str,
+) -> None:
+    require_fields(record, fields, label)
+    empty = [field for field in fields if record.get(field) in (None, "", [])]
+    if empty:
+        raise ValidationError(f"{label} requires non-empty fields: {', '.join(empty)}")
+
+
+def validate_v3_candidates(candidates: list[dict[str, Any]]) -> None:
+    for candidate in candidates:
+        if (
+            candidate.get("structural_importance") in {"critical", "high"}
+            and candidate.get("candidate_status") in {"supporting_behavior", "excluded"}
+        ):
+            comparison = candidate.get("semantic_comparison")
+            required = {
+                "compared_goal",
+                "compared_trigger",
+                "compared_outcome",
+                "conclusion",
+                "evidence_ids",
+            }
+            if not isinstance(comparison, dict) or not required.issubset(comparison):
+                raise ValidationError(
+                    f"candidate {candidate.get('id')} requires semantic comparison"
+                )
+            if not comparison.get("evidence_ids"):
+                raise ValidationError(
+                    f"candidate {candidate.get('id')} semantic comparison requires evidence"
+                )
+
+
+def validate_module_dossiers(
+    records: list[dict[str, Any]],
+    inventory_by_id: dict[str, dict[str, Any]],
+    evidence_ids: set[str],
+    snapshot_id: str,
+) -> dict[str, Any]:
+    required = [
+        "id", "title", "business_purpose", "module_paths", "entry_signal_ids",
+        "job_signal_ids", "consumer_signal_ids", "data_store_signal_ids",
+        "configuration_signal_ids", "external_integration_signal_ids", "key_entities",
+        "control_flow_summary", "business_rules", "state_fields", "calculations",
+        "failure_paths", "repair_paths", "evidence_ids", "coverage_status",
+        "unknown_ids", "snapshot_id",
+    ]
+    ids: set[str] = set()
+    unresolved: list[str] = []
+    covered_signals: set[str] = set()
+    for record in records:
+        _require_nonempty_fields(
+            record,
+            ["id", "title", "business_purpose", "module_paths", "control_flow_summary", "evidence_ids"],
+            "module dossier",
+        )
+        require_fields(record, required, "module dossier")
+        if record["id"] in ids:
+            raise ValidationError(f"duplicate module dossier {record['id']}")
+        ids.add(record["id"])
+        if record["snapshot_id"] != snapshot_id:
+            raise ValidationError(f"module dossier {record['id']} snapshot mismatch")
+        for field in (
+            "entry_signal_ids", "job_signal_ids", "consumer_signal_ids",
+            "data_store_signal_ids", "configuration_signal_ids",
+            "external_integration_signal_ids",
+        ):
+            for signal_id in record[field]:
+                if signal_id not in inventory_by_id:
+                    raise ValidationError(
+                        f"module dossier {record['id']} names unknown signal {signal_id}"
+                    )
+                covered_signals.add(signal_id)
+        for evidence_id in record["evidence_ids"]:
+            if evidence_id not in evidence_ids:
+                raise ValidationError(
+                    f"module dossier {record['id']} names unknown evidence {evidence_id}"
+                )
+        if record["coverage_status"] != "complete":
+            unresolved.append(record["id"])
+    important = {
+        signal_id
+        for signal_id, signal in inventory_by_id.items()
+        if signal.get("structural_importance") in {"critical", "high"}
+        and signal.get("classification") != "technical_support"
+    }
+    missing = sorted(important - covered_signals)
+    unresolved.extend(missing)
+    return {
+        "ids": ids,
+        "metric": _metric(len(important - set(missing)), len(important), unresolved),
+    }
+
+
+def validate_end_to_end_flows(
+    records: list[dict[str, Any]],
+    module_ids: set[str],
+    use_case_ids: set[str],
+    evidence_ids: set[str],
+    snapshot_id: str,
+) -> dict[str, Any]:
+    required = [
+        "id", "title", "business_goal", "actor_ids", "trigger_ids", "stages",
+        "terminal_outcomes", "failure_outcomes", "repair_paths", "module_dossier_ids",
+        "use_case_ids", "rule_ids", "state_machine_ids", "calculation_model_ids",
+        "evidence_ids", "coverage_status", "unknown_ids", "snapshot_id",
+    ]
+    stage_required = [
+        "stage_id", "input", "preconditions", "business_decisions", "processing",
+        "data_changes", "state_changes", "external_effects", "success_output",
+        "rejections", "failures", "recovery", "idempotency_or_concurrency",
+        "observability", "evidence_ids",
+    ]
+    ids: set[str] = set()
+    unresolved: list[str] = []
+    covered_use_cases: set[str] = set()
+    for record in records:
+        require_fields(record, required, "end-to-end flow")
+        _require_nonempty_fields(
+            record,
+            ["id", "title", "business_goal", "stages", "terminal_outcomes", "module_dossier_ids", "use_case_ids", "evidence_ids"],
+            "end-to-end flow",
+        )
+        if record["id"] in ids:
+            raise ValidationError(f"duplicate end-to-end flow {record['id']}")
+        ids.add(record["id"])
+        if record["snapshot_id"] != snapshot_id:
+            raise ValidationError(f"end-to-end flow {record['id']} snapshot mismatch")
+        for module_id in record["module_dossier_ids"]:
+            if module_id not in module_ids:
+                raise ValidationError(f"end-to-end flow names unknown module {module_id}")
+        for use_case_id in record["use_case_ids"]:
+            if use_case_id not in use_case_ids:
+                raise ValidationError(f"end-to-end flow names unknown use case {use_case_id}")
+            covered_use_cases.add(use_case_id)
+        for evidence_id in record["evidence_ids"]:
+            if evidence_id not in evidence_ids:
+                raise ValidationError(f"end-to-end flow names unknown evidence {evidence_id}")
+        for stage in record["stages"]:
+            require_fields(stage, stage_required, f"flow stage {record['id']}")
+            if any(stage.get(field) in (None, "") for field in stage_required):
+                empty = [field for field in stage_required if stage.get(field) in (None, "")]
+                raise ValidationError(
+                    f"flow stage {record['id']} requires non-empty {', '.join(empty)}"
+                )
+            if not stage.get("evidence_ids"):
+                raise ValidationError(f"flow stage {record['id']} requires evidence_ids")
+        if record["coverage_status"] != "complete":
+            unresolved.append(record["id"])
+    missing = sorted(use_case_ids - covered_use_cases)
+    unresolved.extend(missing)
+    return {
+        "ids": ids,
+        "calculation_model_ids": {
+            value for record in records for value in record["calculation_model_ids"]
+        },
+        "metric": _metric(len(use_case_ids - set(missing)), len(use_case_ids), unresolved),
+    }
+
+
+def validate_scenario_narratives(
+    use_cases: list[dict[str, Any]],
+    evidence_ids: set[str],
+    history_event_ids: set[str],
+    unknown_ids: set[str],
+    required_use_case_ids: set[str] | None = None,
+) -> dict[str, Any]:
+    """Validate independently readable narratives for important confirmed use cases."""
+    required = [
+        "business_context", "starting_state", "stages", "branch_matrix",
+        "failure_recovery_matrix", "variants", "worked_examples",
+        "history_event_ids", "open_question_ids",
+    ]
+    stage_required = ["stage_id", "title", "business_purpose", "steps"]
+    step_required = [
+        "step_id", "actor_or_event", "business_action", "business_result",
+        "inputs", "decision_basis", "data_changes", "state_changes",
+        "external_effects", "evidence_ids",
+    ]
+    matrix_requirements = {
+        "branch_matrix": [
+            "condition", "decision_basis", "route", "business_result", "evidence_ids",
+        ],
+        "failure_recovery_matrix": [
+            "failure_point", "business_impact", "stopped_state", "automatic_recovery",
+            "manual_repair", "degradation", "evidence_ids",
+        ],
+        "variants": ["name", "difference", "evidence_ids"],
+        "worked_examples": ["title", "given", "when", "then", "evidence_ids"],
+    }
+    unresolved: list[str] = []
+    complete = 0
+    confirmed = [
+        item for item in use_cases
+        if item.get("claim_status") == "confirmed"
+        and item.get("lifecycle_status") in {"active", "conditional"}
+        and (
+            required_use_case_ids is None
+            or item.get("id") in required_use_case_ids
+        )
+    ]
+    for use_case in confirmed:
+        use_case_id = str(use_case.get("id", ""))
+        narrative = use_case.get("scenario_narrative")
+        if not isinstance(narrative, dict):
+            unresolved.append(f"{use_case_id}#scenario_narrative")
+            continue
+        require_fields(narrative, required, f"scenario narrative {use_case_id}")
+        for field in ("business_context", "starting_state", "stages"):
+            if narrative.get(field) in (None, "", []):
+                raise ValidationError(
+                    f"scenario narrative {use_case_id} requires non-empty {field}"
+                )
+        for field in ("branch_matrix", "failure_recovery_matrix", "worked_examples"):
+            if not narrative.get(field):
+                raise ValidationError(
+                    f"scenario narrative {use_case_id} requires non-empty {field}"
+                )
+        step_count = 0
+        effect_annotation_count = 0
+        seen_stage_ids: set[str] = set()
+        for stage in narrative["stages"]:
+            require_fields(stage, stage_required, f"scenario stage {use_case_id}")
+            if any(stage.get(field) in (None, "", []) for field in stage_required):
+                raise ValidationError(
+                    f"scenario stage {use_case_id} requires complete stage fields"
+                )
+            if stage["stage_id"] in seen_stage_ids:
+                raise ValidationError(
+                    f"scenario narrative {use_case_id} has duplicate stage {stage['stage_id']}"
+                )
+            seen_stage_ids.add(stage["stage_id"])
+            for step in stage["steps"]:
+                require_fields(step, step_required, f"scenario step {use_case_id}")
+                if any(step.get(field) in (None, "") for field in step_required):
+                    raise ValidationError(
+                        f"scenario step {use_case_id} requires complete step fields"
+                    )
+                if not step.get("evidence_ids"):
+                    raise ValidationError(
+                        f"scenario step {use_case_id} requires evidence_ids"
+                    )
+                for evidence_id in step["evidence_ids"]:
+                    if evidence_id not in evidence_ids:
+                        raise ValidationError(
+                            f"scenario step {use_case_id} names unknown evidence {evidence_id}"
+                        )
+                if any(
+                    step.get(field)
+                    for field in ("data_changes", "state_changes", "external_effects")
+                ):
+                    effect_annotation_count += 1
+                step_count += 1
+        if step_count < 3:
+            raise ValidationError(
+                f"scenario narrative {use_case_id} requires at least 3 atomic steps"
+            )
+        if effect_annotation_count == 0:
+            raise ValidationError(
+                f"scenario narrative {use_case_id} requires state, data, or external effect annotations"
+            )
+        for field, item_required in matrix_requirements.items():
+            for item in narrative.get(field, []):
+                if not isinstance(item, dict):
+                    raise ValidationError(
+                        f"scenario narrative {use_case_id} {field} requires object items"
+                    )
+                require_fields(
+                    item,
+                    item_required,
+                    f"scenario narrative {use_case_id} {field}",
+                )
+                if any(item.get(name) in (None, "", []) for name in item_required):
+                    raise ValidationError(
+                        f"scenario narrative {use_case_id} {field} requires complete item fields"
+                    )
+                for evidence_id in item["evidence_ids"]:
+                    if evidence_id not in evidence_ids:
+                        raise ValidationError(
+                            f"scenario narrative {use_case_id} names unknown evidence {evidence_id}"
+                        )
+        for event_id in narrative["history_event_ids"]:
+            if event_id not in history_event_ids:
+                raise ValidationError(
+                    f"scenario narrative {use_case_id} names unknown history event {event_id}"
+                )
+        for unknown_id in narrative["open_question_ids"]:
+            if unknown_id not in unknown_ids:
+                raise ValidationError(
+                    f"scenario narrative {use_case_id} names unknown open question {unknown_id}"
+                )
+        complete += 1
+    return {
+        "complete": complete,
+        "required": len(confirmed),
+        "unresolved_ids": unresolved,
+        "metric": _metric(complete, len(confirmed), unresolved),
+    }
+
+
+def validate_engineering_views(
+    records: list[dict[str, Any]],
+    use_cases: list[dict[str, Any]],
+    required_use_case_ids: set[str],
+    evidence_ids: set[str],
+    unknown_ids: set[str],
+) -> dict[str, Any]:
+    """Validate technology-neutral engineering drill-down for core scenarios."""
+    use_case_by_id = {str(item.get("id")): item for item in use_cases if item.get("id")}
+    required_record_fields = [
+        "id", "use_case_id", "implementation_summary", "step_mappings",
+        "engineering_topics", "change_guides", "evidence_ids",
+    ]
+    required_step_fields = [
+        "step_id", "implementation_units", "reads", "writes", "state_behavior",
+        "external_interactions", "configuration", "runtime_controls", "evidence_ids",
+    ]
+    required_unit_fields = ["kind", "name", "locator", "role", "evidence_ids"]
+    required_topic_fields = [
+        "topic_id", "kind", "status", "summary", "details", "evidence_ids", "unknown_ids",
+    ]
+    required_guide_fields = [
+        "guide_id", "change_goal", "affected_step_ids", "implementation_units",
+        "data_and_state_impacts", "downstream_risks", "verification_targets", "evidence_ids",
+    ]
+    records_by_use_case: dict[str, dict[str, Any]] = {}
+    unresolved: list[str] = []
+    for record in records:
+        require_fields(record, required_record_fields, "engineering view")
+        use_case_id = str(record.get("use_case_id", ""))
+        if use_case_id not in use_case_by_id:
+            raise ValidationError(f"engineering view names unknown use case {use_case_id}")
+        if use_case_id in records_by_use_case:
+            raise ValidationError(f"duplicate engineering view for {use_case_id}")
+        records_by_use_case[use_case_id] = record
+        if not str(record.get("implementation_summary", "")).strip():
+            raise ValidationError(f"engineering view {use_case_id} requires implementation_summary")
+        scenario_steps = {
+            str(step.get("step_id"))
+            for stage in use_case_by_id[use_case_id].get("scenario_narrative", {}).get("stages", [])
+            for step in stage.get("steps", [])
+            if step.get("step_id")
+        }
+        mapped_steps: set[str] = set()
+        for mapping in record.get("step_mappings", []):
+            require_fields(mapping, required_step_fields, f"engineering step mapping {use_case_id}")
+            step_id = str(mapping.get("step_id", ""))
+            if step_id not in scenario_steps:
+                raise ValidationError(
+                    f"engineering view {use_case_id} maps unknown scenario step {step_id}"
+                )
+            if step_id in mapped_steps:
+                raise ValidationError(
+                    f"engineering view {use_case_id} duplicates step mapping {step_id}"
+                )
+            mapped_steps.add(step_id)
+            units = mapping.get("implementation_units")
+            if not isinstance(units, list) or not units:
+                raise ValidationError(
+                    f"engineering step mapping {use_case_id}/{step_id} requires implementation_units"
+                )
+            for unit in units:
+                require_fields(unit, required_unit_fields, f"implementation unit {use_case_id}/{step_id}")
+                if any(unit.get(field) in (None, "", []) for field in required_unit_fields):
+                    raise ValidationError(
+                        f"implementation unit {use_case_id}/{step_id} requires complete fields"
+                    )
+                for evidence_id in unit["evidence_ids"]:
+                    if evidence_id not in evidence_ids:
+                        raise ValidationError(
+                            f"implementation unit {use_case_id}/{step_id} names unknown evidence {evidence_id}"
+                        )
+            for evidence_id in mapping.get("evidence_ids", []):
+                if evidence_id not in evidence_ids:
+                    raise ValidationError(
+                        f"engineering step mapping {use_case_id}/{step_id} names unknown evidence {evidence_id}"
+                    )
+        missing_steps = sorted(scenario_steps - mapped_steps)
+        if missing_steps:
+            unresolved.extend(f"{use_case_id}#engineering/{step_id}" for step_id in missing_steps)
+        topic_kinds: set[str] = set()
+        for topic in record.get("engineering_topics", []):
+            require_fields(topic, required_topic_fields, f"engineering topic {use_case_id}")
+            status = topic.get("status")
+            if status not in {"confirmed", "not_applicable", "source_unknown"}:
+                raise ValidationError(f"engineering topic {use_case_id} has invalid status")
+            topic_kinds.add(str(topic.get("kind", "")))
+            if status == "confirmed" and not topic.get("evidence_ids"):
+                raise ValidationError(
+                    f"confirmed engineering topic {use_case_id} requires evidence_ids"
+                )
+            if status == "source_unknown" and not topic.get("unknown_ids"):
+                raise ValidationError(
+                    f"source_unknown engineering topic {use_case_id} requires unknown_ids"
+                )
+            for evidence_id in topic.get("evidence_ids", []):
+                if evidence_id not in evidence_ids:
+                    raise ValidationError(
+                        f"engineering topic {use_case_id} names unknown evidence {evidence_id}"
+                    )
+            for unknown_id in topic.get("unknown_ids", []):
+                if unknown_id not in unknown_ids:
+                    raise ValidationError(
+                        f"engineering topic {use_case_id} names unknown unknown {unknown_id}"
+                    )
+        for required_kind in {"data_lifecycle", "state_lifecycle", "runtime_safety", "external_contracts", "configuration"}:
+            if required_kind not in topic_kinds:
+                unresolved.append(f"{use_case_id}#engineering-topic/{required_kind}")
+        guides = record.get("change_guides")
+        if not isinstance(guides, list) or not guides:
+            unresolved.append(f"{use_case_id}#change_guides")
+        for guide in guides or []:
+            require_fields(guide, required_guide_fields, f"change guide {use_case_id}")
+            if any(guide.get(field) in (None, "", []) for field in required_guide_fields):
+                raise ValidationError(f"change guide {use_case_id} requires complete fields")
+            unknown_steps = set(guide["affected_step_ids"]) - scenario_steps
+            if unknown_steps:
+                raise ValidationError(
+                    f"change guide {use_case_id} names unknown steps: {', '.join(sorted(unknown_steps))}"
+                )
+            for evidence_id in guide["evidence_ids"]:
+                if evidence_id not in evidence_ids:
+                    raise ValidationError(
+                        f"change guide {use_case_id} names unknown evidence {evidence_id}"
+                    )
+        for evidence_id in record.get("evidence_ids", []):
+            if evidence_id not in evidence_ids:
+                raise ValidationError(f"engineering view {use_case_id} names unknown evidence {evidence_id}")
+    for use_case_id in sorted(required_use_case_ids - set(records_by_use_case)):
+        unresolved.append(f"{use_case_id}#engineering_view")
+    complete = sum(
+        1
+        for use_case_id in required_use_case_ids
+        if not any(item.startswith(f"{use_case_id}#") for item in unresolved)
+    )
+    return {
+        "complete": complete,
+        "required": len(required_use_case_ids),
+        "unresolved_ids": sorted(set(unresolved)),
+        "metric": _metric(complete, len(required_use_case_ids), unresolved),
+    }
+
+
+def important_scenario_use_case_ids(
+    use_cases: list[dict[str, Any]],
+    candidates: list[dict[str, Any]],
+) -> set[str]:
+    """Resolve critical/high scenario IDs without making priority mandatory on legacy nodes."""
+    active_confirmed_ids = {
+        str(item.get("id"))
+        for item in use_cases
+        if item.get("claim_status") == "confirmed"
+        and item.get("lifecycle_status") in {"active", "conditional"}
+        and item.get("id")
+    }
+    important = {
+        str(item["id"])
+        for item in use_cases
+        if item.get("id") in active_confirmed_ids
+        and (
+            item.get("business_priority") in {"critical", "high"}
+            or item.get("structural_importance") in {"critical", "high"}
+        )
+    }
+    important.update(
+        str(candidate.get("resolved_use_case_id"))
+        for candidate in candidates
+        if candidate.get("candidate_status") in {"confirmed", "variant"}
+        and candidate.get("resolved_use_case_id") in active_confirmed_ids
+        and (
+            candidate.get("business_priority") in {"critical", "high"}
+            or candidate.get("structural_importance") in {"critical", "high"}
+        )
+    )
+    return important or active_confirmed_ids
+
+
+def validate_project_progress(
+    progress: dict[str, Any],
+    *,
+    manifest_status: str,
+    inventory_by_id: dict[str, dict[str, Any]],
+    candidate_ids: set[str],
+    module_dossier_ids: set[str],
+    flow_ids: set[str],
+    use_case_ids: set[str],
+    engineering_view_ids: set[str],
+    gap_ids: set[str],
+    required_queue_candidate_ids: set[str],
+    omission_findings: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Validate the repository-wide queue separately from revision publication."""
+    require_fields(
+        progress,
+        [
+            "schema_version", "project_completion_status", "active_module_id",
+            "next_module_ids", "modules",
+        ],
+        "project progress",
+    )
+    if progress.get("schema_version") != contract.V32_SCHEMA_VERSION:
+        raise ValidationError("project progress schema version must be 3.2")
+    project_status = progress.get("project_completion_status")
+    if project_status not in {"complete", "in_progress", "blocked"}:
+        raise ValidationError("project progress has invalid completion status")
+    if manifest_status != project_status:
+        raise ValidationError(
+            "manifest project completion status does not match project progress"
+        )
+    modules = progress.get("modules")
+    if not isinstance(modules, list) or not modules:
+        raise ValidationError("project progress requires a repository-wide module queue")
+    required_fields = [
+        "id", "title", "priority", "status", "signal_ids", "candidate_ids",
+        "module_dossier_id", "flow_ids", "use_case_ids", "engineering_view_ids",
+        "history_status", "gap_ids", "next_action",
+    ]
+    module_by_id: dict[str, dict[str, Any]] = {}
+    unfinished_states = {"pending", "in_progress", "blocked"}
+    unfinished_ids: list[str] = []
+    complete_count = 0
+    for module in modules:
+        require_fields(module, required_fields, "project progress module")
+        module_id = str(module.get("id", ""))
+        if not module_id:
+            raise ValidationError("project progress module requires id")
+        if module_id in module_by_id:
+            raise ValidationError(f"duplicate project progress module {module_id}")
+        module_by_id[module_id] = module
+        status = module.get("status")
+        if status not in unfinished_states | {"complete", "excluded"}:
+            raise ValidationError(f"project progress module {module_id} has invalid status")
+        if status in unfinished_states:
+            unfinished_ids.append(module_id)
+            if not str(module.get("next_action") or "").strip():
+                raise ValidationError(
+                    f"unfinished project module {module_id} requires next_action"
+                )
+        elif module.get("next_action") not in {None, ""}:
+            raise ValidationError(
+                f"finished project module {module_id} must not retain next_action"
+            )
+        for field, known_ids, label in (
+            ("signal_ids", set(inventory_by_id), "signal"),
+            ("candidate_ids", candidate_ids, "candidate"),
+            ("flow_ids", flow_ids, "flow"),
+            ("use_case_ids", use_case_ids, "use case"),
+            ("engineering_view_ids", engineering_view_ids, "engineering view"),
+            ("gap_ids", gap_ids, "gap"),
+        ):
+            values = module.get(field)
+            if not isinstance(values, list):
+                raise ValidationError(f"project module {module_id} {field} must be a list")
+            unknown = sorted(set(values) - known_ids)
+            if unknown:
+                raise ValidationError(
+                    f"project module {module_id} names unknown {label}: "
+                    + ", ".join(unknown)
+                )
+        dossier_id = module.get("module_dossier_id")
+        if dossier_id is not None and dossier_id not in module_dossier_ids:
+            raise ValidationError(
+                f"project module {module_id} names unknown module dossier {dossier_id}"
+            )
+        if status == "complete":
+            complete_count += 1
+            if not dossier_id:
+                raise ValidationError(
+                    f"complete project module {module_id} requires module dossier"
+                )
+            if not module.get("flow_ids") or not module.get("use_case_ids"):
+                raise ValidationError(
+                    f"complete project module {module_id} requires flows and use cases"
+                )
+            if not module.get("engineering_view_ids"):
+                raise ValidationError(
+                    f"complete project module {module_id} requires engineering views"
+                )
+
+    next_ids = progress.get("next_module_ids")
+    if not isinstance(next_ids, list) or len(next_ids) != len(set(next_ids)):
+        raise ValidationError("project progress next_module_ids must be a unique list")
+    unknown_next = sorted(set(next_ids) - set(module_by_id))
+    if unknown_next:
+        raise ValidationError(
+            "project progress names unknown next module: " + ", ".join(unknown_next)
+        )
+    finished_next = [
+        module_id for module_id in next_ids
+        if module_by_id[module_id].get("status") not in unfinished_states
+    ]
+    if finished_next:
+        raise ValidationError(
+            "project progress next queue contains finished module: "
+            + ", ".join(finished_next)
+        )
+    active_id = progress.get("active_module_id")
+    if active_id is not None and active_id not in module_by_id:
+        raise ValidationError("project progress active module is unknown")
+
+    represented_signals = {
+        signal_id
+        for module in modules
+        if module.get("status") in unfinished_states
+        for signal_id in module.get("signal_ids", [])
+    }
+    represented_candidates = {
+        candidate_id
+        for module in modules
+        if module.get("status") in unfinished_states
+        for candidate_id in module.get("candidate_ids", [])
+    }
+    represented_gaps = {
+        gap_id
+        for module in modules
+        if module.get("status") in unfinished_states
+        for gap_id in module.get("gap_ids", [])
+    }
+    detached_candidates = sorted(
+        required_queue_candidate_ids - represented_candidates
+    )
+    if detached_candidates:
+        raise ValidationError(
+            "important unresolved candidate is not represented in the project queue: "
+            + ", ".join(detached_candidates)
+        )
+    detached_omissions: list[str] = []
+    for finding in omission_findings:
+        if (
+            finding.get("resolution_status") == "unresolved"
+            and finding.get("severity") in {"critical", "high"}
+            and not (
+                set(finding.get("signal_ids", [])) & represented_signals
+                or set(finding.get("candidate_ids", [])) & represented_candidates
+                or str(finding.get("id", "")) in represented_gaps
+            )
+        ):
+            detached_omissions.append(str(finding.get("id", "")))
+    if detached_omissions:
+        raise ValidationError(
+            "critical/high unresolved omission is not represented in the project queue: "
+            + ", ".join(sorted(detached_omissions))
+        )
+
+    if project_status == "complete":
+        if unfinished_ids or next_ids or active_id is not None:
+            raise ValidationError(
+                "complete project cannot retain unfinished, active, or queued modules"
+            )
+    elif project_status == "in_progress":
+        if not unfinished_ids or not next_ids:
+            raise ValidationError(
+                "in-progress project requires unfinished work and a non-empty next queue"
+            )
+        if active_id != next_ids[0]:
+            raise ValidationError(
+                "in-progress project active module must equal the first next module"
+            )
+        if module_by_id[active_id].get("status") not in {"pending", "in_progress"}:
+            raise ValidationError(
+                "in-progress project active module must be pending or in_progress"
+            )
+    else:
+        if not unfinished_ids:
+            raise ValidationError("blocked project requires at least one blocked module")
+        if not any(module.get("status") == "blocked" for module in modules):
+            raise ValidationError("blocked project requires a blocked module")
+
+    return {
+        "project_completion_status": project_status,
+        "next_module_ids": list(next_ids),
+        "active_module_id": active_id,
+        "metric": _metric(
+            complete_count,
+            len([item for item in modules if item.get("status") != "excluded"]),
+            unfinished_ids,
+            [item["id"] for item in modules if item.get("status") == "excluded"],
+        ),
+    }
+
+
+def validate_calculation_models(
+    records: list[dict[str, Any]],
+    inventory_by_id: dict[str, dict[str, Any]],
+    evidence_ids: set[str],
+    snapshot_id: str,
+) -> dict[str, Any]:
+    required = [
+        "id", "title", "business_purpose", "inputs", "source_data", "applicability",
+        "filters", "missing_value_policy", "formula_or_algorithm", "weights",
+        "thresholds", "rounding", "caps_and_floors", "version_source", "output",
+        "recalculation_triggers", "examples_or_tests", "evidence_ids",
+        "history_event_ids", "unknown_ids", "snapshot_id",
+    ]
+    ids: set[str] = set()
+    for record in records:
+        require_fields(record, required, "calculation model")
+        _require_nonempty_fields(
+            record,
+            ["id", "title", "business_purpose", "inputs", "source_data", "applicability", "missing_value_policy", "formula_or_algorithm", "rounding", "caps_and_floors", "version_source", "output", "evidence_ids"],
+            "calculation model",
+        )
+        if record["id"] in ids:
+            raise ValidationError(f"duplicate calculation model {record['id']}")
+        ids.add(record["id"])
+        if record["snapshot_id"] != snapshot_id:
+            raise ValidationError(f"calculation model {record['id']} snapshot mismatch")
+        for evidence_id in record["evidence_ids"]:
+            if evidence_id not in evidence_ids:
+                raise ValidationError(f"calculation model names unknown evidence {evidence_id}")
+    detected = {
+        signal_id
+        for signal_id, signal in inventory_by_id.items()
+        if any(
+            token in f"{signal.get('kind', '')} {signal.get('name', '')}".casefold()
+            for token in ("score", "scoring", "calculate", "calculation", "formula", "weight", "threshold", "算分", "评分")
+        )
+    }
+    if detected and not records:
+        raise ValidationError(
+            "calculation model missing for detected signals: " + ", ".join(sorted(detected))
+        )
+    return {
+        "ids": ids,
+        "detected_signal_ids": detected,
+        "metric": _metric(len(detected), len(detected)),
+    }
+
+
+def validate_code_knowledge_matrix(
+    records: list[dict[str, Any]],
+    inventory_by_id: dict[str, dict[str, Any]],
+    module_ids: set[str],
+    flow_ids: set[str],
+    calculation_ids: set[str],
+    *,
+    use_case_ids: set[str],
+    rule_ids: set[str],
+    investigation_ids: set[str],
+    evidence_ids: set[str],
+    calculation_signal_ids: set[str],
+) -> dict[str, Any]:
+    required = [
+        "signal_id", "module_dossier_ids", "flow_ids", "use_case_ids", "rule_ids",
+        "calculation_model_ids", "disposition", "resolution_reason",
+        "investigation_ids", "evidence_ids",
+    ]
+    by_signal: dict[str, dict[str, Any]] = {}
+    for record in records:
+        require_fields(record, required, "code-knowledge matrix row")
+        signal_id = record["signal_id"]
+        if signal_id in by_signal:
+            raise ValidationError(f"duplicate code-knowledge matrix signal {signal_id}")
+        if signal_id not in inventory_by_id:
+            raise ValidationError(f"code-knowledge matrix names unknown signal {signal_id}")
+        if len(str(record.get("resolution_reason", "")).strip()) < 24:
+            raise ValidationError(f"code-knowledge matrix {signal_id} reason is too generic")
+        if record["disposition"] == "covered" and not (
+            record["module_dossier_ids"] and (record["flow_ids"] or record["use_case_ids"])
+        ):
+            raise ValidationError(f"code-knowledge matrix {signal_id} lacks business mapping")
+        if any(value not in module_ids for value in record["module_dossier_ids"]):
+            raise ValidationError(f"code-knowledge matrix {signal_id} names unknown module")
+        if any(value not in flow_ids for value in record["flow_ids"]):
+            raise ValidationError(f"code-knowledge matrix {signal_id} names unknown flow")
+        if any(value not in calculation_ids for value in record["calculation_model_ids"]):
+            raise ValidationError(f"code-knowledge matrix {signal_id} names unknown calculation")
+        if any(value not in use_case_ids for value in record["use_case_ids"]):
+            raise ValidationError(f"code-knowledge matrix {signal_id} names unknown use case")
+        if any(value not in rule_ids for value in record["rule_ids"]):
+            raise ValidationError(f"code-knowledge matrix {signal_id} names unknown rule")
+        if any(value not in investigation_ids for value in record["investigation_ids"]):
+            raise ValidationError(
+                f"code-knowledge matrix {signal_id} names unknown investigation"
+            )
+        if any(value not in evidence_ids for value in record["evidence_ids"]):
+            raise ValidationError(f"code-knowledge matrix {signal_id} names unknown evidence")
+        if signal_id in calculation_signal_ids and not record["calculation_model_ids"]:
+            raise ValidationError(
+                f"calculation signal lacks explicit model mapping: {signal_id}"
+            )
+        by_signal[signal_id] = record
+    reasons: dict[str, list[str]] = {}
+    for signal_id, record in by_signal.items():
+        if inventory_by_id[signal_id].get("structural_importance") not in {
+            "critical",
+            "high",
+        }:
+            continue
+        normalized = re.sub(
+            r"[^0-9a-z\u4e00-\u9fff]+",
+            "",
+            str(record.get("resolution_reason", "")).casefold(),
+        )
+        reasons.setdefault(normalized, []).append(signal_id)
+    repeated = [signal_ids for signal_ids in reasons.values() if len(signal_ids) >= 3]
+    if repeated:
+        raise ValidationError(
+            "code-knowledge matrix reuses a generic resolution reason for important signals: "
+            + ", ".join(sorted(repeated[0]))
+        )
+    important = {
+        signal_id
+        for signal_id, signal in inventory_by_id.items()
+        if signal.get("structural_importance") in {"critical", "high"}
+    }
+    missing = sorted(important - set(by_signal))
+    if missing:
+        raise ValidationError(
+            "code-knowledge matrix missing signal: " + ", ".join(missing)
+        )
+    return {"metric": _metric(len(important), len(important))}
+
+
+def validate_capability_destinations(
+    capabilities: list[dict[str, Any]],
+    confirmed_use_case_ids: set[str],
+    relationships: list[dict[str, Any]],
+) -> dict[str, Any]:
+    confirmed_capabilities = {
+        item["id"]
+        for item in capabilities
+        if item.get("claim_status") == "confirmed"
+        and item.get("lifecycle_status") in {"active", "conditional"}
+    }
+    covered = {
+        relationship["from_id"]
+        for relationship in relationships
+        if relationship.get("type") == "contains"
+        and relationship.get("from_id") in confirmed_capabilities
+        and relationship.get("to_id") in confirmed_use_case_ids
+        and relationship.get("claim_status") == "confirmed"
+    }
+    missing = sorted(confirmed_capabilities - covered)
+    if missing:
+        raise ValidationError(
+            "confirmed capability has no confirmed use case: " + ", ".join(missing)
+        )
+    return {"metric": _metric(len(covered), len(confirmed_capabilities))}
+
+
+def validate_git_commit_index(
+    commits: list[dict[str, Any]],
+    repository_snapshot: dict[str, Any],
+) -> None:
+    git = repository_snapshot.get("git", {})
+    canonical_root = repository_snapshot.get("canonical_root")
+    if not git.get("is_repository") or not canonical_root:
+        return
+    repo = Path(str(canonical_root))
+    probe = subprocess.run(
+        ["git", "-C", str(repo), "rev-parse", "--is-inside-work-tree"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        check=False,
+        text=True,
+    )
+    if probe.returncode != 0 or probe.stdout.strip() != "true":
+        return
+    record_format = "%H%x1f%P%x1f%aI%x1f%cI%x1f%an <%ae>%x1f%s"
+    for commit in commits:
+        sha = str(commit.get("sha", ""))
+        result = subprocess.run(
+            ["git", "-C", str(repo), "show", "-s", f"--format={record_format}", sha],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+            text=True,
+        )
+        if result.returncode != 0:
+            raise ValidationError(f"Git commit is not present in repository: {sha}")
+        fields = result.stdout.rstrip("\n").split("\x1f")
+        actual = {
+            "sha": fields[0],
+            "parents": fields[1].split() if fields[1] else [],
+            "author_time": fields[2],
+            "commit_time": fields[3],
+            "author_identity": fields[4],
+            "subject": fields[5],
+        }
+        for field, expected in actual.items():
+            if commit.get(field) != expected:
+                raise ValidationError(
+                    f"Git commit metadata mismatch for {sha}: {field}"
+                )
+
+
 def validate_family_closure(
     families: list[dict[str, Any]],
     candidates: list[dict[str, Any]],
@@ -1473,14 +2472,19 @@ def calculate_v2_coverage(
     return metrics
 
 
-def validate_revision_v2(root: Path) -> dict[str, Any]:
+def validate_revision_v2(
+    root: Path,
+    *,
+    schema_version: str = contract.V2_SCHEMA_VERSION,
+    deep_validation: bool = False,
+) -> dict[str, Any]:
     manifest = read_json(root / "manifest.json")
     snapshot = manifest.get("repository_snapshot", {})
     snapshot_id = snapshot.get("snapshot_id")
     if not snapshot_id:
         raise ValidationError("manifest repository snapshot is missing snapshot_id")
-    if manifest.get("schema_version") != contract.V2_SCHEMA_VERSION:
-        raise ValidationError("revision is not schema version 2.0")
+    if manifest.get("schema_version") != schema_version:
+        raise ValidationError(f"revision is not schema version {schema_version}")
 
     inventory_records = read_jsonl(root / "inventory.jsonl")
     inventory = validate_inventory(inventory_records)
@@ -1502,7 +2506,12 @@ def validate_revision_v2(root: Path) -> dict[str, Any]:
                 raise ValidationError(f"duplicate node id: {node['id']}")
             node_ids.add(node["id"])
     evidence = read_jsonl(root / "evidence.jsonl")
-    validate_evidence(evidence, snapshot_id)
+    evidence_ids, _ = validate_evidence(
+        evidence,
+        snapshot_id,
+        require_verified_hash=deep_validation,
+        repository_snapshot=snapshot,
+    )
     investigations = validate_investigations(
         read_jsonl(root / "investigations.jsonl"), snapshot_id
     )
@@ -1515,6 +2524,8 @@ def validate_revision_v2(root: Path) -> dict[str, Any]:
     candidate_summary = validate_candidates(
         candidates, inventory_by_id, node_ids, investigations
     )
+    if deep_validation:
+        validate_v3_candidates(candidates)
     family_summary = validate_family_closure(
         nodes_by_file["use-case-families.json"], candidates, investigation_records
     )
@@ -1527,6 +2538,7 @@ def validate_revision_v2(root: Path) -> dict[str, Any]:
         for use_case in nodes_by_file["use-cases.jsonl"]
         if use_case.get("claim_status") == "confirmed"
     ]
+    relationships = read_jsonl(root / "relationships.jsonl")
     flow_diagnostics = validate_business_flows(confirmed_use_cases)
     affected_flow_use_cases = {
         diagnostic["use_case_id"] for diagnostic in flow_diagnostics
@@ -1540,27 +2552,174 @@ def validate_revision_v2(root: Path) -> dict[str, Any]:
         ],
     }
 
-    investigation_required = len(REQUIRED_INVESTIGATIONS) * sum(
-        1 for item in candidates if item.get("resolved_use_case_id")
-    )
+    investigation_required = len(REQUIRED_INVESTIGATIONS) * len(confirmed_use_cases)
     investigation_complete = sum(
-        len(kinds) for kinds in investigations.values() if len(kinds) >= len(REQUIRED_INVESTIGATIONS)
+        len(REQUIRED_INVESTIGATIONS & investigations.get(use_case["id"], set()))
+        for use_case in confirmed_use_cases
     )
+    investigation_unresolved = [
+        f"{use_case['id']}:{kind}"
+        for use_case in confirmed_use_cases
+        for kind in sorted(
+            REQUIRED_INVESTIGATIONS - investigations.get(use_case["id"], set())
+        )
+    ]
+    deep_metrics: dict[str, Any] = {}
+    deep_unresolved: list[str] = []
+    engineering_validation = schema_version in {
+        contract.V31_SCHEMA_VERSION,
+        contract.V32_SCHEMA_VERSION,
+    }
+    project_validation = schema_version == contract.V32_SCHEMA_VERSION
+    project_summary: dict[str, Any] | None = None
+    if deep_validation:
+        important_scenario_ids = important_scenario_use_case_ids(
+            confirmed_use_cases,
+            candidates,
+        )
+        narrative_summary = validate_scenario_narratives(
+            confirmed_use_cases,
+            evidence_ids,
+            {
+                item["id"]
+                for item in read_jsonl(root / "business-evolution-events.jsonl")
+            },
+            {item["id"] for item in nodes_by_file["unknowns.jsonl"]},
+            important_scenario_ids,
+        )
+        calculation_summary = validate_calculation_models(
+            read_jsonl(root / "calculation-models.jsonl"),
+            inventory_by_id,
+            evidence_ids,
+            snapshot_id,
+        )
+        module_summary = validate_module_dossiers(
+            read_jsonl(root / "module-dossiers.jsonl"),
+            inventory_by_id,
+            evidence_ids,
+            snapshot_id,
+        )
+        flow_summary_v3 = validate_end_to_end_flows(
+            read_jsonl(root / "end-to-end-flows.jsonl"),
+            module_summary["ids"],
+            {item["id"] for item in confirmed_use_cases},
+            evidence_ids,
+            snapshot_id,
+        )
+        unknown_calculations = sorted(
+            flow_summary_v3["calculation_model_ids"] - calculation_summary["ids"]
+        )
+        if unknown_calculations:
+            raise ValidationError(
+                "end-to-end flow names unknown calculation model: "
+                + ", ".join(unknown_calculations)
+            )
+        matrix_summary = validate_code_knowledge_matrix(
+            read_jsonl(root / "code-knowledge-matrix.jsonl"),
+            inventory_by_id,
+            module_summary["ids"],
+            flow_summary_v3["ids"],
+            calculation_summary["ids"],
+            use_case_ids={item["id"] for item in nodes_by_file["use-cases.jsonl"]},
+            rule_ids={item["id"] for item in nodes_by_file["business-rules.jsonl"]},
+            investigation_ids={item["id"] for item in investigation_records},
+            evidence_ids=evidence_ids,
+            calculation_signal_ids=calculation_summary["detected_signal_ids"],
+        )
+        capability_summary = validate_capability_destinations(
+            nodes_by_file["capabilities.json"],
+            {item["id"] for item in confirmed_use_cases},
+            relationships,
+        )
+        deep_metrics = {
+            "scenario_readiness_coverage": narrative_summary["metric"],
+            "module_dossier_coverage": module_summary["metric"],
+            "end_to_end_flow_coverage": flow_summary_v3["metric"],
+            "calculation_model_coverage": calculation_summary["metric"],
+            "code_knowledge_coverage": matrix_summary["metric"],
+            "capability_business_coverage": capability_summary["metric"],
+        }
+        if engineering_validation:
+            engineering_records = read_jsonl(root / "engineering-views.jsonl")
+            engineering_summary = validate_engineering_views(
+                engineering_records,
+                confirmed_use_cases,
+                important_scenario_ids,
+                evidence_ids,
+                {item["id"] for item in nodes_by_file["unknowns.jsonl"]},
+            )
+            deep_metrics["engineering_readiness_coverage"] = engineering_summary["metric"]
+        if project_validation:
+            omission_audit = read_json(root / "omission-audit.json")
+            project_summary = validate_project_progress(
+                read_json(root / "project-progress.json"),
+                manifest_status=str(manifest.get("project_completion_status", "")),
+                inventory_by_id=inventory_by_id,
+                candidate_ids=set(candidate_by_id),
+                module_dossier_ids=module_summary["ids"],
+                flow_ids=flow_summary_v3["ids"],
+                use_case_ids={item["id"] for item in nodes_by_file["use-cases.jsonl"]},
+                engineering_view_ids={
+                    str(item.get("id")) for item in engineering_records if item.get("id")
+                },
+                gap_ids={
+                    *{item["id"] for item in nodes_by_file["unknowns.jsonl"]},
+                    *{item["id"] for item in nodes_by_file["conflicts.jsonl"]},
+                    *{
+                        str(item.get("id"))
+                        for item in omission_audit.get("findings", [])
+                        if item.get("id")
+                    },
+                },
+                required_queue_candidate_ids=set(
+                    candidate_summary["unresolved_ids"]
+                ),
+                omission_findings=omission_audit.get("findings", []),
+            )
+            deep_metrics["project_module_completion_coverage"] = project_summary["metric"]
+        deep_unresolved = [
+            unresolved_id
+            for metric in deep_metrics.values()
+            for unresolved_id in metric["unresolved_ids"]
+        ]
+        commits = read_jsonl(root / "git-commits.jsonl")
+        validate_git_commit_index(commits, snapshot)
+        history_analysis = manifest.get("history_analysis", {})
+        if history_analysis.get("requested_scope") == "all_reachable":
+            reachable = history_analysis.get("reachable_commit_count")
+            indexed = len(commits)
+            declared_indexed = history_analysis.get("indexed_commit_count")
+            if reachable != indexed or declared_indexed != indexed:
+                raise ValidationError(
+                    f"all reachable Git commits must be indexed: reachable={reachable}, indexed={indexed}"
+                )
     metrics = calculate_v2_coverage(
         {"signal_count": len(inventory_by_id)},
         candidate_summary,
         family_summary,
-        {"complete": investigation_complete, "required": investigation_required, "unresolved_ids": []},
+        {
+            "complete": investigation_complete,
+            "required": investigation_required,
+            "unresolved_ids": investigation_unresolved,
+        },
         omission_summary,
         flow_summary,
         {"metrics": {}},
     )
+    metrics.update(deep_metrics)
     current_unresolved = (
         candidate_summary["unresolved_ids"]
         + omission_summary["critical_unresolved_ids"]
         + family_summary["unresolved_ids"]
         + flow_summary["unresolved_ids"]
+        + investigation_unresolved
+        + deep_unresolved
     )
+    if project_summary is not None and project_summary["project_completion_status"] != "complete":
+        current_unresolved += [
+            f"project:{project_summary['project_completion_status']}",
+            *project_summary["next_module_ids"],
+        ]
     current_status = "passed" if not current_unresolved else "partial"
     history_status = manifest.get("history_coverage_status", "not_requested")
     aggregate = contract.aggregate_status(current_status, history_status)
@@ -1571,7 +2730,7 @@ def validate_revision_v2(root: Path) -> dict[str, Any]:
     if manifest.get("aggregate_status") != aggregate:
         raise ValidationError("manifest aggregate status does not match artifacts")
     coverage = {
-        "schema_version": contract.V2_SCHEMA_VERSION,
+        "schema_version": schema_version,
         "current_coverage_status": current_status,
         "history_coverage_status": history_status,
         "aggregate_status": aggregate,
@@ -1582,13 +2741,21 @@ def validate_revision_v2(root: Path) -> dict[str, Any]:
     canonical_hash = manifest.get("canonical_revision_sha256")
     if not canonical_hash:
         raise ValidationError("manifest canonical revision hash is missing")
-    calculated_hash = canonical_revision_sha256_v2(root)
+    calculated_hash = (
+        canonical_revision_sha256_v32(root)
+        if project_validation
+        else canonical_revision_sha256_v31(root)
+        if engineering_validation
+        else canonical_revision_sha256_v3(root)
+        if deep_validation
+        else canonical_revision_sha256_v2(root)
+    )
     if canonical_hash != calculated_hash:
         raise ValidationError("manifest canonical revision hash does not match artifacts")
     validate_projections(manifest, canonical_hash)
     validate_projection_files(root, manifest)
     validate_semantic_review(read_json(root / "semantic-review.json"), canonical_hash)
-    return {
+    result = {
         "status": aggregate,
         "errors": [],
         "coverage": coverage,
@@ -1596,9 +2763,20 @@ def validate_revision_v2(root: Path) -> dict[str, Any]:
         "canonical_revision_sha256": canonical_hash,
         "calculated_canonical_sha256": calculated_hash,
         "node_count": len(node_ids),
-        "relationship_count": len(read_jsonl(root / "relationships.jsonl")),
+        "relationship_count": len(relationships),
         "evidence_count": len(evidence),
     }
+    if project_summary is not None:
+        result.update(
+            {
+                "project_completion_status": project_summary[
+                    "project_completion_status"
+                ],
+                "active_module_id": project_summary["active_module_id"],
+                "next_module_ids": project_summary["next_module_ids"],
+            }
+        )
+    return result
 
 
 def validate_revision_v1(root: Path) -> dict[str, Any]:
@@ -1682,6 +2860,24 @@ def validate_revision_v1(root: Path) -> dict[str, Any]:
 def validate_revision(revision_dir: Path | str) -> dict[str, Any]:
     root = Path(revision_dir)
     manifest = read_json(root / "manifest.json")
+    if manifest.get("schema_version") == contract.V32_SCHEMA_VERSION:
+        return validate_revision_v2(
+            root,
+            schema_version=contract.V32_SCHEMA_VERSION,
+            deep_validation=True,
+        )
+    if manifest.get("schema_version") == contract.V31_SCHEMA_VERSION:
+        return validate_revision_v2(
+            root,
+            schema_version=contract.V31_SCHEMA_VERSION,
+            deep_validation=True,
+        )
+    if manifest.get("schema_version") == contract.V3_SCHEMA_VERSION:
+        return validate_revision_v2(
+            root,
+            schema_version=contract.V3_SCHEMA_VERSION,
+            deep_validation=True,
+        )
     if manifest.get("schema_version") == contract.V2_SCHEMA_VERSION:
         return validate_revision_v2(root)
     return validate_revision_v1(root)
@@ -1902,6 +3098,71 @@ def _validate_prohibited_claims(
         )
 
 
+def _validate_calculation_concepts(
+    calculation_models: list[dict[str, Any]],
+    expectation: dict[str, Any],
+) -> None:
+    _require_concept_groups(
+        "calculation concepts",
+        _normalized_text(calculation_models),
+        expectation.get("required_calculation_concepts", []),
+    )
+
+
+def _validate_benchmark_scenario_depth(
+    use_cases: list[dict[str, Any]],
+    requirements: dict[str, Any],
+) -> None:
+    if not requirements:
+        return
+    by_id = {str(item.get("id")): item for item in use_cases if item.get("id")}
+    target_requirements = requirements.get("use_cases")
+    if isinstance(target_requirements, list):
+        failures: list[str] = []
+        for target in target_requirements:
+            use_case_id = str(target.get("id", ""))
+            use_case = by_id.get(use_case_id)
+            if not use_case or use_case.get("claim_status") != "confirmed":
+                failures.append(f"{use_case_id or 'unnamed'}(missing_confirmed_use_case)")
+                continue
+            try:
+                _validate_benchmark_scenario_depth([use_case], target)
+            except ValidationError as error:
+                detail = str(error).removeprefix("benchmark scenario depth failed: ")
+                failures.append(detail)
+        if failures:
+            raise ValidationError("benchmark scenario depth failed: " + ", ".join(failures))
+        return
+    failures: list[str] = []
+    minimum_stages = int(requirements.get("minimum_stages", 1))
+    minimum_steps = int(requirements.get("minimum_atomic_steps", 1))
+    for use_case in use_cases:
+        if use_case.get("claim_status") != "confirmed":
+            continue
+        narrative = use_case.get("scenario_narrative")
+        use_case_id = str(use_case.get("id", "unnamed"))
+        if not isinstance(narrative, dict):
+            failures.append(use_case_id)
+            continue
+        stages = narrative.get("stages", [])
+        step_count = sum(len(stage.get("steps", [])) for stage in stages)
+        missing = []
+        if len(stages) < minimum_stages:
+            missing.append(f"stages<{minimum_stages}")
+        if step_count < minimum_steps:
+            missing.append(f"steps<{minimum_steps}")
+        if requirements.get("require_branch_matrix") and not narrative.get("branch_matrix"):
+            missing.append("branch_matrix")
+        if requirements.get("require_failure_recovery") and not narrative.get("failure_recovery_matrix"):
+            missing.append("failure_recovery_matrix")
+        if requirements.get("require_worked_examples") and not narrative.get("worked_examples"):
+            missing.append("worked_examples")
+        if missing:
+            failures.append(f"{use_case_id}({','.join(missing)})")
+    if failures:
+        raise ValidationError("benchmark scenario depth failed: " + ", ".join(failures))
+
+
 def validate_benchmark_review(
     review: dict[str, Any],
     semantic_rubric: dict[str, Any],
@@ -1956,18 +3217,23 @@ def benchmark_revision(
         bundle["nodes_by_file"]["unknowns.jsonl"]
     )
     _validate_business_framing(bundle, expectation)
+    _validate_benchmark_scenario_depth(
+        bundle["nodes_by_file"]["use-cases.jsonl"],
+        expectation.get("scenario_depth_requirements", {}),
+    )
     _require_concept_groups(
         "business concepts",
         business_text,
         expectation.get("required_business_concepts", []),
     )
-    business_flow_text = _normalized_text(
-        [
-            use_case.get("main_flow", [])
-            for use_case in bundle["nodes_by_file"]["use-cases.jsonl"]
-            if use_case.get("claim_status") == "confirmed"
-        ]
-    )
+    business_flow_text = _normalized_text([
+        {
+            "main_flow": use_case.get("main_flow", []),
+            "scenario_narrative": use_case.get("scenario_narrative", {}),
+        }
+        for use_case in bundle["nodes_by_file"]["use-cases.jsonl"]
+        if use_case.get("claim_status") == "confirmed"
+    ])
     _require_concept_groups(
         "business flow concepts",
         business_flow_text,
@@ -1993,6 +3259,12 @@ def benchmark_revision(
             *bundle["nodes_by_file"]["use-case-families.json"],
         ],
         expectation.get("required_family_members", []),
+    )
+    _validate_calculation_concepts(
+        read_jsonl(root / "calculation-models.jsonl")
+        if (root / "calculation-models.jsonl").is_file()
+        else [],
+        expectation,
     )
     _validate_prohibited_claims(
         bundle["nodes_by_file"],
@@ -2067,7 +3339,12 @@ def publish_revision(
         "ai_path": f"revisions/{revision_id}/ai-context.md",
         "html_path": f"revisions/{revision_id}/site/index.html",
     }
-    if current["schema_version"] == contract.V2_SCHEMA_VERSION:
+    if current["schema_version"] in {
+        contract.V2_SCHEMA_VERSION,
+        contract.V3_SCHEMA_VERSION,
+        contract.V31_SCHEMA_VERSION,
+        contract.V32_SCHEMA_VERSION,
+    }:
         current.update(
             {
                 "current_coverage_status": validation["coverage"][
@@ -2080,6 +3357,16 @@ def publish_revision(
                 "coverage_status": validation["coverage"]["aggregate_status"],
             }
         )
+        if current["schema_version"] == contract.V32_SCHEMA_VERSION:
+            current.update(
+                {
+                    "project_completion_status": validation[
+                        "project_completion_status"
+                    ],
+                    "active_module_id": validation["active_module_id"],
+                    "next_module_ids": validation["next_module_ids"],
+                }
+            )
     else:
         current["coverage_status"] = validation["status"]
     write_json_atomic(workspace / "current.json", current)
@@ -2108,7 +3395,12 @@ def build_parser() -> argparse.ArgumentParser:
     benchmark.add_argument(
         "--scenario",
         required=True,
-        choices=["work-order", "video-binding"],
+        choices=[
+            "work-order",
+            "video-binding",
+            "video-concat",
+            "linjing-scoring",
+        ],
     )
     return parser
 

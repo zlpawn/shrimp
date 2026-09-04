@@ -158,16 +158,16 @@ class RepositorySnapshotTests(unittest.TestCase):
         self.assertEqual(diff["changed_paths"], ["src/Order.java", "src/WorkOrder.java"])
 
     def test_excluded_business_output_is_not_hashed(self):
-        output = self.repo / "_leo_business"
+        output = self.repo / ".leo_business"
         output.mkdir()
         (output / "current.json").write_text("{}\n", encoding="utf-8")
         result = snapshot.capture_snapshot(
             self.repo,
-            exclusions=["_leo_business/**"],
+            exclusions=[".leo_business/**"],
         )
 
-        self.assertNotIn("_leo_business/current.json", result["files"])
-        self.assertIn("_leo_business/**", result["exclusions"])
+        self.assertNotIn(".leo_business/current.json", result["files"])
+        self.assertIn(".leo_business/**", result["exclusions"])
 
     def test_compare_accepts_snapshot_path(self):
         before = snapshot.capture_snapshot(self.repo, exclusions=[])

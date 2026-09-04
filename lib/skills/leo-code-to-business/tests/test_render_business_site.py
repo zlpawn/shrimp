@@ -164,6 +164,100 @@ class RenderBusinessSiteTests(unittest.TestCase):
             renderer.guard.canonical_revision_sha256_v2(revision),
         )
 
+    def test_v3_renders_scenario_as_one_complete_reading_page(self):
+        revision = Path(self.temp.name) / "revision-v3"
+        shutil.copytree(
+            SKILL_DIR / "tests" / "fixtures" / "sample-revision-v3",
+            revision,
+        )
+
+        renderer.write_projections(revision)
+        html = (revision / "site" / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn('id="business_map"', html)
+        self.assertIn('id="core_scenarios"', html)
+        self.assertIn('id="knowledge_topics"', html)
+        self.assertIn("分阶段完整流程", html)
+        self.assertIn("分支与判断", html)
+        self.assertIn("状态、数据与外部影响", html)
+        self.assertIn("失败、恢复与降级", html)
+        self.assertIn("业务实例", html)
+        self.assertIn("实现证据", html)
+        self.assertIn("已达到场景可读标准", html)
+        self.assertIn("已发现、已分类、已保留或已建立代码映射", html)
+        self.assertIn("不等于业务已经被完整理解", html)
+        self.assertIn('href="#scenario-UC-create-work-order"', html)
+        self.assertNotIn('href="#module_dossiers">模块档案</a>', html)
+
+    def test_v32_projects_whole_project_progress_for_people_and_ai(self):
+        revision = Path(self.temp.name) / "revision-v32"
+        shutil.copytree(
+            SKILL_DIR / "tests" / "fixtures" / "sample-revision-v32",
+            revision,
+        )
+        progress = json.loads((revision / "project-progress.json").read_text())
+        progress["project_completion_status"] = "in_progress"
+        progress["active_module_id"] = "MODQ-consumer-acceptance"
+        progress["next_module_ids"] = ["MODQ-consumer-acceptance"]
+        progress["modules"].append({
+            "id": "MODQ-consumer-acceptance",
+            "title": "消费者新版验收体验",
+            "priority": "high",
+            "status": "pending",
+            "signal_ids": [],
+            "candidate_ids": [],
+            "module_dossier_id": None,
+            "flow_ids": [],
+            "use_case_ids": [],
+            "engineering_view_ids": [],
+            "history_status": "pending",
+            "gap_ids": [],
+            "next_action": "完成灰度、列表、详情、归档恢复、反馈和推送的端到端追踪。",
+        })
+        (revision / "project-progress.json").write_text(
+            json.dumps(progress, ensure_ascii=False) + "\n", encoding="utf-8"
+        )
+        manifest = json.loads((revision / "manifest.json").read_text())
+        manifest.update({
+            "project_completion_status": "in_progress",
+            "current_coverage_status": "partial",
+            "aggregate_status": "partial",
+            "coverage_status": "partial",
+        })
+        (revision / "manifest.json").write_text(
+            json.dumps(manifest, ensure_ascii=False) + "\n", encoding="utf-8"
+        )
+
+        renderer.write_projections(revision)
+        html = (revision / "site" / "index.html").read_text(encoding="utf-8")
+        ai = (revision / "ai-context.md").read_text(encoding="utf-8")
+        for text in ["全仓业务沉淀进度", "消费者新版验收体验", "全项目尚未完成"]:
+            self.assertIn(text, html)
+        for text in ["Whole-project status：`in_progress`", "消费者新版验收体验", "不能把本修订描述为全仓业务知识库已完成"]:
+            self.assertIn(text, ai)
+
+    def test_v3_ai_context_leads_with_deep_scenario_behavior(self):
+        revision = Path(self.temp.name) / "revision-v3-ai"
+        shutil.copytree(
+            SKILL_DIR / "tests" / "fixtures" / "sample-revision-v3",
+            revision,
+        )
+
+        renderer.write_projections(revision)
+        ai_context = (revision / "ai-context.md").read_text(encoding="utf-8")
+
+        self.assertIn("已达到场景可读标准", ai_context)
+        self.assertIn("当前行为：分阶段执行", ai_context)
+        self.assertIn("整改工单服务：读取项目检查员并补齐", ai_context)
+        self.assertIn("#### 分支与判断", ai_context)
+        self.assertIn("#### 状态、数据与外部影响", ai_context)
+        self.assertIn("#### 失败、恢复与降级", ai_context)
+        self.assertIn("#### 业务实例", ai_context)
+        self.assertIn("上一版本", ai_context)
+        self.assertIn("原因状态：unknown", ai_context)
+        self.assertIn("scenario_narrative", ai_context)
+        self.assertIn("Scenario readiness：`1/1`", ai_context)
+
     def test_projection_file_tampering_is_rejected(self):
         renderer.write_projections(self.revision)
         with (self.revision / "ai-context.md").open("a", encoding="utf-8") as handle:

@@ -87,6 +87,115 @@ class SiteViewModelTests(unittest.TestCase):
         self.assertIn("<noscript>", rendered)
         self.assertIn("UC-create-work-order", rendered)
 
+    def test_v3_html_uses_three_business_reading_tasks(self):
+        v3_dir = Path(self.temp.name) / "revision-v3"
+        shutil.copytree(
+            SKILL_DIR / "tests" / "fixtures" / "sample-revision-v3",
+            v3_dir,
+        )
+        renderer.write_projections(v3_dir)
+        revision = renderer.load_canonical_revision(v3_dir)
+        model = view_model.build_site_view_model(revision)
+        rendered = renderer.render_html_site(model)
+
+        self.assertEqual(
+            [item["id"] for item in model["navigation"]],
+            [
+                "business_map",
+                "core_scenarios",
+                "knowledge_topics",
+            ],
+        )
+        labels = ["业务地图", "核心业务场景", "专题查询"]
+        positions = [rendered.index(label) for label in labels]
+        self.assertEqual(positions, sorted(positions))
+        self.assertIn("scenario_reading_pages", model["views"])
+        page = model["views"]["scenario_reading_pages"][0]
+        self.assertEqual(
+            [section["id"] for section in page["sections"]],
+            [
+                "context_and_start",
+                "staged_flow",
+                "branches",
+                "state_data_effects",
+                "failure_and_recovery",
+                "variants",
+                "worked_examples",
+                "evolution",
+                "open_questions",
+                "implementation_evidence",
+            ],
+        )
+        self.assertIn("FLOW-create-work-order", rendered)
+        self.assertIn("MOD-work-order", rendered)
+        self.assertNotIn("engineering_views", model["views"])
+        self.assertNotIn("研发实现导航", rendered)
+
+    def test_v31_aligns_engineering_detail_to_business_steps(self):
+        v31_dir = Path(self.temp.name) / "revision-v31"
+        shutil.copytree(
+            SKILL_DIR / "tests" / "fixtures" / "sample-revision-v31",
+            v31_dir,
+        )
+        renderer.write_projections(v31_dir)
+        revision = renderer.load_canonical_revision(v31_dir)
+        model = view_model.build_site_view_model(revision)
+        rendered = renderer.render_html_site(model)
+
+        self.assertEqual(
+            [item["label"] for item in model["navigation"]],
+            ["业务地图", "核心业务场景", "专题查询"],
+        )
+        page = model["views"]["scenario_reading_pages"][0]
+        self.assertEqual(
+            [section["id"] for section in page["sections"]],
+            list(view_model.SCENARIO_READING_SECTION_IDS),
+        )
+        staged_flow = next(
+            section["items"]
+            for section in page["sections"]
+            if section["id"] == "staged_flow"
+        )
+        mappings = {
+            step["step_id"]: step["engineering_mapping"]
+            for stage in staged_flow
+            for step in stage["steps"]
+        }
+        self.assertEqual(set(mappings), {"submit", "enrich", "call-external"})
+        self.assertEqual(
+            mappings["enrich"]["implementation_units"][0]["locator"],
+            "WorkOrderService.create",
+        )
+        self.assertIn("研发实现导航", rendered)
+        self.assertIn("改动影响与验证", rendered)
+        self.assertIn("WorkOrderService.create", rendered)
+
+        persisted = json.loads((v31_dir / "site-view-model.json").read_text(encoding="utf-8"))
+        persisted_page = persisted["views"]["scenario_reading_pages"][0]
+        self.assertEqual(
+            [section["id"] for section in persisted_page["sections"]],
+            list(view_model.SCENARIO_READING_SECTION_IDS),
+        )
+
+    def test_v32_exposes_project_progress_without_changing_primary_navigation(self):
+        v32_dir = Path(self.temp.name) / "revision-v32"
+        shutil.copytree(
+            SKILL_DIR / "tests" / "fixtures" / "sample-revision-v32",
+            v32_dir,
+        )
+        renderer.write_projections(v32_dir)
+        model = view_model.build_site_view_model(
+            renderer.load_canonical_revision(v32_dir)
+        )
+        self.assertEqual(
+            [item["label"] for item in model["navigation"]],
+            ["业务地图", "核心业务场景", "专题查询"],
+        )
+        self.assertEqual(
+            model["views"]["project_progress"]["project_completion_status"],
+            "complete",
+        )
+
     @staticmethod
     def shuffle_every_collection(root: Path, seed: int) -> None:
         random.seed(seed)

@@ -1,0 +1,1 @@
+{"affected_node_ids":["BR-create-work-order-type","UC-create-work-order"],"after_evidence_ids":["EV-create-work-order-rule"],"after_summary":"整改工单固定使用 HOME2 与 TODO 类型。","before_evidence_ids":["EV-create-work-order-source"],"before_summary":"整改工单类型由调用方输入，可能进入非待办流程。","commit_id":"COMMIT-abc123","confidence":"E3","fact_type":"constant_changed","id":"GCF-work-order-type"}

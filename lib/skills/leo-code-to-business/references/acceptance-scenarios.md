@@ -25,8 +25,10 @@ critical/high candidate is a failed comparison.
 Run `extended-java` against `/Users/pa/project/JZ/utopia-scs-recorder` at commit
 `c6893715d0d52477849595e7ed7c8c5ec276f322`. The harness clones to a temporary detached checkout
 and writes only to an explicit external output root. It must find work-order creation, the
-`/app/video/relate` family, a reverse-writer/operational entry, a repair path, and a stratified Git
-history sample. Repository or commit absence returns exit code `2` with a named unavailable
+`/app/video/relate` family, uploaded-3D relation, Linjing device upload, concatenation callback,
+concatenation coordinator and retry, Linjing score orchestration, all four score calculators, total
+score recalculation, a reverse-writer/operational entry, a repair path, and a stratified Git history
+sample. Repository or commit absence returns exit code `2` with a named unavailable
 diagnostic; any present-but-failing scenario returns exit code `1` and cannot count as release
 evidence.
 
@@ -102,11 +104,112 @@ operational relink
 
 Record alternate-entry and backward-writer investigations.
 
+## Linjing Device Upload and Video Concatenation
+
+This is an independent golden scenario. It must not be collapsed into the video-binding use case or
+a generic media-processing scenario.
+
+Required entries and anchors include:
+
+```text
+POST /3d/app/device/upload/video
+POST /3d/app/device/uploaded/video/nonrelated
+POST /linjing/video/concat/callback
+VideoContactTaskServiceImpl.contactVideoByFolder
+VideoContactTaskServiceImpl.retryContactVideoByFolder
+VideoContactTaskServiceImpl.lowReplaceHigh
+VideoContactTaskServiceImpl.updateTaskSuccess
+CeleryProvider.contactVideoHigh / contactVideoLow / contactVideo
+```
+
+The end-to-end flow must establish, with current-source evidence:
+
+1. how a Linjing device upload or upload confirmation creates or updates video records;
+2. how `folderName + hwSn` defines the footage group eligible for concatenation;
+3. which uploaded/stabilized files are included or excluded before a task starts;
+4. how an absent or invalid bitrate selection creates high- and low-bitrate tasks, while an explicit
+   selection creates the corresponding single task;
+5. how the Celery request, generated task ID, persisted `VideoContactTask`, and `VIDEO_CONCAT`
+   started event represent one business stage rather than four unrelated use cases;
+6. how `POST /linjing/video/concat/callback` identifies the task, validates the result, advances
+   success or failure state, and updates the videos in the same folder;
+7. what becomes queryable or usable after success, including any subsequent video relation or
+   downstream synchronization;
+8. how pending, started, failure, and single-task retry paths select tasks and preserve retry count;
+9. how `retryContactVideoByFolder` creates a new task, invalidates the old task, and emits a retry
+   state event;
+10. when `lowReplaceHigh`, failure-reason synchronization, started-time synchronization, retry-limit
+    notification, and task-failure notification act as operational repair or fallback behavior.
+
+Missing callback, state transition, retry, or terminal-use analysis is a failed scenario even if the
+initial upload route and concatenation request were found.
+
+## Linjing Strategy Scoring
+
+This is a calculation-model golden scenario, not a brief use-case paragraph. Required orchestration
+and calculators include:
+
+```text
+LinjingScoreServiceV2.triggerCalculateScore
+StrategyScoreCalculationService.calculateAcceptanceScoreItem
+SpeechScoreCalculator
+ToolScoreCalculator
+CustomerScoreCalculator
+DurationScoreCalculator
+LinjingWindowDetectionService.calDrainageScore
+LinjingScoreServiceV2.recalculateTotalScore
+```
+
+The calculation model must explain:
+
+- applicability gates such as tenant/config switches, mirror-score behavior, construction stage,
+  strategy availability, and module weight;
+- the source and version of the active strategy configuration;
+- inputs used by speech, tool, customer, duration, basic acceptance, and additional acceptance;
+- missing-value behavior for absent video, strategy, modules, detected values, or weights;
+- weighted, percentage, and step-ladder calculations, including threshold boundaries;
+- duration conversion and rounding, two-segment behavior, interpolation, and 0/100 outcomes;
+- edited-versus-detected tool selection, full-score threshold behavior, and the installed-stage
+  drainage specialization through `calDrainageScore`;
+- speech cheating or exclusion handling where present in current source;
+- how module results roll into acceptance items and how `calculateAcceptanceScoreItem` rounds both
+  score and percent score;
+- how `recalculateTotalScore` combines basic and additional acceptance, including rounding;
+- recalculation/repair entries, database persistence, edited score/tool fields, and search/index or
+  presentation refresh where applicable.
+
+Each distinct detected scoring/calculation signal must map through `code-knowledge-matrix.jsonl` to
+one or more explicit `calculation-models.jsonl` records. One generic “weighted score” model cannot
+stand in for all calculators.
+
 ## Gate
 
 An answer limited to one controller method fails even when technically accurate. No semantic rubric
 dimension may score 0 and the total must be at least 13/16. `main_flow = 2` also requires that a
 product or operations reader can understand the scenario without source-code knowledge.
+
+Keyword completeness is only a precheck. The named Utopia core scenarios must also satisfy these
+independent narrative depth floors:
+
+```text
+UC-create-work-order:              >= 2 stages, >= 5 atomic steps
+UC-bind-site-video:                >= 4 stages, >= 9 atomic steps
+UC-bind-headmounted-video:         >= 4 stages, >= 9 atomic steps
+UC-upload-linjing-video:           >= 3 stages, >= 7 atomic steps
+UC-concat-linjing-video:           >= 5 stages, >= 12 atomic steps
+UC-calculate-linjing-score:        >= 4 stages, >= 10 atomic steps
+```
+
+Every named scenario also requires branch closure, failure/recovery/degradation closure, and at least
+one current-source-grounded worked example. These counts are calibration floors, not permission to
+compress multiple business advances into one step.
+
+Frozen closed-book questions must cover trigger-to-terminal retelling, a branch choice, a named
+failure and recovery path, state/data/external effects relevant to a new requirement, and verified
+previous/current behavior with reason status. The Linjing scoring set additionally asks for one
+worked calculation and missing-value/threshold/rounding behavior; video concatenation additionally
+asks for task identity, callback convergence, retry replacement, stale-task handling, and low-bitrate
+degradation.
 
 Run deterministic acceptance with:
 
@@ -120,6 +223,16 @@ business_knowledge_guard.py benchmark
   --revision <canonical-revision>
   --expectations tests/fixtures/expected
   --scenario video-binding
+
+business_knowledge_guard.py benchmark
+  --revision <canonical-revision>
+  --expectations tests/fixtures/expected
+  --scenario video-concat
+
+business_knowledge_guard.py benchmark
+  --revision <canonical-revision>
+  --expectations tests/fixtures/expected
+  --scenario linjing-scoring
 ```
 
 The expectation files are external calibration anchors, not content to copy into generated

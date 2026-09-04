@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>项目业务知识地图</title>
+<style>
+:root { --ink:#18211c; --muted:#667168; --paper:#f3f5f1; --panel:#fff; --forest:#234d37; --leaf:#4f765d; --clay:#b7653b; --line:#d9dfd8; --soft:#e9efe9; --warning:#8a6117; --shadow:0 18px 50px rgba(35,77,55,.08); }
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { margin:0; background:var(--paper); color:var(--ink); font:15px/1.65 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+button,input { font:inherit; }
+.shell { min-height:100vh; }
+aside { position:sticky; top:0; z-index:20; display:flex; align-items:center; justify-content:space-between; gap:24px; padding:14px max(24px,calc((100vw - 1240px)/2)); border-bottom:1px solid var(--line); background:rgba(243,245,241,.96); backdrop-filter:blur(14px); }
+.brand { display:flex; align-items:baseline; gap:10px; white-space:nowrap; }
+.brand strong { font-size:17px; }
+.brand small,.empty { color:var(--muted); }
+nav { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:4px; }
+nav a { color:var(--muted); text-decoration:none; padding:7px 10px; border-radius:999px; }
+nav a:hover,nav a.active { color:var(--forest); background:var(--soft); }
+a:focus-visible,input:focus-visible,summary:focus-visible { outline:3px solid rgba(183,101,59,.3); outline-offset:3px; }
+main { min-width:0; }
+.topbar { position:relative; max-width:1240px; margin:0 auto; padding:22px 28px 0; }
+.search { width:100%; border:1px solid var(--line); background:var(--panel); padding:12px 16px; border-radius:12px; box-shadow:0 6px 20px rgba(24,33,28,.04); }
+.content { max-width:1240px; margin:0 auto; padding:28px 28px 84px; }
+.overview { position:relative; overflow:hidden; padding:58px clamp(24px,5vw,68px); border-radius:28px; background:var(--forest); color:#fff; box-shadow:var(--shadow); }
+.overview::after { content:""; position:absolute; width:360px; height:360px; right:-150px; bottom:-210px; border:70px solid rgba(255,255,255,.06); border-radius:50%; }
+.section-kicker,.card-label { display:block; margin-bottom:10px; color:var(--clay); font-size:12px; font-weight:800; letter-spacing:.12em; }
+.overview .section-kicker { color:#dca583; }
+h1 { max-width:820px; margin:0 0 18px; font-size:clamp(38px,6vw,72px); line-height:1.02; letter-spacing:-.045em; }
+h2 { margin:0; font-size:clamp(27px,3vw,38px); line-height:1.15; letter-spacing:-.025em; }
+h3 { margin:0; font-size:19px; line-height:1.3; }
+.overview__lead { max-width:760px; margin:0; color:#dfe9e2; font-size:18px; }
+.scope-note { position:relative; z-index:1; display:inline-flex; margin:30px 0 0; padding:10px 14px; border:1px solid rgba(255,255,255,.18); border-radius:999px; color:#f4f8f5; background:rgba(255,255,255,.08); }
+.band { padding:64px 0; border-bottom:1px solid var(--line); }
+.band > header { display:flex; justify-content:space-between; align-items:end; gap:24px; margin-bottom:26px; }
+.band > header p { max-width:680px; margin:8px 0 0; color:var(--muted); }
+.count { flex:none; color:var(--leaf); font-size:13px; font-weight:700; }
+.capability-grid,.scenario-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.capability-card,.scenario-card { padding:24px; border:1px solid var(--line); border-radius:18px; background:var(--panel); box-shadow:0 8px 28px rgba(24,33,28,.035); }
+.capability-card p,.scenario-card p { margin:10px 0 0; color:var(--muted); }
+.scenario-card { display:flex; flex-direction:column; min-height:300px; }
+.scenario-card__top { display:flex; justify-content:space-between; gap:16px; margin-bottom:28px; color:var(--leaf); font-size:12px; }
+.scenario-card__top strong { color:var(--ink); }
+.scenario-facts { display:grid; gap:10px; margin:22px 0; }
+.scenario-facts div { padding-left:12px; border-left:2px solid var(--soft); }
+.scenario-facts dt { color:var(--muted); font-size:12px; }
+.scenario-facts dd { margin:2px 0 0; }
+.detail-link { margin-top:auto; color:var(--clay); font-weight:800; text-decoration:none; }
+.actor-strip { list-style:none; display:flex; flex-wrap:wrap; gap:10px; padding:0; margin:22px 0 0; }
+.actor-strip li { display:grid; gap:2px; min-width:220px; padding:14px 16px; border-radius:14px; background:var(--soft); }
+.actor-strip span,.actor-strip small { color:var(--muted); }
+.business-chain { list-style:none; display:grid; gap:14px; padding:0; margin:28px 0 0; }
+.chain-item { display:grid; grid-template-columns:minmax(150px,1fr) auto minmax(180px,1.25fr) auto minmax(180px,1.25fr); align-items:stretch; gap:12px; }
+.chain-node { display:flex; flex-direction:column; justify-content:center; min-height:82px; padding:14px 16px; border:1px solid var(--line); border-radius:14px; background:var(--panel); }
+.chain-node.action { color:#fff; border-color:var(--forest); background:var(--forest); }
+.chain-node small { color:var(--muted); }
+.chain-node.action small { color:#c9dbcf; }
+.chain-arrow { align-self:center; color:var(--clay); font-size:22px; }
+.use-case { scroll-margin-top:82px; margin:34px 0; padding:clamp(24px,4vw,46px); border:1px solid var(--line); border-radius:24px; background:var(--panel); box-shadow:var(--shadow); }
+.use-case__header { display:flex; justify-content:space-between; gap:24px; align-items:start; padding-bottom:24px; border-bottom:1px solid var(--line); }
+.use-case__header p { max-width:760px; margin:12px 0 0; color:var(--muted); }
+.use-case__header a { flex:none; color:var(--leaf); text-decoration:none; }
+.use-case__intro { display:grid; grid-template-columns:1fr 2fr; gap:14px; margin:26px 0; }
+.use-case__intro div { display:grid; gap:4px; padding:18px; border-radius:14px; background:var(--soft); }
+.use-case__intro span { color:var(--muted); font-size:12px; }
+.detail-section { margin:30px 0; }
+.detail-section h3 { margin-bottom:14px; color:var(--forest); }
+.detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+.business-list,.flow-list { margin:0; padding:0; }
+.business-list { list-style:none; display:grid; gap:8px; }
+.business-list li { display:grid; gap:4px; padding:12px 0; border-bottom:1px solid #edf0ed; }
+.business-list small { color:var(--muted); }
+.flow-list { list-style:none; display:grid; counter-reset:flow; gap:12px; }
+.flow-list li { counter-increment:flow; display:grid; grid-template-columns:42px 1fr; gap:14px; align-items:start; }
+.flow-list li::before { content:counter(flow); display:grid; place-items:center; width:34px; height:34px; border-radius:50%; color:#fff; background:var(--forest); font-weight:800; }
+.outcome { padding:20px; border-radius:16px; background:#eef5ef; }
+.exception { padding:20px; border-left:4px solid var(--warning); background:#faf7ef; }
+.questions { padding:20px; border-radius:16px; background:#f7f2ec; }
+.implementation-evidence,.analysis details { margin-top:30px; padding:18px 20px; border:1px solid var(--line); border-radius:14px; background:#f8faf8; }
+.step-engineering { margin-top:16px; padding:14px 16px; border:1px solid #d9e5dc; border-radius:12px; background:#f5f9f6; }
+.step-engineering summary { cursor:pointer; color:var(--leaf); font-weight:700; }
+.implementation-units { display:grid; gap:10px; margin:14px 0; padding:0; list-style:none; }
+.implementation-units li { display:grid; gap:3px; padding:10px 12px; border-left:3px solid var(--soft); background:#fff; }
+.implementation-units span,.implementation-units small { color:var(--muted); }
+.engineering-facts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.engineering-facts div,.engineering-topic { padding:14px; border:1px solid var(--line); border-radius:12px; background:#fff; }
+.engineering-facts dt { color:var(--muted); font-size:12px; }
+.engineering-facts dd { margin:4px 0 0; }
+.engineering-chapter { padding-top:26px; border-top:1px solid var(--line); }
+.chapter-intro,.engineering-summary { color:var(--muted); }
+.engineering-topic-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+.engineering-topic header { display:flex; justify-content:space-between; gap:12px; }
+.engineering-topic header span { color:var(--leaf); font-size:12px; }
+summary { cursor:pointer; color:var(--forest); font-weight:800; }
+.implementation-evidence > p,.analysis details > p { color:var(--muted); }
+.rule-list,.question-list { list-style:none; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; padding:0; }
+.rule-item,.question-item { display:grid; gap:6px; padding:18px; border:1px solid var(--line); border-radius:14px; background:var(--panel); }
+.rule-item span,.question-item span,.question-item small { color:var(--muted); }
+.coverage { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.coverage div { padding:12px; border:1px solid var(--line); background:var(--panel); }
+.coverage .readiness { border-color:rgba(183,101,59,.55); background:#fff8f2; }
+.coverage dt { color:var(--muted); font-size:12px; }
+.coverage dd { margin:4px 0 0; font-weight:700; }
+.coverage-note { margin:0 0 16px; padding:12px 14px; border-left:3px solid var(--clay); color:var(--muted); background:#fff8f2; }
+.empty-states { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:18px; }
+.empty-states div { display:grid; gap:4px; padding:12px; border-radius:10px; background:var(--soft); }
+.empty-states span { color:var(--muted); }
+.analysis-meta { display:grid; gap:8px; margin:18px 0; }
+.analysis-meta p { margin:0; }
+.analysis-meta code { overflow-wrap:anywhere; }
+.deep-list,.flow-stages { display:grid; gap:18px; }
+.scenario-reading { scroll-margin-top:82px; margin:34px 0 54px; padding:clamp(24px,4vw,48px); border:1px solid var(--line); border-radius:24px; background:var(--panel); box-shadow:var(--shadow); }
+.scenario-reading__header { display:flex; justify-content:space-between; gap:24px; padding-bottom:24px; border-bottom:1px solid var(--line); }
+.scenario-reading__header p { max-width:820px; color:var(--muted); }
+.scenario-reading__header a { flex:none; color:var(--leaf); text-decoration:none; }
+.depth-badge { display:inline-flex; margin-bottom:12px; padding:6px 10px; border-radius:999px; font-size:12px; font-weight:800; }
+.depth-badge.deep { color:#23523a; background:#e4f1e7; }
+.depth-badge.summary_only { color:#8a6117; background:#faf0d7; }
+.scenario-chapter { margin:36px 0; }
+.scenario-chapter > h3 { margin-bottom:16px; color:var(--forest); font-size:22px; }
+.narrative-stage { margin:18px 0; padding:22px; border:1px solid var(--line); border-radius:18px; background:#f8faf8; }
+.narrative-stage > header { display:flex; gap:16px; align-items:start; }
+.narrative-stage > header > span { flex:none; padding:5px 9px; border-radius:999px; color:#fff; background:var(--forest); font-size:12px; font-weight:800; }
+.narrative-stage > header p { margin:5px 0 0; color:var(--muted); }
+.atomic-steps { list-style:none; display:grid; gap:12px; margin:20px 0 0; padding:0; }
+.atomic-step { display:grid; grid-template-columns:38px 1fr; gap:14px; padding:16px; border-radius:14px; background:#fff; }
+.step-index { display:grid; place-items:center; width:32px; height:32px; border-radius:50%; color:#fff; background:var(--clay); font-weight:800; }
+.atomic-step__body small { color:var(--leaf); font-weight:800; }
+.atomic-step__body h4 { margin:4px 0 8px; font-size:17px; }
+.atomic-step__body p { margin:0 0 10px; }
+.atomic-facts,.matrix-card dl { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin:0; }
+.atomic-facts div,.matrix-card dl div { padding:10px; border-radius:10px; background:var(--soft); }
+.atomic-facts dt,.matrix-card dt { color:var(--muted); font-size:12px; }
+.atomic-facts dd,.matrix-card dd { margin:3px 0 0; }
+.matrix-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.matrix-card { padding:16px; border:1px solid var(--line); border-radius:14px; background:#fff; }
+.knowledge-topics > details { margin:12px 0; padding:18px 20px; border:1px solid var(--line); border-radius:14px; background:var(--panel); }
+.deep-record { margin:22px 0; padding:28px; border:1px solid var(--line); border-radius:20px; background:var(--panel); box-shadow:var(--shadow); }
+.deep-record > header p { max-width:820px; color:var(--muted); }
+.flow-stage { padding:22px; border:1px solid var(--line); border-radius:16px; background:#f8faf8; }
+.flow-stage > header { display:flex; gap:12px; align-items:center; margin-bottom:16px; }
+.flow-stage > header span { display:grid; place-items:center; width:32px; height:32px; border-radius:50%; color:#fff; background:var(--forest); font-weight:800; }
+.stage-facts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.stage-facts div { padding:12px; border-radius:12px; background:var(--soft); }
+.stage-facts dt { color:var(--muted); font-size:12px; }
+.stage-facts dd { margin:4px 0 0; }
+.stage-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-top:18px; }
+.stage-grid section { padding:16px; border:1px solid var(--line); border-radius:12px; background:var(--panel); }
+.stage-grid h4 { margin:0 0 10px; color:var(--forest); }
+.search-results { display:none; position:absolute; z-index:30; top:72px; left:28px; right:28px; max-height:60vh; overflow:auto; border:1px solid var(--line); border-radius:12px; background:#fff; box-shadow:0 18px 42px rgba(23,33,27,.16); }
+.search-results.visible { display:block; }
+.search-results a { display:grid; gap:2px; color:var(--ink); text-decoration:none; padding:11px 14px; border-bottom:1px solid #e8ece9; }
+.search-results a:hover { background:#f1f5f1; }
+@media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
+@media (max-width:820px) {
+  aside { position:static; display:grid; padding:16px; }
+  nav { justify-content:flex-start; }
+  .topbar { padding:18px 16px 0; }
+  .content { padding:26px 16px 56px; }
+  .overview { padding:38px 24px; border-radius:20px; }
+  .capability-grid,.scenario-grid,.detail-grid,.use-case__intro,.rule-list,.question-list,.coverage,.empty-states,.stage-facts,.stage-grid,.matrix-grid,.atomic-facts,.matrix-card dl,.engineering-facts,.engineering-topic-grid { grid-template-columns:1fr; }
+  .chain-item { grid-template-columns:1fr; }
+  .chain-arrow { transform:rotate(90deg); justify-self:center; }
+  .use-case__header { display:grid; }
+  .band { padding:48px 0; }
+}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside>
+  <div class="brand"><strong>项目业务知识</strong><small>业务结论可追溯</small></div>
+  <nav>
+<a href="#business_map">业务地图</a><a href="#core_scenarios">核心业务场景</a><a href="#knowledge_topics">专题查询</a>
+  </nav>
+</aside>
+<main>
+  <div class="topbar">
+    <input class="search" id="search" type="search" placeholder="搜索业务场景、目标、规则或实现线索" aria-label="搜索业务知识">
+    <div class="search-results" id="search-results"></div>
+  </div>
+  <div class="content">
+    <section class="overview" id="business_map">
+      <span class="section-kicker">业务全景</span>
+      <h1>从业务目标出发，理解这个系统如何运转</h1>
+      <p class="overview__lead">这里围绕参与者、业务问题、流程、规则、结果与异常恢复组织知识。需要核验时，可以从具体业务用例继续下探到当前源码依据。</p>
+      <p class="scope-note">当前已整理 1 个业务场景；其他业务能力将在后续分析中持续补充，本页面不代表系统完整业务全貌。</p>
+    </section>
+    <section class="band" id="business_capabilities"><header><div><span class="section-kicker">业务地图</span><h2>能力、参与者与推荐主线</h2><p>先判断系统解决什么问题、由谁参与，再选择一条核心场景从头读到尾。</p></div><span class="count">1 项能力</span></header><div class="capability-grid"><article class="capability-card"><span class="card-label">业务能力</span><h3>工单管理</h3><p>为施工问题创建和跟踪待办工单。</p></article></div><ul class="actor-strip"><li><strong>工地检查员</strong><span>发现施工问题并发起整改工单的现场角色。</span><small>创建施工整改工单</small></li></ul></section>
+    
+    <section class="band" id="business_chains"><header><div><span class="section-kicker">业务链</span><h2>参与者如何获得业务结果</h2><p>每条链只保留参与者、业务动作与结果，具体规则和异常在场景详情中展开。</p></div></header><ol class="business-chain"><li class="chain-item"><span class="chain-node"><small>参与者</small>工地检查员</span><span class="chain-arrow" aria-hidden="true">→</span><span class="chain-node action"><small>业务动作</small>创建施工整改工单</span><span class="chain-arrow" aria-hidden="true">→</span><span class="chain-node"><small>业务结果</small>施工问题成为外部工单系统中的待办任务</span></li></ol></section>
+    <section class="band" id="core_scenarios"><header><div><span class="section-kicker">主要阅读区</span><h2>核心业务场景</h2><p>每个场景在一个页面内连续讲清业务背景、完整流程、分支、状态数据、失败恢复、实例、历史和证据。</p></div><span class="count">当前已整理 1 个</span></header><div class="scenario-grid"><article class="scenario-card"><div class="scenario-card__top"><span>业务场景</span><strong>工地检查员</strong></div><h3>创建施工整改工单</h3><p>工地检查员为目标项目创建整改待办，实际创建由外部工单系统完成。</p><dl class="scenario-facts"><div><dt>业务目标</dt><dd>将施工问题转为可跟踪的整改待办</dd></div><div><dt>完成结果</dt><dd>施工问题成为外部工单系统中的待办任务</dd></div></dl><a class="detail-link" href="#scenario-UC-create-work-order">查看场景详情 <span aria-hidden="true">→</span></a></article></div><article class="scenario-reading" id="scenario-UC-create-work-order"><header class="scenario-reading__header"><div><span class="depth-badge deep">已达到深度场景标准</span><h2>创建施工整改工单</h2><p>工地检查员为目标项目创建整改待办，实际创建由外部工单系统完成。</p><p class="scenario-goal"><strong>业务目标：</strong>将施工问题转为可跟踪的整改待办</p></div><a href="#core_scenarios">返回场景索引</a></header><section class="scenario-chapter"><h3>业务背景与开始状态</h3><p>检查员发现施工问题后，需要把问题交给外部工单系统形成可持续跟踪的整改待办。</p><ul class="business-list"><li><span>目标项目和整改内容已经确定，外部整改待办尚未创建。</span></li></ul></section><section class="scenario-chapter"><h3>分阶段完整流程</h3><article class="narrative-stage"><header><span>阶段 1</span><div><h3>提交并补齐整改信息</h3><p>把现场问题整理成外部系统能够创建的整改请求。</p></div></header><ol class="atomic-steps"><li class="atomic-step"><span class="step-index">1</span><div class="atomic-step__body"><small>工地检查员</small><h4>提交目标项目、整改内容、图片和计划完成时间。</h4><p><strong>本步结果：</strong>系统获得一份待转换的整改请求。</p><dl class="atomic-facts"><div><dt>输入</dt><dd>项目和整改信息</dd></div></dl><details class="step-engineering"><summary>研发实现</summary><ul class="implementation-units"><li><strong>创建整改工单入口</strong><span>request_handler · 接收项目与整改信息并交给业务服务</span><small>WorkOrderController.create</small></li></ul><dl class="engineering-facts"><div><dt>读取</dt><dd>创建工单请求中的项目、整改内容、图片和计划完成时间</dd></div><div><dt>状态</dt><dd>本步不创建外部待办，只形成待处理请求</dd></div><div><dt>运行保障</dt><dd>入口异常沿调用链返回</dd></div></dl></details></div></li><li class="atomic-step"><span class="step-index">2</span><div class="atomic-step__body"><small>整改工单服务</small><h4>读取项目检查员并补齐发布人、处理人和固定工单类型。</h4><p><strong>本步结果：</strong>形成可提交给外部工单系统的完整请求。</p><dl class="atomic-facts"><div><dt>输入</dt><dd>待转换整改请求</dd></div><div><dt>判断依据</dt><dd>项目订单类型固定为 HOME2，工单类型固定为 TODO。</dd></div><div><dt>数据变化</dt><dd>补齐发布人、处理人和计划完成时间。</dd></div></dl><details class="step-engineering"><summary>研发实现</summary><ul class="implementation-units"><li><strong>整改工单请求补齐</strong><span>business_service · 读取项目检查员并补齐发布人、处理人和固定工单类型</span><small>WorkOrderService.create</small></li></ul><dl class="engineering-facts"><div><dt>读取</dt><dd>项目检查员信息；待转换整改请求</dd></div><div><dt>写入</dt><dd>外部工单请求中的发布人、处理人、HOME2 项目订单类型和 TODO 工单类型</dd></div><div><dt>状态</dt><dd>仍处于外部待办未创建状态</dd></div><div><dt>配置</dt><dd>当前类型值由源码固定为 HOME2/TODO</dd></div><div><dt>运行保障</dt><dd>当前证据未显示独立事务边界</dd></div></dl></details></div></li></ol></article><article class="narrative-stage"><header><span>阶段 2</span><div><h3>创建外部整改待办</h3><p>让现场问题真正进入后续整改处理队列。</p></div></header><ol class="atomic-steps"><li class="atomic-step"><span class="step-index">3</span><div class="atomic-step__body"><small>整改工单服务</small><h4>调用外部工单系统创建待办。</h4><p><strong>本步结果：</strong>外部系统返回创建确认或失败结果。</p><dl class="atomic-facts"><div><dt>输入</dt><dd>完整整改请求</dd></div><div><dt>判断依据</dt><dd>只有外部返回有效结果才算创建成功。</dd></div><div><dt>状态变化</dt><dd>外部整改待办由不存在变为已创建，或保持未创建。</dd></div><div><dt>外部影响</dt><dd>外部工单系统新增 TODO 待办。</dd></div></dl><details class="step-engineering"><summary>研发实现</summary><ul class="implementation-units"><li><strong>外部工单创建客户端</strong><span>external_client · 提交完整请求并把外部确认转换为本次创建结果</span><small>WorkOrderController.create -&gt; external work-order client</small></li></ul><dl class="engineering-facts"><div><dt>读取</dt><dd>完整外部工单请求</dd></div><div><dt>写入</dt><dd>外部工单系统中的 TODO 待办</dd></div><div><dt>状态</dt><dd>外部待办从不存在变为已创建；失败时保持未创建</dd></div><div><dt>外部交互</dt><dd>同步调用外部工单创建接口并读取确认结果</dd></div><div><dt>运行保障</dt><dd>未发现自动重试；失败记录错误并返回失败</dd></div></dl></details></div></li></ol></article></section><section class="scenario-chapter"><h3>分支与判断</h3><div class="matrix-grid"><article class="matrix-card"><dl><div><dt>条件</dt><dd>外部系统返回有效创建结果</dd></div><div><dt>判断依据</dt><dd>外部响应非空且表示成功</dd></div><div><dt>进入路线</dt><dd>完成创建</dd></div><div><dt>业务结果</dt><dd>施工问题成为可跟踪待办</dd></div></dl></article><article class="matrix-card"><dl><div><dt>条件</dt><dd>外部结果为空或调用失败</dd></div><div><dt>判断依据</dt><dd>没有获得有效创建确认</dd></div><div><dt>进入路线</dt><dd>失败结束</dd></div><div><dt>业务结果</dt><dd>本次整改待办不成立并记录错误</dd></div></dl></article></div></section><section class="scenario-chapter"><h3>状态、数据与外部影响</h3><div class="stage-grid"><section><h4>数据变化</h4><ul class="business-list"><li><span>补齐发布人、处理人和计划完成时间。</span></li></ul></section><section><h4>状态变化</h4><ul class="business-list"><li><span>外部整改待办由不存在变为已创建，或保持未创建。</span></li></ul></section><section><h4>外部影响</h4><ul class="business-list"><li><span>外部工单系统新增 TODO 待办。</span></li></ul></section></div></section><section class="scenario-chapter"><h3>失败、恢复与降级</h3><div class="matrix-grid"><article class="matrix-card"><dl><div><dt>失败点</dt><dd>调用外部工单系统</dd></div><div><dt>业务影响</dt><dd>施工问题没有进入整改队列</dd></div><div><dt>停留状态</dt><dd>外部待办未创建</dd></div><div><dt>自动恢复</dt><dd>未发现自动重试</dd></div><div><dt>人工修复</dt><dd>修复输入或外部故障后由调用方重新提交</dd></div><div><dt>降级</dt><dd>不适用</dd></div></dl></article></div></section><section class="scenario-chapter"><h3>业务变体</h3><div class="matrix-grid"><article class="matrix-card"><dl><div><dt>变体</dt><dd>正常创建</dd></div><div><dt>与主流程差异</dt><dd>外部系统确认后形成 TODO 待办。</dd></div></dl></article></div></section><section class="scenario-chapter"><h3>业务实例</h3><div class="matrix-grid"><article class="matrix-card"><dl><div><dt>示例</dt><dd>外部创建成功示例</dd></div><div><dt>已知条件</dt><dd>检查员提交项目和整改内容；外部工单系统可用</dd></div><div><dt>发生动作</dt><dd>系统补齐 HOME2/TODO 和人员字段后提交</dd></div><div><dt>预期结果</dt><dd>外部系统出现一条整改 TODO</dd></div></dl></article></div></section><section class="scenario-chapter engineering-chapter"><h3>研发实现导航</h3><p class="chapter-intro">业务流程仍是主线；这里解释代码如何实现各步骤，以及数据、状态、配置、外部依赖和运行保障。</p><p class="engineering-summary">创建入口接收整改请求，服务层补齐人员与固定工单类型，随后由客户端调用外部工单系统；当前链路未发现本地事务或自动重试。</p><div class="engineering-topic-grid"><article class="engineering-topic"><header><span>confirmed</span><h4>data_lifecycle</h4></header><p>整改请求在入口接收后由服务层补齐，再作为外部创建请求发送。</p><ul class="business-list"><li><span>发布人、处理人和固定类型在服务层补齐</span></li><li><span>当前证据未显示本地持久化</span></li></ul></article><article class="engineering-topic"><header><span>confirmed</span><h4>state_lifecycle</h4></header><p>核心状态由外部待办是否成功创建决定。</p><ul class="business-list"><li><span>成功后外部待办存在</span></li><li><span>失败后保持未创建</span></li></ul></article><article class="engineering-topic"><header><span>confirmed</span><h4>runtime_safety</h4></header><p>调用失败会结束本次操作并记录错误，当前未发现自动重试。</p><ul class="business-list"><li><span>修改外部调用时需验证重复提交风险和失败返回</span></li></ul></article><article class="engineering-topic"><header><span>confirmed</span><h4>external_contracts</h4></header><p>外部系统只有返回有效创建结果时，本次业务才算成功。</p><ul class="business-list"><li><span>空结果或调用失败均进入失败终态</span></li></ul></article><article class="engineering-topic"><header><span>confirmed</span><h4>configuration</h4></header><p>项目订单类型和工单类型当前由源码固定为 HOME2/TODO。</p><ul class="business-list"><li><span>如果改为配置化，需要保持缺省行为并验证外部兼容性</span></li></ul></article><article class="engineering-topic"><header><span>source_unknown</span><h4>security_boundary</h4></header><p>当前代码范围不能确认哪些角色被授权创建整改工单。</p><ul class="business-list"><li><span>入口、服务、配置和注解已搜索</span></li></ul></article></div></section><section class="scenario-chapter engineering-chapter"><h3>改动影响与验证</h3><div class="matrix-grid"><article class="matrix-card"><dl><div><dt>改动目标</dt><dd>调整外部整改工单的类型选择规则</dd></div><div><dt>影响步骤</dt><dd>enrich；call-external</dd></div><div><dt>实现位置</dt><dd>WorkOrderService.create；外部工单创建客户端</dd></div><div><dt>数据与状态</dt><dd>外部请求中的项目订单类型和工单类型会变化；成功状态仍应由外部有效确认决定</dd></div><div><dt>下游风险</dt><dd>新类型可能进入错误处理队列；外部系统可能拒绝不兼容类型；重试或重复提交可能生成重复待办</dd></div><div><dt>验证目标</dt><dd>默认输入仍生成 HOME2/TODO；新条件选择预期类型；外部空结果和失败仍返回失败；重复提交行为被明确验证；错误日志包含可定位信息</dd></div></dl></article></div></section><section class="scenario-chapter"><h3>当前与历史变化</h3><ul class="business-list"><li><span>整改工单类型改为固定待办类型</span></li></ul></section><section class="scenario-chapter questions"><h3>未确认问题</h3><ul class="business-list"><li><span>哪些角色被授权创建整改工单？</span><small>当前追踪范围未发现明确授权规则。</small></li></ul></section><details class="implementation-evidence"><summary>实现证据</summary><p>源码路径和技术标识只用于核验与开发下探。</p><ul class="business-list"><li><span>控制器到外部工单客户端的完整当前源码链路。</span><small>src/WorkOrderController.java:10 WorkOrderController.create</small></li><li><span>项目订单类型固定为 HOME2，工单类型固定为 TODO。</span><small>src/WorkOrderService.java:50 WorkOrderService.create</small></li></ul></details></article></section>
+    <section class="band knowledge-topics" id="knowledge_topics"><header><div><span class="section-kicker">按问题下探</span><h2>专题查询</h2><p>当你需要横向查规则、计算、模块、历史或覆盖范围时再进入这里；它们不打断单个业务场景的主阅读线。</p></div></header><details><summary>规则与计算</summary><ul class="rule-list"><li class="rule-item"><strong>整改工单使用固定类型</strong><span>创建施工整改工单时使用固定的项目订单类型 HOME2 和工单类型 TODO。</span></li></ul><div class="deep-list"><p class="empty" data-empty-state="confirmed_empty">当前业务范围未发现独立计算或评分模型。</p></div></details><details><summary>端到端流程</summary><article class="deep-record" id="flow-FLOW-create-work-order"><header><span class="section-kicker">FLOW-create-work-order</span><h2>创建施工整改工单端到端流程</h2><p>将施工现场问题转化为外部工单系统中的可跟踪整改待办。</p></header><div class="flow-stages"><article class="flow-stage"><header><span>1</span><h3>receive-request</h3></header><dl class="stage-facts"><div><dt>输入</dt><dd>检查员提交的目标项目和整改内容。</dd></div><div><dt>处理</dt><dd>系统接收并校验整改请求。</dd></div><div><dt>成功输出</dt><dd>形成待创建的整改工单请求。</dd></div><div><dt>并发 / 幂等</dt><dd>未发现显式防重或并发控制。</dd></div><div><dt>可观测性</dt><dd>入口异常由应用错误日志记录。</dd></div></dl><div class="stage-grid"><section><h4>前置条件</h4><ul class="business-list"><li><span>目标项目和整改内容可用。</span></li></ul></section><section><h4>业务决策</h4><ul class="business-list"><li><span>只有具备目标项目和整改内容的请求才进入创建流程。</span></li></ul></section><section><h4>数据变化</h4><p class="empty">当前未记录。</p></section><section><h4>状态变化</h4><p class="empty">当前未记录。</p></section><section><h4>外部影响</h4><p class="empty">当前未记录。</p></section><section><h4>拒绝与失败</h4><ul class="business-list"><li><span>缺少目标项目或整改内容。</span></li><li><span>输入缺失导致创建不成立。</span></li></ul></section><section><h4>恢复</h4><p>修正输入后重新提交。</p></section></div></article><article class="flow-stage"><header><span>2</span><h3>create-external-work-order</h3></header><dl class="stage-facts"><div><dt>输入</dt><dd>已校验的整改工单请求。</dd></div><div><dt>处理</dt><dd>补齐固定业务类型和必要业务字段并调用外部系统。</dd></div><div><dt>成功输出</dt><dd>返回已创建的外部整改待办结果。</dd></div><div><dt>并发 / 幂等</dt><dd>当前证据未发现自动重试或去重。</dd></div><div><dt>可观测性</dt><dd>外部调用失败记录错误日志。</dd></div></dl><div class="stage-grid"><section><h4>前置条件</h4><ul class="business-list"><li><span>整改请求已通过入口校验。</span></li></ul></section><section><h4>业务决策</h4><ul class="business-list"><li><span>项目订单类型固定为 HOME2，工单类型固定为 TODO。</span></li></ul></section><section><h4>数据变化</h4><ul class="business-list"><li><span>补齐发布人、操作人和计划完成时间。</span></li></ul></section><section><h4>状态变化</h4><ul class="business-list"><li><span>外部系统生成整改待办。</span></li></ul></section><section><h4>外部影响</h4><ul class="business-list"><li><span>向外部工单系统提交待办创建请求。</span></li></ul></section><section><h4>拒绝与失败</h4><ul class="business-list"><li><span>外部系统未返回有效创建结果。</span></li><li><span>外部调用失败或返回空结果。</span></li></ul></section><section><h4>恢复</h4><p>调用方重新发起创建；未发现自动补偿。</p></section></div></article></div><div class="detail-grid"><section class="detail-section outcome"><h3>终态结果</h3><ul class="business-list"><li><span>施工问题成为外部工单系统中的 TODO 待办。</span></li></ul></section><section class="detail-section exception"><h3>失败与修复</h3><ul class="business-list"><li><span>外部系统未确认创建时，本次整改待办不成立。</span></li><li><span>未发现自动重试、补偿或人工修复入口，失败需要调用方重新发起。</span></li></ul></section></div></article></details><details><summary>模块与代码定位</summary><article class="deep-record" id="module-MOD-work-order"><header><span class="section-kicker">MOD-work-order</span><h2>整改工单创建模块</h2><p>把施工现场问题转化为可跟踪的整改待办。</p></header><section class="detail-section"><h3>控制与数据流</h3><p>检查员从 HTTP 入口提交整改信息，服务补齐固定业务类型并调用外部工单系统；外部结果决定本次创建成功或失败。</p></section><div class="stage-grid"><section><h4>关键实体</h4><ul class="business-list"><li><span>施工项目</span></li><li><span>整改工单</span></li><li><span>发布人</span></li><li><span>操作人</span></li></ul></section><section><h4>业务规则</h4><ul class="business-list"><li><span>创建整改工单时固定使用 HOME2 项目订单类型和 TODO 工单类型。</span></li></ul></section><section><h4>状态字段</h4><ul class="business-list"><li><span>外部工单创建结果</span></li></ul></section><section><h4>计算</h4><p class="empty">当前未记录。</p></section><section><h4>失败路径</h4><ul class="business-list"><li><span>外部工单系统返回空结果或调用失败时，本次创建失败并记录错误。</span></li></ul></section><section><h4>修复路径</h4><ul class="business-list"><li><span>反向与替代入口调查未发现自动补偿或人工修复入口。</span></li></ul></section></div><details class="implementation-evidence"><summary>模块源码范围</summary><ul class="business-list"><li><span>src/WorkOrderController.java</span></li><li><span>src/WorkOrderService.java</span></li><li><span>src/WorkOrderClient.java</span></li></ul></details></article></details><details><summary>业务演进时间线</summary><ul class="business-list"><li><span>整改工单类型改为固定待办类型</span></li></ul></details><details><summary>证据、未知与覆盖治理</summary><section class="project-progress"><h3>全仓业务沉淀进度：complete</h3><p>已完成 1/1 个模块。</p><p class="coverage-note">全仓模块已达到完成或有证据排除标准。</p><ul class="question-list"><li class="empty" data-empty-state="confirmed_empty">当前没有待执行模块。</li></ul></section><p class="coverage-note">已发现、已分类、已保留或已建立代码映射，只说明材料没有丢失；它们不等于业务已经被完整理解。优先查看“已达到场景可读标准”和“已完成端到端追踪”。</p><dl class="coverage"><div class="coverage-metric readiness"><dt>已达到场景可读标准</dt><dd>100%（1/1）</dd></div></dl><ul class="question-list"><li class="question-item"><strong>工单创建权限未知</strong><span>哪些角色被授权创建整改工单？</span><small>当前追踪范围未发现明确授权规则。</small></li><li class="empty" data-empty-state="confirmed_empty">当前已整理范围内未发现相互冲突的业务结论。</li></ul></details></section>
+    <noscript>
+      <section class="band">
+        <h2>业务场景索引</h2>
+        <ul><li><a href="#scenario-UC-create-work-order">创建施工整改工单</a></li></ul>
+        <p>当前页面的业务内容、场景详情和分析说明不依赖脚本；脚本仅用于本地搜索和定位增强。</p>
+      </section>
+    </noscript>
+  </div>
+</main>
+</div>
+<script id="business-knowledge-data" type="application/json">{"canonical_revision_sha256":"2928ec7358dba11ccab8d9214d8698657a0cfa27e7321fb0054625a02e86507c","snapshot":{"canonical_root":"/tmp/sample-repo","files":{"src/WorkOrderClient.java":{"sha256":"client-hash","size":100},"src/WorkOrderController.java":{"sha256":"source-hash","size":100},"src/WorkOrderService.java":{"sha256":"rule-hash","size":100}},"git":{"branch":"main","head_sha":"abc123","root_commit_shas":["root123"]},"repository_lineage_id":"REPO-sample-lineage","snapshot_id":"SNAP-sample","snapshot_sha256":"snapshot-sample","working_tree_dirty":false},"records":[{"id":"UC-create-work-order","kind":"use-case","title":"创建施工整改工单","summary":"工地检查员为目标项目创建整改待办，实际创建由外部工单系统完成。","aliases":[],"route":"#scenario-UC-create-work-order"}]}</script>
+<script>
+(function () {
+  var data = JSON.parse(document.getElementById("business-knowledge-data").textContent);
+  var input = document.getElementById("search");
+  var results = document.getElementById("search-results");
+  function normalize(value) { return String(value || "").toLowerCase(); }
+  function show(query) {
+    var needle = normalize(query).trim();
+    if (!needle) { results.className = "search-results"; results.innerHTML = ""; return; }
+    var matches = data.records.filter(function (item) {
+      return normalize([item.title, item.summary, item.kind, item.aliases.join(" ")].join(" ")).indexOf(needle) !== -1;
+    }).slice(0, 30);
+    results.innerHTML = matches.map(function (item) {
+      return '<a href="' + item.route + '"><strong>' + escapeHtml(item.title) + '</strong><span>' + escapeHtml(item.summary) + '</span></a>';
+    }).join("") || '<a href="#open_questions"><strong>没有直接结果</strong><span>查看待确认事项，或针对该问题继续调查。</span></a>';
+    results.className = "search-results visible";
+  }
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, function (char) {
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char];
+    });
+  }
+  input.addEventListener("input", function () { show(input.value); });
+  results.addEventListener("click", function () { results.className = "search-results"; });
+  function route() {
+    var hash = decodeURIComponent(location.hash || "");
+    if (hash.indexOf("#use-case/") === 0) {
+      var id = hash.slice("#use-case/".length);
+      var target = document.getElementById("use-case-" + id);
+      if (target) target.scrollIntoView({block:"start"});
+    }
+  }
+  window.addEventListener("hashchange", route);
+  route();
+})();
+</script>
+</body>
+</html>

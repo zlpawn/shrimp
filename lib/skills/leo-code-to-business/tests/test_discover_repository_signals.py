@@ -3,12 +3,14 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 from discovery import core
+from discovery import java_spring
 import discover_repository_signals
 import repository_snapshot
 
@@ -215,6 +217,119 @@ class DiscoverRepositorySignalsTests(unittest.TestCase):
         self.assertEqual(important["external_call"], "high")
         self.assertEqual(important["state_write"], "high")
         self.assertEqual(important["repair_entry"], "high")
+
+    def test_java_adapter_preserves_deep_flow_and_calculation_methods(self):
+        repo = self.fixtures / "multi-signal-java-repo"
+
+        result = discover_repository_signals.run_discovery(
+            repo,
+            repository_snapshot.capture_snapshot(repo),
+        )
+        by_symbol = {
+            item["source_location"]["symbol"]: item
+            for item in result["inventory"]
+            if item["kind"] in {
+                "business_process",
+                "calculation",
+                "callback_entry",
+                "state_transition",
+                "repair_entry",
+            }
+        }
+
+        self.assertEqual(
+            by_symbol["LinjingVideoProcessFeign.saveConcatResult"]["kind"],
+            "callback_entry",
+        )
+        self.assertEqual(
+            by_symbol["LinjingBusinessService.contactVideoByFolder"]["kind"],
+            "business_process",
+        )
+        self.assertEqual(
+            by_symbol["LinjingBusinessService.uploaded3dVideoRelate"]["kind"],
+            "business_process",
+        )
+        for symbol in [
+            "LinjingBusinessService.triggerCalculateScore",
+            "LinjingBusinessService.calculateAcceptanceScoreItem",
+            "LinjingBusinessService.recalculateTotalScore",
+            "LinjingBusinessService.calDrainageScore",
+            "DurationScoreCalculator.calculate",
+        ]:
+            self.assertEqual(by_symbol[symbol]["kind"], "calculation")
+            self.assertEqual(by_symbol[symbol]["structural_importance"], "high")
+        self.assertEqual(
+            by_symbol["LinjingBusinessService.updateTaskSuccess"]["kind"],
+            "state_transition",
+        )
+        self.assertEqual(
+            by_symbol["LinjingBusinessService.lowReplaceHigh"]["kind"],
+            "repair_entry",
+        )
+
+    def test_java_adapter_marks_observation_partial_when_high_value_surface_is_missed(self):
+        repo = Path(self.temp.name) / "missed-java-surface"
+        source = repo / "src" / "main" / "java" / "example" / "MissedScoreCalculator.java"
+        source.parent.mkdir(parents=True)
+        source.write_text(
+            """package example;
+
+public class MissedScoreCalculator {
+    public @Nullable Double calculate(Object module, Object context) {
+        return 0D;
+    }
+}
+""",
+            encoding="utf-8",
+        )
+
+        with mock.patch.object(java_spring, "_method_blocks", return_value=[]):
+            result = discover_repository_signals.run_discovery(
+                repo,
+                repository_snapshot.capture_snapshot(repo),
+            )
+
+        self.assertEqual(result["summary"]["status"], "partial")
+        observation = result["observations"][0]
+        self.assertEqual(observation["status"], "partial")
+        self.assertTrue(
+            any(
+                "MissedScoreCalculator.calculate" in item
+                for item in observation["unsupported_constructs"]
+            )
+        )
+
+    def test_callback_surface_audit_ignores_annotations_between_mapping_and_method(self):
+        repo = Path(self.temp.name) / "annotated-callback"
+        source = repo / "src" / "main" / "java" / "example" / "CallbackController.java"
+        source.parent.mkdir(parents=True)
+        source.write_text(
+            """package example;
+
+public class CallbackController {
+    @PostMapping("/device/result/callback")
+    @ApiOperation("接收处理结果")
+    public Boolean saveResult(Object result) {
+        return true;
+    }
+}
+""",
+            encoding="utf-8",
+        )
+
+        result = discover_repository_signals.run_discovery(
+            repo,
+            repository_snapshot.capture_snapshot(repo),
+        )
+
+        self.assertEqual(result["summary"]["status"], "passed")
+        callback = next(
+            item for item in result["inventory"] if item["kind"] == "callback_entry"
+        )
+        self.assertEqual(
+            callback["source_location"]["symbol"],
+            "CallbackController.saveResult",
+        )
 
     def test_node_adapter_prevents_false_empty_success(self):
         repo = self.fixtures / "node-typescript-repo"

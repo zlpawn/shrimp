@@ -1,6 +1,18 @@
 {
   "scenario": "work-order",
   "minimum_confirmed_use_cases": 1,
+  "scenario_depth_requirements": {
+    "use_cases": [
+      {
+        "id": "UC-create-work-order",
+        "minimum_stages": 2,
+        "minimum_atomic_steps": 5,
+        "require_branch_matrix": true,
+        "require_failure_recovery": true,
+        "require_worked_examples": true
+      }
+    ]
+  },
   "required_evidence": [
     {
       "id": "controller-entry",

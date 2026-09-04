@@ -11,6 +11,12 @@ from typing import Any
 
 V1_SCHEMA_VERSION = "1.0"
 V2_SCHEMA_VERSION = "2.0"
+V3_SCHEMA_VERSION = "3.0"
+V31_SCHEMA_VERSION = "3.1"
+V32_SCHEMA_VERSION = "3.2"
+DEEP_SCHEMA_VERSIONS = frozenset(
+    {V3_SCHEMA_VERSION, V31_SCHEMA_VERSION, V32_SCHEMA_VERSION}
+)
 
 V1_CANONICAL_FILES = (
     "inventory.jsonl",
@@ -61,6 +67,24 @@ V2_CANONICAL_FILE_KINDS = {
     "business-evolution-events.jsonl": "jsonl",
     "lineage-links.jsonl": "jsonl",
     "change-impact.json": "semantic_json",
+}
+
+V3_CANONICAL_FILE_KINDS = {
+    **V2_CANONICAL_FILE_KINDS,
+    "module-dossiers.jsonl": "jsonl",
+    "end-to-end-flows.jsonl": "jsonl",
+    "calculation-models.jsonl": "jsonl",
+    "code-knowledge-matrix.jsonl": "jsonl",
+}
+
+V31_CANONICAL_FILE_KINDS = {
+    **V3_CANONICAL_FILE_KINDS,
+    "engineering-views.jsonl": "jsonl",
+}
+
+V32_CANONICAL_FILE_KINDS = {
+    **V31_CANONICAL_FILE_KINDS,
+    "project-progress.json": "json",
 }
 
 V2_HASH_EXCLUDED_FILES = frozenset(

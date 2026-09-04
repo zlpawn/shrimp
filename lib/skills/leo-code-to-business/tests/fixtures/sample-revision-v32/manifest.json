@@ -1,0 +1,65 @@
+{
+  "aggregate_status": "passed",
+  "canonical_revision_sha256": "2928ec7358dba11ccab8d9214d8698657a0cfa27e7321fb0054625a02e86507c",
+  "coverage_status": "passed",
+  "current_coverage_status": "passed",
+  "history_coverage_status": "passed",
+  "mode": "build",
+  "project_completion_status": "complete",
+  "projection_hashes": {
+    "ai": {
+      "canonical_sha256": "2928ec7358dba11ccab8d9214d8698657a0cfa27e7321fb0054625a02e86507c",
+      "path": "ai-context.md",
+      "sha256": "d5b2d3a67530b4dd6f9e9538919cbb9e5007d580a3c6f180f4fc75a10373e129"
+    },
+    "html": {
+      "canonical_sha256": "2928ec7358dba11ccab8d9214d8698657a0cfa27e7321fb0054625a02e86507c",
+      "path": "site/index.html",
+      "sha256": "0cd7331511caa0c2d89b8784fb6f20b773966b2241ceab68c7145d85fffaa0f9"
+    },
+    "view_model": {
+      "canonical_sha256": "2928ec7358dba11ccab8d9214d8698657a0cfa27e7321fb0054625a02e86507c",
+      "path": "site-view-model.json",
+      "sha256": "f46afd8bf0dc2184d353b3cf5a9a7a2678bcf65432f2e57cb79ed57918dd9390"
+    }
+  },
+  "provider_observations": [
+    {
+      "adapter_id": "java-spring",
+      "adapter_version": "2.0",
+      "status": "completed"
+    }
+  ],
+  "repository_lineage_id": "REPO-sample-lineage",
+  "repository_snapshot": {
+    "canonical_root": "/tmp/sample-repo",
+    "files": {
+      "src/WorkOrderClient.java": {
+        "sha256": "client-hash",
+        "size": 100
+      },
+      "src/WorkOrderController.java": {
+        "sha256": "source-hash",
+        "size": 100
+      },
+      "src/WorkOrderService.java": {
+        "sha256": "rule-hash",
+        "size": 100
+      }
+    },
+    "git": {
+      "branch": "main",
+      "head_sha": "abc123",
+      "root_commit_shas": [
+        "root123"
+      ]
+    },
+    "repository_lineage_id": "REPO-sample-lineage",
+    "snapshot_id": "SNAP-sample",
+    "snapshot_sha256": "snapshot-sample",
+    "working_tree_dirty": false
+  },
+  "run_id": "RUN-v32-sample",
+  "schema_version": "3.2",
+  "status": "passed"
+}

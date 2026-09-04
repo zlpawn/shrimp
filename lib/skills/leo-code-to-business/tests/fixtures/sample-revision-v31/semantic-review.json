@@ -1,0 +1,17 @@
+{
+  "canonical_revision_sha256": "11f12bee6c3afea3ab6757d5cff2866e3e23ce874c233647df688877e8360363",
+  "review_protocol_version": "2.0",
+  "reviewed_at": "2026-08-14T00:00:00Z",
+  "reviewer_mode": "independent",
+  "scores": {
+    "business_framing": 2,
+    "effects": 2,
+    "evidence": 2,
+    "failure_and_recovery": 2,
+    "main_flow": 2,
+    "rules_and_decisions": 2,
+    "unknown_discipline": 2,
+    "variants": 2
+  },
+  "total_score": 16
+}

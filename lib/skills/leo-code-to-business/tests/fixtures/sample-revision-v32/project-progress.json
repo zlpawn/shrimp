@@ -1,0 +1,30 @@
+{
+  "schema_version": "3.2",
+  "project_completion_status": "complete",
+  "active_module_id": null,
+  "next_module_ids": [],
+  "modules": [
+    {
+      "id": "MODQ-work-order",
+      "title": "整改工单创建",
+      "priority": "high",
+      "status": "complete",
+      "signal_ids": [
+        "SIG-2fb9ee7ec9e4ade92075",
+        "SIG-058d67d9e679a266e064",
+        "SIG-f5f099dcb958935b14ee"
+      ],
+      "candidate_ids": [
+        "UCC-9f41ce6b36a50a7426fa",
+        "UCC-a7a9f2e9167b4a6fa49e"
+      ],
+      "module_dossier_id": "MOD-work-order",
+      "flow_ids": ["FLOW-create-work-order"],
+      "use_case_ids": ["UC-create-work-order"],
+      "engineering_view_ids": ["ENG-create-work-order"],
+      "history_status": "complete",
+      "gap_ids": ["UNK-work-order-permission"],
+      "next_action": null
+    }
+  ]
+}

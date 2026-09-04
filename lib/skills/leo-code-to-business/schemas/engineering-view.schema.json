@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "engineering-view.schema.json",
+  "title": "Scenario Engineering View",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "use_case_id",
+    "implementation_summary",
+    "step_mappings",
+    "engineering_topics",
+    "change_guides",
+    "evidence_ids"
+  ],
+  "properties": {
+    "id": {"type": "string", "pattern": "^ENG-"},
+    "use_case_id": {"type": "string", "minLength": 1},
+    "implementation_summary": {"type": "string", "minLength": 1},
+    "step_mappings": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "step_id",
+          "implementation_units",
+          "reads",
+          "writes",
+          "state_behavior",
+          "external_interactions",
+          "configuration",
+          "runtime_controls",
+          "evidence_ids"
+        ],
+        "properties": {
+          "step_id": {"type": "string", "minLength": 1},
+          "implementation_units": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind", "name", "locator", "role", "evidence_ids"],
+              "properties": {
+                "kind": {"type": "string", "minLength": 1},
+                "name": {"type": "string", "minLength": 1},
+                "locator": {"type": "string", "minLength": 1},
+                "role": {"type": "string", "minLength": 1},
+                "evidence_ids": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+              }
+            }
+          },
+          "reads": {"type": "array", "items": {"type": "string"}},
+          "writes": {"type": "array", "items": {"type": "string"}},
+          "state_behavior": {"type": "array", "items": {"type": "string"}},
+          "external_interactions": {"type": "array", "items": {"type": "string"}},
+          "configuration": {"type": "array", "items": {"type": "string"}},
+          "runtime_controls": {"type": "array", "items": {"type": "string"}},
+          "evidence_ids": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+        }
+      }
+    },
+    "engineering_topics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["topic_id", "kind", "status", "summary", "details", "evidence_ids", "unknown_ids"],
+        "properties": {
+          "topic_id": {"type": "string", "minLength": 1},
+          "kind": {"type": "string", "minLength": 1},
+          "status": {"enum": ["confirmed", "not_applicable", "source_unknown"]},
+          "summary": {"type": "string", "minLength": 1},
+          "details": {"type": "array", "items": {"type": "string"}},
+          "evidence_ids": {"type": "array", "items": {"type": "string", "minLength": 1}},
+          "unknown_ids": {"type": "array", "items": {"type": "string", "minLength": 1}}
+        }
+      }
+    },
+    "change_guides": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["guide_id", "change_goal", "affected_step_ids", "implementation_units", "data_and_state_impacts", "downstream_risks", "verification_targets", "evidence_ids"],
+        "properties": {
+          "guide_id": {"type": "string", "minLength": 1},
+          "change_goal": {"type": "string", "minLength": 1},
+          "affected_step_ids": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+          "implementation_units": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+          "data_and_state_impacts": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+          "downstream_risks": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+          "verification_targets": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+          "evidence_ids": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+        }
+      }
+    },
+    "evidence_ids": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+  }
+}

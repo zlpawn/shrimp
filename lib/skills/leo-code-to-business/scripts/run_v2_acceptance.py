@@ -41,6 +41,32 @@ def _canonical_result(value: dict[str, Any]) -> str:
     return json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
 
 
+def extended_java_snapshot_fingerprint(snapshot: dict[str, Any]) -> str:
+    payload = {
+        "schema_version": snapshot.get("schema_version"),
+        "git": snapshot.get("git", {}),
+        "working_tree_dirty": snapshot.get("working_tree_dirty", False),
+        "files": {
+            path: {
+                "sha256": metadata.get("sha256"),
+                "size": metadata.get("size"),
+            }
+            for path, metadata in sorted(snapshot.get("files", {}).items())
+        },
+        "exclusions": snapshot.get("exclusions", []),
+        "diagnostics": snapshot.get("diagnostics", []),
+    }
+    digest = hashlib.sha256(
+        json.dumps(
+            payload,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    return f"SNAP-{digest[:16]}"
+
+
 def run_real_git_fixture(skill_dir: Path, output_dir: Path) -> dict[str, Any]:
     bundle = Path(skill_dir) / "tests" / "fixtures" / "real-git-history.bundle"
     if not bundle.is_file():
@@ -115,6 +141,46 @@ def run_real_git_fixture(skill_dir: Path, output_dir: Path) -> dict[str, Any]:
         }
 
 
+def extended_java_surface_checks(
+    inventory: list[dict[str, Any]],
+    *,
+    has_history_sample: bool,
+) -> dict[str, bool]:
+    names = [str(item.get("name", "")).casefold() for item in inventory]
+    symbols = [
+        str(item.get("source_location", {}).get("symbol", "")).casefold()
+        for item in inventory
+    ]
+    paths = [str(item.get("source_location", {}).get("path", "")) for item in inventory]
+    searchable = [f"{name} {symbol}" for name, symbol in zip(names, symbols)]
+    calculators = {
+        symbol.rsplit(".", 1)[0]
+        for item, symbol in zip(inventory, symbols)
+        if item.get("kind") == "calculation"
+        and symbol.endswith("scorecalculator.calculate")
+    }
+    return {
+        "work_order_creation": any("/construction/site/work-order/add" in value for value in searchable),
+        "video_binding_family": any("/app/video/relate" in value for value in searchable),
+        "reverse_writer": any("relink" in value or "backdoor" in path.casefold() for value, path in zip(searchable, paths)),
+        "repair_path": any(item.get("kind") == "repair_entry" for item in inventory),
+        "video_concat_entry": any("/3d/app/device/upload/video" in value for value in searchable),
+        "video_concat_callback": any("/linjing/video/concat/callback" in value for value in searchable),
+        "video_concat_process": any("contactvideobyfolder" in value for value in searchable),
+        "video_concat_retry": any("retrycontactvideobyfolder" in value for value in searchable),
+        "video_binding_uploaded_3d": any("uploaded3dvideorelate" in value for value in searchable),
+        "linjing_scoring_orchestrator": any("triggercalculatescore" in value for value in searchable),
+        "linjing_scoring_calculators": {
+            "speechscorecalculator",
+            "toolscorecalculator",
+            "customerscorecalculator",
+            "durationscorecalculator",
+        }.issubset(calculators),
+        "linjing_score_recalculation": any("recalculatetotalscore" in value for value in searchable),
+        "stratified_history_sample": has_history_sample,
+    }
+
+
 def run_extended_java(repo_path: Path, commit_sha: str, output_dir: Path) -> dict[str, Any]:
     repo = Path(repo_path)
     output = Path(output_dir)
@@ -159,21 +225,16 @@ def run_extended_java(repo_path: Path, commit_sha: str, output_dir: Path) -> dic
         sample_commits = [
             commit for commit in commits if commit["initial_classification"] == "deep_analysis_candidate"
         ][:12]
-        names = [str(item.get("name", "")).casefold() for item in inventory]
-        paths = [str(item.get("source_location", {}).get("path", "")) for item in inventory]
-        checks = {
-            "work_order_creation": any("/construction/site/work-order/add" in name for name in names),
-            "video_binding_family": any("/app/video/relate" in name for name in names),
-            "reverse_writer": any("relink" in name or "backdoor" in path.casefold() for name, path in zip(names, paths)),
-            "repair_path": any(item.get("kind") == "repair_entry" for item in inventory),
-            "stratified_history_sample": bool(sample_commits),
-        }
+        checks = extended_java_surface_checks(
+            inventory,
+            has_history_sample=bool(sample_commits),
+        )
         errors = [name for name, passed in checks.items() if not passed]
         result = {
             "status": "passed" if not errors else "failed",
             "exit_code": 0 if not errors else 1,
             "commit": commit_sha,
-            "snapshot_id": snapshot["snapshot_id"],
+            "snapshot_id": extended_java_snapshot_fingerprint(snapshot),
             "language_adapter_coverage": discovery["summary"]["language_adapter_coverage"],
             "signal_count": len(inventory),
             "checks": checks,

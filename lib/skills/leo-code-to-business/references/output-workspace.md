@@ -10,7 +10,7 @@ stable way to find the latest published revision.
 For a normal writable primary repository, the default output root is:
 
 ```text
-<repository-root>/_leo_business/
+<repository-root>/.leo_business/
 ```
 
 An explicitly requested output root takes precedence. It must be an absolute path.
@@ -32,7 +32,7 @@ Resolve the path deterministically with `resolve_workspace_root(...)` from
 ## Directory Layout
 
 ```text
-_leo_business/
+.leo_business/
 ├── current.json
 ├── runs/
 │   └── <run-id>/
@@ -51,6 +51,10 @@ _leo_business/
         ├── discovery-observations.jsonl
         ├── use-case-candidates.jsonl
         ├── legacy-signal-aliases.jsonl
+        ├── module-dossiers.jsonl
+        ├── end-to-end-flows.jsonl
+        ├── calculation-models.jsonl
+        ├── code-knowledge-matrix.jsonl
         ├── capabilities.json
         ├── actors.json
         ├── use-case-families.json
@@ -101,7 +105,7 @@ from different canonical hashes.
 ## Snapshot Isolation
 
 The output root must not enter the source evidence snapshot. The default
-`_leo_business/**` exclusion is mandatory. When an explicit workspace is located inside the
+`.leo_business/**` exclusion is mandatory. When an explicit workspace is located inside the
 repository, add its repository-relative path to snapshot exclusions before freezing scope.
 
 Do not publish if the output location changed after the snapshot was frozen. Record the resolved

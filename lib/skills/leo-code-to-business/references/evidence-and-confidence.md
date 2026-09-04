@@ -45,6 +45,14 @@ source_verified
 
 The observation states what the source proves, not what the model wishes it meant.
 
+For current-source evidence, prefer the complete frozen file SHA-256 from
+`repository_snapshot.files[path].sha256`. A line-fragment SHA-256 is allowed only when the canonical
+repository root remains accessible and the Guard can recompute the exact inclusive line range.
+Every verified path must exist in the snapshot file map, and every verified hash must match either
+the frozen full-file hash or that recomputed fragment. Schema-3 fixtures or offline migration input
+that predate the file map may remain readable for compatibility; a new schema-3 build must capture
+`repository_snapshot.files` before claiming E3.
+
 ## Documents and History
 
 Documents are `document_claim`; old commits are `historical`. They can explain intent or evolution
@@ -79,6 +87,16 @@ and rubric, not expected answers or source access. Review hashes must match the 
 For `main_flow`, the reviewer must not substitute implementation order, identifiers, storage
 writes, middleware, or field inventories for participant action, business stages, decisions, and
 visible outcomes. A flow that requires source-code knowledge to interpret scores at most 1.
+
+For schema v3, also run the closed-book scenario protocol. The reviewer receives the published
+scenario narrative, related canonical records, and frozen questions, but not the producer's notes,
+expected answer, benchmark fixture, or source repository. The producer cannot satisfy this gate by
+self-scoring. If an answer fails, only then open current source to classify the cause as knowledge
+omission, source unknown, or conflict.
+
+Historical evidence keeps behavior and reason separate. Before/after source facts may confirm when
+a rule appeared and how previous/current behavior differs. A design reason remains unknown unless
+independent evidence supports it; commit text alone is never an `已确认的设计原因`.
 
 ## Freshness
 

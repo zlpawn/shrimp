@@ -1,0 +1,64 @@
+{
+  "aggregate_status": "passed",
+  "canonical_revision_sha256": "39732df5a530defa30f90d9eec3596870f6db9691a18ebb4c0edb47a76f08cc5",
+  "coverage_status": "passed",
+  "current_coverage_status": "passed",
+  "history_coverage_status": "passed",
+  "mode": "build",
+  "projection_hashes": {
+    "ai": {
+      "canonical_sha256": "39732df5a530defa30f90d9eec3596870f6db9691a18ebb4c0edb47a76f08cc5",
+      "path": "ai-context.md",
+      "sha256": "b5c509f0cc25e0829de22a78f97788e693722044b8ecc87f6396eff52a0cc50f"
+    },
+    "html": {
+      "canonical_sha256": "39732df5a530defa30f90d9eec3596870f6db9691a18ebb4c0edb47a76f08cc5",
+      "path": "site/index.html",
+      "sha256": "8d09f81a76f2223290255995d2bb58144541b580c9607b0ac670e7dabf563920"
+    },
+    "view_model": {
+      "canonical_sha256": "39732df5a530defa30f90d9eec3596870f6db9691a18ebb4c0edb47a76f08cc5",
+      "path": "site-view-model.json",
+      "sha256": "fa12f957a94b4569dd2137e84c510465f7dd8d1b7990d9432cf4eee4830b31da"
+    }
+  },
+  "provider_observations": [
+    {
+      "adapter_id": "java-spring",
+      "adapter_version": "2.0",
+      "status": "completed"
+    }
+  ],
+  "repository_lineage_id": "REPO-sample-lineage",
+  "repository_snapshot": {
+    "canonical_root": "/tmp/sample-repo",
+    "files": {
+      "src/WorkOrderClient.java": {
+        "sha256": "client-hash",
+        "size": 100
+      },
+      "src/WorkOrderController.java": {
+        "sha256": "source-hash",
+        "size": 100
+      },
+      "src/WorkOrderService.java": {
+        "sha256": "rule-hash",
+        "size": 100
+      }
+    },
+    "git": {
+      "branch": "main",
+      "head_sha": "abc123",
+      "root_commit_shas": [
+        "root123"
+      ]
+    },
+    "repository_lineage_id": "REPO-sample-lineage",
+    "snapshot_id": "SNAP-sample",
+    "snapshot_sha256": "snapshot-sample",
+    "working_tree_dirty": false
+  },
+  "run_id": "RUN-v3-sample",
+  "schema_version": "3.0",
+  "status": "passed"
+}

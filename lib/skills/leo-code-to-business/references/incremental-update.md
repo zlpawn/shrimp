@@ -58,6 +58,11 @@ Reanalysis may restore a claim only with evidence from the new frozen snapshot a
 8. Recalculate coverage and run a fresh semantic review.
 9. Publish a new immutable revision and atomically replace `current.json`.
 
+For schema 3.2, compare changed/new signals with `project-progress.json`. Reopen an affected module
+or add a new one before publication. A previously complete project becomes `in_progress`, the new
+module enters `next_module_ids`, and work continues after a partial checkpoint until it reaches the
+same dossier, flow, scenario, engineering, and requested-history standard.
+
 Rerun applicable discovery adapters on the new snapshot before resolving candidate changes. Stable
 candidate IDs derive from repository lineage and seed signal; additional provenance does not create
 a new candidate. Recheck candidate conservation, family closure, reverse writers, omission audit,

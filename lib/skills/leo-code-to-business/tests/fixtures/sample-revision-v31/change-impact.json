@@ -1,0 +1,1 @@
+{"schema_version": "3.1","semantic_inputs":{"changed_semantic_ids":["BR-create-work-order-type"]},"validation_results":{"affected_node_ids":["UC-create-work-order"],"invalidated_node_ids":[]}}

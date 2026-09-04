@@ -22,7 +22,7 @@ import business_contract as contract
 SCHEMA_VERSION = "1.0"
 DEFAULT_EXCLUSIONS = [
     ".git/**",
-    "_leo_business/**",
+    ".leo_business/**",
 ]
 
 

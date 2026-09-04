@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "project-progress.schema.json",
+  "title": "Repository-wide Business Knowledge Progress",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "project_completion_status", "active_module_id", "next_module_ids", "modules"],
+  "properties": {
+    "schema_version": {"const": "3.2"},
+    "project_completion_status": {"enum": ["complete", "in_progress", "blocked"]},
+    "active_module_id": {"type": ["string", "null"]},
+    "next_module_ids": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "modules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "priority", "status", "signal_ids", "candidate_ids", "module_dossier_id", "flow_ids", "use_case_ids", "engineering_view_ids", "history_status", "gap_ids", "next_action"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^MODQ-"},
+          "title": {"type": "string", "minLength": 1},
+          "priority": {"enum": ["critical", "high", "normal", "low"]},
+          "status": {"enum": ["pending", "in_progress", "complete", "excluded", "blocked"]},
+          "signal_ids": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+          "candidate_ids": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+          "module_dossier_id": {"type": ["string", "null"]},
+          "flow_ids": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+          "use_case_ids": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+          "engineering_view_ids": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+          "history_status": {"enum": ["not_requested", "pending", "partial", "complete", "blocked"]},
+          "gap_ids": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+          "next_action": {"type": ["string", "null"]}
+        }
+      }
+    }
+  }
+}

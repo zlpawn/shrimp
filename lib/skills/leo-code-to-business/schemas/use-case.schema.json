@@ -19,6 +19,115 @@
     "failure_paths": {"type": "array"},
     "compensation_paths": {"type": "array"},
     "permissions": {"type": "array"},
-    "observability": {"type": "array"}
+    "observability": {"type": "array"},
+    "scenario_narrative": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["business_context", "starting_state", "stages", "branch_matrix", "failure_recovery_matrix", "variants", "worked_examples", "history_event_ids", "open_question_ids"],
+      "properties": {
+        "business_context": {"type": "string", "minLength": 1},
+        "starting_state": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "stages": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["stage_id", "title", "business_purpose", "steps"],
+            "properties": {
+              "stage_id": {"type": "string", "minLength": 1},
+              "title": {"type": "string", "minLength": 1},
+              "business_purpose": {"type": "string", "minLength": 1},
+              "steps": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["step_id", "actor_or_event", "business_action", "business_result", "inputs", "decision_basis", "data_changes", "state_changes", "external_effects", "evidence_ids"],
+                  "properties": {
+                    "step_id": {"type": "string", "minLength": 1},
+                    "actor_or_event": {"type": "string", "minLength": 1},
+                    "business_action": {"type": "string", "minLength": 1},
+                    "business_result": {"type": "string", "minLength": 1},
+                    "inputs": {"type": "array", "items": {"type": "string"}},
+                    "decision_basis": {"type": "array", "items": {"type": "string"}},
+                    "data_changes": {"type": "array", "items": {"type": "string"}},
+                    "state_changes": {"type": "array", "items": {"type": "string"}},
+                    "external_effects": {"type": "array", "items": {"type": "string"}},
+                    "evidence_ids": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+                  }
+                }
+              }
+            }
+          }
+        },
+        "branch_matrix": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["condition", "decision_basis", "route", "business_result", "evidence_ids"],
+            "properties": {
+              "condition": {"type": "string", "minLength": 1},
+              "decision_basis": {"type": "string", "minLength": 1},
+              "route": {"type": "string", "minLength": 1},
+              "business_result": {"type": "string", "minLength": 1},
+              "evidence_ids": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+            }
+          }
+        },
+        "failure_recovery_matrix": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["failure_point", "business_impact", "stopped_state", "automatic_recovery", "manual_repair", "degradation", "evidence_ids"],
+            "properties": {
+              "failure_point": {"type": "string", "minLength": 1},
+              "business_impact": {"type": "string", "minLength": 1},
+              "stopped_state": {"type": "string", "minLength": 1},
+              "automatic_recovery": {"type": "string", "minLength": 1},
+              "manual_repair": {"type": "string", "minLength": 1},
+              "degradation": {"type": "string", "minLength": 1},
+              "evidence_ids": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+            }
+          }
+        },
+        "variants": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "difference", "evidence_ids"],
+            "properties": {
+              "name": {"type": "string", "minLength": 1},
+              "difference": {"type": "string", "minLength": 1},
+              "evidence_ids": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+            }
+          }
+        },
+        "worked_examples": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["title", "given", "when", "then", "evidence_ids"],
+            "properties": {
+              "title": {"type": "string", "minLength": 1},
+              "given": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+              "when": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+              "then": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+              "evidence_ids": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+            }
+          }
+        },
+        "history_event_ids": {"type": "array", "items": {"type": "string"}},
+        "open_question_ids": {"type": "array", "items": {"type": "string"}}
+      }
+    }
   }
 }

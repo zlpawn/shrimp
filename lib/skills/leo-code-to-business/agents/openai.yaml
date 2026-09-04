@@ -1,7 +1,7 @@
 interface:
   display_name: "Leo 代码转业务知识"
-  short_description: "从当前代码还原可追溯业务知识，并生成 AI 与离线 HTML 知识库"
-  default_prompt: "Use $leo-code-to-business to reconstruct the current repository's business knowledge from source evidence and publish both AI-readable artifacts and a human-readable offline HTML site."
+  short_description: "从当前代码还原产品可读、研发可下钻、AI 可检索的业务知识"
+  default_prompt: "Use $leo-code-to-business to reconstruct the current repository's business behavior from source evidence, align every core business step with its implementation and change impact, and publish AI-readable plus offline HTML knowledge."
 
 policy:
   allow_implicit_invocation: true

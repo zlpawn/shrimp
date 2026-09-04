@@ -18,7 +18,7 @@ EXCLUDED_PARTS = {
     ".next",
     ".nuxt",
     ".git",
-    "_leo_business",
+    ".leo_business",
 }
 ROUTE_PATTERN = re.compile(
     r"\b(?P<receiver>app|router|server)\.(?P<method>get|post|put|patch|delete|all)"

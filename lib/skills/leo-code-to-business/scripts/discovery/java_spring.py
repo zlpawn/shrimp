@@ -11,8 +11,8 @@ from discovery.core import AdapterResult, DiscoveryContext, RawFinding, Rejected
 
 METHOD_PATTERN = re.compile(
     r"(?P<annotations>(?:\s*@[^\n]+\n)*)"
-    r"\s*(?:(?:public|protected|private|static|final|synchronized|abstract|default)\s+)+"
-    r"[\w<>,.?\[\]\s]+\s+(?P<name>\w+)\s*\([^)]*\)\s*(?:throws\s+[^\{;]+)?(?P<end>[\{;])",
+    r"\s*(?:(?:public|protected|private|static|final|synchronized|abstract|default)\s+)*"
+    r"[\w<>,.?\[\]\s]+\s+(?P<name>\w+)\s*\((?s:.*?)\)\s*(?:throws\s+[^\{;]+)?(?P<end>[\{;])",
     re.MULTILINE,
 )
 CLASS_PATTERN = re.compile(
@@ -29,6 +29,15 @@ SQL_WRITE_PATTERN = re.compile(r"\b(?:update|insert\s+into|delete\s+from|merge\s
 CALL_PATTERN = re.compile(r"\b(?P<receiver>\w+)\.(?P<method>\w+)\s*\(")
 TERMINAL_STATE_PATTERN = re.compile(
     r"\b(?:CANCELLED|CANCELED|CLOSED|REJECTED|FAILED|COMPLETED|DONE|REFUNDED|APPROVED)\b"
+)
+CALCULATION_METHOD_PATTERN = re.compile(
+    r"(?:^calculate$|calculate.*score|recalculate.*score|cal.*score|trigger.*score)", re.I
+)
+BUSINESS_PROCESS_METHOD_PATTERN = re.compile(
+    r"(?:contactVideoByFolder|uploaded.*VideoRelate|relate.*Video)", re.I
+)
+STATE_TRANSITION_METHOD_PATTERN = re.compile(
+    r"(?:updateTask(?:Success|Failure|Result)|completeTask|failTask)", re.I
 )
 
 
@@ -98,7 +107,7 @@ def _location(path: str, symbol: str, content: str, start: int, body: str = "") 
 
 class JavaSpringAdapter:
     adapter_id = "java-spring"
-    adapter_version = "2.0"
+    adapter_version = "3.0"
     claimed_languages = {"java"}
     claimed_frameworks = {"spring", "spring-mvc", "spring-events", "mybatis", "feign"}
     supported_signal_kinds = {
@@ -111,6 +120,10 @@ class JavaSpringAdapter:
         "external_call",
         "event_producer",
         "repair_entry",
+        "business_process",
+        "calculation",
+        "callback_entry",
+        "state_transition",
     }
 
     def discover(self, context: DiscoveryContext) -> AdapterResult:
@@ -145,8 +158,13 @@ class JavaSpringAdapter:
                 if mapping:
                     http_method, method_path = mapping
                     route = (class_prefix.rstrip("/") + method_path) or "/"
-                    kind = "external_call" if is_feign else "http_entry"
-                    signal_class = "external_effect_anchor" if is_feign else "trigger_entry"
+                    is_callback = "/callback" in route.lower() or "callback" in method.lower()
+                    kind = "callback_entry" if is_callback else ("external_call" if is_feign else "http_entry")
+                    signal_class = (
+                        "trigger_entry"
+                        if is_callback or not is_feign
+                        else "external_effect_anchor"
+                    )
                     findings.append(
                         RawFinding(
                             signal_class=signal_class,
@@ -155,8 +173,12 @@ class JavaSpringAdapter:
                             name=f"{http_method} {route}",
                             source_location=location,
                             framework_identity=f"{http_method} {route}",
-                            structural_importance="high" if is_feign else "normal",
-                            classification="external_integration" if is_feign else "unresolved",
+                            structural_importance="high" if is_callback or is_feign else "normal",
+                            classification=(
+                                "business"
+                                if is_callback
+                                else ("external_integration" if is_feign else "unresolved")
+                            ),
                         )
                     )
                 elif re.search(r"@\w+Mapping\b", annotations):
@@ -204,6 +226,12 @@ class JavaSpringAdapter:
                         )
                     )
 
+                semantic_finding = self._semantic_method_finding(
+                    relative, class_name, method, symbol, location
+                )
+                if semantic_finding is not None:
+                    findings.append(semantic_finding)
+
                 findings.extend(self._body_findings(relative, symbol, content, method_match.start(), body))
 
             if SQL_WRITE_PATTERN.search(content) and ("@Update" in content or "@Insert" in content or "@Delete" in content):
@@ -222,6 +250,14 @@ class JavaSpringAdapter:
                         )
                     )
 
+            self._audit_high_value_surfaces(
+                relative,
+                content,
+                class_name,
+                findings,
+                unsupported,
+            )
+
         findings.extend(self._xml_sql_findings(context))
         return AdapterResult(
             findings=findings,
@@ -232,8 +268,80 @@ class JavaSpringAdapter:
         )
 
     @staticmethod
+    def _audit_high_value_surfaces(
+        relative: str,
+        content: str,
+        class_name: str,
+        findings: list[RawFinding],
+        unsupported: set[str],
+    ) -> None:
+        found_symbols_by_kind: dict[str, set[str]] = {}
+        for finding in findings:
+            symbol = str(finding.source_location.get("symbol", ""))
+            if str(finding.source_location.get("path", "")) != relative:
+                continue
+            found_symbols_by_kind.setdefault(finding.kind, set()).add(symbol)
+
+        expected: list[tuple[str, str]] = []
+        if class_name.endswith("ScoreCalculator") and re.search(r"\bcalculate\s*\(", content):
+            expected.append(("calculation", f"{class_name}.calculate"))
+        for mapping in MAPPING_PATTERN.finditer(content):
+            annotation_text = mapping.group(0)
+            path = _path_from_mapping(annotation_text)
+            if path and "/callback" in path[1].lower():
+                following = content[mapping.start() :]
+                method = METHOD_PATTERN.search(following)
+                if method:
+                    expected.append(("callback_entry", f"{class_name}.{method.group('name')}"))
+
+        for kind, symbol in expected:
+            if symbol not in found_symbols_by_kind.get(kind, set()):
+                unsupported.add(
+                    f"high-value {kind} surface was not parsed: {relative}:{symbol}"
+                )
+
+    @staticmethod
     def _is_repair(symbol: str, body: str) -> bool:
-        return bool(re.search(r"repair|retry|reconcile|compensat|redo|relink", symbol + " " + body, re.I))
+        return bool(
+            re.search(
+                r"repair|retry|reconcile|compensat|redo|relink|replace|fallback|recover|restore",
+                symbol + " " + body,
+                re.I,
+            )
+        )
+
+    @staticmethod
+    def _semantic_method_finding(
+        relative: str,
+        class_name: str,
+        method: str,
+        symbol: str,
+        location: dict,
+    ) -> RawFinding | None:
+        if class_name.endswith("ScoreCalculator") and method == "calculate":
+            kind = "calculation"
+            signal_class = "calculation_anchor"
+        elif CALCULATION_METHOD_PATTERN.search(method):
+            kind = "calculation"
+            signal_class = "calculation_anchor"
+        elif STATE_TRANSITION_METHOD_PATTERN.search(method):
+            kind = "state_transition"
+            signal_class = "state_anchor"
+        elif BUSINESS_PROCESS_METHOD_PATTERN.search(method):
+            kind = "business_process"
+            signal_class = "process_anchor"
+        else:
+            return None
+        return RawFinding(
+            signal_class=signal_class,
+            kind=kind,
+            locator=f"{relative}:{symbol}:{kind}",
+            name=symbol,
+            source_location=location,
+            framework_identity=f"java-method:{method}",
+            structural_importance="high",
+            classification="business",
+        )
 
     def _body_findings(
         self, relative: str, symbol: str, content: str, start: int, body: str

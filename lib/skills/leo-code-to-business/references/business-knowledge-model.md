@@ -4,8 +4,11 @@
 
 Define the canonical concepts shared by AI and HTML projections.
 
-Schema v2 separates discovery signals and candidate decisions from authored business knowledge,
-and separates current knowledge from requested Git history. The canonical hash covers semantic
+Schema v3 preserves the v2 separation between discovery signals, candidate decisions, authored
+business knowledge, and requested Git history, then adds deep module, end-to-end flow,
+calculation, code-to-knowledge, and scenario-narrative contracts. Schema v3.1 adds a separately
+extensible engineering view joined to atomic business steps. Schema v3.2 adds repository-wide
+project progress so a publishable checkpoint cannot be mistaken for completion. The canonical hash covers semantic
 artifacts but excludes coverage, reviews, publication status, and projections.
 
 ## Discovery and Candidate Layer
@@ -122,6 +125,58 @@ verified current-source evidence
 all eight required investigation kinds
 ```
 
+Confirmed critical/high use cases additionally require `scenario_narrative`. Importance comes from
+the use-case fields when present and otherwise from the resolved candidate. Older revisions and
+pre-narrative v3 records remain readable, but render as `summary_only`; a new v3 revision cannot pass
+scenario readiness for those core scenarios.
+
+`scenario_narrative` owns:
+
+```text
+business_context
+starting_state
+stages[] -> atomic steps
+branch_matrix
+failure_recovery_matrix
+variants
+worked_examples
+history_event_ids
+open_question_ids
+```
+
+Every atomic step names the actor or event, business action, business result, inputs, decision basis,
+data/state/external effects, and current-source evidence. Every branch, failure/recovery row,
+variant, and worked example also carries evidence. `main_flow` is a short synopsis only and cannot
+substitute for the independently readable narrative.
+
+## Engineering View Contract
+
+Schema v3.1 adds `engineering-views.jsonl`, one record per use case. It does not create a second
+scenario. It joins to `scenario_narrative` by `use_case_id + step_id` and owns:
+
+```text
+step_mappings
+engineering_topics
+change_guides
+```
+
+Every atomic step maps exactly once to one or more open-kind implementation units plus verified
+reads, writes, state behavior, external interactions, configuration, runtime controls, and evidence.
+Required topic kinds are `data_lifecycle`, `state_lifecycle`, `runtime_safety`,
+`external_contracts`, and `configuration`; additional domain topics are allowed. A topic is
+`confirmed`, `not_applicable`, or `source_unknown`, with evidence or searched unknowns as required.
+Change guides identify affected steps, implementation starting points, data/state impact, downstream
+risk, and observable verification targets. Read
+[engineering-drilldown.md](engineering-drilldown.md) for the authoring rules.
+
+## Project progress contract
+
+Schema v3.2 adds `project-progress.json`. It inventories the whole repository as business modules,
+tracks completed and unfinished knowledge destinations, and records the active and next modules.
+Revision publication status remains independent: `partial` may be published as a truthful
+checkpoint, while `project_completion_status = in_progress` requires continued execution. Read
+[project-completion.md](project-completion.md) for state transitions and the completion gate.
+
 The `main_flow` must describe participant actions or business events, ordered business stages,
 business-facing decisions, and a visible result or handoff. Source identifiers and implementation order,
 persistence operations, field inventories, queues, caches, indexes, and middleware cannot substitute
@@ -153,6 +208,11 @@ before/after invariants; rename-only facts do not create business events. Event 
 IDs, marks legacy inventory with `id_scheme = legacy_v1`, and leaves current coverage partial until
 fresh v2 discovery establishes exact signals. Migration never edits the source revision or current
 publication pointer.
+
+Schema compatibility is readable, not equivalent in depth. A legacy or pre-narrative revision may
+still support evidence lookup and historical comparison, but the HTML and AI projection must label
+its core scenarios `summary_only` and must not imply that discovery or mapping equals complete
+business understanding.
 
 ## Unknown Contract
 

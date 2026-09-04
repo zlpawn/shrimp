@@ -36,7 +36,7 @@ def extract_java_entries(repo_root: Path) -> List[Dict[str, Any]]:
     java_files = list(repo_root.glob("**/*.java"))
     for file_path in sorted(java_files):
         rel_str = str(file_path.relative_to(repo_root))
-        if any(part in rel_str for part in ["/test/", "/target/", "/build/", "/.git/", "/_leo_business/"]):
+        if any(part in rel_str for part in ["/test/", "/target/", "/build/", "/.git/", "/.leo_business/"]):
             continue
 
         try:

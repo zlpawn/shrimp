@@ -1,1 +1,89 @@
-{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"site-view-model.schema.json","type":"object","additionalProperties":false,"required":["view_schema_version","canonical_revision_sha256","overview","capability_tree","use_case_catalog","use_case_details","workflow_views","state_views","rule_catalog","effect_catalog","actor_permission_views","evolution_views","gap_views","coverage_dashboard"],"properties":{"view_schema_version":{"const":"2.0"},"canonical_revision_sha256":{"type":["string","null"]},"overview":{"type":"object"},"capability_tree":{"type":"array"},"use_case_catalog":{"type":"array"},"use_case_details":{"type":"array"},"workflow_views":{"type":"array"},"state_views":{"type":"array"},"rule_catalog":{"type":"array"},"effect_catalog":{"type":"array"},"actor_permission_views":{"type":"array"},"evolution_views":{"type":"array"},"gap_views":{"type":"array"},"coverage_dashboard":{"type":"object"}}}
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "site-view-model.schema.json",
+  "title": "Business Knowledge Site View Model",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "view_schema_version",
+    "canonical_revision_sha256",
+    "navigation",
+    "empty_states",
+    "views"
+  ],
+  "properties": {
+    "view_schema_version": {"const": "2.0"},
+    "canonical_revision_sha256": {"type": ["string", "null"]},
+    "navigation": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "label"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "label": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "empty_states": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["state", "reason"],
+        "properties": {
+          "state": {
+            "enum": [
+              "confirmed_empty",
+              "searched_not_found",
+              "not_investigated",
+              "not_applicable"
+            ]
+          },
+          "reason": {"type": "string"}
+        }
+      }
+    },
+    "views": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "overview",
+        "capability_tree",
+        "use_case_catalog",
+        "use_case_details",
+        "workflow_views",
+        "state_views",
+        "rule_catalog",
+        "effect_catalog",
+        "actor_permission_views",
+        "evolution_views",
+        "gap_views",
+        "coverage_dashboard"
+      ],
+      "properties": {
+        "overview": {"type": "object"},
+        "capability_tree": {"type": "array"},
+        "use_case_catalog": {"type": "array"},
+        "use_case_details": {"type": "array"},
+        "workflow_views": {"type": "array"},
+        "state_views": {"type": "array"},
+        "rule_catalog": {"type": "array"},
+        "effect_catalog": {"type": "array"},
+        "actor_permission_views": {"type": "array"},
+        "evolution_views": {"type": "object"},
+        "gap_views": {"type": "object"},
+        "coverage_dashboard": {"type": "object"},
+        "business_map": {"type": "object"},
+        "scenario_reading_pages": {"type": "array"},
+        "knowledge_topics": {"type": "object"},
+        "module_dossiers": {"type": "array"},
+        "end_to_end_flows": {"type": "array"},
+        "calculation_models": {"type": "array"},
+        "code_knowledge_matrix": {"type": "array"}
+        ,"engineering_views": {"type": "array"}
+      }
+    }
+  }
+}

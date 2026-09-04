@@ -1,0 +1,109 @@
+{
+  "scenario": "linjing-scoring",
+  "minimum_confirmed_use_cases": 1,
+  "scenario_depth_requirements": {
+    "use_cases": [
+      {
+        "id": "UC-calculate-linjing-score",
+        "minimum_stages": 4,
+        "minimum_atomic_steps": 10,
+        "require_branch_matrix": true,
+        "require_failure_recovery": true,
+        "require_worked_examples": true
+      }
+    ]
+  },
+  "required_evidence": [
+    {
+      "id": "score-orchestrator",
+      "path_contains": "LinjingScoreServiceV2.java",
+      "symbol_contains": "triggerCalculateScore"
+    },
+    {
+      "id": "acceptance-aggregation",
+      "path_contains": "StrategyScoreCalculationService.java",
+      "symbol_contains": "calculateAcceptanceScoreItem"
+    },
+    {
+      "id": "speech-calculator",
+      "path_contains": "SpeechScoreCalculator.java",
+      "symbol_contains": "calculate"
+    },
+    {
+      "id": "tool-calculator",
+      "path_contains": "ToolScoreCalculator.java",
+      "symbol_contains": "calculate"
+    },
+    {
+      "id": "customer-calculator",
+      "path_contains": "CustomerScoreCalculator.java",
+      "symbol_contains": "calculate"
+    },
+    {
+      "id": "duration-calculator",
+      "path_contains": "DurationScoreCalculator.java",
+      "symbol_contains": "calculate"
+    },
+    {
+      "id": "total-recalculation",
+      "path_contains": "LinjingScoreServiceV2.java",
+      "symbol_contains": "recalculateTotalScore"
+    }
+  ],
+  "required_business_concepts": [],
+  "required_business_flow_concepts": [
+    {
+      "id": "strategy-selected",
+      "any_of": ["系统为当前临境视频选择适用的评分策略", "system selects the applicable scoring strategy"]
+    },
+    {
+      "id": "modules-calculated",
+      "any_of": ["语音、工具、客户和时长模块分别计算", "speech, tool, customer, and duration modules are calculated"]
+    },
+    {
+      "id": "acceptance-aggregated",
+      "any_of": ["模块分汇总为基础验收和附加验收结果", "module scores aggregate into basic and additional acceptance"]
+    },
+    {
+      "id": "score-persisted",
+      "any_of": ["评分结果保存并可供验收业务查看", "score result is persisted and available to acceptance users"]
+    }
+  ],
+  "required_calculation_concepts": [
+    {
+      "id": "missing-value-policy",
+      "any_of": ["缺少视频、权重或模块时返回零分", "missing video, weight, or module yields zero"]
+    },
+    {
+      "id": "duration-step-ladder",
+      "any_of": ["时长按阶梯区间计算", "duration uses step-ladder ranges"]
+    },
+    {
+      "id": "duration-rounding",
+      "any_of": ["时长和分数按规则四舍五入", "duration and score are rounded"]
+    },
+    {
+      "id": "tool-threshold",
+      "any_of": ["工具数量达到满分阈值时得满分", "tool count reaching the threshold receives full score"]
+    },
+    {
+      "id": "edited-detected-tools",
+      "any_of": ["人工编辑工具优先于自动识别工具", "edited tools take precedence over detected tools"]
+    },
+    {
+      "id": "drainage-specialization",
+      "any_of": ["竣工验收给排水使用专用算分", "installed-stage drainage uses specialized scoring"]
+    },
+    {
+      "id": "acceptance-percent",
+      "any_of": ["验收项同时计算得分和百分比分", "acceptance item calculates score and percent score"]
+    },
+    {
+      "id": "total-rounding",
+      "any_of": ["基础验收与附加验收相加后得到四舍五入总分", "basic and additional acceptance are summed and rounded"]
+    }
+  ],
+  "technical_fact_placements": [],
+  "required_unknowns": [],
+  "required_family_members": []
+}

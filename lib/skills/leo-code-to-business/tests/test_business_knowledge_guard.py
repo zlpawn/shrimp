@@ -1,6 +1,7 @@
 import importlib.util
 import json
 import shutil
+import subprocess
 import tempfile
 import unittest
 from copy import deepcopy
@@ -77,7 +78,7 @@ class BusinessKnowledgeGuardTests(unittest.TestCase):
             "unknown",
             "current source",
             "codebase-memory-mcp",
-            "_leo_business",
+            ".leo_business",
             "output-workspace.md",
             "discover_repository_signals.py",
             "use-case-candidates.jsonl",
@@ -89,6 +90,87 @@ class BusinessKnowledgeGuardTests(unittest.TestCase):
             "current_coverage_status",
             "history_coverage_status",
             "task context",
+            "module-dossiers.jsonl",
+            "end-to-end-flows.jsonl",
+            "calculation-models.jsonl",
+            "code-knowledge-matrix.jsonl",
+            "module-archaeology.md",
+            "end-to-end-flow-analysis.md",
+            "calculation-and-scoring-analysis.md",
+            "code-knowledge-traceability.md",
+        ]:
+            self.assertIn(required, text)
+
+    def test_v3_references_define_deep_analysis_contracts(self):
+        required_by_file = {
+            "module-archaeology.md": [
+                "one dossier per business module",
+                "control flow",
+                "failure",
+                "repair",
+                "module-dossiers.jsonl",
+            ],
+            "end-to-end-flow-analysis.md": [
+                "trigger",
+                "terminal outcome",
+                "idempotency",
+                "observability",
+                "end-to-end-flows.jsonl",
+            ],
+            "calculation-and-scoring-analysis.md": [
+                "missing value",
+                "weights",
+                "thresholds",
+                "rounding",
+                "recalculation",
+                "calculation-models.jsonl",
+            ],
+            "code-knowledge-traceability.md": [
+                "every important signal",
+                "semantic comparison",
+                "generic",
+                "code-knowledge-matrix.jsonl",
+            ],
+        }
+        for name, phrases in required_by_file.items():
+            text = (SKILL_DIR / "references" / name).read_text(encoding="utf-8").lower()
+            for phrase in phrases:
+                self.assertIn(phrase, text, f"{name}: {phrase}")
+
+    def test_v3_html_reference_fixes_business_knowledge_navigation(self):
+        text = (SKILL_DIR / "references" / "html-projection.md").read_text(
+            encoding="utf-8"
+        )
+        expected = [
+            "业务地图",
+            "核心业务场景",
+            "专题查询",
+        ]
+        positions = [text.index(label) for label in expected]
+        self.assertEqual(positions, sorted(positions))
+        self.assertIn("一个页面内连续讲清", text)
+        self.assertIn("状态、数据与外部影响", text)
+        self.assertIn("已发现", text)
+        self.assertIn("不等于", text)
+
+    def test_utopia_acceptance_defines_upload_concat_and_scoring_goldens(self):
+        text = (SKILL_DIR / "references" / "acceptance-scenarios.md").read_text(
+            encoding="utf-8"
+        )
+        for required in [
+            "POST /3d/app/device/upload/video",
+            "POST /linjing/video/concat/callback",
+            "contactVideoByFolder",
+            "retryContactVideoByFolder",
+            "lowReplaceHigh",
+            "triggerCalculateScore",
+            "calculateAcceptanceScoreItem",
+            "SpeechScoreCalculator",
+            "ToolScoreCalculator",
+            "CustomerScoreCalculator",
+            "DurationScoreCalculator",
+            "calDrainageScore",
+            "recalculateTotalScore",
         ]:
             self.assertIn(required, text)
 
@@ -97,7 +179,7 @@ class BusinessKnowledgeGuardTests(unittest.TestCase):
             SKILL_DIR / "references" / "output-workspace.md"
         ).read_text(encoding="utf-8").lower()
         for required in [
-            "<repository-root>/_leo_business/",
+            "<repository-root>/.leo_business/",
             "current.json",
             "ai-context.md",
             "site/index.html",
@@ -114,7 +196,7 @@ class BusinessKnowledgeGuardTests(unittest.TestCase):
 
         workspace = guard.resolve_workspace_root(repo)
 
-        self.assertEqual(workspace, (repo / "_leo_business").resolve())
+        self.assertEqual(workspace, (repo / ".leo_business").resolve())
 
     def test_explicit_absolute_workspace_overrides_default(self):
         repo = self.root / "repo"
@@ -133,7 +215,7 @@ class BusinessKnowledgeGuardTests(unittest.TestCase):
             guard.ValidationError,
             "absolute path",
         ):
-            guard.resolve_workspace_root(repo, "_leo_business")
+            guard.resolve_workspace_root(repo, ".leo_business")
 
     def test_reference_repository_requires_external_workspace(self):
         repo = self.root / "reference-repo"
@@ -150,7 +232,7 @@ class BusinessKnowledgeGuardTests(unittest.TestCase):
         ):
             guard.resolve_workspace_root(
                 repo,
-                repo / "_leo_business",
+                repo / ".leo_business",
                 repository_role="reference",
             )
 
@@ -687,6 +769,12 @@ class BusinessKnowledgeGuardTests(unittest.TestCase):
         video = json.loads(
             (expected / "utopia-video-binding.json").read_text(encoding="utf-8")
         )
+        concat = json.loads(
+            (expected / "utopia-video-concat.json").read_text(encoding="utf-8")
+        )
+        scoring = json.loads(
+            (expected / "utopia-linjing-scoring.json").read_text(encoding="utf-8")
+        )
         rubric = json.loads(
             (expected / "semantic-rubric.json").read_text(encoding="utf-8")
         )
@@ -695,9 +783,51 @@ class BusinessKnowledgeGuardTests(unittest.TestCase):
         self.assertEqual(len(video["required_family_members"]), 8)
         self.assertIn("required_business_flow_concepts", video)
         self.assertIn("technical_fact_placements", video)
+        self.assertGreaterEqual(len(concat["required_evidence"]), 5)
+        self.assertGreaterEqual(len(concat["required_business_flow_concepts"]), 8)
+        self.assertGreaterEqual(len(scoring["required_evidence"]), 7)
+        self.assertIn("required_calculation_concepts", scoring)
         self.assertEqual(rubric["reviewer_mode"], "independent")
         self.assertGreaterEqual(rubric["minimum_total_score"], 13)
         self.assertIn("non_technical_comprehensibility", rubric)
+
+    def test_benchmark_cli_exposes_video_concat_and_linjing_scoring_scenarios(self):
+        scenario_action = next(
+            action
+            for action in guard.build_parser()._subparsers._group_actions[0].choices[
+                "benchmark"
+            ]._actions
+            if action.dest == "scenario"
+        )
+
+        self.assertIn("video-concat", scenario_action.choices)
+        self.assertIn("linjing-scoring", scenario_action.choices)
+
+    def test_benchmark_requires_calculation_concepts_from_calculation_models(self):
+        expectation = {
+            "required_calculation_concepts": [
+                {
+                    "id": "edited-tools-precedence",
+                    "any_of": ["人工编辑工具优先于自动识别工具"],
+                }
+            ]
+        }
+
+        with self.assertRaisesRegex(
+            guard.ValidationError,
+            "calculation concepts.*edited-tools-precedence",
+        ):
+            guard._validate_calculation_concepts([], expectation)
+
+        guard._validate_calculation_concepts(
+            [
+                {
+                    "id": "CALC-tool-score",
+                    "formula_or_algorithm": "人工编辑工具优先于自动识别工具。",
+                }
+            ],
+            expectation,
+        )
 
     def test_benchmark_requires_technical_facts_in_allowed_dimensions(self):
         nodes_by_file = {
@@ -760,6 +890,95 @@ class BusinessKnowledgeGuardTests(unittest.TestCase):
                 requirements,
             )
 
+    def test_benchmark_rejects_keyword_complete_but_shallow_scenario(self):
+        use_cases = [{
+            "id": "UC-video-concat",
+            "claim_status": "confirmed",
+            "lifecycle_status": "active",
+            "main_flow": [
+                {"statement": "上传、分组、拼接、回调、失败重试和低清降级。"}
+            ],
+        }]
+
+        with self.assertRaisesRegex(
+            guard.ValidationError,
+            "scenario depth.*UC-video-concat",
+        ):
+            guard._validate_benchmark_scenario_depth(
+                use_cases,
+                {
+                    "minimum_stages": 4,
+                    "minimum_atomic_steps": 8,
+                    "require_branch_matrix": True,
+                    "require_failure_recovery": True,
+                    "require_worked_examples": True,
+                },
+            )
+
+    def test_utopia_benchmarks_define_named_scenario_depth_gates(self):
+        expected_dir = SKILL_DIR / "tests" / "fixtures" / "expected"
+        required = {
+            "work-order": {"UC-create-work-order": (2, 5)},
+            "video-binding": {
+                "UC-bind-site-video": (4, 9),
+                "UC-bind-headmounted-video": (4, 9),
+            },
+            "video-concat": {
+                "UC-upload-linjing-video": (3, 7),
+                "UC-concat-linjing-video": (5, 12),
+            },
+            "linjing-scoring": {"UC-calculate-linjing-score": (4, 10)},
+        }
+        for scenario, expected_targets in required.items():
+            expectation = json.loads(
+                (expected_dir / f"utopia-{scenario}.json").read_text(encoding="utf-8")
+            )
+            targets = {
+                item["id"]: item
+                for item in expectation["scenario_depth_requirements"]["use_cases"]
+            }
+            self.assertEqual(set(targets), set(expected_targets))
+            for use_case_id, (minimum_stages, minimum_steps) in expected_targets.items():
+                self.assertEqual(targets[use_case_id]["minimum_stages"], minimum_stages)
+                self.assertEqual(targets[use_case_id]["minimum_atomic_steps"], minimum_steps)
+                self.assertTrue(targets[use_case_id]["require_branch_matrix"])
+                self.assertTrue(targets[use_case_id]["require_failure_recovery"])
+                self.assertTrue(targets[use_case_id]["require_worked_examples"])
+
+    def test_benchmark_depth_can_target_named_use_cases(self):
+        use_cases = [
+            {
+                "id": "UC-core",
+                "claim_status": "confirmed",
+                "scenario_narrative": {
+                    "stages": [{"steps": [{}, {}]}, {"steps": [{}, {}]}],
+                    "branch_matrix": [{}],
+                    "failure_recovery_matrix": [{}],
+                    "worked_examples": [{}],
+                },
+            },
+            {
+                "id": "UC-supporting",
+                "claim_status": "confirmed",
+            },
+        ]
+
+        guard._validate_benchmark_scenario_depth(
+            use_cases,
+            {
+                "use_cases": [
+                    {
+                        "id": "UC-core",
+                        "minimum_stages": 2,
+                        "minimum_atomic_steps": 4,
+                        "require_branch_matrix": True,
+                        "require_failure_recovery": True,
+                        "require_worked_examples": True,
+                    }
+                ]
+            },
+        )
+
     def test_failed_publication_keeps_current_pointer(self):
         workspace = self.root / "workspace"
         run = workspace / "runs" / "RUN-bad" / "staging-artifacts"
@@ -805,6 +1024,23 @@ class BusinessKnowledgeGuardTests(unittest.TestCase):
                 (workspace / "current.json").read_text(encoding="utf-8")
             )["canonical_revision_sha256"],
         )
+
+    def test_v3_publication_exposes_independent_coverage_statuses(self):
+        revision = self.root / "revision-v3-publication"
+        shutil.copytree(
+            SKILL_DIR / "tests" / "fixtures" / "sample-revision-v3",
+            revision,
+        )
+        renderer.write_projections(revision)
+        workspace = self.root / "workspace-v3"
+
+        current = guard.publish_revision(revision, workspace)
+
+        self.assertEqual(current["schema_version"], "3.0")
+        self.assertEqual(current["current_coverage_status"], "passed")
+        self.assertEqual(current["history_coverage_status"], "passed")
+        self.assertEqual(current["aggregate_status"], "passed")
+        self.assertEqual(current["coverage_status"], "passed")
 
     def test_publication_rejects_missing_ai_and_html_projections(self):
         workspace = self.root / "workspace"
@@ -1065,6 +1301,632 @@ class BusinessKnowledgeGuardV2Tests(unittest.TestCase):
         self.assertEqual(current["history_coverage_status"], "passed")
         self.assertEqual(current["aggregate_status"], "passed")
         self.assertEqual(current["coverage_status"], "passed")
+
+
+class BusinessKnowledgeGuardV3Tests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp.name)
+        self.revision = self.root / "revision-v3"
+        shutil.copytree(
+            SKILL_DIR / "tests" / "fixtures" / "sample-revision-v3",
+            self.revision,
+        )
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def read_json(self, name):
+        return json.loads((self.revision / name).read_text(encoding="utf-8"))
+
+    def write_json(self, name, value):
+        (self.revision / name).write_text(
+            json.dumps(value, ensure_ascii=False, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+
+    def read_jsonl(self, name):
+        return [
+            json.loads(line)
+            for line in (self.revision / name).read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+
+    def write_jsonl(self, name, values):
+        (self.revision / name).write_text(
+            "".join(
+                json.dumps(value, ensure_ascii=False, sort_keys=True) + "\n"
+                for value in values
+            ),
+            encoding="utf-8",
+        )
+
+    def refresh(self):
+        renderer.write_projections(self.revision)
+
+    def assert_guard_error(self, message):
+        canonical_hash = guard.canonical_revision_sha256_v3(self.revision)
+        manifest = self.read_json("manifest.json")
+        manifest["canonical_revision_sha256"] = canonical_hash
+        for projection in manifest.get("projection_hashes", {}).values():
+            projection["canonical_sha256"] = canonical_hash
+        self.write_json("manifest.json", manifest)
+        review = self.read_json("semantic-review.json")
+        review["canonical_revision_sha256"] = canonical_hash
+        self.write_json("semantic-review.json", review)
+        with self.assertRaisesRegex(guard.ValidationError, message):
+            guard.validate_revision(self.revision)
+
+    def test_valid_v3_revision_passes_deep_coverage_gates(self):
+        self.refresh()
+        result = guard.validate_revision(self.revision)
+
+        self.assertEqual(result["status"], "passed")
+        for name in [
+            "module_dossier_coverage",
+            "end_to_end_flow_coverage",
+            "calculation_model_coverage",
+            "code_knowledge_coverage",
+        ]:
+            self.assertEqual(result["coverage"]["metrics"][name]["ratio"], 1.0)
+
+    def test_v3_core_scenario_requires_deep_narrative(self):
+        use_cases = self.read_jsonl("use-cases.jsonl")
+        use_cases[0].pop("scenario_narrative", None)
+        self.write_jsonl("use-cases.jsonl", use_cases)
+        manifest = self.read_json("manifest.json")
+        manifest["current_coverage_status"] = "partial"
+        manifest["aggregate_status"] = "partial"
+        manifest["coverage_status"] = "partial"
+        self.write_json("manifest.json", manifest)
+
+        self.refresh()
+        result = guard.validate_revision(self.revision)
+
+        metric = result["coverage"]["metrics"]["scenario_readiness_coverage"]
+        self.assertEqual(result["status"], "partial")
+        self.assertEqual(metric["ratio"], 0.0)
+        self.assertIn("UC-create-work-order#scenario_narrative", metric["unresolved_ids"])
+
+    def test_v3_rejects_narrative_step_without_current_source_evidence(self):
+        use_cases = self.read_jsonl("use-cases.jsonl")
+        use_cases[0]["scenario_narrative"]["stages"][0]["steps"][0]["evidence_ids"] = []
+        self.write_jsonl("use-cases.jsonl", use_cases)
+
+        self.assert_guard_error("scenario step.*evidence_ids")
+
+    def test_v3_rejects_narrative_without_branch_failure_and_example_closure(self):
+        use_cases = self.read_jsonl("use-cases.jsonl")
+        narrative = use_cases[0]["scenario_narrative"]
+        narrative["branch_matrix"] = []
+        narrative["failure_recovery_matrix"] = []
+        narrative["worked_examples"] = []
+        self.write_jsonl("use-cases.jsonl", use_cases)
+
+        self.assert_guard_error("scenario narrative.*branch_matrix")
+
+    def test_v3_rejects_missing_deep_artifact(self):
+        (self.revision / "module-dossiers.jsonl").unlink()
+        with self.assertRaisesRegex(guard.ValidationError, "module-dossiers.jsonl"):
+            guard.validate_revision(self.revision)
+
+    def test_v3_rejects_shallow_flow_stage(self):
+        flows = self.read_jsonl("end-to-end-flows.jsonl")
+        flows[0]["stages"][0]["processing"] = ""
+        self.write_jsonl("end-to-end-flows.jsonl", flows)
+
+        self.assert_guard_error("flow stage.*processing")
+
+    def test_v3_rejects_important_signal_without_knowledge_mapping(self):
+        matrix = self.read_jsonl("code-knowledge-matrix.jsonl")
+        matrix = [item for item in matrix if item["signal_id"] != "SIG-f5f099dcb958935b14ee"]
+        self.write_jsonl("code-knowledge-matrix.jsonl", matrix)
+
+        self.assert_guard_error("code-knowledge matrix missing signal")
+
+    def test_v3_requires_calculation_model_for_detected_scoring_signal(self):
+        inventory = self.read_jsonl("inventory.jsonl")
+        inventory[0]["kind"] = "score_calculation"
+        inventory[0]["name"] = "calculate Linjing score"
+        self.write_jsonl("inventory.jsonl", inventory)
+
+        self.assert_guard_error("calculation model missing")
+
+    def test_v3_rejects_incomplete_calculation_model(self):
+        models = [{
+            "id": "CALC-linjing-score",
+            "title": "临境算分",
+            "business_purpose": "生成临境质量分",
+            "inputs": ["检查项"],
+            "source_data": ["检查结果"],
+            "applicability": ["临境验收"],
+            "filters": [],
+            "missing_value_policy": "缺失项不计分",
+            "formula_or_algorithm": "加权求和",
+            "weights": [],
+            "thresholds": [],
+            "rounding": "未记录",
+            "caps_and_floors": "未记录",
+            "version_source": "当前源码",
+            "output": "质量分",
+            "recalculation_triggers": [],
+            "examples_or_tests": [],
+            "evidence_ids": [],
+            "history_event_ids": [],
+            "unknown_ids": [],
+            "snapshot_id": "SNAP-sample"
+        }]
+        del models[0]["formula_or_algorithm"]
+        self.write_jsonl("calculation-models.jsonl", models)
+
+        self.assert_guard_error("calculation model.*formula_or_algorithm")
+
+    def test_v3_rejects_high_supporting_candidate_without_semantic_comparison(self):
+        candidates = self.read_jsonl("use-case-candidates.jsonl")
+        candidates[1]["structural_importance"] = "high"
+        candidates[1].pop("semantic_comparison", None)
+        self.write_jsonl("use-case-candidates.jsonl", candidates)
+
+        self.assert_guard_error("semantic comparison")
+
+    def test_v3_rejects_verified_evidence_with_empty_content_hash(self):
+        evidence = self.read_jsonl("evidence.jsonl")
+        evidence[0]["content_sha256"] = ""
+        self.write_jsonl("evidence.jsonl", evidence)
+
+        self.assert_guard_error("content_sha256")
+
+    def test_v3_rejects_verified_current_source_missing_from_snapshot(self):
+        manifest = self.read_json("manifest.json")
+        manifest["repository_snapshot"]["files"].pop(
+            "src/WorkOrderController.java"
+        )
+        self.write_json("manifest.json", manifest)
+
+        self.assert_guard_error("not present in frozen snapshot")
+
+    def test_v3_rejects_verified_current_source_hash_mismatch(self):
+        manifest = self.read_json("manifest.json")
+        manifest["repository_snapshot"]["files"][
+            "src/WorkOrderController.java"
+        ]["sha256"] = "0" * 64
+        self.write_json("manifest.json", manifest)
+
+        self.assert_guard_error("does not match frozen snapshot")
+
+    def test_v3_code_matrix_rejects_unknown_foreign_ids(self):
+        matrix = self.read_jsonl("code-knowledge-matrix.jsonl")
+        matrix[0]["use_case_ids"] = ["UC-does-not-exist"]
+        self.write_jsonl("code-knowledge-matrix.jsonl", matrix)
+
+        self.assert_guard_error("names unknown use case")
+
+    def test_v3_scoring_signal_requires_explicit_model_mapping(self):
+        inventory = self.read_jsonl("inventory.jsonl")
+        inventory[0]["kind"] = "score_calculation"
+        inventory[0]["name"] = "calculate Linjing score"
+        self.write_jsonl("inventory.jsonl", inventory)
+        self.write_jsonl(
+            "calculation-models.jsonl",
+            [{
+                "id": "CALC-linjing-score",
+                "title": "临境算分",
+                "business_purpose": "生成临境质量分",
+                "inputs": ["检查项"],
+                "source_data": ["检查结果"],
+                "applicability": ["临境验收"],
+                "filters": [],
+                "missing_value_policy": "缺失项不计分",
+                "formula_or_algorithm": "按当前策略配置加权汇总",
+                "weights": ["来自当前策略配置"],
+                "thresholds": [],
+                "rounding": "当前源码未发现额外取整",
+                "caps_and_floors": "当前源码未发现额外封顶或保底",
+                "version_source": "当前源码和策略配置",
+                "output": "临境质量分",
+                "recalculation_triggers": ["验收结果更新"],
+                "examples_or_tests": [],
+                "evidence_ids": ["EV-create-work-order-source"],
+                "history_event_ids": [],
+                "unknown_ids": [],
+                "snapshot_id": "SNAP-sample",
+            }],
+        )
+
+        self.assert_guard_error("calculation signal lacks explicit model mapping")
+
+    def test_v3_rejects_template_reason_reused_for_many_important_signals(self):
+        inventory = self.read_jsonl("inventory.jsonl")
+        inventory[1]["structural_importance"] = "high"
+        self.write_jsonl("inventory.jsonl", inventory)
+        matrix = self.read_jsonl("code-knowledge-matrix.jsonl")
+        template = "当前源码确认该入口属于同一个通用业务流程，因此统一归并处理。"
+        for row in matrix:
+            row["resolution_reason"] = template
+        self.write_jsonl("code-knowledge-matrix.jsonl", matrix)
+
+        self.assert_guard_error("reuses a generic resolution reason")
+
+    def test_v3_confirmed_capability_requires_confirmed_business_destination(self):
+        relationships = self.read_jsonl("relationships.jsonl")
+        relationships = [
+            item for item in relationships
+            if item["id"] != "REL-cap-use-case"
+        ]
+        self.write_jsonl("relationships.jsonl", relationships)
+
+        self.assert_guard_error("confirmed capability has no confirmed use case")
+
+    def test_v3_rejects_git_commit_metadata_that_disagrees_with_repository(self):
+        repo = self.root / "git-source"
+        repo.mkdir()
+        subprocess.run(["git", "init", "-q", str(repo)], check=True)
+        subprocess.run(
+            ["git", "-C", str(repo), "config", "user.email", "test@example.com"],
+            check=True,
+        )
+        subprocess.run(
+            ["git", "-C", str(repo), "config", "user.name", "History Test"],
+            check=True,
+        )
+        (repo / "rule.txt").write_text("current\n", encoding="utf-8")
+        subprocess.run(["git", "-C", str(repo), "add", "rule.txt"], check=True)
+        subprocess.run(
+            ["git", "-C", str(repo), "commit", "-qm", "real subject"],
+            check=True,
+        )
+        sha = subprocess.run(
+            ["git", "-C", str(repo), "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        commits = self.read_jsonl("git-commits.jsonl")
+        actual = subprocess.run(
+            [
+                "git", "-C", str(repo), "show", "-s",
+                "--format=%H%x1f%P%x1f%aI%x1f%cI%x1f%an <%ae>", sha,
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip().split("\x1f")
+        commits[0]["sha"] = sha
+        commits[0]["id"] = f"COMMIT-{sha}"
+        commits[0]["parents"] = actual[1].split() if actual[1] else []
+        commits[0]["author_time"] = actual[2]
+        commits[0]["commit_time"] = actual[3]
+        commits[0]["author_identity"] = actual[4]
+        commits[0]["subject"] = "invented subject"
+
+        with self.assertRaisesRegex(
+            guard.ValidationError,
+            "Git commit metadata mismatch.*subject",
+        ):
+            guard.validate_git_commit_index(
+                commits,
+                {"canonical_root": str(repo), "git": {"is_repository": True}},
+            )
+
+    def test_v2_investigation_gap_cannot_pass_current_coverage(self):
+        revision = self.root / "revision-v2"
+        shutil.copytree(
+            SKILL_DIR / "tests" / "fixtures" / "sample-revision-v2",
+            revision,
+        )
+        investigations = [
+            json.loads(line)
+            for line in (revision / "investigations.jsonl").read_text().splitlines()
+            if line
+        ]
+        investigations = [
+            item for item in investigations
+            if item["investigation_kind"] != "vocabulary_expansion"
+        ]
+        (revision / "investigations.jsonl").write_text(
+            "".join(json.dumps(item, sort_keys=True) + "\n" for item in investigations),
+            encoding="utf-8",
+        )
+        manifest = json.loads((revision / "manifest.json").read_text())
+        manifest["current_coverage_status"] = "partial"
+        manifest["aggregate_status"] = "partial"
+        manifest["coverage_status"] = "partial"
+        (revision / "manifest.json").write_text(json.dumps(manifest) + "\n")
+        renderer.write_projections(revision)
+
+        result = guard.validate_revision(revision)
+        self.assertEqual(result["status"], "partial")
+        metric = result["coverage"]["metrics"]["required_investigation_coverage"]
+        self.assertLess(metric["ratio"], 1.0)
+        self.assertTrue(metric["unresolved_ids"])
+
+    def test_v3_rejects_fake_all_history_denominator(self):
+        manifest = self.read_json("manifest.json")
+        manifest["history_analysis"] = {
+            "requested_scope": "all_reachable",
+            "reachable_commit_count": 9,
+            "indexed_commit_count": 1,
+        }
+        self.write_json("manifest.json", manifest)
+
+        self.assert_guard_error("reachable Git commits")
+
+
+class BusinessKnowledgeGuardV31Tests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.revision = Path(self.temp.name) / "revision-v31"
+        shutil.copytree(
+            SKILL_DIR / "tests" / "fixtures" / "sample-revision-v31",
+            self.revision,
+        )
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def read_json(self, name):
+        return json.loads((self.revision / name).read_text(encoding="utf-8"))
+
+    def write_json(self, name, value):
+        (self.revision / name).write_text(
+            json.dumps(value, ensure_ascii=False, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+
+    def read_jsonl(self, name):
+        return [
+            json.loads(line)
+            for line in (self.revision / name).read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+
+    def write_jsonl(self, name, values):
+        (self.revision / name).write_text(
+            "".join(
+                json.dumps(value, ensure_ascii=False, sort_keys=True) + "\n"
+                for value in values
+            ),
+            encoding="utf-8",
+        )
+
+    def set_partial_status(self):
+        manifest = self.read_json("manifest.json")
+        manifest["current_coverage_status"] = "partial"
+        manifest["aggregate_status"] = "partial"
+        manifest["coverage_status"] = "partial"
+        self.write_json("manifest.json", manifest)
+
+    def assert_guard_error(self, message):
+        canonical_hash = guard.revision_canonical_sha256(self.revision)
+        manifest = self.read_json("manifest.json")
+        manifest["canonical_revision_sha256"] = canonical_hash
+        for projection in manifest.get("projection_hashes", {}).values():
+            projection["canonical_sha256"] = canonical_hash
+        self.write_json("manifest.json", manifest)
+        review = self.read_json("semantic-review.json")
+        review["canonical_revision_sha256"] = canonical_hash
+        self.write_json("semantic-review.json", review)
+        with self.assertRaisesRegex(guard.ValidationError, message):
+            guard.validate_revision(self.revision)
+
+    def test_valid_v31_revision_passes_engineering_readiness(self):
+        renderer.write_projections(self.revision)
+        result = guard.validate_revision(self.revision)
+
+        self.assertEqual(result["status"], "passed")
+        metric = result["coverage"]["metrics"]["engineering_readiness_coverage"]
+        self.assertEqual(metric["ratio"], 1.0)
+        self.assertEqual(result["coverage"]["schema_version"], "3.1")
+
+    def test_missing_engineering_view_makes_revision_partial(self):
+        self.write_jsonl("engineering-views.jsonl", [])
+        self.set_partial_status()
+        renderer.write_projections(self.revision)
+
+        result = guard.validate_revision(self.revision)
+
+        metric = result["coverage"]["metrics"]["engineering_readiness_coverage"]
+        self.assertEqual(result["status"], "partial")
+        self.assertEqual(metric["ratio"], 0.0)
+        self.assertIn("UC-create-work-order#engineering_view", metric["unresolved_ids"])
+
+    def test_missing_business_step_mapping_makes_revision_partial(self):
+        records = self.read_jsonl("engineering-views.jsonl")
+        records[0]["step_mappings"] = [
+            item for item in records[0]["step_mappings"]
+            if item["step_id"] != "enrich"
+        ]
+        self.write_jsonl("engineering-views.jsonl", records)
+        self.set_partial_status()
+        renderer.write_projections(self.revision)
+
+        result = guard.validate_revision(self.revision)
+
+        unresolved = result["coverage"]["metrics"]["engineering_readiness_coverage"]["unresolved_ids"]
+        self.assertIn("UC-create-work-order#engineering/enrich", unresolved)
+
+    def test_unknown_business_step_is_rejected(self):
+        records = self.read_jsonl("engineering-views.jsonl")
+        records[0]["step_mappings"][0]["step_id"] = "not-a-business-step"
+        self.write_jsonl("engineering-views.jsonl", records)
+
+        self.assert_guard_error("maps unknown scenario step")
+
+    def test_incomplete_implementation_unit_is_rejected(self):
+        records = self.read_jsonl("engineering-views.jsonl")
+        records[0]["step_mappings"][0]["implementation_units"][0]["locator"] = ""
+        self.write_jsonl("engineering-views.jsonl", records)
+
+        self.assert_guard_error("implementation unit.*requires complete fields")
+
+    def test_missing_stable_topic_makes_revision_partial(self):
+        records = self.read_jsonl("engineering-views.jsonl")
+        records[0]["engineering_topics"] = [
+            item for item in records[0]["engineering_topics"]
+            if item["kind"] != "runtime_safety"
+        ]
+        self.write_jsonl("engineering-views.jsonl", records)
+        self.set_partial_status()
+        renderer.write_projections(self.revision)
+
+        result = guard.validate_revision(self.revision)
+
+        unresolved = result["coverage"]["metrics"]["engineering_readiness_coverage"]["unresolved_ids"]
+        self.assertIn(
+            "UC-create-work-order#engineering-topic/runtime_safety",
+            unresolved,
+        )
+
+    def test_confirmed_topic_without_evidence_is_rejected(self):
+        records = self.read_jsonl("engineering-views.jsonl")
+        records[0]["engineering_topics"][0]["evidence_ids"] = []
+        self.write_jsonl("engineering-views.jsonl", records)
+
+        self.assert_guard_error("confirmed engineering topic.*requires evidence_ids")
+
+    def test_source_unknown_topic_without_unknown_id_is_rejected(self):
+        records = self.read_jsonl("engineering-views.jsonl")
+        extension = next(
+            item for item in records[0]["engineering_topics"]
+            if item["kind"] == "security_boundary"
+        )
+        extension["unknown_ids"] = []
+        self.write_jsonl("engineering-views.jsonl", records)
+
+        self.assert_guard_error("source_unknown engineering topic.*requires unknown_ids")
+
+    def test_change_guide_with_unknown_step_is_rejected(self):
+        records = self.read_jsonl("engineering-views.jsonl")
+        records[0]["change_guides"][0]["affected_step_ids"] = ["unknown-step"]
+        self.write_jsonl("engineering-views.jsonl", records)
+
+        self.assert_guard_error("change guide.*names unknown steps")
+
+
+class BusinessKnowledgeGuardV32Tests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.revision = Path(self.temp.name) / "revision-v32"
+        shutil.copytree(
+            SKILL_DIR / "tests" / "fixtures" / "sample-revision-v32",
+            self.revision,
+        )
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def read_json(self, name):
+        return json.loads((self.revision / name).read_text(encoding="utf-8"))
+
+    def write_json(self, name, value):
+        (self.revision / name).write_text(
+            json.dumps(value, ensure_ascii=False, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+
+    def refresh(self):
+        renderer.write_projections(self.revision)
+
+    def assert_guard_error(self, message):
+        renderer.refresh_canonical_hashes(self.revision)
+        with self.assertRaisesRegex(guard.ValidationError, message):
+            guard.validate_revision(self.revision)
+
+    def make_in_progress(self):
+        progress = self.read_json("project-progress.json")
+        progress["project_completion_status"] = "in_progress"
+        progress["active_module_id"] = "MODQ-consumer-acceptance"
+        progress["next_module_ids"] = ["MODQ-consumer-acceptance"]
+        progress["modules"].append({
+            "id": "MODQ-consumer-acceptance",
+            "title": "消费者新版验收体验",
+            "priority": "high",
+            "status": "pending",
+            "signal_ids": [],
+            "candidate_ids": [],
+            "module_dossier_id": None,
+            "flow_ids": [],
+            "use_case_ids": [],
+            "engineering_view_ids": [],
+            "history_status": "pending",
+            "gap_ids": [],
+            "next_action": "完成灰度、列表、详情、归档恢复、反馈和推送的端到端追踪。",
+        })
+        self.write_json("project-progress.json", progress)
+        manifest = self.read_json("manifest.json")
+        manifest["project_completion_status"] = "in_progress"
+        manifest["current_coverage_status"] = "partial"
+        manifest["aggregate_status"] = "partial"
+        manifest["coverage_status"] = "partial"
+        self.write_json("manifest.json", manifest)
+
+    def test_valid_complete_v32_revision_passes(self):
+        self.refresh()
+        result = guard.validate_revision(self.revision)
+        self.assertEqual(result["status"], "passed")
+        self.assertEqual(result["project_completion_status"], "complete")
+        self.assertEqual(result["next_module_ids"], [])
+
+    def test_in_progress_revision_is_publishable_partial_with_next_module(self):
+        self.make_in_progress()
+        self.refresh()
+        result = guard.validate_revision(self.revision)
+        self.assertEqual(result["status"], "partial")
+        self.assertEqual(result["project_completion_status"], "in_progress")
+        self.assertEqual(result["next_module_ids"], ["MODQ-consumer-acceptance"])
+
+    def test_complete_project_cannot_retain_pending_high_module(self):
+        progress = self.read_json("project-progress.json")
+        progress["modules"].append({
+            "id": "MODQ-hidden-core",
+            "title": "遗漏核心流程",
+            "priority": "high",
+            "status": "pending",
+            "signal_ids": [],
+            "candidate_ids": [],
+            "module_dossier_id": None,
+            "flow_ids": [],
+            "use_case_ids": [],
+            "engineering_view_ids": [],
+            "history_status": "pending",
+            "gap_ids": [],
+            "next_action": "完成端到端追踪。",
+        })
+        self.write_json("project-progress.json", progress)
+        self.assert_guard_error("complete project cannot retain unfinished")
+
+    def test_in_progress_project_requires_non_empty_next_queue(self):
+        self.make_in_progress()
+        progress = self.read_json("project-progress.json")
+        progress["active_module_id"] = None
+        progress["next_module_ids"] = []
+        self.write_json("project-progress.json", progress)
+        self.assert_guard_error("requires unfinished work and a non-empty next queue")
+
+    def test_high_omission_must_be_attached_to_unfinished_queue(self):
+        self.make_in_progress()
+        audit = self.read_json("omission-audit.json")
+        audit["status"] = "partial"
+        audit["findings"] = [{
+            "id": "OMIT-video-stitching",
+            "severity": "high",
+            "signal_ids": ["SIG-f5f099dcb958935b14ee"],
+            "candidate_ids": [],
+            "evidence_ids": [],
+            "resolution_status": "unresolved",
+            "resolution": "临境视频拼接流程尚未分析。",
+        }]
+        self.write_json("omission-audit.json", audit)
+        self.assert_guard_error("unresolved omission is not represented")
+
+    def test_publish_current_exposes_whole_project_status_and_queue(self):
+        self.make_in_progress()
+        self.refresh()
+        workspace = Path(self.temp.name) / "workspace"
+        current = guard.publish_revision(self.revision, workspace)
+        self.assertEqual(current["status"], "partial")
+        self.assertEqual(current["project_completion_status"], "in_progress")
+        self.assertEqual(current["next_module_ids"], ["MODQ-consumer-acceptance"])
 
 if __name__ == "__main__":
     unittest.main()

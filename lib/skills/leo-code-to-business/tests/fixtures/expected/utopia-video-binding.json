@@ -1,6 +1,26 @@
 {
   "scenario": "video-binding",
   "minimum_confirmed_use_cases": 2,
+  "scenario_depth_requirements": {
+    "use_cases": [
+      {
+        "id": "UC-bind-site-video",
+        "minimum_stages": 4,
+        "minimum_atomic_steps": 9,
+        "require_branch_matrix": true,
+        "require_failure_recovery": true,
+        "require_worked_examples": true
+      },
+      {
+        "id": "UC-bind-headmounted-video",
+        "minimum_stages": 4,
+        "minimum_atomic_steps": 9,
+        "require_branch_matrix": true,
+        "require_failure_recovery": true,
+        "require_worked_examples": true
+      }
+    ]
+  },
   "required_evidence": [
     {
       "id": "main-entry",
