@@ -7,6 +7,10 @@ import {
   getCommandApp,
   listCommandApps,
   normalizeCommandAppsConfig,
+  parseUvToolList,
+  inspectHindsightTool,
+  installHindsightTool,
+  updateHindsightTool,
   validateAppSettings,
 } from "../../lib/command-apps/index.mjs";
 
@@ -64,6 +68,48 @@ test("validateAppSettings accepts an existing absolute exe", () => {
     fileExists: (p) => p === windowsPath,
   });
   assert.equal(result.executablePath, windowsPath);
+});
+
+test("hindsight tool manager parses only the uv-managed hindsight-embed package", () => {
+  const tools = parseUvToolList(`
+hindsight-api v0.9.2
+- hindsight-api
+hindsight-embed v0.9.3
+- hindsight-embed
+`);
+  assert.deepEqual(tools, {
+    installed: true,
+    version: "0.9.3",
+  });
+});
+
+test("hindsight tool manager reports missing uv without falling back to another installer", async () => {
+  const status = await inspectHindsightTool({
+    execFile: (_file, _args, _options, callback) => {
+      const error = Object.assign(new Error("spawn uv ENOENT"), { code: "ENOENT" });
+      callback(error, "", "");
+    },
+  });
+  assert.equal(status.uvAvailable, false);
+  assert.equal(status.installed, false);
+  assert.equal(status.installCommand, "uv tool install hindsight-embed");
+  assert.equal(status.updateCommand, "uv tool upgrade hindsight-embed");
+});
+
+test("hindsight tool manager uses fixed uv argument arrays for install and update", async () => {
+  const calls = [];
+  const execFile = (file, args, options, callback) => {
+    calls.push({ file, args, options });
+    callback(null, "ok", "");
+  };
+  await installHindsightTool({ execFile });
+  await updateHindsightTool({ execFile });
+  assert.equal(calls[0].file, "uv");
+  assert.deepEqual(calls[0].args, ["tool", "install", "hindsight-embed"]);
+  assert.equal(calls[1].file, "uv");
+  assert.deepEqual(calls[1].args, ["tool", "upgrade", "hindsight-embed"]);
+  assert.equal(calls[0].options.shell, false);
+  assert.equal(calls[1].options.shell, false);
 });
 
 import { discoverCommandApp } from "../../lib/command-apps/infra/discovery.mjs";
@@ -1161,6 +1207,338 @@ test("routes open a Hindsight Control Plane bank page", async () => {
   const body = JSON.parse(responses[0].body);
   assert.equal(body.bankId, "coding-agent::local-ai-gateway");
   assert.equal(body.url, "http://127.0.0.1:19077/banks/coding-agent%3A%3Alocal-ai-gateway");
+});
+
+test("service installs hindsight-embed with uv and rediscovers its executable", async () => {
+  const executable = "/Users/pa/.local/bin/hindsight-embed";
+  const saved = [];
+  let installed = false;
+  const service = createCommandAppsService({
+    configStore: {
+      get() { return saved.at(-1) || { apps: {} }; },
+      save(next) { saved.push(next); return next; },
+    },
+    platform: "darwin",
+    discovery: async (app) => installed && app.id.startsWith("hindsight")
+      ? { selected: { path: executable, strategy: "path-environment" }, candidates: [] }
+      : { selected: null, candidates: [] },
+    fileExists: (value) => installed && value === executable,
+    inspectHindsightToolState: async () => ({
+      uvAvailable: true,
+      installed,
+      version: installed ? "0.9.3" : null,
+      installCommand: "uv tool install hindsight-embed",
+      updateCommand: "uv tool upgrade hindsight-embed",
+    }),
+    installHindsightPackage: async () => { installed = true; },
+    inspectHindsight: async () => ({ status: "stopped", pid: null }),
+    probeHindsight: async () => false,
+  });
+
+  const result = await service.installHindsightTool();
+
+  assert.equal(result.tool.installed, true);
+  assert.equal(result.tool.version, "0.9.3");
+  assert.equal(result.apps.find((item) => item.profileName === "default").executablePath, executable);
+  assert.equal(saved.at(-1).apps.hindsight.executablePath, executable);
+});
+
+test("service install only rediscovers an existing uv tool when its saved path is missing", async () => {
+  const executable = "/Users/pa/.local/bin/hindsight-embed";
+  const saved = [];
+  let installCalled = false;
+  const service = createCommandAppsService({
+    configStore: {
+      get() { return saved.at(-1) || { apps: {} }; },
+      save(next) { saved.push(next); return next; },
+    },
+    platform: "darwin",
+    fileExists: (value) => value === executable,
+    discovery: async () => ({ selected: { path: executable, strategy: "path-environment" }, candidates: [] }),
+    inspectHindsightToolState: async () => ({
+      uvAvailable: true,
+      installed: true,
+      managedByUv: true,
+      version: "0.9.3",
+      executablePath: null,
+      installCommand: "uv tool install hindsight-embed",
+      updateCommand: "uv tool upgrade hindsight-embed",
+    }),
+    installHindsightPackage: async () => { installCalled = true; },
+    inspectHindsight: async () => ({ status: "stopped", pid: null }),
+    probeHindsight: async () => false,
+  });
+
+  const result = await service.installHindsightTool();
+
+  assert.equal(installCalled, false);
+  assert.equal(result.tool.installed, true);
+  assert.equal(result.tool.executablePath, executable);
+  assert.equal(saved.at(-1).apps.hindsight.executablePath, executable);
+});
+
+test("service distinguishes an existing non-uv hindsight-embed installation", async () => {
+  const executable = "/opt/tools/hindsight-embed";
+  const service = createCommandAppsService({
+    configStore: {
+      get() { return { apps: { hindsight: { executablePath: executable } } }; },
+      save() {},
+    },
+    platform: "darwin",
+    fileExists: (value) => value === executable,
+    inspectHindsightToolState: async () => ({
+      uvAvailable: true,
+      installed: false,
+      managedByUv: false,
+      version: null,
+      installCommand: "uv tool install hindsight-embed",
+      updateCommand: "uv tool upgrade hindsight-embed",
+    }),
+    inspectHindsight: async () => ({ status: "stopped", pid: null }),
+    probeHindsight: async () => false,
+  });
+
+  const status = await service.getHindsightToolStatus();
+
+  assert.equal(status.installed, true);
+  assert.equal(status.managedByUv, false);
+  assert.equal(status.executablePath, executable);
+  assert.equal(status.version, null);
+});
+
+test("service keeps uv installation status without a saved path and rediscovers it during update", async () => {
+  const executable = "/Users/pa/.local/bin/hindsight-embed";
+  const saved = [];
+  let updated = false;
+  const service = createCommandAppsService({
+    configStore: {
+      get() { return saved.at(-1) || { apps: {} }; },
+      save(next) { saved.push(next); return next; },
+    },
+    platform: "darwin",
+    fileExists: (value) => updated && value === executable,
+    discovery: async () => updated
+      ? { selected: { path: executable, strategy: "path-environment" }, candidates: [] }
+      : { selected: null, candidates: [] },
+    inspectHindsightToolState: async () => ({
+      uvAvailable: true,
+      installed: true,
+      managedByUv: true,
+      version: updated ? "0.9.4" : "0.9.3",
+      executablePath: null,
+      installCommand: "uv tool install hindsight-embed",
+      updateCommand: "uv tool upgrade hindsight-embed",
+    }),
+    updateHindsightPackage: async () => { updated = true; },
+    inspectHindsight: async () => ({ status: "stopped", pid: null }),
+    probeHindsight: async () => false,
+  });
+
+  const before = await service.getHindsightToolStatus();
+  const result = await service.updateHindsightTool();
+
+  assert.equal(before.installed, true);
+  assert.equal(before.managedByUv, true);
+  assert.equal(before.executablePath, null);
+  assert.equal(result.tool.version, "0.9.4");
+  assert.equal(result.tool.executablePath, executable);
+  assert.equal(saved.at(-1).apps.hindsight.executablePath, executable);
+});
+
+test("service rejects uv update for a non-uv hindsight-embed installation", async () => {
+  const executable = "/opt/tools/hindsight-embed";
+  let updateCalled = false;
+  const service = createCommandAppsService({
+    configStore: {
+      get() { return { apps: { hindsight: { executablePath: executable } } }; },
+      save() {},
+    },
+    platform: "darwin",
+    fileExists: (value) => value === executable,
+    inspectHindsightToolState: async () => ({
+      uvAvailable: true,
+      installed: false,
+      managedByUv: false,
+      version: null,
+      installCommand: "uv tool install hindsight-embed",
+      updateCommand: "uv tool upgrade hindsight-embed",
+    }),
+    updateHindsightPackage: async () => { updateCalled = true; },
+    inspectHindsight: async () => ({ status: "stopped", pid: null }),
+    probeHindsight: async () => false,
+  });
+
+  await assert.rejects(
+    () => service.updateHindsightTool(),
+    (error) => error instanceof CommandAppsError
+      && error.code === "invalid_request"
+      && /not managed by uv/.test(error.message),
+  );
+  assert.equal(updateCalled, false);
+});
+
+test("service update stops active hindsight profiles and restores them after uv upgrade", async () => {
+  const executable = "/Users/pa/.local/bin/hindsight-embed";
+  const running = new Set(["default", "coding-agent"]);
+  const calls = [];
+  const service = createCommandAppsService({
+    configStore: {
+      get() { return { apps: { hindsight: { executablePath: executable } } }; },
+      save() {},
+    },
+    platform: "darwin",
+    fileExists: (value) => value === executable,
+    listHindsightProfiles: () => ([
+      { name: "default", configPath: "/tmp/.hindsight/embed", port: 8888 },
+      { name: "coding-agent", configPath: "/tmp/.hindsight/profiles/coding-agent.env", port: 9077 },
+    ]),
+    inspectHindsight: async (_app, settings) => ({
+      status: running.has(settings.profileName) ? "running" : "stopped",
+      pid: running.has(settings.profileName) ? 4242 : null,
+    }),
+    stopHindsight: async (_app, settings) => {
+      calls.push(`stop:${settings.profileName}`);
+      running.delete(settings.profileName);
+    },
+    startHindsight: async (_app, settings) => {
+      calls.push(`start:${settings.profileName}`);
+      running.add(settings.profileName);
+      return { pid: 5000 };
+    },
+    updateHindsightPackage: async () => { calls.push("uv:update"); },
+    inspectHindsightToolState: async () => ({
+      uvAvailable: true,
+      installed: true,
+      version: "0.9.3",
+      installCommand: "uv tool install hindsight-embed",
+      updateCommand: "uv tool upgrade hindsight-embed",
+    }),
+    discovery: async () => ({ selected: { path: executable, strategy: "path-environment" }, candidates: [] }),
+    probeHindsight: async () => false,
+  });
+
+  const result = await service.updateHindsightTool();
+
+  assert.deepEqual(calls, [
+    "stop:default",
+    "stop:coding-agent",
+    "uv:update",
+    "start:default",
+    "start:coding-agent",
+  ]);
+  assert.equal(result.tool.version, "0.9.3");
+  assert.deepEqual([...running].sort(), ["coding-agent", "default"]);
+});
+
+test("service restores active hindsight profiles when uv upgrade fails", async () => {
+  const executable = "/Users/pa/.local/bin/hindsight-embed";
+  const running = new Set(["coding-agent"]);
+  const calls = [];
+  const updateError = new CommandAppsError("process_error", "uv upgrade failed");
+  const service = createCommandAppsService({
+    configStore: {
+      get() { return { apps: { hindsight: { executablePath: executable } } }; },
+      save() {},
+    },
+    platform: "darwin",
+    fileExists: (value) => value === executable,
+    listHindsightProfiles: () => ([
+      { name: "default", configPath: "/tmp/.hindsight/embed", port: 8888 },
+      { name: "coding-agent", configPath: "/tmp/.hindsight/profiles/coding-agent.env", port: 9077 },
+    ]),
+    inspectHindsight: async (_app, settings) => ({
+      status: running.has(settings.profileName) ? "running" : "stopped",
+      pid: running.has(settings.profileName) ? 4242 : null,
+    }),
+    stopHindsight: async (_app, settings) => {
+      calls.push(`stop:${settings.profileName}`);
+      running.delete(settings.profileName);
+    },
+    startHindsight: async (_app, settings) => {
+      calls.push(`start:${settings.profileName}`);
+      running.add(settings.profileName);
+      return { pid: 5000 };
+    },
+    updateHindsightPackage: async () => {
+      calls.push("uv:update");
+      throw updateError;
+    },
+    inspectHindsightToolState: async () => ({
+      uvAvailable: true,
+      installed: true,
+      version: "0.9.2",
+      installCommand: "uv tool install hindsight-embed",
+      updateCommand: "uv tool upgrade hindsight-embed",
+    }),
+    discovery: async () => ({ selected: { path: executable, strategy: "path-environment" }, candidates: [] }),
+    probeHindsight: async () => false,
+  });
+
+  await assert.rejects(
+    () => service.updateHindsightTool(),
+    (error) => error === updateError,
+  );
+  assert.deepEqual(calls, ["stop:coding-agent", "uv:update", "start:coding-agent"]);
+  assert.deepEqual([...running], ["coding-agent"]);
+});
+
+test("service reports a restore failure after a successful uv upgrade", async () => {
+  const executable = "/Users/pa/.local/bin/hindsight-embed";
+  const running = new Set(["coding-agent"]);
+  const warnings = [];
+  const service = createCommandAppsService({
+    configStore: {
+      get() { return { apps: { hindsight: { executablePath: executable } } }; },
+      save() {},
+    },
+    platform: "darwin",
+    fileExists: (value) => value === executable,
+    listHindsightProfiles: () => ([
+      { name: "default", configPath: "/tmp/.hindsight/embed", port: 8888 },
+      { name: "coding-agent", configPath: "/tmp/.hindsight/profiles/coding-agent.env", port: 9077 },
+    ]),
+    inspectHindsight: async (_app, settings) => ({
+      status: running.has(settings.profileName) ? "running" : "stopped",
+      pid: running.has(settings.profileName) ? 4242 : null,
+    }),
+    stopHindsight: async (_app, settings) => { running.delete(settings.profileName); },
+    startHindsight: async () => { throw new Error("daemon start failed"); },
+    updateHindsightPackage: async () => {},
+    inspectHindsightToolState: async () => ({
+      uvAvailable: true,
+      installed: true,
+      version: "0.9.3",
+      installCommand: "uv tool install hindsight-embed",
+      updateCommand: "uv tool upgrade hindsight-embed",
+    }),
+    discovery: async () => ({ selected: { path: executable, strategy: "path-environment" }, candidates: [] }),
+    probeHindsight: async () => false,
+    logger: { warn(message) { warnings.push(message); } },
+  });
+
+  await assert.rejects(
+    () => service.updateHindsightTool(),
+    (error) => error instanceof CommandAppsError
+      && error.code === "process_error"
+      && /restore/.test(error.message),
+  );
+  assert.equal(warnings.length, 1);
+  assert.deepEqual([...running], []);
+});
+
+test("routes expose Hindsight tool status, install, and update actions", async () => {
+  const { fx, reqFor, res, responses } = createRouteFixture();
+  fx.service.getHindsightToolStatus = async () => ({ installed: false, uvAvailable: true });
+  fx.service.installHindsightTool = async () => ({ tool: { installed: true, version: "0.9.3" }, apps: [] });
+  fx.service.updateHindsightTool = async () => ({ tool: { installed: true, version: "0.9.4" }, apps: [] });
+
+  await routeCommandAppsRequest(reqFor("GET", "/v1/command-apps/hindsight/tool"), res, null, "/v1/command-apps/hindsight/tool", { service: fx.service });
+  await routeCommandAppsRequest(reqFor("POST", "/v1/command-apps/hindsight/install", {}), res, null, "/v1/command-apps/hindsight/install", { service: fx.service });
+  await routeCommandAppsRequest(reqFor("POST", "/v1/command-apps/hindsight/update", {}), res, null, "/v1/command-apps/hindsight/update", { service: fx.service });
+
+  assert.equal(JSON.parse(responses[0].body).installed, false);
+  assert.equal(JSON.parse(responses[1].body).tool.version, "0.9.3");
+  assert.equal(JSON.parse(responses[2].body).tool.version, "0.9.4");
 });
 
 test("service lists each on-disk hindsight profile as its own card", async () => {
