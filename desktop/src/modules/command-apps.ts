@@ -595,9 +595,9 @@ function render(): void {
   root.innerHTML = `
     ${state.error ? `<div class="command-apps-error" role="alert" style="margin-bottom: 16px;">${escapeHtml(state.error)}</div>` : ""}
     ${detail ? renderHindsightDetail() : `<div style="display: flex; flex-direction: column; gap: 16px;">
-      <div id="codexhost-runtime-root">${renderCodexhostRuntime()}</div>
       ${otherApps().map((app) => renderCard(app)).join("")}
       ${renderHindsightSummary()}
+      <div id="codexhost-runtime-root">${renderCodexhostRuntime()}</div>
     </div>`}
   `;
 }

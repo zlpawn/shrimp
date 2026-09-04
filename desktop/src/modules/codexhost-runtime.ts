@@ -8,7 +8,11 @@ type CodexhostStatus = {
     launcherPid?: number | null;
   };
   gateway?: { healthy?: boolean; port?: number | null; models?: number };
-  codexConfig?: { healthy?: boolean; issues?: Array<{ message?: string }> } | null;
+  codexConfig?: {
+    healthy?: boolean;
+    dataPlane?: { external?: boolean; gatewayPort?: number | null; healthy?: boolean };
+    issues?: Array<{ message?: string }>;
+  } | null;
   desktop?: { version?: string | null };
   actions?: { canStart?: boolean; canStop?: boolean; canOpenOfficial?: boolean };
   error?: string | null;
@@ -46,6 +50,10 @@ export function renderCodexhostRuntime(): string {
   const meta = statusMeta();
   const installed = Boolean(status?.runtime?.installed);
   const issues = (status?.codexConfig?.issues || []).map((item) => escapeHtml(item?.message || ""));
+  const dataPlane = status?.codexConfig?.dataPlane;
+  const dataPlaneLabel = dataPlane?.external
+    ? "外部 Shrimp · :" + Number(dataPlane.gatewayPort || 0)
+    : "当前页面实例 · :" + Number(dataPlane?.gatewayPort || status?.gateway?.port || 0);
   return [
     '<div class="command-apps-card" data-app-id="codexhost">',
     '<div class="command-apps-header"><div><h3>CodexHost</h3>',
@@ -58,7 +66,7 @@ export function renderCodexhostRuntime(): string {
     '<span class="command-apps-badge">' + (status?.process?.managed ? "Launcher PID " + Number(status.process.launcherPid || 0) : "未托管") + "</span></div>",
     "<div><dt>启动前检查</dt>",
     "<dd>Shrimp 网关：" + (status?.gateway?.healthy ? "正常 · :" + Number(status?.gateway?.port || 0) : "离线 · :" + Number(status?.gateway?.port || 0)) + "</dd>",
-    "<dd>Codex 模型配置：" + (status?.codexConfig?.healthy ? "已指向 Shrimp 网关" : "需要检查") + "</dd>",
+    "<dd>Codex 模型配置：" + (status?.codexConfig?.healthy ? "数据面：" + escapeHtml(dataPlaneLabel) : "需要检查") + "</dd>",
     '<span class="command-apps-badge">Codex Desktop ' + escapeHtml(status?.desktop?.version || "未检测") + "</span></div></dl>",
     issues.length ? '<div class="command-apps-hint is-error">' + issues.join("<br>") + "</div>" : "",
     state.error ? '<div class="command-apps-hint is-error">' + escapeHtml(state.error) + "</div>" : "",

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 const integration = await import("../../lib/codexhost-integration/index.mjs").catch(() => null);
+const discovery = await import("../../lib/codexhost-integration/discovery.mjs").catch(() => null);
 const processManager = await import("../../lib/codexhost-integration/process-manager.mjs").catch(() => null);
 
 test("codexhost integration module is available", () => {
@@ -10,6 +11,32 @@ test("codexhost integration module is available", () => {
 
 const skipUntilModuleExists = integration ? false : "codexhost integration is not implemented yet";
 const skipProcessManager = processManager ? false : "codexhost process manager is not implemented yet";
+const skipDiscovery = discovery ? false : "codexhost discovery is not implemented yet";
+
+test("discovery accepts the platform package nested under @codexhost/cli", { skip: skipDiscovery }, async () => {
+  const files = new Set([
+    "/global/node_modules/@codexhost/cli/bin/codexhost.js",
+    "/global/node_modules/@codexhost/cli/node_modules/@codexhost/cli-darwin-arm64/bin/codexhost",
+  ]);
+  const result = await discovery.discoverCodexhostExecutable({
+    platform: "darwin",
+    arch: "arm64",
+    environment: { PATH: "/bin" },
+    fileExists: (value) => files.has(value),
+    execFileImpl: async (command, args) => {
+      if (args[0] === "root" && args[1] === "-g") return { stdout: "/global/node_modules" };
+      assert.equal(command, process.execPath);
+      assert.deepEqual(args.slice(0, 2), ["/global/node_modules/@codexhost/cli/bin/codexhost.js", "--version"]);
+      return { stdout: "0.4.4\n" };
+    },
+  });
+
+  assert.equal(result.version, "0.4.4");
+  assert.equal(
+    result.launcherPath,
+    "/global/node_modules/@codexhost/cli/node_modules/@codexhost/cli-darwin-arm64/bin/codexhost",
+  );
+});
 
 function validDescriptor(overrides = {}) {
   return {
@@ -60,6 +87,20 @@ function createFixture(overrides = {}) {
       instance_id: "gateway-test-8788",
       models: ["test-model"],
     } : overrides.gatewayHealth,
+    probeConfigGateway: async (healthUrl) => {
+      if (healthUrl === "http://127.0.0.1:8787/health") return overrides.externalGatewayHealth === undefined
+        ? {
+            ok: true,
+            service: "shrimp",
+            process_id: 200,
+            instance_id: "gateway-main-8787",
+            models: ["main-model"],
+          }
+        : overrides.externalGatewayHealth;
+      return overrides.gatewayHealth === undefined
+        ? { ok: true, service: "shrimp", process_id: 100, models: ["test-model"] }
+        : overrides.gatewayHealth;
+    },
     readCodexConfig: async () => ({
       path: "C:\\isolated\\.codex\\config.toml",
       text: overrides.configText === undefined ? validConfig() : overrides.configText,
@@ -141,10 +182,11 @@ test("status reports codexhost as an unavailable managed runtime when it is not 
   assert.equal(status.actions.canStart, false);
 });
 
-test("config guard accepts the existing gateway-backed Codex model selection without changing it", { skip: skipUntilModuleExists }, () => {
+test("config guard accepts the existing gateway-backed Codex model selection without changing it", { skip: skipUntilModuleExists }, async () => {
   const text = validConfig();
 
-  const result = integration.inspectCodexConfig(text, {
+  const result = await integration.inspectCodexConfig(text, {
+    probeGateway: async () => ({ ok: true, service: "shrimp" }),
     configPath: "C:\\isolated\\.codex\\config.toml",
     gatewayPort: 8788,
   });
@@ -157,14 +199,65 @@ test("config guard accepts the existing gateway-backed Codex model selection wit
   assert.equal(text, validConfig(), "inspection must not mutate the source configuration");
 });
 
-test("config guard checks only the target port without treating default HTTPS as a gateway", { skip: skipUntilModuleExists }, () => {
+test("config guard checks only the target port without treating default HTTPS as a gateway", { skip: skipUntilModuleExists }, async () => {
   const text = validConfig(443).replace(/http:\/\/127\.0\.0\.1:443/g, "https://127.0.0.1");
 
-  const result = integration.inspectCodexConfig(text, { gatewayPort: 8788 });
+  const result = await integration.inspectCodexConfig(text, { gatewayPort: 8788, probeGateway: async () => null });
 
   assert.equal(result.healthy, false);
   assert.ok(result.issues.some((issue) => issue.code === "gateway_url_mismatch"));
   assert.ok(result.issues.some((issue) => issue.code === "provider_url_mismatch"));
+});
+
+test("status allows a Codex model config backed by another healthy local Shrimp gateway", { skip: skipUntilModuleExists }, async () => {
+  const { service } = createFixture({
+    configText: validConfig(8787),
+  });
+
+  const status = await service.getStatus();
+
+  assert.equal(status.codexConfig.healthy, true);
+  assert.deepEqual(status.codexConfig.issues, []);
+  assert.equal(status.codexConfig.dataPlane.gatewayPort, 8787);
+  assert.equal(status.codexConfig.dataPlane.external, true);
+  assert.equal(status.codexConfig.dataPlane.healthy, true);
+  assert.equal(status.actions.canStart, true);
+});
+
+test("data plane follows the selected model provider when root and provider URLs differ", { skip: skipUntilModuleExists }, async () => {
+  const text = [
+    'model_provider = "custom"',
+    'model_catalog_json = "C:/isolated/gateway-model-catalog.json"',
+    'openai_base_url = "http://127.0.0.1:8788/codex/v1"',
+    "",
+    "[model_providers.custom]",
+    'base_url = "http://127.0.0.1:8787/codex/v1"',
+  ].join("\n");
+
+  const result = await integration.inspectCodexConfig(text, {
+    gatewayPort: 8788,
+    probeGateway: async () => ({ ok: true, service: "shrimp" }),
+  });
+
+  assert.equal(result.healthy, true);
+  assert.equal(result.dataPlane.gatewayPort, 8787);
+  assert.equal(result.dataPlane.external, true);
+});
+
+test("start refuses an external model gateway that is offline or is not Shrimp", { skip: skipUntilModuleExists }, async () => {
+  for (const externalGatewayHealth of [null, { ok: true, service: "other" }]) {
+    const { service, calls } = createFixture({
+      configText: validConfig(8787),
+      externalGatewayHealth,
+    });
+
+    await assert.rejects(
+      () => service.start(),
+      (error) => error?.code === "codex_config_invalid"
+        && error?.details?.issues?.some((issue) => issue.message.includes("http://127.0.0.1:8787/codex/v1")),
+    );
+    assert.deepEqual(calls.spawn, []);
+  }
 });
 
 test("start refuses to launch codexhost while the Shrimp gateway is offline", { skip: skipUntilModuleExists }, async () => {
