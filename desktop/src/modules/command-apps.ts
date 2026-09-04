@@ -59,6 +59,7 @@ type CommandAppStatus = {
     status?: "stopped" | "running" | "launching" | "error";
     count?: number;
     launchedByPanel?: boolean;
+    external?: boolean;
   };
   llm?: CommandAppLlm | null;
   llmSource?: ModelSource | null;
@@ -307,6 +308,7 @@ function renderLangBotCard(status: CommandAppStatus): string {
   const hasError = Boolean(status.error || status.process?.status === "error");
   const meta = statusMeta(status);
   const running = status.process?.status === "running";
+  const external = Boolean(status.process?.external);
   const busyAction = state.actionBusy[appId] || "";
   const isBusy = Boolean(busyAction);
   const isEditing = state.editingAppId === appId;
@@ -356,9 +358,10 @@ function renderLangBotCard(status: CommandAppStatus): string {
         </form>
       ` : `
         <div class="command-apps-actions">
-          <button class="btn" type="button" onclick="window.__commandAppsOpenLangBot()" ${busyAction === "open" || !running ? "disabled" : ""}>打开 LangBot</button>
+          <button class="btn" type="button" onclick="window.__commandAppsOpenLangBot()" ${busyAction === "open" || !running ? "disabled" : ""}>打开控制台</button>
+          <button class="btn" type="button" onclick="window.__commandAppsOpenLangBotBots()" ${busyAction === "open" || !running ? "disabled" : ""}>配置机器人</button>
           <button class="btn btn-primary" type="button" onclick="window.__commandAppsLaunch('${escapeHtml(appId)}')" ${isBusy || running || status.process?.status === "launching" || !status.configured || !isSupported ? "disabled" : ""}>${busyAction === "launch" || status.process?.status === "launching" ? "启动中..." : "启动"}</button>
-          <button class="btn" type="button" onclick="window.__commandAppsStop('${escapeHtml(appId)}')" ${isBusy || (!running && status.process?.status !== "launching") ? "disabled" : ""}>${busyAction === "stop" ? "停止中..." : "停止"}</button>
+          <button class="btn" type="button" onclick="window.__commandAppsStop('${escapeHtml(appId)}')" ${isBusy || external || (!running && status.process?.status !== "launching") ? "disabled" : ""} title="${external ? "该 LangBot 不是网关启动的，请在原终端中停止" : ""}">${busyAction === "stop" ? "停止中..." : "停止"}</button>
           <button class="btn" type="button" onclick="window.__commandAppsInstallLangBot()" ${isBusy || !isSupported || status.configured ? "disabled" : ""}>${busyAction === "install" ? "安装中..." : "安装"}</button>
           <button class="btn" type="button" onclick="window.__commandAppsUpdateLangBot()" ${isBusy || !isSupported || !status.configured ? "disabled" : ""}>${busyAction === "update" ? "更新中..." : "更新"}</button>
           <button class="btn" type="button" onclick="window.__commandAppsRescan('${escapeHtml(appId)}')" ${isBusy || !isSupported ? "disabled" : ""}>${busyAction === "rescan" ? "检测中..." : "重新检测"}</button>
@@ -794,6 +797,12 @@ function openLangBot(): void {
   window.open(url, "_blank", "noopener,noreferrer");
 }
 
+function openLangBotBots(): void {
+  const current = state.apps.find(isLangBotApp);
+  const base = current?.endpoints?.appUrl || "http://127.0.0.1:5300/";
+  window.open(`${base.replace(/\/$/, "")}/home/bots`, "_blank", "noopener,noreferrer");
+}
+
 async function rescan(appId: string = "antigravity"): Promise<void> {
   await runAction(appId, "rescan", async () => {
     const status = await api<CommandAppStatus>(`/v1/command-apps/apps/${encodeURIComponent(appId)}/discover`);
@@ -988,6 +997,7 @@ async function openMemoryPage(): Promise<void> {
 (window as any).__commandAppsInstallLangBot = installLangBot;
 (window as any).__commandAppsUpdateLangBot = updateLangBot;
 (window as any).__commandAppsOpenLangBot = openLangBot;
+(window as any).__commandAppsOpenLangBotBots = openLangBotBots;
 (window as any).__commandAppsRescan = rescan;
 (window as any).__commandAppsEditPath = editPath;
 (window as any).__commandAppsCancelEdit = cancelEdit;
