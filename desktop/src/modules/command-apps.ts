@@ -676,11 +676,11 @@ function render(): void {
     ${state.error ? `<div class="command-apps-error" role="alert" style="margin-bottom: 16px;">${escapeHtml(state.error)}</div>` : ""}
     ${detail ? renderHindsightDetail() : `<div style="display: flex; flex-direction: column; gap: 16px;">
       ${otherApps().filter((app) => !isLangBotApp(app)).map((app) => renderCard(app)).join("")}
+      ${renderHindsightSummary()}
       ${(() => {
         const langbot = state.apps.find(isLangBotApp);
         return langbot ? renderLangBotCard(langbot) : "";
       })()}
-      ${renderHindsightSummary()}
     </div>`}
   `;
 }
