@@ -154,3 +154,27 @@ node scripts/apollo_query.js zulin-iot-platform lockAuth --json
    - 核心 Cookie：`jt_apollo_login_token`（作用域 `test-apollo.portal.life.ke.com`）；
    - 自动读取 `~/.shrimp/skills/live-inspector/test_apollo_cookie.json`；
    - 失效时指引用户使用 Chrome 扩展 **Leo cookie.txt Locally** 复制 `jt_apollo_login_token`。严禁引导安装 `ego-browser`。
+
+---
+
+## 🛡️ 5. 【生产环境】配置变更参谋模式实战指南 (Production Change Advisor)
+
+生产环境的 Apollo 配置变更直接决定微服务链路的稳定性和线上业务资产安全。本节规范 AI 作为**“高阶参谋助手”**协助工程师完成线上配置变更的标准操作程序（SOP）。
+
+### 5.1 铁律：生产环境零直写 (Zero Direct Mutation)
+* **原则**：AI 绝对禁止以任何自动化脚本或 HTTP 写接口直接篡改或发布生产配置。
+* **原因**：
+  1. **避免绕过审批与风控审计**：生产 Apollo 发布受到工单绑定、变更窗口以及权限分级等规范约束；
+  2. **避免越权与资损**：任何生产超时截断、重试爆炸或白名单污染均可直接引发线上重大事故。
+
+### 5.2 参谋标准产物：《线上配置变更建议单》
+当收到用户的线上配置修改诉求时，AI 先通过 `node scripts/apollo_query.js <app> <key>` 探查出当前最新配置，随后输出包含以下要素的标准建议书：
+1. **元信息定位**：清晰标明目标应用 (`appId`)、集群 (`default`) 与所属命名空间 (`namespaceName`)；
+2. **可视 Diff 对比**：展示【当前线上值 vs 建议目标值】的清晰比对；
+3. **发布属性建议**：优先推荐【业务开关 (SWITCH, 3)】，符合生产审计要求；
+4. **风险排雷与影响评估**：校验 JSON 语法、评估下游调用链与回退可行性；
+5. **官方 Portal 命名空间直达链接 (Deep-Link)**：
+   ```text
+   http://apollo.portal.life.ke.com/#/appid={appId}&env=PROD&cluster=default&namespace={namespace}
+   ```
+   *用户只需一键点击，免去在控制台复杂微服务列表中寻找具体 Namespace 的时间。*
