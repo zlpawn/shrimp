@@ -910,6 +910,24 @@
     "langbot": {
       "endpoints": [
         {
+          "id": "ep_d13b7220-710e-40cd-a38a-3e61634a1a55",
+          "name": "codex 订阅",
+          "type": "codex-subscription",
+          "base_url": "",
+          "auth": "bearer",
+          "models": [],
+          "model_mapping": {},
+          "capabilities": {
+            "input_modalities": [
+              "text",
+              "image"
+            ],
+            "reasoning": true,
+            "tools": true
+          },
+          "is_default": false
+        },
+        {
           "id": "ep_74e3c574-fa6c-4ff0-8b17-ed3d9b6ba5b5",
           "name": "Antigravity",
           "type": "antigravity",
