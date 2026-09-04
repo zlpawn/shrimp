@@ -663,6 +663,27 @@ test("service launches LangBot with its own daemon adapter and settings", async 
   assert.equal(launchCalls[0].settings.dataRoot, "/Users/test/.langbot/data");
 });
 
+test("service status forwards managed pid to the LangBot inspector", async () => {
+  const executable = "/Users/test/.local/bin/langbot";
+  const processStore = createCommandAppsProcessStore();
+  processStore.record("langbot", { pid: process.pid });
+  const service = createCommandAppsService({
+    configStore: {
+      get: () => ({ apps: { langbot: { executablePath: executable, lastLaunchedAt: new Date().toISOString() } } }),
+      save() {},
+    },
+    platform: "darwin",
+    homeDir: "/Users/test",
+    processStore,
+    fileExists: () => true,
+    probeLangbot: async () => true,
+  });
+  const status = await service.getStatus("langbot");
+  assert.equal(status.process.status, "running");
+  assert.equal(status.process.launchedByPanel, true);
+  assert.equal(status.process.external, false);
+});
+
 test("service install and update expose persistent LangBot package controls", async () => {
   const executable = "/Users/test/.local/bin/langbot";
   const saved = [];
