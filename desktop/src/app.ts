@@ -1160,10 +1160,99 @@ window.submitCreateClient = async function() {
     }
 };
 
+interface PromptModalOptions {
+    title?: string;
+    message?: string;
+    label?: string;
+    defaultValue?: string;
+    placeholder?: string;
+    hint?: string;
+    maxLength?: number;
+    confirmText?: string;
+    cancelText?: string;
+}
+
+let promptModalResolver: ((value: string | null) => void) | null = null;
+
+function showPromptModal(options: PromptModalOptions | string, defaultVal = ''): Promise<string | null> {
+    const opts: PromptModalOptions = typeof options === 'string'
+        ? { title: '请输入', label: options, defaultValue: defaultVal }
+        : (options || {});
+
+    return new Promise((resolve) => {
+        const titleEl = document.getElementById('app-prompt-title');
+        const bodyEl = document.getElementById('app-prompt-body');
+        const labelEl = document.getElementById('app-prompt-label');
+        const inputEl = document.getElementById('app-prompt-input') as HTMLInputElement | null;
+        const hintEl = document.getElementById('app-prompt-hint');
+        const okBtn = document.getElementById('app-prompt-ok');
+        const cancelBtn = document.querySelector('#app-prompt-modal .skill-modal-actions .btn:not(.btn-primary)');
+
+        if (titleEl) titleEl.textContent = opts.title || '请输入';
+        if (bodyEl) {
+            bodyEl.textContent = opts.message || '';
+            bodyEl.style.display = opts.message ? 'block' : 'none';
+        }
+        if (labelEl) {
+            labelEl.textContent = opts.label || '';
+            labelEl.style.display = opts.label ? 'block' : 'none';
+        }
+        if (hintEl) {
+            hintEl.textContent = opts.hint || '';
+            hintEl.style.display = opts.hint ? 'block' : 'none';
+        }
+        if (okBtn) okBtn.textContent = opts.confirmText || '确定';
+        if (cancelBtn) cancelBtn.textContent = opts.cancelText || '取消';
+
+        if (inputEl) {
+            inputEl.value = opts.defaultValue ?? '';
+            inputEl.placeholder = opts.placeholder ?? '';
+            if (opts.maxLength) {
+                inputEl.maxLength = opts.maxLength;
+            } else {
+                inputEl.removeAttribute('maxlength');
+            }
+        }
+
+        const overlay = document.getElementById('app-prompt-modal');
+        overlay?.classList.add('open');
+        promptModalResolver = resolve;
+
+        setTimeout(() => {
+            if (inputEl) {
+                inputEl.focus();
+                inputEl.select();
+            }
+        }, 50);
+    });
+}
+(window as any).showPromptModal = showPromptModal;
+
+(window as any).closeAppPromptModal = function(val: string | null = null) {
+    const overlay = document.getElementById('app-prompt-modal');
+    overlay?.classList.remove('open');
+    const resolver = promptModalResolver;
+    promptModalResolver = null;
+    if (resolver) resolver(val);
+};
+
+(window as any).submitAppPromptModal = function() {
+    const inputEl = document.getElementById('app-prompt-input') as HTMLInputElement | null;
+    const val = inputEl ? inputEl.value : '';
+    (window as any).closeAppPromptModal(val);
+};
+
 window.renameCustomClient = async function(client: string) {
     if (!isCustomClient(client)) return;
     const currentName = config.clients?.[client]?.display_name || client;
-    const input = prompt(`请输入代理「${clientDisplayName(client)}」的新显示名称：`, currentName);
+    const input = await showPromptModal({
+        title: '重命名代理节点',
+        label: `请输入代理「${clientDisplayName(client)}」的新显示名称：`,
+        defaultValue: currentName,
+        placeholder: '例如：我的代理 或 DeepSeek 代理',
+        hint: '显示名称用于界面与导航展示，支持中文、空格及任意字符（最多 60 字符）。',
+        maxLength: 60,
+    });
     if (input === null) return;
     const trimmed = input.trim();
     if (!trimmed) {
@@ -8331,6 +8420,18 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.key === 'Enter') { e.preventDefault(); submitCreateClient(); }
         });
     }
+    const promptInput = document.getElementById('app-prompt-input');
+    if (promptInput) {
+        promptInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                (window as any).submitAppPromptModal();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                (window as any).closeAppPromptModal(null);
+            }
+        });
+    }
     init();
     const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
     updateThemeIcon(currentTheme);
@@ -8356,6 +8457,10 @@ document.addEventListener('change', () => {
 });
 
 document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && promptModalResolver) {
+        (window as any).closeAppPromptModal(null);
+        return;
+    }
     if (e.key === 'Escape' && clientCreateOpen) {
         closeClientCreateModal();
         return;

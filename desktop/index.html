@@ -934,6 +934,22 @@ experimental_bearer_token = "dummy"</pre>
         </div>
     </div>
 
+    <div class="skill-modal-overlay" id="app-prompt-modal" onclick="if(event.target===this) closeAppPromptModal(null)">
+        <div class="skill-modal" role="dialog" aria-modal="true" style="width: min(460px, calc(100vw - 32px));">
+            <h3 class="skill-modal-title" id="app-prompt-title">提示</h3>
+            <div class="skill-modal-body" id="app-prompt-body" style="white-space: normal; display: none;"></div>
+            <div class="client-create-field" style="margin-top: 8px;">
+                <label for="app-prompt-input" id="app-prompt-label" style="display: none;"></label>
+                <input type="text" id="app-prompt-input" autocomplete="off" />
+                <div class="client-create-hint" id="app-prompt-hint" style="display: none;"></div>
+            </div>
+            <div class="skill-modal-actions">
+                <button class="btn" type="button" onclick="closeAppPromptModal(null)">取消</button>
+                <button class="btn btn-primary" type="button" id="app-prompt-ok" onclick="submitAppPromptModal()">确定</button>
+            </div>
+        </div>
+    </div>
+
     <div class="skill-modal-overlay" id="skill-promote-modal" onclick="if(event.target===this) closeSkillPromoteModal()">
         <div class="skill-modal" role="dialog" aria-modal="true" style="width: min(480px, calc(100vw - 32px));">
             <h3 class="skill-modal-title">转为网关托管</h3>

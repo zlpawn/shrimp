@@ -904,7 +904,7 @@
           "is_default": false
         }
       ],
-      "display_name": "DeepSeek",
+      "display_name": "DeepSeek 代理",
       "protocol": "openai"
     }
   },

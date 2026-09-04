@@ -1482,11 +1482,22 @@ async function loadVideoList(): Promise<void> {
 }
 
 (window as any).videoKbRenameVideo = async function (videoId: string, currentTitle: string): Promise<void> {
-  const next = prompt("输入新的显示标题", currentTitle || "");
+  const next = typeof (window as any).showPromptModal === "function"
+    ? await (window as any).showPromptModal({
+        title: "重命名视频",
+        label: "输入新的显示标题",
+        defaultValue: currentTitle || "",
+        placeholder: "输入视频标题",
+      })
+    : prompt("输入新的显示标题", currentTitle || "");
   if (next == null) return;
   const title = String(next).trim();
   if (!title) {
-    alert("标题不能为空");
+    if (typeof (window as any).showToast === "function") {
+      (window as any).showToast("标题不能为空", "error");
+    } else {
+      alert("标题不能为空");
+    }
     return;
   }
   try {

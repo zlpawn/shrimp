@@ -944,6 +944,10 @@ test("custom client section header includes rename button and renameCustomClient
   assert.match(html, /window\.renameCustomClient\s*=\s*async function/);
   assert.match(html, /\/v1\/config\/rename-client/);
   assert.match(html, /displayName:\s*trimmed/);
+  assert.match(html, /id="app-prompt-modal"/);
+  assert.match(html, /id="app-prompt-input"/);
+  assert.match(html, /showPromptModal/);
+  assert.doesNotMatch(html, /const input = prompt\(/);
 });
 
 test("removeCustomClient confirmation prompt displays both display name and slug", async () => {
