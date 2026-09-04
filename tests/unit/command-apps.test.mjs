@@ -29,7 +29,17 @@ test("registry exposes built-in app definitions", () => {
   assert.deepEqual(shrimp.defaultArgs, ["run", "gateway:restart"]);
   assert.deepEqual(shrimp.supportedPlatforms, ["win32", "darwin", "linux"]);
 
-  assert.equal(listCommandApps().length, 3);
+  const langbot = getCommandApp("langbot");
+  assert.equal(langbot.displayName, "LangBot");
+  assert.equal(langbot.type, "cli-daemon");
+  assert.equal(langbot.daemonKind, "langbot");
+  assert.equal(langbot.executableName, "langbot");
+  assert.equal(langbot.defaultPort, 5300);
+  assert.equal(langbot.healthPath, "/login");
+  assert.deepEqual(langbot.defaultArgs, []);
+  assert.deepEqual(langbot.supportedPlatforms, ["win32", "darwin", "linux"]);
+
+  assert.equal(listCommandApps().length, 4);
 });
 
 test("normalizeCommandAppsConfig keeps only known app settings", () => {
@@ -39,8 +49,12 @@ test("normalizeCommandAppsConfig keeps only known app settings", () => {
       unknown: { executablePath: windowsPath },
     },
   }, { platform: "win32" });
-  assert.deepEqual(Object.keys(config.apps).sort(), ["antigravity", "hindsight", "shrimp"]);
+  assert.deepEqual(Object.keys(config.apps).sort(), ["antigravity", "hindsight", "langbot", "shrimp"]);
   assert.equal(config.apps.antigravity.manuallyConfigured, false);
+  assert.equal(config.apps.langbot.executablePath, "");
+  assert.equal(config.apps.langbot.cwd, path.join(os.homedir(), ".langbot"));
+  assert.equal(config.apps.langbot.dataRoot, path.join(os.homedir(), ".langbot", "data"));
+  assert.equal(config.apps.langbot.port, 5300);
 });
 
 test("validateAppSettings rejects unsafe Windows paths", () => {
@@ -330,6 +344,9 @@ test("service listApps on darwin returns supported=false for antigravity without
   const service = createCommandAppsService({
     configStore: { get: () => ({}), save() {} },
     platform: "darwin",
+    homeDir: "/Users/test",
+    uvPath: "/opt/test/uv",
+    discovery: async () => ({ selected: { path: executable }, candidates: [{ path: executable }] }),
     listProcesses: async () => [],
   });
   const list = await service.listApps();
@@ -402,6 +419,21 @@ test("status infers launch time from running processes when panel never launched
 });
 
 import { createCommandAppsSqliteStore } from "../../lib/command-apps/infra/sqlite-store.mjs";
+import { DatabaseSync } from "node:sqlite";
+import {
+  inspectLangBotDaemon,
+  langbotDaemonUrl,
+  probeLangBotHealth,
+  startLangBotDaemonLogsToInstanceFile,
+  startLangBotDaemon,
+  stopLangBotDaemon,
+} from "../../lib/command-apps/infra/langbot-daemon.mjs";
+import {
+  findUv,
+  installLangBotTool,
+  installedLangBotVersion,
+  upgradeLangBotTool,
+} from "../../lib/command-apps/infra/langbot-package.mjs";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -427,6 +459,407 @@ test("command apps sqlite store persists settings outside gateway config", () =>
   });
   store.close();
   fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test("command apps sqlite store persists LangBot daemon ownership settings", () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "command-apps-langbot-sqlite-"));
+  const dbPath = path.join(tmp, "gateway.db");
+  const store = createCommandAppsSqliteStore({
+    dbPath,
+    platform: "darwin",
+  });
+  const home = "/Users/test";
+  const settings = {
+    executablePath: "/Users/test/.local/bin/langbot",
+    cwd: path.join(home, ".langbot"),
+    dataRoot: path.join(home, ".langbot", "data"),
+    port: 5301,
+    manuallyConfigured: true,
+    lastLaunchedAt: "2026-09-04T01:00:00.000Z",
+  };
+  store.save({ apps: { langbot: settings } });
+  assert.deepEqual(store.get().apps.langbot, {
+    ...settings,
+    args: [],
+  });
+  store.close();
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test("command apps sqlite store migrates an existing settings table", () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "command-apps-sqlite-upgrade-"));
+  const dbPath = path.join(tmp, "gateway.db");
+  const legacy = new DatabaseSync(dbPath);
+  legacy.exec(`
+    CREATE TABLE command_apps_settings (
+      app_id TEXT PRIMARY KEY,
+      executable_path TEXT NOT NULL,
+      args_json TEXT NOT NULL DEFAULT '[]',
+      manually_configured INTEGER NOT NULL DEFAULT 0,
+      last_launched_at TEXT,
+      updated_at INTEGER NOT NULL
+    );
+  `);
+  legacy.prepare("INSERT INTO command_apps_settings (app_id, executable_path, args_json, manually_configured, updated_at) VALUES (?, ?, ?, ?, ?)")
+    .run("hindsight", "/Users/test/.local/bin/hindsight-embed", "[]", 0, Date.now());
+  legacy.close();
+
+  const store = createCommandAppsSqliteStore({ dbPath, platform: "darwin" });
+  store.save({
+    apps: {
+      langbot: { executablePath: "/Users/test/.local/bin/langbot" },
+      hindsight: { executablePath: "/Users/test/.local/bin/hindsight-embed" },
+    },
+  });
+  assert.equal(store.get().apps.langbot.executablePath, "/Users/test/.local/bin/langbot");
+  assert.equal(store.get().apps.hindsight.executablePath, "/Users/test/.local/bin/hindsight-embed");
+  store.close();
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test("LangBot daemon URLs use configured port and app endpoints", () => {
+  const app = getCommandApp("langbot");
+  const urls = langbotDaemonUrl(app, { port: 5301 });
+  assert.equal(urls.port, 5301);
+  assert.equal(urls.healthUrl, "http://127.0.0.1:5301/login");
+  assert.equal(urls.appUrl, "http://127.0.0.1:5301/");
+  assert.equal(urls.mcpUrl, "http://127.0.0.1:5301/mcp");
+});
+
+test("LangBot health probe accepts only successful HTTP responses", async () => {
+  const app = getCommandApp("langbot");
+  const settings = { port: 5300 };
+  assert.equal(await probeLangBotHealth(app, settings, { request: async () => ({ statusCode: 200 }) }), true);
+  assert.equal(await probeLangBotHealth(app, settings, { request: async () => ({ statusCode: 302 }) }), false);
+  assert.equal(await probeLangBotHealth(app, settings, {
+    request: async () => { throw new Error("down"); },
+  }), false);
+});
+
+test("LangBot start passes fixed instance directory and env", async () => {
+  const app = getCommandApp("langbot");
+  const settings = {
+    executablePath: "/Users/test/.local/bin/langbot",
+    cwd: "/Users/test/.langbot",
+    dataRoot: "/Users/test/.langbot/data",
+    port: 5300,
+  };
+  const spawnCalls = [];
+  const child = { pid: 4242, unref() { this.unrefed = true; }, unrefed: false };
+  const result = await startLangBotDaemon(app, settings, {
+    spawnProcess: (...args) => { spawnCalls.push(args); return child; },
+    probe: async () => false,
+    ensureDirectories: async () => {},
+    openLogFile: () => ({ close() {} }),
+    env: {
+      PATH: "/bin",
+      ALL_PROXY: "socks5://127.0.0.1:7890",
+      HTTP_PROXY: "http://127.0.0.1:7897",
+      HTTPS_PROXY: "http://127.0.0.1:7897",
+    },
+  });
+  assert.equal(result.pid, 4242);
+  assert.equal(result.alreadyRunning, false);
+  assert.equal(spawnCalls.length, 1);
+  assert.equal(spawnCalls[0][0], settings.executablePath);
+  assert.deepEqual(spawnCalls[0][1], []);
+  assert.equal(spawnCalls[0][2].cwd, settings.cwd);
+  assert.equal(spawnCalls[0][2].env.LANGBOT_DATA_ROOT, settings.dataRoot);
+  assert.equal(spawnCalls[0][2].env.ALL_PROXY, undefined);
+  assert.equal(spawnCalls[0][2].env.HTTP_PROXY, "http://127.0.0.1:7897");
+  assert.equal(spawnCalls[0][2].env.HTTPS_PROXY, "http://127.0.0.1:7897");
+  assert.equal(child.unrefed, true);
+});
+
+test("LangBot start captures daemon output under the instance data root", async () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "langbot-instance-"));
+  const app = getCommandApp("langbot");
+  const settings = {
+    executablePath: "/Users/test/.local/bin/langbot",
+    cwd: path.join(tmp, ".langbot"),
+    dataRoot: path.join(tmp, ".langbot", "data"),
+  };
+  const calls = [];
+  const child = { pid: 1, unref() {} };
+  const logFiles = [];
+  await startLangBotDaemonLogsToInstanceFile(app, settings, {
+    spawnProcess: (...args) => { calls.push(args); return child; },
+    probe: async () => false,
+    openLogFile: (value) => { logFiles.push(value); return { close() {} }; },
+  });
+  assert.equal(calls[0][2].stdio[1], calls[0][2].stdio[2]);
+  assert.equal(logFiles[0], path.join(settings.dataRoot, "logs", "shrimp-launch.log"));
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test("LangBot status tracks startup and managed pid", async () => {
+  const app = getCommandApp("langbot");
+  const settings = { port: 5300, lastLaunchedAt: new Date().toISOString() };
+  assert.deepEqual(
+    await inspectLangBotDaemon(app, settings, { probe: async () => true, managedPid: 4242, isPidAliveOverride: () => true }),
+    { status: "running", pid: 4242, managed: true },
+  );
+  assert.deepEqual(
+    await inspectLangBotDaemon(app, settings, { probe: async () => true, managedPid: 4242, isPidAliveOverride: () => false }),
+    { status: "running", pid: 4242, managed: false },
+  );
+  assert.deepEqual(
+    await inspectLangBotDaemon(app, settings, { probe: async () => false, managedPid: 4242, isPidAliveOverride: () => true }),
+    { status: "launching", pid: 4242 },
+  );
+  assert.deepEqual(
+    await inspectLangBotDaemon(app, { ...settings, lastLaunchedAt: "2020-01-01T00:00:00.000Z" }, {
+      probe: async () => false,
+      managedPid: 4242,
+      isPidAliveOverride: () => true,
+    }),
+    { status: "error", pid: 4242, error: "LangBot failed to become healthy within the startup window" },
+  );
+});
+
+test("LangBot stop terminates managed process and waits for health to clear", async () => {
+  const app = getCommandApp("langbot");
+  const settings = { port: 5300 };
+  let healthy = true;
+  const stopped = [];
+  const result = await stopLangBotDaemon(app, settings, {
+    probe: async () => healthy,
+    managedPid: 4242,
+    terminateProcess: async (pid) => { stopped.push(pid); healthy = false; },
+  });
+  assert.equal(result.stopped, true);
+  assert.deepEqual(stopped, [4242]);
+});
+
+test("LangBot package install uses persistent uv tool install", async () => {
+  const calls = [];
+  const result = await installLangBotTool({
+    uvPath: "/opt/bin/uv",
+    execFile: async (file, args, options) => {
+      calls.push({ file, args, options });
+      if (args.includes("--version")) return { stdout: "uv 1.0.0\n" };
+      return { stdout: "Installed langbot 4.10.9" };
+    },
+    discoverExecutable: async () => "/Users/test/.local/bin/langbot",
+  });
+  assert.deepEqual(result, {
+    executablePath: "/Users/test/.local/bin/langbot",
+    version: "4.10.9",
+  });
+  assert.equal(calls[0].file, "/opt/bin/uv");
+  assert.deepEqual(calls[0].args, ["tool", "install", "langbot"]);
+});
+
+test("LangBot installed version comes from uv tool list", async () => {
+  const version = await installedLangBotVersion({
+    uvPath: "/opt/bin/uv",
+    execFile: async () => ({ stdout: "langbot v4.10.9 [CPython 3.12.13]\n- langbot (/Users/test/.local/bin/langbot)\n" }),
+  });
+  assert.equal(version, "4.10.9");
+});
+
+test("LangBot package update stops first, upgrades, and preserves data on failure", async () => {
+  const events = [];
+  let upgradeAttempts = 0;
+  const result = await upgradeLangBotTool({
+    uvPath: "/opt/bin/uv",
+    stop: async () => events.push("stop"),
+    execFile: async (file, args) => {
+      events.push(args.join(" "));
+      if (args[1] === "upgrade") {
+        upgradeAttempts += 1;
+        if (upgradeAttempts === 1) throw new Error("network unavailable");
+      }
+      return { stdout: "" };
+    },
+    discoverExecutable: async () => "/Users/test/.local/bin/langbot",
+  });
+  assert.deepEqual(events, ["stop", "tool upgrade langbot"]);
+  assert.deepEqual(result, {
+    executablePath: "/Users/test/.local/bin/langbot",
+    version: null,
+    recovered: true,
+  });
+});
+
+test("findUv prefers exact command and rejects missing executable", () => {
+  assert.equal(findUv({ commandExists: (value) => value === "uv" }), "uv");
+  assert.equal(findUv({ commandExists: () => false }), null);
+});
+
+test("service launches LangBot with its own daemon adapter and settings", async () => {
+  const executable = "/Users/test/.local/bin/langbot";
+  const saved = [];
+  const launchCalls = [];
+  const service = createCommandAppsService({
+    configStore: {
+      get() { return saved.at(-1) || { apps: { langbot: { executablePath: executable } } }; },
+      save(next) { saved.push(next); return next; },
+    },
+    platform: "darwin",
+    homeDir: "/Users/test",
+    uvPath: "/opt/test/uv",
+    fileExists: (value) => value === executable,
+    probeLangbot: async () => false,
+    inspectLangbot: async () => ({ status: "stopped", pid: null }),
+    startLangbot: async (app, settings) => {
+      launchCalls.push({ app, settings });
+      return { pid: 4242, alreadyRunning: false };
+    },
+    stopLangbot: async () => ({ stopped: true }),
+  });
+  const status = await service.launch("langbot");
+  assert.equal(status.app.id, "langbot");
+  assert.equal(status.cwd, "/Users/test/.langbot");
+  assert.equal(status.dataRoot, "/Users/test/.langbot/data");
+  assert.equal(status.endpoints.appUrl, "http://127.0.0.1:5300/");
+  assert.equal(launchCalls.length, 1);
+  assert.equal(launchCalls[0].settings.executablePath, executable);
+  assert.equal(launchCalls[0].settings.cwd, "/Users/test/.langbot");
+  assert.equal(launchCalls[0].settings.dataRoot, "/Users/test/.langbot/data");
+});
+
+test("service status forwards managed pid to the LangBot inspector", async () => {
+  const executable = "/Users/test/.local/bin/langbot";
+  const processStore = createCommandAppsProcessStore();
+  processStore.record("langbot", { pid: process.pid });
+  const service = createCommandAppsService({
+    configStore: {
+      get: () => ({ apps: { langbot: { executablePath: executable, lastLaunchedAt: new Date().toISOString() } } }),
+      save() {},
+    },
+    platform: "darwin",
+    homeDir: "/Users/test",
+    processStore,
+    fileExists: () => true,
+    probeLangbot: async () => true,
+  });
+  const status = await service.getStatus("langbot");
+  assert.equal(status.process.status, "running");
+  assert.equal(status.process.launchedByPanel, true);
+  assert.equal(status.process.external, false);
+});
+
+test("service install and update expose persistent LangBot package controls", async () => {
+  const executable = "/Users/test/.local/bin/langbot";
+  const saved = [];
+  const events = [];
+  const service = createCommandAppsService({
+    configStore: {
+      get() { return saved.at(-1) || { apps: {} }; },
+      save(next) { saved.push(next); return next; },
+    },
+    platform: "darwin",
+    homeDir: "/Users/test",
+    discovery: async () => ({ selected: { path: executable }, candidates: [{ path: executable }] }),
+    fileExists: () => true,
+    probeLangbot: async () => false,
+    inspectLangbot: async () => ({ status: "stopped", pid: null }),
+    installLangbotTool: async () => ({ executablePath: executable, version: "4.10.9" }),
+    upgradeLangbotTool: async ({ stop }) => {
+      await stop();
+      events.push("upgrade");
+      return { executablePath: executable, version: "4.11.0" };
+    },
+    stopLangbot: async () => {
+      events.push("stop");
+      return { stopped: true };
+    },
+  });
+  const installed = await service.installLangbot("langbot");
+  assert.equal(installed.executablePath, executable);
+  assert.equal(installed.installable, true);
+  const updated = await service.updateLangbot("langbot");
+  assert.equal(updated.installable, true);
+  assert.deepEqual(events, ["stop", "upgrade"]);
+});
+
+test("service passes resolved uv path into install and update dependencies", async () => {
+  const executable = "/Users/test/.local/bin/langbot";
+  const passed = [];
+  const service = createCommandAppsService({
+    configStore: { get: () => ({}), save() {} },
+    platform: "darwin",
+    homeDir: "/Users/test",
+    uvPath: "/opt/test/uv",
+    discovery: async () => ({ selected: { path: executable } }),
+    fileExists: () => true,
+    probeLangbot: async () => false,
+    inspectLangbot: async () => ({ status: "stopped", pid: null }),
+    installLangbotTool: async (options) => {
+      passed.push(["install", options]);
+      return { executablePath: executable, version: "4.10.9" };
+    },
+    upgradeLangbotTool: async (options) => {
+      passed.push(["update", options]);
+      return { executablePath: executable, version: "4.11.0" };
+    },
+  });
+  await service.installLangbot("langbot");
+  await service.updateLangbot("langbot");
+  assert.deepEqual(passed.map(([kind, options]) => [kind, options.uvPath]), [
+    ["install", "/opt/test/uv"],
+    ["update", "/opt/test/uv"],
+  ]);
+});
+
+test("service stops the LangBot process group on unix", async () => {
+  const executable = "/Users/test/.local/bin/langbot";
+  const stopped = [];
+  const service = createCommandAppsService({
+    configStore: { get: () => ({ apps: { langbot: { executablePath: executable } } }), save() {} },
+    platform: "darwin",
+    homeDir: "/Users/test",
+    fileExists: () => true,
+    probeLangbot: async () => true,
+    inspectLangbot: async () => ({ status: "running", pid: 4242 }),
+    processStore: (() => {
+      const store = createCommandAppsProcessStore();
+      store.record("langbot", { pid: 4242 });
+      return store;
+    })(),
+    terminateProcess: undefined,
+    terminateUnixProcess: async (pid) => stopped.push(pid),
+    stopLangbot: async (app, settings, options) => {
+      await options.terminateProcess(options.managedPid);
+      return { stopped: true };
+    },
+  });
+  await service.stop("langbot");
+  assert.deepEqual(stopped, [4242]);
+});
+
+test("routes expose LangBot install and update controls", async () => {
+  const service = {
+    async installLangbot(appId) {
+      assert.equal(appId, "langbot");
+      return { app: { id: "langbot" }, installable: true };
+    },
+    async updateLangbot(appId) {
+      assert.equal(appId, "langbot");
+      return { app: { id: "langbot" }, installable: true };
+    },
+  };
+  const responses = [];
+  const reqFor = (method, url) => ({
+    method,
+    url,
+    headers: {},
+    on(event, listener) {
+      if (event === "end") listener();
+      return this;
+    },
+  });
+  const res = {
+    writeHead(status) { this.status = status; },
+    end(body) { responses.push({ status: this.status, body }); },
+  };
+  await routeCommandAppsRequest(reqFor("POST", "/v1/command-apps/apps/langbot/install"), res, null, "/v1/command-apps/apps/langbot/install", { service });
+  await routeCommandAppsRequest(reqFor("POST", "/v1/command-apps/apps/langbot/update"), res, null, "/v1/command-apps/apps/langbot/update", { service });
+  assert.equal(responses.length, 2);
+  assert.equal(responses[0].status, 200);
+  assert.equal(JSON.parse(responses[0].body).app.id, "langbot");
+  assert.equal(responses[1].status, 200);
 });
 
 test("validateAppSettings validates project directory and package.json for Shrimp", () => {
