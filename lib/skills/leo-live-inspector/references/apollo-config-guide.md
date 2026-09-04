@@ -96,3 +96,61 @@ node scripts/apollo_query.js zulin-iot-platform lockAuth --json
 | **超时与重试配置** | `timeout`, `retry`, `feign` | 排查接口 504 / Read Timeout 是否由于 Feign/Ribbon 超时设置过短 |
 | **连接池与线程池** | `max-active`, `pool`, `threads` | 核对数据库连接池与线程池当前静态配置容量 |
 | **第三方接口鉴权** | `app-id`, `secret`, `url` | 核验外部供应商对接域名与 AppId 是否配置正确 |
+
+---
+
+## 🛠️ 4. 【测试环境】Apollo 配置动态修改与两阶段发布协议 (`scripts/apollo_modify.js`)
+
+测试环境中，微服务常常需要临时修改开关、白名单或联调参数。为避免手动登录控制台的繁琐流程，同时杜绝误改串改隐患，`leo-live-inspector` 提供了高可靠的配置写入与两阶段发布能力。
+
+### 4.1 底层 REST 接口协议 (Portal 内部直连)
+* **Portal 门户地址**：`http://test-apollo.portal.life.ke.com`
+* **更新/新增配置项**：
+  ```http
+  PUT /apps/{appId}/envs/TEST/clusters/{clusterName}/namespaces/{namespaceName}/item
+  Content-Type: application/json;charset=UTF-8
+  Cookie: jt_apollo_login_token={token}
+
+  {
+    "key": "liveRunner.access.ucIdWhitelist",
+    "value": "[31534062,12]",
+    "comment": "AI 辅助更新配置",
+    "tableViewOperType": "update"
+  }
+  ```
+* **发布生效 (Release)**：
+  ```http
+  POST /apps/{appId}/envs/TEST/clusters/{clusterName}/namespaces/{namespaceName}/releases
+  Content-Type: application/json;charset=UTF-8
+  Cookie: jt_apollo_login_token={token}
+
+  {
+    "releaseTitle": "20260904...-release",
+    "releaseComment": "AI 自动化发布: 业务开关修改",
+    "releaseAttribute": "3"
+  }
+  ```
+  > ⚠️ **发布属性 (`releaseAttribute`) 规范**：
+  > - `1`: 业务变更 (CHANGE)
+  > - `2`: 业务降级 (DEGRADE)
+  > - `3`: **业务开关 (SWITCH)** ➔ **系统默认且强制推荐值**，用于控制功能开关、降级开关与白名单。
+
+### 4.2 严格风控闭环与使用规范
+1. **阶段 1：安全预览 (Pre-flight / Dry-Run)**
+   ```bash
+   node scripts/apollo_modify.js iot liveRunner.access.ucIdWhitelist "[31534062,12]"
+   ```
+   - 脚本自动拉取微服务所有命名空间，精准定位目标 Key；
+   - 对比当前线上旧值与目标新值，输出 Diff 差异对比；
+   - **AI 必须暂停并等待用户明确确认**。
+2. **阶段 2：执行发布 (Commit / Post-flight)**
+   ```bash
+   node scripts/apollo_modify.js iot liveRunner.access.ucIdWhitelist "[31534062,12]" --confirm
+   ```
+   - 带 `--confirm` 参数提交变更；
+   - 创建发布单（属性固定为业务开关 SWITCH）；
+   - 自动直连 `http://test.config.apollo.ke.com` 回查 ConfigService 确认热生效。
+3. **凭证管理与自愈**：
+   - 核心 Cookie：`jt_apollo_login_token`（作用域 `test-apollo.portal.life.ke.com`）；
+   - 自动读取 `~/.shrimp/skills/live-inspector/test_apollo_cookie.json`；
+   - 失效时指引用户使用 Chrome 扩展 **Leo cookie.txt Locally** 复制 `jt_apollo_login_token`。严禁引导安装 `ego-browser`。

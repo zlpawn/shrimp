@@ -1,21 +1,23 @@
 ---
 name: leo-live-inspector
-description: 线上与测试环境全场景数据探查、日志检索、TraceId 链路回溯、Apollo 实时配置查询与页面数据探索中枢。涵盖四大核心能力：(1) FAST / Kibana 线上日志毫秒级极速直连检索、入参出参抓取与 500 异常排查；(2) Apollo 配置中心免鉴权秒级直连探查、业务开关与白名单核验；(3) TraceId 全链路时序回溯与 Mermaid 交互图自动生成；(4) ES 索引自学习与跨平台双探针自愈，以及后台页面点击探查。
+description: 线上与测试环境全场景数据探查、日志检索、TraceId 链路回溯、Apollo 实时配置查询与测试环境配置安全修改发布、以及页面数据探索中枢。涵盖核心能力：(1) FAST / Kibana 线上日志毫秒级极速直连检索、入参出参抓取与 500 异常排查；(2) Apollo 配置中心免鉴权秒级直连探查，以及【测试环境】配置动态修改与发布（严格两阶段 Diff 确认闭环、默认业务开关 SWITCH）；(3) TraceId 全链路时序回溯与 Mermaid 交互图自动生成；(4) ES 索引自学习与 Chrome 扩展探针自愈，以及后台页面点击探查。
 ---
 
 # 🔍 Leo Live Inspector (线上数据探查、日志检索、Trace 链路透视与 Apollo 配置中枢)
 
-本 Skill 专门指导 AI 执行线上生产环境与测试环境的 **全场景数据观测与诊断（Observe & Diagnose）**：
+本 Skill 专门指导 AI 执行线上生产环境与测试环境的 **全场景数据观测、诊断与测试配置管理（Observe, Diagnose & Configure）**：
 1. **⚡ FAST / Kibana 毫秒级日志检索**：直连内网 ES 网关，快速捞取微服务报错日志、接口真实请求入参 (`request_in`) 与响应结果 (`request_out`)；
-2. **⚙️ Apollo 配置中心秒级直连探查**：直连 Apollo ConfigService (`http://apollo.configservice.life.ke.com`)，秒级读取微服务实时配置项、业务开关、超时参数与白名单；
+2. **⚙️ Apollo 配置中心秒级直连探查与测试环境安全修改发布**：直连 Apollo ConfigService 秒级读取全量实时配置、业务开关与白名单；支持测试环境 (`test-apollo.portal.life.ke.com`) 配置热修改与发布，内置严格 Pre-flight Diff 对比与人工确认闭环，默认作为【业务开关】(SWITCH) 发布；
 3. **🧵 TraceId 全链路时序还原**：跨微服务追溯完整请求生命周期，自动提炼调用步骤并绘制 **Mermaid 时序交互图**；
-4. **🧭 索引自学习与跨平台双探针自愈**：初次查询新服务自动通过 macOS `ego-browser` 或 Windows/Chrome 扩展探针提取 ES cluster/index 映射并本地持久化；
+4. **🧭 索引自学习与 Chrome 扩展探针自愈**：初次查询新服务自动通过 Chrome 扩展探针（Leo cookie.txt Locally）提取 ES cluster/index 映射并本地持久化；
 5. **🌐 后台页面点击与数据探查（扩展能力）**：支持借助浏览器自动化/扩展能力在后台管理系统、运维看板中通过页面点击和元素审查提取业务数据。
 
 > ⚠️ **【核心执行原则：AI 全自动后台执行，严禁要求用户手动运行命令】**
-> - **底层脚本（`scripts/fast_query.js` 与 `scripts/apollo_query.js`）是 AI 专用的后台探查工具**。
-> - 用户只负责用自然语言表达排查或查配置意图（如 *“帮我看下 500 报错”*、*“根据 traceId 画个时序图”*、*“查下 iot-platform 的 apollo 配置”*、*“看下超时开关”*）。
-> - **AI 必须在后台自动解析意图并主动执行对应脚本**，提取关键日志、出入参、实时配置或调用链，最终向用户直接交付结构化表格、Mermaid 交互时序图和清晰结论。
+> - **底层脚本（`scripts/fast_query.js`、`scripts/apollo_query.js` 与 `scripts/apollo_modify.js`）是 AI 专用的后台探查与配置工具**。
+> - 用户只负责用自然语言表达排查、查配置或改测试配置意图（如 *“帮我看下 500 报错”*、*“根据 traceId 画个时序图”*、*“查下 iot-platform 的 apollo 配置”*、*“把测试环境 liveRunner 白名单加上 12”*）。
+> - **AI 必须在后台自动解析意图并主动执行对应脚本**：
+>   - 查日志/查配置/查库：AI 后台静默执行，提取关键日志、出入参、实时配置或调用链，交付结构化表格与结论。
+>   - **修改测试 Apollo 配置（风控例外）**：AI **必须先执行 Pre-flight（Dry-Run）**，向用户展示【变更前 vs 变更后】Diff 对比单，**等待用户明确确认**后再追加 `--confirm` 执行发布并校验。
 > - **切勿在回复中输出“请您手动在终端运行 node scripts/...”等推卸给用户的言论。**
 
 ---
@@ -36,6 +38,10 @@ description: 线上与测试环境全场景数据探查、日志检索、TraceId
 | **“查下【预发环境】saas 的超时配置 timeout”** | `node scripts/apollo_query.js saas -e preview timeout` | 预发环境 (prev.config.apollo.ke.com) 超时参数明细 |
 | **“看下 iot-platform 上的 lockAuth 开关或白名单”** | `node scripts/apollo_query.js iot-platform lockAuth` | 匹配到的业务开关、白名单及解析后的格式化 JSON |
 | **“查下 Apollo application.properties 里的 weitang 配置”** | `node scripts/apollo_query.js iot-platform application.properties weitang` | 指定命名空间下的精准配置项 |
+| **“把测试环境 iot 的 liveRunner.access.ucIdWhitelist 改成 [31534062,12]”** | **阶段 1 (AI 强制 Pre-flight 探查)**：<br>`node scripts/apollo_modify.js iot liveRunner.access.ucIdWhitelist "[31534062,12]"` | 向用户展示【变更前 vs 变更后】Diff 确认单、锁定 Namespace 与发布属性（业务开关 SWITCH），**停下等待用户明确确认** |
+| **用户明确确认（“确认修改”、“发布吧”、“同意更改”）** | **阶段 2 (用户确认后正式发布)**：<br>`node scripts/apollo_modify.js iot liveRunner.access.ucIdWhitelist "[31534062,12]" --confirm` | 写入 Portal、发布版本并直连 ConfigService 验证客户端热生效结果 |
+| **“把测试环境 saas 的 timeout 改成 5000”** | `node scripts/apollo_modify.js saas timeout 5000` (先展示 Diff 确认单) | 自动嗅探多 Namespace，锁定所属 namespace，生成 Diff 待确认 |
+| **“修改测试环境 platform 的 application 空间下的某个 key 为 xxx”** | `node scripts/apollo_modify.js platform application <key> "<val>"` | 精准指定 Namespace 进行修改，隔离其他命名空间 |
 | *“查下【测试环境】warehouse 最新的 10 条日志”* | `node scripts/test_log_query.js warehouse -n 10` | 测试环境容器日志表格，含 Pod 与泳道名 |
 | *“看下【测试环境】algo 的 500 报错或异常堆栈”* | `node scripts/test_log_query.js algo --level ERROR -t 30m` | 大禹泳道 Pod 异常原因与堆栈解析 |
 | *“根据 TraceId 361922... 查测试环境链路”* | `node scripts/test_log_query.js <app> --traceId "361922..."` | 跨测试容器追溯出入参与请求生命周期 |
@@ -52,11 +58,12 @@ description: 线上与测试环境全场景数据探查、日志检索、TraceId
 
 ```mermaid
 flowchart TD
-    A["用户提出自然语言诉求 (查日志 / 查配置 / 追链路 / 查数据库)"] --> B{"意图类型判定"}
+    A["用户提出自然语言诉求 (查日志 / 查配置 / 改测试配置 / 追链路 / 查数据库)"] --> B{"意图类型判定"}
     
     B -->|"查日志 / 500 报错"| C1["后台执行 scripts/fast_query.js (-a, --level ERROR)"]
     B -->|"追溯 TraceId"| C2["后台执行 scripts/fast_query.js (--traceId)"]
     B -->|"查 Apollo 配置/开关"| C3["后台执行 scripts/apollo_query.js (appId, keyword)"]
+    B -->|"改测试环境 Apollo 配置"| C7["后台执行 scripts/apollo_modify.js (app, [ns], key, val) [Dry-run]"]
     B -->|"查线上生产数据库"| C4["后台执行 scripts/cloud_mysql_query.js (appId, sql)"]
     B -->|"查线下/测试数据库"| C5["后台执行 scripts/test_mysql_query.js (appId, [ds], sql)"]
     B -->|"后台页面点击探查"| C6["通过 Chrome 扩展探针访问后台页面检索"]
@@ -64,10 +71,12 @@ flowchart TD
     C1 --> D1["提取 URI, 状态码, 耗时, 错误堆栈"]
     C2 --> D2["按时间正序排列，自动绘制 Mermaid 时序图"]
     C3 --> D3["结构化提取配置 Key，美化内嵌 JSON 对象"]
+    C7 --> D7["展示【修改前 vs 修改后】Diff 对比单并等待用户确认"]
+    D7 -->|用户明确确认| E7["后台追加 --confirm 执行修改与发布，并校验热生效"]
     C4 & C5 --> D4["格式化 Markdown 数据表格，标注耗时与行数"]
     C6 --> D5["解析页面 DOM / Network 返回数据"]
 
-    D1 & D2 & D3 & D4 & D5 --> E["向用户交付高可读性诊断报告与结论"]
+    D1 & D2 & D3 & D4 & D5 & E7 --> E["向用户交付高可读性诊断报告与结论"]
     E -.-> F["💡 若需免发版订正脏数据，主动引导唤起 leo-live-runner"]
 ```
 
@@ -111,9 +120,9 @@ AI 后台执行 `node scripts/test_log_query.js <appId> [options]`：
 
 > 💡 **自动分流支持**：在 `fast_query.js` 中指定 `--env test` 时，底层会自动委派至 `test_log_query.js` 容器直连通道。
 
----
+## ⚙️ 2. Apollo 配置探查与测试环境动态修改
 
-## ⚙️ 2. Apollo 配置探查内部 CLI 参数速查
+### 2.1 Apollo 全环境配置只读探查 (`scripts/apollo_query.js`)
 AI 后台执行 `node scripts/apollo_query.js <appId|alias> [namespace|keyKeyword] [keyKeyword] [options]`：
 
 | 参数/选项 | 简写 | 默认值 | 说明 |
@@ -126,6 +135,47 @@ AI 后台执行 `node scripts/apollo_query.js <appId|alias> [namespace|keyKeywor
 | `--cluster` | - | `default` | 集群名称 |
 | `--server` | - | 动态匹配 | 显式覆盖 Apollo ConfigService 服务端地址 |
 | `--json` | - | `false` | 输出纯 JSON 格式 |
+
+---
+
+### 2.2 【测试环境】Apollo 配置动态修改与两阶段发布 (`scripts/apollo_modify.js`)
+AI 后台执行 `node scripts/apollo_modify.js <appId|alias> [namespace] <key> <value> [options]`：
+
+| 参数/选项 | 简写 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `<appId\|alias>` | - | 必填 | 目标微服务 ID 或别名 (如 `iot`, `saas`, `platform`, `recorder`) |
+| `[namespace]` | - | 自动嗅探 | 命名空间。不传时**全自动探测所有 Namespace** 并精确定位所属空间；传则精准修改指定空间 |
+| `<key>` | - | 必填 | 待修改的配置键名 (如 `liveRunner.access.ucIdWhitelist`, `test.switch`) |
+| `<value>` | - | 必填 | 新的配置目标值 (如 `"[31534062,12]"`, `true`, `5000`) |
+| `--confirm` | - | `false` | **发布确认门禁**。未提供时为 Pre-flight 安全预览模式，提供后真正执行写入与发布 |
+| `--type <1\|2\|3>` | `-t` | `3` (switch) | **发布属性**：`3` 或 `switch` (业务开关，默认且推荐), `1` (业务变更), `2` (业务降级) |
+| `--comment` | `-m` | 自动生成 | 本次发布说明 (例如 `AI 辅助修改配置: <key>`) |
+| `--cookie` | - | 动态读取 | 临时传入 Apollo Portal Cookie (默认自动读取 `~/.shrimp`) |
+| `--json` | - | `false` | 以 JSON 格式输出 Diff 或发布结果 |
+
+#### 🛡️ 核心风控与安全规范 (Zero Silent Mutation)
+1. **严格两阶段发布机制（绝对禁止静默变更）**：
+   - ⚠️ **严禁 AI 直接带 `--confirm` 一步到位修改配置！**
+   - **阶段一 (Pre-flight / Dry-Run)**：AI 收到修改诉求后，必须先在后台执行不带 `--confirm` 的命令：
+     ```bash
+     node scripts/apollo_modify.js iot liveRunner.access.ucIdWhitelist "[31534062,12]"
+     ```
+     提取出【当前旧值 vs 目标新值】Diff、锁定目标微服务、所属 Namespace 与发布属性，形成可视化 Diff 确认单呈现给用户，询问：*“请您确认是否将配置修改为以上内容并发布？”*；
+   - **阶段二 (Post-flight / Commit)**：用户回复明确肯定指令（如 *“确认”、“发布吧”、“修改吧”*）后，AI 再次在后台追加 `--confirm` 执行提交：
+     ```bash
+     node scripts/apollo_modify.js iot liveRunner.access.ucIdWhitelist "[31534062,12]" --confirm
+     ```
+     提交后脚本会自动直连 ConfigService 回查热生效状态，向用户交付发布单号与最新生效值。
+2. **发布属性规范**：
+   - 默认且必须为【业务开关】(`releaseAttribute: "3"`)，符合贝壳测试环境配置变更管理与审计规范。
+3. **多 Namespace 隔离与自动定位**：
+   - 脚本自动读取目标微服务的所有 Namespace。若用户未显式指定，脚本会自动在所有 Namespace 中搜索该 Key 并精确定位所属 Namespace；
+   - 亦可显式传入 Namespace（如 `node scripts/apollo_modify.js iot application liveRunner.access.ucIdWhitelist "[31534062,12]"`），确保隔离其他 Namespace，绝不串改其它配置。
+4. **鉴权凭证规范（精准引导，严禁引导安装外部浏览器）**：
+   - 目标站点：`http://test-apollo.portal.life.ke.com`
+   - 核心凭证 Cookie 键名：**`jt_apollo_login_token`**
+   - 本地持久化路径：`~/.shrimp/skills/live-inspector/test_apollo_cookie.json`
+   - 当凭证失效时，AI 必须明确指引用户使用已有的 Chrome 扩展（**Leo cookie.txt Locally**）复制 **`jt_apollo_login_token`**，或通过 F12 复制该 Cookie。**严禁出现任何引导用户安装 `ego-browser` 的言论。**
 
 ---
 
@@ -180,6 +230,7 @@ AI 后台执行 `node scripts/test_mysql_query.js <service|host> [datasource|sql
 当执行查库或日志自愈遇到 **凭证缺失** 或 **凭证过期（302 重定向）** 时，AI 必须根据用户操作系统（Mac / Windows）主动提供清晰、精准的引导，严禁仅抛出冷冰冰的报错或模糊的 F12 指引：
 
 ### 🔑 核心凭证 Key 速查
+* **Apollo 测试环境配置修改**：目标页面 `http://test-apollo.portal.life.ke.com` ➔ 核心 Key: **`jt_apollo_login_token`**
 * **服务云 MySQL 查库**：目标页面 `https://cloud.intra.ke.com/database/mysql/self-check` ➔ 核心 Key: **`cloud_console_token_egg`**（`2.0...` 开头长串）
 * **FAST 日志全量自愈**：目标页面 `https://fast.ke.com` ➔ 核心 Key: **`_secondx`**（32位十六进制字符串）
 
