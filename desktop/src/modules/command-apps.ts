@@ -39,6 +39,7 @@ type CommandAppStatus = {
     supported?: boolean;
     configurableLlm?: boolean;
     profileName?: string;
+    daemonKind?: string | null;
   };
   profileName?: string;
   configPath?: string;
@@ -64,9 +65,14 @@ type CommandAppStatus = {
   embeddingSource?: ModelSource | null;
   endpoints?: {
     healthUrl?: string;
+    appUrl?: string;
     mcpUrl?: string;
     port?: number;
   } | null;
+  cwd?: string | null;
+  dataRoot?: string | null;
+  version?: string | null;
+  installable?: boolean;
 };
 
 const state: {
@@ -78,7 +84,7 @@ const state: {
   pathDrafts: Record<string, string>;
   llmDrafts: Record<string, Required<CommandAppLlm>>;
   modelSources: Record<string, { llm: ModelSource; embedding: ModelSource }>;
-  actionBusy: Record<string, "" | "launch" | "restart" | "stop" | "rescan" | "save" | "save-llm">;
+  actionBusy: Record<string, "" | "launch" | "restart" | "stop" | "rescan" | "save" | "save-llm" | "install" | "update" | "open">;
   memoryPageBusy: boolean;
   view: "list" | "hindsight";
 } = {
@@ -249,6 +255,10 @@ function isHindsightApp(status: CommandAppStatus): boolean {
   return Boolean(status.app?.id && String(status.app.id).startsWith("hindsight"));
 }
 
+function isLangBotApp(status: CommandAppStatus): boolean {
+  return status.app?.id === "langbot";
+}
+
 function hindsightApps(): CommandAppStatus[] {
   return state.apps.filter(isHindsightApp);
 }
@@ -289,6 +299,74 @@ function daemonDescription(status: CommandAppStatus): string {
     return "当前被编码 Agent 插件使用的记忆服务。页面上的 LLM / Base URL 会写入这个 profile。";
   }
   return "本地记忆服务。可配置自定义 LLM 中转，并由网关托管 daemon。";
+}
+
+function renderLangBotCard(status: CommandAppStatus): string {
+  const appId = status.app?.id || "langbot";
+  const isSupported = status.app?.supported !== false;
+  const hasError = Boolean(status.error || status.process?.status === "error");
+  const meta = statusMeta(status);
+  const running = status.process?.status === "running";
+  const busyAction = state.actionBusy[appId] || "";
+  const isBusy = Boolean(busyAction);
+  const isEditing = state.editingAppId === appId;
+  const draft = state.pathDrafts[appId] ?? (status.executablePath || "");
+  const appUrl = status.endpoints?.appUrl || "http://127.0.0.1:5300/";
+  const sources = state.modelSources[appId] || sourcesFromStatus(status);
+  const model = sources.llm.type === "gateway" ? resolvedGatewayModel(sources.llm) : sources.llm.model;
+  return `
+    <div class="command-apps-card${running ? " is-running" : ""}${!isSupported ? " is-unsupported" : ""}${hasError ? " is-card-error" : ""}" data-app-id="langbot">
+      <div class="command-apps-header">
+        <div>
+          <h3>LangBot</h3>
+          <p>多平台 AI 机器人服务。Shrimp 只托管进程和入口，配置、数据库与插件保存在 ~/.langbot。</p>
+        </div>
+        <span class="command-apps-status ${meta.className}" role="status">
+          <span class="command-apps-dot" aria-hidden="true"></span>${escapeHtml(meta.text)}
+        </span>
+      </div>
+      <dl class="command-apps-meta is-daemon">
+        <div>
+          <dt>LangBot CLI</dt>
+          <dd class="command-apps-path" title="${escapeHtml(status.executablePath || "")}">${escapeHtml(status.executablePath || "未检测到 langbot")}</dd>
+          <span class="command-apps-badge">${status.manuallyConfigured ? "手动路径" : (status.executablePath ? "自动检测" : "未安装")}</span>
+        </div>
+        <div>
+          <dt>实例数据</dt>
+          <dd class="command-apps-path" title="${escapeHtml(status.dataRoot || "")}">${escapeHtml(status.dataRoot || "~/.langbot/data")}</dd>
+          <span class="command-apps-badge">启动目录 ${escapeHtml(status.cwd || "~/.langbot")}</span>
+        </div>
+        <div>
+          <dt>Web / API</dt>
+          <dd class="command-apps-path">${escapeHtml(appUrl)}</dd>
+          <span class="command-apps-badge">:${Number(status.endpoints?.port || 5300)}</span>
+          <span class="command-apps-badge">${status.version ? escapeHtml(status.version) : "版本未知"}</span>
+        </div>
+      </dl>
+      <div class="command-apps-hint">LLM 手动接入建议：在 LangBot 模型提供方中选择 OpenAI-compatible，Base URL 填 http://127.0.0.1:8787/v1，模型填 ${escapeHtml(model || "网关模型")}，API Key 使用网关密钥或 all。Shrimp 不直接修改 LangBot 的模型配置。</div>
+      ${hasError ? `<div class="command-apps-hint is-error" style="color: #ef4444; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2);">${escapeHtml(status.error || "LangBot 状态异常")}</div>` : ""}
+      ${isEditing ? `
+        <form class="command-apps-manual" onsubmit="window.__commandAppsSave(event, '${escapeHtml(appId)}')">
+          <label for="command-apps-path-${escapeHtml(appId)}">langbot 可执行文件路径</label>
+          <input id="command-apps-path-${escapeHtml(appId)}" type="text" spellcheck="false" autocomplete="off" value="${escapeHtml(draft)}" placeholder="/Users/you/.local/bin/langbot" />
+          <div class="command-apps-actions">
+            <button class="btn btn-primary" type="submit" ${isBusy ? "disabled" : ""}>${busyAction === "save" ? "保存中..." : "保存路径"}</button>
+            <button class="btn" type="button" onclick="window.__commandAppsCancelEdit('${escapeHtml(appId)}')" ${isBusy ? "disabled" : ""}>取消</button>
+          </div>
+        </form>
+      ` : `
+        <div class="command-apps-actions">
+          <button class="btn" type="button" onclick="window.__commandAppsOpenLangBot()" ${busyAction === "open" || !running ? "disabled" : ""}>打开 LangBot</button>
+          <button class="btn btn-primary" type="button" onclick="window.__commandAppsLaunch('${escapeHtml(appId)}')" ${isBusy || running || status.process?.status === "launching" || !status.configured || !isSupported ? "disabled" : ""}>${busyAction === "launch" || status.process?.status === "launching" ? "启动中..." : "启动"}</button>
+          <button class="btn" type="button" onclick="window.__commandAppsStop('${escapeHtml(appId)}')" ${isBusy || (!running && status.process?.status !== "launching") ? "disabled" : ""}>${busyAction === "stop" ? "停止中..." : "停止"}</button>
+          <button class="btn" type="button" onclick="window.__commandAppsInstallLangBot()" ${isBusy || !isSupported || status.configured ? "disabled" : ""}>${busyAction === "install" ? "安装中..." : "安装"}</button>
+          <button class="btn" type="button" onclick="window.__commandAppsUpdateLangBot()" ${isBusy || !isSupported || !status.configured ? "disabled" : ""}>${busyAction === "update" ? "更新中..." : "更新"}</button>
+          <button class="btn" type="button" onclick="window.__commandAppsRescan('${escapeHtml(appId)}')" ${isBusy || !isSupported ? "disabled" : ""}>${busyAction === "rescan" ? "检测中..." : "重新检测"}</button>
+          <button class="btn" type="button" onclick="window.__commandAppsEditPath('${escapeHtml(appId)}')" ${isBusy || !isSupported ? "disabled" : ""}>配置路径</button>
+        </div>
+      `}
+    </div>
+  `;
 }
 
 function renderCard(status: CommandAppStatus): string {
@@ -594,7 +672,11 @@ function render(): void {
   root.innerHTML = `
     ${state.error ? `<div class="command-apps-error" role="alert" style="margin-bottom: 16px;">${escapeHtml(state.error)}</div>` : ""}
     ${detail ? renderHindsightDetail() : `<div style="display: flex; flex-direction: column; gap: 16px;">
-      ${otherApps().map((app) => renderCard(app)).join("")}
+      ${otherApps().filter((app) => !isLangBotApp(app)).map((app) => renderCard(app)).join("")}
+      ${(() => {
+        const langbot = state.apps.find(isLangBotApp);
+        return langbot ? renderLangBotCard(langbot) : "";
+      })()}
       ${renderHindsightSummary()}
     </div>`}
   `;
@@ -688,6 +770,28 @@ async function stop(appId: string = "antigravity"): Promise<void> {
     updateAppStatus(status);
     showToast(`${status.app?.displayName || appId} 已停止`, "info");
   });
+}
+
+async function packageAction(appId: "langbot", action: "install" | "update"): Promise<void> {
+  await runAction(appId, action, async () => {
+    const status = await api<CommandAppStatus>(`/v1/command-apps/apps/${encodeURIComponent(appId)}/${action}`, { method: "POST" });
+    updateAppStatus(status);
+    showToast(action === "install" ? "LangBot 安装完成" : "LangBot 更新完成", "success");
+  });
+}
+
+async function installLangBot(): Promise<void> {
+  await packageAction("langbot", "install");
+}
+
+async function updateLangBot(): Promise<void> {
+  await packageAction("langbot", "update");
+}
+
+function openLangBot(): void {
+  const current = state.apps.find(isLangBotApp);
+  const url = current?.endpoints?.appUrl || "http://127.0.0.1:5300/";
+  window.open(url, "_blank", "noopener,noreferrer");
 }
 
 async function rescan(appId: string = "antigravity"): Promise<void> {
@@ -881,6 +985,9 @@ async function openMemoryPage(): Promise<void> {
 (window as any).__commandAppsLaunch = launch;
 (window as any).__commandAppsRestart = restart;
 (window as any).__commandAppsStop = stop;
+(window as any).__commandAppsInstallLangBot = installLangBot;
+(window as any).__commandAppsUpdateLangBot = updateLangBot;
+(window as any).__commandAppsOpenLangBot = openLangBot;
 (window as any).__commandAppsRescan = rescan;
 (window as any).__commandAppsEditPath = editPath;
 (window as any).__commandAppsCancelEdit = cancelEdit;
