@@ -89,7 +89,8 @@
     "cluster": "https://fast101-kibana-logcenter-intra.intra.ke.com",
     "port": "6763",
     "database": "utopia_scs_recorder",
-    "dbDesc": "智慧工地记录仪从库"
+    "dbDesc": "智慧工地记录仪从库",
+    "realAppId": "utopia-scs-recorder"
   },
   "头戴式记录仪": {
     "index": "index-13401-13764*",
@@ -122,7 +123,8 @@
     "cluster": "https://fast105-kibana-logcenter-intra.intra.ke.com",
     "port": "6763",
     "database": "utopia_scs_algo",
-    "dbDesc": "智慧工地算法库"
+    "dbDesc": "智慧工地算法库",
+    "realAppId": "utopia-scs-algo"
   },
   "智慧工地saas全量日志": {
     "index": "index-9592-8939*",
@@ -224,5 +226,32 @@
     "port": "6496",
     "database": "basic_core",
     "dbDesc": "基础核心库"
+  },
+  "cangjie": {
+    "realAppId": "cangjie"
+  },
+  "memory": {
+    "realAppId": "dial-insight-memory"
+  },
+  "dial-insight-memory": {
+    "realAppId": "dial-insight-memory"
+  },
+  "ecology": {
+    "realAppId": "iot-ecology-platform"
+  },
+  "iot-ecology-platform": {
+    "realAppId": "iot-ecology-platform"
+  },
+  "erp-core": {
+    "realAppId": "iot-erp-core"
+  },
+  "erp-finance": {
+    "realAppId": "iot-erp-finance"
+  },
+  "cloud-plat": {
+    "realAppId": "huiju-iot-cloud-plat"
+  },
+  "device-adaptor": {
+    "realAppId": "zulin-iot-device-adaptor"
   }
 }

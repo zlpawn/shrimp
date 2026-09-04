@@ -1,0 +1,7 @@
+{
+  "name": "leo-live-inspector",
+  "version": "1.0.0",
+  "description": "Leo Live Inspector skill modules",
+  "type": "module",
+  "private": true
+}
