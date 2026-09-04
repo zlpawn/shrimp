@@ -180,8 +180,11 @@ test("service launch discovers, persists, and spawns Antigravity safely", async 
   assert.equal(result.executablePath, fx.executable);
   assert.equal(fx.saved[0].apps.antigravity.executablePath, fx.executable);
   assert.equal(fx.spawnCalls.length, 1);
-  assert.equal(fx.spawnCalls[0][0], fx.executable);
-  assert.deepEqual(fx.spawnCalls[0][1], ["--no-sandbox"]);
+  assert.equal(fx.spawnCalls[0][0], "runas.exe");
+  assert.deepEqual(fx.spawnCalls[0][1], [
+    "/trustlevel:0x20000",
+    `"${fx.executable}" --no-sandbox`,
+  ]);
   assert.equal(fx.spawnCalls[0][2].detached, true);
   assert.equal(fx.spawnCalls[0][2].stdio, "ignore");
   assert.equal(fx.spawnCalls[0][2].windowsHide, true);
@@ -256,7 +259,7 @@ test("routes expose config update and unknown app errors", async () => {
 test("launch request cannot override fixed arguments", async () => {
   const { fx, reqFor, res } = createRouteFixture();
   await routeCommandAppsRequest(reqFor("POST", "/v1/command-apps/apps/antigravity/launch", { args: ["--danger"] }), res, null, "/v1/command-apps/apps/antigravity/launch", { service: fx.service });
-  assert.deepEqual(fx.spawnCalls[0][1], ["--no-sandbox"]);
+  assert.equal(fx.spawnCalls[0][1].at(-1), `"${fx.executable}" --no-sandbox`);
 });
 
 test("windows process matching falls back to executable name when path is unavailable", () => {

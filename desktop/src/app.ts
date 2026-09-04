@@ -2917,6 +2917,17 @@ function installCliByName(name, command) {
     if (nameInput) nameInput.value = name;
     if (cmdInput) cmdInput.focus();
 }
+function prefillCliInstallCommand(command, cliName) {
+    // Shared bridge so special managed-runtime cards can reuse the generic
+    // install terminal and history without knowing its DOM implementation.
+    switchTab('cli-install-history');
+    const cmdInput = document.getElementById('cli-install-cmd');
+    const nameInput = document.getElementById('cli-install-name');
+    if (cmdInput) cmdInput.value = command;
+    if (nameInput) nameInput.value = cliName || '';
+    if (cmdInput) cmdInput.focus();
+}
+window.prefillCliInstallCommand = prefillCliInstallCommand;
 
 // CLI install terminal + history (parallel to the skills install flow)
 let cliXterm = null;

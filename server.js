@@ -183,6 +183,7 @@ import { createNatTraversalService } from "./lib/nat-traversal/application/servi
 import { createCommandAppsService } from "./lib/command-apps/application/service.mjs";
 import { routeCommandAppsRequest } from "./lib/command-apps/http/routes.mjs";
 import { createCommandAppsSqliteStore } from "./lib/command-apps/infra/sqlite-store.mjs";
+import { createCodexhostService, routeCodexhostRequest } from "./lib/codexhost-integration/index.mjs";
 import { createSessionKanbanStore } from "./lib/session-kanban/infra/sqlite-store.mjs";
 import { createSessionKanbanService } from "./lib/session-kanban/application/service.mjs";
 import { createSessionKanbanScheduler } from "./lib/session-kanban/application/scheduler.mjs";
@@ -352,6 +353,15 @@ function ensureCommandAppsService() {
     logger: console,
   });
   return globalCommandAppsService;
+}
+
+let globalCodexhostService = null;
+function ensureCodexhostService() {
+  if (globalCodexhostService) return globalCodexhostService;
+  globalCodexhostService = createCodexhostService({
+    gatewayPort: ENV_PORT,
+  });
+  return globalCodexhostService;
 }
 
 let globalSessionKanbanService = null;
@@ -1222,6 +1232,15 @@ async function route(req, res) {
     });
     return;
   }
+
+  if (reqPath.startsWith("/v1/cli-tools/codexhost")) {
+    if (!checkLocalAuth(req, res)) return;
+    await routeCodexhostRequest(req, res, reqPath, {
+      service: ensureCodexhostService(),
+    });
+    return;
+  }
+
   if (reqPath.startsWith("/v1/session-kanban")) {
     if (!checkLocalAuth(req, res)) return;
     await routeSessionKanbanRequest(req, res, reqPath, {
