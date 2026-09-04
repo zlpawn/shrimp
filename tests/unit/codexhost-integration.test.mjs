@@ -2,12 +2,14 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 const integration = await import("../../lib/codexhost-integration/index.mjs").catch(() => null);
+const processManager = await import("../../lib/codexhost-integration/process-manager.mjs").catch(() => null);
 
 test("codexhost integration module is available", () => {
   assert.ok(integration, "expected lib/codexhost-integration/index.mjs to exist");
 });
 
 const skipUntilModuleExists = integration ? false : "codexhost integration is not implemented yet";
+const skipProcessManager = processManager ? false : "codexhost process manager is not implemented yet";
 
 function validDescriptor(overrides = {}) {
   return {
@@ -71,6 +73,58 @@ function createFixture(overrides = {}) {
     terminateProcess: async (pid) => { calls.terminate.push(pid); descriptor = null; },
     now: () => new Date("2026-09-03T08:00:00.000Z"),
     ...overrides.dependencies,
+  });
+  return { service, calls, executable };
+}
+
+function createDarwinFixture(overrides = {}) {
+  const executable = {
+    executablePath: "/opt/homebrew/bin/codexhost",
+    entrypointPath: "/opt/homebrew/lib/node_modules/@codexhost/cli/bin/codexhost.js",
+    launcherPath: "/opt/homebrew/lib/node_modules/@codexhost/cli-darwin-arm64/bin/codexhost",
+    version: "0.4.2",
+  };
+  const calls = { spawn: [], terminate: [] };
+  let descriptor = overrides.descriptor === undefined ? null : overrides.descriptor;
+  const service = integration?.createCodexhostService({
+    platform: "darwin",
+    gatewayPort: 8788,
+    discoverExecutable: async () => executable,
+    inspectInstallation: async () => overrides.installation || {
+      desktopExecutable: "/Applications/ChatGPT.app/Contents/MacOS/ChatGPT",
+      desktopLauncher: "/Applications/ChatGPT.app/Contents/MacOS/ChatGPT",
+      desktopProcessIds: [],
+    },
+    readRuntimeDescriptor: async () => descriptor,
+    probeRuntimeControl: async () => Boolean(descriptor),
+    probeGateway: async () => ({
+      ok: true,
+      service: "shrimp",
+      process_id: 100,
+      instance_id: "gateway-darwin-8788",
+      models: ["test-model"],
+    }),
+    readCodexConfig: async () => ({
+      path: "/Users/tester/.codex/config.toml",
+      text: [
+        'model_provider = "custom"',
+        'model_catalog_json = "/Users/tester/.codex/gateway-model-catalog.json"',
+        'openai_base_url = "http://127.0.0.1:8788/codex/v1"',
+        "",
+        "[model_providers.custom]",
+        'base_url = "http://127.0.0.1:8788/codex/v1"',
+      ].join("\n"),
+    }),
+    processExecutablePath: async (pid) => overrides.processExecutablePath === undefined
+      ? (pid === 4242 ? executable.launcherPath : "")
+      : overrides.processExecutablePath,
+    isProcessAlive: async () => true,
+    spawnProcess(command, args, options) {
+      calls.spawn.push({ command, args, options });
+      return { pid: 5252, unref() {} };
+    },
+    terminateProcess: async (pid) => { calls.terminate.push(pid); descriptor = null; },
+    now: () => new Date("2026-09-04T08:00:00.000Z"),
   });
   return { service, calls, executable };
 }
@@ -178,6 +232,92 @@ test("stop terminates only the launcher verified by the runtime descriptor and i
 
   assert.deepEqual(calls.terminate, [4242]);
   assert.equal(status.process.status, "stopped");
+});
+
+test("macOS resolves a PID executable through ps output", { skip: skipProcessManager }, async () => {
+  const calls = [];
+  const execFileImpl = async (command, args, options) => {
+    calls.push({ command, args, options });
+    return { stdout: "/opt/homebrew/lib/node_modules/@codexhost/cli-darwin-arm64/bin/codexhost\n" };
+  };
+
+  const result = await processManager.processExecutablePath(4242, {
+    platform: "darwin",
+    execFileImpl,
+  });
+
+  assert.equal(result, "/opt/homebrew/lib/node_modules/@codexhost/cli-darwin-arm64/bin/codexhost");
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].command, "ps");
+  assert.deepEqual(calls[0].args, ["-p", "4242", "-o", "comm="]);
+});
+
+test("macOS PID path probing treats a vanished process as unverified instead of throwing", { skip: skipProcessManager }, async () => {
+  const result = await processManager.processExecutablePath(4242, {
+    platform: "darwin",
+    execFileImpl: async () => {
+      const error = new Error("no such process");
+      error.code = 1;
+      throw error;
+    },
+  });
+
+  assert.equal(result, "");
+});
+
+test("macOS termination waits for the launcher to exit after SIGTERM", { skip: skipProcessManager }, async () => {
+  const originalKill = process.kill;
+  const signals = [];
+  const sleeps = [];
+  const alive = [true, true, false];
+  process.kill = (pid, signal) => { signals.push([pid, signal]); };
+  try {
+    await processManager.terminateProcess(4242, {
+      platform: "darwin",
+      isProcessAlive: async () => alive.length ? alive.shift() : false,
+      sleep: async (ms) => { sleeps.push(ms); },
+    });
+  } finally {
+    process.kill = originalKill;
+  }
+
+  assert.deepEqual(signals, [[4242, "SIGTERM"]]);
+  assert.equal(sleeps.length, 2);
+});
+
+test("macOS termination reports a launcher that ignores SIGTERM", { skip: skipProcessManager }, async () => {
+  await assert.rejects(
+    () => processManager.terminateProcess(4242, {
+      platform: "darwin",
+      sendSignal: () => {},
+      isProcessAlive: async () => true,
+      sleep: async () => {},
+      timeoutMs: 250,
+    }),
+    (error) => error?.code === "process_error" && /did not exit/.test(error.message),
+  );
+});
+
+test("macOS stop verifies and terminates the installed launcher", { skip: skipUntilModuleExists }, async () => {
+  const { service, calls } = createDarwinFixture({ descriptor: validDescriptor() });
+
+  const status = await service.stop({ confirmInterrupt: true });
+
+  assert.deepEqual(calls.terminate, [4242]);
+  assert.equal(status.process.status, "stopped");
+});
+
+test("macOS stop refuses a launcher PID owned by another executable", { skip: skipUntilModuleExists }, async () => {
+  const { service, calls } = createDarwinFixture({
+    descriptor: validDescriptor(),
+    processExecutablePath: "/tmp/malware/codexhost",
+  });
+
+  await assert.rejects(
+    () => service.stop({ confirmInterrupt: true }),
+    (error) => error?.code === "runtime_owner_mismatch",
+  );
+  assert.deepEqual(calls.terminate, []);
 });
 
 test("open official waits for the verified launcher and descriptor cleanup before launching normal mode", { skip: skipUntilModuleExists }, async () => {
