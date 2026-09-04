@@ -21,7 +21,20 @@ Complete the existing `leo-live-inspector` test-environment MySQL DML/DDL capabi
 
 Automated tests cover two agreed public seams:
 
-1. An exported SQL-analysis module that classifies statements and reports whether an `UPDATE` or `DELETE` has an effective top-level `WHERE` clause.
+1. An exported SQL-analysis module with this stable contract:
+
+   ```js
+   analyzeSql(sql) => {
+     keyword,          // normalized main statement keyword or "UNKNOWN"
+     category,         // "QUERY" | "DML" | "DDL" | "UNKNOWN"
+     isWrite,          // true for recognized DML/DDL
+     guardRequired,    // true when the effective statement is UPDATE/DELETE
+     hasTopLevelWhere, // true | false | null; null means indeterminate
+     tableName         // extracted table name or null
+   }
+   ```
+
+   The analyzer never mutates or rewrites the supplied SQL.
 2. The `test_mysql_query.js` CLI, observed through exit status, stdout, and stderr with a fake MySQL adapter or injected execution dependency.
 
 Tests must describe user-visible behavior and must not assert private implementation steps.
@@ -37,15 +50,16 @@ The analyzer must:
 - Classify the supported query statements: `SELECT`, `SHOW`, `DESC`/`DESCRIBE`, and `EXPLAIN`.
 - Classify the supported DML statements: `INSERT`, `UPDATE`, `DELETE`, and `REPLACE`.
 - Classify the supported DDL statements: `CREATE`, `ALTER`, `DROP`, and `TRUNCATE`.
-- Recognize a top-level `UPDATE` or `DELETE` following a MySQL 8 `WITH` common-table expression.
+- Recognize a top-level `UPDATE` or `DELETE` following MySQL 8 common-table expressions, including multiple CTEs and `WITH RECURSIVE`.
 - For guarded `UPDATE` and `DELETE`, recognize only an effective top-level `WHERE`, not `WHERE` text inside a string, comment, identifier, or nested subquery.
 - Extract a table name for straightforward `CREATE TABLE`, `ALTER TABLE`, `DROP TABLE`, and `TRUNCATE TABLE` statements when possible. Failure to extract a name must not prevent execution.
 
-The analyzer is deliberately not a complete SQL parser. Unsupported or ambiguous statements remain executable as generic queries, but they do not silently gain DML/DDL write labels or bypass the guarded-statement rule.
+The analyzer is deliberately not a complete SQL parser. Unsupported statements that do not lexically resolve to a guarded `UPDATE` or `DELETE` remain executable as generic queries. If lexical analysis indicates that the effective statement may be `UPDATE` or `DELETE` but the main statement or top-level-`WHERE` result is indeterminate, execution fails closed unless `--force` is present.
 
 ## Guard behavior
 
 - `UPDATE` and `DELETE` without an effective top-level `WHERE` must exit before loading `mysql2`, opening a connection, or persisting credentials.
+- A potentially guarded statement with `hasTopLevelWhere: null` is treated the same as a missing `WHERE` and rejected unless `--force` is present.
 - The rejection message must identify the operation and explain that `--force` is required for an intentional full-table operation.
 - `--force` bypasses only this guard; it does not alter connection selection, SQL text, or output mode.
 - `WHERE 1=1` counts as a syntactic `WHERE` and is allowed. The tool protects against accidental omission, not semantically broad predicates.
@@ -65,7 +79,7 @@ For DML/DDL results, human-readable output includes:
 - warning count when non-zero;
 - a contextual success line containing the extracted table name for supported DDL statements when available.
 
-JSON output keeps the current connection metadata and operation type, and returns the same write-result metrics without formatting-only text.
+JSON output keeps the current connection metadata and operation type. Write results use the exact keys `affectedRows`, `insertId`, `changedRows`, and `warningStatus`, retaining current compatibility.
 
 SELECT/SHOW/DESC/EXPLAIN output and existing datasource selection behavior must remain compatible.
 
@@ -101,7 +115,9 @@ After automated tests pass, run the production CLI against the configured `iot_s
 leo_inspector_verify_20260904_<random-suffix>
 ```
 
-Verification steps:
+The full lifecycle must be controlled by one Node verification harness. It may be a checked-in manual verification script or a one-shot stdin script, but it must contain a single `try/finally` around all CLI invocations. The `finally` block always invokes the production CLI with `DROP TABLE IF EXISTS`, then queries `information_schema.tables` to prove that the generated table name is absent. A series of unrelated terminal commands is not sufficient evidence.
+
+Verification steps inside that harness:
 
 1. `CREATE TABLE` with a numeric primary key, text value, and integer status.
 2. `INSERT` one row and record the returned insert ID.
@@ -109,7 +125,7 @@ Verification steps:
 4. `SELECT` the row and verify the new value.
 5. `DELETE ... WHERE id = <insertId>` and verify one affected row.
 6. `DROP TABLE`.
-7. In all cases, execute `DROP TABLE IF EXISTS` as final cleanup and verify the table no longer exists.
+7. In all cases, execute `DROP TABLE IF EXISTS` from `finally` and verify the table no longer exists.
 
 The validation report may include the temporary table name, operation results, and timings, but no password or secret-bearing connection configuration.
 
@@ -117,7 +133,7 @@ The validation report may include the temporary table name, operation results, a
 
 - Update `SKILL.md` only where behavior has materially changed, especially the safety explanation and DDL feedback.
 - Add a focused npm test command for the inspector MySQL tests if that improves repeatability.
-- After repository verification, synchronize only the changed `leo-live-inspector` files to `~/.agents/skills/leo-live-inspector` and compare them byte-for-byte.
+- After repository verification, synchronize only the changed `leo-live-inspector` files to `~/.agents/skills/leo-live-inspector` and compare them byte-for-byte, including `SKILL.md` whenever it changes.
 
 ## Completion criteria
 
