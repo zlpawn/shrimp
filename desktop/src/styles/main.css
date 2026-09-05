@@ -973,12 +973,66 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
+  flex: 1;
+}
+
+.kb-col-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+  line-height: 1;
 }
 
 .kb-collection-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.kb-collection-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.kb-col-actions {
+  display: none;
+  align-items: center;
+  gap: 2px;
+}
+
+.kb-collection-item:hover .kb-col-actions,
+.kb-collection-item.active .kb-col-actions {
+  display: flex;
+}
+
+.kb-col-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all var(--transition-fast);
+  line-height: 1;
+}
+
+.kb-col-btn:hover {
+  background: var(--surface);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.kb-col-btn.text-danger:hover {
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.12);
 }
 
 /* Search Box */

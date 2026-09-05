@@ -84,6 +84,10 @@ const state = {
   installTask: null as InstallTask | null,
   showInstallModal: false,
   showCreateColModal: false,
+  showEditColModal: false,
+  editingColId: "",
+  editColName: "",
+  editColDesc: "",
   showUrlModal: false,
   showTextModal: false,
   modalUrl: "",
@@ -102,6 +106,11 @@ const state = {
 
 function getRoot(): HTMLElement | null {
   return document.getElementById("knowledge-base-root");
+}
+
+function getCollectionIcon(icon?: string): string {
+  if (!icon || icon === "folder") return "📁";
+  return icon;
 }
 
 function esc(str: any): string {
@@ -838,15 +847,26 @@ export function render(): void {
                 <button class="btn btn-xs" onclick="window.__kbOpenCreateColModal()">+ 新建</button>
               </div>
               <div class="kb-collections-list">
-                ${state.collections.map((c) => `
+                ${state.collections.map((c) => {
+                  const icon = getCollectionIcon(c.icon);
+                  const isDefault = c.id === "col_default";
+                  return `
                   <div class="kb-collection-item ${c.id === state.activeCollectionId ? "active" : ""}" onclick="window.__kbSelectCollection('${c.id}')">
                     <div class="kb-collection-name-row">
-                      <span>${c.icon || "📁"}</span>
+                      <span class="kb-col-icon">${icon}</span>
                       <span class="kb-collection-name" title="${esc(c.name)}">${esc(c.name)}</span>
                     </div>
-                    <span class="mcp-badge-counter">${c.doc_count || 0}</span>
+                    <div class="kb-collection-meta-row">
+                      <span class="mcp-badge-counter">${c.doc_count || 0}</span>
+                      <div class="kb-col-actions" onclick="event.stopPropagation()">
+                        <button class="kb-col-btn" title="重命名 / 编辑目录" onclick="window.__kbOpenEditColModal('${c.id}')">✏️</button>
+                        ${!isDefault ? `
+                          <button class="kb-col-btn text-danger" title="删除知识库目录及全部文档" onclick="window.__kbDeleteCollection('${c.id}', '${esc(c.name)}')">🗑️</button>
+                        ` : ""}
+                      </div>
+                    </div>
                   </div>
-                `).join("")}
+                `;}).join("")}
               </div>
             </div>
 
@@ -1127,16 +1147,42 @@ export function render(): void {
             <div class="kb-modal-body">
               <div class="kb-form-group">
                 <label class="kb-form-label">分类名称</label>
-                <input type="text" class="kb-form-input" placeholder="例如: 深度研报、工程架构、竞品跟踪" value="${esc(state.modalColName)}" oninput="state.modalColName = this.value" autofocus />
+                <input type="text" class="kb-form-input" placeholder="例如: 深度研报、工程架构、竞品跟踪" value="${esc(state.modalColName)}" oninput="state.modalColName = this.value" onkeydown="if (event.key === 'Enter') window.__kbSubmitCreateCol()" autofocus />
               </div>
               <div class="kb-form-group">
                 <label class="kb-form-label">分类描述 (可选)</label>
-                <input type="text" class="kb-form-input" placeholder="简要描述该分类下的文档类型" value="${esc(state.modalColDesc)}" oninput="state.modalColDesc = this.value" />
+                <input type="text" class="kb-form-input" placeholder="简要描述该分类下的文档类型" value="${esc(state.modalColDesc)}" oninput="state.modalColDesc = this.value" onkeydown="if (event.key === 'Enter') window.__kbSubmitCreateCol()" />
               </div>
             </div>
             <div class="kb-modal-footer">
               <button class="btn" onclick="window.__kbCloseCreateColModal()">取消</button>
               <button class="btn btn-primary" onclick="window.__kbSubmitCreateCol()" ${!state.modalColName.trim() ? "disabled" : ""}>创建分类</button>
+            </div>
+          </div>
+        </div>
+      ` : ""}
+
+      <!-- Edit Collection Modal -->
+      ${state.showEditColModal ? `
+        <div class="kb-modal-backdrop" onclick="if (event.target === this) window.__kbCloseEditColModal()">
+          <div class="kb-modal" style="width: 440px;">
+            <div class="kb-modal-header">
+              <span>编辑知识库目录</span>
+              <button class="vk-modal-close" onclick="window.__kbCloseEditColModal()">✕</button>
+            </div>
+            <div class="kb-modal-body">
+              <div class="kb-form-group">
+                <label class="kb-form-label">目录名称</label>
+                <input type="text" class="kb-form-input" placeholder="请输入知识库名称" value="${esc(state.editColName)}" oninput="state.editColName = this.value" onkeydown="if (event.key === 'Enter') window.__kbSubmitEditCol()" autofocus />
+              </div>
+              <div class="kb-form-group">
+                <label class="kb-form-label">目录描述 (可选)</label>
+                <input type="text" class="kb-form-input" placeholder="简要描述该分类下的文档类型或用途" value="${esc(state.editColDesc)}" oninput="state.editColDesc = this.value" onkeydown="if (event.key === 'Enter') window.__kbSubmitEditCol()" />
+              </div>
+            </div>
+            <div class="kb-modal-footer">
+              <button class="btn" onclick="window.__kbCloseEditColModal()">取消</button>
+              <button class="btn btn-primary" onclick="window.__kbSubmitEditCol()" ${!state.editColName.trim() ? "disabled" : ""}>保存修改</button>
             </div>
           </div>
         </div>
@@ -1295,6 +1341,65 @@ function bindDragAndDrop(): void {
     await loadDocuments();
   } catch (err: any) {
     alert(`创建分类失败: ${err.message}`);
+  }
+};
+
+(window as any).__kbOpenEditColModal = (id: string) => {
+  const col = state.collections.find((c) => c.id === id);
+  if (!col) return;
+  state.editingColId = id;
+  state.editColName = col.name;
+  state.editColDesc = col.description || "";
+  state.showEditColModal = true;
+  render();
+};
+
+(window as any).__kbCloseEditColModal = () => {
+  state.showEditColModal = false;
+  state.editingColId = "";
+  state.editColName = "";
+  state.editColDesc = "";
+  render();
+};
+
+(window as any).__kbSubmitEditCol = async () => {
+  if (!state.editingColId || !state.editColName.trim()) return;
+  try {
+    await apiFetch(`/v1/kb/collections/${state.editingColId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: state.editColName.trim(),
+        description: state.editColDesc.trim(),
+      }),
+    });
+    state.showEditColModal = false;
+    state.editingColId = "";
+    state.editColName = "";
+    state.editColDesc = "";
+    await loadCollections();
+  } catch (err: any) {
+    alert(`修改知识库失败: ${err.message}`);
+  }
+};
+
+(window as any).__kbDeleteCollection = async (id: string, name: string) => {
+  if (id === "col_default") {
+    alert("默认知识库为系统基础目录，不支持删除。如需调整，可直接点击重命名。");
+    return;
+  }
+  if (!confirm(`确定要删除知识库目录「${name}」吗？\n\n注意：该目录下的所有文档及其解析数据将被一并删除，此操作不可撤销！`)) {
+    return;
+  }
+  try {
+    await apiFetch(`/v1/kb/collections/${id}`, { method: "DELETE" });
+    if (state.activeCollectionId === id) {
+      state.activeCollectionId = "col_default";
+    }
+    await loadCollections();
+    await loadDocuments();
+  } catch (err: any) {
+    alert(`删除知识库失败: ${err.message}`);
   }
 };
 

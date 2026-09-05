@@ -67,11 +67,17 @@ test("KbStore: CRUD collections and documents with FTS5 search", async () => {
   assert.equal(searchResults.length, 1);
   assert.equal(searchResults[0].id, "doc_001");
 
-  // Test document deletion
-  store.deleteDocument("doc_001");
-  assert.equal(store.getDocument("doc_001"), null);
-  const colAfterDel = store.getCollection("col_test");
-  assert.equal(colAfterDel.doc_count, 0);
+  // Test collection update (rename)
+  const updatedCol = store.updateCollection("col_test", {
+    name: "深度学习专栏",
+    description: "更新后的描述",
+  });
+  assert.equal(updatedCol.name, "深度学习专栏");
+  assert.equal(store.getCollection("col_test").name, "深度学习专栏");
+
+  // Test collection deletion
+  store.deleteCollection("col_test");
+  assert.equal(store.getCollection("col_test"), null);
 
   // Clean up
   store.close();

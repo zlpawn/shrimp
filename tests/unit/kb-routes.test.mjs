@@ -80,6 +80,30 @@ test("KbRoutes: Collections, documents, and tools status endpoints", async () =>
   assert.equal(resDocDetail.status, 200);
   assert.equal(dataDocDetail.document.id, dataIngestText.document.id);
 
+  // 7. PUT /v1/kb/collections/:id (Rename collection)
+  const resUpdateCol = await fetch(`http://127.0.0.1:${port}/v1/kb/collections/${dataCreateCol.collection.id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: "已更名专栏", description: "全新描述" }),
+  });
+  const dataUpdateCol = await resUpdateCol.json();
+  assert.equal(resUpdateCol.status, 200);
+  assert.equal(dataUpdateCol.collection.name, "已更名专栏");
+
+  // 8. DELETE /v1/kb/collections/col_default (Should fail with 400)
+  const resDelDefault = await fetch(`http://127.0.0.1:${port}/v1/kb/collections/col_default`, {
+    method: "DELETE",
+  });
+  assert.equal(resDelDefault.status, 400);
+
+  // 9. DELETE /v1/kb/collections/:id (Delete created collection)
+  const resDelCol = await fetch(`http://127.0.0.1:${port}/v1/kb/collections/${dataCreateCol.collection.id}`, {
+    method: "DELETE",
+  });
+  const dataDelCol = await resDelCol.json();
+  assert.equal(resDelCol.status, 200);
+  assert.equal(dataDelCol.ok, true);
+
   server.close();
   store.close();
   fs.rmSync(tmpDir, { recursive: true, force: true });
