@@ -214,6 +214,7 @@ import {
   createTrendIntelScheduler,
   routeTrendIntelRequest,
 } from "./lib/trend-intel/index.mjs";
+import { initKnowledgeBaseModule } from "./lib/knowledge-base/index.mjs";
 
 loadDotEnv();
 enableNodeEnvProxy();
@@ -402,6 +403,17 @@ function ensureTrendIntelService() {
     globalTrendIntelScheduler.start();
   }
   return globalTrendIntelService;
+}
+
+let globalKnowledgeBaseModule = null;
+function ensureKnowledgeBaseModule() {
+  if (globalKnowledgeBaseModule) return globalKnowledgeBaseModule;
+  const dataDir = path.join(path.dirname(GATEWAY_CONFIG_FILE), "data");
+  globalKnowledgeBaseModule = initKnowledgeBaseModule({
+    dataDir,
+    taskQueue: globalTaskQueue,
+  });
+  return globalKnowledgeBaseModule;
 }
 
 function ensureMcpManagementService() {
@@ -1255,6 +1267,13 @@ async function route(req, res) {
       service: ensureTrendIntelService(),
     });
     return;
+  }
+
+  if (reqPath.startsWith("/v1/kb")) {
+    if (!checkLocalAuth(req, res)) return;
+    const { routeHandler } = ensureKnowledgeBaseModule();
+    const handled = await routeHandler(req, res, url, reqPath);
+    if (handled) return;
   }
 
 

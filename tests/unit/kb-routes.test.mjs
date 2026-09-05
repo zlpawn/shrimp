@@ -1,0 +1,86 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import http from "node:http";
+import fs from "node:fs";
+import path from "node:path";
+import os from "node:os";
+import { createKbStore } from "../../lib/knowledge-base/kb-store.mjs";
+import { createEngineRegistry } from "../../lib/knowledge-base/engine-adapter.mjs";
+import { createWebScraper } from "../../lib/knowledge-base/scraper.mjs";
+import { createKbPipeline } from "../../lib/knowledge-base/pipeline.mjs";
+import { createKbRoutes } from "../../lib/knowledge-base/routes.mjs";
+
+test("KbRoutes: Collections, documents, and tools status endpoints", async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "kb-routes-test-"));
+  const store = createKbStore({ dbPath: path.join(tmpDir, "test.db") });
+  store.init();
+  const registry = createEngineRegistry();
+  const scraper = createWebScraper({});
+  const pipeline = createKbPipeline({ store, registry, scraper, dataDir: tmpDir });
+  const handler = createKbRoutes({ store, pipeline, registry, dataDir: tmpDir });
+
+  const server = http.createServer(async (req, res) => {
+    const parsed = new URL(req.url, "http://127.0.0.1");
+    const handled = await handler(req, res, parsed, parsed.pathname);
+    if (!handled) {
+      res.statusCode = 404;
+      res.end();
+    }
+  });
+
+  await new Promise((r) => server.listen(0, r));
+  const port = server.address().port;
+
+  // 1. GET /v1/kb/collections
+  const resCol = await fetch(`http://127.0.0.1:${port}/v1/kb/collections`);
+  const dataCol = await resCol.json();
+  assert.equal(resCol.status, 200);
+  assert.equal(Array.isArray(dataCol.collections), true);
+  assert.equal(dataCol.collections.length >= 1, true);
+
+  // 2. POST /v1/kb/collections
+  const resCreateCol = await fetch(`http://127.0.0.1:${port}/v1/kb/collections`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: "新项目研报", description: "项目专属" }),
+  });
+  const dataCreateCol = await resCreateCol.json();
+  assert.equal(resCreateCol.status, 200);
+  assert.equal(dataCreateCol.collection.name, "新项目研报");
+
+  // 3. GET /v1/kb/tools/status
+  const resTools = await fetch(`http://127.0.0.1:${port}/v1/kb/tools/status`);
+  const dataTools = await resTools.json();
+  assert.equal(resTools.status, 200);
+  assert.equal("tools" in dataTools, true);
+
+  // 4. POST /v1/kb/ingest/text
+  const resIngestText = await fetch(`http://127.0.0.1:${port}/v1/kb/ingest/text`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      text: "# 接口测试内容\n这是段落测试。",
+      title: "接口测试标题",
+      collection_id: dataCreateCol.collection.id,
+    }),
+  });
+  const dataIngestText = await resIngestText.json();
+  assert.equal(resIngestText.status, 200);
+  assert.equal(dataIngestText.document.title, "接口测试标题");
+
+  // 5. GET /v1/kb/documents
+  const resDocs = await fetch(`http://127.0.0.1:${port}/v1/kb/documents?collection_id=${dataCreateCol.collection.id}`);
+  const dataDocs = await resDocs.json();
+  assert.equal(resDocs.status, 200);
+  assert.equal(dataDocs.documents.length, 1);
+
+  // 6. GET /v1/kb/documents/:id
+  const resDocDetail = await fetch(`http://127.0.0.1:${port}/v1/kb/documents/${dataIngestText.document.id}`);
+  const dataDocDetail = await resDocDetail.json();
+  assert.equal(resDocDetail.status, 200);
+  assert.equal(dataDocDetail.document.id, dataIngestText.document.id);
+
+  server.close();
+  store.close();
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
