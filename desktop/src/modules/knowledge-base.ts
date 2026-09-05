@@ -23,7 +23,7 @@ interface KbDocument {
   id: string;
   collection_id: string;
   title: string;
-  source_type: "file" | "url" | "text";
+  source_type: "file" | "url" | "text" | "craft" | "video";
   source_url?: string;
   file_name?: string;
   file_size?: number;
@@ -97,6 +97,14 @@ const state = {
   modalColName: "",
   modalColDesc: "",
   previewAsset: null as KbAsset | null,
+  showCraftModal: false,
+  craftStatus: null as null | { connected: boolean; spaceName?: string; error?: string },
+  craftLoading: false,
+  craftDocuments: [] as Array<{ id: string; title: string; snippet?: string }>,
+  craftSelectedIds: new Set<string>(),
+  craftSearchQuery: "",
+  craftImporting: false,
+  craftImportTargetCol: "col_default",
   // Phase 2-4 interactive preview state
   chunkSize: 1024,
   chunkOverlap: 128,
@@ -439,6 +447,117 @@ async function handleTextIngest(): Promise<void> {
   }
 }
 
+// Craft MCP Channel Handlers
+let craftSearchTimer: any = null;
+
+async function openCraftModal(): Promise<void> {
+  state.showCraftModal = true;
+  state.craftLoading = true;
+  state.craftSearchQuery = "";
+  state.craftSelectedIds = new Set();
+  state.craftImportTargetCol = state.activeCollectionId || "col_default";
+  render();
+
+  try {
+    const status = await apiFetch<{ connected: boolean; spaceName?: string; error?: string }>("/v1/kb/channels/craft/status");
+    state.craftStatus = status;
+    if (status.connected) {
+      const data = await apiFetch<{ documents: Array<{ id: string; title: string; snippet?: string }> }>("/v1/kb/channels/craft/documents?limit=50");
+      state.craftDocuments = data.documents || [];
+    } else {
+      state.craftDocuments = [];
+    }
+  } catch (err: any) {
+    state.craftStatus = { connected: false, error: err.message };
+    state.craftDocuments = [];
+  } finally {
+    state.craftLoading = false;
+    render();
+  }
+}
+
+async function searchCraftDocuments(query: string): Promise<void> {
+  state.craftSearchQuery = query;
+  state.craftLoading = true;
+  render();
+
+  try {
+    const q = encodeURIComponent(query.trim());
+    const data = await apiFetch<{ documents: Array<{ id: string; title: string; snippet?: string }> }>(
+      `/v1/kb/channels/craft/documents?limit=50${q ? `&q=${q}` : ""}`
+    );
+    state.craftDocuments = data.documents || [];
+  } catch (err: any) {
+    console.error("Search craft error:", err);
+  } finally {
+    state.craftLoading = false;
+    render();
+  }
+}
+
+async function importSingleCraftDoc(rootBlockId: string, title: string): Promise<void> {
+  state.craftImporting = true;
+  render();
+
+  try {
+    const targetCol = state.craftImportTargetCol || state.activeCollectionId || "col_default";
+    const res = await apiFetch<{ document: KbDocument }>("/v1/kb/channels/craft/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        rootBlockId,
+        title,
+        collection_id: targetCol,
+      }),
+    });
+    state.showCraftModal = false;
+    state.activeDocId = res.document.id;
+    await loadCollections();
+    await loadDocuments();
+  } catch (err: any) {
+    alert(`导入 Craft 笔记失败: ${err.message}`);
+  } finally {
+    state.craftImporting = false;
+    render();
+  }
+}
+
+async function batchImportCraftDocs(): Promise<void> {
+  if (state.craftSelectedIds.size === 0) return;
+  state.craftImporting = true;
+  render();
+
+  try {
+    const targetCol = state.craftImportTargetCol || state.activeCollectionId || "col_default";
+    const items = Array.from(state.craftSelectedIds).map((id) => {
+      const doc = state.craftDocuments.find((d) => d.id === id);
+      return { rootBlockId: id, title: doc?.title || "" };
+    });
+
+    const res = await apiFetch<{ imported: KbDocument[]; failed: any[]; total: number }>("/v1/kb/channels/craft/batch-import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        items,
+        collection_id: targetCol,
+      }),
+    });
+
+    state.showCraftModal = false;
+    state.craftSelectedIds.clear();
+    await loadCollections();
+    await loadDocuments();
+    if (res.imported && res.imported.length > 0) {
+      state.activeDocId = res.imported[0].id;
+    }
+  } catch (err: any) {
+    alert(`批量导入失败: ${err.message}`);
+  } finally {
+    state.craftImporting = false;
+    render();
+  }
+}
+
 // Tool Install / Upgrade
 async function triggerToolAction(tool: string, action: "install" | "upgrade"): Promise<void> {
   state.showInstallModal = true;
@@ -740,6 +859,9 @@ export function render(): void {
           <button class="btn btn-primary" onclick="document.getElementById('kb-file-input').click()" title="支持 PDF、Word、PPT、Excel 等">
             <span>📂</span> 上传文件
           </button>
+          <button class="btn" onclick="window.__kbOpenCraftModal()" title="从 Craft 笔记软件导入文档与知识库">
+            <span>📓</span> 导入 Craft 笔记
+          </button>
           <button class="btn" onclick="window.__kbOpenUrlModal()" title="抓取公众号/知乎等网页内容，支持图片防盗链本地化">
             <span>🌐</span> 抓取网页内容
           </button>
@@ -897,7 +1019,7 @@ export function render(): void {
                 ${state.documents.map((d) => `
                   <div class="kb-doc-card ${d.id === state.activeDocId ? "active" : ""}" onclick="window.__kbSelectDocument('${d.id}')">
                     <div class="kb-doc-card-top">
-                      <span class="kb-doc-type-icon">${d.source_type === "url" ? "🌐" : d.source_type === "text" ? "📝" : "📄"}</span>
+                      <span class="kb-doc-type-icon">${d.source_type === "url" ? "🌐" : d.source_type === "text" ? "📝" : d.source_type === "craft" ? "📓" : "📄"}</span>
                       <span class="kb-doc-card-title" title="${esc(d.title)}">${esc(d.title)}</span>
                     </div>
                     <div class="kb-doc-card-engines">
@@ -925,13 +1047,19 @@ export function render(): void {
               <div class="mcp-empty-hero kb-workbench-hero">
                 <div class="mcp-empty-hero-icon">📚</div>
                 <div class="mcp-empty-hero-title">知识库双引擎对比工作台</div>
-                <p>支持多格式办公文档、防盗链网页图文抓取本地化、OCR 表格抽取与跨格式导出。<br/>在同一界面对比微软 MarkItDown 与 IBM Docling 的解析细节，获取最优知识表达。</p>
+                <p>支持多格式办公文档、防盗链网页图文抓取本地化、Craft 笔记无缝同步、OCR 表格抽取与跨格式导出。<br/>在同一界面对比微软 MarkItDown 与 IBM Docling 的解析细节，获取最优知识表达。</p>
                 <div class="kb-hero-actions">
                   <button class="btn btn-primary btn-lg" onclick="document.getElementById('kb-file-input').click()">
                     <span>📂</span> 上传文档解析
                   </button>
+                  <button class="btn btn-lg" onclick="window.__kbOpenCraftModal()">
+                    <span>📓</span> 导入 Craft 笔记
+                  </button>
                   <button class="btn btn-lg" onclick="window.__kbOpenUrlModal()">
                     <span>🌐</span> 抓取网页内容
+                  </button>
+                  <button class="btn btn-lg" onclick="window.__kbOpenTextModal()">
+                    <span>📝</span> 纯文本录入
                   </button>
                 </div>
               </div>
@@ -942,11 +1070,11 @@ export function render(): void {
                 <div class="kb-wb-toolbar">
                   <div class="kb-wb-meta-group">
                     <div class="kb-wb-doc-title" title="${esc(doc.title)}">
-                      <span class="kb-wb-type-badge">${doc.source_type === "url" ? "网页" : doc.source_type === "text" ? "纯文本" : "文件"}</span>
+                      <span class="kb-wb-type-badge">${doc.source_type === "url" ? "网页" : doc.source_type === "text" ? "纯文本" : doc.source_type === "craft" ? "Craft 笔记" : "文件"}</span>
                       <span>${esc(doc.title)}</span>
                     </div>
                     <div class="kb-wb-doc-subinfo">
-                      ${doc.source_url ? `<a href="${esc(doc.source_url)}" target="_blank" class="kb-source-link" title="${esc(doc.source_url)}">🔗 ${esc(doc.source_url)}</a><span>·</span>` : ""}
+                      ${doc.source_url ? `<a href="${esc(doc.source_url)}" ${doc.source_type === "craft" ? "" : 'target="_blank"'} class="kb-source-link" title="${esc(doc.source_url)}">${doc.source_type === "craft" ? "📓 在 Craft 中打开" : `🔗 ${esc(doc.source_url)}`}</a><span>·</span>` : ""}
                       <span>创建于 ${formatDate(doc.created_at)}</span>
                       <span>·</span>
                       <span>${doc.word_count ? `${doc.word_count.toLocaleString()} 字` : formatBytes(doc.file_size || 0)}</span>
@@ -1131,6 +1259,126 @@ export function render(): void {
         </div>
       ` : ""}
 
+      <!-- Craft Notes Import Modal -->
+      ${state.showCraftModal ? `
+        <div class="kb-modal-backdrop" onclick="if (event.target === this && !state.craftImporting) window.__kbCloseCraftModal()">
+          <div class="kb-modal" style="width: 720px; max-height: 85vh; display: flex; flex-direction: column;">
+            <div class="kb-modal-header" style="flex-shrink: 0; display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 18px;">📓</span>
+                <span style="font-weight: 600; font-size: 15px;">从 Craft 笔记同步知识</span>
+                ${state.craftStatus?.connected
+                  ? `<span class="badge badge-success" style="font-size: 11px; padding: 2px 8px; border-radius: 12px;">🟢 ${esc(state.craftStatus.spaceName || "已连接 Space")}</span>`
+                  : state.craftLoading
+                  ? `<span class="badge" style="font-size: 11px; padding: 2px 8px;">连接中...</span>`
+                  : `<span class="badge badge-error" style="font-size: 11px; padding: 2px 8px; border-radius: 12px;">🔴 未连接</span>`
+                }
+              </div>
+              ${!state.craftImporting ? `<button class="vk-modal-close" onclick="window.__kbCloseCraftModal()">✕</button>` : ""}
+            </div>
+
+            <div class="kb-modal-body" style="overflow-y: auto; flex: 1; padding: 16px 20px;">
+              ${!state.craftStatus?.connected && !state.craftLoading ? `
+                <div class="kb-alert kb-alert-error" style="margin-bottom: 14px; padding: 12px; border-radius: 6px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);">
+                  <div style="font-weight: 600; color: #ef4444;">Craft MCP 服务连接失败</div>
+                  <div style="font-size: 12px; margin-top: 4px; color: var(--text-secondary);">
+                    ${esc(state.craftStatus?.error || "无法连接到 Craft MCP 链接")}
+                  </div>
+                  <div style="font-size: 12px; margin-top: 6px; color: var(--text-muted);">
+                    提示：系统已尝试读取 <code>~/.gemini/config/mcp_config.json</code> 中的 Craft 配置。请检查 Craft MCP 服务状态。
+                  </div>
+                </div>
+              ` : `
+                <!-- Filter bar: Search + Target Collection -->
+                <div style="display: flex; gap: 12px; margin-bottom: 14px; align-items: center;">
+                  <div style="flex: 1; position: relative;">
+                    <input type="text" class="kb-form-input" placeholder="🔍 搜索 Craft 笔记标题或全文..."
+                      value="${esc(state.craftSearchQuery)}"
+                      oninput="window.__kbOnCraftSearch(this.value)"
+                      ${state.craftImporting ? "disabled" : ""} />
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 6px; font-size: 13px;">
+                    <span style="white-space: nowrap; color: var(--text-secondary);">目标知识库:</span>
+                    <select class="kb-form-input" style="width: 150px; padding: 6px 10px;"
+                      onchange="state.craftImportTargetCol = this.value"
+                      ${state.craftImporting ? "disabled" : ""}>
+                      ${state.collections.map((c) => `
+                        <option value="${c.id}" ${(state.craftImportTargetCol || state.activeCollectionId || 'col_default') === c.id ? 'selected' : ''}>
+                          ${getCollectionIcon(c.icon)} ${esc(c.name)}
+                        </option>
+                      `).join('')}
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Notes List -->
+                ${state.craftLoading ? `
+                  <div style="text-align: center; padding: 48px; color: var(--text-secondary);">
+                    <div style="font-size: 24px; margin-bottom: 8px;">⏳</div>
+                    <div>正在从 Craft 获取笔记列表...</div>
+                  </div>
+                ` : state.craftDocuments.length === 0 ? `
+                  <div style="text-align: center; padding: 48px; color: var(--text-secondary);">
+                    <div style="font-size: 24px; margin-bottom: 8px;">🔍</div>
+                    <div>未找到匹配的 Craft 笔记</div>
+                  </div>
+                ` : `
+                  <div style="border: 1px solid var(--border-color); border-radius: 6px; max-height: 380px; overflow-y: auto; background: var(--bg-secondary);">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                      <thead style="background: var(--bg-tertiary); position: sticky; top: 0; z-index: 1;">
+                        <tr style="border-bottom: 1px solid var(--border-color); text-align: left;">
+                          <th style="padding: 10px 14px; width: 40px;">
+                            <input type="checkbox"
+                              ${state.craftSelectedIds.size === state.craftDocuments.length && state.craftDocuments.length > 0 ? "checked" : ""}
+                              onchange="window.__kbToggleAllCraftDocs(this.checked)"
+                              ${state.craftImporting ? "disabled" : ""} />
+                          </th>
+                          <th style="padding: 10px 14px;">笔记标题与摘要</th>
+                          <th style="padding: 10px 14px; width: 80px; text-align: right;">操作</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${state.craftDocuments.map((d) => `
+                          <tr style="border-bottom: 1px solid var(--border-color); transition: background 0.15s;" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background=''">
+                            <td style="padding: 10px 14px; vertical-align: middle;">
+                              <input type="checkbox" value="${d.id}"
+                                ${state.craftSelectedIds.has(d.id) ? "checked" : ""}
+                                onchange="window.__kbToggleCraftDoc('${d.id}', this.checked)"
+                                ${state.craftImporting ? "disabled" : ""} />
+                            </td>
+                            <td style="padding: 10px 14px; vertical-align: middle;">
+                              <div style="font-weight: 500; color: var(--text-primary);">${esc(d.title)}</div>
+                              ${d.snippet ? `<div style="font-size: 11px; color: var(--text-muted); max-width: 460px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 3px;">${esc(d.snippet)}</div>` : ''}
+                            </td>
+                            <td style="padding: 10px 14px; text-align: right; vertical-align: middle;">
+                              <button class="btn btn-xs btn-primary" onclick="window.__kbImportSingleCraftDoc('${d.id}', '${esc(d.title)}')" ${state.craftImporting ? "disabled" : ""}>
+                                导入
+                              </button>
+                            </td>
+                          </tr>
+                        `).join('')}
+                      </tbody>
+                    </table>
+                  </div>
+                `}
+              `}
+            </div>
+
+            <div class="kb-modal-footer" style="flex-shrink: 0; display: flex; justify-content: space-between; align-items: center;">
+              <div style="font-size: 12px; color: var(--text-secondary);">
+                ${state.craftSelectedIds.size > 0 ? `已选 <b style="color: var(--text-primary);">${state.craftSelectedIds.size}</b> 篇笔记` : `共 ${state.craftDocuments.length} 篇可用笔记`}
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn" onclick="window.__kbCloseCraftModal()" ${state.craftImporting ? "disabled" : ""}>取消</button>
+                <button class="btn btn-primary" onclick="window.__kbBatchImportCraftDocs()" ${state.craftSelectedIds.size === 0 || state.craftImporting ? "disabled" : ""}>
+                  ${state.craftImporting ? `正在解析导入中...` : `批量导入 (${state.craftSelectedIds.size})`}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ` : ""}
+
       <!-- Create Collection Modal -->
       ${state.showCreateColModal ? `
         <div class="kb-modal-backdrop" onclick="if (event.target === this) window.__kbCloseCreateColModal()">
@@ -1305,6 +1553,49 @@ function bindDragAndDrop(): void {
 
 (window as any).__kbSubmitTextIngest = () => {
   void handleTextIngest();
+};
+
+(window as any).__kbOpenCraftModal = () => {
+  void openCraftModal();
+};
+
+(window as any).__kbCloseCraftModal = () => {
+  if (state.craftImporting) return;
+  state.showCraftModal = false;
+  render();
+};
+
+(window as any).__kbOnCraftSearch = (val: string) => {
+  if (craftSearchTimer) clearTimeout(craftSearchTimer);
+  craftSearchTimer = setTimeout(() => {
+    void searchCraftDocuments(val);
+  }, 300);
+};
+
+(window as any).__kbToggleCraftDoc = (id: string, checked: boolean) => {
+  if (checked) {
+    state.craftSelectedIds.add(id);
+  } else {
+    state.craftSelectedIds.delete(id);
+  }
+  render();
+};
+
+(window as any).__kbToggleAllCraftDocs = (checked: boolean) => {
+  if (checked) {
+    state.craftSelectedIds = new Set(state.craftDocuments.map((d) => d.id));
+  } else {
+    state.craftSelectedIds.clear();
+  }
+  render();
+};
+
+(window as any).__kbImportSingleCraftDoc = (id: string, title: string) => {
+  void importSingleCraftDoc(id, title);
+};
+
+(window as any).__kbBatchImportCraftDocs = () => {
+  void batchImportCraftDocs();
 };
 
 (window as any).__kbOpenCreateColModal = () => {
