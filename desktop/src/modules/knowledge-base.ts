@@ -91,7 +91,7 @@ const state = {
   showUrlModal: false,
   showTextModal: false,
   modalUrl: "",
-  modalUseLeo: false,
+  modalUseLeo: true,
   modalText: "",
   modalTextTitle: "",
   modalColName: "",
@@ -740,8 +740,8 @@ export function render(): void {
           <button class="btn btn-primary" onclick="document.getElementById('kb-file-input').click()" title="支持 PDF、Word、PPT、Excel 等">
             <span>📂</span> 上传文件
           </button>
-          <button class="btn" onclick="window.__kbOpenUrlModal()" title="抓取公众号/知乎等网页，支持图片防盗链本地化">
-            <span>🌐</span> 抓取网页
+          <button class="btn" onclick="window.__kbOpenUrlModal()" title="抓取公众号/知乎等网页内容，支持图片防盗链本地化">
+            <span>🌐</span> 抓取网页内容
           </button>
           <button class="btn" onclick="window.__kbOpenTextModal()" title="输入或粘贴纯文本/Markdown/HTML">
             <span>📝</span> 纯文本录入
@@ -931,7 +931,7 @@ export function render(): void {
                     <span>📂</span> 上传文档解析
                   </button>
                   <button class="btn btn-lg" onclick="window.__kbOpenUrlModal()">
-                    <span>🌐</span> 抓取网页并提取配图
+                    <span>🌐</span> 抓取网页内容
                   </button>
                 </div>
               </div>
@@ -1085,25 +1085,21 @@ export function render(): void {
         <div class="kb-modal-backdrop" onclick="if (event.target === this) window.__kbCloseUrlModal()">
           <div class="kb-modal" style="width: 500px;">
             <div class="kb-modal-header">
-              <span>抓取网页内容与配图</span>
+              <span>抓取网页内容</span>
               <button class="vk-modal-close" onclick="window.__kbCloseUrlModal()">✕</button>
             </div>
             <div class="kb-modal-body">
               <div class="kb-form-group">
                 <label class="kb-form-label">目标网页 URL 地址</label>
-                <input type="text" class="kb-form-input" placeholder="输入网页链接 (例如: https://mp.weixin.qq.com/s/...)" value="${esc(state.modalUrl)}" oninput="state.modalUrl = this.value" autofocus />
+                <input type="text" class="kb-form-input" placeholder="输入网页链接 (例如: https://mp.weixin.qq.com/s/...)" value="${esc(state.modalUrl)}" oninput="state.modalUrl = this.value" onkeydown="if (event.key === 'Enter') window.__kbSubmitUrlIngest()" autofocus />
               </div>
-              <div class="kb-checkbox-row" style="margin-top: 10px;">
-                <input type="checkbox" id="kb-check-leo" ${state.modalUseLeo ? "checked" : ""} onchange="state.modalUseLeo = this.checked" />
-                <label for="kb-check-leo">突破防盗链：使用 Leo 插件 Cookie 与真实客户端凭据</label>
-              </div>
-              <div style="font-size:12px; color:var(--text-secondary); margin-top:8px; line-height:1.45;">
-                自动抓取微信公众号、知乎、头条等网页文章，并将文中图片下载保存到网关本地，彻底杜绝防盗链失效问题。
+              <div style="font-size:12px; color:var(--text-secondary); margin-top:10px; line-height:1.5;">
+                💡 <b>自动配置与鉴权</b>：系统将自动识别目标域名并联动真实客户端凭据，同时自动将文内图片转存至本地，彻底解决内网鉴权与防盗链失效问题。
               </div>
             </div>
             <div class="kb-modal-footer">
               <button class="btn" onclick="window.__kbCloseUrlModal()">取消</button>
-              <button class="btn btn-primary" onclick="window.__kbSubmitUrlIngest()" ${!state.modalUrl.trim() ? "disabled" : ""}>开始抓取与双引擎解析</button>
+              <button class="btn btn-primary" onclick="window.__kbSubmitUrlIngest()" ${!state.modalUrl.trim() ? "disabled" : ""}>开始抓取与解析</button>
             </div>
           </div>
         </div>

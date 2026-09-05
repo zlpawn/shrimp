@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
+import fs from "node:fs";
+import path from "node:path";
+import os from "node:os";
 import { parseCliArgs, executeCommand, formatCliError, normalizeCliParams } from "../lib/cli.mjs";
 import { LanternServer } from "../lib/server.mjs";
 
@@ -417,6 +420,76 @@ test("CLI: maps page-drive and network commands", async () => {
       await callPromise;
     }
   } finally {
+    await bridge.stop();
+  }
+});
+
+test("CLI: cookies command formats (json, txt, out)", async () => {
+  const bridge = new LanternServer({ port: 0 });
+  await bridge.start();
+  const tmpFile = path.join(os.tmpdir(), `test-cookies-${Date.now()}.txt`);
+  try {
+    await postJson(`http://127.0.0.1:${bridge.port}/ext/hello`, { id: "cookies-ext" });
+
+    // 1. JSON format (default)
+    const pollPromise1 = getJson(`http://127.0.0.1:${bridge.port}/ext/poll?waitMs=5000`);
+    const callPromise1 = executeCommand("cookies", { domain: "example.com" }, [], { port: bridge.port });
+    const poll1 = await pollPromise1;
+    assert.equal(poll1.body.cmd.type, "cookies.export");
+    assert.equal(poll1.body.cmd.params.domain, "example.com");
+    await postJson(`http://127.0.0.1:${bridge.port}/ext/result`, {
+      id: poll1.body.cmd.id,
+      ok: true,
+      result: {
+        cookies: [
+          { domain: ".example.com", name: "sid", value: "s123", path: "/", secure: true, expires: 1800000000 },
+        ],
+      },
+    });
+    const res1 = await callPromise1;
+    assert.equal(res1.ok, true);
+    assert.equal(res1.result.cookies.length, 1);
+
+    // 2. TXT / Netscape format
+    const pollPromise2 = getJson(`http://127.0.0.1:${bridge.port}/ext/poll?waitMs=5000`);
+    const callPromise2 = executeCommand("cookies", { domain: "example.com", format: "txt" }, [], { port: bridge.port });
+    const poll2 = await pollPromise2;
+    await postJson(`http://127.0.0.1:${bridge.port}/ext/result`, {
+      id: poll2.body.cmd.id,
+      ok: true,
+      result: {
+        cookies: [
+          { domain: ".example.com", name: "token", value: "tok456", path: "/api", secure: false, expirationDate: 1800000000 },
+        ],
+      },
+    });
+    const res2 = await callPromise2;
+    assert.equal(res2.ok, true);
+    assert.ok(res2.rawText.includes("# Netscape HTTP Cookie File"));
+    assert.ok(res2.rawText.includes(".example.com\tTRUE\t/api\tFALSE\t1800000000\ttoken\ttok456"));
+
+    // 3. TXT with --out FILE
+    const pollPromise3 = getJson(`http://127.0.0.1:${bridge.port}/ext/poll?waitMs=5000`);
+    const callPromise3 = executeCommand("cookies", { domain: "example.com", format: "txt", out: tmpFile }, [], { port: bridge.port });
+    const poll3 = await pollPromise3;
+    await postJson(`http://127.0.0.1:${bridge.port}/ext/result`, {
+      id: poll3.body.cmd.id,
+      ok: true,
+      result: {
+        cookies: [
+          { domain: ".example.com", name: "user", value: "alice", path: "/", secure: true, expires: 1800000000 },
+        ],
+      },
+    });
+    const res3 = await callPromise3;
+    assert.equal(res3.ok, true);
+    assert.equal(res3.savedTo, tmpFile);
+    assert.equal(fs.existsSync(tmpFile), true);
+    const content = fs.readFileSync(tmpFile, "utf-8");
+    assert.ok(content.includes("# Netscape HTTP Cookie File"));
+    assert.ok(content.includes("alice"));
+  } finally {
+    if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile);
     await bridge.stop();
   }
 });
