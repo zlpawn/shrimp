@@ -8,3 +8,4 @@ import "./modules/session-kanban";
 import "./modules/mcp-management";
 import "./modules/clip-player";
 import "./modules/trend-intel";
+import "./modules/knowledge-base";
