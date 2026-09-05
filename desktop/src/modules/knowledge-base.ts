@@ -63,8 +63,11 @@ interface InstallTask {
   error?: string;
 }
 
+export type KbPhaseView = "parser" | "chunking" | "retrieval" | "rag";
+
 // --- State ---
 const state = {
+  activePhase: "parser" as KbPhaseView,
   collections: [] as KbCollection[],
   activeCollectionId: "col_default",
   documents: [] as KbDocument[],
@@ -90,6 +93,11 @@ const state = {
   modalColName: "",
   modalColDesc: "",
   previewAsset: null as KbAsset | null,
+  // Phase 2-4 interactive preview state
+  chunkSize: 1024,
+  chunkOverlap: 128,
+  selectedEmbeddingModel: "text-embedding-3-small",
+  hybridWeight: 0.5,
 };
 
 function getRoot(): HTMLElement | null {
@@ -252,10 +260,20 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
   return res.json();
 }
 
-export async function initKnowledgeBase(): Promise<void> {
-  await Promise.all([loadEngineStatuses(), loadCollections()]);
-  await loadDocuments();
+/**
+ * Instant initialization: renders immediately without blocking on network/process detection!
+ */
+export function initKnowledgeBase(): void {
+  // 1. Instant optimistic render (0ms delay)
   render();
+
+  // 2. Load collections & documents asynchronously
+  void loadCollections()
+    .then(() => loadDocuments())
+    .then(() => render());
+
+  // 3. Load engine statuses asynchronously in background
+  void loadEngineStatuses().then(() => render());
 }
 
 async function loadEngineStatuses(): Promise<void> {
@@ -535,6 +553,161 @@ function renderEngineOutput(doc: KbDocument, engine: "markitdown" | "docling"): 
   return "";
 }
 
+// --- Phase 2: Chunking & Embedding Preview View ---
+function renderPhaseChunking(): string {
+  return `
+    <div class="kb-phase-blueprint">
+      <div class="kb-phase-hero">
+        <div class="kb-phase-hero-info">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+            <span class="kb-tab-badge-phase is-planned">二期规划</span>
+            <span class="kb-phase-status-badge">🛠️ 架构与数据协议已就绪</span>
+          </div>
+          <h3>知识切片流水线与 LanceDB 嵌入式向量索引</h3>
+          <p>基于一期高保真解析出的结构化 Markdown 与富文本，提供智能分块（段落/Markdown 层级/语义）、向量嵌入（Embedding）并持久化到本地 LanceDB 向量数据库，为 RAG 问答提供高召回知识单元。</p>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button class="btn btn-primary" onclick="alert('二期知识切片引擎正在流水线集成中，一期解析出的所有 Markdown 与富文本将可无缝直接灌入！')">▶️ 开启切片索引构建</button>
+        </div>
+      </div>
+
+      <div class="kb-phase-grid">
+        <div class="kb-phase-card">
+          <div class="kb-phase-card-title"><span>🧩</span> 智能分块策略 (Chunking Strategies)</div>
+          <div class="kb-phase-card-desc">针对技术文档、研报、跨页表格与法规提供定制切片算法，保留语义完整性。</div>
+          <ul class="kb-phase-feature-list">
+            <li class="kb-phase-feature-item"><span>🔹</span> <span><code>Header-Aware Chunker</code>：识别 Markdown <code># / ## / ###</code> 层级分层切片</span></li>
+            <li class="kb-phase-feature-item"><span>🔹</span> <span><code>Table-Preserving Chunker</code>：完整保留 Docling 提取的跨页表格，不被打断</span></li>
+            <li class="kb-phase-feature-item"><span>🔹</span> <span><code>Semantic Chunker</code>：基于余弦相似度相邻断句自适应合并</span></li>
+            <li class="kb-phase-feature-item"><span>🔹</span> <span><code>QA Synthesis</code>：针对切片自动提取 3~5 个高频问答对辅助索引</span></li>
+          </ul>
+        </div>
+
+        <div class="kb-phase-card">
+          <div class="kb-phase-card-title"><span>📐</span> 向量模型路由 (Embedding Pipeline)</div>
+          <div class="kb-phase-card-desc">复用本网关现有模型路由中心，支持云端与本地向量模型无缝调度。</div>
+          <ul class="kb-phase-feature-list">
+            <li class="kb-phase-feature-item"><span>🔹</span> <span><b>网关模型中转</b>：支持 <code>text-embedding-3-small</code>, <code>bge-m3</code>, <code>nomic-embed</code></span></li>
+            <li class="kb-phase-feature-item"><span>🔹</span> <span><b>本地离线模型</b>：支持纯本地 FastEmbed / Ollama 向量模型</span></li>
+            <li class="kb-phase-feature-item"><span>🔹</span> <span><b>批量批处理</b>：自动多线程 Batching 并发，防止接口限流</span></li>
+          </ul>
+        </div>
+
+        <div class="kb-phase-card">
+          <div class="kb-phase-card-title"><span>🗄️</span> 嵌入式向量库 (LanceDB)</div>
+          <div class="kb-phase-card-desc">基于 Lance 列式格式的现代化嵌入式向量数据库，零常驻开销。</div>
+          <ul class="kb-phase-feature-list">
+            <li class="kb-phase-feature-item"><span>🔹</span> <span><b>自包含免运维</b>：单机文件存储在 <code>data/knowledge-base/lancedb/</code></span></li>
+            <li class="kb-phase-feature-item"><span>🔹</span> <span><b>极速向量检索</b>：基于 Rust / Arrow 底层加速，支持百万向量毫秒级余弦搜索</span></li>
+            <li class="kb-phase-feature-item"><span>🔹</span> <span><b>元数据过滤</b>：支持按 <code>collection_id</code>、文档 ID、更新时间联合过滤</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// --- Phase 3: Hybrid Retrieval & Rerank Lab View ---
+function renderPhaseRetrieval(): string {
+  return `
+    <div class="kb-phase-blueprint">
+      <div class="kb-phase-hero">
+        <div class="kb-phase-hero-info">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+            <span class="kb-tab-badge-phase is-planned">三期规划</span>
+            <span class="kb-phase-status-badge">🎯 FTS5 引擎已就绪 · RRF 融合评测中</span>
+          </div>
+          <h3>多路混合检索与重排精排评测实验室 (Hybrid Retrieval Lab)</h3>
+          <p>融合 BM25 关键词倒排索引与 Dense 向量语义检索，并通过 BGE-Reranker 二次重排打分，提供可视化的检索召回效果调优控制台。</p>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button class="btn btn-primary" onclick="alert('三期混合检索评测室正在对齐 RRF 参数算法！当前一期 SQLite FTS5 全文搜索已可用。')">🔍 运行检索召回基准评测</button>
+        </div>
+      </div>
+
+      <div class="kb-phase-grid">
+        <div class="kb-phase-card">
+          <div class="kb-phase-card-title"><span>🔍</span> 双路融合检索 (Hybrid Search)</div>
+          <div class="kb-phase-card-desc">兼顾专有名词精确匹配与模糊自然语言语义泛化。</div>
+          <ul class="kb-phase-feature-list">
+            <li class="kb-phase-feature-item"><span>🔹</span> <span><b>BM25 全文路</b>：基于已有 SQLite FTS5 引擎，针对代码、专有名词、型号百分百命中</span></li>
+            <li class="kb-phase-feature-item"><span>🔹</span> <span><b>向量语义路</b>：基于 LanceDB 语义相似度，处理口语化同义词表达</span></li>
+            <li class="kb-phase-feature-item"><span>🔹</span> <span><b>RRF 排名融合</b>：基于倒数排名公式自适应归一化多路得分</span></li>
+          </ul>
+        </div>
+
+        <div class="kb-phase-card">
+          <div class="kb-phase-card-title"><span>⚖️</span> 重排精排模型 (Cross-Encoder Rerank)</div>
+          <div class="kb-phase-card-desc">解决向量检索中相关度虚高问题，将最精准事实排在前列。</div>
+          <ul class="kb-phase-feature-list">
+            <li class="kb-phase-feature-item"><span>🔹</span> <span><b>支持模型</b>：<code>bge-reranker-v2-m3</code>, <code>cohere-rerank-v3</code>, <code>flashrank</code></span></li>
+            <li class="kb-phase-feature-item"><span>🔹</span> <span><b>动态上下文压缩</b>：精简注入 LLM 的上下文窗口，节省 Token 消耗</span></li>
+          </ul>
+        </div>
+
+        <div class="kb-phase-card">
+          <div class="kb-phase-card-title"><span>🧪</span> 可视化评测工作台 (Benchmark Workbench)</div>
+          <div class="kb-phase-card-desc">输入任意自然语言问题，实时对比纯关键词、纯向量与混合重排的三栏召回得分分布。</div>
+          <ul class="kb-phase-feature-list">
+            <li class="kb-phase-feature-item"><span>🔹</span> <span><b>Top-K 命中高亮</b>：高亮展示匹配的具体文档切片与原文定位</span></li>
+            <li class="kb-phase-feature-item"><span>🔹</span> <span><b>参数一键热调</b>：实时调整 Dense/Sparse 权重比值与阈值截断</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// --- Phase 4: RAG Chat & Agent Tool View ---
+function renderPhaseRag(): string {
+  return `
+    <div class="kb-phase-blueprint">
+      <div class="kb-phase-hero">
+        <div class="kb-phase-hero-info">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+            <span class="kb-tab-badge-phase is-planned">四期规划</span>
+            <span class="kb-phase-status-badge">💬 溯源问答原型 & MCP 协议</span>
+          </div>
+          <h3>基于精准溯源的 RAG 问答舱与 Agent 原生工具赋能</h3>
+          <p>支持与知识库直接展开多轮流式对话，回答严格基于召回上下文并附带可交互的文档引用溯源；同时将知识库自动发布为标准 MCP 工具，供外部编程 Agent 自主检索。</p>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button class="btn btn-primary" onclick="alert('四期问答工作舱与 MCP 适配器正在对接，未来 Claude Code、Codex、Antigravity 即可直接对话检索此库！')">💬 开启对话舱</button>
+        </div>
+      </div>
+
+      <div class="kb-phase-grid">
+        <div class="kb-phase-card">
+          <div class="kb-phase-card-title"><span>💬</span> 知识库对话舱 (Chat with KB)</div>
+          <div class="kb-phase-card-desc">为用户提供沉浸式的问答界面，支持多轮会话记忆。</div>
+          <ul class="kb-phase-feature-list">
+            <li class="kb-phase-feature-item"><span>🔹</span> <span><b>严格防幻觉 Prompt</b>：要求模型完全依据知识库事实作答，未知内容坦诚说明</span></li>
+            <li class="kb-phase-feature-item"><span>🔹</span> <span><b>流式打字机输出</b>：打字机即时展现思考过程与最终论述</span></li>
+          </ul>
+        </div>
+
+        <div class="kb-phase-card">
+          <div class="kb-phase-card-title"><span>🔗</span> 精准引用与溯源高亮 (Citations & Grounding)</div>
+          <div class="kb-phase-card-desc">回答段落右上角带有一键溯源码，点击直接定位文档原处。</div>
+          <ul class="kb-phase-feature-list">
+            <li class="kb-phase-feature-item"><span>🔹</span> <span><b>原文抽屉弹出</b>：点击 [1]、[2] 徽章，侧栏立即高亮展示原切片与对应图片</span></li>
+            <li class="kb-phase-feature-item"><span>🔹</span> <span><b>图表双向联动</b>：如果回答涉及 Excel 提取表格或 Docling 配图，可内嵌直接预览</span></li>
+          </ul>
+        </div>
+
+        <div class="kb-phase-card">
+          <div class="kb-phase-card-title"><span>🤖</span> Agent 级 MCP 工具导出 (Agent Tool Integration)</div>
+          <div class="kb-phase-card-desc">无缝联动网关现有的 MCP 枢纽 (MCP Hub)。</div>
+          <ul class="kb-phase-feature-list">
+            <li class="kb-phase-feature-item"><span>🔹</span> <span><b>内置原生 MCP Server</b>：自动暴露 <code>kb_search</code>, <code>kb_get_document</code> 工具</span></li>
+            <li class="kb-phase-feature-item"><span>🔹</span> <span><b>全客户端分发</b>：一键写入 Claude Desktop, Claude Code, Codex 与 Antigravity</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 // --- Main Render ---
 
 export function render(): void {
@@ -567,6 +740,26 @@ export function render(): void {
         </div>
       </div>
 
+      <!-- Phase Navigation Tabs (一期 / 二期 / 三期 / 四期) -->
+      <div class="kb-nav-tabs">
+        <button class="kb-nav-tab-btn ${state.activePhase === "parser" ? "active" : ""}" onclick="window.__kbSwitchView('parser')">
+          <span class="kb-tab-badge-phase">一期已就绪</span>
+          <span>📑 文档解析与对比工作台</span>
+        </button>
+        <button class="kb-nav-tab-btn ${state.activePhase === "chunking" ? "active" : ""}" onclick="window.__kbSwitchView('chunking')">
+          <span class="kb-tab-badge-phase is-planned">二期</span>
+          <span>🧩 知识切片与向量索引</span>
+        </button>
+        <button class="kb-nav-tab-btn ${state.activePhase === "retrieval" ? "active" : ""}" onclick="window.__kbSwitchView('retrieval')">
+          <span class="kb-tab-badge-phase is-planned">三期</span>
+          <span>🎯 混合检索评测室</span>
+        </button>
+        <button class="kb-nav-tab-btn ${state.activePhase === "rag" ? "active" : ""}" onclick="window.__kbSwitchView('rag')">
+          <span class="kb-tab-badge-phase is-planned">四期</span>
+          <span>💬 RAG 问答与 Agent 工具</span>
+        </button>
+      </div>
+
       <!-- Ingest Loading Banner -->
       ${state.ingesting ? `
         <div class="kb-ingest-banner" role="status">
@@ -575,261 +768,268 @@ export function render(): void {
         </div>
       ` : ""}
 
-      <!-- Engine Status & Health Row -->
-      <div class="kb-engines-row">
-        <!-- MarkItDown Card -->
-        <div class="kb-engine-card ${mdStatus.installed ? "is-ready" : "is-missing"}">
-          <div class="kb-engine-card-head">
-            <div class="kb-engine-title-group">
-              <span class="kb-engine-icon">⚡</span>
-              <span class="kb-engine-name">MarkItDown</span>
-              <span class="kb-engine-vendor">微软官方开源</span>
-            </div>
-            <div class="kb-engine-status-tag">
-              <span class="${mdStatus.installed ? "dot-on" : "dot-warn"}"></span>
-              <span>${mdStatus.installed ? `已就绪 ${mdStatus.version ? `· v${mdStatus.version}` : ""}` : "未安装"}</span>
-            </div>
-          </div>
-          <div class="kb-engine-desc">轻量快速转换 Office (Word/Excel/PPT)、PDF、音频网页为标准 Markdown</div>
-          <div class="kb-engine-foot">
-            <code class="kb-engine-cmd" title="${esc(mdStatus.installed ? mdStatus.upgradeCommand : mdStatus.installCommand)}">${esc(mdStatus.installed ? mdStatus.upgradeCommand : mdStatus.installCommand)}</code>
-            <div class="kb-engine-actions">
-              ${mdStatus.installed
-                ? `<button class="btn btn-xs" onclick="window.__kbToolAction('markitdown', 'upgrade')">🔄 更新</button>`
-                : `<button class="btn btn-xs btn-primary" onclick="window.__kbToolAction('markitdown', 'install')">⬇️ 一键安装</button>`
-              }
-            </div>
-          </div>
-        </div>
+      <!-- Content Views according to activePhase -->
+      ${state.activePhase === "chunking" ? renderPhaseChunking() : ""}
+      ${state.activePhase === "retrieval" ? renderPhaseRetrieval() : ""}
+      ${state.activePhase === "rag" ? renderPhaseRag() : ""}
 
-        <!-- Docling Card -->
-        <div class="kb-engine-card ${doclingStatus.installed ? "is-ready" : "is-missing"}">
-          <div class="kb-engine-card-head">
-            <div class="kb-engine-title-group">
-              <span class="kb-engine-icon">🧠</span>
-              <span class="kb-engine-name">Docling</span>
-              <span class="kb-engine-vendor">IBM 深度文档理解</span>
-            </div>
-            <div class="kb-engine-status-tag">
-              <span class="${doclingStatus.installed ? "dot-on" : "dot-warn"}"></span>
-              <span>${doclingStatus.installed ? `已就绪 ${doclingStatus.version ? `· v${doclingStatus.version}` : ""}` : "未安装"}</span>
-            </div>
-          </div>
-          <div class="kb-engine-desc">前沿版面分析与 OCR，精确提取复杂表格、层级结构，支持 Markdown/HTML/JSON</div>
-          <div class="kb-engine-foot">
-            <code class="kb-engine-cmd" title="${esc(doclingStatus.installed ? doclingStatus.upgradeCommand : doclingStatus.installCommand)}">${esc(doclingStatus.installed ? doclingStatus.upgradeCommand : doclingStatus.installCommand)}</code>
-            <div class="kb-engine-actions">
-              ${doclingStatus.installed
-                ? `<button class="btn btn-xs" onclick="window.__kbToolAction('docling', 'upgrade')">🔄 更新</button>`
-                : `<button class="btn btn-xs btn-primary" onclick="window.__kbToolAction('docling', 'install')">⬇️ 一键安装</button>`
-              }
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Main Workspace Layout -->
-      <div class="kb-layout">
-        <!-- Left Sidebar: Collections & Documents -->
-        <aside class="kb-sidebar">
-          <!-- Collections Section -->
-          <div class="kb-sidebar-section">
-            <div class="kb-section-header-mini">
-              <span class="kb-section-title">📁 知识库目录</span>
-              <button class="btn btn-xs" onclick="window.__kbOpenCreateColModal()">+ 新建</button>
-            </div>
-            <div class="kb-collections-list">
-              ${state.collections.map((c) => `
-                <div class="kb-collection-item ${c.id === state.activeCollectionId ? "active" : ""}" onclick="window.__kbSelectCollection('${c.id}')">
-                  <div class="kb-collection-name-row">
-                    <span>${c.icon || "📁"}</span>
-                    <span class="kb-collection-name" title="${esc(c.name)}">${esc(c.name)}</span>
-                  </div>
-                  <span class="mcp-badge-counter">${c.doc_count || 0}</span>
-                </div>
-              `).join("")}
-            </div>
-          </div>
-
-          <!-- Documents Section -->
-          <div class="kb-sidebar-section">
-            <div class="kb-section-header-mini">
-              <span class="kb-section-title">📄 文档列表 (${state.documents.length})</span>
-            </div>
-            <div class="kb-search-box">
-              <span class="kb-search-icon">🔍</span>
-              <input class="kb-search-input" type="text" placeholder="搜索文档标题或全文内容..." value="${esc(state.searchQuery)}" oninput="window.__kbOnSearchInput(event)" />
-              ${state.searchQuery ? `<button class="kb-search-clear" onclick="window.__kbClearSearch()">✕</button>` : ""}
-            </div>
-
-            <div class="kb-docs-list">
-              ${state.loadingDocs ? `
-                <div class="kb-empty-box">
-                  <span class="kb-spinner"></span>
-                  <div class="kb-empty-box-sub" style="margin-top:6px;">正在加载文档...</div>
-                </div>
-              ` : ""}
-              ${!state.loadingDocs && state.documents.length === 0 ? `
-                <div class="kb-empty-box">
-                  <div class="kb-empty-box-icon">📂</div>
-                  <div class="kb-empty-box-text">${state.searchQuery ? "未找到匹配文档" : "当前知识库暂无文档"}</div>
-                  <div class="kb-empty-box-sub">点击上方按钮或拖拽文件到窗口直接上传</div>
-                </div>
-              ` : ""}
-              ${state.documents.map((d) => `
-                <div class="kb-doc-card ${d.id === state.activeDocId ? "active" : ""}" onclick="window.__kbSelectDocument('${d.id}')">
-                  <div class="kb-doc-card-top">
-                    <span class="kb-doc-type-icon">${d.source_type === "url" ? "🌐" : d.source_type === "text" ? "📝" : "📄"}</span>
-                    <span class="kb-doc-card-title" title="${esc(d.title)}">${esc(d.title)}</span>
-                  </div>
-                  <div class="kb-doc-card-engines">
-                    <span class="kb-engine-tag ${d.markitdown_status === "done" ? "tag-ok" : d.markitdown_status === "failed" ? "tag-err" : "tag-skip"}">
-                      ⚡ MD: ${d.markitdown_status === "done" ? `${d.markitdown_duration_ms}ms` : d.markitdown_status === "failed" ? "失败" : "未就绪"}
-                    </span>
-                    <span class="kb-engine-tag ${d.docling_status === "done" ? "tag-ok" : d.docling_status === "failed" ? "tag-err" : "tag-skip"}">
-                      🧠 DL: ${d.docling_status === "done" ? `${(d.docling_duration_ms / 1000).toFixed(1)}s` : d.docling_status === "failed" ? "失败" : "未就绪"}
-                    </span>
-                  </div>
-                  <div class="kb-doc-card-meta">
-                    <span class="kb-doc-time">${formatDate(d.created_at)}</span>
-                    <span class="kb-doc-size">${d.word_count ? `${d.word_count.toLocaleString()} 字` : formatBytes(d.file_size || 0)}</span>
-                  </div>
-                </div>
-              `).join("")}
-            </div>
-          </div>
-        </aside>
-
-        <!-- Right: Workbench Area -->
-        <main class="kb-workbench">
-          ${!doc ? `
-            <!-- Empty Hero State -->
-            <div class="mcp-empty-hero kb-workbench-hero">
-              <div class="mcp-empty-hero-icon">📚</div>
-              <div class="mcp-empty-hero-title">知识库双引擎对比工作台</div>
-              <p>支持多格式办公文档、防盗链网页图文抓取本地化、OCR 表格抽取与跨格式导出。<br/>在同一界面对比微软 MarkItDown 与 IBM Docling 的解析细节，获取最优知识表达。</p>
-              <div class="kb-hero-actions">
-                <button class="btn btn-primary btn-lg" onclick="document.getElementById('kb-file-input').click()">
-                  <span>📂</span> 上传文档解析
-                </button>
-                <button class="btn btn-lg" onclick="window.__kbOpenUrlModal()">
-                  <span>🌐</span> 抓取网页并提取配图
-                </button>
+      ${state.activePhase === "parser" ? `
+        <!-- Engine Status & Health Row -->
+        <div class="kb-engines-row">
+          <!-- MarkItDown Card -->
+          <div class="kb-engine-card ${mdStatus.installed ? "is-ready" : "is-missing"}">
+            <div class="kb-engine-card-head">
+              <div class="kb-engine-title-group">
+                <span class="kb-engine-icon">⚡</span>
+                <span class="kb-engine-name">MarkItDown</span>
+                <span class="kb-engine-vendor">微软官方开源</span>
+              </div>
+              <div class="kb-engine-status-tag">
+                <span class="${mdStatus.installed ? "dot-on" : "dot-warn"}"></span>
+                <span>${mdStatus.installed ? `已就绪 ${mdStatus.version ? `· v${mdStatus.version}` : ""}` : "未安装"}</span>
               </div>
             </div>
-          ` : `
-            <!-- Active Document Workbench -->
-            <div class="kb-doc-workbench">
-              <!-- Workbench Toolbar -->
-              <div class="kb-wb-toolbar">
-                <div class="kb-wb-meta-group">
-                  <div class="kb-wb-doc-title" title="${esc(doc.title)}">
-                    <span class="kb-wb-type-badge">${doc.source_type === "url" ? "网页" : doc.source_type === "text" ? "纯文本" : "文件"}</span>
-                    <span>${esc(doc.title)}</span>
-                  </div>
-                  <div class="kb-wb-doc-subinfo">
-                    ${doc.source_url ? `<a href="${esc(doc.source_url)}" target="_blank" class="kb-source-link" title="${esc(doc.source_url)}">🔗 ${esc(doc.source_url)}</a><span>·</span>` : ""}
-                    <span>创建于 ${formatDate(doc.created_at)}</span>
-                    <span>·</span>
-                    <span>${doc.word_count ? `${doc.word_count.toLocaleString()} 字` : formatBytes(doc.file_size || 0)}</span>
-                    ${doc.assets && doc.assets.length > 0 ? `<span>·</span><span>🖼️ ${doc.assets.length} 张提取配图</span>` : ""}
-                  </div>
-                </div>
+            <div class="kb-engine-desc">轻量快速转换 Office (Word/Excel/PPT)、PDF、音频网页为标准 Markdown</div>
+            <div class="kb-engine-foot">
+              <code class="kb-engine-cmd" title="${esc(mdStatus.installed ? mdStatus.upgradeCommand : mdStatus.installCommand)}">${esc(mdStatus.installed ? mdStatus.upgradeCommand : mdStatus.installCommand)}</code>
+              <div class="kb-engine-actions">
+                ${mdStatus.installed
+                  ? `<button class="btn btn-xs" onclick="window.__kbToolAction('markitdown', 'upgrade')">🔄 更新</button>`
+                  : `<button class="btn btn-xs btn-primary" onclick="window.__kbToolAction('markitdown', 'install')">⬇️ 一键安装</button>`
+                }
+              </div>
+            </div>
+          </div>
 
-                <div class="kb-wb-controls">
-                  <!-- Format Segmented Toggle -->
-                  <div class="mcp-segmented" title="切换输出视图格式">
-                    <button class="mcp-seg-btn ${state.activeFormat === "markdown" ? "active" : ""}" onclick="window.__kbSetFormat('markdown')">Markdown</button>
-                    <button class="mcp-seg-btn ${state.activeFormat === "html" ? "active" : ""}" onclick="window.__kbSetFormat('html')">HTML</button>
-                    <button class="mcp-seg-btn ${state.activeFormat === "json" ? "active" : ""}" onclick="window.__kbSetFormat('json')">JSON</button>
-                  </div>
+          <!-- Docling Card -->
+          <div class="kb-engine-card ${doclingStatus.installed ? "is-ready" : "is-missing"}">
+            <div class="kb-engine-card-head">
+              <div class="kb-engine-title-group">
+                <span class="kb-engine-icon">🧠</span>
+                <span class="kb-engine-name">Docling</span>
+                <span class="kb-engine-vendor">IBM 深度文档理解</span>
+              </div>
+              <div class="kb-engine-status-tag">
+                <span class="${doclingStatus.installed ? "dot-on" : "dot-warn"}"></span>
+                <span>${doclingStatus.installed ? `已就绪 ${doclingStatus.version ? `· v${doclingStatus.version}` : ""}` : "未安装"}</span>
+              </div>
+            </div>
+            <div class="kb-engine-desc">前沿版面分析与 OCR，精确提取复杂表格、层级结构，支持 Markdown/HTML/JSON</div>
+            <div class="kb-engine-foot">
+              <code class="kb-engine-cmd" title="${esc(doclingStatus.installed ? doclingStatus.upgradeCommand : doclingStatus.installCommand)}">${esc(doclingStatus.installed ? doclingStatus.upgradeCommand : doclingStatus.installCommand)}</code>
+              <div class="kb-engine-actions">
+                ${doclingStatus.installed
+                  ? `<button class="btn btn-xs" onclick="window.__kbToolAction('docling', 'upgrade')">🔄 更新</button>`
+                  : `<button class="btn btn-xs btn-primary" onclick="window.__kbToolAction('docling', 'install')">⬇️ 一键安装</button>`
+                }
+              </div>
+            </div>
+          </div>
+        </div>
 
-                  <!-- Split View Segmented Toggle -->
-                  <div class="mcp-segmented" title="切换视图分屏模式">
-                    <button class="mcp-seg-btn ${state.splitMode === "both" ? "active" : ""}" onclick="window.__kbSetSplit('both')">⫴ 分屏对比</button>
-                    <button class="mcp-seg-btn ${state.splitMode === "markitdown" ? "active" : ""}" onclick="window.__kbSetSplit('markitdown')">⚡ MarkItDown</button>
-                    <button class="mcp-seg-btn ${state.splitMode === "docling" ? "active" : ""}" onclick="window.__kbSetSplit('docling')">🧠 Docling</button>
+        <!-- Main Workspace Layout -->
+        <div class="kb-layout">
+          <!-- Left Sidebar: Collections & Documents -->
+          <aside class="kb-sidebar">
+            <!-- Collections Section -->
+            <div class="kb-sidebar-section">
+              <div class="kb-section-header-mini">
+                <span class="kb-section-title">📁 知识库目录</span>
+                <button class="btn btn-xs" onclick="window.__kbOpenCreateColModal()">+ 新建</button>
+              </div>
+              <div class="kb-collections-list">
+                ${state.collections.map((c) => `
+                  <div class="kb-collection-item ${c.id === state.activeCollectionId ? "active" : ""}" onclick="window.__kbSelectCollection('${c.id}')">
+                    <div class="kb-collection-name-row">
+                      <span>${c.icon || "📁"}</span>
+                      <span class="kb-collection-name" title="${esc(c.name)}">${esc(c.name)}</span>
+                    </div>
+                    <span class="mcp-badge-counter">${c.doc_count || 0}</span>
                   </div>
+                `).join("")}
+              </div>
+            </div>
 
-                  <button class="btn btn-sm btn-danger" onclick="window.__kbDeleteDoc('${doc.id}')" title="删除此文档">
-                    🗑️ 删除
+            <!-- Documents Section -->
+            <div class="kb-sidebar-section">
+              <div class="kb-section-header-mini">
+                <span class="kb-section-title">📄 文档列表 (${state.documents.length})</span>
+              </div>
+              <div class="kb-search-box">
+                <span class="kb-search-icon">🔍</span>
+                <input class="kb-search-input" type="text" placeholder="搜索文档标题或全文内容..." value="${esc(state.searchQuery)}" oninput="window.__kbOnSearchInput(event)" />
+                ${state.searchQuery ? `<button class="kb-search-clear" onclick="window.__kbClearSearch()">✕</button>` : ""}
+              </div>
+
+              <div class="kb-docs-list">
+                ${state.loadingDocs ? `
+                  <div class="kb-empty-box">
+                    <span class="kb-spinner"></span>
+                    <div class="kb-empty-box-sub" style="margin-top:6px;">正在加载文档...</div>
+                  </div>
+                ` : ""}
+                ${!state.loadingDocs && state.documents.length === 0 ? `
+                  <div class="kb-empty-box">
+                    <div class="kb-empty-box-icon">📂</div>
+                    <div class="kb-empty-box-text">${state.searchQuery ? "未找到匹配文档" : "当前知识库暂无文档"}</div>
+                    <div class="kb-empty-box-sub">点击上方按钮或拖拽文件到窗口直接上传</div>
+                  </div>
+                ` : ""}
+                ${state.documents.map((d) => `
+                  <div class="kb-doc-card ${d.id === state.activeDocId ? "active" : ""}" onclick="window.__kbSelectDocument('${d.id}')">
+                    <div class="kb-doc-card-top">
+                      <span class="kb-doc-type-icon">${d.source_type === "url" ? "🌐" : d.source_type === "text" ? "📝" : "📄"}</span>
+                      <span class="kb-doc-card-title" title="${esc(d.title)}">${esc(d.title)}</span>
+                    </div>
+                    <div class="kb-doc-card-engines">
+                      <span class="kb-engine-tag ${d.markitdown_status === "done" ? "tag-ok" : d.markitdown_status === "failed" ? "tag-err" : "tag-skip"}">
+                        ⚡ MD: ${d.markitdown_status === "done" ? `${d.markitdown_duration_ms}ms` : d.markitdown_status === "failed" ? "失败" : "未就绪"}
+                      </span>
+                      <span class="kb-engine-tag ${d.docling_status === "done" ? "tag-ok" : d.docling_status === "failed" ? "tag-err" : "tag-skip"}">
+                        🧠 DL: ${d.docling_status === "done" ? `${(d.docling_duration_ms / 1000).toFixed(1)}s` : d.docling_status === "failed" ? "失败" : "未就绪"}
+                      </span>
+                    </div>
+                    <div class="kb-doc-card-meta">
+                      <span class="kb-doc-time">${formatDate(d.created_at)}</span>
+                      <span class="kb-doc-size">${d.word_count ? `${d.word_count.toLocaleString()} 字` : formatBytes(d.file_size || 0)}</span>
+                    </div>
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+          </aside>
+
+          <!-- Right: Workbench Area -->
+          <main class="kb-workbench">
+            ${!doc ? `
+              <!-- Empty Hero State -->
+              <div class="mcp-empty-hero kb-workbench-hero">
+                <div class="mcp-empty-hero-icon">📚</div>
+                <div class="mcp-empty-hero-title">知识库双引擎对比工作台</div>
+                <p>支持多格式办公文档、防盗链网页图文抓取本地化、OCR 表格抽取与跨格式导出。<br/>在同一界面对比微软 MarkItDown 与 IBM Docling 的解析细节，获取最优知识表达。</p>
+                <div class="kb-hero-actions">
+                  <button class="btn btn-primary btn-lg" onclick="document.getElementById('kb-file-input').click()">
+                    <span>📂</span> 上传文档解析
+                  </button>
+                  <button class="btn btn-lg" onclick="window.__kbOpenUrlModal()">
+                    <span>🌐</span> 抓取网页并提取配图
                   </button>
                 </div>
               </div>
-
-              <!-- Dual Engine Split Grid -->
-              <div class="kb-engines-split-grid ${state.splitMode === "both" ? "is-dual" : "is-single"}">
-                <!-- MarkItDown Panel -->
-                ${state.splitMode !== "docling" ? `
-                  <div class="kb-panel-box">
-                    <div class="kb-panel-header">
-                      <div class="kb-panel-title-group">
-                        <span class="kb-panel-icon">⚡</span>
-                        <span class="kb-panel-name">MarkItDown (微软)</span>
-                        <span class="kb-duration-pill">${doc.markitdown_duration_ms ? `${doc.markitdown_duration_ms}ms` : "未执行"}</span>
-                      </div>
-                      <div class="kb-panel-actions">
-                        <button class="btn btn-xs ${state.showRaw.markitdown ? "is-active" : ""}" onclick="window.__kbToggleRaw('markitdown')">
-                          ${state.showRaw.markitdown ? "👁️ 富文本" : "⌨️ 源码"}
-                        </button>
-                        <button class="btn btn-xs" onclick="window.__kbCopyContent('markitdown')">📋 复制</button>
-                        <button class="btn btn-xs" onclick="window.__kbExportContent('markitdown')">💾 导出</button>
-                      </div>
+            ` : `
+              <!-- Active Document Workbench -->
+              <div class="kb-doc-workbench">
+                <!-- Workbench Toolbar -->
+                <div class="kb-wb-toolbar">
+                  <div class="kb-wb-meta-group">
+                    <div class="kb-wb-doc-title" title="${esc(doc.title)}">
+                      <span class="kb-wb-type-badge">${doc.source_type === "url" ? "网页" : doc.source_type === "text" ? "纯文本" : "文件"}</span>
+                      <span>${esc(doc.title)}</span>
                     </div>
-                    <div class="kb-panel-body">
-                      ${renderEngineOutput(doc, "markitdown")}
+                    <div class="kb-wb-doc-subinfo">
+                      ${doc.source_url ? `<a href="${esc(doc.source_url)}" target="_blank" class="kb-source-link" title="${esc(doc.source_url)}">🔗 ${esc(doc.source_url)}</a><span>·</span>` : ""}
+                      <span>创建于 ${formatDate(doc.created_at)}</span>
+                      <span>·</span>
+                      <span>${doc.word_count ? `${doc.word_count.toLocaleString()} 字` : formatBytes(doc.file_size || 0)}</span>
+                      ${doc.assets && doc.assets.length > 0 ? `<span>·</span><span>🖼️ ${doc.assets.length} 张提取配图</span>` : ""}
                     </div>
                   </div>
-                ` : ""}
 
-                <!-- Docling Panel -->
-                ${state.splitMode !== "markitdown" ? `
-                  <div class="kb-panel-box">
-                    <div class="kb-panel-header">
-                      <div class="kb-panel-title-group">
-                        <span class="kb-panel-icon">🧠</span>
-                        <span class="kb-panel-name">Docling (IBM)</span>
-                        <span class="kb-duration-pill">${doc.docling_duration_ms ? `${(doc.docling_duration_ms / 1000).toFixed(1)}s` : "未执行"}</span>
+                  <div class="kb-wb-controls">
+                    <!-- Format Segmented Toggle -->
+                    <div class="mcp-segmented" title="切换输出视图格式">
+                      <button class="mcp-seg-btn ${state.activeFormat === "markdown" ? "active" : ""}" onclick="window.__kbSetFormat('markdown')">Markdown</button>
+                      <button class="mcp-seg-btn ${state.activeFormat === "html" ? "active" : ""}" onclick="window.__kbSetFormat('html')">HTML</button>
+                      <button class="mcp-seg-btn ${state.activeFormat === "json" ? "active" : ""}" onclick="window.__kbSetFormat('json')">JSON</button>
+                    </div>
+
+                    <!-- Split View Segmented Toggle -->
+                    <div class="mcp-segmented" title="切换视图分屏模式">
+                      <button class="mcp-seg-btn ${state.splitMode === "both" ? "active" : ""}" onclick="window.__kbSetSplit('both')">⫴ 分屏对比</button>
+                      <button class="mcp-seg-btn ${state.splitMode === "markitdown" ? "active" : ""}" onclick="window.__kbSetSplit('markitdown')">⚡ MarkItDown</button>
+                      <button class="mcp-seg-btn ${state.splitMode === "docling" ? "active" : ""}" onclick="window.__kbSetSplit('docling')">🧠 Docling</button>
+                    </div>
+
+                    <button class="btn btn-sm btn-danger" onclick="window.__kbDeleteDoc('${doc.id}')" title="删除此文档">
+                      🗑️ 删除
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Dual Engine Split Grid -->
+                <div class="kb-engines-split-grid ${state.splitMode === "both" ? "is-dual" : "is-single"}">
+                  <!-- MarkItDown Panel -->
+                  ${state.splitMode !== "docling" ? `
+                    <div class="kb-panel-box">
+                      <div class="kb-panel-header">
+                        <div class="kb-panel-title-group">
+                          <span class="kb-panel-icon">⚡</span>
+                          <span class="kb-panel-name">MarkItDown (微软)</span>
+                          <span class="kb-duration-pill">${doc.markitdown_duration_ms ? `${doc.markitdown_duration_ms}ms` : "未执行"}</span>
+                        </div>
+                        <div class="kb-panel-actions">
+                          <button class="btn btn-xs ${state.showRaw.markitdown ? "is-active" : ""}" onclick="window.__kbToggleRaw('markitdown')">
+                            ${state.showRaw.markitdown ? "👁️ 富文本" : "⌨️ 源码"}
+                          </button>
+                          <button class="btn btn-xs" onclick="window.__kbCopyContent('markitdown')">📋 复制</button>
+                          <button class="btn btn-xs" onclick="window.__kbExportContent('markitdown')">💾 导出</button>
+                        </div>
                       </div>
-                      <div class="kb-panel-actions">
-                        <button class="btn btn-xs ${state.showRaw.docling ? "is-active" : ""}" onclick="window.__kbToggleRaw('docling')">
-                          ${state.showRaw.docling ? "👁️ 富文本" : "⌨️ 源码"}
-                        </button>
-                        <button class="btn btn-xs" onclick="window.__kbCopyContent('docling')">📋 复制</button>
-                        <button class="btn btn-xs" onclick="window.__kbExportContent('docling')">💾 导出</button>
+                      <div class="kb-panel-body">
+                        ${renderEngineOutput(doc, "markitdown")}
                       </div>
                     </div>
-                    <div class="kb-panel-body">
-                      ${renderEngineOutput(doc, "docling")}
+                  ` : ""}
+
+                  <!-- Docling Panel -->
+                  ${state.splitMode !== "markitdown" ? `
+                    <div class="kb-panel-box">
+                      <div class="kb-panel-header">
+                        <div class="kb-panel-title-group">
+                          <span class="kb-panel-icon">🧠</span>
+                          <span class="kb-panel-name">Docling (IBM)</span>
+                          <span class="kb-duration-pill">${doc.docling_duration_ms ? `${(doc.docling_duration_ms / 1000).toFixed(1)}s` : "未执行"}</span>
+                        </div>
+                        <div class="kb-panel-actions">
+                          <button class="btn btn-xs ${state.showRaw.docling ? "is-active" : ""}" onclick="window.__kbToggleRaw('docling')">
+                            ${state.showRaw.docling ? "👁️ 富文本" : "⌨️ 源码"}
+                          </button>
+                          <button class="btn btn-xs" onclick="window.__kbCopyContent('docling')">📋 复制</button>
+                          <button class="btn btn-xs" onclick="window.__kbExportContent('docling')">💾 导出</button>
+                        </div>
+                      </div>
+                      <div class="kb-panel-body">
+                        ${renderEngineOutput(doc, "docling")}
+                      </div>
+                    </div>
+                  ` : ""}
+                </div>
+
+                <!-- Extracted Localized Assets Tray -->
+                ${doc.assets && doc.assets.length > 0 ? `
+                  <div class="kb-assets-drawer">
+                    <div class="kb-assets-drawer-header">
+                      <span class="kb-assets-title">🖼️ 本地提取资源与配图 (${doc.assets.length})</span>
+                      <span class="kb-assets-hint">所有配图均已完成本地化存储，突破第三方图床防盗链限制</span>
+                    </div>
+                    <div class="kb-assets-gallery">
+                      ${doc.assets.map((a) => `
+                        <div class="kb-asset-card" onclick="window.__kbPreviewImage('${a.url}')" title="${esc(a.name)} (${formatBytes(a.sizeBytes)})">
+                          <img src="${a.url}" class="kb-asset-thumb" alt="${esc(a.name)}" loading="lazy" />
+                          <div class="kb-asset-meta">
+                            <span class="kb-asset-name">${esc(a.name)}</span>
+                            <span class="kb-asset-size">${formatBytes(a.sizeBytes)}</span>
+                          </div>
+                        </div>
+                      `).join("")}
                     </div>
                   </div>
                 ` : ""}
               </div>
-
-              <!-- Extracted Localized Assets Tray -->
-              ${doc.assets && doc.assets.length > 0 ? `
-                <div class="kb-assets-drawer">
-                  <div class="kb-assets-drawer-header">
-                    <span class="kb-assets-title">🖼️ 本地提取资源与配图 (${doc.assets.length})</span>
-                    <span class="kb-assets-hint">所有配图均已完成本地化存储，突破第三方图床防盗链限制</span>
-                  </div>
-                  <div class="kb-assets-gallery">
-                    ${doc.assets.map((a) => `
-                      <div class="kb-asset-card" onclick="window.__kbPreviewImage('${a.url}')" title="${esc(a.name)} (${formatBytes(a.sizeBytes)})">
-                        <img src="${a.url}" class="kb-asset-thumb" alt="${esc(a.name)}" loading="lazy" />
-                        <div class="kb-asset-meta">
-                          <span class="kb-asset-name">${esc(a.name)}</span>
-                          <span class="kb-asset-size">${formatBytes(a.sizeBytes)}</span>
-                        </div>
-                      </div>
-                    `).join("")}
-                  </div>
-                </div>
-              ` : ""}
-            </div>
-          `}
-        </main>
-      </div>
+            `}
+          </main>
+        </div>
+      ` : ""}
 
       <!-- Install / Upgrade Modal -->
       ${state.showInstallModal && state.installTask ? `
@@ -981,6 +1181,11 @@ function bindDragAndDrop(): void {
 }
 
 // --- Window Action Bindings ---
+
+(window as any).__kbSwitchView = (phase: KbPhaseView) => {
+  state.activePhase = phase;
+  render();
+};
 
 (window as any).__kbSelectCollection = (id: string) => {
   state.activeCollectionId = id;
@@ -1138,6 +1343,6 @@ function bindDragAndDrop(): void {
 // Register Tab Lifecycle
 registerTab("knowledge-base", {
   onEnter: () => {
-    void initKnowledgeBase();
+    initKnowledgeBase();
   },
 });
