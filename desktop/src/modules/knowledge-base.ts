@@ -569,14 +569,14 @@ function renderPhaseChunking(): string {
       <div class="kb-phase-hero">
         <div class="kb-phase-hero-info">
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-            <span class="kb-tab-badge-phase is-planned">二期规划</span>
+            <span class="kb-tab-badge-phase is-planned">未就绪</span>
             <span class="kb-phase-status-badge">🛠️ 架构与数据协议已就绪</span>
           </div>
           <h3>知识切片流水线与 LanceDB 嵌入式向量索引</h3>
-          <p>基于一期高保真解析出的结构化 Markdown 与富文本，提供智能分块（段落/Markdown 层级/语义）、向量嵌入（Embedding）并持久化到本地 LanceDB 向量数据库，为 RAG 问答提供高召回知识单元。</p>
+          <p>基于高保真解析出的结构化 Markdown 与富文本，提供智能分块（段落/Markdown 层级/语义）、向量嵌入（Embedding）并持久化到本地 LanceDB 向量数据库，为 RAG 问答提供高召回知识单元。</p>
         </div>
         <div style="display:flex; gap:8px; align-items:center;">
-          <button class="btn btn-primary" onclick="alert('二期知识切片引擎正在流水线集成中，一期解析出的所有 Markdown 与富文本将可无缝直接灌入！')">▶️ 开启切片索引构建</button>
+          <button class="btn btn-primary" onclick="alert('知识切片引擎正在流水线集成中，解析出的所有 Markdown 与富文本将可无缝直接灌入！')">▶️ 开启切片索引构建</button>
         </div>
       </div>
 
@@ -623,14 +623,14 @@ function renderPhaseRetrieval(): string {
       <div class="kb-phase-hero">
         <div class="kb-phase-hero-info">
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-            <span class="kb-tab-badge-phase is-planned">三期规划</span>
+            <span class="kb-tab-badge-phase is-planned">未就绪</span>
             <span class="kb-phase-status-badge">🎯 FTS5 引擎已就绪 · RRF 融合评测中</span>
           </div>
           <h3>多路混合检索与重排精排评测实验室 (Hybrid Retrieval Lab)</h3>
           <p>融合 BM25 关键词倒排索引与 Dense 向量语义检索，并通过 BGE-Reranker 二次重排打分，提供可视化的检索召回效果调优控制台。</p>
         </div>
         <div style="display:flex; gap:8px; align-items:center;">
-          <button class="btn btn-primary" onclick="alert('三期混合检索评测室正在对齐 RRF 参数算法！当前一期 SQLite FTS5 全文搜索已可用。')">🔍 运行检索召回基准评测</button>
+          <button class="btn btn-primary" onclick="alert('混合检索评测室正在对齐 RRF 参数算法！当前 SQLite FTS5 全文搜索已可用。')">🔍 运行检索召回基准评测</button>
         </div>
       </div>
 
@@ -674,14 +674,14 @@ function renderPhaseRag(): string {
       <div class="kb-phase-hero">
         <div class="kb-phase-hero-info">
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-            <span class="kb-tab-badge-phase is-planned">四期规划</span>
+            <span class="kb-tab-badge-phase is-planned">未就绪</span>
             <span class="kb-phase-status-badge">💬 溯源问答原型 & MCP 协议</span>
           </div>
           <h3>基于精准溯源的 RAG 问答舱与 Agent 原生工具赋能</h3>
           <p>支持与知识库直接展开多轮流式对话，回答严格基于召回上下文并附带可交互的文档引用溯源；同时将知识库自动发布为标准 MCP 工具，供外部编程 Agent 自主检索。</p>
         </div>
         <div style="display:flex; gap:8px; align-items:center;">
-          <button class="btn btn-primary" onclick="alert('四期问答工作舱与 MCP 适配器正在对接，未来 Claude Code、Codex、Antigravity 即可直接对话检索此库！')">💬 开启对话舱</button>
+          <button class="btn btn-primary" onclick="alert('问答工作舱与 MCP 适配器正在对接，未来 Claude Code、Codex、Antigravity 即可直接对话检索此库！')">💬 开启对话舱</button>
         </div>
       </div>
 
@@ -749,23 +749,22 @@ export function render(): void {
         </div>
       </div>
 
-      <!-- Phase Navigation Tabs (一期 / 二期 / 三期 / 四期) -->
+      <!-- Navigation Tabs -->
       <div class="kb-nav-tabs">
         <button class="kb-nav-tab-btn ${state.activePhase === "parser" ? "active" : ""}" onclick="window.__kbSwitchView('parser')">
-          <span class="kb-tab-badge-phase">一期已就绪</span>
           <span>📑 文档解析与对比工作台</span>
         </button>
         <button class="kb-nav-tab-btn ${state.activePhase === "chunking" ? "active" : ""}" onclick="window.__kbSwitchView('chunking')">
-          <span class="kb-tab-badge-phase is-planned">二期</span>
           <span>🧩 知识切片与向量索引</span>
+          <span class="kb-tab-badge-phase is-planned">未就绪</span>
         </button>
         <button class="kb-nav-tab-btn ${state.activePhase === "retrieval" ? "active" : ""}" onclick="window.__kbSwitchView('retrieval')">
-          <span class="kb-tab-badge-phase is-planned">三期</span>
           <span>🎯 混合检索评测室</span>
+          <span class="kb-tab-badge-phase is-planned">未就绪</span>
         </button>
         <button class="kb-nav-tab-btn ${state.activePhase === "rag" ? "active" : ""}" onclick="window.__kbSwitchView('rag')">
-          <span class="kb-tab-badge-phase is-planned">四期</span>
           <span>💬 RAG 问答与 Agent 工具</span>
+          <span class="kb-tab-badge-phase is-planned">未就绪</span>
         </button>
       </div>
 
