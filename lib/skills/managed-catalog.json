@@ -358,6 +358,27 @@
       "requiresDaemon": false,
       "promoted": true,
       "managed": true
+    },
+    {
+      "id": "leo-karpathy-wiki",
+      "name": "leo-karpathy-wiki",
+      "title": "Leo Karpathy LLM Wiki 知识编译",
+      "summary": "基于 Andrej Karpathy 'Stop retrieving. Start compiling.' 理念的知识编译沉淀器。将网页、Craft 笔记、PDF 与视频字幕编译为具备原子概念、双向链接 [[...]] 与全局主题大纲的自包含 Obsidian 离线知识库。",
+      "category": "research",
+      "categoryLabel": "研究与知识",
+      "icon": "🧠",
+      "featured": true,
+      "tags": [
+        "karpathy",
+        "wiki",
+        "obsidian",
+        "pkm",
+        "knowledge-base",
+        "second-brain"
+      ],
+      "requiresDaemon": false,
+      "promoted": true,
+      "managed": true
     }
   ]
 }
