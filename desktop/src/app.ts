@@ -2135,8 +2135,9 @@ async function init() {
     }
     await loadSyncStatus();
     const initialHash = window.location.hash.replace('#', '');
-    if (initialHash && isCustomClient(initialHash)) {
-        switchTab(initialHash);
+    const cleanInitialTab = initialHash ? initialHash.split('?')[0].split('/')[0] : '';
+    if (cleanInitialTab && (cleanInitialTab !== 'code' || isCustomClient(cleanInitialTab))) {
+        switchTab(cleanInitialTab);
     } else {
         render();
     }
@@ -4641,9 +4642,9 @@ window.switchTab = function(tabId) {
     // Update URL hash so refresh keeps the current tab. Keep in-tab subviews
     // such as #command-apps/hindsight when the same top-level tab is re-entered.
     const currentHash = String(window.location.hash || '').replace(/^#/, '');
-    const currentTab = currentHash.split('/')[0];
+    const currentTab = currentHash.split('/')[0].split('?')[0];
     if (tabId && tabId !== 'code') {
-        if (!(tabId === currentTab && currentHash.includes('/'))) {
+        if (!(tabId === currentTab && (currentHash.includes('/') || currentHash.includes('?')))) {
             history.replaceState(null, '', '#' + tabId);
         }
     } else {

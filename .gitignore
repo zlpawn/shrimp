@@ -2,6 +2,8 @@
 .env
 gateway.secrets.json
 mcp.secrets.json
+kb.secrets.json
+*channel-secrets*.json
 /remote-session.config.json
 /remote-session.secrets.json
 /remote-session/

@@ -9,6 +9,19 @@ description: "将多源知识（技术长文、网页抓取、Craft 笔记、PDF
 
 ---
 
+## 零、 必备前置输入与交互规则（Required Inputs & Prompting）
+
+在执行本 Skill 之前，**必须明确目标 Obsidian 知识库根目录**：
+
+* **核心参数**：`target_vault_root`（目标 Obsidian Vault 的本地绝对路径，例如 `D:/Obsidian/MyKnowledge` 或 `/Users/xxx/Documents/Vault`）。
+* **交互规则（强制执行）**：
+  1. **严禁臆测默认路径**：严禁私自将文件写入操作系统的临时目录、工作区内部临时文件夹或任意未经用户许可的路径；
+  2. **前置询问**：若用户未在指令中显式提供 `target_vault_root`，Skill 执行的第一步必须**立即暂停并主动询问用户**：
+     > “请提供目标 Obsidian 知识库（Vault）的根目录绝对路径（如 `D:/Obsidian/MyWiki`），以便将原始材料、原子卡片与双链索引准确沉淀至您的本地知识库。”
+  3. **路径存在性与初始化**：当用户指定路径后，系统若发现该目录尚未创建，应提示用户“将自动在指定位置初始化 Vault 目录结构 (`raw/`, `wiki/`, `00-Meta/`)”。
+
+---
+
 ## 一、 核心哲学与三层分层架构
 
 知识库必须满足**完全脱离网关或云端也能独立离线使用**的要求。目录结构划分为严格的三层：
@@ -95,24 +108,59 @@ status: "compiled"
 
 ---
 
-## 四、 增量编译工作流（Incremental Compilation Flow）
+## 四、 编译与增量迭代工作流（Compilation & Incremental Refinement Flow）
+
+针对网关无多轮会话 Session 上下文的特性，采用 **“草稿暂存 + 无状态全量上下文增量修正”** 的工作流：
 
 ```mermaid
 sequenceDiagram
-    participant User as 用户 / 网关
-    participant Raw as raw/ 原始资产
+    participant User as 用户 / 前端
+    participant Gateway as 网关编译器
     participant Model as 选定 LLM 模型 (GLM/Grok)
-    participant Wiki as wiki/ 原子双链
-    participant Meta as 00-Meta/ 索引与日志
+    participant Vault as 目标 Obsidian Vault
 
-    User->>Raw: 1. 原始文件与图片沉淀到 raw/ 与 raw/assets/
-    User->>Model: 2. 注入 Karpathy 提示词 + 原始材料 + 当前 index.md 现有概念列表
-    Model-->>User: 3. 输出提炼出的原子概念、正文、[[双向链接]] 与索引增量
-    User->>Wiki: 4. 写入/更新 wiki/[[概念]].md
-    User->>Meta: 5. 追加 00-Meta/index.md 与 00-Meta/log.md
+    User->>Gateway: 1. 发起编译预览 (提供材料 + target_vault_root)
+    Gateway->>Model: 2. 注入提示词 + 原材料 + 现有 index.md 概念
+    Model-->>Gateway: 3. 输出结构化草稿 (Draft: 概念卡片 + 双链 + MOC)
+    Gateway-->>User: 4. 前端展示草稿，用户可核对/预览 (此时不写盘)
+    
+    opt 用户不满意，发起增量修改
+        User->>Gateway: 5. 提交修改意见 ("合并概念A与B；补充实战案例")
+        Gateway->>Model: 6. 注入 [原材料] + [上轮草稿] + [用户修改建议]
+        Model-->>Gateway: 7. 输出修正后的新版草稿
+        Gateway-->>User: 8. 更新草稿预览
+    end
+
+    User->>Gateway: 9. 满意确认，点击一键落盘
+    Gateway->>Vault: 10. 写入 raw/ (相对路径 assets/)、wiki/、00-Meta/
 ```
 
-1. **材料预存**：先把输入材料（网页、Craft 笔记、PDF 或视频字幕）转存至 `raw/` 目录，确保媒体文件相对路径化；
-2. **上下文装配**：读取当前 Vault 已有的 `00-Meta/index.md`，把现有的所有概念列表作为上下文传给模型，告知模型“库里已有这些概念，请尽量在正文中用 `[[...]]` 引用它们”；
-3. **概念抽取与写入**：调用模型生成原子概念卡片，写入 `wiki/`；
-4. **确定性注册**：代码自动在 `00-Meta/index.md` 对应分类下追加新概念链接，并在 `00-Meta/log.md` 记下一笔更新记录。
+### 1. 阶段一：草稿生成（Draft Preview）
+1. **上下文装配**：网关读取指定 Vault 现有的 `00-Meta/index.md`，提取库中已有概念列表注入上下文，指示模型“优先在正文中用 `[[现有概念]]` 织入现有网络”；
+2. **生成草稿**：调用模型生成原子概念卡片、正文与 MOC 映射，返回前端预览，**不直接触碰本地磁盘**。
+
+### 2. 阶段二：增量修改闭环（Incremental Refinement Loop）
+若用户对首次生成不满意，可输入自然语言修改意见：
+* **无状态重提炼 Prompt 结构**：
+  ```markdown
+  You are an expert Knowledge Refiner.
+  
+  [Raw Input Material]
+  ...
+  
+  [Previous Compilation Draft]
+  ...
+  
+  [User Feedback & Instructions]
+  ...
+  
+  Please refine the compilation draft according to the user feedback while preserving established high-quality sections.
+  ```
+* 每次增量调整均携带“前次草稿 + 用户反馈”，模型在单次无状态调用中即可实现精准的二次修改。
+
+### 3. 阶段三：原子化落盘（Atomic Commit）
+用户确认满意后，网关一次性执行：
+1. **原典与媒体归档**：输入材料沉淀至 `raw/YYYY-MM-DD-标题.md`，配图拷入 `raw/assets/` 并转为相对路径 `assets/...`；
+2. **原子卡片发布**：写入 `wiki/[[概念]].md`；
+3. **确定性注册**：追加 `00-Meta/index.md` 主题入口与 `00-Meta/log.md` 审计流水。
+

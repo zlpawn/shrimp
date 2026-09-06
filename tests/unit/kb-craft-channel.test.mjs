@@ -51,11 +51,20 @@ test("CraftChannel: getStatus, listDocuments, and fetchDocument with mock fetch"
       };
     }
 
-    if (cmd.startsWith("documents list")) {
+    if (cmd.startsWith("folders list")) {
       return {
         ok: true,
         status: 200,
-        text: async () => `event: message\ndata: {"result":{"content":[{"type":"text","text":"2 document(s) — format: <rootBlockId> Title\\n\\n  <doc_aaa_111> Note Alpha\\n  <doc_bbb_222> Note Beta\\n\\nNext page: documents list --cursor cur_999"}],"isError":false}}\n\n`,
+        text: async () => `event: message\ndata: {"result":{"content":[{"type":"text","text":"3 folder(s) — format: <folderId> Folder Name\\n\\n* <fld_1> AI Research (5 docs)\\n  * <fld_2> Prompt Engineering (2 docs)\\n* <fld_3> Personal (0 docs)"}],"isError":false}}\n\n`,
+      };
+    }
+
+    if (cmd.startsWith("documents list")) {
+      const isPaged = cmd.includes("--cursor");
+      return {
+        ok: true,
+        status: 200,
+        text: async () => `event: message\ndata: {"result":{"content":[{"type":"text","text":"${isPaged ? "1 document(s) — format: <rootBlockId> Title\\n\\n  <doc_ccc_333> Note Gamma" : "2 document(s) — format: <rootBlockId> Title\\n\\n  <doc_aaa_111> Note Alpha\\n  <doc_bbb_222> Note Beta\\n\\nNext page: documents list --cursor cur_999"}"}],"isError":false}}\n\n`,
       };
     }
 
@@ -89,12 +98,30 @@ test("CraftChannel: getStatus, listDocuments, and fetchDocument with mock fetch"
   assert.equal(status.spaceName, "Tiger Space");
   assert.equal(status.spaceId, "space_123");
 
-  // Test listDocuments
+  // Test listFolders
+  const foldersRes = await channel.listFolders({});
+  assert.equal(foldersRes.folders.length, 3);
+  assert.equal(foldersRes.folders[0].id, "fld_1");
+  assert.equal(foldersRes.folders[0].name, "AI Research");
+  assert.equal(foldersRes.folders[0].depth, 0);
+  assert.equal(foldersRes.folders[0].docCount, 5);
+  assert.equal(foldersRes.folders[1].id, "fld_2");
+  assert.equal(foldersRes.folders[1].name, "Prompt Engineering");
+  assert.equal(foldersRes.folders[1].depth, 1);
+  assert.equal(foldersRes.folders[1].docCount, 2);
+
+  // Test listDocuments (auto-pagination fetches all pages)
   const list = await channel.listDocuments({});
-  assert.equal(list.documents.length, 2);
+  assert.equal(list.documents.length, 3);
   assert.equal(list.documents[0].id, "doc_aaa_111");
   assert.equal(list.documents[0].title, "Note Alpha");
-  assert.equal(list.nextCursor, "cur_999");
+  assert.equal(list.documents[2].id, "doc_ccc_333");
+  assert.equal(list.nextCursor, null);
+
+  // Test listDocuments with fetchAll: false (single page with cursor)
+  const singlePage = await channel.listDocuments({ fetchAll: false });
+  assert.equal(singlePage.documents.length, 2);
+  assert.equal(singlePage.nextCursor, "cur_999");
 
   // Test search
   const searchResults = await channel.listDocuments({ search: "Alpha" });
@@ -105,6 +132,10 @@ test("CraftChannel: getStatus, listDocuments, and fetchDocument with mock fetch"
   const doc = await channel.fetchDocument("doc_aaa_111");
   assert.equal(doc.title, "Note Alpha");
   assert.ok(doc.markdown.includes("This is the note body."));
+
+  // Test buildCraftUrl
+  const craftUrl = channel.buildCraftUrl("doc_aaa_111");
+  assert.equal(craftUrl, "https://docs.craft.do/editor/d/space_123/doc_aaa_111");
 });
 
 test("CraftChannel: pipeline.ingestCraftNote and API routes", async () => {
@@ -123,6 +154,9 @@ test("CraftChannel: pipeline.ingestCraftNote and API routes", async () => {
 
   const mockChannel = {
     getStatus: async () => ({ connected: true, spaceName: "Tiger Space", spaceId: "space_123" }),
+    listFolders: async () => ({
+      folders: [{ id: "fld_test_1", name: "Research", depth: 0, docCount: 1 }],
+    }),
     listDocuments: async () => ({
       documents: [{ id: "doc_test_1", title: "Test Note 1" }],
     }),
@@ -131,7 +165,7 @@ test("CraftChannel: pipeline.ingestCraftNote and API routes", async () => {
       title: "Test Note 1",
       markdown: "# Test Note 1 Content\n\nSome great knowledge.",
     }),
-    buildCraftUrl: (rootBlockId) => `craftdocs://open?spaceId=space_123&blockId=${rootBlockId}`,
+    buildCraftUrl: (rootBlockId) => `https://docs.craft.do/editor/d/space_123/${rootBlockId}`,
   };
 
   // Test pipeline.ingestCraftNote
@@ -140,12 +174,12 @@ test("CraftChannel: pipeline.ingestCraftNote and API routes", async () => {
     title: "Test Note 1",
     markdown: "# Test Note 1 Content\n\nSome great knowledge.",
     collectionId: "col_default",
-    craftUrl: "craftdocs://open?spaceId=space_123&blockId=doc_test_1",
+    craftUrl: "https://docs.craft.do/editor/d/space_123/doc_test_1",
   });
 
   assert.equal(doc.source_type, "craft");
   assert.equal(doc.title, "Test Note 1");
-  assert.ok(doc.source_url.startsWith("craftdocs://"));
+  assert.ok(doc.source_url.startsWith("https://docs.craft.do/"));
   assert.ok(doc.word_count > 0);
 
   // Verify in store
@@ -185,6 +219,24 @@ test("CraftChannel: pipeline.ingestCraftNote and API routes", async () => {
   assert.equal(handledStatus, true);
   assert.equal(statusResponse.connected, true);
   assert.equal(statusResponse.spaceName, "Tiger Space");
+
+  // GET /v1/kb/channels/craft/folders
+  let foldersResponse = null;
+  const mockResFolders = {
+    writeHead(code, headers) {},
+    end(data) {
+      foldersResponse = JSON.parse(data);
+    },
+  };
+  const handledFolders = await routeHandler(
+    { method: "GET" },
+    mockResFolders,
+    new URL("http://localhost/v1/kb/channels/craft/folders"),
+    "/v1/kb/channels/craft/folders"
+  );
+  assert.equal(handledFolders, true);
+  assert.equal(foldersResponse.folders.length, 1);
+  assert.equal(foldersResponse.folders[0].name, "Research");
 
   // Clean up
   store.close();

@@ -1113,12 +1113,31 @@
 .kb-doc-card-top {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.kb-doc-checkbox {
+  width: 15px !important;
+  min-width: 15px !important;
+  max-width: 15px !important;
+  height: 15px !important;
+  min-height: 15px !important;
+  max-height: 15px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  cursor: pointer;
+  flex-shrink: 0 !important;
+  accent-color: var(--color-primary, #3b82f6);
 }
 
 .kb-doc-type-icon {
   font-size: 14px;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .kb-doc-card-title {
@@ -1129,6 +1148,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
+  min-width: 0;
 }
 
 .kb-doc-card-engines {
@@ -1801,6 +1821,148 @@
   border: 1px solid rgba(245, 158, 11, 0.25);
 }
 
+/* Modality Sub-tabs Bar */
+.kb-subtabs-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.kb-subtabs-group {
+  display: inline-flex;
+  background: var(--input-bg);
+  padding: 3px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--border-color);
+  gap: 3px;
+}
+
+.kb-subtab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.15s ease);
+}
+
+.kb-subtab-btn:hover {
+  color: var(--text-primary);
+  background: var(--surface-hover);
+}
+
+.kb-subtab-btn.active {
+  background: var(--surface);
+  color: var(--text-primary);
+  font-weight: 600;
+  border-color: var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.kb-subtab-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--surface-hover);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+  line-height: 1.2;
+}
+
+.kb-subtab-btn.active .kb-subtab-badge {
+  background: var(--input-bg);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+/* Intake Dropdown Menu (Floating Overlay Popover) */
+.kb-dropdown-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.kb-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  z-index: 1000;
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: var(--radius-md, 8px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kb-dropdown-menu.align-right {
+  right: 0;
+  left: auto;
+}
+
+.kb-dropdown-menu.align-left {
+  left: 0;
+  right: auto;
+}
+
+.kb-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: all var(--transition-fast, 0.15s ease);
+  color: var(--text-primary);
+}
+
+.kb-dropdown-item:hover {
+  background: var(--surface-hover, rgba(0, 0, 0, 0.05));
+  border-color: var(--border-color);
+}
+
+.kb-dropdown-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kb-dropdown-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.kb-dropdown-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.kb-dropdown-sub {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.2;
+}
+
 /* Phase Blueprint / Architecture Preview Cards */
 .kb-phase-blueprint {
   display: flex;
@@ -1904,4 +2066,309 @@
   font-family: var(--font-mono);
 }
 
+/* Multi-Channel & WeRead Auto-Sync UI */
+.kb-channel-capsule {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  background: var(--surface-secondary, rgba(255, 255, 255, 0.04));
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border-color);
+}
 
+.kb-weread-book-card {
+  display: flex;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--surface);
+  transition: all 0.15s ease;
+}
+
+.kb-weread-book-card:hover {
+  border-color: var(--color-primary, #3b82f6);
+  background: var(--surface-hover);
+}
+
+.kb-weread-book-card.is-selected {
+  border-color: var(--color-primary, #3b82f6);
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.kb-weread-cover {
+  width: 48px;
+  height: 68px;
+  object-fit: cover;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: var(--bg-tertiary);
+  flex-shrink: 0;
+}
+
+.kb-stream-date-group {
+  margin-bottom: 20px;
+}
+
+.kb-stream-date-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+  border: 1px solid var(--border-color);
+}
+
+.kb-stream-item {
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--surface);
+  margin-bottom: 10px;
+  transition: border-color 0.15s;
+}
+
+.kb-stream-item:hover {
+  border-color: var(--border-hover, #64748b);
+}
+
+.kb-stream-quote {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  margin: 6px 0;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border-left: 3px solid var(--color-primary, #3b82f6);
+  border-radius: 0 6px 6px 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ==========================================================================
+   Sliding Switch / Wheel Toggles (.kb-switch)
+   ========================================================================== */
+.kb-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.kb-switch-input {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  margin: 0 !important;
+}
+
+.kb-switch-track,
+.kb-switch-slider {
+  position: relative;
+  display: inline-block;
+  width: 42px;
+  height: 22px;
+  border: 1px solid var(--border-color, #cbd5e1);
+  border-radius: 999px;
+  background: var(--input-bg, #e2e8f0);
+  transition: background 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
+  flex-shrink: 0;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.kb-switch-track::after,
+.kb-switch-slider::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25), 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+
+.kb-switch-input:checked + .kb-switch-track,
+.kb-switch-input:checked + .kb-switch-slider {
+  background: #2563eb !important;
+  border-color: #1d4ed8 !important;
+}
+
+.kb-switch-input:checked + .kb-switch-track::after,
+.kb-switch-input:checked + .kb-switch-slider::after {
+  transform: translateX(20px);
+}
+
+.kb-switch-input:focus-visible + .kb-switch-track,
+.kb-switch-input:focus-visible + .kb-switch-slider {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.kb-switch-input:disabled + .kb-switch-track,
+.kb-switch-input:disabled + .kb-switch-slider {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ==========================================================================
+   Segmented Slider / Single Choice Radio Pill Group (.kb-segmented-group)
+   ========================================================================== */
+.kb-segmented-group {
+  display: inline-flex;
+  align-items: center;
+  background: var(--input-bg, #f1f5f9);
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  gap: 3px;
+  user-select: none;
+  max-width: 100%;
+}
+
+.kb-segmented-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  border: 1px solid transparent;
+  background: transparent;
+  white-space: nowrap;
+}
+
+.kb-segmented-item:hover:not(.active):not(.disabled) {
+  color: var(--text-primary);
+  background: var(--surface-hover, rgba(0, 0, 0, 0.05));
+}
+
+.kb-segmented-item.active {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  border-color: #1d4ed8 !important;
+  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.3);
+}
+
+.kb-segmented-item input[type="radio"] {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  margin: 0 !important;
+}
+
+/* ==========================================================================
+   Craft Folder Hierarchy Tree (.kb-craft-tree-item)
+   ========================================================================== */
+.kb-craft-tree-item {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  min-height: 28px !important;
+  padding: 5px 8px !important;
+  border-radius: 6px !important;
+  border: 1px solid transparent !important;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 12px !important;
+  text-align: left !important;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  box-sizing: border-box !important;
+}
+
+.kb-craft-tree-item:hover:not(.active):not(:disabled) {
+  background: var(--surface-hover, rgba(0, 0, 0, 0.05)) !important;
+  border-color: var(--border-color) !important;
+}
+
+.kb-craft-tree-item.active {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  border-color: #1d4ed8 !important;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.3) !important;
+}
+
+.kb-craft-tree-item.active .kb-tree-branch,
+.kb-craft-tree-item.active .kb-craft-tree-count {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.kb-tree-branch {
+  font-family: var(--font-mono, monospace);
+  color: var(--text-muted, #94a3b8);
+  margin-right: 4px;
+  font-weight: normal;
+  display: inline-flex;
+  align-items: center;
+}
+
+.kb-craft-tree-count {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: 6px;
+  flex-shrink: 0;
+  font-weight: normal;
+}
+
+/* ==========================================================================
+   Primary Button Styling (NEVER pure black, modern vibrant blue)
+   ========================================================================== */
+.btn-primary,
+button.btn-primary {
+  background: #2563eb !important;
+  border: 1px solid #1d4ed8 !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
+}
+
+.btn-primary:hover:not(:disabled),
+button.btn-primary:hover:not(:disabled) {
+  background: #1d4ed8 !important;
+  border-color: #1e40af !important;
+  color: #ffffff !important;
+}
+
+.btn-primary:active:not(:disabled),
+button.btn-primary:active:not(:disabled) {
+  background: #1e4ed8 !important;
+  border-color: #1e3a8a !important;
+}
+
+.btn-primary:disabled,
+button.btn-primary:disabled {
+  background: #93c5fd !important;
+  border-color: #bfdbfe !important;
+  color: #ffffff !important;
+  opacity: 0.65;
+  cursor: not-allowed;
+}

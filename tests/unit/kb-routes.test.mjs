@@ -96,7 +96,48 @@ test("KbRoutes: Collections, documents, and tools status endpoints", async () =>
   });
   assert.equal(resDelDefault.status, 400);
 
-  // 9. DELETE /v1/kb/collections/:id (Delete created collection)
+  // 9. POST /v1/kb/documents/:id/adopt (Adopt document and verify physical final.md)
+  const docId = dataIngestText.document.id;
+  const resAdopt = await fetch(`http://127.0.0.1:${port}/v1/kb/documents/${docId}/adopt`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      engine: "docling",
+      content: "# 采纳版本：示例文档权威指引\n\n经过团队对比，采纳 Docling 解析结果作为正式知识库文档。",
+    }),
+  });
+  const dataAdopt = await resAdopt.json();
+  assert.equal(resAdopt.status, 200);
+  assert.equal(dataAdopt.ok, true);
+  assert.equal(dataAdopt.document.adopted_engine, "docling");
+  assert.ok(dataAdopt.document.accepted_at > 0);
+  assert.ok(dataAdopt.document.final_content.includes("采纳版本"));
+
+  // Verify physical file on disk exists!
+  const finalFile = path.join(tmpDir, "files", docId, "final.md");
+  assert.equal(fs.existsSync(finalFile), true);
+  const savedContent = fs.readFileSync(finalFile, "utf8");
+  assert.equal(savedContent, dataAdopt.document.final_content);
+
+  // 10. POST /v1/kb/documents/agent-prompt (Generate cross-platform Agent prompt)
+  const resPrompt = await fetch(`http://127.0.0.1:${port}/v1/kb/documents/agent-prompt`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      doc_ids: [docId],
+    }),
+  });
+  const dataPrompt = await resPrompt.json();
+  assert.equal(resPrompt.status, 200);
+  assert.equal(dataPrompt.ok, true);
+  assert.ok(dataPrompt.promptText.includes("请基于以下已解析与校验的知识库素材进行分析与知识沉淀"));
+  assert.ok(dataPrompt.promptText.includes("接口测试标题"));
+  assert.ok(dataPrompt.promptText.includes("file:///"));
+  assert.ok(dataPrompt.promptText.includes("final.md"));
+  assert.equal(dataPrompt.items.length, 1);
+  assert.equal(dataPrompt.items[0].id, docId);
+
+  // 11. DELETE /v1/kb/collections/:id (Delete created collection)
   const resDelCol = await fetch(`http://127.0.0.1:${port}/v1/kb/collections/${dataCreateCol.collection.id}`, {
     method: "DELETE",
   });

@@ -250,19 +250,45 @@ async function executeDocumentTargetTask(type, params = {}) {
   const res = await chrome.scripting.executeScript({
     target: { tabId },
     world: "ISOLATED",
-    func: async (mode, normalizedTarget, value) => {
-      const api = await import(chrome.runtime.getURL("/element-target.mjs"));
-      const interaction = await import(chrome.runtime.getURL("/interaction.mjs"));
-      const registry = api.ensureDocumentRegistry(globalThis);
-      if (mode === "state") return api.collectState(document, registry);
-      if (mode === "find") return api.findTargetSnapshot(document, registry, normalizedTarget);
-      if (mode === "click") return interaction.clickTarget(document, registry, normalizedTarget);
-      return interaction.fillTarget(document, registry, normalizedTarget, value);
+    func: async (mode, normalizedTarget, value, rawParams) => {
+      try {
+        const api = await import(chrome.runtime.getURL("/element-target.mjs"));
+        const interaction = await import(chrome.runtime.getURL("/interaction.mjs"));
+        const registry = api.ensureDocumentRegistry(globalThis);
+        if (mode === "state") return api.collectState(document, registry);
+        if (mode === "find") return api.findTargetSnapshot(document, registry, normalizedTarget);
+        if (mode === "click") return interaction.clickTarget(document, registry, normalizedTarget);
+        return interaction.fillTarget(document, registry, normalizedTarget, value);
+      } catch (err) {
+        if (mode === "click") {
+          let el = null;
+          if (normalizedTarget?.selector) {
+            el = document.querySelector(normalizedTarget.selector);
+          } else if (rawParams?.selector || rawParams?.sel) {
+            el = document.querySelector(rawParams.selector || rawParams.sel);
+          } else if (rawParams?.text || normalizedTarget?.text) {
+            const txt = (rawParams?.text || normalizedTarget?.text || "").trim();
+            const candidates = Array.from(document.querySelectorAll("button, a, [role='button'], input[type='button'], input[type='submit']"));
+            el = candidates.find(c => (c.innerText || c.textContent || "").includes(txt)) ||
+                 candidates.find(c => (c.getAttribute("title") || "").includes(txt));
+          }
+          if (el) {
+            el.scrollIntoView({ block: "center", inline: "center" });
+            el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true }));
+            el.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, cancelable: true }));
+            el.click();
+            return { clicked: true, fallback: true, target: normalizedTarget };
+          }
+          return { clicked: false, error: "Element not found by fallback", target: normalizedTarget };
+        }
+        return { error: String(err) };
+      }
     },
     args: [
       type === "dom.state" ? "state" : type === "dom.find" ? "find" : type === "dom.click" ? "click" : "fill",
       target,
       fillValue,
+      params,
     ],
   });
   const result = res?.[0]?.result;
@@ -472,8 +498,13 @@ async function executeTask(task) {
       const tabId = await requireTaskTabId(params);
       const res = await chrome.scripting.executeScript({
         target: { tabId },
+        world: "MAIN",
         func: (code) => {
-          return window.eval(code);
+          try {
+            return (0, eval)(code);
+          } catch (e) {
+            return { error: e.message, stack: e.stack };
+          }
         },
         args: [params.script],
       });

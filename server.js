@@ -412,6 +412,8 @@ function ensureKnowledgeBaseModule() {
   globalKnowledgeBaseModule = initKnowledgeBaseModule({
     dataDir,
     taskQueue: globalTaskQueue,
+    config: GATEWAY_CONFIG,
+    listenPort: LISTEN_PORT,
   });
   return globalKnowledgeBaseModule;
 }
@@ -3462,6 +3464,25 @@ async function routeVideoKbRequest(req, res, context, reqPath) {
     return;
   }
 
+  // POST /v1/video-kb/upload - upload local media file for pipeline processing
+  if (reqPath === "/v1/video-kb/upload" && req.method === "POST") {
+    try {
+      const filenameHeader = decodeURIComponent(req.headers["x-filename"] || "media.mp4");
+      const { rootDir } = videoKbPaths();
+      const uploadsDir = path.join(rootDir, "_uploads");
+      if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+      const buffer = await readRequestBuffer(req);
+      const safeExt = path.extname(filenameHeader) || ".mp4";
+      const baseName = path.basename(filenameHeader, safeExt).replace(/[^\w.-]/g, "_") || "media";
+      const targetPath = path.join(uploadsDir, `${Date.now()}_${baseName}${safeExt}`);
+      fs.writeFileSync(targetPath, buffer);
+      sendJson(res, 200, { ok: true, filePath: targetPath, filename: filenameHeader });
+    } catch (err) {
+      sendJson(res, 500, { error: { type: "server_error", message: err.message } });
+    }
+    return;
+  }
+
   // POST /v1/video-kb/ingest - submit ingestion task
   if (reqPath === "/v1/video-kb/ingest" && req.method === "POST") {
     let body;
@@ -3492,6 +3513,14 @@ async function routeVideoKbRequest(req, res, context, reqPath) {
       chunkMaxSeconds: body.chunk_max_seconds,
       chunkOverlapSeconds: body.chunk_overlap_seconds,
       keepVideo: body.keep_video !== false,
+      frameStrategy: body.frame_strategy || "scene",
+      frameInterval: Number(body.frame_interval) || 5,
+      sceneThreshold: Number(body.scene_threshold) || 0.35,
+      maxFrames: Number(body.max_frames) || 30,
+      visionClient: body.vision_client || body.summary_client || null,
+      visionEndpointId: body.vision_endpoint_id || body.summary_endpoint_id || null,
+      visionModel: body.vision_model || null,
+      maxVisionFrames: Number(body.max_vision_frames) || 5,
       selectedSteps,
       outputDir,
       lanceDbPath,
@@ -3524,7 +3553,7 @@ async function routeVideoKbRequest(req, res, context, reqPath) {
       const { lanceDbPath, metaDbPath } = videoKbPaths();
       const metaStore = createMetaStore({ dbPath: metaDbPath });
       const vectorStore = createVectorStore({ dbPath: lanceDbPath });
-      const collection = String(url.searchParams.get("collection") || "").trim();
+      const collection = String(context.url?.searchParams?.get("collection") || "").trim();
       const metaVideos = collection ? metaStore.listVideos({ collection }) : metaStore.listVideos();
       const vectorVideos = collection ? [] : await vectorStore.listVideos().catch(() => []);
       metaStore.close();
@@ -3792,6 +3821,26 @@ async function routeVideoKbRequest(req, res, context, reqPath) {
       console.error("[video-kb] search failed:", err instanceof Error ? err.message : String(err));
       sendJson(res, 200, { results: [], count: 0, error: err instanceof Error ? err.message : String(err) });
     }
+    return;
+  }
+
+  // GET /v1/video-kb/assets/:video_id/frames/:filename - serve video frame image
+  const frameAssetMatch = reqPath.match(/^\/v1\/video-kb\/assets\/([^/]+)\/frames\/([^/]+)$/);
+  if (frameAssetMatch && req.method === "GET") {
+    const videoId = decodeURIComponent(frameAssetMatch[1]);
+    const filename = decodeURIComponent(frameAssetMatch[2]);
+    const dataDir = mediaDataDir();
+    const filePath = path.join(dataDir, "video-kb", videoId, "frames", filename);
+    if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
+      sendJson(res, 404, { error: { type: "frame_not_found", message: "Frame file not found." } });
+      return;
+    }
+    res.writeHead(200, {
+      "Content-Type": "image/jpeg",
+      "Content-Length": fs.statSync(filePath).size,
+      "Cache-Control": "public, max-age=86400",
+    });
+    fs.createReadStream(filePath).pipe(res);
     return;
   }
 
