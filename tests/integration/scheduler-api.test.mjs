@@ -149,6 +149,32 @@ describe("Scheduler REST API Integration Tests", () => {
     assert.equal(body.ok, false);
   });
 
+  it("PATCH config rejects values outside the job schema range", async () => {
+    const res = await fetch(`${baseUrl}/v1/scheduler/jobs/fx_rate_refresh/config`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ interval_hours: 999 }),
+    });
+    assert.equal(res.status, 400);
+    const body = await res.json();
+    assert.equal(body.ok, false);
+    assert.match(body.error, /interval_hours/);
+
+    const savedConfig = JSON.parse(
+      fs.readFileSync(path.join(tmpDir, "scheduler.config.json"), "utf-8")
+    );
+    assert.notEqual(savedConfig.jobs.fx_rate_refresh._touched, true);
+  });
+
+  it("scheduler routes reject malformed percent-encoded job ids", async () => {
+    const res = await fetch(`${baseUrl}/v1/scheduler/jobs/%/run`, {
+      method: "POST",
+    });
+    assert.equal(res.status, 400);
+    const body = await res.json();
+    assert.equal(body.ok, false);
+  });
+
   it("PATCH config writes through to the underlying trend-intel service", async () => {
     configUpdates.length = 0;
     rescheduleCalls.length = 0;

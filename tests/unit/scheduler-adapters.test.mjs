@@ -7,6 +7,7 @@ import { KanbanDispatchAdapter } from "../../lib/scheduler/adapters/kanban-dispa
 import { FxRateAdapter } from "../../lib/scheduler/adapters/fx-rate.mjs";
 import { ModelPricingAdapter } from "../../lib/scheduler/adapters/model-pricing.mjs";
 import { SessionSyncAdapter } from "../../lib/scheduler/adapters/session-sync.mjs";
+import { createTrendIntelScheduler } from "../../lib/trend-intel/scheduler.mjs";
 
 describe("Scheduler Adapters Unit Tests", () => {
   it("TrendCrawlAdapter reports status and triggers crawl", async () => {
@@ -278,6 +279,43 @@ describe("Scheduler Adapters Unit Tests", () => {
     const status = adapter.getStatus({ enabled: false, daily_times: ["09:00"] });
     assert.equal(status.enabled, false);
     assert.equal(status.nextRunAt, null);
+  });
+
+  it("Trend adapters restart the shared scheduler after both sub-jobs were disabled", async () => {
+    let schedulerConfig = {
+      enabled: true,
+      crawl_enabled: true,
+      brief_enabled: true,
+      interval_minutes: 30,
+      daily_brief_times: ["08:30"],
+    };
+    const service = {
+      getConfig: () => ({ scheduler: schedulerConfig }),
+      updateConfig: (patch) => {
+        schedulerConfig = { ...schedulerConfig, ...patch.scheduler };
+      },
+      crawlOnce: async () => ({ count: 0 }),
+    };
+    const scheduler = createTrendIntelScheduler(service, { initialCrawl: false });
+    const crawlAdapter = new TrendCrawlAdapter({
+      getService: () => service,
+      getScheduler: () => scheduler,
+    });
+    const briefAdapter = new TrendBriefAdapter({
+      getService: () => service,
+      getScheduler: () => scheduler,
+    });
+
+    scheduler.start();
+    await crawlAdapter.onConfigChange({ enabled: false }, { enabled: false });
+    await briefAdapter.onConfigChange({ enabled: false }, { enabled: false });
+    assert.equal(scheduler.getStatus().running, false);
+
+    await crawlAdapter.onConfigChange({ enabled: true }, { enabled: true });
+    assert.equal(scheduler.getStatus().running, true);
+    assert.equal(scheduler.getStatus().crawl_enabled, true);
+
+    scheduler.stop();
   });
 
   it("KanbanDispatchAdapter applies interval and stop on config change", async () => {
