@@ -106,9 +106,9 @@
   },
   "allowScripts": {
     "node-pty@1.1.0": true,
-    "esbuild@0.28.1": true
+    "esbuild@0.28.2": true
   },
   "devDependencies": {
-    "esbuild": "^0.28.1"
+    "esbuild": "^0.28.2"
   }
 }
