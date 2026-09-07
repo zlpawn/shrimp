@@ -1198,6 +1198,71 @@ test("saving runtime config keeps a stopped hindsight stopped", async () => {
   assert.deepEqual(status.configApply, { restartRequired: false, restarted: false });
 });
 
+test("saving runtime config restores env when shared config save fails", async () => {
+  const saved = [];
+  const envWrites = [];
+  const service = createCommandAppsService({
+    configStore: {
+      get: () => ({
+        apps: { hindsight: { executablePath: "/bin/hindsight-embed" } },
+        hindsightProfiles: { "coding-agent": { port: 9077 } },
+      }),
+      save(next) {
+        saved.push(next);
+        if (saved.length === 1) throw new Error("disk full");
+      },
+    },
+    platform: "darwin",
+    fileExists: () => true,
+    inspectHindsight: async () => ({ status: "stopped", pid: null }),
+    readHindsightLlm: () => ({ provider: "openai", model: "new-model" }),
+    readHindsightEnvFile: () => "HINDSIGHT_API_LLM_MODEL=old-model\n",
+    writeHindsightEnvFile: (_path, text) => envWrites.push(text),
+    writeHindsightLlm: (patch) => envWrites.push(patch),
+    probeHindsight: async () => false,
+  });
+  await assert.rejects(
+    () => service.updateConfig("hindsight:coding-agent", { llm: { model: "new-model" } }),
+    (error) => error.details?.phase === "write"
+      && error.details?.configState === "rolled_back"
+      && error.details?.configSaved === false,
+  );
+  assert.deepEqual(envWrites.at(-1), "HINDSIGHT_API_LLM_MODEL=old-model\n");
+});
+
+test("saving runtime config reports unknown state when rollback fails", async () => {
+  const envWrites = [];
+  let saveFailed;
+  const service = createCommandAppsService({
+    configStore: {
+      get: () => ({ apps: { hindsight: { executablePath: "/bin/hindsight-embed" } } }),
+      save() {
+        if (!saveFailed) {
+          saveFailed = true;
+          throw new Error("disk full");
+        }
+      },
+    },
+    platform: "darwin",
+    fileExists: () => true,
+    inspectHindsight: async () => ({ status: "stopped", pid: null }),
+    readHindsightLlm: () => ({ provider: "openai", model: "new-model" }),
+    readHindsightEnvFile: () => "HINDSIGHT_API_LLM_MODEL=old-model\n",
+    writeHindsightEnvFile: (_path, text) => {
+      envWrites.push(text);
+      if (envWrites.length > 1) throw new Error("rollback failed");
+    },
+    writeHindsightLlm: (patch) => envWrites.push(patch),
+    probeHindsight: async () => false,
+  });
+  await assert.rejects(
+    () => service.updateConfig("hindsight:coding-agent", { llm: { model: "new-model" } }),
+    (error) => error.details?.phase === "write"
+      && error.details?.configState === "unknown"
+      && error.details?.configSaved === false,
+  );
+});
+
 test("saving runtime config refuses to write when active hindsight cannot be proven and stopped", async () => {
   const writes = [];
   const service = createCommandAppsService({
