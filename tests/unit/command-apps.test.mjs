@@ -1095,7 +1095,7 @@ test("hindsight process identity verifies parent and command before termination"
   const unrelatedProcesses = processes.filter((process) => process.pid === 30);
   assert.deepEqual(findSafelyTerminableHindsightPids({
     profileName: "coding-agent",
-    processes: unrelatedProcesses,
+    processes,
     lockPid: 30,
     executablePath: "/bin/hindsight-embed",
     platform: "darwin",
@@ -1133,6 +1133,39 @@ test("hindsight lifecycle operations are serialized globally", async () => {
   );
 });
 
+test("hindsight non-runtime config updates share the lifecycle mutex", async () => {
+  const active = [];
+  let releaseLaunch;
+  const launchBlocked = new Promise((resolve) => {
+    releaseLaunch = resolve;
+  });
+  const service = createCommandAppsService({
+    configStore: {
+      get: () => ({ apps: { hindsight: { executablePath: "/bin/hindsight-embed" } } }),
+      save() {},
+    },
+    platform: "darwin",
+    fileExists: () => true,
+    startHindsight: async () => {
+      active.push("launch");
+      await launchBlocked;
+      active.push("launch-done");
+      return { pid: 30 };
+    },
+    writeCodingAgentPlugin: () => active.push("plugin-write"),
+    inspectHindsight: async () => ({ status: "stopped", pid: null }),
+    probeHindsight: async () => false,
+  });
+  const launch = service.launch("hindsight");
+  await new Promise((resolve) => setImmediate(resolve));
+  const update = service.updateConfig("hindsight", { daemonProfile: "coding-agent" });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(active, ["launch"]);
+  releaseLaunch();
+  await Promise.all([launch, update]);
+  assert.deepEqual(active, ["launch", "launch-done", "plugin-write"]);
+});
+
 test("saving runtime config stops active hindsight before writing and restarts after writing", async () => {
   const calls = [];
   const writes = [];
@@ -1147,11 +1180,12 @@ test("saving runtime config stops active hindsight before writing and restarts a
     },
     platform: "darwin",
     fileExists: () => true,
-    listHindsightProcesses: async () => [{
-      pid: 10,
+    listHindsightProcesses: async () => running.has("coding-agent") ? [{
+      pid: 30,
       parentPid: 1,
       commandLine: "/bin/hindsight-embed -p coding-agent daemon start",
-    }],
+    }] : [],
+    readHindsightLock: () => running.has("coding-agent") ? 30 : null,
     inspectHindsight: async (_app, settings) => ({
       status: running.has(settings.profileName) ? "running" : "stopped",
       pid: running.has(settings.profileName) ? 20 : null,
@@ -1171,11 +1205,98 @@ test("saving runtime config stops active hindsight before writing and restarts a
       return { pid: 30, alreadyRunning: false };
     },
     probeHindsight: async (_app, settings) => running.has(settings.profileName),
-    isPidAlive: (pid) => pid === 10 || pid === 30,
+    isPidAlive: (pid) => pid === 30 && running.has("coding-agent"),
   });
   const status = await service.updateConfig("hindsight:coding-agent", { llm: { model: "new-model" } });
   assert.deepEqual(calls, [["stop", 9077], ["write", "coding-agent"], ["start", 9077]]);
   assert.deepEqual(status.configApply, { restartRequired: true, restarted: true });
+});
+
+test("saving runtime config uses old port to stop and new port to start", async () => {
+  const calls = [];
+  let currentPort = 9077;
+  let running = true;
+  const service = createCommandAppsService({
+    configStore: {
+      get: () => ({ apps: { hindsight: { executablePath: "/bin/hindsight-embed" } } }),
+      save() {},
+    },
+    platform: "darwin",
+    fileExists: () => true,
+    listHindsightProcesses: async () => running ? [{
+      pid: 30,
+      parentPid: 1,
+      commandLine: "/bin/hindsight-embed -p coding-agent daemon start",
+    }] : [],
+    readHindsightLock: () => running ? 30 : null,
+    inspectHindsight: async () => ({ status: running ? "running" : "stopped", pid: running ? 30 : null }),
+    stopHindsight: async (_app, settings) => {
+      calls.push(["stop", settings.port]);
+      running = false;
+    },
+    readHindsightLlm: () => ({ provider: "openai", port: String(currentPort), model: "new-model" }),
+    writeHindsightLlm: (patch) => {
+      calls.push(["write", Number(patch.port)]);
+      currentPort = Number(patch.port);
+    },
+    startHindsight: async (_app, settings) => {
+      calls.push(["start", settings.port]);
+      running = true;
+      return { pid: 30, alreadyRunning: false };
+    },
+    probeHindsight: async () => false,
+    isPidAlive: (pid) => pid === 30 && running,
+  });
+  await service.updateConfig("hindsight:coding-agent", {
+    llm: { host: "127.0.0.1", port: "9177", model: "new-model" },
+  });
+  assert.deepEqual(calls, [["stop", 9077], ["write", 9177], ["start", 9177]]);
+});
+
+test("saving runtime config rejects an occupied new endpoint before start", async () => {
+  const calls = [];
+  let currentPort = 9077;
+  let stopped = false;
+  const occupiedPorts = new Set([9177]);
+  const service = createCommandAppsService({
+    configStore: {
+      get: () => ({ apps: { hindsight: { executablePath: "/bin/hindsight-embed" } } }),
+      save() {},
+    },
+    platform: "darwin",
+    fileExists: () => true,
+    listHindsightProcesses: async () => stopped ? [] : [{
+      pid: 10,
+      parentPid: 1,
+      commandLine: "/bin/hindsight-embed -p coding-agent daemon start",
+    }],
+    readHindsightLock: () => stopped ? null : 10,
+    inspectHindsight: async () => ({ status: stopped ? "stopped" : "running", pid: stopped ? null : 10 }),
+    stopHindsight: async () => {
+      calls.push("stop");
+      stopped = true;
+    },
+    readHindsightLlm: () => ({ provider: "openai", port: String(currentPort), model: "new-model" }),
+    writeHindsightLlm: (patch) => {
+      calls.push("write");
+      currentPort = Number(patch.port);
+    },
+    startHindsight: async () => calls.push("start"),
+    probeHindsight: async (_app, settings) => {
+      if (stopped) return occupiedPorts.has(settings.port);
+      return settings.port === currentPort || occupiedPorts.has(settings.port);
+    },
+    isPidAlive: (pid) => !stopped && pid === 10,
+  });
+  await assert.rejects(
+    () => service.updateConfig("hindsight:coding-agent", {
+      llm: { host: "127.0.0.1", port: "9177", model: "new-model" },
+    }),
+    (error) => error.details?.phase === "start"
+      && error.details?.configSaved === true
+      && error.details?.configState === "saved",
+  );
+  assert.deepEqual(calls, ["stop", "write"]);
 });
 
 test("saving runtime config keeps a stopped hindsight stopped", async () => {
@@ -1289,6 +1410,154 @@ test("saving runtime config refuses to write when active hindsight cannot be pro
       && error.details?.phase === "stop",
   );
   assert.deepEqual(writes, []);
+});
+
+test("saving runtime config safely terminates verified pids after stop timeout", async () => {
+  const calls = [];
+  const alive = new Set([10, 20]);
+  let running = true;
+  const processes = [
+    { pid: 10, parentPid: 1, commandLine: "/bin/hindsight-embed -p coding-agent daemon start" },
+    { pid: 20, parentPid: 10, commandLine: "/usr/bin/python /bin/hindsight-api --port 9077" },
+    { pid: 30, parentPid: 1, commandLine: "/bin/hindsight-embed -p coding-agent daemon start" },
+  ];
+  const service = createCommandAppsService({
+    configStore: {
+      get: () => ({ apps: { hindsight: { executablePath: "/bin/hindsight-embed" } } }),
+      save() {},
+    },
+    platform: "darwin",
+    fileExists: () => true,
+    listHindsightProcesses: async () => processes.filter((row) => alive.has(row.pid)),
+    readHindsightLock: () => alive.has(20) ? 20 : (alive.has(30) ? 30 : null),
+    inspectHindsight: async () => ({ status: "running", pid: 20 }),
+    stopHindsight: async () => {
+      calls.push("stop");
+      throw new Error("timed out");
+    },
+    terminateProcess: async (pid) => {
+      calls.push(`terminate:${pid}`);
+      alive.delete(pid);
+      if (!alive.size) running = false;
+    },
+    writeHindsightLlm: () => calls.push("write"),
+    startHindsight: async () => {
+      calls.push("start");
+      alive.add(30);
+      running = true;
+      return { pid: 30, alreadyRunning: false };
+    },
+    probeHindsight: async () => running,
+    isPidAlive: (pid) => alive.has(pid),
+  });
+  await service.updateConfig("hindsight:coding-agent", { llm: { model: "new-model" } });
+  assert.deepEqual(calls, ["stop", "terminate:20", "terminate:10", "write", "start"]);
+});
+
+test("saving runtime config terminates a verified pid left alive after graceful stop", async () => {
+  const calls = [];
+  const alive = new Set([10]);
+  let running = true;
+  const processes = [
+    { pid: 10, parentPid: 1, commandLine: "/bin/hindsight-embed -p coding-agent daemon start" },
+    { pid: 30, parentPid: 1, commandLine: "/bin/hindsight-embed -p coding-agent daemon start" },
+  ];
+  const service = createCommandAppsService({
+    configStore: {
+      get: () => ({ apps: { hindsight: { executablePath: "/bin/hindsight-embed" } } }),
+      save() {},
+    },
+    platform: "darwin",
+    fileExists: () => true,
+    listHindsightProcesses: async () => processes.filter((row) => alive.has(row.pid)),
+    readHindsightLock: () => alive.has(10) ? 10 : (alive.has(30) ? 30 : null),
+    inspectHindsight: async () => ({ status: "running", pid: 10 }),
+    stopHindsight: async () => {
+      calls.push("stop");
+      running = false;
+    },
+    terminateProcess: async (pid) => {
+      calls.push(`terminate:${pid}`);
+      alive.delete(pid);
+    },
+    writeHindsightLlm: () => calls.push("write"),
+    startHindsight: async () => {
+      calls.push("start");
+      alive.add(30);
+      running = true;
+      return { pid: 30, alreadyRunning: false };
+    },
+    probeHindsight: async () => running,
+    isPidAlive: (pid) => alive.has(pid),
+  });
+  await service.updateConfig("hindsight:coding-agent", { llm: { model: "new-model" } });
+  assert.deepEqual(calls, ["stop", "terminate:10", "write", "start"]);
+});
+
+test("saving runtime config refuses to write when a stale child lock leaves the parent alive", async () => {
+  const calls = [];
+  const alive = new Set([10, 20]);
+  const processes = [
+    { pid: 10, parentPid: 1, commandLine: "/bin/hindsight-embed -p coding-agent daemon start" },
+    { pid: 20, parentPid: 10, commandLine: "/usr/bin/python /bin/hindsight-api --port 9077" },
+  ];
+  const service = createCommandAppsService({
+    configStore: {
+      get: () => ({ apps: { hindsight: { executablePath: "/bin/hindsight-embed" } } }),
+      save() {},
+    },
+    platform: "darwin",
+    fileExists: () => true,
+    readHindsightLock: () => 20,
+    listHindsightProcesses: async () => processes.filter((row) => alive.has(row.pid)),
+    inspectHindsight: async () => ({ status: "running", pid: 20 }),
+    stopHindsight: async () => {
+      calls.push("stop");
+      alive.delete(20);
+    },
+    terminateProcess: async (pid) => {
+      calls.push(`terminate:${pid}`);
+      alive.delete(pid);
+    },
+    writeHindsightLlm: () => calls.push("write"),
+    startHindsight: async () => calls.push("start"),
+    probeHindsight: async () => false,
+    isPidAlive: (pid) => alive.has(pid),
+  });
+  await assert.rejects(
+    () => service.updateConfig("hindsight:coding-agent", { llm: { model: "new-model" } }),
+    (error) => error.details?.phase === "stop" && error.details?.configSaved === false,
+  );
+  assert.deepEqual(calls, ["stop"]);
+});
+
+test("saving runtime config refuses to write when the profile lock is missing but its process remains", async () => {
+  const calls = [];
+  const service = createCommandAppsService({
+    configStore: {
+      get: () => ({ apps: { hindsight: { executablePath: "/bin/hindsight-embed" } } }),
+      save() {},
+    },
+    platform: "darwin",
+    fileExists: () => true,
+    readHindsightLock: () => null,
+    listHindsightProcesses: async () => [{
+      pid: 10,
+      parentPid: 1,
+      commandLine: "/bin/hindsight-embed -p coding-agent daemon start",
+    }],
+    inspectHindsight: async () => ({ status: "running", pid: null }),
+    stopHindsight: async () => calls.push("stop"),
+    writeHindsightLlm: () => calls.push("write"),
+    startHindsight: async () => calls.push("start"),
+    probeHindsight: async () => false,
+    isPidAlive: (pid) => pid === 10,
+  });
+  await assert.rejects(
+    () => service.updateConfig("hindsight:coding-agent", { llm: { model: "new-model" } }),
+    (error) => error.details?.phase === "stop" && error.details?.configSaved === false,
+  );
+  assert.deepEqual(calls, ["stop"]);
 });
 
 test("hindsight llm config writes custom base url into embed env", () => {
@@ -1800,6 +2069,7 @@ test("command apps service opens the coding-agent control plane deep link", asyn
   const service = createCommandAppsService({
     configStore: { get: () => ({}), save() {} },
     platform: "darwin",
+    probeHindsight: async () => true,
     ensureControlPlane: async ({ bankId }) => ({
       running: true,
       alreadyRunning: true,
@@ -2087,6 +2357,49 @@ test("service update stops active hindsight profiles and restores them after uv 
   ]);
   assert.equal(result.tool.version, "0.9.3");
   assert.deepEqual([...running].sort(), ["coding-agent", "default"]);
+});
+
+test("hindsight package update shares the lifecycle mutex", async () => {
+  const executable = "/Users/pa/.local/bin/hindsight-embed";
+  const calls = [];
+  let releaseLaunch;
+  const launchBlocked = new Promise((resolve) => {
+    releaseLaunch = resolve;
+  });
+  const service = createCommandAppsService({
+    configStore: {
+      get() { return { apps: { hindsight: { executablePath: executable } } }; },
+      save() {},
+    },
+    platform: "darwin",
+    fileExists: (value) => value === executable,
+    listHindsightProfiles: () => [{ name: "default", configPath: "/tmp/.hindsight/embed", port: 8888 }],
+    inspectHindsight: async () => ({ status: "stopped", pid: null }),
+    startHindsight: async () => {
+      calls.push("launch");
+      await launchBlocked;
+      calls.push("launch-done");
+      return { pid: 30 };
+    },
+    updateHindsightPackage: async () => calls.push("uv:update"),
+    inspectHindsightToolState: async () => ({
+      uvAvailable: true,
+      installed: true,
+      managedByUv: true,
+      version: "0.9.3",
+    }),
+    discovery: async () => ({ selected: { path: executable, strategy: "path-environment" }, candidates: [] }),
+    probeHindsight: async () => false,
+  });
+
+  const launch = service.launch("hindsight");
+  await new Promise((resolve) => setImmediate(resolve));
+  const update = service.updateHindsightTool();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(calls, ["launch"]);
+  releaseLaunch();
+  await Promise.all([launch, update]);
+  assert.deepEqual(calls, ["launch", "launch-done", "uv:update"]);
 });
 
 test("service restores active hindsight profiles when uv upgrade fails", async () => {
