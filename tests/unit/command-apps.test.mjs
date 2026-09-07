@@ -1133,6 +1133,99 @@ test("hindsight lifecycle operations are serialized globally", async () => {
   );
 });
 
+test("saving runtime config stops active hindsight before writing and restarts after writing", async () => {
+  const calls = [];
+  const writes = [];
+  const running = new Set(["coding-agent"]);
+  const service = createCommandAppsService({
+    configStore: {
+      get: () => ({
+        apps: { hindsight: { executablePath: "/bin/hindsight-embed" } },
+        hindsightProfiles: { "coding-agent": { port: 9077 } },
+      }),
+      save() {},
+    },
+    platform: "darwin",
+    fileExists: () => true,
+    listHindsightProcesses: async () => [{
+      pid: 10,
+      parentPid: 1,
+      commandLine: "/bin/hindsight-embed -p coding-agent daemon start",
+    }],
+    inspectHindsight: async (_app, settings) => ({
+      status: running.has(settings.profileName) ? "running" : "stopped",
+      pid: running.has(settings.profileName) ? 20 : null,
+    }),
+    stopHindsight: async (_app, settings) => {
+      calls.push(["stop", settings.port]);
+      running.delete(settings.profileName);
+    },
+    readHindsightLlm: () => ({ provider: "openai", model: "new-model", hasApiKey: true }),
+    writeHindsightLlm: (patch, name) => {
+      calls.push(["write", name]);
+      writes.push(patch);
+    },
+    startHindsight: async (_app, settings) => {
+      calls.push(["start", settings.port]);
+      running.add(settings.profileName);
+      return { pid: 30, alreadyRunning: false };
+    },
+    probeHindsight: async (_app, settings) => running.has(settings.profileName),
+    isPidAlive: (pid) => pid === 10 || pid === 30,
+  });
+  const status = await service.updateConfig("hindsight:coding-agent", { llm: { model: "new-model" } });
+  assert.deepEqual(calls, [["stop", 9077], ["write", "coding-agent"], ["start", 9077]]);
+  assert.deepEqual(status.configApply, { restartRequired: true, restarted: true });
+});
+
+test("saving runtime config keeps a stopped hindsight stopped", async () => {
+  const calls = [];
+  const service = createCommandAppsService({
+    configStore: {
+      get: () => ({ apps: { hindsight: { executablePath: "/bin/hindsight-embed" } } }),
+      save() {},
+    },
+    platform: "darwin",
+    fileExists: () => true,
+    inspectHindsight: async () => ({ status: "stopped", pid: null }),
+    writeHindsightLlm: (...args) => calls.push(["write", ...args]),
+    stopHindsight: async () => calls.push(["stop"]),
+    startHindsight: async () => calls.push(["start"]),
+    probeHindsight: async () => false,
+  });
+  const status = await service.updateConfig("hindsight:coding-agent", { llm: { model: "new-model" } });
+  assert.deepEqual(calls.map((row) => row[0]), ["write"]);
+  assert.deepEqual(status.configApply, { restartRequired: false, restarted: false });
+});
+
+test("saving runtime config refuses to write when active hindsight cannot be proven and stopped", async () => {
+  const writes = [];
+  const service = createCommandAppsService({
+    configStore: {
+      get: () => ({ apps: { hindsight: { executablePath: "/bin/hindsight-embed" } } }),
+      save() {},
+    },
+    platform: "darwin",
+    fileExists: () => true,
+    listHindsightProcesses: async () => [],
+    inspectHindsight: async () => ({ status: "running", pid: 4242 }),
+    stopHindsight: async () => {},
+    writeHindsightLlm: (patch) => writes.push(patch),
+    startHindsight: async () => {
+      throw new Error("must not start");
+    },
+    probeHindsight: async () => true,
+    isPidAlive: () => true,
+  });
+  await assert.rejects(
+    () => service.updateConfig("hindsight:coding-agent", { llm: { model: "new-model" } }),
+    (error) => error.details?.configSaved === false
+      && error.details?.configState === "rolled_back"
+      && error.details?.phase === "stop",
+  );
+  assert.deepEqual(writes, []);
+});
+
 test("hindsight llm config writes custom base url into embed env", () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "hindsight-embed-"));
   const configPath = path.join(tmp, "embed");
