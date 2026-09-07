@@ -9,3 +9,4 @@ import "./modules/mcp-management";
 import "./modules/clip-player";
 import "./modules/trend-intel";
 import "./modules/knowledge-base";
+import "./modules/job-scheduler";

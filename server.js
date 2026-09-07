@@ -215,6 +215,7 @@ import {
   routeTrendIntelRequest,
 } from "./lib/trend-intel/index.mjs";
 import { initKnowledgeBaseModule } from "./lib/knowledge-base/index.mjs";
+import { initSchedulerModule } from "./lib/scheduler/index.mjs";
 
 loadDotEnv();
 enableNodeEnvProxy();
@@ -416,6 +417,34 @@ function ensureKnowledgeBaseModule() {
     listenPort: LISTEN_PORT,
   });
   return globalKnowledgeBaseModule;
+}
+
+let globalSchedulerModule = null;
+function ensureSchedulerModule() {
+  if (globalSchedulerModule) return globalSchedulerModule;
+  globalSchedulerModule = initSchedulerModule({
+    configDir: path.dirname(GATEWAY_CONFIG_FILE),
+    logger: console,
+    getTrendIntelService: () => ensureTrendIntelService(),
+    getTrendIntelScheduler: () => globalTrendIntelScheduler,
+    getKbSyncScheduler: () => {
+      const kb = ensureKnowledgeBaseModule();
+      return kb?.syncScheduler;
+    },
+    getKbChannelSecrets: () => {
+      const kb = ensureKnowledgeBaseModule();
+      return kb?.channelSecrets;
+    },
+    getSessionKanbanScheduler: () => {
+      ensureSessionKanbanService();
+      return globalSessionKanbanScheduler;
+    },
+    getSessionKanbanService: () => ensureSessionKanbanService(),
+    getFxRateService: () => globalFxRateService,
+    getModelPricingEngine: () => globalPricingEngine,
+    getSessionWatcherDaemon: () => globalWatcherDaemon,
+  });
+  return globalSchedulerModule;
 }
 
 function ensureMcpManagementService() {
@@ -1275,6 +1304,13 @@ async function route(req, res) {
     if (!checkLocalAuth(req, res)) return;
     const { routeHandler } = ensureKnowledgeBaseModule();
     const handled = await routeHandler(req, res, url, reqPath);
+    if (handled) return;
+  }
+
+  if (reqPath.startsWith("/v1/scheduler")) {
+    if (!checkLocalAuth(req, res)) return;
+    const { handleSchedulerRequest } = ensureSchedulerModule();
+    const handled = await handleSchedulerRequest(req, res, reqPath);
     if (handled) return;
   }
 

@@ -1,0 +1,37 @@
+{
+  "$schema": "./lib/scheduler/schema.json",
+  "version": 1,
+  "jobs": {
+    "trend_intel_crawl": {
+      "enabled": true,
+      "interval_minutes": 30
+    },
+    "trend_intel_daily_brief": {
+      "enabled": true,
+      "daily_times": ["08:30", "18:00"]
+    },
+    "kb_incremental_sync": {
+      "enabled": true,
+      "mode": "daily",
+      "daily_time": "04:00",
+      "interval_hours": 12,
+      "sync_on_startup": true
+    },
+    "session_kanban_dispatch": {
+      "enabled": true,
+      "interval_seconds": 30
+    },
+    "fx_rate_refresh": {
+      "enabled": true,
+      "interval_hours": 6
+    },
+    "model_pricing_refresh": {
+      "enabled": true,
+      "interval_hours": 24
+    },
+    "session_watcher_daemon": {
+      "enabled": true,
+      "debounce_ms": 1500
+    }
+  }
+}
