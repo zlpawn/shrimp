@@ -1102,6 +1102,37 @@ test("hindsight process identity verifies parent and command before termination"
   }), []);
 });
 
+test("hindsight lifecycle operations are serialized globally", async () => {
+  const active = [];
+  const service = createCommandAppsService({
+    configStore: {
+      get: () => ({ apps: { hindsight: { executablePath: "/bin/hindsight-embed" } } }),
+      save() {},
+    },
+    platform: "darwin",
+    fileExists: () => true,
+    startHindsight: async () => {
+      active.push("start");
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      active.push("start-done");
+      return { pid: 1 };
+    },
+    stopHindsight: async () => {
+      active.push("stop");
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      active.push("stop-done");
+    },
+    inspectHindsight: async () => ({ status: "stopped", pid: null }),
+    probeHindsight: async () => false,
+  });
+  await Promise.all([service.launch("hindsight"), service.stop("hindsight")]);
+  assert.equal(active.indexOf("stop"), active.lastIndexOf("stop"));
+  assert.ok(
+    active.indexOf("stop") > active.indexOf("start-done")
+    || active.indexOf("start") > active.indexOf("stop-done"),
+  );
+});
+
 test("hindsight llm config writes custom base url into embed env", () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "hindsight-embed-"));
   const configPath = path.join(tmp, "embed");
