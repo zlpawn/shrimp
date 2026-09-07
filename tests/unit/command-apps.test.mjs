@@ -710,13 +710,14 @@ test("service launches LangBot with its own daemon adapter and settings", async 
   });
   const status = await service.launch("langbot");
   assert.equal(status.app.id, "langbot");
-  assert.equal(status.cwd, "/Users/test/.langbot");
-  assert.equal(status.dataRoot, "/Users/test/.langbot/data");
+  const expectedCwd = path.join("/Users/test", ".langbot");
+  assert.equal(status.cwd, expectedCwd);
+  assert.equal(status.dataRoot, path.join(expectedCwd, "data"));
   assert.equal(status.endpoints.appUrl, "http://127.0.0.1:5300/");
   assert.equal(launchCalls.length, 1);
   assert.equal(launchCalls[0].settings.executablePath, executable);
-  assert.equal(launchCalls[0].settings.cwd, "/Users/test/.langbot");
-  assert.equal(launchCalls[0].settings.dataRoot, "/Users/test/.langbot/data");
+  assert.equal(launchCalls[0].settings.cwd, expectedCwd);
+  assert.equal(launchCalls[0].settings.dataRoot, path.join(expectedCwd, "data"));
 });
 
 test("service status forwards managed pid to the LangBot inspector", async () => {
@@ -1186,6 +1187,7 @@ test("saving runtime config stops active hindsight before writing and restarts a
       commandLine: "/bin/hindsight-embed -p coding-agent daemon start",
     }] : [],
     readHindsightLock: () => running.has("coding-agent") ? 30 : null,
+    readHindsightEnvFile: () => "HINDSIGHT_API_LLM_MODEL=old-model\n",
     inspectHindsight: async (_app, settings) => ({
       status: running.has(settings.profileName) ? "running" : "stopped",
       pid: running.has(settings.profileName) ? 20 : null,
@@ -1229,6 +1231,7 @@ test("saving runtime config uses old port to stop and new port to start", async 
       commandLine: "/bin/hindsight-embed -p coding-agent daemon start",
     }] : [],
     readHindsightLock: () => running ? 30 : null,
+    readHindsightEnvFile: () => "HINDSIGHT_API_LLM_MODEL=old-model\n",
     inspectHindsight: async () => ({ status: running ? "running" : "stopped", pid: running ? 30 : null }),
     stopHindsight: async (_app, settings) => {
       calls.push(["stop", settings.port]);
@@ -1271,6 +1274,7 @@ test("saving runtime config rejects an occupied new endpoint before start", asyn
       commandLine: "/bin/hindsight-embed -p coding-agent daemon start",
     }],
     readHindsightLock: () => stopped ? null : 10,
+    readHindsightEnvFile: () => "HINDSIGHT_API_LLM_MODEL=old-model\n",
     inspectHindsight: async () => ({ status: stopped ? "stopped" : "running", pid: stopped ? null : 10 }),
     stopHindsight: async () => {
       calls.push("stop");
@@ -1309,6 +1313,7 @@ test("saving runtime config keeps a stopped hindsight stopped", async () => {
     platform: "darwin",
     fileExists: () => true,
     inspectHindsight: async () => ({ status: "stopped", pid: null }),
+    readHindsightEnvFile: () => "HINDSIGHT_API_LLM_MODEL=old-model\n",
     writeHindsightLlm: (...args) => calls.push(["write", ...args]),
     stopHindsight: async () => calls.push(["stop"]),
     startHindsight: async () => calls.push(["start"]),
@@ -1430,6 +1435,7 @@ test("saving runtime config safely terminates verified pids after stop timeout",
     fileExists: () => true,
     listHindsightProcesses: async () => processes.filter((row) => alive.has(row.pid)),
     readHindsightLock: () => alive.has(20) ? 20 : (alive.has(30) ? 30 : null),
+    readHindsightEnvFile: () => "HINDSIGHT_API_LLM_MODEL=old-model\n",
     inspectHindsight: async () => ({ status: "running", pid: 20 }),
     stopHindsight: async () => {
       calls.push("stop");
@@ -1471,6 +1477,7 @@ test("saving runtime config terminates a verified pid left alive after graceful 
     fileExists: () => true,
     listHindsightProcesses: async () => processes.filter((row) => alive.has(row.pid)),
     readHindsightLock: () => alive.has(10) ? 10 : (alive.has(30) ? 30 : null),
+    readHindsightEnvFile: () => "HINDSIGHT_API_LLM_MODEL=old-model\n",
     inspectHindsight: async () => ({ status: "running", pid: 10 }),
     stopHindsight: async () => {
       calls.push("stop");
@@ -1916,6 +1923,7 @@ test("gateway llm source keeps pointing at the stable local gateway even on a wo
   const executable = "/Users/pa/.local/bin/hindsight-embed";
   const saved = [];
   const envWrites = [];
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "hindsight-gateway-source-"));
   const previousPort = process.env.GATEWAY_PORT;
   process.env.GATEWAY_PORT = "8788";
   try {
@@ -1925,6 +1933,7 @@ test("gateway llm source keeps pointing at the stable local gateway even on a wo
         save(next) { saved.push(next); return next; },
       },
       platform: "darwin",
+      homeDir: tmp,
       fileExists: (value) => value === executable,
       writeHindsightLlm: (patch) => envWrites.push({ ...patch }),
       readHindsightLlm: () => ({
@@ -1957,6 +1966,7 @@ test("gateway llm source keeps pointing at the stable local gateway even on a wo
     assert.equal(envWrites[0].model, "deepseek-v4-pro-jiyuan");
     assert.equal(envWrites[0].apiKey, "all");
   } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
     if (previousPort === undefined) delete process.env.GATEWAY_PORT;
     else process.env.GATEWAY_PORT = previousPort;
   }
@@ -2578,8 +2588,6 @@ test("service always lists coding-agent and can point Codex at another profile",
   fs.writeFileSync(path.join(home, "embed"), "HINDSIGHT_API_LLM_MODEL=default-model\n");
   fs.writeFileSync(path.join(home, "coding-agent.json"), JSON.stringify({ serverMode: "daemon", retainTags: ["keep-me"] }));
   const executable = "/Users/pa/.local/bin/hindsight-embed";
-  const originalHome = process.env.HOME;
-  process.env.HOME = tmp;
   try {
     const service = createCommandAppsService({
       configStore: {
@@ -2587,6 +2595,7 @@ test("service always lists coding-agent and can point Codex at another profile",
         save() {},
       },
       platform: "darwin",
+      homeDir: tmp,
       fileExists: (value) => value === executable || fs.existsSync(value),
       probeHindsight: async () => false,
       inspectHindsight: async () => ({ status: "stopped", pid: null }),
@@ -2613,7 +2622,6 @@ test("service always lists coding-agent and can point Codex at another profile",
     assert.equal(raw.daemonProfile, "default");
     assert.deepEqual(raw.retainTags, ["keep-me"]);
   } finally {
-    process.env.HOME = originalHome;
     fs.rmSync(tmp, { recursive: true, force: true });
   }
 });
