@@ -419,6 +419,19 @@ function ensureKnowledgeBaseModule() {
   return globalKnowledgeBaseModule;
 }
 
+function ensureSessionWatcherDaemon() {
+  if (globalWatcherDaemon) return globalWatcherDaemon;
+  const sessionSync = GATEWAY_CONFIG.sessionSync || {};
+  globalWatcherDaemon = new SessionWatcherDaemon({
+    hubStore: globalHubStore,
+    dateRange: sessionSync.dateRange || null,
+    summaryMode: sessionSync.summaryMode || "rule",
+    summaryModel: sessionSync.summaryModel || "",
+    listenPort: LISTEN_PORT,
+  });
+  return globalWatcherDaemon;
+}
+
 let globalSchedulerModule = null;
 function ensureSchedulerModule() {
   if (globalSchedulerModule) return globalSchedulerModule;
@@ -426,7 +439,10 @@ function ensureSchedulerModule() {
     configDir: path.dirname(GATEWAY_CONFIG_FILE),
     logger: console,
     getTrendIntelService: () => ensureTrendIntelService(),
-    getTrendIntelScheduler: () => globalTrendIntelScheduler,
+    getTrendIntelScheduler: () => {
+      ensureTrendIntelService();
+      return globalTrendIntelScheduler;
+    },
     getKbSyncScheduler: () => {
       const kb = ensureKnowledgeBaseModule();
       return kb?.syncScheduler;
@@ -442,7 +458,7 @@ function ensureSchedulerModule() {
     getSessionKanbanService: () => ensureSessionKanbanService(),
     getFxRateService: () => globalFxRateService,
     getModelPricingEngine: () => globalPricingEngine,
-    getSessionWatcherDaemon: () => globalWatcherDaemon,
+    getSessionWatcherDaemon: () => ensureSessionWatcherDaemon(),
   });
   return globalSchedulerModule;
 }

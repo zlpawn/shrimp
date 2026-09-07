@@ -117,6 +117,7 @@ describe("SchedulerConfigStore", () => {
       interval_hours: 3,
     });
     assert.equal(updated.interval_hours, 3);
+    assert.equal("_touched" in updated, false);
     assert.equal(store.isJobTouched("fx_rate_refresh"), true);
 
     // A forged marker without any real update is still just "touched by this call",

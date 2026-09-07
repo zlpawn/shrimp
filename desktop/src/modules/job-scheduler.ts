@@ -137,7 +137,7 @@ export async function saveJobConfig(jobId: string, formElement: HTMLFormElement)
       patch[field.key] = Number(input.value);
     } else if (field.type === "string_list") {
       patch[field.key] = input.value
-        .split(",")
+        .split(/[,，]/)
         .map((s) => s.trim())
         .filter(Boolean);
     } else {
@@ -145,8 +145,14 @@ export async function saveJobConfig(jobId: string, formElement: HTMLFormElement)
     }
   }
 
+  const submitBtn = formElement.querySelector<HTMLButtonElement>('button[type="submit"]');
+  const originalBtnText = submitBtn ? submitBtn.textContent : null;
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = "正在保存...";
+  }
+
   state.savingJobIds.add(jobId);
-  render();
 
   try {
     const res = await apiFetch<{ ok: boolean; job: JobInfo }>(
@@ -166,10 +172,16 @@ export async function saveJobConfig(jobId: string, formElement: HTMLFormElement)
     state.expandedFormJobIds.delete(jobId);
   } catch (err: any) {
     showToast(`保存配置失败: ${err.message}`, "error");
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      if (originalBtnText) submitBtn.textContent = originalBtnText;
+    }
+    state.savingJobIds.delete(jobId);
+    return;
   } finally {
     state.savingJobIds.delete(jobId);
-    render();
   }
+  render();
 }
 
 export function toggleForm(jobId: string): void {
@@ -201,11 +213,11 @@ export function toggleHistory(jobId: string): void {
   saveJobConfig(jobId, form);
 };
 
-function formatTime(isoStr: string | null): string {
-  if (!isoStr) return "从未执行";
+function formatTime(isoStr: string | null, fallback = "从未执行"): string {
+  if (!isoStr) return fallback;
   try {
     const d = new Date(isoStr);
-    if (isNaN(d.getTime())) return "无效时间";
+    if (isNaN(d.getTime())) return fallback === "从未执行" ? "无效时间" : fallback;
     const pad = (n: number) => String(n).padStart(2, "0");
     const m = pad(d.getMonth() + 1);
     const day = pad(d.getDate());
@@ -335,7 +347,7 @@ function renderJobCard(job: JobInfo): string {
           </div>
           <div class="scheduler-meta-item">
             <span class="scheduler-meta-label">下次计划</span>
-            <span class="scheduler-meta-val">${formatTime(job.nextRunAt)}</span>
+            <span class="scheduler-meta-val">${formatTime(job.nextRunAt, "未计划")}</span>
           </div>
         </div>
 

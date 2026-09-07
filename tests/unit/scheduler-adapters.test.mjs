@@ -45,7 +45,7 @@ describe("Scheduler Adapters Unit Tests", () => {
       getService: () => ({
         generateBriefOnce: async () => {
           generated = true;
-          return { title: "AI 早报精选" };
+          return { brief: { title: "AI 早报精选" } };
         },
       }),
       getScheduler: () => ({
@@ -66,8 +66,10 @@ describe("Scheduler Adapters Unit Tests", () => {
     assert.match(runRes.message, /AI 早报精选/);
   });
 
-  it("KbSyncAdapter handles WeRead & Craft sync", async () => {
+  it("KbSyncAdapter handles WeRead & Craft sync and calls scheduleNext on config change", async () => {
     let syncRan = false;
+    let scheduleNextCalled = false;
+    let restartCalled = false;
     const adapter = new KbSyncAdapter({
       getScheduler: () => ({
         getNextRunInfo: () => ({ timestamp: Date.now() + 60000 }),
@@ -79,6 +81,12 @@ describe("Scheduler Adapters Unit Tests", () => {
             highlightsCount: 5,
             reviewsCount: 2,
           };
+        },
+        scheduleNext: () => {
+          scheduleNextCalled = true;
+        },
+        restart: () => {
+          restartCalled = true;
         },
       }),
       getChannelSecrets: () => ({
@@ -97,6 +105,10 @@ describe("Scheduler Adapters Unit Tests", () => {
     assert.equal(res.ok, true);
     assert.equal(syncRan, true);
     assert.match(res.message, /新增 5 条划线/);
+
+    await adapter.onConfigChange({ interval_hours: 6 }, { enabled: true, interval_hours: 6 });
+    assert.equal(scheduleNextCalled, true);
+    assert.equal(restartCalled, false);
   });
 
   it("KanbanDispatchAdapter triggers dispatch", async () => {
@@ -252,6 +264,14 @@ describe("Scheduler Adapters Unit Tests", () => {
     );
     assert.deepEqual(updates[0], {
       scheduler: { daily_brief_times: ["09:00"], brief_enabled: true },
+    });
+
+    await adapter.onConfigChange(
+      { daily_times: [] },
+      { enabled: true, daily_times: [] }
+    );
+    assert.deepEqual(updates[1], {
+      scheduler: { daily_brief_times: [], brief_enabled: true },
     });
 
     // Disabled brief reports null nextRunAt
