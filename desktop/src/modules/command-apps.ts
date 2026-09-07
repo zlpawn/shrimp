@@ -75,6 +75,10 @@ type CommandAppStatus = {
   dataRoot?: string | null;
   version?: string | null;
   installable?: boolean;
+  configApply?: {
+    restartRequired: boolean;
+    restarted: boolean;
+  };
 };
 
 type HindsightToolStatus = {
@@ -130,7 +134,11 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data?.error?.message || `HTTP ${res.status}`);
+  if (!res.ok) {
+    const error = new Error(data?.error?.message || `HTTP ${res.status}`) as Error & { details?: Record<string, unknown> };
+    error.details = data?.error?.details;
+    throw error;
+  }
   return data as T;
 }
 
@@ -1031,7 +1039,11 @@ async function saveLlm(event: Event, appId: string = "hindsight"): Promise<void>
   event.preventDefault();
   const draft = llmDraftFor({ app: { id: appId }, llm: state.llmDrafts[appId] });
   const sources = state.modelSources[appId];
-  await runAction(appId, "save-llm", async () => {
+  if (state.actionBusy[appId]) return;
+  state.actionBusy[appId] = "save-llm";
+  state.error = "";
+  render();
+  try {
     const embeddingMode = sources?.embedding?.type || "local";
     const llmMode = sources?.llm?.type || "custom";
     const llmSource = sources?.llm ? {
@@ -1082,8 +1094,24 @@ async function saveLlm(event: Event, appId: string = "hindsight"): Promise<void>
       model: status.llm?.model || draft.model,
       apiKey: "",
     };
-    showToast("LLM 配置已保存", "success");
-  });
+    if (status.configApply?.restarted) {
+      showToast("LLM 配置已保存并重启生效", "success");
+    } else if (status.configApply && !status.configApply.restartRequired) {
+      showToast("LLM 配置已保存，将在下次启动时生效", "info");
+    } else {
+      showToast("LLM 配置已保存", "success");
+    }
+  } catch (error: any) {
+    state.error = error?.message || String(error);
+    if (error?.details?.configSaved) {
+      showToast(`配置已保存，但 Hindsight 重启失败：${state.error}`, "danger");
+    } else {
+      showToast("命令行程序操作失败", "danger");
+    }
+  } finally {
+    state.actionBusy[appId] = "";
+    render();
+  }
 }
 
 async function openMemoryPage(): Promise<void> {
