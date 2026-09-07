@@ -737,6 +737,14 @@ test("Hindsight summary exposes uv installation and update controls", async () =
   assert.match(source, /managedByUv/);
 });
 
+test("command apps llm save reports restart apply state", async () => {
+  const source = await readFile(path.join(ROOT, "desktop", "src", "modules", "command-apps.ts"), "utf8");
+  assert.match(source, /configApply\?\.restarted/);
+  assert.match(source, /LLM 配置已保存并重启生效/);
+  assert.match(source, /LLM 配置已保存，将在下次启动时生效/);
+  assert.match(source, /error\?\.details\?\.configSaved/);
+});
+
 test("LangBot install and update actions use managed busy states", async () => {
   const source = await readFile(path.join(ROOT, "desktop", "src", "modules", "command-apps.ts"), "utf8");
   assert.match(source, /action: "launch" \| "restart" \| "stop" \| "rescan" \| "save" \| "save-llm" \| "install" \| "update"/);
