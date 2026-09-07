@@ -1348,6 +1348,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  row-gap: 6px;
   padding: 10px 14px;
   border-bottom: 1px solid var(--border-color);
   background: var(--input-bg);
@@ -1377,7 +1378,9 @@
 
 .kb-panel-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 6px;
 }
 

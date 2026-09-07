@@ -123,6 +123,7 @@ const state = {
   activeFormat: "markdown" as "markdown" | "html" | "json",
   splitMode: "both" as "both" | "markitdown" | "docling",
   showRaw: { markitdown: false, docling: false },
+  reparsingEngine: "" as "markitdown" | "docling" | "",
   loadingDocs: false,
   ingesting: false,
   ingestStatusText: "",
@@ -1941,7 +1942,12 @@ function renderEngineOutput(doc: KbDocument, engine: "markitdown" | "docling"): 
   if (status === "failed") {
     return `
       <div class="command-apps-error" role="alert" style="margin-top:0;">
-        <div style="font-weight:600; margin-bottom:4px;">⚠️ ${toolName} 解析失败</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; row-gap:6px; flex-wrap:wrap; margin-bottom:4px;">
+          <div style="font-weight:600;">⚠️ ${toolName} 解析失败</div>
+          <button class="btn btn-xs btn-primary" onclick="window.__kbReparseDocument('${doc.id}', '${engine}')" ${state.reparsingEngine ? "disabled" : ""}>
+            ${state.reparsingEngine === engine ? "⏳ 重跑中..." : "🔄 重跑解析"}
+          </button>
+        </div>
         <div style="font-size:12px; word-break:break-all;">${esc(error || "未知解析错误")}</div>
       </div>
     `;
@@ -2194,7 +2200,7 @@ function renderWereadNotebooksTab(): string {
         <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; flex-shrink: 0;">
           <span style="white-space: nowrap; color: var(--text-secondary);">目标知识库:</span>
           <select class="kb-form-input" style="width: 140px; padding: 5px 8px; font-size: 12px;"
-            onchange="state.wereadImportTargetCol = this.value"
+            onchange="window.__kbSetStateValue('wereadImportTargetCol', this.value)"
             ${state.wereadImporting ? "disabled" : ""}>
             ${state.collections.map((c) => `
               <option value="${c.id}" ${(state.wereadImportTargetCol || state.activeCollectionId || 'col_default') === c.id ? 'selected' : ''}>
@@ -2382,7 +2388,7 @@ function renderWereadSettingsTab(): string {
             <input type="${state.wereadShowApiKey ? 'text' : 'password'}" class="kb-form-input"
               placeholder="${wereadKey ? '如需修改，请输入新的 API Key' : '请输入微信读书 API Key (wrk-...)'}"
               value="${esc(state.wereadApiKeyInput)}"
-              oninput="state.wereadApiKeyInput = this.value" />
+              oninput="window.__kbSetStateValue('wereadApiKeyInput', this.value)" />
             <button class="btn btn-sm" onclick="window.__kbToggleShowWereadApiKey()" title="切换明文显示">
               ${state.wereadShowApiKey ? "🙈 隐藏" : "👁️ 显示"}
             </button>
@@ -2413,7 +2419,7 @@ function renderWereadSettingsTab(): string {
           </div>
           <label class="kb-switch">
             <input type="checkbox" class="kb-switch-input" ${state.syncScheduleEnabledInput ? "checked" : ""}
-              onchange="state.syncScheduleEnabledInput = this.checked; render();" />
+              onchange="window.__kbSetStateValue('syncScheduleEnabledInput', this.checked); render();" />
             <span class="kb-switch-track"></span>
           </label>
         </div>
@@ -2426,12 +2432,12 @@ function renderWereadSettingsTab(): string {
               <div class="kb-segmented-group">
                 <label class="kb-segmented-item ${state.syncScheduleModeInput === 'daily' ? 'active' : ''}">
                   <input type="radio" name="syncMode" value="daily" ${state.syncScheduleModeInput === "daily" ? "checked" : ""}
-                    onchange="state.syncScheduleModeInput = 'daily'; render();" />
+                    onchange="window.__kbSetStateValue('syncScheduleModeInput', 'daily'); render();" />
                   <span>⏰ 每日指定时间定时执行 (推荐)</span>
                 </label>
                 <label class="kb-segmented-item ${state.syncScheduleModeInput === 'interval' ? 'active' : ''}">
                   <input type="radio" name="syncMode" value="interval" ${state.syncScheduleModeInput === "interval" ? "checked" : ""}
-                    onchange="state.syncScheduleModeInput = 'interval'; render();" />
+                    onchange="window.__kbSetStateValue('syncScheduleModeInput', 'interval'); render();" />
                   <span>🔄 固定间隔循环执行</span>
                 </label>
               </div>
@@ -2442,13 +2448,13 @@ function renderWereadSettingsTab(): string {
                 <label class="kb-form-label">每日定时执行时间 (24小时制，例如 04:00 凌晨静默同步)</label>
                 <input type="time" class="kb-form-input" style="width: 160px;"
                   value="${esc(state.syncDailyTimeInput)}"
-                  oninput="state.syncDailyTimeInput = this.value" />
+                  oninput="window.__kbSetStateValue('syncDailyTimeInput', this.value)" />
               </div>
             ` : `
               <div class="kb-form-group">
                 <label class="kb-form-label">循环执行间隔 (小时)</label>
                 <select class="kb-form-input" style="width: 160px;"
-                  onchange="state.syncIntervalHoursInput = Number(this.value);">
+                  onchange="window.__kbSetStateValue('syncIntervalHoursInput', Number(this.value))">
                   <option value="4" ${state.syncIntervalHoursInput === 4 ? "selected" : ""}>每 4 小时</option>
                   <option value="6" ${state.syncIntervalHoursInput === 6 ? "selected" : ""}>每 6 小时</option>
                   <option value="12" ${state.syncIntervalHoursInput === 12 ? "selected" : ""}>每 12 小时</option>
@@ -2465,7 +2471,7 @@ function renderWereadSettingsTab(): string {
               </div>
               <label class="kb-switch">
                 <input type="checkbox" class="kb-switch-input" ${state.syncOnStartupInput ? "checked" : ""}
-                  onchange="state.syncOnStartupInput = this.checked;" />
+                  onchange="window.__kbSetStateValue('syncOnStartupInput', this.checked)" />
                 <span class="kb-switch-track"></span>
               </label>
             </div>
@@ -2474,7 +2480,7 @@ function renderWereadSettingsTab(): string {
             <div class="kb-form-group">
               <label class="kb-form-label">自动增量笔记默认保存知识库目录</label>
               <select class="kb-form-input" style="width: 220px;"
-                onchange="state.syncTargetColInput = this.value;">
+                onchange="window.__kbSetStateValue('syncTargetColInput', this.value)">
                 ${state.collections.map((c) => `
                   <option value="${c.id}" ${(state.syncTargetColInput || 'col_default') === c.id ? 'selected' : ''}>
                     ${getCollectionIcon(c.icon)} ${esc(c.name)}
@@ -3327,7 +3333,7 @@ export function render(): void {
             <div class="kb-modal-body">
               <div class="kb-form-group">
                 <label class="kb-form-label">目标网页 URL 地址</label>
-                <input type="text" class="kb-form-input" placeholder="输入网页链接 (例如: https://mp.weixin.qq.com/s/...)" value="${esc(state.modalUrl)}" oninput="state.modalUrl = this.value" onkeydown="if (event.key === 'Enter') window.__kbSubmitUrlIngest()" autofocus />
+                <input type="text" class="kb-form-input" placeholder="输入网页链接 (例如: https://mp.weixin.qq.com/s/...)" value="${esc(state.modalUrl)}" oninput="window.__kbSetStateValue('modalUrl', this.value)" onkeydown="if (event.key === 'Enter') window.__kbSubmitUrlIngest()" autofocus />
               </div>
               <div style="font-size:12px; color:var(--text-secondary); margin-top:10px; line-height:1.5;">
                 💡 <b>自动配置与鉴权</b>：系统将自动识别目标域名并联动真实客户端凭据，同时自动将文内图片转存至本地，彻底解决内网鉴权与防盗链失效问题。
@@ -3352,11 +3358,11 @@ export function render(): void {
             <div class="kb-modal-body">
               <div class="kb-form-group">
                 <label class="kb-form-label">文档标题 (可选)</label>
-                <input type="text" class="kb-form-input" placeholder="输入文档标题 (默认为纯文本草稿)" value="${esc(state.modalTextTitle)}" oninput="state.modalTextTitle = this.value" />
+                <input type="text" class="kb-form-input" placeholder="输入文档标题 (默认为纯文本草稿)" value="${esc(state.modalTextTitle)}" oninput="window.__kbSetStateValue('modalTextTitle', this.value)" />
               </div>
               <div class="kb-form-group">
                 <label class="kb-form-label">正文内容</label>
-                <textarea class="kb-form-textarea" placeholder="在此粘贴任意文本、HTML 或 Markdown 结构..." oninput="state.modalText = this.value">${esc(state.modalText)}</textarea>
+              <textarea class="kb-form-textarea" placeholder="在此粘贴任意文本、HTML 或 Markdown 结构..." oninput="window.__kbSetStateValue('modalText', this.value)">${esc(state.modalText)}</textarea>
               </div>
             </div>
             <div class="kb-modal-footer">
@@ -3407,7 +3413,7 @@ export function render(): void {
               ` : `
                 <div class="kb-form-group">
                   <label class="kb-form-label">网络图片直链 / 网页图片地址</label>
-                  <input type="text" class="kb-form-input" placeholder="输入图片直链或包含图片的网页地址 (如 https://...)" value="${esc(state.imageUrlInput)}" oninput="state.imageUrlInput = this.value; render();" />
+                  <input type="text" class="kb-form-input" placeholder="输入图片直链或包含图片的网页地址 (如 https://...)" value="${esc(state.imageUrlInput)}" oninput="window.__kbSetStateValue('imageUrlInput', this.value)" />
                   <div style="font-size: 11px; color: var(--text-secondary); margin-top: 6px; line-height: 1.5;">
                     💡 支持直接图片直链、图床、微信公众号、文章及各类公开网页图片。系统将自动解析抓取高清原图并交由视觉大模型深度转译。
                   </div>
@@ -3416,7 +3422,7 @@ export function render(): void {
 
               <div class="kb-form-group" style="margin-top: 14px;">
                 <label class="kb-form-label">图片文档标题 (可选)</label>
-                <input type="text" class="kb-form-input" placeholder="输入文档标题 (可选，留空将自动提取或使用文件名)" value="${esc(state.imageTitleInput)}" oninput="state.imageTitleInput = this.value" />
+                <input type="text" class="kb-form-input" placeholder="输入文档标题 (可选，留空将自动提取或使用文件名)" value="${esc(state.imageTitleInput)}" oninput="window.__kbSetStateValue('imageTitleInput', this.value)" />
               </div>
 
               <div style="display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 10px; margin-top: 14px;">
@@ -3565,7 +3571,7 @@ export function render(): void {
                       <div style="display: flex; align-items: center; gap: 6px; font-size: 12px;">
                         <span style="white-space: nowrap; color: var(--text-secondary);">目标知识库:</span>
                         <select class="kb-form-input" style="width: 140px; padding: 5px 8px; font-size: 12px;"
-                          onchange="state.craftImportTargetCol = this.value"
+                          onchange="window.__kbSetStateValue('craftImportTargetCol', this.value)"
                           ${state.craftImporting ? "disabled" : ""}>
                           ${state.collections.map((c) => `
                             <option value="${c.id}" ${(state.craftImportTargetCol || state.activeCollectionId || 'col_default') === c.id ? 'selected' : ''}>
@@ -3693,7 +3699,7 @@ export function render(): void {
                 <div style="display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--text-secondary);">
                   <span>${state.wereadSelectedIds.size > 0 ? `已选 <b style="color: var(--text-primary);">${state.wereadSelectedIds.size}</b> 本书` : `共 ${state.wereadBooks.length} 本笔记图书`}</span>
                   ${state.wereadBooks.length > 0 ? `
-                    <button class="btn btn-xs" onclick="window.__kbToggleAllWereadBooks(${state.wereadSelectedIds.size !== state.wereadBooks.length})" ${state.wereadImporting ? "disabled" : ""}>
+                    <button class="btn btn-xs" onclick="window.__kbToggleAllWereadBooks()" ${state.wereadImporting ? "disabled" : ""}>
                       ${state.wereadSelectedIds.size === state.wereadBooks.length ? "取消全选" : "全选全部"}
                     </button>
                   ` : ""}
@@ -3742,11 +3748,11 @@ export function render(): void {
             <div class="kb-modal-body">
               <div class="kb-form-group">
                 <label class="kb-form-label">分类名称</label>
-                <input type="text" class="kb-form-input" placeholder="例如: 深度研报、工程架构、竞品跟踪" value="${esc(state.modalColName)}" oninput="state.modalColName = this.value" onkeydown="if (event.key === 'Enter') window.__kbSubmitCreateCol()" autofocus />
+                <input type="text" class="kb-form-input" placeholder="例如: 深度研报、工程架构、竞品跟踪" value="${esc(state.modalColName)}" oninput="window.__kbSetStateValue('modalColName', this.value)" onkeydown="if (event.key === 'Enter') window.__kbSubmitCreateCol()" autofocus />
               </div>
               <div class="kb-form-group">
                 <label class="kb-form-label">分类描述 (可选)</label>
-                <input type="text" class="kb-form-input" placeholder="简要描述该分类下的文档类型" value="${esc(state.modalColDesc)}" oninput="state.modalColDesc = this.value" onkeydown="if (event.key === 'Enter') window.__kbSubmitCreateCol()" />
+                <input type="text" class="kb-form-input" placeholder="简要描述该分类下的文档类型" value="${esc(state.modalColDesc)}" oninput="window.__kbSetStateValue('modalColDesc', this.value)" onkeydown="if (event.key === 'Enter') window.__kbSubmitCreateCol()" />
               </div>
             </div>
             <div class="kb-modal-footer">
@@ -3768,11 +3774,11 @@ export function render(): void {
             <div class="kb-modal-body">
               <div class="kb-form-group">
                 <label class="kb-form-label">目录名称</label>
-                <input type="text" class="kb-form-input" placeholder="请输入知识库名称" value="${esc(state.editColName)}" oninput="state.editColName = this.value" onkeydown="if (event.key === 'Enter') window.__kbSubmitEditCol()" autofocus />
+                <input type="text" class="kb-form-input" placeholder="请输入知识库名称" value="${esc(state.editColName)}" oninput="window.__kbSetEditColName(this.value)" onkeydown="if (event.key === 'Enter') window.__kbSubmitEditCol()" autofocus />
               </div>
               <div class="kb-form-group">
                 <label class="kb-form-label">目录描述 (可选)</label>
-                <input type="text" class="kb-form-input" placeholder="简要描述该分类下的文档类型或用途" value="${esc(state.editColDesc)}" oninput="state.editColDesc = this.value" onkeydown="if (event.key === 'Enter') window.__kbSubmitEditCol()" />
+                <input type="text" class="kb-form-input" placeholder="简要描述该分类下的文档类型或用途" value="${esc(state.editColDesc)}" oninput="window.__kbSetEditColDesc(this.value)" onkeydown="if (event.key === 'Enter') window.__kbSubmitEditCol()" />
               </div>
             </div>
             <div class="kb-modal-footer">
@@ -3834,7 +3840,7 @@ export function render(): void {
                     </label>
                     <input type="text" class="kb-form-input" placeholder="例如：D:\\Obsidian\\MyNotes 或 /Users/name/Vault"
                       value="${esc(state.compileVaultRoot)}"
-                      oninput="state.compileVaultRoot = this.value; localStorage.setItem('kb_obsidian_vault_root', this.value)"
+                      oninput="window.__kbSetCompileVaultRoot(this.value)"
                       ${state.compileLoading || state.compileRefining || state.compileApplying ? 'disabled' : ''} />
                   </div>
 
@@ -3902,7 +3908,7 @@ export function render(): void {
                     <label class="kb-form-label">自定义提炼偏好或额外指令 (可选)</label>
                     <textarea class="kb-form-textarea" style="height: 60px;"
                       placeholder="例如：提炼偏向于架构实战；概念数量控制在 3 个以内；重点提取反常识论点..."
-                      oninput="state.compileCustomInstruction = this.value">${esc(state.compileCustomInstruction)}</textarea>
+                      oninput="window.__kbSetStateValue('compileCustomInstruction', this.value)">${esc(state.compileCustomInstruction)}</textarea>
                   </div>
                   <div style="margin-top: 16px;">
                     <button class="btn btn-primary btn-lg" style="width: 100%; justify-content: center; padding: 12px;" onclick="window.__kbStartCompilePreview()">
@@ -3971,7 +3977,7 @@ export function render(): void {
                       <input type="text" class="kb-form-input" style="flex: 1;"
                         placeholder="例如：概念切分太细，把前两个合并为一个高阶决策模型；增加实操案例；语气更第一性原理一点..."
                         value="${esc(state.compileFeedback)}"
-                        oninput="state.compileFeedback = this.value"
+                        oninput="window.__kbSetStateValue('compileFeedback', this.value)"
                         onkeydown="if (event.key === 'Enter') window.__kbRefineCompileDraft()"
                         ${state.compileRefining || state.compileApplying ? 'disabled' : ''} />
                       <button class="btn" onclick="window.__kbRefineCompileDraft()" ${state.compileRefining || state.compileApplying || !state.compileFeedback.trim() ? 'disabled' : ''}>
@@ -4046,7 +4052,7 @@ export function render(): void {
                       </label>
                       <input type="text" class="kb-form-input" placeholder="https://www.bilibili.com/video/BV... 或 https://www.youtube.com/watch?v=..."
                         value="${esc(state.videoUrlInput)}"
-                        oninput="state.videoUrlInput = this.value; render();"
+                        oninput="window.__kbSetStateValue('videoUrlInput', this.value)"
                         ${state.videoTaskStatus === "running" ? "disabled" : ""} />
                     </div>
                   ` : `
@@ -4079,14 +4085,14 @@ export function render(): void {
                       <label class="kb-form-label">文档标题 (可选，留空自动提取)</label>
                       <input type="text" class="kb-form-input" placeholder="${state.videoModalTab === 'local' ? '留空则使用本地文件名' : '留空则自动抓取原视频标题'}"
                         value="${esc(state.videoTitleInput)}"
-                        oninput="state.videoTitleInput = this.value"
+                        oninput="window.__kbSetStateValue('videoTitleInput', this.value)"
                         ${state.videoTaskStatus === "running" ? "disabled" : ""} />
                     </div>
 
                     <div class="kb-form-group" style="margin-bottom: 0;">
                       <label class="kb-form-label">存入目标知识库</label>
                       <select class="kb-form-input"
-                        onchange="state.activeCollectionId = this.value; localStorage.setItem('kb_active_collection_id', this.value); render();"
+                        onchange="window.__kbSelectCollection(this.value)"
                         ${state.videoTaskStatus === "running" ? "disabled" : ""}>
                         ${state.collections.map((c) => `
                           <option value="${c.id}" ${(state.activeCollectionId || 'col_default') === c.id ? 'selected' : ''}>
@@ -4549,6 +4555,29 @@ function bindDragAndDrop(): void {
   void triggerToolAction(tool, action);
 };
 
+(window as any).__kbReparseDocument = async (docId: string, engine: "markitdown" | "docling") => {
+  if (state.reparsingEngine) return;
+  state.reparsingEngine = engine;
+  render();
+  try {
+    const data = await apiFetch<{ ok: boolean; document: KbDocument }>(`/v1/kb/documents/${docId}/reparse`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ engine }),
+    });
+    state.activeDocId = docId;
+    state.activeDoc = data.document;
+    await loadDocuments();
+    showToast("解析引擎已更新", "success");
+  } catch (err: any) {
+    showToast(`重跑解析失败: ${err.message}`, "error");
+    await loadActiveDocDetail(docId);
+  } finally {
+    state.reparsingEngine = "";
+    render();
+  }
+};
+
 (window as any).__kbCloseInstallModal = () => {
   state.showInstallModal = false;
   render();
@@ -4762,6 +4791,8 @@ function bindDragAndDrop(): void {
     state.editColName = "";
     state.editColDesc = "";
     await loadCollections();
+    render();
+    showToast("知识库目录已更新", "success");
   } catch (err: any) {
     showToast(`修改知识库失败: ${err.message}`, "error");
   }
@@ -4806,6 +4837,25 @@ function bindDragAndDrop(): void {
   }).catch(() => {
     showToast("复制失败，请重试", "error");
   });
+};
+
+// Inline event attributes execute in global scope, while `state` is module-local.
+// Expose explicit setters so modal inputs can never submit stale values.
+(window as any).__kbSetStateValue = <K extends keyof typeof state>(key: K, value: (typeof state)[K]) => {
+  state[key] = value;
+};
+
+(window as any).__kbSetEditColName = (value: string) => {
+  state.editColName = value;
+};
+
+(window as any).__kbSetEditColDesc = (value: string) => {
+  state.editColDesc = value;
+};
+
+(window as any).__kbSetCompileVaultRoot = (value: string) => {
+  state.compileVaultRoot = value;
+  localStorage.setItem("kb_obsidian_vault_root", value);
 };
 
 (window as any).__kbExportContent = (engine: "markitdown" | "docling") => {
@@ -5318,4 +5368,3 @@ registerTab("knowledge-base", {
     initKnowledgeBase();
   },
 });
-

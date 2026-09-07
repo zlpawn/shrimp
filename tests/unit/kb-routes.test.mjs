@@ -5,7 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import { createKbStore } from "../../lib/knowledge-base/kb-store.mjs";
-import { createEngineRegistry } from "../../lib/knowledge-base/engine-adapter.mjs";
+import { createEngineRegistry, MarkItDownAdapter, DoclingAdapter } from "../../lib/knowledge-base/engine-adapter.mjs";
 import { createWebScraper } from "../../lib/knowledge-base/scraper.mjs";
 import { createKbPipeline } from "../../lib/knowledge-base/pipeline.mjs";
 import { createKbRoutes } from "../../lib/knowledge-base/routes.mjs";
@@ -15,6 +15,8 @@ test("KbRoutes: Collections, documents, and tools status endpoints", async () =>
   const store = createKbStore({ dbPath: path.join(tmpDir, "test.db") });
   store.init();
   const registry = createEngineRegistry();
+  registry.register(new MarkItDownAdapter());
+  registry.register(new DoclingAdapter());
   const scraper = createWebScraper({});
   const pipeline = createKbPipeline({ store, registry, scraper, dataDir: tmpDir });
   const handler = createKbRoutes({ store, pipeline, registry, dataDir: tmpDir });
@@ -54,19 +56,22 @@ test("KbRoutes: Collections, documents, and tools status endpoints", async () =>
   assert.equal(resTools.status, 200);
   assert.equal("tools" in dataTools, true);
 
-  // 4. POST /v1/kb/ingest/text
-  const resIngestText = await fetch(`http://127.0.0.1:${port}/v1/kb/ingest/text`, {
+  // 4. POST /v1/kb/ingest/file
+  const sourceFile = path.join(tmpDir, "接口测试内容.md");
+  fs.writeFileSync(sourceFile, "# 接口测试内容\n这是段落测试。", "utf8");
+  const sourceBytes = fs.readFileSync(sourceFile);
+  const resIngestText = await fetch(`http://127.0.0.1:${port}/v1/kb/ingest/file`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      text: "# 接口测试内容\n这是段落测试。",
-      title: "接口测试标题",
-      collection_id: dataCreateCol.collection.id,
-    }),
+    headers: {
+      "Content-Type": "application/octet-stream",
+      "x-filename": encodeURIComponent("接口测试标题.md"),
+      "x-collection-id": dataCreateCol.collection.id,
+    },
+    body: sourceBytes,
   });
   const dataIngestText = await resIngestText.json();
   assert.equal(resIngestText.status, 200);
-  assert.equal(dataIngestText.document.title, "接口测试标题");
+  assert.equal(dataIngestText.document.title, "接口测试标题.md");
 
   // 5. GET /v1/kb/documents
   const resDocs = await fetch(`http://127.0.0.1:${port}/v1/kb/documents?collection_id=${dataCreateCol.collection.id}`);
@@ -98,6 +103,18 @@ test("KbRoutes: Collections, documents, and tools status endpoints", async () =>
 
   // 9. POST /v1/kb/documents/:id/adopt (Adopt document and verify physical final.md)
   const docId = dataIngestText.document.id;
+  // Retry one engine in place without creating another document.
+  const resReparse = await fetch(`http://127.0.0.1:${port}/v1/kb/documents/${docId}/reparse`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ engine: "markitdown" }),
+  });
+  const dataReparse = await resReparse.json();
+  assert.equal(resReparse.status, 200);
+  assert.equal(dataReparse.ok, true);
+  assert.equal(dataReparse.document.id, docId);
+  assert.equal(dataReparse.document.markitdown_status, "done");
+  assert.ok(dataReparse.document.markitdown_md.includes("接口测试内容"));
   const resAdopt = await fetch(`http://127.0.0.1:${port}/v1/kb/documents/${docId}/adopt`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
