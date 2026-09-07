@@ -1019,6 +1019,10 @@ import {
   writeCodingAgentPluginConfig,
 } from "../../lib/command-apps/index.mjs";
 import { inspectHindsightDaemon } from "../../lib/command-apps/infra/hindsight-daemon.mjs";
+import {
+  commandLineMatchesHindsightProfile,
+  findSafelyTerminableHindsightPids,
+} from "../../lib/command-apps/infra/hindsight-processes.mjs";
 import { ensureHindsightControlPlane } from "../../lib/command-apps/infra/hindsight-control-plane.mjs";
 
 test("registry exposes hindsight as a cross-platform cli daemon", () => {
@@ -1066,6 +1070,36 @@ test("sanitizeDaemonEnv strips SOCKS and HTTP proxy variables", () => {
   assert.equal(env.HTTPS_PROXY, undefined);
   assert.match(env.NO_PROXY, /127\.0\.0\.1/);
   assert.equal(env.PATH, "/usr/bin");
+});
+
+test("hindsight process identity accepts explicit and default profile commands", () => {
+  assert.equal(commandLineMatchesHindsightProfile("/bin/hindsight-embed -p coding-agent daemon start", "coding-agent"), true);
+  assert.equal(commandLineMatchesHindsightProfile("/bin/hindsight-embed daemon start", "default"), true);
+  assert.equal(commandLineMatchesHindsightProfile("/bin/hindsight-embed -p other daemon start", "coding-agent"), false);
+  assert.equal(commandLineMatchesHindsightProfile("/usr/bin/python /bin/hindsight-api --host 127.0.0.1", "coding-agent"), false);
+});
+
+test("hindsight process identity verifies parent and command before termination", () => {
+  const processes = [
+    { pid: 10, parentPid: 1, commandLine: "/bin/hindsight-embed -p coding-agent daemon start" },
+    { pid: 20, parentPid: 10, commandLine: "/usr/bin/python /bin/hindsight-api --port 9077" },
+    { pid: 30, parentPid: 1, commandLine: "/bin/hindsight-embed -p other daemon start" },
+  ];
+  assert.deepEqual(findSafelyTerminableHindsightPids({
+    profileName: "coding-agent",
+    processes,
+    lockPid: 20,
+    executablePath: "/bin/hindsight-embed",
+    platform: "darwin",
+  }), [10, 20]);
+  const unrelatedProcesses = processes.filter((process) => process.pid === 30);
+  assert.deepEqual(findSafelyTerminableHindsightPids({
+    profileName: "coding-agent",
+    processes: unrelatedProcesses,
+    lockPid: 30,
+    executablePath: "/bin/hindsight-embed",
+    platform: "darwin",
+  }), []);
 });
 
 test("hindsight llm config writes custom base url into embed env", () => {
