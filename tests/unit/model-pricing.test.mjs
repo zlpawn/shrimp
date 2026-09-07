@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import os from "node:os";
 import { createModelPricingEngine } from "../../lib/analytics/model-pricing.mjs";
 
 const engine = createModelPricingEngine({
@@ -103,3 +104,15 @@ test("identity segments like mini/pro remain distinct models", () => {
   assert.equal(mini.source, "default");
 });
 
+
+test("setRefreshIntervalHours re-arms the refresh timer", () => {
+  const engine = createModelPricingEngine({ configDir: os.tmpdir() });
+  assert.equal(engine.getRefreshIntervalMs(), 24 * 60 * 60 * 1000);
+  engine.setRefreshIntervalHours(48);
+  assert.equal(engine.getRefreshIntervalMs(), 48 * 60 * 60 * 1000);
+  // Floor of 1h
+  engine.setRefreshIntervalHours(-1);
+  assert.equal(engine.getRefreshIntervalMs(), 60 * 60 * 1000);
+  engine.stopRefresh();
+  engine.startRefresh();
+});

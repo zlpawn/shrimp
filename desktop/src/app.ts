@@ -4706,7 +4706,7 @@ window.switchTab = function(tabId) {
 
     render();
 
-    if (['dream-skin', 'nat-traversal', 'remote-session', 'command-apps', 'session-kanban', 'mcp-management', 'trend-intel', 'knowledge-base'].includes(tabId)) {
+    if (['dream-skin', 'nat-traversal', 'remote-session', 'command-apps', 'session-kanban', 'mcp-management', 'trend-intel', 'knowledge-base', 'scheduler'].includes(tabId)) {
         try {
             runTabEnter(tabId);
         } catch (error) {
@@ -7271,7 +7271,7 @@ window.addEventListener('load', () => {
     const hash = window.location.hash.replace('#', '');
     const parts = hash.split('/');
     const tabId = parts[0];
-    const knownTabs = ['code','desktop','codex','deeptutor','analytics','proxy','sync','skills','install-history','tools','extensions','cli','cli-install-history','cli-sources','dream-skin','nat-traversal','remote-session','command-apps','session-kanban','mcp-management','trend-intel','knowledge-base'];
+    const knownTabs = ['code','desktop','codex','deeptutor','analytics','proxy','sync','skills','install-history','tools','extensions','cli','cli-install-history','cli-sources','dream-skin','nat-traversal','remote-session','command-apps','session-kanban','mcp-management','trend-intel','knowledge-base','scheduler'];
     if (knownTabs.includes(tabId) || isCustomClient(tabId)) {
         switchTab(tabId);
         // Restore sub-view for tools/extensions

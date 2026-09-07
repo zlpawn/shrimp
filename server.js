@@ -215,6 +215,7 @@ import {
   routeTrendIntelRequest,
 } from "./lib/trend-intel/index.mjs";
 import { initKnowledgeBaseModule } from "./lib/knowledge-base/index.mjs";
+import { initSchedulerModule } from "./lib/scheduler/index.mjs";
 
 loadDotEnv();
 enableNodeEnvProxy();
@@ -416,6 +417,65 @@ function ensureKnowledgeBaseModule() {
     listenPort: LISTEN_PORT,
   });
   return globalKnowledgeBaseModule;
+}
+
+function ensureSessionWatcherDaemon() {
+  if (globalWatcherDaemon) return globalWatcherDaemon;
+  const sessionSync = GATEWAY_CONFIG.sessionSync || {};
+  globalWatcherDaemon = new SessionWatcherDaemon({
+    hubStore: globalHubStore,
+    dateRange: sessionSync.dateRange || null,
+    summaryMode: sessionSync.summaryMode || "rule",
+    summaryModel: sessionSync.summaryModel || "",
+    listenPort: LISTEN_PORT,
+  });
+  return globalWatcherDaemon;
+}
+
+let globalSchedulerModule = null;
+function ensureSchedulerModule() {
+  if (globalSchedulerModule) return globalSchedulerModule;
+  globalSchedulerModule = initSchedulerModule({
+    configDir: path.dirname(GATEWAY_CONFIG_FILE),
+    logger: console,
+    getTrendIntelService: () => ensureTrendIntelService(),
+    getTrendIntelScheduler: () => {
+      ensureTrendIntelService();
+      return globalTrendIntelScheduler;
+    },
+    getKbSyncScheduler: () => {
+      const kb = ensureKnowledgeBaseModule();
+      return kb?.syncScheduler;
+    },
+    getKbChannelSecrets: () => {
+      const kb = ensureKnowledgeBaseModule();
+      return kb?.channelSecrets;
+    },
+    getSessionKanbanScheduler: () => {
+      ensureSessionKanbanService();
+      return globalSessionKanbanScheduler;
+    },
+    getSessionKanbanService: () => ensureSessionKanbanService(),
+    getFxRateService: () => globalFxRateService,
+    getModelPricingEngine: () => globalPricingEngine,
+    getSessionWatcherDaemon: () => ensureSessionWatcherDaemon(),
+  });
+  return globalSchedulerModule;
+}
+
+/**
+ * Re-apply persisted scheduler.config.json onto freshly booted background
+ * services so Job Scheduler panel toggles survive gateway restarts.
+ */
+function applySchedulerBootConfig() {
+  try {
+    const { applyBootConfig } = ensureSchedulerModule();
+    applyBootConfig().catch((err) => {
+      console.error(`Scheduler boot config failed: ${err instanceof Error ? err.message : String(err)}`);
+    });
+  } catch (error) {
+    console.error(`Scheduler boot config failed to start: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
 
 function ensureMcpManagementService() {
@@ -973,6 +1033,9 @@ server.listen(LISTEN_PORT, LISTEN_HOST, () => {
     } catch (error) {
       console.error(`Trend Intel service failed to start: ${error instanceof Error ? error.message : String(error)}`);
     }
+    // Re-apply Job Scheduler panel settings (enabled/interval) persisted in
+    // scheduler.config.json so they survive gateway restarts.
+    applySchedulerBootConfig();
   });
 
   console.log(`Ark Anthropic messages URL: ${ARK_MESSAGES_URL}`);
@@ -1275,6 +1338,13 @@ async function route(req, res) {
     if (!checkLocalAuth(req, res)) return;
     const { routeHandler } = ensureKnowledgeBaseModule();
     const handled = await routeHandler(req, res, url, reqPath);
+    if (handled) return;
+  }
+
+  if (reqPath.startsWith("/v1/scheduler")) {
+    if (!checkLocalAuth(req, res)) return;
+    const { handleSchedulerRequest } = ensureSchedulerModule();
+    const handled = await handleSchedulerRequest(req, res, reqPath);
     if (handled) return;
   }
 
