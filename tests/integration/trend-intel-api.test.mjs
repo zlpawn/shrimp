@@ -311,3 +311,44 @@ test("scheduler - start, stop and status lifecycle", async () => {
     fs.rmSync(dataDir, { recursive: true, force: true });
   }
 });
+
+test("scheduler - crawl_enabled/brief_enabled sub-switches and rescheduleCrawl", async () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "trend-intel-sched-sub-"));
+  const mockFetch = createMockFetch();
+  const service = createTrendIntelService({ dataDir, fetchImpl: mockFetch });
+  // No intervalMinutes option: the interval comes from service config so it
+  // can be changed at runtime via updateConfig + rescheduleCrawl
+  const scheduler = createTrendIntelScheduler(service, {});
+
+  try {
+    scheduler.start();
+    let status = scheduler.getStatus();
+    assert.equal(status.crawl_enabled, true);
+    assert.equal(status.brief_enabled, true);
+
+    // Disable only the crawl sub-task: scheduler keeps running
+    service.updateConfig({ scheduler: { crawl_enabled: false } });
+    status = scheduler.getStatus();
+    assert.equal(status.running, true);
+    assert.equal(status.crawl_enabled, false);
+    assert.equal(status.brief_enabled, true);
+
+    // Re-enable and change interval: rescheduleCrawl re-arms without restart
+    service.updateConfig({ scheduler: { crawl_enabled: true, interval_minutes: 2 } });
+    scheduler.rescheduleCrawl();
+    status = scheduler.getStatus();
+    assert.equal(status.crawl_enabled, true);
+    assert.equal(status.interval_minutes, 2);
+    assert.equal(status.running, true);
+
+    // rescheduleCrawl while stopped must not resurrect the scheduler
+    scheduler.stop();
+    service.updateConfig({ scheduler: { crawl_enabled: true, interval_minutes: 5 } });
+    scheduler.rescheduleCrawl();
+    assert.equal(scheduler.getStatus().running, false);
+  } finally {
+    scheduler.stop();
+    service.destroy();
+    fs.rmSync(dataDir, { recursive: true, force: true });
+  }
+});

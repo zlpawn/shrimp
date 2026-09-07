@@ -11,6 +11,8 @@ describe("Scheduler REST API Integration Tests", () => {
   let server;
   let baseUrl;
   let schedulerModule;
+  let configUpdates;
+  let rescheduleCalls;
 
   beforeEach(async () => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "scheduler-api-test-"));
@@ -28,6 +30,8 @@ describe("Scheduler REST API Integration Tests", () => {
     );
 
     let crawlCalled = false;
+    configUpdates = [];
+    rescheduleCalls = [];
     schedulerModule = initSchedulerModule({
       configDir: tmpDir,
       getTrendIntelService: () => ({
@@ -35,14 +39,24 @@ describe("Scheduler REST API Integration Tests", () => {
           crawlCalled = true;
           return { count: 18 };
         },
+        updateConfig: (patch) => {
+          configUpdates.push(patch);
+          return patch;
+        },
       }),
       getTrendIntelScheduler: () => ({
         getStatus: () => ({
           running: true,
           enabled: true,
+          crawl_enabled: true,
+          brief_enabled: true,
           interval_minutes: 20,
           lastCrawlAt: "2026-09-07T00:00:00.000Z",
         }),
+        rescheduleCrawl: () => {
+          rescheduleCalls.push(Date.now());
+        },
+        stop: () => {},
       }),
     });
 
@@ -133,5 +147,87 @@ describe("Scheduler REST API Integration Tests", () => {
     assert.equal(res.status, 404);
     const body = await res.json();
     assert.equal(body.ok, false);
+  });
+
+  it("PATCH config writes through to the underlying trend-intel service", async () => {
+    configUpdates.length = 0;
+    rescheduleCalls.length = 0;
+
+    const res = await fetch(`${baseUrl}/v1/scheduler/jobs/trend_intel_crawl/config`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ interval_minutes: 90 }),
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.ok, true);
+
+    // The adapter must have written the interval into the trend-intel config
+    // store (source of truth for the crawl timer) and re-armed the timer.
+    assert.equal(configUpdates.length, 1);
+    assert.deepEqual(configUpdates[0], {
+      scheduler: { interval_minutes: 90, crawl_enabled: true },
+    });
+    assert.equal(rescheduleCalls.length, 1);
+  });
+
+  it("applyBootConfig applies only touched jobs after a restart", async () => {
+    // Simulate a restart: persist a touched crawl config directly on disk.
+    // fx_rate_refresh stays untouched (default example values).
+    const persisted = JSON.parse(
+      fs.readFileSync(path.join(tmpDir, "scheduler.config.json"), "utf-8")
+    );
+    persisted.jobs.trend_intel_crawl = {
+      enabled: true,
+      interval_minutes: 90,
+      _touched: true,
+    };
+    fs.writeFileSync(
+      path.join(tmpDir, "scheduler.config.json"),
+      JSON.stringify(persisted),
+      "utf-8"
+    );
+
+    configUpdates.length = 0;
+    const fxEngineCalls = [];
+    const freshModule = initSchedulerModule({
+      configDir: tmpDir,
+      getTrendIntelService: () => ({
+        crawlOnce: async () => ({ count: 0 }),
+        updateConfig: (patch) => {
+          configUpdates.push(patch);
+          return patch;
+        },
+      }),
+      getTrendIntelScheduler: () => ({
+        getStatus: () => ({
+          running: true,
+          crawl_enabled: true,
+          brief_enabled: true,
+        }),
+        rescheduleCrawl: () => {},
+        stop: () => {},
+      }),
+      getFxRateService: () => ({
+        setRefreshIntervalHours: (h) => fxEngineCalls.push(h),
+        stopRefresh: () => fxEngineCalls.push("stop"),
+        startRefresh: () => fxEngineCalls.push("start"),
+      }),
+    });
+
+    const { applied, skipped } = await freshModule.applyBootConfig();
+
+    // trend_intel_crawl has _touched=true from the earlier PATCH (interval 90, enabled false)
+    assert.ok(applied.includes("trend_intel_crawl"));
+    // Untouched jobs are skipped, so the fx timer was never re-armed
+    assert.ok(skipped.includes("fx_rate_refresh"));
+    assert.equal(fxEngineCalls.length, 0);
+
+    // The touched interval really landed in the trend-intel config store
+    const crawlUpdate = configUpdates.find(
+      (u) => u.scheduler && "interval_minutes" in u.scheduler
+    );
+    assert.ok(crawlUpdate);
+    assert.equal(crawlUpdate.scheduler.interval_minutes, 90);
   });
 });

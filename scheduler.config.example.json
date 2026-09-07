@@ -1,5 +1,4 @@
 {
-  "$schema": "./lib/scheduler/schema.json",
   "version": 1,
   "jobs": {
     "trend_intel_crawl": {

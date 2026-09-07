@@ -73,13 +73,19 @@ describe("Scheduler Adapters Unit Tests", () => {
         getNextRunInfo: () => ({ timestamp: Date.now() + 60000 }),
         runSync: async () => {
           syncRan = true;
-          return { ok: true, totalHighlights: 5, craftNotesCount: 2 };
+          return {
+            ok: true,
+            summary: "增量同步成功：共更新 3 本书，新增 5 条划线与 2 条想法",
+            highlightsCount: 5,
+            reviewsCount: 2,
+          };
         },
       }),
       getChannelSecrets: () => ({
         load: () => ({
           schedule: { enabled: true, mode: "daily", daily_time: "04:30" },
         }),
+        updateSchedule: () => {},
       }),
     });
 
@@ -90,7 +96,7 @@ describe("Scheduler Adapters Unit Tests", () => {
     const res = await adapter.runNow();
     assert.equal(res.ok, true);
     assert.equal(syncRan, true);
-    assert.match(res.message, /微信划线\/想法 \+5/);
+    assert.match(res.message, /新增 5 条划线/);
   });
 
   it("KanbanDispatchAdapter triggers dispatch", async () => {
@@ -180,5 +186,147 @@ describe("Scheduler Adapters Unit Tests", () => {
 
     await adapter.onConfigChange({ debounce_ms: 2500 }, { debounce_ms: 2500 });
     assert.equal(mockDaemon.debounceMs, 2500);
+  });
+
+  it("TrendCrawlAdapter writes through interval and enabled to trend-intel config", async () => {
+    const updates = [];
+    let rescheduled = 0;
+    const adapter = new TrendCrawlAdapter({
+      getService: () => ({
+        crawlOnce: async () => ({ count: 1 }),
+        updateConfig: (patch) => {
+          updates.push(patch);
+          return patch;
+        },
+      }),
+      getScheduler: () => ({
+        getStatus: () => ({ running: true, crawl_enabled: true, brief_enabled: true }),
+        rescheduleCrawl: () => {
+          rescheduled += 1;
+        },
+        stop: () => {},
+      }),
+    });
+
+    await adapter.onConfigChange(
+      { interval_minutes: 60 },
+      { enabled: true, interval_minutes: 60 }
+    );
+    assert.equal(updates.length, 1);
+    assert.deepEqual(updates[0], {
+      scheduler: { interval_minutes: 60, crawl_enabled: true },
+    });
+    assert.equal(rescheduled, 1);
+
+    // Disabling only crawl must NOT stop the shared scheduler (brief still on)
+    await adapter.onConfigChange(
+      { enabled: false },
+      { enabled: false, interval_minutes: 60 }
+    );
+    assert.equal(updates.length, 2);
+    assert.deepEqual(updates[1].scheduler, {
+      interval_minutes: 60,
+      crawl_enabled: false,
+    });
+  });
+
+  it("TrendBriefAdapter writes through daily_times and brief_enabled", async () => {
+    const updates = [];
+    const adapter = new TrendBriefAdapter({
+      getService: () => ({
+        generateBriefOnce: async () => ({ title: "t" }),
+        updateConfig: (patch) => {
+          updates.push(patch);
+          return patch;
+        },
+      }),
+      getScheduler: () => ({
+        getStatus: () => ({ running: true, crawl_enabled: true, brief_enabled: true }),
+        stop: () => {},
+      }),
+    });
+
+    await adapter.onConfigChange(
+      { daily_times: ["09:00"] },
+      { enabled: true, daily_times: ["09:00"] }
+    );
+    assert.deepEqual(updates[0], {
+      scheduler: { daily_brief_times: ["09:00"], brief_enabled: true },
+    });
+
+    // Disabled brief reports null nextRunAt
+    const status = adapter.getStatus({ enabled: false, daily_times: ["09:00"] });
+    assert.equal(status.enabled, false);
+    assert.equal(status.nextRunAt, null);
+  });
+
+  it("KanbanDispatchAdapter applies interval and stop on config change", async () => {
+    const calls = [];
+    const adapter = new KanbanDispatchAdapter({
+      getScheduler: () => ({
+        runOnce: async () => {},
+        setIntervalMs: (ms) => calls.push(["interval", ms]),
+        stop: () => calls.push(["stop"]),
+        start: () => calls.push(["start"]),
+      }),
+    });
+
+    await adapter.onConfigChange(
+      { interval_seconds: 45 },
+      { enabled: true, interval_seconds: 45 }
+    );
+    assert.deepEqual(calls, [["interval", 45000], ["start"]]);
+
+    calls.length = 0;
+    await adapter.onConfigChange(
+      { enabled: false },
+      { enabled: false, interval_seconds: 45 }
+    );
+    assert.deepEqual(calls, [["interval", 45000], ["stop"]]);
+  });
+
+  it("FxRateAdapter re-arms timer on interval change and stops when disabled", async () => {
+    const calls = [];
+    const adapter = new FxRateAdapter({
+      getService: () => ({
+        getRate: () => ({ usd_to_cny: 7.2, source: "api", updated_at: Date.now() }),
+        refresh: async () => true,
+        setRefreshIntervalHours: (h) => calls.push(["interval", h]),
+        stopRefresh: () => calls.push(["stop"]),
+        startRefresh: () => calls.push(["start"]),
+      }),
+    });
+
+    await adapter.onConfigChange(
+      { interval_hours: 12 },
+      { enabled: true, interval_hours: 12 }
+    );
+    assert.deepEqual(calls, [["interval", 12], ["start"]]);
+
+    calls.length = 0;
+    await adapter.onConfigChange(
+      { enabled: false },
+      { enabled: false, interval_hours: 12 }
+    );
+    assert.deepEqual(calls, [["interval", 12], ["stop"]]);
+  });
+
+  it("ModelPricingAdapter re-arms refresh timer on config change", async () => {
+    const calls = [];
+    const adapter = new ModelPricingAdapter({
+      getEngine: () => ({
+        listPrices: () => ({ models: [] }),
+        refresh: async () => true,
+        setRefreshIntervalHours: (h) => calls.push(["interval", h]),
+        stopRefresh: () => calls.push(["stop"]),
+        startRefresh: () => calls.push(["start"]),
+      }),
+    });
+
+    await adapter.onConfigChange(
+      { interval_hours: 48 },
+      { enabled: true, interval_hours: 48 }
+    );
+    assert.deepEqual(calls, [["interval", 48], ["start"]]);
   });
 });

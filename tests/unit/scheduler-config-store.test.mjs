@@ -79,4 +79,49 @@ describe("SchedulerConfigStore", () => {
     assert.equal(jobConf.mode, "daily");
     assert.equal(jobConf.daily_time, "04:00");
   });
+
+  it("marks jobs as touched only after explicit updateJobConfig", () => {
+    const store = new SchedulerConfigStore({ configPath, exampleConfigPath });
+    store.load();
+
+    // Fresh config cloned from example: nothing is touched
+    assert.equal(store.isJobTouched("trend_intel_crawl"), false);
+    assert.equal(store.isJobTouched("kb_incremental_sync"), false);
+
+    // getJobConfig never leaks the internal _touched marker
+    const before = store.getJobConfig("trend_intel_crawl");
+    assert.equal("_touched" in before, false);
+
+    store.updateJobConfig("trend_intel_crawl", { interval_minutes: 45 });
+    assert.equal(store.isJobTouched("trend_intel_crawl"), true);
+    assert.equal(store.isJobTouched("kb_incremental_sync"), false);
+
+    // Marker survives save + reload round-trip
+    const reloaded = new SchedulerConfigStore({ configPath, exampleConfigPath });
+    reloaded.load();
+    assert.equal(reloaded.isJobTouched("trend_intel_crawl"), true);
+    assert.equal(reloaded.isJobTouched("kb_incremental_sync"), false);
+
+    // Public config still clean after reload
+    const pub = reloaded.getJobConfig("trend_intel_crawl");
+    assert.equal("_touched" in pub, false);
+    assert.equal(pub.interval_minutes, 45);
+  });
+
+  it("strips _touched from incoming patch so callers cannot forge the marker", () => {
+    const store = new SchedulerConfigStore({ configPath, exampleConfigPath });
+    store.load();
+
+    const updated = store.updateJobConfig("fx_rate_refresh", {
+      _touched: true,
+      interval_hours: 3,
+    });
+    assert.equal(updated.interval_hours, 3);
+    assert.equal(store.isJobTouched("fx_rate_refresh"), true);
+
+    // A forged marker without any real update is still just "touched by this call",
+    // but the persisted public config stays clean
+    const pub = store.getJobConfig("fx_rate_refresh");
+    assert.equal("_touched" in pub, false);
+  });
 });

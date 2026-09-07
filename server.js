@@ -447,6 +447,21 @@ function ensureSchedulerModule() {
   return globalSchedulerModule;
 }
 
+/**
+ * Re-apply persisted scheduler.config.json onto freshly booted background
+ * services so Job Scheduler panel toggles survive gateway restarts.
+ */
+function applySchedulerBootConfig() {
+  try {
+    const { applyBootConfig } = ensureSchedulerModule();
+    applyBootConfig().catch((err) => {
+      console.error(`Scheduler boot config failed: ${err instanceof Error ? err.message : String(err)}`);
+    });
+  } catch (error) {
+    console.error(`Scheduler boot config failed to start: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
 function ensureMcpManagementService() {
   if (globalMcpManagementService) return globalMcpManagementService;
   const paths = resolveMcpPaths({
@@ -1002,6 +1017,9 @@ server.listen(LISTEN_PORT, LISTEN_HOST, () => {
     } catch (error) {
       console.error(`Trend Intel service failed to start: ${error instanceof Error ? error.message : String(error)}`);
     }
+    // Re-apply Job Scheduler panel settings (enabled/interval) persisted in
+    // scheduler.config.json so they survive gateway restarts.
+    applySchedulerBootConfig();
   });
 
   console.log(`Ark Anthropic messages URL: ${ARK_MESSAGES_URL}`);
