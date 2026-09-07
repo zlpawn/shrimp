@@ -64,6 +64,9 @@ test("codexhost managed-runtime routes are mounted behind local gateway auth on 
   const unauthorized = await fetch(`http://127.0.0.1:${GATEWAY_PORT}/v1/cli-tools/codexhost/status`);
   assert.equal(unauthorized.status, 401);
 
+  const unauthorizedUpdate = await fetch(`http://127.0.0.1:${GATEWAY_PORT}/v1/cli-tools/codexhost/update`, { method: "POST" });
+  assert.equal(unauthorizedUpdate.status, 401);
+
   const statusResponse = await fetch(`http://127.0.0.1:${GATEWAY_PORT}/v1/cli-tools/codexhost/status`, {
     headers: { "x-gateway-client": "codex", Authorization: "Bearer codexhost-route-test-key" },
   });

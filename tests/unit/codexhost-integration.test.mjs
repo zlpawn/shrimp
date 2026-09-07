@@ -442,6 +442,9 @@ test("codexhost routes expose stable status, start, stop, and official Desktop a
     start: async (body) => { calls.push(["start", body]); return { process: { status: "launching" } }; },
     stop: async (body) => { calls.push(["stop", body]); return { process: { status: "stopped" } }; },
     openOfficial: async (body) => { calls.push(["open-official", body]); return { process: { status: "official" } }; },
+    install: async (body) => { calls.push(["install", body]); return { runtime: { installed: true } }; },
+    update: async (body) => { calls.push(["update", body]); return { runtime: { installed: true } }; },
+    uninstall: async (body) => { calls.push(["uninstall", body]); return { runtime: { installed: false } }; },
   };
   const request = (method, url, body) => ({
     method,
@@ -462,11 +465,43 @@ test("codexhost routes expose stable status, start, stop, and official Desktop a
   await integration.routeCodexhostRequest(request("POST", "/v1/cli-tools/codexhost/start", { args: ["ignored"] }), response(), "/v1/cli-tools/codexhost/start", { service });
   await integration.routeCodexhostRequest(request("POST", "/v1/cli-tools/codexhost/stop", { confirmInterrupt: true }), response(), "/v1/cli-tools/codexhost/stop", { service });
   await integration.routeCodexhostRequest(request("POST", "/v1/cli-tools/codexhost/open-official", { confirmInterrupt: true }), response(), "/v1/cli-tools/codexhost/open-official", { service });
+  await integration.routeCodexhostRequest(request("POST", "/v1/cli-tools/codexhost/install"), response(), "/v1/cli-tools/codexhost/install", { service });
+  await integration.routeCodexhostRequest(request("POST", "/v1/cli-tools/codexhost/update"), response(), "/v1/cli-tools/codexhost/update", { service });
+  await integration.routeCodexhostRequest(request("POST", "/v1/cli-tools/codexhost/uninstall"), response(), "/v1/cli-tools/codexhost/uninstall", { service });
 
-  assert.deepEqual(responses.map((item) => item.status), [200, 200, 200, 200]);
+  assert.deepEqual(responses.map((item) => item.status), [200, 200, 200, 200, 200, 200, 200]);
   assert.deepEqual(calls, [
     ["start", { args: ["ignored"] }],
     ["stop", { confirmInterrupt: true }],
     ["open-official", { confirmInterrupt: true }],
+    ["install", {}],
+    ["update", {}],
+    ["uninstall", {}],
+  ]);
+});
+
+test("service install, update, and uninstall invoke npm with expected arguments", { skip: skipUntilModuleExists }, async () => {
+  const npmCalls = [];
+  const service = integration.createCodexhostService({
+    platform: "darwin",
+    discoverExecutable: async () => null,
+    inspectInstallation: async () => ({ desktopExecutable: "", desktopLauncher: "", desktopProcessIds: [] }),
+    readRuntimeDescriptor: async () => null,
+    probeRuntimeControl: async () => false,
+    probeGateway: async () => ({ ok: true, service: "shrimp" }),
+    execNpm: async (args) => {
+      npmCalls.push(args);
+      return { stdout: "ok" };
+    },
+  });
+
+  await service.install();
+  await service.update();
+  await service.uninstall();
+
+  assert.deepEqual(npmCalls, [
+    ["install", "-g", "@codexhost/cli"],
+    ["install", "-g", "@codexhost/cli@latest"],
+    ["uninstall", "-g", "@codexhost/cli"],
   ]);
 });

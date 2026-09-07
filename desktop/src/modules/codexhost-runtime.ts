@@ -1,4 +1,5 @@
 import { escapeHtml } from "../core/dom";
+import { showToast } from "../core/ui";
 
 type CodexhostStatus = {
   runtime?: { installed?: boolean; version?: string | null; packageName?: string };
@@ -22,7 +23,7 @@ const state = {
   loading: false,
   status: null as CodexhostStatus | null,
   error: "",
-  action: "" as "" | "start" | "stop" | "official",
+  action: "" as "" | "start" | "stop" | "official" | "install" | "update" | "uninstall",
 };
 let pollTimer: number | null = null;
 
@@ -75,9 +76,9 @@ export function renderCodexhostRuntime(): string {
     '<button class="btn btn-primary" data-codexhost-action="start" ' + (!installed || !status?.actions?.canStart || state.action ? "disabled" : "") + ">启动增强模式</button>",
     '<button class="btn" data-codexhost-action="stop" ' + (!status?.actions?.canStop || state.action ? "disabled" : "") + ">停止增强模式</button>",
     '<button class="btn" data-codexhost-action="official" ' + (!status?.actions?.canOpenOfficial || state.action ? "disabled" : "") + ">启动普通模式</button>",
-    '<button class="btn" data-codexhost-action="install" ' + (state.action || installed ? "disabled" : "") + ">安装</button>",
-    '<button class="btn" data-codexhost-action="update" ' + (state.action || !installed ? "disabled" : "") + ">更新</button>",
-    '<button class="btn" data-codexhost-action="uninstall" ' + (state.action || !installed ? "disabled" : "") + ">卸载</button>",
+    '<button class="btn" data-codexhost-action="install" ' + (state.action || installed ? "disabled" : "") + ">" + (state.action === "install" ? "正在安装..." : "安装") + "</button>",
+    '<button class="btn" data-codexhost-action="update" ' + (state.action || !installed ? "disabled" : "") + ">" + (state.action === "update" ? "正在更新..." : "更新") + "</button>",
+    '<button class="btn" data-codexhost-action="uninstall" ' + (state.action || !installed ? "disabled" : "") + ">" + (state.action === "uninstall" ? "正在卸载..." : "卸载") + "</button>",
     "</div></div>",
   ].join("");
 }
@@ -123,21 +124,57 @@ function confirmInterruption(action: "stop" | "official") {
     "增强模式不能热切换，需要完整重启 Codex Desktop。",
     "",
     "确定继续吗？",
-  ].join("\\n"));
+  ].join("\n"));
 }
 
 async function runAction(action: "start" | "stop" | "official" | "install" | "update" | "uninstall") {
   if (state.action) return;
+
+  if (action === "uninstall") {
+    if (!window.confirm("确定要卸载 @codexhost/cli 吗？\n\n卸载后将无法使用 CodexHost 增强模式。")) {
+      return;
+    }
+  } else if (action === "stop" || action === "official") {
+    if (!confirmInterruption(action)) return;
+  }
+
+  state.action = action;
+  state.error = "";
+  rerender();
+
+  const toastMap = {
+    install: { start: "CodexHost 正在安装...", success: "CodexHost 安装完成", fail: "CodexHost 安装失败" },
+    update: { start: "CodexHost 正在后台更新...", success: "CodexHost 更新完成", fail: "CodexHost 更新失败" },
+    uninstall: { start: "CodexHost 正在卸载...", success: "CodexHost 卸载完成", fail: "CodexHost 卸载失败" },
+  } as const;
+
+  const endpoints = {
+    install: "/v1/cli-tools/codexhost/install",
+    update: "/v1/cli-tools/codexhost/update",
+    uninstall: "/v1/cli-tools/codexhost/uninstall",
+  } as const;
+
   if (action === "install" || action === "update" || action === "uninstall") {
-    const command = action === "install" || action === "update"
-      ? "npm install -g @codexhost/cli"
-      : "npm uninstall -g @codexhost/cli";
-    (window as any).prefillCliInstallCommand?.(command, "codexhost");
+    const config = toastMap[action];
+    showToast(config.start, "info");
+    try {
+      state.status = await api(endpoints[action], {
+        method: "POST",
+        body: JSON.stringify({}),
+      });
+      state.error = "";
+      showToast(config.success, "success");
+    } catch (error: any) {
+      state.error = error?.message || String(error);
+      showToast(`${config.fail}: ${state.error}`, "danger");
+    } finally {
+      state.action = "";
+      rerender();
+      schedulePolling();
+    }
     return;
   }
-  if (action !== "start" && !confirmInterruption(action)) return;
-  state.action = action;
-  rerender();
+
   const path = action === "start"
     ? "/v1/cli-tools/codexhost/start"
     : action === "stop"

@@ -35,14 +35,17 @@ test("CodexHost card uses managed-runtime APIs without joining generic CLI disco
   assert.doesNotMatch(source, /\/v1\/cli\/discover/);
 });
 
-test("CodexHost install entry reuses the existing CLI install terminal mechanism", async () => {
+test("CodexHost install, update, and uninstall run in the background without navigating away", async () => {
   const source = await readFile(path.join(ROOT, "desktop/src/modules/codexhost-runtime.ts"), "utf8");
-  const app = await readFile(path.join(ROOT, "desktop/src/app.ts"), "utf8");
-  assert.match(source, /"npm install -g @codexhost\/cli"/);
-  assert.match(source, /"npm uninstall -g @codexhost\/cli"/);
-  assert.match(source, /prefillCliInstallCommand\?\.\(command, "codexhost"\)/);
-  assert.match(app, /window\.prefillCliInstallCommand = prefillCliInstallCommand/);
-  assert.match(app, /\/v1\/cli\/install/);
-  assert.match(source, /data-codexhost-action="update"/);
-  assert.match(source, /data-codexhost-action="uninstall"/);
+  assert.match(source, /\/v1\/cli-tools\/codexhost\/install/);
+  assert.match(source, /\/v1\/cli-tools\/codexhost\/update/);
+  assert.match(source, /\/v1\/cli-tools\/codexhost\/uninstall/);
+  assert.match(source, /showToast\(config\.start, "info"\)/);
+  assert.match(source, /showToast\(config\.success, "success"\)/);
+  assert.match(source, /showToast\(`\$\{config\.fail\}: \$\{state\.error\}`, "danger"\)/);
+  assert.match(source, /正在更新\.\.\./);
+  assert.match(source, /正在安装\.\.\./);
+  assert.match(source, /正在卸载\.\.\./);
+  assert.doesNotMatch(source, /prefillCliInstallCommand/);
+  assert.doesNotMatch(source, /switchTab/);
 });
