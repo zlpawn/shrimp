@@ -4,18 +4,31 @@
 
 Proposal. No implementation is included in this change.
 
+## Decision
+
+Shrimp owns the remote-agent command system.
+
+Bot frameworks such as LangBot or AstrBot act as transport adapters only:
+
+- receive the IM message
+- forward a normalized envelope to Shrimp
+- send Shrimp's plain-text reply back to the original chat
+
+Users never see JSON. JSON is only the internal contract between the bot framework and Shrimp.
+
 ## Goal
 
-Enable a user to send a coding instruction from an IM platform to LangBot and have Shrimp deliver that instruction to the correct local coding-agent session, preserve queue semantics, and return a concise completion result to the original chat.
+Enable a user to send a coding instruction from an IM platform and have Shrimp deliver that instruction to the correct local coding-agent session, preserve queue semantics, and return a concise completion result to the original chat.
 
 The target user journey is:
 
-1. A whitelisted user sends an instruction from QQ, Telegram, Lark, DingTalk, or another LangBot-supported platform.
-2. LangBot resolves the sender, chat, and user intent.
-3. Shrimp maps that interaction to a local Codex, Claude, or Antigravity session.
-4. Shrimp queues the message using Session Kanban and dispatches it only when that session is idle.
-5. The official CLI resumes its own session and records the turn in its native session format.
-6. Shrimp returns a bounded summary, status, and link to the original chat.
+1. A whitelisted user sends text from QQ, Telegram, Lark, DingTalk, or another supported platform.
+2. The bot framework forwards the original text plus chat identity to Shrimp.
+3. Shrimp parses commands such as `/agent list` and `/agent use 1`, or treats ordinary text as a task for the currently bound session.
+4. Shrimp maps the chat binding to a local Codex, Claude, or Antigravity session.
+5. Shrimp queues the message using Session Kanban and dispatches it only when that session is idle.
+6. The official CLI resumes its own session and records the turn in its native session format.
+7. Shrimp returns plain-text status or results; the bot framework posts that text back to the original chat.
 
 ## Existing Building Blocks
 
@@ -32,14 +45,21 @@ Shrimp already contains most of the local execution plane:
 - `POST /v1/session-kanban/queue` already accepts a session ID and message and persists a queue item.
 - The desktop Session Kanban panel already proves the interaction model.
 
-The missing piece is a secure, IM-facing contract between LangBot and Shrimp.
+The missing piece is a stable, framework-agnostic IM bridge into Shrimp:
+
+- inbound message envelope
+- gateway-owned command parser
+- chat-to-session binding store
+- plain-text reply contract
+- later async completion notification
 
 ## Non-Goals
 
 - Do not write directly into Codex/Claude session JSONL or SQLite records.
 - Do not run every incoming IM message as a privileged shell command.
-- Do not make Shrimp responsible for platform adapters, upload media handling, or IM authentication.
-- Do not replace LangBot's local-agent runtime in the first milestone.
+- Do not make Shrimp responsible for Telegram/QQ/Lark SDK connections or media upload pipelines.
+- Do not put command semantics in LangBot or AstrBot if the goal is multi-framework reuse.
+- Do not replace LangBot's local-agent runtime unless a later native Runner is explicitly adopted.
 
 ## Integration Options
 
@@ -134,49 +154,216 @@ Disadvantages:
 
 ## Recommended Path
 
-Use a two-stage approach.
+Adopt a gateway-owned command bridge.
 
-### Stage 1: MCP-first MVP
+### Why this path
 
-Expose Shrimp Session Kanban operations as authenticated MCP tools and connect them to LangBot `local-agent`.
+The product goal is a stable remote-coding command system that can outlive any one bot framework. If LangBot parses `/agent list` and `/agent use`, AstrBot would need a second implementation. If Shrimp parses those commands, LangBot and AstrBot both become thin adapters.
 
-Initial tools:
+Selected architecture:
 
-- `list_agent_sessions`: return recent, inactive sessions with client, ID, title, workspace, and status.
-- `dispatch_agent_message`: enqueue a message for one session and return queue ID and position.
-- `get_agent_task_status`: return queue state, dispatch state, and last error.
-- `get_agent_result_summary`: return a bounded transcript tail, files changed if available, and a panel URL.
+```text
+IM platforms
+  -> LangBot / AstrBot / other bot frameworks
+  -> Shrimp remote-agent bridge
+  -> Session Kanban
+  -> Codex / Claude / Antigravity CLI resume
+```
 
-Stage 1 intentionally answers with an immediate queued/dispatched status rather than holding an HTTP request open for a long coding run.
+Ownership:
 
-### Stage 2: Native conversational bridge
+| Concern | Owner |
+|---|---|
+| Platform SDK login and message receive/send | Bot framework |
+| Command parsing (`/agent ...`) | Shrimp |
+| Chat-to-session binding | Shrimp |
+| Local session discovery | Shrimp Session Kanban readers |
+| Queue and serial dispatch | Shrimp Session Kanban |
+| Plain-text user replies | Shrimp generates, bot framework delivers |
+| Async completion callback | Shrimp emits, bot framework posts |
 
-After the MCP tools prove reliable, add a small Shrimp notification/notification-subscription API:
+### Stage 1: synchronous command bridge
 
-- Persist a chat binding: platform, launcher type, launcher ID, sender ID, client, session ID.
-- Emit task completion and failure events.
-- Provide webhook or polling delivery for a LangBot plugin or future native runner.
-- Add explicit approval semantics for dangerous or policy-gated actions.
+Add an authenticated inbound API such as:
 
-If adoption justifies it, contribute a native LangBot Runner at that point instead of maintaining the plugin boundary.
+```text
+POST /v1/remote-agent/message
+```
+
+Bot frameworks forward every relevant chat message as a normalized envelope. Shrimp parses the text, executes the command or queues a task, and returns a plain-text `reply` immediately.
+
+Stage 1 intentionally returns queued/dispatched status for coding tasks instead of waiting for the full agent run.
+
+### Stage 2: async completion notifications
+
+After Stage 1 works, add:
+
+- task completion and failure events
+- optional webhook callback to the bot framework
+- bounded result summaries and panel links
+- confirmation tokens for dangerous actions
+
+### Stage 3: optional native Runner
+
+If one bot framework becomes dominant, contribute a native Runner later. The command semantics should still live in Shrimp so other frameworks remain compatible.
+
+## Inbound Message Envelope
+
+Bot frameworks send JSON to Shrimp. Users never see this JSON.
+
+Example request:
+
+```json
+{
+  "platform": "telegram",
+  "chatType": "private",
+  "chatId": "123456",
+  "userId": "7890",
+  "userName": "alice",
+  "messageId": "42",
+  "text": "/agent list",
+  "timestamp": "2026-09-09T12:00:00.000Z"
+}
+```
+
+Required fields:
+
+- `platform`
+- `chatType` (`private` or `group`)
+- `chatId`
+- `userId`
+- `text`
+
+Recommended fields:
+
+- `userName`
+- `messageId`
+- `timestamp`
+- `replyToMessageId`
+
+Example immediate response:
+
+```json
+{
+  "ok": true,
+  "reply": "1. Codex | AstrBot | 修复登录问题\n2. Claude | Shrimp | 配置面板重构",
+  "actions": []
+}
+```
+
+For queued coding work:
+
+```json
+{
+  "ok": true,
+  "reply": "已加入队列，当前排在第 1 位。\n会话: Codex | AstrBot | 修复登录问题",
+  "taskId": "task_123",
+  "sessionId": "0193xxxx",
+  "actions": []
+}
+```
+
+The bot framework posts only `reply` to the IM user.
+
+## Command Surface
+
+`/agent ...` is not a Telegram or LangBot built-in command. It is the Shrimp remote-agent command language.
+
+Initial commands:
+
+| User text | Meaning |
+|---|---|
+| `/agent list` | List recent local agent sessions |
+| `/agent use <n\|alias\|sessionId>` | Bind the current chat to one session |
+| `/agent status` | Show current binding and latest queue state |
+| `/agent unbind` | Clear the current chat binding |
+| `/agent help` | Show command help |
+| ordinary text after binding | Queue the text into the bound session |
+
+Example `/agent list` reply:
+
+```text
+可用会话：
+1. Codex | D:\work\AstrBot | 修复登录问题
+2. Claude | D:\work\shrimp | 配置面板重构
+3. Codex | D:\work\demo | 数据库迁移
+
+用法：/agent use 1
+```
+
+Example `/agent use 1` reply:
+
+```text
+已绑定当前聊天到：
+Codex | D:\work\AstrBot | 修复登录问题
+
+之后直接发任务即可。
+```
+
+Example ordinary text after binding:
+
+```text
+用户：继续修登录问题，重点看 provider 初始化
+
+机器人：已加入队列，当前排在第 1 位。
+```
 
 ## Session and Project Binding
 
 Recommended ownership:
 
-- LangBot owns platform identity and the original chat context.
-- Shrimp owns the authoritative mapping from a stable integration key to local session and workspace state.
+- Bot framework owns live platform connectivity and original chat delivery.
+- Shrimp owns command parsing and the authoritative mapping from chat identity to local agent session.
+
+Binding key:
+
+```text
+platform + chatType + chatId [+ userId for per-sender mode]
+```
 
 A binding record should include:
 
-- Integration key (`platform + launcher_type + launcher_id + optional sender_id`)
-- Shrimp session ID and client
+- Binding key
+- Client (`codex` / `claude` / `antigravity`)
+- Session ID
 - Workspace path
-- Binding creator and creation time
-- Required policy mode
-- Last used time
+- Bound by user ID
+- Created at / last used at
+- Policy mode
+
+Default recommendation for MVP:
+
+- private chats: one binding per chat
+- group chats: one binding per sender inside the group
 
 Do not overload an OpenAI model name to represent a workspace/session. That works only as a temporary prototype and becomes ambiguous as projects multiply.
+
+## Delivery Mechanics
+
+Do not write into Codex/Claude session files.
+
+Delivery path after binding:
+
+```text
+POST /v1/remote-agent/message
+  text = "继续修登录问题"
+        |
+        v
+resolve binding -> sessionId
+        |
+        v
+POST /v1/session-kanban/queue
+  { sessionId, message }
+        |
+        v
+scheduler waits until session idle
+        |
+        v
+CLI resume
+  Codex:        codex exec resume <sessionId> <message>
+  Claude:       claude --resume <sessionId> --print <message>
+  Antigravity:  agy --conversation <sessionId> --print <message>
+```
 
 ## Security Policy
 
@@ -203,9 +390,29 @@ Required behavior:
 5. Return a bounded final summary and link.
 6. Preserve errors, quota waits, and cancellation states.
 
-## API/MCP Shape
+## Bot Framework Adapter Contract
 
-A first MCP tool set should be deliberately small:
+A LangBot or AstrBot adapter should do as little as possible:
+
+1. Accept messages from allowed chats/users.
+2. Forward the envelope to `POST /v1/remote-agent/message`.
+3. Post the returned `reply` back to the same chat.
+4. Later, accept Shrimp completion callbacks and post those replies too.
+
+The adapter should not implement:
+
+- `/agent list` parsing
+- session ranking
+- binding storage
+- Codex/Claude resume logic
+
+Those belong in Shrimp.
+
+## Optional MCP Surface
+
+MCP remains useful as a secondary interface for desktop agents and debugging, but it is not the primary IM command path.
+
+Useful MCP tools:
 
 ```text
 list_agent_sessions(limit?)
@@ -225,24 +432,25 @@ subscribe_agent_events(callback_url)
 
 ## Implementation Milestones
 
-### M1: contract and security
+### M1: inbound contract and command parser
 
-- Define normalized session and task schemas.
-- Add authenticated external access policy.
-- Decide MCP transport and token storage.
-- Define result truncation and audit events.
+- Define the inbound envelope and plain-text reply schema.
+- Add authenticated `POST /v1/remote-agent/message`.
+- Implement `/agent help|list|use|status|unbind`.
+- Persist chat bindings in Shrimp.
+- Add unit tests for parser and binding resolution.
 
-### M2: MCP tools
+### M2: queue-backed delivery
 
-- Implement read-only session and task status tools.
-- Implement queue dispatch.
-- Add unit and integration tests with a fake dispatcher.
-- Connect LangBot `local-agent` and verify command intent and queued status.
+- Route ordinary text through Session Kanban enqueue.
+- Return immediate queued status to IM.
+- Reuse existing CLI resume dispatchers.
+- Add integration tests with a fake dispatcher.
 
 ### M3: completion notifications
 
-- Add chat-binding persistence.
-- Add task completion events or polling API.
+- Emit task completion and failure events.
+- Support webhook callback to the bot framework.
 - Return bounded summaries and panel links.
 - Add retry and cancellation behavior.
 
@@ -251,13 +459,12 @@ subscribe_agent_events(callback_url)
 - Add policy modes and confirmation tokens.
 - Add dangerous-action gates.
 - Add concurrency, replay, and abuse tests.
-- Evaluate a native LangBot Runner based on actual usage.
+- Add thin LangBot and AstrBot adapters against the same Shrimp contract.
 
 ## Open Questions
 
-- Which LangBot platforms need proactive result delivery in M3?
-- Should multiple users in one group share one binding, or should bindings be per sender?
+- Which platforms need proactive result delivery in M3 first: Telegram, QQ, Lark, or DingTalk?
+- For group chats, confirm per-sender binding as the default.
 - What approval policy should apply to git commits, pushes, dependency installation, and test execution?
 - Should Shrimp expose a URL-safe transcript artifact for long results instead of sending the full output to IM?
-- Is a Dify-compatible endpoint worth maintaining after MCP tools exist?
-
+- Should Stage 1 reject unbound ordinary text with a help message, or attempt heuristic session matching?
