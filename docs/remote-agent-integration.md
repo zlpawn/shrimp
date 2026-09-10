@@ -2,14 +2,15 @@
 
 ## Status
 
-Stage 1 is implemented:
+Stage 1 and Stage 2 are implemented:
 
 - authenticated `POST /v1/remote-agent/message`
 - Dify-compatible `POST /dify/v1/chat-messages`
 - desktop System Extensions page: **IM 会话投递**
 - chat binding store, `/agent` command parser, and Session Kanban enqueue
+- async completion/failure webhook callbacks with bounded plain-text replies
 
-Stage 2 async completion notifications are not implemented yet.
+Dangerous-action confirmation tokens remain in M4.
 
 ## Decision
 
@@ -297,12 +298,42 @@ Desktop management endpoints (local gateway auth):
 
 ### Stage 2: async completion notifications
 
-After Stage 1 works, add:
+Implemented:
 
-- task completion and failure events
-- optional webhook callback to the bot framework
-- bounded result summaries and panel links
-- confirmation tokens for dangerous actions
+- queue items from remote-agent carry chat delivery metadata
+- Session Kanban settlement emits success/failure events
+- Shrimp POSTs a bounded plain-text `reply` to the configured webhook
+- desktop **IM 会话投递** page can save/clear `webhookUrl`
+- recent tasks show `notifyStatus`
+
+Webhook resolution order:
+
+1. `REMOTE_AGENT_WEBHOOK_URL` environment variable
+2. `gateway.secrets.json` → `remote_agent.webhook_url`
+
+Callback body example:
+
+```json
+{
+  "type": "remote_agent.task_dispatched",
+  "taskId": "...",
+  "status": "dispatched",
+  "reply": "已派发完成
+任务: ...
+会话: Codex | D:\repo | login fix",
+  "platform": "telegram",
+  "chatType": "private",
+  "chatId": "123",
+  "userId": "789",
+  "bindingKey": "telegram:private:123",
+  "replyToMessageId": "42",
+  "sessionId": "...",
+  "panelUrl": "http://127.0.0.1:8787/#session-kanban",
+  "occurredAt": "2026-09-10T12:00:00.000Z"
+}
+```
+
+The bot framework adapter posts `reply` back to the original chat. Confirmation tokens for dangerous actions remain in M4.
 
 ### Stage 3: optional native Runner
 
@@ -589,10 +620,11 @@ subscribe_agent_events(callback_url)
 
 ### M3: completion notifications
 
-- Emit task completion and failure events.
-- Support webhook callback to the bot framework.
-- Return bounded summaries and panel links.
-- Add retry and cancellation behavior.
+- [x] Emit task completion and failure events.
+- [x] Support webhook callback to the bot framework.
+- [x] Return bounded summaries and panel links.
+- [x] Record notify sent/failed bookkeeping on queue items.
+- [ ] Add richer retry/cancellation UX for notify delivery (optional follow-up).
 
 ### M4: approvals and production hardening
 

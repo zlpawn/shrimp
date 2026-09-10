@@ -21,6 +21,8 @@ type RecentTask = {
   message: string;
   status: string;
   error?: string;
+  notifyStatus?: string;
+  notifyError?: string;
   updatedAt?: string | null;
 };
 
@@ -30,6 +32,9 @@ type StatusPayload = {
   tokenConfigured: boolean;
   tokenMasked: string;
   tokenSource: string;
+  webhookUrl?: string;
+  webhookConfigured?: boolean;
+  webhookSource?: string;
   endpoints: {
     healthUrl: string;
     messageUrl: string;
@@ -47,6 +52,7 @@ const state = {
   error: "",
   status: null as StatusPayload | null,
   lastRotatedToken: "",
+  webhookDraft: "",
 };
 
 function root() {
@@ -76,6 +82,7 @@ async function reload(silent = false) {
   }
   try {
     state.status = await api<StatusPayload>("/v1/remote-agent/status");
+    if (!state.webhookDraft) state.webhookDraft = state.status.webhookUrl || "";
   } catch (error: any) {
     state.error = error?.message || String(error);
     if (!silent) showToast("加载 IM 会话投递状态失败", "error");
@@ -100,6 +107,30 @@ async function rotateToken() {
     state.busy = "";
     render();
   }
+}
+
+async function saveWebhook() {
+  if (state.busy) return;
+  state.busy = "webhook";
+  render();
+  try {
+    await api("/v1/remote-agent/webhook", {
+      method: "POST",
+      body: JSON.stringify({ webhookUrl: state.webhookDraft || "" }),
+    });
+    showToast("Webhook 已保存", "success");
+    await reload(true);
+  } catch (error: any) {
+    showToast(error?.message || "保存 Webhook 失败", "error");
+  } finally {
+    state.busy = "";
+    render();
+  }
+}
+
+async function clearWebhook() {
+  state.webhookDraft = "";
+  await saveWebhook();
 }
 
 async function clearBinding(bindingKey: string) {
@@ -150,6 +181,7 @@ function renderTasks(tasks: RecentTask[]) {
       <div>
         <strong>${escapeHtml(item.status)}</strong>
         <div class="imsd-sub">${escapeHtml(item.message || "")}</div>
+        <div class="imsd-sub">回传: ${escapeHtml(item.notifyStatus || "none")}${item.notifyError ? ` · ${escapeHtml(item.notifyError)}` : ""}</div>
         <code>${escapeHtml(item.sessionId || "")}</code>
       </div>
       <span class="imsd-muted">${escapeHtml(item.updatedAt || item.id)}</span>
@@ -210,6 +242,24 @@ function render() {
       <div class="imsd-actions">
         <button class="btn" type="button" onclick="window.__imsdReload()">刷新</button>
         <button class="btn" type="button" onclick="window.__imsdCopy('${escapeHtml(endpoints.difyChatMessagesUrl || "")}', 'Chat Messages URL')">复制 chat-messages</button>
+      </div>
+    </div>
+
+    <div class="imsd-card">
+      <h3>完成回传 Webhook</h3>
+      <p class="imsd-help">任务派发完成或失败后，Shrimp 会把纯文本 reply POST 到这个地址，由 LangBot/适配器发回原聊天。</p>
+      <div class="imsd-grid">
+        <div>
+          <label>Webhook URL</label>
+          <div class="imsd-copy-row">
+            <input id="imsd-webhook-input" class="imsd-input" type="text" value="${escapeHtml(state.webhookDraft || status?.webhookUrl || "")}" placeholder="http://127.0.0.1:18080/hooks/shrimp" />
+          </div>
+          <div class="imsd-help">来源：${escapeHtml(status?.webhookSource || "none")} · ${status?.webhookConfigured ? "已配置" : "未配置"}</div>
+        </div>
+      </div>
+      <div class="imsd-actions">
+        <button class="btn" type="button" ${state.busy === "webhook" ? "disabled" : ""} onclick="window.__imsdSaveWebhook()">${state.busy === "webhook" ? "保存中..." : "保存 Webhook"}</button>
+        <button class="btn" type="button" ${state.busy === "webhook" ? "disabled" : ""} onclick="window.__imsdClearWebhook()">清空</button>
       </div>
     </div>
 

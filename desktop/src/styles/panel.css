@@ -8455,3 +8455,13 @@ input:focus, select:focus {
   border-radius: 50%;
   animation: trend-intel-spin 0.8s linear infinite;
 }
+
+
+.imsd-input {
+  width: 100%;
+  border: 1px solid var(--border, #d0d7de);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: var(--panel, #fff);
+  color: inherit;
+}
