@@ -54,3 +54,28 @@ test("config service reports endpoints and rotates token into secrets", async ()
   await service.clearBinding("telegram:private:1");
   assert.equal(bindingStore.getBinding("telegram:private:1"), null);
 });
+
+
+test("config service persists webhook url into secrets", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "remote-agent-config-"));
+  const secretsPath = path.join(dir, "gateway.secrets.json");
+  fs.writeFileSync(secretsPath, JSON.stringify({ api_keys: {} }, null, 2));
+  const bindingStore = createRemoteAgentBindingStore({ dbPath: path.join(dir, "b.sqlite") });
+  let secrets = JSON.parse(fs.readFileSync(secretsPath, "utf8"));
+  const service = createRemoteAgentConfigService({
+    bindingStore,
+    secretsPath,
+    getSecrets: () => secrets,
+    setSecrets: (next) => {
+      secrets = next;
+      fs.writeFileSync(secretsPath, JSON.stringify(next, null, 2));
+    },
+    listenPort: 8787,
+  });
+  const result = await service.setWebhookUrl("http://127.0.0.1:18080/hooks/shrimp");
+  assert.equal(result.webhookUrl, "http://127.0.0.1:18080/hooks/shrimp");
+  assert.equal(secrets.remote_agent.webhook_url, "http://127.0.0.1:18080/hooks/shrimp");
+  const status = await service.getStatus();
+  assert.equal(status.webhookConfigured, true);
+  assert.equal(status.webhookUrl, "http://127.0.0.1:18080/hooks/shrimp");
+});

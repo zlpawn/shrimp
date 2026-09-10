@@ -198,6 +198,10 @@ import {
   routeRemoteAgentRequest,
   createRemoteAgentConfigService,
   routeDifyCompatibleRequest,
+  createWebhookNotifier,
+  buildCompletionEvent,
+  formatCompletion,
+  formatFailure,
 } from "./lib/remote-agent/index.mjs";
 import { routeNatTraversalRequest } from "./lib/nat-traversal/http/routes.mjs";
 import {
@@ -375,11 +379,18 @@ function ensureCodexhostService() {
 
 let globalSessionKanbanService = null;
 let globalSessionKanbanScheduler = null;
+function resolveRemoteAgentWebhookUrl() {
+  const envUrl = String(process.env.REMOTE_AGENT_WEBHOOK_URL || "").trim();
+  if (envUrl) return envUrl;
+  return String(GATEWAY_SECRETS?.remote_agent?.webhook_url || "").trim();
+}
+
 function ensureSessionKanbanService() {
   if (globalSessionKanbanService) return globalSessionKanbanService;
   const store = createSessionKanbanStore({
     dbPath: process.env.SESSION_KANBAN_DB_FILE || path.join(path.dirname(GATEWAY_CONFIG_FILE), "gateway.db"),
   });
+  const panelUrl = `http://127.0.0.1:${Number(ENV_PORT) || Number(GATEWAY_CONFIG?.server?.port) || 8787}/#session-kanban`;
   globalSessionKanbanService = createSessionKanbanService({
     store,
     readers: [
@@ -388,6 +399,26 @@ function ensureSessionKanbanService() {
       createAntigravityReader(),
     ],
     dispatchers: createCliDispatchers(),
+    onQueueSettled: async (item) => {
+      try {
+        if (String(item?.source || "") !== "remote-agent") return;
+        const notifier = createWebhookNotifier({
+          webhookUrl: resolveRemoteAgentWebhookUrl(),
+          token: resolveRemoteAgentToken(),
+        });
+        const reply = item.status === "failed"
+          ? formatFailure(item, { panelUrl })
+          : formatCompletion(item, { panelUrl });
+        const event = buildCompletionEvent(item, { reply, panelUrl });
+        const result = await notifier.notify(event);
+        if (result.ok) store.markNotifySent(item.id);
+        else store.markNotifyFailed(item.id, result.error || "notify failed");
+      } catch (error) {
+        try {
+          store.markNotifyFailed(item.id, error?.message || String(error));
+        } catch {}
+      }
+    },
   });
   globalSessionKanbanScheduler = createSessionKanbanScheduler(globalSessionKanbanService, {
     intervalMs: Number(process.env.SESSION_KANBAN_INTERVAL_MS || 30 * 1000),
@@ -1415,6 +1446,7 @@ async function route(req, res) {
     const pathOnly = String(reqPath || "").split("?")[0];
     const needsLocalAuth = pathOnly === "/v1/remote-agent/status"
       || pathOnly === "/v1/remote-agent/token/rotate"
+      || pathOnly === "/v1/remote-agent/webhook"
       || /^\/v1\/remote-agent\/bindings\//.test(pathOnly);
     if (needsLocalAuth && !checkLocalAuth(req, res)) return;
     await routeRemoteAgentRequest(req, res, reqPath, {
