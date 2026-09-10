@@ -14,8 +14,11 @@ import {
   formatUnknown,
   formatCompletion,
   formatFailure,
+  formatConfirmationRequired,
+  formatConfirmationInvalid,
 } from "../../lib/remote-agent/domain/replies.mjs";
 import { buildCompletionEvent } from "../../lib/remote-agent/domain/completion-events.mjs";
+import { classifyDangerousAction, requiresConfirmation } from "../../lib/remote-agent/domain/policy.mjs";
 
 test("normalizeEnvelope builds private and group binding keys", () => {
   assert.equal(
@@ -149,4 +152,30 @@ test("buildCompletionEvent wraps reply for webhook adapters", () => {
   assert.equal(event.reply, "任务失败：CLI unavailable");
   assert.equal(event.chatId, "123");
   assert.equal(event.taskId, "task-1");
+});
+
+
+test("parseCommand recognizes confirm and cancel", () => {
+  assert.deepEqual(parseCommand("/agent confirm abc123"), { type: "confirm", raw: "/agent confirm abc123", target: "abc123" });
+  assert.deepEqual(parseCommand("/agent cancel"), { type: "cancel", raw: "/agent cancel" });
+});
+
+test("classifyDangerousAction detects privileged operations", () => {
+  assert.equal(classifyDangerousAction("git push origin main").dangerous, true);
+  assert.equal(classifyDangerousAction("npm install lodash").dangerous, true);
+  assert.equal(classifyDangerousAction("继续修登录问题").dangerous, false);
+});
+
+test("requiresConfirmation respects policy modes", () => {
+  assert.equal(requiresConfirmation("open", "git push").required, false);
+  assert.equal(requiresConfirmation("confirm_dangerous", "git push").required, true);
+  assert.equal(requiresConfirmation("confirm_dangerous", "继续修登录").required, false);
+  assert.equal(requiresConfirmation("confirm_all", "继续修登录").required, true);
+});
+
+test("formatConfirmationRequired includes token and instructions", () => {
+  const text = formatConfirmationRequired({ token: "abc123", message: "git push", reason: "dangerous" });
+  assert.match(text, /确认码: abc123/);
+  assert.match(text, /\/agent confirm abc123/);
+  assert.match(formatConfirmationInvalid(), /无效或已过期/);
 });
