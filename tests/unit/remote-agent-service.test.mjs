@@ -14,12 +14,20 @@ function setupKanban(sessions) {
     async board() {
       return { sessions, queue: [...queue] };
     },
-    async enqueue({ sessionId, message }) {
+    async enqueue(input) {
       const item = {
         id: `task-${queue.length + 1}`,
-        sessionId,
-        message,
+        sessionId: input.sessionId,
+        message: input.message,
         status: "pending",
+        source: input.source || "",
+        bindingKey: input.bindingKey || "",
+        platform: input.platform || "",
+        chatType: input.chatType || "",
+        chatId: input.chatId || "",
+        userId: input.userId || "",
+        replyToMessageId: input.replyToMessageId || "",
+        notifyStatus: input.source === "remote-agent" ? "pending" : "none",
         createdAt: new Date().toISOString(),
       };
       queue.unshift(item);
@@ -127,4 +135,31 @@ test("use with missing index returns not_found", async () => {
     ),
     (error) => error instanceof RemoteAgentError && error.type === "not_found",
   );
+});
+
+
+test("dispatch enqueue carries remote-agent delivery metadata", async () => {
+  const { service, sessionKanban } = setupService(sessions);
+  const auth = { authorization: "Bearer secret" };
+  await service.handleMessage(
+    { platform: "telegram", chatType: "private", chatId: "1", userId: "9", text: "/agent list" },
+    auth,
+  );
+  await service.handleMessage(
+    { platform: "telegram", chatType: "private", chatId: "1", userId: "9", text: "/agent use 1" },
+    auth,
+  );
+  await service.handleMessage(
+    { platform: "telegram", chatType: "private", chatId: "1", userId: "9", text: "继续修登录问题", replyToMessageId: "42" },
+    auth,
+  );
+  const queued = (await sessionKanban.listQueue())[0];
+  assert.equal(queued.source, "remote-agent");
+  assert.equal(queued.bindingKey, "telegram:private:1");
+  assert.equal(queued.platform, "telegram");
+  assert.equal(queued.chatType, "private");
+  assert.equal(queued.chatId, "1");
+  assert.equal(queued.userId, "9");
+  assert.equal(queued.replyToMessageId, "42");
+  assert.equal(queued.notifyStatus, "pending");
 });
