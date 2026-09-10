@@ -10,7 +10,7 @@ Stage 1 and Stage 2 are implemented:
 - chat binding store, `/agent` command parser, and Session Kanban enqueue
 - async completion/failure webhook callbacks with bounded plain-text replies
 
-Dangerous-action confirmation tokens remain in M4.
+Dangerous-action confirmation tokens are implemented.
 
 ## Decision
 
@@ -333,7 +333,23 @@ Callback body example:
 }
 ```
 
-The bot framework adapter posts `reply` back to the original chat. Confirmation tokens for dangerous actions remain in M4.
+The bot framework adapter posts `reply` back to the original chat. Dangerous actions require /agent confirm <token> under the configured policy mode.
+
+### Confirmation Policy
+
+Policy modes:
+
+- open: enqueue immediately
+- confirm_dangerous (default): require confirmation for privileged operations
+- confirm_all: require confirmation for every ordinary dispatch
+
+When confirmation is required, Shrimp replies with a short-lived token and waits for:
+
+```text
+/agent confirm <token>
+```
+
+Cancel with /agent cancel. Tokens expire in 10 minutes.
 
 ### Stage 3: optional native Runner
 
@@ -628,10 +644,11 @@ subscribe_agent_events(callback_url)
 
 ### M4: approvals and production hardening
 
-- Add policy modes and confirmation tokens.
-- Add dangerous-action gates.
-- Add concurrency, replay, and abuse tests.
-- Add thin LangBot and AstrBot adapters against the same Shrimp contract.
+- [x] Add policy modes and confirmation tokens.
+- [x] Add dangerous-action gates.
+- [x] API/desktop policy selector for open / confirm_dangerous / confirm_all.
+- [ ] Add concurrency, replay, and abuse tests.
+- [ ] Add thin LangBot and AstrBot adapters against the same Shrimp contract.
 
 ## Open Questions
 

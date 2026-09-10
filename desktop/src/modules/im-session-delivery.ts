@@ -35,6 +35,8 @@ type StatusPayload = {
   webhookUrl?: string;
   webhookConfigured?: boolean;
   webhookSource?: string;
+  policyMode?: string;
+  policyModes?: string[];
   endpoints: {
     healthUrl: string;
     messageUrl: string;
@@ -53,6 +55,7 @@ const state = {
   status: null as StatusPayload | null,
   lastRotatedToken: "",
   webhookDraft: "",
+  policyDraft: "confirm_dangerous",
 };
 
 function root() {
@@ -83,6 +86,7 @@ async function reload(silent = false) {
   try {
     state.status = await api<StatusPayload>("/v1/remote-agent/status");
     if (!state.webhookDraft) state.webhookDraft = state.status.webhookUrl || "";
+    state.policyDraft = state.status.policyMode || state.policyDraft || "confirm_dangerous";
   } catch (error: any) {
     state.error = error?.message || String(error);
     if (!silent) showToast("加载 IM 会话投递状态失败", "error");
@@ -103,6 +107,25 @@ async function rotateToken() {
     await reload(true);
   } catch (error: any) {
     showToast(error?.message || "生成 Token 失败", "error");
+  } finally {
+    state.busy = "";
+    render();
+  }
+}
+
+async function savePolicy() {
+  if (state.busy) return;
+  state.busy = "policy";
+  render();
+  try {
+    await api("/v1/remote-agent/policy", {
+      method: "POST",
+      body: JSON.stringify({ policyMode: state.policyDraft || "confirm_dangerous" }),
+    });
+    showToast("策略已保存", "success");
+    await reload(true);
+  } catch (error: any) {
+    showToast(error?.message || "保存策略失败", "error");
   } finally {
     state.busy = "";
     render();
@@ -242,6 +265,24 @@ function render() {
       <div class="imsd-actions">
         <button class="btn" type="button" onclick="window.__imsdReload()">刷新</button>
         <button class="btn" type="button" onclick="window.__imsdCopy('${escapeHtml(endpoints.difyChatMessagesUrl || "")}', 'Chat Messages URL')">复制 chat-messages</button>
+      </div>
+    </div>
+
+    <div class="imsd-card">
+      <h3>确认策略</h3>
+      <p class="imsd-help">危险操作默认需要确认。可选：open（直接投递）/ confirm_dangerous（仅危险确认）/ confirm_all（全部确认）。</p>
+      <div class="imsd-grid">
+        <div>
+          <label>Policy Mode</label>
+          <select id="imsd-policy-select" class="imsd-input">
+            ${(status?.policyModes || ["open", "confirm_dangerous", "confirm_all"]).map((mode) => `
+              <option value="${escapeHtml(mode)}" ${(state.policyDraft || status?.policyMode) === mode ? "selected" : ""}>${escapeHtml(mode)}</option>
+            `).join("")}
+          </select>
+        </div>
+      </div>
+      <div class="imsd-actions">
+        <button class="btn" type="button" ${state.busy === "policy" ? "disabled" : ""} onclick="window.__imsdSavePolicy()">${state.busy === "policy" ? "保存中..." : "保存策略"}</button>
       </div>
     </div>
 

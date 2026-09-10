@@ -163,3 +163,58 @@ test("dispatch enqueue carries remote-agent delivery metadata", async () => {
   assert.equal(queued.replyToMessageId, "42");
   assert.equal(queued.notifyStatus, "pending");
 });
+
+test("dangerous dispatch requires confirmation then confirm enqueues", async () => {
+  const { service, sessionKanban } = setupService(sessions);
+  const auth = { authorization: "Bearer secret" };
+  await service.handleMessage(
+    { platform: "telegram", chatType: "private", chatId: "1", userId: "9", text: "/agent list" },
+    auth,
+  );
+  await service.handleMessage(
+    { platform: "telegram", chatType: "private", chatId: "1", userId: "9", text: "/agent use 1" },
+    auth,
+  );
+  const challenged = await service.handleMessage(
+    { platform: "telegram", chatType: "private", chatId: "1", userId: "9", text: "git push origin main" },
+    auth,
+  );
+  assert.match(challenged.reply, /确认码:/);
+  assert.deepEqual(challenged.actions, ["confirmation_required"]);
+  assert.equal((await sessionKanban.listQueue()).length, 0);
+  const token = challenged.reply.match(/确认码:\s*(\S+)/)?.[1];
+  assert.ok(token);
+  const confirmed = await service.handleMessage(
+    { platform: "telegram", chatType: "private", chatId: "1", userId: "9", text: `/agent confirm ${token}` },
+    auth,
+  );
+  assert.match(confirmed.reply, /已确认并加入队列/);
+  assert.equal((await sessionKanban.listQueue()).length, 1);
+});
+
+test("open policy skips confirmation for dangerous text", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "remote-agent-service-"));
+  const bindingStore = createRemoteAgentBindingStore({ dbPath: path.join(dir, "b.sqlite") });
+  const sessionKanban = setupKanban(sessions);
+  const service = createRemoteAgentService({
+    bindingStore,
+    sessionKanban,
+    token: "secret",
+    policyMode: "open",
+  });
+  const auth = { authorization: "Bearer secret" };
+  await service.handleMessage(
+    { platform: "telegram", chatType: "private", chatId: "1", userId: "9", text: "/agent list" },
+    auth,
+  );
+  await service.handleMessage(
+    { platform: "telegram", chatType: "private", chatId: "1", userId: "9", text: "/agent use 1" },
+    auth,
+  );
+  const result = await service.handleMessage(
+    { platform: "telegram", chatType: "private", chatId: "1", userId: "9", text: "git push origin main" },
+    auth,
+  );
+  assert.match(result.reply, /已加入队列/);
+  assert.equal((await sessionKanban.listQueue()).length, 1);
+});

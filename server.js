@@ -379,6 +379,13 @@ function ensureCodexhostService() {
 
 let globalSessionKanbanService = null;
 let globalSessionKanbanScheduler = null;
+
+function resolveRemoteAgentPolicyMode() {
+  const envMode = String(process.env.REMOTE_AGENT_POLICY_MODE || "").trim();
+  if (envMode) return envMode;
+  return String(GATEWAY_SECRETS?.remote_agent?.policy_mode || "confirm_dangerous").trim() || "confirm_dangerous";
+}
+
 function resolveRemoteAgentWebhookUrl() {
   const envUrl = String(process.env.REMOTE_AGENT_WEBHOOK_URL || "").trim();
   if (envUrl) return envUrl;
@@ -459,6 +466,7 @@ function ensureRemoteAgentService() {
     bindingStore,
     sessionKanban: ensureSessionKanbanService(),
     token,
+    policyMode: resolveRemoteAgentPolicyMode(),
   });
   globalRemoteAgentService.__token = token;
   return globalRemoteAgentService;
@@ -1447,6 +1455,7 @@ async function route(req, res) {
     const needsLocalAuth = pathOnly === "/v1/remote-agent/status"
       || pathOnly === "/v1/remote-agent/token/rotate"
       || pathOnly === "/v1/remote-agent/webhook"
+      || pathOnly === "/v1/remote-agent/policy"
       || /^\/v1\/remote-agent\/bindings\//.test(pathOnly);
     if (needsLocalAuth && !checkLocalAuth(req, res)) return;
     await routeRemoteAgentRequest(req, res, reqPath, {

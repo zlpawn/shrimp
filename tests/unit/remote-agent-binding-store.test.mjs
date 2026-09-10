@@ -56,3 +56,32 @@ test("list snapshots expire after maxAgeMs", () => {
     [],
   );
 });
+
+test("pending confirmation round-trips and expires", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "remote-agent-bind-"));
+  const store = createRemoteAgentBindingStore({ dbPath: path.join(dir, "t.sqlite") });
+  store.upsertBinding({
+    bindingKey: "telegram:private:1",
+    platform: "telegram",
+    chatType: "private",
+    chatId: "1",
+    userId: "",
+    client: "codex",
+    sessionId: "s1",
+    workspacePath: "D:/repo",
+    title: "登录",
+    boundByUserId: "u1",
+  });
+  store.setPendingConfirmation("telegram:private:1", {
+    token: "abc123",
+    message: "git push",
+    reason: "dangerous",
+    expiresAtMs: Date.now() + 60_000,
+  });
+  const pending = store.getPendingConfirmation("telegram:private:1");
+  assert.equal(pending.token, "abc123");
+  assert.equal(pending.message, "git push");
+  assert.equal(store.getPendingConfirmation("telegram:private:1", { nowMs: Date.now() + 120_000 }), null);
+  store.clearPendingConfirmation("telegram:private:1");
+  assert.equal(store.getPendingConfirmation("telegram:private:1"), null);
+});
