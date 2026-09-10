@@ -192,6 +192,11 @@ import { createClaudeReader } from "./lib/session-kanban/infra/claude-reader.mjs
 import { createAntigravityReader } from "./lib/session-kanban/infra/antigravity-reader.mjs";
 import { createCliDispatchers } from "./lib/session-kanban/infra/cli-dispatchers.mjs";
 import { routeSessionKanbanRequest } from "./lib/session-kanban/http/routes.mjs";
+import {
+  createRemoteAgentBindingStore,
+  createRemoteAgentService,
+  routeRemoteAgentRequest,
+} from "./lib/remote-agent/index.mjs";
 import { routeNatTraversalRequest } from "./lib/nat-traversal/http/routes.mjs";
 import {
   resolveRemoteSessionPaths,
@@ -387,6 +392,30 @@ function ensureSessionKanbanService() {
   });
   globalSessionKanbanScheduler.start();
   return globalSessionKanbanService;
+}
+
+let globalRemoteAgentService = null;
+function resolveRemoteAgentToken() {
+  const envToken = String(process.env.REMOTE_AGENT_TOKEN || "").trim();
+  if (envToken) return envToken;
+  return String(GATEWAY_SECRETS?.remote_agent?.token || "").trim();
+}
+function ensureRemoteAgentService() {
+  const token = resolveRemoteAgentToken();
+  if (globalRemoteAgentService && globalRemoteAgentService.__token === token) {
+    return globalRemoteAgentService;
+  }
+  const dbPath = process.env.REMOTE_AGENT_DB_FILE
+    || process.env.SESSION_KANBAN_DB_FILE
+    || path.join(path.dirname(GATEWAY_CONFIG_FILE), "gateway.db");
+  const bindingStore = createRemoteAgentBindingStore({ dbPath });
+  globalRemoteAgentService = createRemoteAgentService({
+    bindingStore,
+    sessionKanban: ensureSessionKanbanService(),
+    token,
+  });
+  globalRemoteAgentService.__token = token;
+  return globalRemoteAgentService;
 }
  
 let globalTrendIntelService = null;
@@ -1322,6 +1351,13 @@ async function route(req, res) {
     if (!checkLocalAuth(req, res)) return;
     await routeSessionKanbanRequest(req, res, reqPath, {
       service: ensureSessionKanbanService(),
+    });
+    return;
+  }
+
+  if (reqPath.startsWith("/v1/remote-agent")) {
+    await routeRemoteAgentRequest(req, res, reqPath, {
+      service: ensureRemoteAgentService(),
     });
     return;
   }
