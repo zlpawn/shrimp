@@ -16,6 +16,21 @@ Bot frameworks such as LangBot or AstrBot act as transport adapters only:
 
 Users never see JSON. JSON is only the internal contract between the bot framework and Shrimp.
 
+### Product placement
+
+In the desktop System Extensions area, present this as part of a session-connectivity family:
+
+```text
+系统扩展
+  └─ 会话互联
+       ├─ 远程会话
+       │    本机控制远端 Antigravity 会话
+       └─ IM 会话投递
+            把聊天消息投到本机 Codex / Claude 会话
+```
+
+Do not overload the existing Remote Session page. Remote Session is host-to-peer control. IM session delivery is chat-to-local-session delivery.
+
 ## Goal
 
 Enable a user to send a coding instruction from an IM platform and have Shrimp deliver that instruction to the correct local coding-agent session, preserve queue semantics, and return a concise completion result to the original chat.
@@ -194,6 +209,41 @@ Bot frameworks forward every relevant chat message as a normalized envelope. Shr
 
 Stage 1 intentionally returns queued/dispatched status for coding tasks instead of waiting for the full agent run.
 
+#### Auth
+
+Request header:
+
+```text
+Authorization: Bearer <token>
+```
+
+Token resolution order:
+
+1. `REMOTE_AGENT_TOKEN` environment variable
+2. `gateway.secrets.json` → `remote_agent.token`
+
+Missing/invalid token returns HTTP `401`.
+
+#### Errors
+
+| HTTP | `error.type` | When |
+|---|---|---|
+| 400 | `invalid_request` | Missing fields / invalid chatType / invalid JSON / payload too large |
+| 401 | `unauthorized` | Bad/missing bearer token |
+| 404 | `not_found` | Unknown route or `/agent use` target missing |
+| 409 | `conflict` | Ordinary text with no binding |
+| 500 | `internal_error` | Unexpected failures |
+
+Command-facing errors should still include a plain-text `reply` so adapters can post a useful IM message.
+
+Health endpoint:
+
+```text
+GET /v1/remote-agent/health
+```
+
+Returns `{ "ok": true, "service": "remote-agent" }`.
+
 ### Stage 2: async completion notifications
 
 After Stage 1 works, add:
@@ -247,6 +297,9 @@ Example immediate response:
 {
   "ok": true,
   "reply": "1. Codex | AstrBot | 修复登录问题\n2. Claude | Shrimp | 配置面板重构",
+  "taskId": null,
+  "sessionId": null,
+  "bindingKey": "telegram:private:123456",
   "actions": []
 }
 ```
@@ -259,6 +312,7 @@ For queued coding work:
   "reply": "已加入队列，当前排在第 1 位。\n会话: Codex | AstrBot | 修复登录问题",
   "taskId": "task_123",
   "sessionId": "0193xxxx",
+  "bindingKey": "telegram:private:123456",
   "actions": []
 }
 ```
@@ -290,6 +344,17 @@ Example `/agent list` reply:
 
 用法：/agent use 1
 ```
+
+List ranking:
+
+1. Prefer `waiting_input`
+2. Then `queued`
+3. Then `running`
+4. Then `completed`
+5. Newest `lastActivityAt` first within the same status
+6. Default limit: 10
+
+Stage 1 stores the latest ranked snapshot under the chat binding key for 10 minutes so `/agent use 1` resolves against the same list the user just saw.
 
 Example `/agent use 1` reply:
 
@@ -337,6 +402,28 @@ Default recommendation for MVP:
 - group chats: one binding per sender inside the group
 
 Do not overload an OpenAI model name to represent a workspace/session. That works only as a temporary prototype and becomes ambiguous as projects multiply.
+
+SQLite table:
+
+```sql
+CREATE TABLE IF NOT EXISTS remote_agent_bindings (
+  binding_key TEXT PRIMARY KEY,
+  platform TEXT NOT NULL,
+  chat_type TEXT NOT NULL,
+  chat_id TEXT NOT NULL,
+  user_id TEXT NOT NULL DEFAULT '',
+  client TEXT NOT NULL,
+  session_id TEXT NOT NULL,
+  workspace_path TEXT NOT NULL DEFAULT '',
+  title TEXT NOT NULL DEFAULT '',
+  bound_by_user_id TEXT NOT NULL,
+  list_snapshot_json TEXT NOT NULL DEFAULT '[]',
+  list_snapshot_at_ms INTEGER NOT NULL DEFAULT 0,
+  created_at_ms INTEGER NOT NULL,
+  updated_at_ms INTEGER NOT NULL,
+  last_used_at_ms INTEGER NOT NULL
+);
+```
 
 ## Delivery Mechanics
 
