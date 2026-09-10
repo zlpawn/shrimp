@@ -12,7 +12,10 @@ import {
   formatStatus,
   formatUnbound,
   formatUnknown,
+  formatCompletion,
+  formatFailure,
 } from "../../lib/remote-agent/domain/replies.mjs";
+import { buildCompletionEvent } from "../../lib/remote-agent/domain/completion-events.mjs";
 
 test("normalizeEnvelope builds private and group binding keys", () => {
   assert.equal(
@@ -99,4 +102,51 @@ test("reply helpers cover bind queue status and unbound cases", () => {
   );
   assert.match(formatUnbound(), /尚未绑定会话/);
   assert.match(formatUnknown("foo"), /未知命令/);
+});
+
+
+test("formatCompletion returns bounded plain-text success reply", () => {
+  const reply = formatCompletion({
+    id: "task-1",
+    status: "dispatched",
+    message: "继续修登录问题",
+    client: "codex",
+    title: "login fix",
+    workspacePath: "D:/repo",
+  }, { panelUrl: "http://127.0.0.1:8787/#session-kanban" });
+  assert.match(reply, /已派发完成/);
+  assert.match(reply, /task-1/);
+  assert.match(reply, /session-kanban/);
+  assert.ok(reply.length < 500);
+});
+
+test("formatFailure truncates error text", () => {
+  const reply = formatFailure({
+    id: "task-2",
+    status: "failed",
+    client: "claude",
+    title: "refactor",
+    workspacePath: "D:/shrimp",
+    error: "x".repeat(300),
+  });
+  assert.match(reply, /任务失败/);
+  assert.ok(reply.length < 500);
+});
+
+test("buildCompletionEvent wraps reply for webhook adapters", () => {
+  const event = buildCompletionEvent({
+    id: "task-1",
+    status: "failed",
+    sessionId: "s1",
+    bindingKey: "telegram:private:123",
+    platform: "telegram",
+    chatType: "private",
+    chatId: "123",
+    userId: "789",
+    replyToMessageId: "42",
+  }, { reply: "任务失败：CLI unavailable" });
+  assert.equal(event.type, "remote_agent.task_failed");
+  assert.equal(event.reply, "任务失败：CLI unavailable");
+  assert.equal(event.chatId, "123");
+  assert.equal(event.taskId, "task-1");
 });
