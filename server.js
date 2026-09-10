@@ -196,6 +196,8 @@ import {
   createRemoteAgentBindingStore,
   createRemoteAgentService,
   routeRemoteAgentRequest,
+  createRemoteAgentConfigService,
+  routeDifyCompatibleRequest,
 } from "./lib/remote-agent/index.mjs";
 import { routeNatTraversalRequest } from "./lib/nat-traversal/http/routes.mjs";
 import {
@@ -395,20 +397,33 @@ function ensureSessionKanbanService() {
 }
 
 let globalRemoteAgentService = null;
+let globalRemoteAgentConfigService = null;
+let globalRemoteAgentBindingStore = null;
 function resolveRemoteAgentToken() {
   const envToken = String(process.env.REMOTE_AGENT_TOKEN || "").trim();
   if (envToken) return envToken;
   return String(GATEWAY_SECRETS?.remote_agent?.token || "").trim();
+}
+function resolveRemoteAgentDbPath() {
+  return process.env.REMOTE_AGENT_DB_FILE
+    || process.env.SESSION_KANBAN_DB_FILE
+    || path.join(path.dirname(GATEWAY_CONFIG_FILE), "gateway.db");
+}
+function ensureRemoteAgentBindingStore() {
+  const dbPath = resolveRemoteAgentDbPath();
+  if (globalRemoteAgentBindingStore && globalRemoteAgentBindingStore.__dbPath === dbPath) {
+    return globalRemoteAgentBindingStore;
+  }
+  globalRemoteAgentBindingStore = createRemoteAgentBindingStore({ dbPath });
+  globalRemoteAgentBindingStore.__dbPath = dbPath;
+  return globalRemoteAgentBindingStore;
 }
 function ensureRemoteAgentService() {
   const token = resolveRemoteAgentToken();
   if (globalRemoteAgentService && globalRemoteAgentService.__token === token) {
     return globalRemoteAgentService;
   }
-  const dbPath = process.env.REMOTE_AGENT_DB_FILE
-    || process.env.SESSION_KANBAN_DB_FILE
-    || path.join(path.dirname(GATEWAY_CONFIG_FILE), "gateway.db");
-  const bindingStore = createRemoteAgentBindingStore({ dbPath });
+  const bindingStore = ensureRemoteAgentBindingStore();
   globalRemoteAgentService = createRemoteAgentService({
     bindingStore,
     sessionKanban: ensureSessionKanbanService(),
@@ -416,6 +431,45 @@ function ensureRemoteAgentService() {
   });
   globalRemoteAgentService.__token = token;
   return globalRemoteAgentService;
+}
+function ensureRemoteAgentConfigService() {
+  const token = resolveRemoteAgentToken();
+  if (globalRemoteAgentConfigService && globalRemoteAgentConfigService.__token === token) {
+    return globalRemoteAgentConfigService;
+  }
+  globalRemoteAgentConfigService = createRemoteAgentConfigService({
+    bindingStore: ensureRemoteAgentBindingStore(),
+    sessionKanban: ensureSessionKanbanService(),
+    secretsPath: GATEWAY_SECRETS_FILE,
+    getSecrets: () => GATEWAY_SECRETS,
+    setSecrets: (next) => {
+      GATEWAY_SECRETS = next || { api_keys: {} };
+      fs.writeFileSync(
+        GATEWAY_SECRETS_FILE,
+        JSON.stringify(GATEWAY_SECRETS, null, 2) + "\n",
+        { mode: 0o600 },
+      );
+    },
+    getToken: () => resolveRemoteAgentToken(),
+    setToken: (value) => {
+      const next = structuredClone(GATEWAY_SECRETS || { api_keys: {} });
+      if (!next.remote_agent || typeof next.remote_agent !== "object") next.remote_agent = {};
+      next.remote_agent.token = String(value || "").trim();
+      GATEWAY_SECRETS = next;
+      process.env.REMOTE_AGENT_TOKEN = String(value || "").trim();
+      fs.writeFileSync(
+        GATEWAY_SECRETS_FILE,
+        JSON.stringify(GATEWAY_SECRETS, null, 2) + "\n",
+        { mode: 0o600 },
+      );
+      // Force service rebuild on next request with the rotated token.
+      globalRemoteAgentService = null;
+      globalRemoteAgentConfigService = null;
+    },
+    listenPort: Number(ENV_PORT) || Number(GATEWAY_CONFIG?.server?.port) || 8787,
+  });
+  globalRemoteAgentConfigService.__token = token;
+  return globalRemoteAgentConfigService;
 }
  
 let globalTrendIntelService = null;
@@ -1356,7 +1410,22 @@ async function route(req, res) {
   }
 
   if (reqPath.startsWith("/v1/remote-agent")) {
+    // Public message/health endpoints authenticate via remote-agent token.
+    // Desktop management endpoints still require local gateway auth.
+    const pathOnly = String(reqPath || "").split("?")[0];
+    const needsLocalAuth = pathOnly === "/v1/remote-agent/status"
+      || pathOnly === "/v1/remote-agent/token/rotate"
+      || /^\/v1\/remote-agent\/bindings\//.test(pathOnly);
+    if (needsLocalAuth && !checkLocalAuth(req, res)) return;
     await routeRemoteAgentRequest(req, res, reqPath, {
+      service: ensureRemoteAgentService(),
+      configService: ensureRemoteAgentConfigService(),
+    });
+    return;
+  }
+
+  if (reqPath.startsWith("/dify/v1")) {
+    await routeDifyCompatibleRequest(req, res, reqPath, {
       service: ensureRemoteAgentService(),
     });
     return;

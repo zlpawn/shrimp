@@ -5,6 +5,7 @@ import "./modules/remote-session";
 import "./modules/command-apps";
 import "./modules/codexhost-runtime";
 import "./modules/session-kanban";
+import "./modules/im-session-delivery";
 import "./modules/mcp-management";
 import "./modules/clip-player";
 import "./modules/trend-intel";

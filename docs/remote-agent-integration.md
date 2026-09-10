@@ -2,7 +2,14 @@
 
 ## Status
 
-Proposal. No implementation is included in this change.
+Stage 1 is implemented:
+
+- authenticated `POST /v1/remote-agent/message`
+- Dify-compatible `POST /dify/v1/chat-messages`
+- desktop System Extensions page: **IM 会话投递**
+- chat binding store, `/agent` command parser, and Session Kanban enqueue
+
+Stage 2 async completion notifications are not implemented yet.
 
 ## Decision
 
@@ -104,13 +111,21 @@ This is the best fit when Shrimp must remain behind explicit commands and users 
 
 ### Option B: Dify-compatible workflow endpoint
 
-LangBot already has a first-class Dify Service API runner and supports chat, agent, workflow, and chatflow application types. Shrimp could implement the subset of the Dify HTTP/SSE contract that LangBot's Dify client actually uses.
+LangBot already has a first-class Dify Service API runner and supports chat, agent, workflow, and chatflow application types. Shrimp implements the subset of the Dify HTTP/SSE contract that LangBot's Dify client actually uses for Stage 1.
+
+Current Stage 1 mapping:
+
+- endpoint: `POST /dify/v1/chat-messages`
+- auth: `Authorization: Bearer <REMOTE_AGENT_TOKEN>`
+- required LangBot variables in `inputs`: `launcher_type`, `launcher_id`, `sender_id`
+- optional `inputs.platform`
+- response: SSE `message` + `message_end` with Shrimp's plain-text `reply` as `answer`
 
 Advantages:
 
 - Requires no LangBot plugin.
-- Reuses LangBot's conversation handling, streaming, workflow events, human input, and form rendering.
-- A Dify `conversation_id` can represent the binding between an IM conversation and a Shrimp workflow state.
+- Reuses LangBot's conversation handling and streaming client.
+- Keeps command parsing inside Shrimp, so `/agent list` and `/agent use` remain framework-agnostic.
 
 Disadvantages:
 
@@ -120,7 +135,7 @@ Disadvantages:
 
 The `agent` app type in LangBot's Dify configuration means a Dify-hosted agent application. It does not provide a generic custom-agent protocol. Choosing it still requires Dify-compatible responses.
 
-This is appropriate only if Shrimp must inherit LangBot's rich workflow/form interactions without a plugin and the team accepts protocol-compatibility maintenance.
+This is the recommended LangBot adapter for Stage 1 because it avoids a custom plugin while preserving Shrimp ownership of command semantics.
 
 ### Option C: LangBot local-agent plus Shrimp MCP tools
 
@@ -180,10 +195,23 @@ Selected architecture:
 ```text
 IM platforms
   -> LangBot / AstrBot / other bot frameworks
-  -> Shrimp remote-agent bridge
+  -> Shrimp remote-agent core
+       ├─ native envelope: POST /v1/remote-agent/message
+       └─ Dify-compatible adapter: POST /dify/v1/chat-messages
   -> Session Kanban
   -> Codex / Claude / Antigravity CLI resume
 ```
+
+Desktop management lives under:
+
+```text
+系统扩展
+  └─ 会话互联
+       ├─ 远程会话
+       └─ IM 会话投递
+```
+
+The IM page exposes Base URL, Token rotate/copy, binding list, and recent tasks. Do not create a proxy-node named `langbot-dify`; Dify-compatible is an adapter over the shared remote-agent core.
 
 Ownership:
 
@@ -243,6 +271,29 @@ GET /v1/remote-agent/health
 ```
 
 Returns `{ "ok": true, "service": "remote-agent" }`.
+
+#### Dify-compatible adapter
+
+```text
+POST /dify/v1/chat-messages
+```
+
+LangBot points its Dify Service API Base URL at:
+
+```text
+http://127.0.0.1:<port>/dify/v1
+```
+
+and uses the remote-agent token as the Dify API Key. Shrimp maps the Dify request into the same envelope used by `POST /v1/remote-agent/message`, then returns SSE events:
+
+1. `event: message` with `answer = reply`
+2. `event: message_end` with Shrimp metadata such as `taskId`, `sessionId`, and `bindingKey`
+
+Desktop management endpoints (local gateway auth):
+
+- `GET /v1/remote-agent/status`
+- `POST /v1/remote-agent/token/rotate`
+- `DELETE /v1/remote-agent/bindings/:bindingKey`
 
 ### Stage 2: async completion notifications
 
@@ -521,18 +572,20 @@ subscribe_agent_events(callback_url)
 
 ### M1: inbound contract and command parser
 
-- Define the inbound envelope and plain-text reply schema.
-- Add authenticated `POST /v1/remote-agent/message`.
-- Implement `/agent help|list|use|status|unbind`.
-- Persist chat bindings in Shrimp.
-- Add unit tests for parser and binding resolution.
+- [x] Define the inbound envelope and plain-text reply schema.
+- [x] Add authenticated `POST /v1/remote-agent/message`.
+- [x] Implement `/agent help|list|use|status|unbind`.
+- [x] Persist chat bindings in Shrimp.
+- [x] Add unit tests for parser and binding resolution.
 
-### M2: queue-backed delivery
+### M2: queue-backed delivery + Dify adapter + desktop page
 
-- Route ordinary text through Session Kanban enqueue.
-- Return immediate queued status to IM.
-- Reuse existing CLI resume dispatchers.
-- Add integration tests with a fake dispatcher.
+- [x] Route ordinary text through Session Kanban enqueue.
+- [x] Return immediate queued status to IM.
+- [x] Reuse existing CLI resume dispatchers.
+- [x] Add Dify-compatible `POST /dify/v1/chat-messages`.
+- [x] Add desktop **IM 会话投递** page for token/endpoints/bindings/recent tasks.
+- [x] Add integration tests with a fake dispatcher / Dify SSE adapter.
 
 ### M3: completion notifications
 
