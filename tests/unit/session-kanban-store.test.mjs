@@ -131,3 +131,25 @@ test("enqueue persists remote-agent delivery metadata", async () => {
   assert.equal(plain.source, "");
   assert.equal(plain.notifyStatus, "none");
 });
+
+
+test("markNotifySent and markNotifyFailed update notify bookkeeping", async () => {
+  const { store } = tempStore();
+  const item = await store.enqueue({
+    sessionId: "claude-1",
+    message: "fix login",
+    source: "remote-agent",
+    bindingKey: "telegram:private:123",
+  });
+  assert.equal(item.notifyStatus, "pending");
+
+  const failed = await store.markNotifyFailed(item.id, "Webhook returned HTTP 500");
+  assert.equal(failed.notifyStatus, "failed");
+  assert.equal(failed.notifyAttempts, 1);
+  assert.match(failed.notifyError, /HTTP 500/);
+
+  const sent = await store.markNotifySent(item.id);
+  assert.equal(sent.notifyStatus, "sent");
+  assert.equal(sent.notifyError, "");
+  assert.ok(sent.notifiedAt);
+});
