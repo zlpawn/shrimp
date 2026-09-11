@@ -103,3 +103,21 @@ test("config service persists policy mode into secrets", async () => {
   const status = await service.getStatus();
   assert.equal(status.policyMode, "confirm_all");
 });
+
+test("setPolicyMode notifies listener so gateway can rebuild service", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "remote-agent-config-"));
+  const secretsPath = path.join(dir, "gateway.secrets.json");
+  fs.writeFileSync(secretsPath, JSON.stringify({ api_keys: {} }, null, 2));
+  const bindingStore = createRemoteAgentBindingStore({ dbPath: path.join(dir, "b.sqlite") });
+  const changes = [];
+  const service = createRemoteAgentConfigService({
+    bindingStore,
+    secretsPath,
+    listenPort: 8787,
+    onPolicyModeChanged: (mode) => changes.push(mode),
+  });
+
+  await service.setPolicyMode("open");
+
+  assert.deepEqual(changes, ["open"]);
+});

@@ -490,6 +490,10 @@ function ensureRemoteAgentConfigService() {
       );
     },
     getToken: () => resolveRemoteAgentToken(),
+    onPolicyModeChanged: () => {
+      // Policy is captured when the remote-agent service is built; rebuild on change.
+      globalRemoteAgentService = null;
+    },
     setToken: (value) => {
       const next = structuredClone(GATEWAY_SECRETS || { api_keys: {} });
       if (!next.remote_agent || typeof next.remote_agent !== "object") next.remote_agent = {};
