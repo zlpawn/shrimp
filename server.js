@@ -126,6 +126,14 @@ import { createDefaultStrategies } from "./lib/models/strategies/index.mjs";
 import { mergeClaudeOfficialModels, BUILTIN_CLAUDE_OFFICIAL_MODELS } from "./lib/config/claude-official-models.mjs";
 import { SkillInstaller } from "./lib/session-sync/skill-installer.mjs";
 import { SessionWatcherDaemon } from "./lib/session-sync/watcher-daemon.mjs";
+import { HubStore } from "./lib/session-sync/hub-store.mjs";
+import {
+  generateManifest,
+  getSessionSafely,
+  mergeSessionLWW,
+  verifySyncAuth,
+  syncWithPeer,
+} from "./lib/session-sync/peer-protocol.mjs";
 import { WebSocketServer } from "ws";
 import * as nodePty from "node-pty";
 import { InstallHistory } from "./lib/skills/install-history.mjs";
@@ -198,6 +206,7 @@ import {
   createRemoteSessionConfigStore,
 } from "./lib/remote-session/index.mjs";
 import { createRemoteSessionService } from "./lib/remote-session/application/service.mjs";
+import { createPeerClient } from "./lib/remote-session/transport/peer-client.mjs";
 import { routeRemoteSessionRequest } from "./lib/remote-session/http/routes.mjs";
 import { createFakeHostBackend } from "./lib/remote-session/host-attach/fake-host.mjs";
 import {
@@ -419,6 +428,9 @@ function ensureKnowledgeBaseModule() {
   return globalKnowledgeBaseModule;
 }
 
+const globalHubStore = new HubStore();
+let globalWatcherDaemon = null;
+
 function ensureSessionWatcherDaemon() {
   if (globalWatcherDaemon) return globalWatcherDaemon;
   const sessionSync = GATEWAY_CONFIG.sessionSync || {};
@@ -544,7 +556,6 @@ function getCustomClientKeys() {
   const builtin = new Set(["code", "desktop", "codex", "deeptutor"]);
   return Object.keys(GATEWAY_CONFIG.clients || {}).filter((k) => !builtin.has(k));
 }
-let globalWatcherDaemon = null;
 let CLAUDE_CODE_MODEL_ROUTES = buildClaudeCodeModelRoutes(
   GATEWAY_CONFIG.clients?.code?.endpoints || [],
 );
@@ -1005,6 +1016,7 @@ server.listen(LISTEN_PORT, LISTEN_HOST, () => {
         const sessionSync = GATEWAY_CONFIG.sessionSync || {};
         if (!globalWatcherDaemon) {
           globalWatcherDaemon = new SessionWatcherDaemon({
+            hubStore: globalHubStore,
             dateRange: sessionSync.dateRange || null,
             summaryMode: sessionSync.summaryMode || 'rule',
             summaryModel: sessionSync.summaryModel || '',
@@ -1377,6 +1389,77 @@ async function route(req, res) {
       service: await ensureRemoteSessionService(),
     });
     return;
+  }
+
+  if (reqPath.startsWith("/v1/session-sync")) {
+    if (reqPath === "/v1/session-sync/manifest" && req.method === "GET") {
+      if (!verifySessionSyncAuth(req, res)) return;
+      return sendJson(res, 200, {
+        success: true,
+        ...generateManifest(globalHubStore),
+      });
+    }
+
+    if (reqPath.startsWith("/v1/session-sync/file/") && req.method === "GET") {
+      if (!verifySessionSyncAuth(req, res)) return;
+      const sessionId = decodeURIComponent(reqPath.slice("/v1/session-sync/file/".length));
+      try {
+        const session = getSessionSafely(globalHubStore, sessionId);
+        if (!session) {
+          return sendJson(res, 404, { error: `session "${sessionId}" not found` });
+        }
+        return sendJson(res, 200, session);
+      } catch (err) {
+        return sendJson(res, 400, { error: err.message });
+      }
+    }
+
+    if (reqPath === "/v1/session-sync/push" && req.method === "POST") {
+      if (!verifySessionSyncAuth(req, res)) return;
+      try {
+        const body = await readJson(req);
+        const result = mergeSessionLWW(globalHubStore, body);
+        return sendJson(res, 200, { success: true, ...result });
+      } catch (err) {
+        return sendJson(res, 400, { error: err.message });
+      }
+    }
+
+    if (reqPath.startsWith("/v1/session-sync/peers/") && reqPath.endsWith("/sync") && req.method === "POST") {
+      if (!checkLocalAuth(req, res)) return;
+      const match = reqPath.match(/^\/v1\/session-sync\/peers\/([^/]+)\/sync$/);
+      if (!match) {
+        return sendJson(res, 400, { error: "invalid route" });
+      }
+      const peerId = decodeURIComponent(match[1]);
+      try {
+        const body = await readJson(req).catch(() => ({}));
+        const direction = body?.direction || url.searchParams.get("direction") || "pull";
+        const remoteSessionService = await ensureRemoteSessionService();
+        const natService = ensureNatTraversalService();
+        const currentPeers = remoteSessionService.getConfig().peers || [];
+        const peer = currentPeers.find((p) => p.id === peerId);
+        if (!peer) {
+          return sendJson(res, 404, { error: `peer "${peerId}" not found` });
+        }
+        let baseUrl = "";
+        try {
+          const opened = await natService.openService(peerId, "gateway-api");
+          baseUrl = opened?.endpoint;
+        } catch (e) {
+          baseUrl = peer.services?.gatewayApi || peer.endpoint || "";
+        }
+        if (!baseUrl) {
+          return sendJson(res, 400, { error: `peer "${peerId}" has no gateway-api endpoint configured` });
+        }
+        const token = peer.auth?.gatewayToken || peer.token || "";
+        const peerClient = createPeerClient({ baseUrl, token });
+        const result = await syncWithPeer({ peerClient, hubStore: globalHubStore, direction });
+        return sendJson(res, 200, { success: true, ...result });
+      } catch (err) {
+        return sendJson(res, 500, { error: err.message });
+      }
+    }
   }
 
   if (reqPath.startsWith("/v1/video-kb/tools/agent-reach")) {
@@ -1901,6 +1984,7 @@ function collectGroupedModelsFromConfig(config) {
       if (enabled) {
         if (!globalWatcherDaemon) {
           globalWatcherDaemon = new SessionWatcherDaemon({
+            hubStore: globalHubStore,
             dateRange,
             summaryMode,
             summaryModel,
@@ -11400,6 +11484,25 @@ function checkLocalAuth(req, res) {
     error: {
       type: "unauthorized",
       message: "Invalid local gateway API key",
+    },
+  });
+  return false;
+}
+
+function verifySessionSyncAuth(req, res) {
+  const apiKey = requestApiKey(req);
+  if (apiKey && (apiKey === GATEWAY_API_KEY || isConfiguredApiKeySentinel(apiKey))) {
+    return true;
+  }
+  const remotePeers = GATEWAY_CONFIG.remoteSession?.peers || [];
+  const peerTokens = remotePeers.map((p) => p.auth?.gatewayToken || p.token).filter(Boolean);
+  if (verifySyncAuth(req, { expectedKey: GATEWAY_API_KEY, peerTokens })) {
+    return true;
+  }
+  sendJson(res, 401, {
+    error: {
+      type: "unauthorized",
+      message: "Invalid session-sync authentication token",
     },
   });
   return false;
