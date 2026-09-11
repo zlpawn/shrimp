@@ -1,0 +1,46 @@
+{
+  "code": 0,
+  "message": "Success",
+  "zpData": {
+    "jobInfo": {
+      "encryptJobId": "job_core_001",
+      "jobName": "AI平台Java后端架构师/专家",
+      "salaryDesc": "40-60K·15薪",
+      "experienceName": "5-10年",
+      "degreeName": "本科",
+      "jobLabels": [
+        "Java",
+        "Spring Cloud",
+        "Agent",
+        "RAG"
+      ],
+      "skills": [
+        "Java",
+        "Spring Boot",
+        "Agent",
+        "RAG",
+        "MCP",
+        "分布式架构"
+      ],
+      "postDescription": "岗位职责：\\n1. 负责企业级智能体（Agent）中台及工作流编排平台的架构设计与核心研发；\\n2. 负责基于 RAG 的企业知识库系统设计，解决检索召回、排序及上下文幻觉问题；\\n3. 负责模型工具调用（Function Calling / MCP）、状态机治理及多 Agent 协同机制落地；\\n4. 参与 Java 后端高可用、权限安全、审计治理与多租户架构演进。\\n\\n任职要求：\\n1. 本科及以上学历，计算机相关专业，8年以上 Java 后端及复杂业务架构经验；\\n2. 深入理解 Spring 体系，具备跨系统治理、复杂状态流转与高可靠系统落地经验；\\n3. 熟悉主流 LLM 与 Agent 架构范式，掌握 RAG、Prompt、Tool/MCP 集成原理；\\n4. 有技术带队、架构选型及复杂项目端到端交付经验者优先。",
+      "address": "北京市海淀区西北旺东路10号院用友产业园",
+      "longitude": 116.23456,
+      "latitude": 40.06789,
+      "cityName": "北京",
+      "areaDistrict": "海淀区",
+      "businessDistrict": "西北旺"
+    },
+    "brandComInfo": {
+      "brandName": "智谱智能科技有限公司",
+      "introduce": "专注于新一代认知智能与通用大模型研发的高新技术企业。",
+      "industryName": "人工智能",
+      "scaleName": "1000-9999人",
+      "stageName": "D轮及以上"
+    },
+    "bossInfo": {
+      "name": "张经理",
+      "title": "技术总监",
+      "activeTimeDesc": "刚刚活跃"
+    }
+  }
+}

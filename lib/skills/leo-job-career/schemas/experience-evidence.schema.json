@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ExperienceEvidence",
+  "type": "object",
+  "required": [
+    "evidence_id",
+    "project_name",
+    "role"
+  ],
+  "properties": {
+    "evidence_id": {
+      "type": "string"
+    },
+    "project_name": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string"
+    },
+    "starting_problem": {
+      "type": "string"
+    },
+    "personal_actions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "technical_outcomes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

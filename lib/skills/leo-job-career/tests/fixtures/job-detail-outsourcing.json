@@ -1,0 +1,41 @@
+{
+  "code": 0,
+  "message": "Success",
+  "zpData": {
+    "jobInfo": {
+      "encryptJobId": "job_outsourcing_002",
+      "jobName": "Java后端开发（派驻某互联网大厂）",
+      "salaryDesc": "25-35K·13薪",
+      "experienceName": "5-10年",
+      "degreeName": "本科",
+      "jobLabels": [
+        "Java",
+        "外派驻场"
+      ],
+      "skills": [
+        "Java",
+        "Spring Boot",
+        "MySQL"
+      ],
+      "postDescription": "岗位职责：\\n1. 派驻客户大厂现场进行日常业务系统需求开发；\\n2. 驻场开发，按客户项目经理要求完成交付；\\n3. 严格遵守客户现场保密协议与外派考勤要求。\\n\\n任职要求：\\n1. 5年以上Java开发经验，能接受长期客户现场驻场外派；\\n2. 本岗位为人力外包派遣岗位，介意勿投。",
+      "address": "北京市朝阳区望京东路某大厦",
+      "longitude": 116.48,
+      "latitude": 39.99,
+      "cityName": "北京",
+      "areaDistrict": "朝阳区",
+      "businessDistrict": "望京"
+    },
+    "brandComInfo": {
+      "brandName": "中科软通人力资源服务有限公司",
+      "introduce": "专业IT人力外包与劳务派遣服务提供商。",
+      "industryName": "人力资源服务",
+      "scaleName": "10000人以上",
+      "stageName": "已上市"
+    },
+    "bossInfo": {
+      "name": "李主管",
+      "title": "招聘顾问",
+      "activeTimeDesc": "3日内活跃"
+    }
+  }
+}

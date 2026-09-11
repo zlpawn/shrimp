@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CareerProfile",
+  "type": "object",
+  "required": [
+    "user_name",
+    "target_city",
+    "direction",
+    "compensation",
+    "level"
+  ],
+  "properties": {
+    "user_name": {
+      "type": "string"
+    },
+    "target_city": {
+      "type": "string"
+    },
+    "direction": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "compensation": {
+      "type": "object",
+      "required": [
+        "current_cash_annual_cny",
+        "target_band"
+      ],
+      "properties": {
+        "current_cash_annual_cny": {
+          "type": "number"
+        },
+        "target_cash_annual_cny": {
+          "type": "number"
+        },
+        "target_band": {
+          "type": "string"
+        }
+      }
+    },
+    "level": {
+      "type": "object",
+      "required": [
+        "current_level",
+        "target_benchmark"
+      ],
+      "properties": {
+        "current_level": {
+          "type": "string"
+        },
+        "target_benchmark": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

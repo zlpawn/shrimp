@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "JobAnalysis",
+  "type": "object",
+  "required": [
+    "job_id",
+    "role_family",
+    "agent_relevance",
+    "java_relevance"
+  ],
+  "properties": {
+    "job_id": {
+      "type": "string"
+    },
+    "role_family": {
+      "type": "string"
+    },
+    "agent_relevance": {
+      "type": "object"
+    },
+    "java_relevance": {
+      "type": "object"
+    }
+  }
+}

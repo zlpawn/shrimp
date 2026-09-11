@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "JobFact",
+  "type": "object",
+  "required": [
+    "source",
+    "source_job_id",
+    "canonical_key",
+    "title",
+    "salary",
+    "company",
+    "location"
+  ],
+  "properties": {
+    "source": {
+      "type": "string"
+    },
+    "source_job_id": {
+      "type": "string"
+    },
+    "canonical_key": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "salary": {
+      "type": "object"
+    },
+    "company": {
+      "type": "object"
+    },
+    "location": {
+      "type": "object"
+    }
+  }
+}

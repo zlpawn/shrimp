@@ -379,6 +379,30 @@
       "requiresDaemon": false,
       "promoted": true,
       "managed": true
+    },
+    {
+      "id": "leo-job-career",
+      "name": "leo-job-career",
+      "title": "Leo 岗位求职与面试准备",
+      "summary": "面向资深 Java 工程师向 AI Agent 转型与求职进阶的专属 Copilot：采集分析真实岗位、排除外包、提炼能力矩阵与P7标杆门槛、一问一答提取实战证据并产出渐进式周末备考计划。",
+      "category": "career",
+      "categoryLabel": "职业与成长",
+      "icon": "🎯",
+      "featured": true,
+      "tags": [
+        "career",
+        "job",
+        "boss",
+        "java",
+        "agent",
+        "interview",
+        "求职",
+        "面试"
+      ],
+      "requiresDaemon": false,
+      "promoted": true,
+      "managed": true
     }
   ]
 }
+

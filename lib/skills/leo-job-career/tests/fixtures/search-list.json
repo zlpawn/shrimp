@@ -1,0 +1,95 @@
+{
+  "code": 0,
+  "message": "Success",
+  "zpData": {
+    "hasMore": false,
+    "jobList": [
+      {
+        "encryptJobId": "job_core_001",
+        "jobName": "AI平台Java后端架构师/专家",
+        "salaryDesc": "40-60K·15薪",
+        "jobExperience": "5-10年",
+        "jobDegree": "本科",
+        "cityName": "北京",
+        "areaDistrict": "海淀区",
+        "businessDistrict": "西北旺",
+        "brandName": "智谱智能科技有限公司",
+        "brandIndustry": "人工智能",
+        "brandScaleName": "1000-9999人",
+        "brandStageName": "D轮及以上",
+        "jobLabels": [
+          "Java",
+          "Spring Boot",
+          "大模型",
+          "Agent",
+          "RAG"
+        ],
+        "skills": [
+          "Java",
+          "Spring Boot",
+          "Agent",
+          "RAG",
+          "MCP"
+        ],
+        "securityId": "sec_id_mock_001",
+        "lid": "lid_mock_001"
+      },
+      {
+        "encryptJobId": "job_outsourcing_002",
+        "jobName": "Java后端开发（派驻某互联网大厂）",
+        "salaryDesc": "25-35K·13薪",
+        "jobExperience": "5-10年",
+        "jobDegree": "本科",
+        "cityName": "北京",
+        "areaDistrict": "朝阳区",
+        "businessDistrict": "望京",
+        "brandName": "中科软通人力资源服务有限公司",
+        "brandIndustry": "人力资源服务",
+        "brandScaleName": "10000人以上",
+        "brandStageName": "已上市",
+        "jobLabels": [
+          "Java",
+          "Spring Boot",
+          "MySQL",
+          "外派驻场"
+        ],
+        "skills": [
+          "Java",
+          "Spring Boot",
+          "MySQL"
+        ],
+        "securityId": "sec_id_mock_002",
+        "lid": "lid_mock_002"
+      },
+      {
+        "encryptJobId": "job_python_003",
+        "jobName": "大模型Agent算法研究员",
+        "salaryDesc": "50-80K·16薪",
+        "jobExperience": "3-5年",
+        "jobDegree": "硕士",
+        "cityName": "北京",
+        "areaDistrict": "海淀区",
+        "businessDistrict": "中关村",
+        "brandName": "未来模型实验室",
+        "brandIndustry": "互联网",
+        "brandScaleName": "500-999人",
+        "brandStageName": "B轮",
+        "jobLabels": [
+          "Python",
+          "PyTorch",
+          "LLM",
+          "Agent",
+          "强化学习"
+        ],
+        "skills": [
+          "Python",
+          "PyTorch",
+          "Transformers",
+          "RLHF"
+        ],
+        "securityId": "sec_id_mock_003",
+        "lid": "lid_mock_003"
+      }
+    ]
+  }
+}

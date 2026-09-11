@@ -1,0 +1,4 @@
+interface:
+  display_name: "Leo 岗位求职与面试准备"
+  short_description: "采集分析北京 Java + Agent 真实岗位，提取能力矩阵并制定渐进式周末备考计划"
+  default_prompt: "使用 $leo-job-career，帮我检查环境与登录状态，开始分析北京当前的 Java + Agent 岗位市场。"
