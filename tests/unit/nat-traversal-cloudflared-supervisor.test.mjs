@@ -78,6 +78,32 @@ test("resolveCloudflaredBin prioritizes configured path and falls back across pl
   assert.equal(macDefault, "cloudflared");
 });
 
+test("resolveCloudflaredBin prioritizes native .exe over .cmd wrapper or shell script on Windows", () => {
+  // Case 1: whichBin returns a .cmd wrapper, but sibling or candidate .exe exists
+  const resolved1 = resolveCloudflaredBin({
+    platform: "win32",
+    whichBin: () => "C:\\nodejs\\cloudflared.cmd",
+    existsSync: (p) => p === "C:\\nodejs\\cloudflared.exe",
+  });
+  assert.equal(resolved1, "C:\\nodejs\\cloudflared.exe");
+
+  // Case 2: whichBin returns an extensionless shell script, but companion .exe exists
+  const resolved2 = resolveCloudflaredBin({
+    platform: "win32",
+    whichBin: () => "C:\\nodejs\\cloudflared",
+    existsSync: (p) => p === "C:\\nodejs\\cloudflared.exe",
+  });
+  assert.equal(resolved2, "C:\\nodejs\\cloudflared.exe");
+
+  // Case 3: configuredPath points to a .cmd, but .exe exists
+  const resolved3 = resolveCloudflaredBin({
+    platform: "win32",
+    configuredPath: "C:\\tools\\cloudflared.cmd",
+    existsSync: (p) => p === "C:\\tools\\cloudflared.cmd" || p === "C:\\tools\\cloudflared.exe",
+  });
+  assert.equal(resolved3, "C:\\tools\\cloudflared.exe");
+});
+
 test("cloudflared supervisor lifecycle with fake runner", async (t) => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "cf-sup-"));
   const pidPath = path.join(tmpDir, "cloudflared.pid");
