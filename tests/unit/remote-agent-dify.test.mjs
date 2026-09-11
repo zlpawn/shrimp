@@ -75,6 +75,18 @@ test("dify SSE stream waits for settled task and streams timeout notice", async 
   assert.ok(calls >= 1);
 });
 
+test("dify SSE stream reports canceled tasks as canceled", async () => {
+  const stream = createDifySseStream({
+    initialResult: { taskId: "task-1", bindingKey: "b" },
+    getTask: async () => ({ status: "canceled", id: "task-1" }),
+  });
+  const chunks = [];
+  for await (const chunk of stream) chunks.push(String(chunk));
+  const body = chunks.join("");
+  assert.match(body, /任务已取消/);
+  assert.doesNotMatch(body, /已派发完成/);
+});
+
 test("dify SSE stream finishes after task settles", async () => {
   const stream = createDifySseStream({
     initialResult: {
