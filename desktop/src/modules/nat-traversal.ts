@@ -112,6 +112,8 @@ const state: {
     user: string;
     gatewayApi: string;
   };
+  installingCloudflared: boolean;
+  installOutput: string;
 } = {
   view: "catalog",
   loading: false,
@@ -132,6 +134,8 @@ const state: {
     user: "",
     gatewayApi: "",
   },
+  installingCloudflared: false,
+  installOutput: "",
 };
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -537,10 +541,24 @@ function renderCloudflaredDetail(): string {
         <div class="nt-form-grid" style="margin-top:8px;">
           <div class="form-group nt-col-2">
             <span style="font-size:12px;color:var(--text-secondary)">推荐跨平台安装方式 (macOS & Windows):</span>
-            <div style="display:flex;gap:8px;align-items:center;">
-              <input readonly value="npm install -g cloudflared" class="mono" style="flex:1;" />
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <input readonly value="npm install -g cloudflared" class="mono" style="flex:1;min-width:200px;" />
               <button class="btn btn-sm" onclick="window.__ntCopyText('npm install -g cloudflared')">复制命令</button>
+              <button class="btn btn-sm btn-primary" id="nt-btn-install-cf" ${state.installingCloudflared ? "disabled" : ""} onclick="window.__ntInstallCloudflared()">
+                ${state.installingCloudflared ? "⏳ 正在安装..." : "⚡ 网关一键安装"}
+              </button>
             </div>
+            ${state.installingCloudflared ? `
+              <div style="margin-top:8px;padding:8px 12px;background:var(--bg-secondary, #f4f4f5);border-radius:6px;font-size:12px;display:flex;align-items:center;gap:8px;">
+                <span>正在后台执行 <code>npm install -g cloudflared</code>，请稍候（通常需 15~30 秒自动下载对应平台二进制）...</span>
+              </div>
+            ` : ""}
+            ${state.installOutput ? `
+              <details style="margin-top:8px;font-size:12px;background:var(--bg-secondary, #f4f4f5);padding:6px 10px;border-radius:6px;" open>
+                <summary style="cursor:pointer;color:var(--text-secondary);font-weight:600;">最近安装输出日志</summary>
+                <pre class="nt-log" style="margin-top:6px;max-height:160px;font-size:11px;overflow:auto;white-space:pre-wrap;">${escapeHtml(state.installOutput)}</pre>
+              </details>
+            ` : ""}
           </div>
           <div class="form-group">
             <span style="font-size:12px;color:var(--text-secondary)">macOS (Homebrew):</span>
@@ -777,6 +795,40 @@ async function runAction(action: "start" | "stop" | "restart"): Promise<void> {
   } catch (error: any) {
     state.error = error?.message || String(error);
     showToast(state.error, "error");
+    render();
+  }
+}
+
+async function installCloudflared(): Promise<void> {
+  if (state.installingCloudflared) return;
+  state.installingCloudflared = true;
+  state.installOutput = "";
+  render();
+  try {
+    showToast("开始安装 cloudflared，正在自动下载官方对应平台二进制...", "info");
+    const result = await api<{
+      ok: boolean;
+      binPath?: string;
+      message?: string;
+      output?: string;
+      error?: string;
+    }>("/v1/nat-traversal/install-cloudflared", {
+      method: "POST",
+      body: JSON.stringify({ packageManager: "npm" }),
+    });
+    state.installingCloudflared = false;
+    state.installOutput = result.output || result.message || "";
+    if (result.ok) {
+      showToast(`🎉 cloudflared 安装成功！路径: ${result.binPath || "已就绪"}`, "success");
+      state.status = await api<NatStatus>("/v1/nat-traversal/status");
+    } else {
+      showToast(`安装未完成: ${result.error || "未知错误"}`, "error");
+    }
+  } catch (error: any) {
+    state.installingCloudflared = false;
+    state.installOutput = error?.message || String(error);
+    showToast(`安装失败: ${error?.message || String(error)}`, "error");
+  } finally {
     render();
   }
 }
@@ -1064,6 +1116,9 @@ async function testPeer(id: string): Promise<void> {
   } else {
     showToast("复制失败：浏览器权限受限", "error");
   }
+};
+(window as any).__ntInstallCloudflared = () => {
+  void installCloudflared();
 };
 
 registerTab("nat-traversal", {

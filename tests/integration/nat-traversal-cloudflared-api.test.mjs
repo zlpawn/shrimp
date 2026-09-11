@@ -119,6 +119,16 @@ function createTestContext() {
           return false;
         },
       }),
+    installRunner: (cmd, args, { done }) => {
+      setTimeout(() => {
+        done({
+          ok: true,
+          message: "cloudflared installed successfully",
+          binPath: "/usr/local/bin/cloudflared",
+          output: "installed",
+        });
+      }, 5);
+    },
   });
 
   const service = createNatTraversalService({
@@ -214,6 +224,20 @@ test("Cloudflare Tunnel API - lifecycle control starts and captures publicUrl", 
     service: ctx.service,
   });
   assert.equal(resStop.statusCode, 200);
+
+  // Install cloudflared via API
+  const resInstall = makeRes();
+  await routeNatTraversalRequest(
+    makeReq("POST", "/v1/nat-traversal/install-cloudflared", { packageManager: "npm" }),
+    resInstall,
+    {},
+    "/v1/nat-traversal/install-cloudflared",
+    { service: ctx.service },
+  );
+  assert.equal(resInstall.statusCode, 200);
+  const installJson = resInstall.json();
+  assert.equal(installJson.ok, true);
+  assert.equal(installJson.binPath, "/usr/local/bin/cloudflared");
 });
 
 test("Session Sync API protocol - manifest, file retrieval with traversal security, and LWW merge", async (t) => {
