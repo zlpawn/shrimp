@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-08-28T00:00:00.000Z",
+  "updatedAt": "2026-09-11T14:39:41.767Z",
   "skills": [
     {
       "id": "leo-tdx-stock",
@@ -11,7 +11,14 @@
       "categoryLabel": "研究与知识",
       "icon": "📈",
       "featured": false,
-      "tags": ["tdx", "stock", "finance", "股票", "行情", "K线"],
+      "tags": [
+        "tdx",
+        "stock",
+        "finance",
+        "股票",
+        "行情",
+        "K线"
+      ],
       "requiresDaemon": false,
       "promoted": true,
       "managed": true
@@ -25,7 +32,14 @@
       "categoryLabel": "研究与知识",
       "icon": "📈",
       "featured": false,
-      "tags": ["tdx", "stock", "finance", "股票", "行情", "K线"],
+      "tags": [
+        "tdx",
+        "stock",
+        "finance",
+        "股票",
+        "行情",
+        "K线"
+      ],
       "requiresDaemon": false,
       "promoted": true,
       "managed": true
@@ -39,7 +53,14 @@
       "categoryLabel": "研究与知识",
       "icon": "📈",
       "featured": false,
-      "tags": ["tdx", "stock", "finance", "股票", "行情", "K线"],
+      "tags": [
+        "tdx",
+        "stock",
+        "finance",
+        "股票",
+        "行情",
+        "K线"
+      ],
       "requiresDaemon": false,
       "promoted": true,
       "managed": true
@@ -53,7 +74,14 @@
       "categoryLabel": "研究与知识",
       "icon": "📈",
       "featured": false,
-      "tags": ["tdx", "stock", "finance", "股票", "行情", "K线"],
+      "tags": [
+        "tdx",
+        "stock",
+        "finance",
+        "股票",
+        "行情",
+        "K线"
+      ],
       "requiresDaemon": false,
       "promoted": true,
       "managed": true
@@ -67,7 +95,14 @@
       "categoryLabel": "研究与知识",
       "icon": "📈",
       "featured": false,
-      "tags": ["tdx", "stock", "finance", "股票", "行情", "K线"],
+      "tags": [
+        "tdx",
+        "stock",
+        "finance",
+        "股票",
+        "行情",
+        "K线"
+      ],
       "requiresDaemon": false,
       "promoted": true,
       "managed": true
@@ -81,7 +116,14 @@
       "categoryLabel": "研究与知识",
       "icon": "📈",
       "featured": false,
-      "tags": ["tdx", "stock", "finance", "股票", "行情", "K线"],
+      "tags": [
+        "tdx",
+        "stock",
+        "finance",
+        "股票",
+        "行情",
+        "K线"
+      ],
       "requiresDaemon": false,
       "promoted": true,
       "managed": true
@@ -95,7 +137,14 @@
       "categoryLabel": "开发工程",
       "icon": "🗄️",
       "featured": false,
-      "tags": ["database", "mysql", "redis", "sqlite", "sql", "数据管理"],
+      "tags": [
+        "database",
+        "mysql",
+        "redis",
+        "sqlite",
+        "sql",
+        "数据管理"
+      ],
       "requiresDaemon": false,
       "promoted": true,
       "managed": true
@@ -402,7 +451,20 @@
       "requiresDaemon": false,
       "promoted": true,
       "managed": true
+    },
+    {
+      "id": "leo-huoshan-tts-skill",
+      "name": "leo-huoshan-tts-skill",
+      "title": "火山tts",
+      "summary": "Convert text into spoken audio with Volcengine Ark / Doubao TTS over the official HTTP streaming API. Use when the user asks for text-to-speech, TTS, voiceover generation, narratio",
+      "category": "download",
+      "categoryLabel": "下载采集",
+      "icon": "⬇️",
+      "featured": false,
+      "tags": [],
+      "requiresDaemon": false,
+      "promoted": true,
+      "managed": true
     }
   ]
 }
-

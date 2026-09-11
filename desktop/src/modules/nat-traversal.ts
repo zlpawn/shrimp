@@ -623,10 +623,6 @@ function render(): void {
   const el = rootEl();
   if (!el) return;
   setOuterHeaderVisible(state.view === "catalog");
-  if (state.loading && !state.config) {
-    el.innerHTML = `<div class="nt-page"><p class="nt-help">正在加载…</p></div>`;
-    return;
-  }
   if (state.error && !state.config) {
     el.innerHTML = `<div class="nt-page"><div class="nt-alert">${escapeHtml(state.error)} <button class="btn" onclick="window.__ntReload()">重试</button></div></div>`;
     return;
@@ -1125,6 +1121,7 @@ registerTab("nat-traversal", {
   onEnter: () => {
     state.view = "catalog";
     setOuterHeaderVisible(true);
+    render();
     void reload();
   },
   onLeave: () => {
