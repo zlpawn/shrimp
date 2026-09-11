@@ -352,6 +352,25 @@ function formatDate(ts: number): string {
   return `${m}-${day} ${h}:${min}`;
 }
 
+function isDocumentAdopted(d: KbDocument | null | undefined): boolean {
+  if (!d) return false;
+  if (!d.final_content || !d.final_content.trim()) return false;
+  if (d.adopted_engine === "both" && (!d.accepted_at || d.accepted_at <= 0)) return false;
+  return true;
+}
+
+function formatEngineBadge(engine?: string): string {
+  const eng = (engine || "").toLowerCase();
+  if (eng === "markitdown") return "⚡ 微软 MarkItDown";
+  if (eng === "docling") return "🧠 IBM Docling";
+  if (eng === "whisper") return "🎙️ Whisper 语音识别";
+  if (eng === "vision") return "👁️ 视觉深度转译";
+  if (eng === "craft") return "📓 Craft 笔记";
+  if (eng === "weread") return "📚 微信读书";
+  if (eng === "both") return "⚖️ 双引擎协作";
+  return eng ? `⚙️ ${eng.toUpperCase()}` : "📄 标准解析";
+}
+
 // Markdown Renderer
 function renderMarkdownToHtml(md: string): string {
   if (!md) {
@@ -2883,7 +2902,7 @@ export function render(): void {
                     <div class="kb-doc-card-meta">
                       <span class="kb-doc-time">${formatDate(d.created_at)}</span>
                       <span>
-                        ${d.final_content ? `<span class="kb-adopted-pill" style="font-size:10px; padding:1px 5px;" title="已确认官方采纳版本">✅ 已采纳</span>` : ""}
+                        ${isDocumentAdopted(d) ? `<span class="kb-adopted-pill" style="font-size:10px; padding:1px 5px;" title="已确认官方采纳版本">✅ 已采纳</span>` : ""}
                         <span class="kb-doc-size">${d.word_count ? `${d.word_count.toLocaleString()} 字` : formatBytes(d.file_size || 0)}</span>
                       </span>
                     </div>
@@ -2952,7 +2971,7 @@ export function render(): void {
                     <div class="kb-wb-doc-title" title="${esc(doc.title)}">
                       <span class="kb-wb-type-badge">${doc.source_type === "url" ? "网页" : doc.source_type === "text" ? "纯文本" : doc.source_type === "craft" ? "Craft 笔记" : doc.source_type === "weread" ? "微信读书" : doc.source_type === "video" || doc.doc_type === "video" ? "视频" : doc.doc_type === "image" ? "图像" : "文件"}</span>
                       <span>${esc(doc.title)}</span>
-                      ${doc.final_content ? `<span class="kb-adopted-pill" title="已采纳官方正文版本">✅ 已采纳</span>` : `<span class="kb-unadopted-pill" title="尚未确认采纳版本">⚠️ 待采纳</span>`}
+                      ${isDocumentAdopted(doc) ? `<span class="kb-adopted-pill" title="已采纳官方正文版本">✅ 已采纳</span>` : `<span class="kb-unadopted-pill" title="尚未确认采纳版本">⚠️ 待采纳</span>`}
                     </div>
                     <div class="kb-wb-doc-subinfo">
                       ${doc.source_url ? (
@@ -3101,9 +3120,17 @@ export function render(): void {
                 ${doc.doc_type === "image" || doc.source_type === "image" ? `
                   <!-- Image Workbench View -->
                   <div class="kb-panel-box" style="flex: 1; display: flex; flex-direction: column;">
-                    <div class="kb-adopted-bar" style="background: rgba(99, 102, 241, 0.08); border-bottom: 1px solid rgba(99, 102, 241, 0.2); color: #3730a3;">
+                    <div class="kb-adopted-bar kb-adopted-bar-vision">
                       <div class="kb-adopted-info">
-                        <span>👁️ <b>视觉大模型深度转译</b> · 包含 Mermaid 架构图与 Markdown 结构 · 对应文件: <code>final.md</code></span>
+                        <span class="kb-status-chip is-vision">
+                          <span class="kb-chip-dot"></span>
+                          视觉大模型深度转译
+                        </span>
+                        <span class="kb-engine-tag">👁️ Mermaid 架构图 + Markdown 结构</span>
+                        <span class="kb-file-chip" title="本地知识库正文标准文件 final.md">
+                          <span class="kb-file-icon">📄</span>
+                          <code>final.md</code>
+                        </span>
                       </div>
                       <div class="kb-adopted-actions">
                         <button class="btn btn-xs ${state.showRaw.markitdown ? "is-active" : ""}" onclick="window.__kbToggleRaw('markitdown')">
@@ -3128,9 +3155,17 @@ export function render(): void {
                 ` : doc.doc_type === "video" || doc.source_type === "video" ? `
                   <!-- Video Workbench View -->
                   <div class="kb-panel-box" style="flex: 1; display: flex; flex-direction: column;">
-                    <div class="kb-adopted-bar" style="background: rgba(16, 185, 129, 0.08); border-bottom: 1px solid rgba(16, 185, 129, 0.2); color: #065f46;">
+                    <div class="kb-adopted-bar kb-adopted-bar-video">
                       <div class="kb-adopted-info">
-                        <span>🎙️ <b>音视频智能转录与提炼</b> · Whisper ASR 语音识别 + AI 核心要点 · 对应文件: <code>final.md</code></span>
+                        <span class="kb-status-chip is-video">
+                          <span class="kb-chip-dot"></span>
+                          音视频智能转录与提炼
+                        </span>
+                        <span class="kb-engine-tag">🎙️ Whisper ASR 语音识别 + AI 核心要点</span>
+                        <span class="kb-file-chip" title="本地知识库正文标准文件 final.md">
+                          <span class="kb-file-icon">📄</span>
+                          <code>final.md</code>
+                        </span>
                       </div>
                       <div class="kb-adopted-actions">
                         <button class="btn btn-xs ${state.showRaw.markitdown ? "is-active" : ""}" onclick="window.__kbToggleRaw('markitdown')">
@@ -3160,17 +3195,28 @@ export function render(): void {
                 ` : state.docViewMode === "adopted" ? `
                   <!-- Final Adopted View for Documents -->
                   <div class="kb-panel-box" style="flex: 1; display: flex; flex-direction: column;">
-                    ${doc.adopted_engine ? `
+                    ${isDocumentAdopted(doc) ? `
                       <div class="kb-adopted-bar">
                         <div class="kb-adopted-info">
-                          <span>✅ <b>官方采纳版本</b> · 已生成本地文件: <code>final.md</code> (${doc.adopted_engine.toUpperCase()})</span>
+                          <span class="kb-status-chip is-adopted">
+                            <span class="kb-chip-dot"></span>
+                            官方采纳版本
+                          </span>
+                          <span class="kb-engine-tag" title="正文来源解析引擎">
+                            ${formatEngineBadge(doc.adopted_engine)}
+                          </span>
+                          <span class="kb-file-chip" title="本地知识库正文标准文件 final.md (用于 Agent 检索与消费)">
+                            <span class="kb-file-icon">📄</span>
+                            <code>final.md</code>
+                          </span>
+                          ${doc.word_count ? `<span class="kb-meta-chip">${doc.word_count.toLocaleString()} 字</span>` : ""}
                         </div>
                         <div class="kb-adopted-actions">
-                          <button class="btn btn-xs ${state.showRaw.markitdown ? "is-active" : ""}" onclick="window.__kbToggleRaw('markitdown')">
+                          <button class="btn btn-xs ${state.showRaw.markitdown ? "is-active" : ""}" onclick="window.__kbToggleRaw('markitdown')" title="在富文本渲染与 Markdown 源码视图间切换">
                             ${state.showRaw.markitdown ? "👁️ 富文本" : "⌨️ 源码"}
                           </button>
-                          <button class="btn btn-xs" onclick="window.__kbCopyFinalContent()">📋 复制正文</button>
-                          <button class="btn btn-xs" onclick="window.__kbExportFinalContent()">💾 导出 final.md</button>
+                          <button class="btn btn-xs" onclick="window.__kbCopyFinalContent()" title="复制正文 Markdown 到剪贴板">📋 复制正文</button>
+                          <button class="btn btn-xs" onclick="window.__kbExportFinalContent()" title="下载 final.md 文件到本地">💾 导出 final.md</button>
                           <button class="btn btn-xs" onclick="window.__kbSetDocViewMode('compare')" title="重新打开双引擎对比进行比对与再次采纳">⚖️ 重新比对与采纳</button>
                         </div>
                       </div>
@@ -3179,14 +3225,22 @@ export function render(): void {
                       </div>
                     ` : `
                       <div class="kb-unadopted-banner">
-                        <div>
-                          <div style="font-weight:600; margin-bottom:2px;">⚠️ 当前文档尚未确认官方采纳版本</div>
-                          <div style="font-size:12px; color:var(--text-secondary);">系统已完成双引擎解析，下方为默认推荐预览。请确认采纳版本或前往双引擎对比。</div>
+                        <div class="kb-unadopted-info">
+                          <span class="kb-unadopted-badge">
+                            <span class="kb-chip-dot"></span>
+                            待确认采纳
+                          </span>
+                          <div class="kb-unadopted-text">
+                            <div class="kb-unadopted-title">当前文档尚未确认官方采纳版本</div>
+                            <div class="kb-unadopted-desc">
+                              双引擎已解析完毕。下方为默认推荐预览，请比对后采纳任一版本作为知识库标准正文（将生成本地 <code>final.md</code>）。
+                            </div>
+                          </div>
                         </div>
                         <div class="kb-unadopted-buttons">
-                          ${doc.markitdown_status === "done" ? `<button class="btn btn-xs kb-btn-adopt" onclick="window.__kbAdoptEngine('markitdown')">✅ 采纳 MarkItDown 版本</button>` : ""}
-                          ${doc.docling_status === "done" ? `<button class="btn btn-xs kb-btn-adopt" onclick="window.__kbAdoptEngine('docling')">✅ 采纳 Docling 版本</button>` : ""}
-                          <button class="btn btn-xs" onclick="window.__kbSetDocViewMode('compare')">⚖️ 前往双引擎对比</button>
+                          ${doc.markitdown_status === "done" ? `<button class="btn btn-xs kb-btn-adopt" onclick="window.__kbAdoptEngine('markitdown')" title="采纳 MarkItDown 解析结果为标准正文并生成 final.md">⚡ 采纳 MarkItDown</button>` : ""}
+                          ${doc.docling_status === "done" ? `<button class="btn btn-xs kb-btn-adopt" onclick="window.__kbAdoptEngine('docling')" title="采纳 Docling 解析结果为标准正文并生成 final.md">🧠 采纳 Docling</button>` : ""}
+                          <button class="btn btn-xs" onclick="window.__kbSetDocViewMode('compare')" title="进入左右双屏逐行逐段精细对比">⚖️ 双引擎对比</button>
                         </div>
                       </div>
                       <div class="kb-panel-body kb-final-panel-body">
