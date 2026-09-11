@@ -192,6 +192,17 @@ import { createClaudeReader } from "./lib/session-kanban/infra/claude-reader.mjs
 import { createAntigravityReader } from "./lib/session-kanban/infra/antigravity-reader.mjs";
 import { createCliDispatchers } from "./lib/session-kanban/infra/cli-dispatchers.mjs";
 import { routeSessionKanbanRequest } from "./lib/session-kanban/http/routes.mjs";
+import {
+  createRemoteAgentBindingStore,
+  createRemoteAgentService,
+  routeRemoteAgentRequest,
+  createRemoteAgentConfigService,
+  routeDifyCompatibleRequest,
+  createWebhookNotifier,
+  buildCompletionEvent,
+  formatCompletion,
+  formatFailure,
+} from "./lib/remote-agent/index.mjs";
 import { routeNatTraversalRequest } from "./lib/nat-traversal/http/routes.mjs";
 import {
   resolveRemoteSessionPaths,
@@ -368,11 +379,25 @@ function ensureCodexhostService() {
 
 let globalSessionKanbanService = null;
 let globalSessionKanbanScheduler = null;
+
+function resolveRemoteAgentPolicyMode() {
+  const envMode = String(process.env.REMOTE_AGENT_POLICY_MODE || "").trim();
+  if (envMode) return envMode;
+  return String(GATEWAY_SECRETS?.remote_agent?.policy_mode || "confirm_dangerous").trim() || "confirm_dangerous";
+}
+
+function resolveRemoteAgentWebhookUrl() {
+  const envUrl = String(process.env.REMOTE_AGENT_WEBHOOK_URL || "").trim();
+  if (envUrl) return envUrl;
+  return String(GATEWAY_SECRETS?.remote_agent?.webhook_url || "").trim();
+}
+
 function ensureSessionKanbanService() {
   if (globalSessionKanbanService) return globalSessionKanbanService;
   const store = createSessionKanbanStore({
     dbPath: process.env.SESSION_KANBAN_DB_FILE || path.join(path.dirname(GATEWAY_CONFIG_FILE), "gateway.db"),
   });
+  const panelUrl = `http://127.0.0.1:${Number(ENV_PORT) || Number(GATEWAY_CONFIG?.server?.port) || 8787}/#session-kanban`;
   globalSessionKanbanService = createSessionKanbanService({
     store,
     readers: [
@@ -381,12 +406,113 @@ function ensureSessionKanbanService() {
       createAntigravityReader(),
     ],
     dispatchers: createCliDispatchers(),
+    onQueueSettled: async (item) => {
+      try {
+        if (String(item?.source || "") !== "remote-agent") return;
+        const notifier = createWebhookNotifier({
+          webhookUrl: resolveRemoteAgentWebhookUrl(),
+          token: resolveRemoteAgentToken(),
+        });
+        const reply = item.status === "failed"
+          ? formatFailure(item, { panelUrl })
+          : formatCompletion(item, { panelUrl });
+        const event = buildCompletionEvent(item, { reply, panelUrl });
+        const result = await notifier.notify(event);
+        if (result.ok) store.markNotifySent(item.id);
+        else store.markNotifyFailed(item.id, result.error || "notify failed");
+      } catch (error) {
+        try {
+          store.markNotifyFailed(item.id, error?.message || String(error));
+        } catch {}
+      }
+    },
   });
   globalSessionKanbanScheduler = createSessionKanbanScheduler(globalSessionKanbanService, {
     intervalMs: Number(process.env.SESSION_KANBAN_INTERVAL_MS || 30 * 1000),
   });
   globalSessionKanbanScheduler.start();
   return globalSessionKanbanService;
+}
+
+let globalRemoteAgentService = null;
+let globalRemoteAgentConfigService = null;
+let globalRemoteAgentBindingStore = null;
+function resolveRemoteAgentToken() {
+  const envToken = String(process.env.REMOTE_AGENT_TOKEN || "").trim();
+  if (envToken) return envToken;
+  return String(GATEWAY_SECRETS?.remote_agent?.token || "").trim();
+}
+function resolveRemoteAgentDbPath() {
+  return process.env.REMOTE_AGENT_DB_FILE
+    || process.env.SESSION_KANBAN_DB_FILE
+    || path.join(path.dirname(GATEWAY_CONFIG_FILE), "gateway.db");
+}
+function ensureRemoteAgentBindingStore() {
+  const dbPath = resolveRemoteAgentDbPath();
+  if (globalRemoteAgentBindingStore && globalRemoteAgentBindingStore.__dbPath === dbPath) {
+    return globalRemoteAgentBindingStore;
+  }
+  globalRemoteAgentBindingStore = createRemoteAgentBindingStore({ dbPath });
+  globalRemoteAgentBindingStore.__dbPath = dbPath;
+  return globalRemoteAgentBindingStore;
+}
+function ensureRemoteAgentService() {
+  const token = resolveRemoteAgentToken();
+  if (globalRemoteAgentService && globalRemoteAgentService.__token === token) {
+    return globalRemoteAgentService;
+  }
+  const bindingStore = ensureRemoteAgentBindingStore();
+  globalRemoteAgentService = createRemoteAgentService({
+    bindingStore,
+    sessionKanban: ensureSessionKanbanService(),
+    token,
+    policyMode: resolveRemoteAgentPolicyMode(),
+  });
+  globalRemoteAgentService.__token = token;
+  return globalRemoteAgentService;
+}
+function ensureRemoteAgentConfigService() {
+  const token = resolveRemoteAgentToken();
+  if (globalRemoteAgentConfigService && globalRemoteAgentConfigService.__token === token) {
+    return globalRemoteAgentConfigService;
+  }
+  globalRemoteAgentConfigService = createRemoteAgentConfigService({
+    bindingStore: ensureRemoteAgentBindingStore(),
+    sessionKanban: ensureSessionKanbanService(),
+    secretsPath: GATEWAY_SECRETS_FILE,
+    getSecrets: () => GATEWAY_SECRETS,
+    setSecrets: (next) => {
+      GATEWAY_SECRETS = next || { api_keys: {} };
+      fs.writeFileSync(
+        GATEWAY_SECRETS_FILE,
+        JSON.stringify(GATEWAY_SECRETS, null, 2) + "\n",
+        { mode: 0o600 },
+      );
+    },
+    getToken: () => resolveRemoteAgentToken(),
+    onPolicyModeChanged: () => {
+      // Policy is captured when the remote-agent service is built; rebuild on change.
+      globalRemoteAgentService = null;
+    },
+    setToken: (value) => {
+      const next = structuredClone(GATEWAY_SECRETS || { api_keys: {} });
+      if (!next.remote_agent || typeof next.remote_agent !== "object") next.remote_agent = {};
+      next.remote_agent.token = String(value || "").trim();
+      GATEWAY_SECRETS = next;
+      process.env.REMOTE_AGENT_TOKEN = String(value || "").trim();
+      fs.writeFileSync(
+        GATEWAY_SECRETS_FILE,
+        JSON.stringify(GATEWAY_SECRETS, null, 2) + "\n",
+        { mode: 0o600 },
+      );
+      // Force service rebuild on next request with the rotated token.
+      globalRemoteAgentService = null;
+      globalRemoteAgentConfigService = null;
+    },
+    listenPort: Number(ENV_PORT) || Number(GATEWAY_CONFIG?.server?.port) || 8787,
+  });
+  globalRemoteAgentConfigService.__token = token;
+  return globalRemoteAgentConfigService;
 }
  
 let globalTrendIntelService = null;
@@ -1322,6 +1448,30 @@ async function route(req, res) {
     if (!checkLocalAuth(req, res)) return;
     await routeSessionKanbanRequest(req, res, reqPath, {
       service: ensureSessionKanbanService(),
+    });
+    return;
+  }
+
+  if (reqPath.startsWith("/v1/remote-agent")) {
+    // Public message/health endpoints authenticate via remote-agent token.
+    // Desktop management endpoints still require local gateway auth.
+    const pathOnly = String(reqPath || "").split("?")[0];
+    const needsLocalAuth = pathOnly === "/v1/remote-agent/status"
+      || pathOnly === "/v1/remote-agent/token/rotate"
+      || pathOnly === "/v1/remote-agent/webhook"
+      || pathOnly === "/v1/remote-agent/policy"
+      || /^\/v1\/remote-agent\/bindings\//.test(pathOnly);
+    if (needsLocalAuth && !checkLocalAuth(req, res)) return;
+    await routeRemoteAgentRequest(req, res, reqPath, {
+      service: ensureRemoteAgentService(),
+      configService: ensureRemoteAgentConfigService(),
+    });
+    return;
+  }
+
+  if (reqPath.startsWith("/dify/v1")) {
+    await routeDifyCompatibleRequest(req, res, reqPath, {
+      service: ensureRemoteAgentService(),
     });
     return;
   }
