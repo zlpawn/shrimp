@@ -117,6 +117,15 @@ test("environment loading fills missing values without overriding the caller", a
   });
 });
 
+test("the packaged .env.example contains only minimal runtime settings without provider keys", async () => {
+  const content = await readFile(path.join(projectRoot, ".env.example"), "utf8");
+  assert.match(content, /PORT=/);
+  assert.match(content, /HOST=/);
+  assert.doesNotMatch(content, /ARK_API_KEY/);
+  assert.doesNotMatch(content, /OFFICIAL_ANTHROPIC/);
+  assert.doesNotMatch(content, /TAVILY_API_KEY/);
+});
+
 test("relative user configuration paths resolve under the user data directory", () => {
   assert.equal(
     resolveUserPath("D:\\Users\\person\\.shrimp", "gateway.config.json"),
@@ -127,3 +136,4 @@ test("relative user configuration paths resolve under the user data directory", 
     path.resolve("E:\\shared\\gateway.json"),
   );
 });
+
