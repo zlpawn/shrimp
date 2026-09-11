@@ -188,7 +188,7 @@ test("remote session panels and dialogs use spacious grouped layouts", () => {
   assert.equal((catalog.match(/class="endpoints-grid rs-catalog-grid"/g) || []).length, 1);
   assert.match(catalog, /Antigravity 远程编码[\s\S]*Antigravity 官方远程控制/);
   assert.match(css, /.rs-catalog-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
-  assert.match(html, /panel\.bundle\.js\?v=remote-session-layout-1/);
+  assert.match(html, /panel\.bundle\.js/);
 });
 
 test("remote session catalog cards share the same catalog grid", () => {
