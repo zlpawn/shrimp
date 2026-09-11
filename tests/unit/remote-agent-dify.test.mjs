@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  createDifySseStream,
   mapDifyChatRequest,
   buildDifySseEvents,
   encodeSse,
@@ -40,4 +41,67 @@ test("buildDifySseEvents emits message and message_end", () => {
   assert.equal(events[0].conversation_id, "conv_1");
   assert.equal(events[1].event, "message_end");
   assert.match(encodeSse(events), /^data: /);
+});
+
+test("dify SSE stream waits for settled task and streams timeout notice", async () => {
+  let calls = 0;
+  let currentTime = 0;
+  const stream = createDifySseStream({
+    initialResult: {
+      ok: true,
+      reply: "已加入队列，当前排在第 1 位。",
+      taskId: "task-1",
+      sessionId: "s1",
+      bindingKey: "telegram:private:1",
+    },
+    conversationId: "conv_1",
+    user: "u1",
+    getTask: async () => {
+      calls += 1;
+      return { status: "dispatching" };
+    },
+    pollIntervalMs: 1,
+    maxWaitMs: 5,
+    now: () => {
+      currentTime += 10;
+      return currentTime;
+    },
+  });
+  const chunks = [];
+  for await (const chunk of stream) chunks.push(String(chunk));
+  const body = chunks.join("");
+  assert.match(body, /已加入队列/);
+  assert.match(body, /任务仍在运行/);
+  assert.ok(calls >= 1);
+});
+
+test("dify SSE stream finishes after task settles", async () => {
+  const stream = createDifySseStream({
+    initialResult: {
+      ok: true,
+      reply: "已加入队列，当前排在第 1 位。",
+      taskId: "task-1",
+      sessionId: "s1",
+      bindingKey: "telegram:private:1",
+    },
+    conversationId: "conv_1",
+    user: "u1",
+    getTask: async () => ({
+      status: "dispatched",
+      id: "task-1",
+      sessionId: "s1",
+      client: "codex",
+      title: "login fix",
+      workspacePath: "D:/repo",
+      message: "fix login",
+    }),
+    pollIntervalMs: 1,
+    maxWaitMs: 100,
+    now: () => 0,
+  });
+  const chunks = [];
+  for await (const chunk of stream) chunks.push(String(chunk));
+  const body = chunks.join("");
+  assert.match(body, /已派发完成/);
+  assert.doesNotMatch(body, /任务仍在运行/);
 });

@@ -10,7 +10,7 @@ Stage 1 and Stage 2 are implemented:
 - chat binding store, `/agent` command parser, and Session Kanban enqueue
 - async completion/failure webhook callbacks with bounded plain-text replies
 
-Dangerous-action confirmation tokens are implemented.
+Dangerous-action confirmation tokens are implemented. The default result path is synchronous SSE waiting; webhook callbacks remain available but are optional and do not need to be configured when synchronous mode is used.
 
 ## Decision
 
@@ -287,8 +287,24 @@ http://127.0.0.1:<port>/dify/v1
 
 and uses the remote-agent token as the Dify API Key. Shrimp maps the Dify request into the same envelope used by `POST /v1/remote-agent/message`, then returns SSE events:
 
-1. `event: message` with `answer = reply`
-2. `event: message_end` with Shrimp metadata such as `taskId`, `sessionId`, and `bindingKey`
+1. an immediate `message` event with queue/binding/status text
+2. optional `ping` heartbeats while a queued task runs
+3. a final `message` + `message_end` with the completion, failure, or bounded wait-timeout reply and Shrimp metadata such as `taskId`, `sessionId`, and `bindingKey`
+
+Synchronous wait behavior:
+
+- poll the queued task every 2 seconds
+- send an SSE heartbeat every 15 seconds
+- default maximum wait is 3 minutes
+- when the timeout is reached, return `任务仍在运行` plus the task ID and suggest `/agent status`
+
+Environment overrides:
+
+```text
+REMOTE_AGENT_SYNC_POLL_MS=2000
+REMOTE_AGENT_SYNC_HEARTBEAT_MS=15000
+REMOTE_AGENT_SYNC_MAX_WAIT_MS=180000
+```
 
 Desktop management endpoints (local gateway auth):
 
@@ -305,6 +321,8 @@ Implemented:
 - Shrimp POSTs a bounded plain-text `reply` to the configured webhook
 - desktop **IM 会话投递** page can save/clear `webhookUrl`
 - recent tasks show `notifyStatus`
+
+Synchronous result mode is preferred. Webhook delivery is optional and only needed when the original IM request should be released immediately and results should be pushed later.
 
 Webhook resolution order:
 
