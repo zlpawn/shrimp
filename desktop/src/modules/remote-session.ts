@@ -508,7 +508,8 @@ function renderAntigravityScene(): string {
           <h3>远端主机、工作区与会话</h3>
           <div class="rs-inline-actions">
             <button class="btn btn-sm" onclick="window.__rsOpenPeersDrawer()">⚙️ 管理对端节点</button>
-            <button class="btn btn-sm" onclick="window.__rsLoadProjects()" ${state.loading || !state.selectedPeerId ? "disabled" : ""}>🔄 刷新远端数据</button>
+            <button class="btn btn-sm" onclick="window.__rsSyncPeer(state.selectedPeerId)" ${state.loading || !state.selectedPeerId ? "disabled" : ""}>🔄 同步会话</button>
+            <button class="btn btn-sm" onclick="window.__rsLoadProjects()" ${state.loading || !state.selectedPeerId ? "disabled" : ""}>刷新数据</button>
           </div>
         </div>
 
@@ -802,6 +803,7 @@ function renderPeersDrawer(): string {
                         <div class="node-card-top">
                           <div class="node-card-title">🌐 ${escapeHtml(p.displayName || p.name || p.id)}</div>
                           <div class="rs-inline-actions">
+                            <button class="btn btn-sm" onclick="window.__rsSyncPeer('${escapeHtml(p.id)}')">🔄 同步</button>
                             <button class="btn btn-sm" onclick="window.__rsEditPeer('${escapeHtml(p.id)}')">编辑</button>
                             <button class="btn btn-sm btn-danger" onclick="window.__rsDeletePeer('${escapeHtml(p.id)}')">删除</button>
                           </div>
@@ -813,6 +815,7 @@ function renderPeersDrawer(): string {
                             ${port ? `<span class="badge">端口 ${port}</span>` : ""}
                           </div>
                           ${host ? `<div class="node-card-row"><span class="mono">${escapeHtml(host)}${port ? ":" + port : ""}</span></div>` : ""}
+                          ${p.services?.gatewayApi ? `<div class="node-card-row"><span class="badge mono">API: ${escapeHtml(p.services.gatewayApi)}</span></div>` : ""}
                           <div class="node-card-row">
                             <span class="badge">${
                               authType === "ssh"
@@ -950,6 +953,10 @@ function renderPeerModal(): string {
               <input id="modal-peer-token" type="password" value="${escapeHtml(p.auth?.gatewayToken || "")}" placeholder="填写远端网关 Token" />
             </label>
           ` : ""}
+            <label class="form-group rs-col-2">
+              <span>Gateway API 访问地址 (用于会话同步 / Cloudflare 穿透域名)</span>
+              <input id="modal-peer-gw-api" value="${escapeHtml(p.services?.gatewayApi || "")}" placeholder="例如：https://my-peer.trycloudflare.com 或 http://192.168.1.100:8788" />
+            </label>
           </div>
         </div>
 
@@ -1723,6 +1730,7 @@ function copyConversationContent(): void {
   const sshUser = (document.getElementById("modal-peer-ssh-user") as HTMLInputElement | null)?.value?.trim() || "";
   const sshPwdInput = (document.getElementById("modal-peer-ssh-pwd") as HTMLInputElement | null)?.value;
   const token = (document.getElementById("modal-peer-token") as HTMLInputElement | null)?.value || "";
+  const gwApi = (document.getElementById("modal-peer-gw-api") as HTMLInputElement | null)?.value?.trim() || "";
 
   if (!name) {
     showToast("请输入节点名称", "error");
@@ -1747,6 +1755,7 @@ function copyConversationContent(): void {
       ssh: authType === "ssh" ? { username: sshUser, password: finalPwd } : undefined,
       gatewayToken: authType === "gateway_token" ? token : undefined,
     },
+    services: gwApi ? { gatewayApi: gwApi } : state.editingPeer?.services,
   };
 
   try {
@@ -1765,6 +1774,24 @@ function copyConversationContent(): void {
     await reload();
   } catch (err: any) {
     showToast("保存节点失败: " + err.message, "error");
+  }
+};
+
+(window as any).__rsSyncPeer = async (peerId: string) => {
+  if (!peerId) {
+    showToast("请先选择对端主机", "error");
+    return;
+  }
+  try {
+    showToast(`正在与对端 ${peerId} 同步会话...`, "info");
+    const result = await api<any>(`/v1/session-sync/peers/${encodeURIComponent(peerId)}/sync`, {
+      method: "POST",
+      body: JSON.stringify({ direction: "pull" }),
+    });
+    showToast(`会话同步完成: 拉取 ${result.pulled ?? 0} 个新会话，跳过 ${result.skipped ?? 0} 个`, "success");
+    await reload();
+  } catch (err: any) {
+    showToast(`会话同步失败: ${err?.message || String(err)}`, "error");
   }
 };
 

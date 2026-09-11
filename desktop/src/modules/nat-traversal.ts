@@ -19,6 +19,13 @@ type NatConfig = {
       remotePort?: number;
     }>;
   };
+  cloudflared?: {
+    mode?: "quick" | "token";
+    binPath?: string;
+    localUrl?: string;
+    logLevel?: string;
+    publicUrl?: string;
+  };
   frpsDashboard?: { enabled?: boolean; url?: string };
   peers?: Array<{
     id?: string;
@@ -28,6 +35,7 @@ type NatConfig = {
   }>;
   secrets?: {
     frpcTokenConfigured?: boolean;
+    cloudflaredTokenConfigured?: boolean;
     dashboardAuthConfigured?: boolean;
   };
 };
@@ -41,6 +49,25 @@ type NatStatus = {
     lastError?: string;
     recentLogs?: string[];
     binPath?: string;
+    mode?: string;
+    publicUrl?: string;
+  };
+  providers?: {
+    frpc?: {
+      status?: string;
+      pid?: number;
+      lastError?: string;
+      recentLogs?: string[];
+    };
+    cloudflared?: {
+      status?: string;
+      pid?: number;
+      lastError?: string;
+      recentLogs?: string[];
+      publicUrl?: string;
+      mode?: string;
+      binPath?: string;
+    };
   };
   dashboard?: {
     enabled?: boolean;
@@ -66,7 +93,7 @@ type DiscoverItem = {
 };
 
 const state: {
-  view: "catalog" | "frpc";
+  view: "catalog" | "frpc" | "cloudflared";
   loading: boolean;
   error: string;
   config: NatConfig | null;
@@ -74,6 +101,7 @@ const state: {
   discoveries: DiscoverItem[];
   selectedDiscoverPath: string;
   tokenDraft: string;
+  cfTokenDraft: string;
   dashUserDraft: string;
   dashPassDraft: string;
   peerDraft: {
@@ -93,6 +121,7 @@ const state: {
   discoveries: [],
   selectedDiscoverPath: "",
   tokenDraft: "",
+  cfTokenDraft: "",
   dashUserDraft: "",
   dashPassDraft: "",
   peerDraft: {
@@ -164,10 +193,18 @@ function renderDashboardHints(cfg: NatConfig, st: NatStatus): string {
 
 function renderCatalog(): string {
   const cfg = state.config || {};
-  const st = statusMeta(state.status?.provider?.status);
+  const frpStatusRaw = state.status?.providers?.frpc?.status || (state.status?.activeProvider === "frpc" ? state.status?.provider?.status : undefined);
+  const cfStatusRaw = state.status?.providers?.cloudflared?.status || (state.status?.activeProvider === "cloudflared" ? state.status?.provider?.status : undefined);
+  const stFrp = statusMeta(frpStatusRaw);
+  const stCf = statusMeta(cfStatusRaw);
+
   const server = cfg.frpc?.serverAddr || "未配置 serverAddr";
   const proxyCount = cfg.frpc?.proxies?.length || 0;
   const dashReady = Boolean(cfg.secrets?.dashboardAuthConfigured);
+
+  const cfMode = cfg.cloudflared?.mode || "quick";
+  const cfPublicUrl = state.status?.providers?.cloudflared?.publicUrl || (state.status?.activeProvider === "cloudflared" ? state.status?.provider?.publicUrl : undefined) || cfg.cloudflared?.publicUrl || "";
+  const cfTokenReady = Boolean(cfg.secrets?.cloudflaredTokenConfigured);
 
   return `
     <div class="nt-page">
@@ -181,13 +218,13 @@ function renderCatalog(): string {
               <div class="node-card-title">frp</div>
             </div>
             <div class="node-card-actions" onclick="event.stopPropagation()">
-              <span class="${st.badge}">${escapeHtml(st.text)}</span>
+              <span class="${stFrp.badge}">${escapeHtml(stFrp.text)}</span>
             </div>
           </div>
           <div class="node-card-meta">
             <div class="node-card-row">
               <span class="badge">frpc / frps</span>
-              <span class="badge ${st.text === "运行中" ? "badge-default" : ""}">${escapeHtml(st.text)}</span>
+              <span class="badge ${stFrp.text === "运行中" ? "badge-default" : ""}">${escapeHtml(stFrp.text)}</span>
               <span class="badge">${proxyCount} 条映射</span>
               <span class="badge">${dashReady ? "Dashboard 已鉴权" : "Dashboard 待配置"}</span>
             </div>
@@ -202,6 +239,39 @@ function renderCatalog(): string {
           </div>
           <div class="node-card-footer">
             <span>后台托管 frpc（macOS / Windows 可手动启停）</span>
+            <span class="node-card-cta">进入管理 →</span>
+          </div>
+        </div>
+
+        <div class="node-card" role="button" tabindex="0"
+             onclick="window.__ntOpenProvider('cloudflared')"
+             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.__ntOpenProvider('cloudflared');}">
+          <div class="node-card-top">
+            <div class="node-card-title-row">
+              <div class="node-card-title">Cloudflare Tunnel</div>
+            </div>
+            <div class="node-card-actions" onclick="event.stopPropagation()">
+              <span class="${stCf.badge}">${escapeHtml(stCf.text)}</span>
+            </div>
+          </div>
+          <div class="node-card-meta">
+            <div class="node-card-row">
+              <span class="badge">cloudflared</span>
+              <span class="badge ${stCf.text === "运行中" ? "badge-default" : ""}">${escapeHtml(stCf.text)}</span>
+              <span class="badge">${cfMode === "token" ? "Token 隧道" : "Quick 临时公网"}</span>
+              ${cfMode === "token" ? `<span class="badge">${cfTokenReady ? "Token 已配置" : "Token 待配置"}</span>` : ""}
+            </div>
+            <div class="node-card-row">
+              <span class="mono" title="${escapeHtml(cfPublicUrl || "启动后自动捕获公网 URL")}">${escapeHtml(cfPublicUrl || (stCf.text === "运行中" ? "捕获公网地址中..." : "未运行 (Quick / Token)"))}</span>
+            </div>
+            <div class="node-card-models">
+              <span class="tag">无需公网IP</span>
+              <span class="tag">trycloudflare</span>
+              <span class="tag">多端互联</span>
+            </div>
+          </div>
+          <div class="node-card-footer">
+            <span>官方 Cloudflare Tunnel 穿透隧道（支持 Windows / macOS）</span>
             <span class="node-card-cta">进入管理 →</span>
           </div>
         </div>
@@ -393,6 +463,144 @@ function renderFrpcDetail(): string {
   `;
 }
 
+function renderCloudflaredDetail(): string {
+  const cfg = state.config || {};
+  const st = state.status || {};
+  const cfStatus = st.providers?.cloudflared || (st.activeProvider === "cloudflared" ? st.provider : {}) || {};
+  const status = statusMeta(cfStatus.status);
+  const cfConfig = cfg.cloudflared || {};
+  const mode = cfConfig.mode || "quick";
+  const localUrl = cfConfig.localUrl || "http://127.0.0.1:8788";
+  const binPath = cfConfig.binPath || "";
+  const logLevel = cfConfig.logLevel || "info";
+  const publicUrl = cfStatus.publicUrl || cfConfig.publicUrl || "";
+  const tokenConfigured = Boolean(cfg.secrets?.cloudflaredTokenConfigured);
+  const logs = cfStatus.recentLogs || [];
+
+  return `
+    <div class="nt-page">
+      <div class="section-header nt-subhead">
+        <div>
+          <h2>Cloudflare Tunnel 管理</h2>
+          <p>基于 cloudflared 的零公网 IP 穿透，支持 Quick 临时公网与 Token 命名隧道模式。</p>
+        </div>
+        <div class="section-header-actions">
+          <span class="${status.badge}">${escapeHtml(status.text)}</span>
+          <button class="btn" onclick="window.__ntBackCatalog()">返回列表</button>
+          <button class="btn" onclick="window.__ntReload()">刷新</button>
+          <button class="btn btn-primary" onclick="window.__ntSave()">保存配置</button>
+        </div>
+      </div>
+
+      ${state.error ? `<div class="nt-alert">${escapeHtml(state.error)}</div>` : ""}
+      ${cfStatus.lastError ? `<div class="nt-alert">${escapeHtml(cfStatus.lastError)}</div>` : ""}
+
+      <div class="usage-guide nt-block">
+        <div class="nt-block-head">
+          <h3>运行控制</h3>
+          <div class="nt-inline-actions">
+            <button class="btn" onclick="window.__ntStart()">启动</button>
+            <button class="btn" onclick="window.__ntStop()">停止</button>
+            <button class="btn" onclick="window.__ntRestart()">重启</button>
+          </div>
+        </div>
+        <div class="node-card-row" style="margin-top:12px;gap:8px;flex-wrap:wrap;">
+          <span class="badge">PID ${escapeHtml(String(cfStatus.pid || 0))}</span>
+          <span class="badge">模式: ${escapeHtml(cfStatus.mode || mode)}</span>
+          <span class="badge mono" title="${escapeHtml(cfStatus.binPath || binPath || "")}">cloudflared: ${escapeHtml(cfStatus.binPath || binPath || "自动解析")}</span>
+        </div>
+
+        ${publicUrl ? `
+          <div style="margin-top:16px; padding:12px; background:var(--bg-secondary, #f4f4f5); border-radius:8px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-weight:600; font-size:13px;">🌐 公网访问地址:</span>
+              <a href="${escapeHtml(publicUrl)}" target="_blank" rel="noopener noreferrer" class="mono" style="color:var(--accent-color, #0284c7); text-decoration:underline;">${escapeHtml(publicUrl)}</a>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-sm" onclick="window.__ntCopyText('${escapeHtml(publicUrl)}')">📋 复制链接</button>
+              <a class="btn btn-sm" href="${escapeHtml(publicUrl)}" target="_blank" rel="noopener noreferrer">在新标签打开 →</a>
+            </div>
+          </div>
+          ${mode === "quick" ? `<p class="nt-help" style="margin-top:6px;">注：Quick 模式基于 trycloudflare.com 临时分配，进程停止或重启后分配的域名可能会改变。</p>` : ""}
+        ` : (cfStatus.status === "running" ? `
+          <div style="margin-top:12px; padding:10px; background:var(--bg-secondary, #f4f4f5); border-radius:6px;">
+            <span class="mono">正在从 cloudflared 输出流中捕获 trycloudflare.com 域名，请稍候...</span>
+          </div>
+        ` : "")}
+      </div>
+
+      <div class="usage-guide nt-block">
+        <div class="nt-block-head">
+          <h3>📦 cloudflared 安装指引 (跨平台)</h3>
+        </div>
+        <p class="nt-help">如果本机尚未安装 cloudflared，推荐使用 npm 全局安装（双系统全自动下载官方对应平台二进制并配置环境）：</p>
+        <div class="nt-form-grid" style="margin-top:8px;">
+          <div class="form-group nt-col-2">
+            <span style="font-size:12px;color:var(--text-secondary)">推荐跨平台安装方式 (macOS & Windows):</span>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input readonly value="npm install -g cloudflared" class="mono" style="flex:1;" />
+              <button class="btn btn-sm" onclick="window.__ntCopyText('npm install -g cloudflared')">复制命令</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <span style="font-size:12px;color:var(--text-secondary)">macOS (Homebrew):</span>
+            <input readonly value="brew install cloudflared" class="mono" />
+          </div>
+          <div class="form-group">
+            <span style="font-size:12px;color:var(--text-secondary)">Windows (winget):</span>
+            <input readonly value="winget install --id Cloudflare.cloudflared" class="mono" />
+          </div>
+        </div>
+      </div>
+
+      <div class="usage-guide nt-block">
+        <h3>Tunnel 连接配置</h3>
+        <p class="nt-help">配置启动模式、本地映射地址以及 Cloudflare Tunnel Token。凭据安全存放在 nat-traversal.secrets.json，绝不污染模型配置。</p>
+        <div class="nt-form-grid" style="margin-top:12px;">
+          <label class="form-group">
+            <span>穿透模式 (Mode)</span>
+            <select id="nt-cf-mode" onchange="window.__ntCfModeChange(this.value)">
+              <option value="quick" ${mode === "quick" ? "selected" : ""}>Quick 模式 (零配置 *.trycloudflare.com 临时公网)</option>
+              <option value="token" ${mode === "token" ? "selected" : ""}>Token 模式 (Cloudflare Zero Trust 永久命名隧道)</option>
+            </select>
+          </label>
+          <label class="form-group">
+            <span>本地目标服务 (localUrl)</span>
+            <input id="nt-cf-local-url" value="${escapeHtml(localUrl)}" placeholder="http://127.0.0.1:8788" />
+          </label>
+          <label class="form-group nt-col-2" id="nt-cf-token-group" style="${mode === "token" ? "" : "display:none;"}">
+            <span style="display:flex; justify-content:space-between; align-items:center;">
+              <span>Tunnel Token (仅 Token 模式需要)</span>
+              <span class="badge ${tokenConfigured ? "badge-default" : ""}" style="font-size:11px;">
+                ${tokenConfigured ? "已配置" : "未配置"}
+              </span>
+            </span>
+            <input id="nt-cf-token" type="password" value="${escapeHtml(state.cfTokenDraft)}" placeholder="${tokenConfigured ? "已配置 Token，留空保持不变" : "粘贴 Cloudflare Zero Trust 提供的 Tunnel Token"}" />
+          </label>
+          <label class="form-group">
+            <span>可执行文件路径 (binPath)</span>
+            <input id="nt-cf-bin-path" placeholder="留空自动在 PATH、npm、brew 中发现" value="${escapeHtml(binPath)}" />
+          </label>
+          <label class="form-group">
+            <span>日志级别 (logLevel)</span>
+            <select id="nt-cf-log-level">
+              <option value="info" ${logLevel === "info" ? "selected" : ""}>info</option>
+              <option value="debug" ${logLevel === "debug" ? "selected" : ""}>debug</option>
+              <option value="warn" ${logLevel === "warn" ? "selected" : ""}>warn</option>
+              <option value="error" ${logLevel === "error" ? "selected" : ""}>error</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <div class="usage-guide nt-block">
+        <h3>最近日志</h3>
+        <pre class="nt-log">${escapeHtml(logs.slice(-50).join("\n") || "暂无日志")}</pre>
+      </div>
+    </div>
+  `;
+}
+
 function render(): void {
   const el = rootEl();
   if (!el) return;
@@ -405,10 +613,45 @@ function render(): void {
     el.innerHTML = `<div class="nt-page"><div class="nt-alert">${escapeHtml(state.error)} <button class="btn" onclick="window.__ntReload()">重试</button></div></div>`;
     return;
   }
-  el.innerHTML = state.view === "catalog" ? renderCatalog() : renderFrpcDetail();
+  el.innerHTML = state.view === "catalog"
+    ? renderCatalog()
+    : state.view === "frpc"
+      ? renderFrpcDetail()
+      : renderCloudflaredDetail();
 }
 
 function collectConfigFromDom(): { config: NatConfig; secrets: any } {
+  if (state.view === "cloudflared") {
+    const mode = ((document.getElementById("nt-cf-mode") as HTMLSelectElement | null)?.value || "quick") as "quick" | "token";
+    const localUrl = (document.getElementById("nt-cf-local-url") as HTMLInputElement | null)?.value?.trim() || "http://127.0.0.1:8788";
+    const binPath = (document.getElementById("nt-cf-bin-path") as HTMLInputElement | null)?.value?.trim() || "";
+    const logLevel = (document.getElementById("nt-cf-log-level") as HTMLSelectElement | null)?.value || "info";
+    const token = (document.getElementById("nt-cf-token") as HTMLInputElement | null)?.value?.trim() || "";
+
+    state.cfTokenDraft = token;
+
+    const secrets: any = {};
+    if (token) {
+      secrets.cloudflared = { token };
+    }
+
+    return {
+      config: {
+        ...(state.config || {}),
+        enabled: true,
+        activeProvider: "cloudflared",
+        cloudflared: {
+          ...(state.config?.cloudflared || {}),
+          mode,
+          localUrl,
+          binPath,
+          logLevel,
+        },
+      },
+      secrets,
+    };
+  }
+
   const serverAddr = (document.getElementById("nt-server-addr") as HTMLInputElement | null)?.value || "";
   const serverPort = Number((document.getElementById("nt-server-port") as HTMLInputElement | null)?.value || 7000);
   const binPath = (document.getElementById("nt-bin-path") as HTMLInputElement | null)?.value || "";
@@ -507,9 +750,10 @@ async function save(opts: { quietRender?: boolean } = {}): Promise<void> {
     // when we will re-render form fields from server state.
     if (!opts.quietRender) {
       state.tokenDraft = "";
+      state.cfTokenDraft = "";
       state.dashPassDraft = "";
     }
-    showToast("frp 配置已保存", "success");
+    showToast(`${state.view === "cloudflared" ? "Cloudflare Tunnel" : "frp"} 配置已保存`, "success");
     if (!opts.quietRender) render();
   } catch (error: any) {
     state.error = error?.message || String(error);
@@ -521,6 +765,11 @@ async function save(opts: { quietRender?: boolean } = {}): Promise<void> {
 
 async function runAction(action: "start" | "stop" | "restart"): Promise<void> {
   try {
+    if (state.view === "cloudflared" && state.config?.activeProvider !== "cloudflared") {
+      await save({ quietRender: true });
+    } else if (state.view === "frpc" && state.config?.activeProvider !== "frpc") {
+      await save({ quietRender: true });
+    }
     await api(`/v1/nat-traversal/${action}`, { method: "POST", body: "{}" });
     state.status = await api<NatStatus>("/v1/nat-traversal/status");
     showToast(`已${action === "start" ? "启动" : action === "stop" ? "停止" : "重启"}`, "success");
@@ -772,6 +1021,11 @@ async function testPeer(id: string): Promise<void> {
   urlInput.value = `http://${host}:7500/static/#/`;
 };
 (window as any).__ntOpenProvider = async (id: string) => {
+  if (id === "cloudflared") {
+    state.view = "cloudflared";
+    render();
+    return;
+  }
   if (id !== "frpc") {
     showToast("该穿透方式尚未接入", "info");
     return;
@@ -795,6 +1049,21 @@ async function testPeer(id: string): Promise<void> {
 (window as any).__ntBackCatalog = () => {
   state.view = "catalog";
   render();
+};
+(window as any).__ntCfModeChange = (mode: string) => {
+  const tokenGroup = document.getElementById("nt-cf-token-group");
+  if (tokenGroup) {
+    tokenGroup.style.display = mode === "token" ? "" : "none";
+  }
+};
+(window as any).__ntCopyText = (text: string) => {
+  if (navigator.clipboard?.writeText) {
+    void navigator.clipboard.writeText(text).then(() => {
+      showToast("已复制到剪贴板", "success");
+    });
+  } else {
+    showToast("复制失败：浏览器权限受限", "error");
+  }
 };
 
 registerTab("nat-traversal", {
