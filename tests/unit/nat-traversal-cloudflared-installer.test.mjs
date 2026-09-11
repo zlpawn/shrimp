@@ -41,7 +41,7 @@ test("installCloudflared executes installer with runner and handles success and 
   assert.equal(res1.ok, true);
   assert.equal(res1.binPath, "/usr/local/bin/cloudflared");
   assert.ok(capturedCmd.includes("npm"));
-  assert.deepEqual(capturedArgs, ["install", "-g", "cloudflared"]);
+  assert.deepEqual(capturedArgs, ["install", "-g", "--allow-scripts=cloudflared", "cloudflared"]);
 
   // 2. Failure case
   const fakeRunnerFail = (cmd, args, { done }) => {
