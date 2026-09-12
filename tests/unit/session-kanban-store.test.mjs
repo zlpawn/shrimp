@@ -98,3 +98,58 @@ test("cancel and retry transition terminal rows", async () => {
   assert.equal(retry.status, "pending");
   assert.equal(retry.attempts, 1);
 });
+
+test("enqueue persists remote-agent delivery metadata", async () => {
+  const { store } = tempStore();
+  const item = await store.enqueue({
+    sessionId: "claude-1",
+    message: "fix login",
+    source: "remote-agent",
+    bindingKey: "telegram:private:123",
+    platform: "telegram",
+    chatType: "private",
+    chatId: "123",
+    userId: "789",
+    replyToMessageId: "42",
+  });
+  assert.equal(item.source, "remote-agent");
+  assert.equal(item.bindingKey, "telegram:private:123");
+  assert.equal(item.platform, "telegram");
+  assert.equal(item.chatType, "private");
+  assert.equal(item.chatId, "123");
+  assert.equal(item.userId, "789");
+  assert.equal(item.replyToMessageId, "42");
+  assert.equal(item.notifyStatus, "pending");
+  assert.equal(item.notifyAttempts, 0);
+  assert.equal(item.notifyError, "");
+  assert.equal(item.notifiedAt, null);
+
+  const plain = await store.enqueue({
+    sessionId: "claude-1",
+    message: "local only",
+  });
+  assert.equal(plain.source, "");
+  assert.equal(plain.notifyStatus, "none");
+});
+
+
+test("markNotifySent and markNotifyFailed update notify bookkeeping", async () => {
+  const { store } = tempStore();
+  const item = await store.enqueue({
+    sessionId: "claude-1",
+    message: "fix login",
+    source: "remote-agent",
+    bindingKey: "telegram:private:123",
+  });
+  assert.equal(item.notifyStatus, "pending");
+
+  const failed = await store.markNotifyFailed(item.id, "Webhook returned HTTP 500");
+  assert.equal(failed.notifyStatus, "failed");
+  assert.equal(failed.notifyAttempts, 1);
+  assert.match(failed.notifyError, /HTTP 500/);
+
+  const sent = await store.markNotifySent(item.id);
+  assert.equal(sent.notifyStatus, "sent");
+  assert.equal(sent.notifyError, "");
+  assert.ok(sent.notifiedAt);
+});

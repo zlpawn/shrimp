@@ -96,3 +96,47 @@ test("failed dispatch remains visible and retryable", async () => {
   const retried = await service.retry(item.id);
   assert.equal(retried.status, "pending");
 });
+
+
+test("dispatchReady notifies remote-agent items after success and failure", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "kanban-service-"));
+  const store = createSessionKanbanStore({ dbPath: path.join(dir, "q.sqlite") });
+  const events = [];
+  const service = createSessionKanbanService({
+    store,
+    readers: [{ list: async () => [idleClaude] }],
+    dispatchers: [{
+      client: "claude",
+      canDispatch: () => true,
+      dispatch: async (_session, message) => {
+        if (message === "boom") throw new Error("CLI unavailable");
+        return { command: "claude --print", exitCode: 0, stdout: "done" };
+      },
+    }],
+    onQueueSettled: async (item) => { events.push(item); },
+  });
+  await service.enqueue({
+    sessionId: "claude-1",
+    message: "ok",
+    source: "remote-agent",
+    bindingKey: "tg:private:1",
+    platform: "telegram",
+    chatType: "private",
+    chatId: "1",
+    userId: "u1",
+  });
+  await service.enqueue({
+    sessionId: "claude-1",
+    message: "boom",
+    source: "remote-agent",
+    bindingKey: "tg:private:1",
+    platform: "telegram",
+    chatType: "private",
+    chatId: "1",
+    userId: "u1",
+  });
+  await service.dispatchReady();
+  assert.equal(events.length, 2);
+  const statuses = events.map((item) => item.status).sort();
+  assert.deepEqual(statuses, ["dispatched", "failed"]);
+});
