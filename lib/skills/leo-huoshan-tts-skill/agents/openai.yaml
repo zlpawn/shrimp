@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ark TTS"
+  short_description: "Volcengine Ark text-to-speech skill."
+  default_prompt: "Use $xtea-ark-tts-skill to turn this text into spoken audio."

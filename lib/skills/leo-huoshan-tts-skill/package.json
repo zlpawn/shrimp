@@ -1,0 +1,12 @@
+{
+  "name": "xtea-ark-tts-skill",
+  "version": "1.0.0",
+  "description": "Volcengine Ark text-to-speech skill using the official HTTP streaming endpoint.",
+  "main": "scripts/tts.js",
+  "scripts": {
+    "test": "node scripts/tts.js --help"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
