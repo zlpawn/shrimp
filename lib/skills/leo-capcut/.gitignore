@@ -1,0 +1,6 @@
+﻿# Media assets and rendered previews
+*.mp4
+*.wav
+*.mov
+assets/cute_pet_assets/
+assets/warp_animation_assets/

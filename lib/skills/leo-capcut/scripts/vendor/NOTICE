@@ -1,0 +1,5 @@
+This directory vendors a snapshot of pyJianYingDraft for Jianying draft encryption.
+Upstream: https://github.com/aoguai/pyJianYingDraft
+License: Apache License 2.0 (see pyJianYingDraft-LICENSE)
+Original copyright: Copyright 2024 Gary Guan / aoguai
+The snapshot is used only as a local draft codec. Scene templates must not import it directly.

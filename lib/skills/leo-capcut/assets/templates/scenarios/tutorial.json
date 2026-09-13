@@ -1,0 +1,23 @@
+{
+  "id": "tutorial",
+  "name": "教程演示",
+  "duration_seconds": 45,
+  "hook_seconds": 3,
+  "pace": "medium",
+  "canvas": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30
+  },
+  "structure": [
+    "goal",
+    "steps",
+    "result"
+  ],
+  "quality_constraints": [
+    "step_clarity",
+    "on_screen_text_matches_steps"
+  ],
+  "default_style": "clean-vertical",
+  "default_platform": "douyin"
+}

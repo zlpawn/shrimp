@@ -1,0 +1,12 @@
+{
+  "id": "clean-vertical",
+  "name": "干净竖屏",
+  "caption_align": "center",
+  "title_size": 12,
+  "caption_size": 7,
+  "palette": [
+    "#F5F7FA",
+    "#111827",
+    "#38BDF8"
+  ]
+}

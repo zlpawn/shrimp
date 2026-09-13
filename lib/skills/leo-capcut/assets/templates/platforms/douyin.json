@@ -1,0 +1,11 @@
+{
+  "id": "douyin",
+  "name": "抖音",
+  "canvas": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30
+  },
+  "safe_caption_y": -0.73,
+  "max_duration_seconds": 60
+}

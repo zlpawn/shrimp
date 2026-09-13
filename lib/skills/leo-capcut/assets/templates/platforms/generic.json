@@ -1,0 +1,11 @@
+{
+  "id": "generic",
+  "name": "通用",
+  "canvas": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30
+  },
+  "safe_caption_y": -0.7,
+  "max_duration_seconds": 180
+}

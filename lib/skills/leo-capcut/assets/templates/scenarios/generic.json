@@ -1,0 +1,24 @@
+{
+  "id": "generic",
+  "name": "通用短视频",
+  "duration_seconds": 15,
+  "hook_seconds": 3,
+  "pace": "medium",
+  "canvas": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30
+  },
+  "structure": [
+    "hook",
+    "point",
+    "proof",
+    "close"
+  ],
+  "quality_constraints": [
+    "readable_captions",
+    "single_main_message"
+  ],
+  "default_style": "clean-vertical",
+  "default_platform": "douyin"
+}

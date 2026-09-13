@@ -465,6 +465,29 @@
       "requiresDaemon": false,
       "promoted": true,
       "managed": true
+    },
+    {
+      "id": "leo-capcut",
+      "name": "leo-capcut",
+      "title": "Leo 剪映自动化剪辑",
+      "summary": "专业级剪映/CapCut自动化视频剪辑技能。打通从自然语言分镜规划、Timeline IR 编排、多轨叙事剪辑、高级特效滤镜、关键帧推拉、文字动效花字到原生工程草稿无损写入的全流程。",
+      "category": "media",
+      "categoryLabel": "媒体创作",
+      "icon": "🎬",
+      "featured": true,
+      "tags": [
+        "jianying",
+        "capcut",
+        "video-editing",
+        "timeline-ir",
+        "剪映",
+        "自动化剪辑",
+        "特效",
+        "草稿"
+      ],
+      "requiresDaemon": false,
+      "promoted": true,
+      "managed": true
     }
   ]
 }

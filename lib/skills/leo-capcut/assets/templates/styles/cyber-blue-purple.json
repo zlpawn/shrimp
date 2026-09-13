@@ -1,0 +1,12 @@
+{
+  "id": "cyber-blue-purple",
+  "name": "赛博蓝紫",
+  "caption_align": "center",
+  "title_size": 13,
+  "caption_size": 7.2,
+  "palette": [
+    "#07101F",
+    "#40EBFF",
+    "#B75BFF"
+  ]
+}

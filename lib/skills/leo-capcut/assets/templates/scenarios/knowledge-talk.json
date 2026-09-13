@@ -1,0 +1,26 @@
+{
+  "id": "knowledge-talk",
+  "name": "知识讲解/观点口播",
+  "duration_seconds": 30,
+  "hook_seconds": 3,
+  "pace": "fast",
+  "canvas": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30
+  },
+  "structure": [
+    "hook",
+    "claim",
+    "why",
+    "how",
+    "close"
+  ],
+  "quality_constraints": [
+    "one_claim",
+    "caption_covers_speech",
+    "no_empty_broll"
+  ],
+  "default_style": "clean-vertical",
+  "default_platform": "douyin"
+}

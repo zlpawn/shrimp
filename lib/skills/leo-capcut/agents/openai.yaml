@@ -1,0 +1,6 @@
+interface:
+  display_name: "Leo CapCut"
+  short_description: "Natural-language Jianying draft pipeline"
+  default_prompt: "Use $leo-capcut to turn this request into an editable Jianying draft."
+policy:
+  allow_implicit_invocation: true

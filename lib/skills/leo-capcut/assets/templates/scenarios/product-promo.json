@@ -1,0 +1,24 @@
+{
+  "id": "product-promo",
+  "name": "产品宣传",
+  "duration_seconds": 20,
+  "hook_seconds": 2,
+  "pace": "fast",
+  "canvas": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30
+  },
+  "structure": [
+    "pain",
+    "product",
+    "proof",
+    "cta"
+  ],
+  "quality_constraints": [
+    "product_visible_early",
+    "cta_last_3s"
+  ],
+  "default_style": "cyber-blue-purple",
+  "default_platform": "douyin"
+}
