@@ -37,9 +37,43 @@ test("registry exposes built-in app definitions", () => {
   assert.equal(langbot.defaultPort, 5300);
   assert.equal(langbot.healthPath, "/login");
   assert.deepEqual(langbot.defaultArgs, []);
-  assert.deepEqual(langbot.supportedPlatforms, ["win32", "darwin", "linux"]);
+  const voicestudio = getCommandApp("voicestudio");
+  assert.equal(voicestudio.displayName, "VoiceStudio");
+  assert.equal(voicestudio.type, "executable");
+  assert.equal(voicestudio.executableName, "omnivoice-studio.exe");
+  assert.equal(voicestudio.defaultPort, 3900);
+  assert.equal(voicestudio.healthPath, "/health");
+  assert.equal(voicestudio.appPath, "/docs");
+  assert.deepEqual(voicestudio.defaultArgs, []);
+  assert.deepEqual(voicestudio.supportedPlatforms, ["win32", "darwin"]);
 
-  assert.equal(listCommandApps().length, 4);
+  assert.equal(listCommandApps().length, 5);
+});
+
+test("validateAppSettings accepts VoiceStudio on Windows and macOS", () => {
+  const app = getCommandApp("voicestudio");
+  const winExe = "D:\\VoiceStudio\\omnivoice-studio.exe";
+  const macApp = "/Applications/VoiceStudio.app";
+
+  const winResult = validateAppSettings(app, { executablePath: winExe }, {
+    platform: "win32",
+    fileExists: (p) => p === winExe,
+  });
+  assert.equal(winResult.executablePath, winExe);
+
+  const macResult = validateAppSettings(app, { executablePath: macApp }, {
+    platform: "darwin",
+    fileExists: (p) => p === macApp,
+  });
+  assert.equal(macResult.executablePath, macApp);
+
+  assert.throws(
+    () => validateAppSettings(app, { executablePath: "D:\\VoiceStudio\\omnivoice-studio.bat" }, {
+      platform: "win32",
+      fileExists: () => true,
+    }),
+    CommandAppsError,
+  );
 });
 
 test("normalizeCommandAppsConfig keeps only known app settings", () => {
@@ -49,7 +83,7 @@ test("normalizeCommandAppsConfig keeps only known app settings", () => {
       unknown: { executablePath: windowsPath },
     },
   }, { platform: "win32" });
-  assert.deepEqual(Object.keys(config.apps).sort(), ["antigravity", "hindsight", "langbot", "shrimp"]);
+  assert.deepEqual(Object.keys(config.apps).sort(), ["antigravity", "hindsight", "langbot", "shrimp", "voicestudio"]);
   assert.equal(config.apps.antigravity.manuallyConfigured, false);
   assert.equal(config.apps.langbot.executablePath, "");
   assert.equal(config.apps.langbot.cwd, path.join(os.homedir(), ".langbot"));
