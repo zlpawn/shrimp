@@ -196,6 +196,52 @@ test("discovery filters missing and non-exe candidates", async () => {
   assert.equal(result.selected.strategy, "well-known-localappdata");
 });
 
+test("discovery finds VoiceStudio via shortcut and common drive on Windows", async () => {
+  const app = getCommandApp("voicestudio");
+  const shortcutTarget = "D:\\VoiceStudio\\omnivoice-studio.exe";
+  const result = await discoverCommandApp(app, {
+    platform: "win32",
+    env: { LOCALAPPDATA: "C:\\Users\\xtea\\AppData\\Local", PATH: "C:\\Windows" },
+    fileExists: (p) => p === shortcutTarget,
+    statFile: async () => ({ isFile: () => true }),
+    queryAppPaths: async () => [],
+    searchPathDirs: async () => [],
+    readShortcutTarget: async () => shortcutTarget,
+  });
+  assert.equal(result.selected.path, shortcutTarget);
+  assert.equal(result.selected.strategy, "start-menu-shortcuts");
+});
+
+test("discovery finds VoiceStudio in common drive roots on Windows", async () => {
+  const app = getCommandApp("voicestudio");
+  const drivePath = "D:\\VoiceStudio\\omnivoice-studio.exe";
+  const result = await discoverCommandApp(app, {
+    platform: "win32",
+    env: { LOCALAPPDATA: "C:\\Users\\xtea\\AppData\\Local", PATH: "" },
+    fileExists: (p) => p === drivePath,
+    statFile: async () => ({ isFile: () => true }),
+    queryAppPaths: async () => [],
+    searchPathDirs: async () => [],
+    readShortcutTarget: async () => "",
+  });
+  assert.equal(result.selected.path, drivePath);
+  assert.equal(result.selected.strategy, "common-drive-roots");
+});
+
+test("discovery finds VoiceStudio in macOS Applications directory", async () => {
+  const app = getCommandApp("voicestudio");
+  const macApp = "/Applications/VoiceStudio.app";
+  const result = await discoverCommandApp(app, {
+    platform: "darwin",
+    env: { HOME: "/Users/test" },
+    fileExists: (p) => p === macApp,
+    statFile: async () => ({ isDirectory: () => true, isFile: () => false }),
+    searchPathDirs: async () => [],
+  });
+  assert.equal(result.selected.path, macApp);
+  assert.equal(result.selected.strategy, "macos-applications");
+});
+
 
 import {
   createCommandAppsProcessStore,
