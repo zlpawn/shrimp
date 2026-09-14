@@ -75,6 +75,7 @@ type CommandAppStatus = {
   dataRoot?: string | null;
   version?: string | null;
   installable?: boolean;
+  healthy?: boolean | null;
   configApply?: {
     restartRequired: boolean;
     restarted: boolean;
@@ -448,6 +449,14 @@ function renderCard(status: CommandAppStatus): string {
           ${status.plugin?.usedByCodex ? `<span class="command-apps-badge is-codex">插件正在使用</span>` : ""}
         </div>` : "";
 
+  const endpointSummary = status.endpoints?.appUrl ? `
+        <div>
+          <dt>Web / API</dt>
+          <dd class="command-apps-path" title="${escapeHtml(status.endpoints.appUrl)}">${escapeHtml(status.endpoints.appUrl)}</dd>
+          <span class="command-apps-badge">:${Number(status.endpoints.port || 3900)}</span>
+          ${running ? `<span class="command-apps-badge ${status.healthy ? "is-running" : "is-neutral"}">${status.healthy ? "服务就绪" : "启动中"}</span>` : ""}
+        </div>` : "";
+
   return `
     <div class="command-apps-card${running ? " is-running" : ""}${!isSupported ? " is-unsupported" : ""}${hasError ? " is-card-error" : ""}" data-app-id="${escapeHtml(appId)}">
       <div class="command-apps-header">
@@ -472,6 +481,7 @@ function renderCard(status: CommandAppStatus): string {
           <span class="command-apps-badge">${status.process?.status === "launching" ? "正在加载模型，首次可能需要 1-3 分钟" : (running ? `${Number(status.process?.count || 1)} 个进程` : (hasError ? "状态异常" : "无活动进程"))}</span>
         </div>
         ${llmSummary}
+        ${endpointSummary}
       </dl>
 
       <div class="command-apps-args" aria-label="执行命令">
@@ -602,6 +612,9 @@ ${sources.embedding.type === "custom" ? `
         </form>
       ` : `
         <div class="command-apps-actions">
+          ${status.endpoints?.appUrl ? `
+            <button class="btn" type="button" onclick="window.__commandAppsOpenAppUrl('${escapeHtml(appId)}')" ${!running ? "disabled" : ""}>打开 Web API</button>
+          ` : ""}
           ${isProject ? `
             <button class="btn btn-primary" onclick="window.__commandAppsRestart('${escapeHtml(appId)}')" ${isBusy || !status.configured || !isSupported ? "disabled" : ""}>${busyAction === "restart" || busyAction === "launch" ? (running ? "重启中..." : "启动中...") : (running ? "重启" : "启动")}</button>
           ` : `
@@ -927,6 +940,14 @@ function openLangBotBots(): void {
   window.open(`${base.replace(/\/$/, "")}/home/bots`, "_blank", "noopener,noreferrer");
 }
 
+function openAppUrl(appId: string): void {
+  const current = state.apps.find((a) => a.app?.id === appId);
+  const url = current?.endpoints?.appUrl || (appId === "voicestudio" ? "http://127.0.0.1:3900/docs" : "");
+  if (url) {
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+}
+
 async function rescan(appId: string = "antigravity"): Promise<void> {
   await runAction(appId, "rescan", async () => {
     const status = await api<CommandAppStatus>(`/v1/command-apps/apps/${encodeURIComponent(appId)}/discover`);
@@ -1154,6 +1175,8 @@ async function openMemoryPage(): Promise<void> {
 (window as any).__commandAppsOpenMemoryPage = openMemoryPage;
 (window as any).__commandAppsInstallHindsight = installHindsight;
 (window as any).__commandAppsUpdateHindsight = updateHindsight;
+(window as any).__commandAppsOpenAppUrl = openAppUrl;
+(window as any).__commandAppsOpenVoiceStudio = () => openAppUrl("voicestudio");
 
 document.addEventListener("input", (event) => {
   const target = event.target as HTMLInputElement | null;

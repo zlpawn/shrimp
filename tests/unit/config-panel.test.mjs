@@ -752,6 +752,15 @@ test("LangBot install and update actions use managed busy states", async () => {
   assert.match(source, /showToast\(action === "install" \? "LangBot 安装中" : "LangBot 更新中", "info"\)/);
 });
 
+test("command apps card supports Web API button and health status badge", async () => {
+  const source = await readFile(path.join(ROOT, "desktop", "src", "modules", "command-apps.ts"), "utf8");
+  assert.match(source, /status\.endpoints\?\.appUrl/);
+  assert.match(source, /打开 Web API/);
+  assert.match(source, /__commandAppsOpenAppUrl/);
+  assert.match(source, /__commandAppsOpenVoiceStudio/);
+  assert.match(source, /status\.healthy \? "服务就绪" : "启动中"/);
+});
+
 test("video kb ingest form includes collection field", async () => {
   const src = await readFile(path.join(ROOT, "desktop", "src", "modules", "video-kb.ts"), "utf8");
   assert.match(src, /vk-collection/);
