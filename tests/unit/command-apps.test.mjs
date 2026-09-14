@@ -439,6 +439,85 @@ test("service listApps on darwin returns supported=false for antigravity without
   const shrimp = list.find((item) => item.app.id === "shrimp");
   assert.ok(shrimp);
   assert.equal(shrimp.app.supported, true);
+
+  const voicestudio = list.find((item) => item.app.id === "voicestudio");
+  assert.ok(voicestudio);
+  assert.equal(voicestudio.app.supported, true);
+});
+
+test("service launches and stops VoiceStudio on Windows with endpoints and health", async () => {
+  const vsPath = "D:\\VoiceStudio\\omnivoice-studio.exe";
+  const saved = [];
+  const configStore = {
+    get() { return saved.at(-1) || { apps: { voicestudio: { executablePath: vsPath } } }; },
+    save(next) { saved.push(next); return next; },
+  };
+  const spawnCalls = [];
+  const stoppedPids = [];
+  const child = { pid: 8888, unref() {} };
+  let runningProcesses = [];
+  let isHealthy = false;
+
+  const service = createCommandAppsService({
+    configStore,
+    platform: "win32",
+    discovery: async () => ({ selected: { path: vsPath }, candidates: [{ path: vsPath }] }),
+    listProcesses: async () => runningProcesses,
+    terminateProcess: async (pid) => { stoppedPids.push(pid); },
+    spawnProcess: (...args) => { spawnCalls.push(args); return child; },
+    fileExists: (p) => p === vsPath,
+    probeVoicestudio: async () => isHealthy,
+  });
+
+  const initialStatus = await service.getStatus("voicestudio");
+  assert.equal(initialStatus.process.status, "stopped");
+  assert.equal(initialStatus.endpoints.port, 3900);
+  assert.equal(initialStatus.endpoints.healthUrl, "http://127.0.0.1:3900/health");
+  assert.equal(initialStatus.endpoints.appUrl, "http://127.0.0.1:3900/docs");
+  assert.equal(initialStatus.healthy, false);
+
+  const launchResult = await service.launch("voicestudio");
+  assert.equal(spawnCalls.length, 1);
+  assert.equal(spawnCalls[0][0], "runas.exe");
+  assert.deepEqual(spawnCalls[0][1], [
+    "/trustlevel:0x20000",
+    `"${vsPath}"`,
+  ]);
+
+  runningProcesses = [{ pid: 8888, executablePath: vsPath }];
+  isHealthy = true;
+  const runningStatus = await service.getStatus("voicestudio");
+  assert.equal(runningStatus.process.status, "running");
+  assert.equal(runningStatus.healthy, true);
+
+  await service.stop("voicestudio");
+  assert.deepEqual(stoppedPids, [8888]);
+});
+
+test("service launches VoiceStudio on macOS via open -a for .app bundles", async () => {
+  const macPath = "/Applications/VoiceStudio.app";
+  const saved = [];
+  const configStore = {
+    get() { return saved.at(-1) || { apps: { voicestudio: { executablePath: macPath } } }; },
+    save(next) { saved.push(next); return next; },
+  };
+  const spawnCalls = [];
+  const child = { pid: 7777, unref() {} };
+
+  const service = createCommandAppsService({
+    configStore,
+    platform: "darwin",
+    discovery: async () => ({ selected: { path: macPath }, candidates: [{ path: macPath }] }),
+    listProcesses: async () => [],
+    terminateProcess: async () => {},
+    spawnProcess: (...args) => { spawnCalls.push(args); return child; },
+    fileExists: (p) => p === macPath,
+  });
+
+  await service.launch("voicestudio");
+  assert.equal(spawnCalls.length, 1);
+  assert.equal(spawnCalls[0][0], "open");
+  assert.deepEqual(spawnCalls[0][1], ["-a", macPath]);
 });
 
 test("service listApps isolates individual app errors without breaking other apps", async () => {
