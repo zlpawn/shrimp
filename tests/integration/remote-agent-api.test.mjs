@@ -96,3 +96,36 @@ test("remote-agent API health auth and message path", async () => {
     bindingStore.close();
   }
 });
+
+test("remote-agent status endpoint is implemented", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "remote-agent-status-"));
+  const bindingStore = createRemoteAgentBindingStore({ dbPath: path.join(dir, "bind.sqlite") });
+  const service = createRemoteAgentService({
+    bindingStore,
+    sessionKanban: setupKanban([]),
+    token: "secret",
+  });
+  const configService = {
+    getStatus: async () => ({ ok: true, enabled: true, tokenConfigured: true }),
+  };
+
+  const server = http.createServer((req, res) => {
+    routeRemoteAgentRequest(req, res, new URL(req.url, "http://localhost").pathname, {
+      service,
+      configService,
+    });
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const port = server.address().port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/v1/remote-agent/status`);
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.equal(body.ok, true);
+    assert.equal(body.tokenConfigured, true);
+  } finally {
+    server.close();
+    bindingStore.close();
+  }
+});

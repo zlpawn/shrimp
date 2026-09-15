@@ -1,6 +1,11 @@
 import { registerTab } from "../core/navigation";
 import { showToast } from "../core/ui";
 import { escapeHtml } from "../core/dom";
+import {
+  enterImSessionDelivery,
+  renderImSessionDeliveryPanel,
+  setImSessionDeliveryRenderHook,
+} from "./im-session-delivery";
 
 export function sortAntigravityModels<T extends { id?: string; name?: string; label?: string }>(models: T[] = []): T[] {
   const filtered = models.filter((m) => {
@@ -151,7 +156,7 @@ const OFFICIAL_MODELS_FALLBACK: AvailableModel[] = sortAntigravityModels([
 ]);
 
 const state: {
-  view: "catalog" | "antigravity" | "official-links";
+  view: "catalog" | "antigravity" | "official-links" | "im-session-delivery";
   loading: boolean;
   error: string;
   config: RemoteConfig | null;
@@ -414,7 +419,11 @@ function renderCatalog(): string {
 
       ${state.error ? `<div class="rs-alert">${escapeHtml(state.error)}</div>` : ""}
 
-      <div class="endpoints-grid rs-catalog-grid">
+      <div class="rs-catalog-section">
+        <div class="mcp-section-label-row">
+          <span class="mcp-section-label">远端桌面 / 官方控制</span>
+        </div>
+        <div class="endpoints-grid rs-catalog-grid">
         <div class="node-card" role="button" tabindex="0"
              onclick="window.__rsOpenScene('antigravity')"
              onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.__rsOpenScene('antigravity');}">
@@ -476,6 +485,39 @@ function renderCatalog(): string {
             <span>管理官方远程链接；官方站点禁止 iframe 时使用新 Tab</span>
             <span class="node-card-cta">管理官方链接 →</span>
           </div>
+        </div>
+        </div>
+      </div>
+
+      <div class="rs-catalog-section">
+        <div class="mcp-section-label-row">
+          <span class="mcp-section-label">IM 会话投递</span>
+        </div>
+        <div class="endpoints-grid rs-catalog-grid">
+        <div class="node-card" role="button" tabindex="0"
+             onclick="window.__rsOpenScene('im-session-delivery')"
+             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.__rsOpenScene('im-session-delivery');}">
+          <div class="node-card-top">
+            <div class="node-card-title-row">
+              <div class="node-card-title">💬 IM 会话投递</div>
+            </div>
+            <div class="node-card-actions" onclick="event.stopPropagation()">
+              <span class="badge">LangBot / Dify</span>
+            </div>
+          </div>
+          <div class="node-card-meta">
+            <div class="node-card-row">
+              <span class="badge">Telegram / QQ 等平台</span>
+              <span class="badge">Codex / Claude / Antigravity</span>
+              <span class="badge">同步结果</span>
+            </div>
+            <div class="node-card-row mono">通过 /agent 命令绑定聊天与本机会话</div>
+          </div>
+          <div class="node-card-footer">
+            <span>把聊天消息投递到本机 Agent 会话，并在原聊天里返回结果</span>
+            <span class="node-card-cta">管理 IM 投递 →</span>
+          </div>
+        </div>
         </div>
       </div>
     </div>
@@ -972,7 +1014,9 @@ function renderPeerModal(): string {
 function render(): void {
   const el = rootEl();
   if (!el) return;
-  const content = state.view === "antigravity"
+  const content = state.view === "im-session-delivery"
+    ? renderImSessionDeliveryPanel()
+    : state.view === "antigravity"
     ? renderAntigravityScene()
     : state.view === "official-links"
       ? renderOfficialLinksScene()
@@ -1548,8 +1592,9 @@ function copyConversationContent(): void {
 
 // Window Globals for UI actions
 (window as any).__rsReload = () => { void reload(); };
-(window as any).__rsOpenScene = (scene: "antigravity" | "official-links") => {
+(window as any).__rsOpenScene = (scene: "antigravity" | "official-links" | "im-session-delivery") => {
   state.view = scene;
+  if (scene === "im-session-delivery") enterImSessionDelivery();
   render();
 };
 (window as any).__rsBackToCatalog = () => {
@@ -1797,6 +1842,7 @@ function copyConversationContent(): void {
 
 registerTab("remote-session", {
   onEnter: () => {
+    setImSessionDeliveryRenderHook(render);
     void Promise.all([reload(), loadOfficialLinks()]);
   },
   onLeave: () => {
