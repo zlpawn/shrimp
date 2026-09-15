@@ -3,12 +3,30 @@ import assert from "node:assert/strict";
 import { getStatus, resolveBinary, checkHealth, DEFAULT_WORKBUDDY_PORT } from "../../lib/workbuddy/supervisor.mjs";
 import { routeWorkbuddyRequest } from "../../lib/workbuddy/routes.mjs";
 import { EventEmitter } from "node:events";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 
 test("supervisor resolves uv and workbuddy2api binaries", () => {
   const uvBin = resolveBinary("uv");
   assert.ok(uvBin, "uv binary should be resolved");
   const wbBin = resolveBinary("workbuddy2api");
   assert.ok(wbBin, "workbuddy2api binary should be resolved");
+});
+
+test("resolveBinary detects Windows executable extensions", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "workbuddy-bin-"));
+  try {
+    const bin = path.join(dir, "workbuddy2api.exe");
+    fs.writeFileSync(bin, "", "utf8");
+    assert.equal(resolveBinary("workbuddy2api", {
+      platform: "win32",
+      home: dir,
+      pathValue: dir,
+    }), bin);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test("getStatus returns comprehensive environment report", async () => {

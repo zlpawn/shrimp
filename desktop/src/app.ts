@@ -4171,6 +4171,7 @@ function createEndpointDetailHTML(client, index, ep) {
                             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                                 <span id="wb-status-text-${client}-${index}">状态：检测中...</span>
                                 <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                                    <button type="button" class="btn btn-sm btn-primary" title="安装 workbuddy2api（uv tool install workbuddy2api）" onclick="installWorkbuddy('${client}', ${index})">安装 workbuddy2api</button>
                                     <button type="button" class="btn btn-sm btn-primary" title="唤起腾讯 CodeBuddy 国际版 (workbuddy.ai) 授权页面" onclick="triggerWorkbuddyLogin('${client}', ${index}, 'global')">一键登录(国际版)</button>
                                     <button type="button" class="btn btn-sm" title="唤起腾讯 CodeBuddy 国内版 (copilot.tencent.com) 授权页面" onclick="triggerWorkbuddyLogin('${client}', ${index}, 'cn')">一键登录(国内版)</button>
                                     <button type="button" class="btn btn-sm" onclick="restartWorkbuddyService('${client}', ${index})">启动/就绪服务</button>
@@ -7701,6 +7702,34 @@ window.pollWorkbuddyStatus = async function(client: string, index: number) {
         textEl.innerHTML = `服务：${statusBadge} &nbsp;|&nbsp; 账号：${sessionBadge}`;
     } catch (err: any) {
         textEl.innerHTML = `<span style="color:var(--text-danger, #ef4444)">检测异常: ${escapeHtml(err?.message || String(err))}</span>`;
+    }
+};
+
+window.installWorkbuddy = async function(client: string, index: number) {
+    const textEl = document.getElementById(`wb-status-text-${client}-${index}`);
+    if (textEl) {
+        textEl.innerHTML = '<span style="color:#3b82f6;">正在安装 workbuddy2api（uv tool install workbuddy2api）...</span>';
+    }
+    showToast('正在安装 workbuddy2api，请稍候...', 'info');
+    try {
+        const res = await fetch('/v1/workbuddy/install', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: '{}',
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+            const detail = typeof data?.error === 'object'
+                ? (data.error?.message || JSON.stringify(data.error))
+                : (data?.error || '未知错误');
+            showToast('workbuddy2api 安装失败: ' + detail, 'error');
+        } else {
+            showToast(`workbuddy2api 安装成功${data.binPath ? `：${data.binPath}` : ''}`, 'success');
+        }
+        await window.pollWorkbuddyStatus(client, index);
+    } catch (err: any) {
+        showToast('workbuddy2api 安装异常: ' + (err?.message || String(err)), 'error');
+        await window.pollWorkbuddyStatus(client, index);
     }
 };
 
