@@ -6374,7 +6374,7 @@ async function forwardResolvedCodexResponse({
   // gpt-* models via fallback matching.
   let route = resolveConfiguredModelPrecise(
     requestedModel,
-    ["anthropic", "openai-chat", "openai-responses", "grok", "antigravity", "codex-subscription", "chatgpt-codex"],
+    ["anthropic", "openai-chat", "openai-responses", "grok", "antigravity", "codex-subscription", "chatgpt-codex", "workbuddy"],
     context.client,
   );
   if (!route && context.client === "codex" && isOfficialCodexModel(requestedModel)) {
@@ -6396,7 +6396,7 @@ async function forwardResolvedCodexResponse({
   if (!route) {
     route = resolveConfiguredModel(
       requestedModel,
-      ["anthropic", "openai-chat", "openai-responses", "grok", "antigravity", "codex-subscription", "chatgpt-codex"],
+      ["anthropic", "openai-chat", "openai-responses", "grok", "antigravity", "codex-subscription", "chatgpt-codex", "workbuddy"],
       context.client,
     );
   }
@@ -6550,7 +6550,7 @@ async function forwardResolvedCodexResponse({
     return;
   }
 
-  if (route?.provider?.type === "openai-chat") {
+  if (route?.provider?.type === "openai-chat" || route?.provider?.type === "workbuddy") {
     if (injectedSearch.selected) {
       const loop = await runGatewayWebSearchResponsesLoop({
         body: withoutStreamFlag(body),
@@ -6565,6 +6565,14 @@ async function forwardResolvedCodexResponse({
         }),
         fetchResponse: async (loopBody) => {
           const chatRequest = responsesRequestToChat(loopBody, resolvedModel);
+          if (route.provider?.type === "workbuddy" && Array.isArray(chatRequest.body?.messages)) {
+            if (chatRequest.body.messages.length === 0 || chatRequest.body.messages[0]?.role !== "system") {
+              chatRequest.body.messages = [
+                { role: "system", content: "You are a helpful assistant." },
+                ...chatRequest.body.messages,
+              ];
+            }
+          }
           let upstream = await fetchConfiguredOpenAI(
             route.provider,
             "/v1/chat/completions",
@@ -6581,6 +6589,14 @@ async function forwardResolvedCodexResponse({
             context,
             fetchAgain: async (retryBody) => {
               const retryRequest = responsesRequestToChat(retryBody, resolvedModel);
+              if (route.provider?.type === "workbuddy" && Array.isArray(retryRequest.body?.messages)) {
+                if (retryRequest.body.messages.length === 0 || retryRequest.body.messages[0]?.role !== "system") {
+                  retryRequest.body.messages = [
+                    { role: "system", content: "You are a helpful assistant." },
+                    ...retryRequest.body.messages,
+                  ];
+                }
+              }
               return fetchConfiguredOpenAI(
                 route.provider,
                 "/v1/chat/completions",
@@ -6623,6 +6639,14 @@ async function forwardResolvedCodexResponse({
     }
 
     const chatRequest = responsesRequestToChat(body, resolvedModel);
+    if (route.provider?.type === "workbuddy" && Array.isArray(chatRequest.body?.messages)) {
+      if (chatRequest.body.messages.length === 0 || chatRequest.body.messages[0]?.role !== "system") {
+        chatRequest.body.messages = [
+          { role: "system", content: "You are a helpful assistant." },
+          ...chatRequest.body.messages,
+        ];
+      }
+    }
     let upstream = await fetchConfiguredOpenAI(
       route.provider,
       "/v1/chat/completions",
@@ -6639,6 +6663,14 @@ async function forwardResolvedCodexResponse({
       context,
       fetchAgain: async (retryBody) => {
         const retryRequest = responsesRequestToChat(retryBody, resolvedModel);
+        if (route.provider?.type === "workbuddy" && Array.isArray(retryRequest.body?.messages)) {
+          if (retryRequest.body.messages.length === 0 || retryRequest.body.messages[0]?.role !== "system") {
+            retryRequest.body.messages = [
+              { role: "system", content: "You are a helpful assistant." },
+              ...retryRequest.body.messages,
+            ];
+          }
+        }
         return fetchConfiguredOpenAI(
           route.provider,
           "/v1/chat/completions",
@@ -6649,6 +6681,51 @@ async function forwardResolvedCodexResponse({
         );
       },
     });
+
+    // Multi-node failover across candidates on 429/403/5xx
+    if (route.candidates && route.candidates.length > 1 && (upstream.status === 429 || upstream.status === 403 || upstream.status >= 500)) {
+      for (const altRoute of route.candidates) {
+        if (altRoute.endpoint?.id === route.endpoint?.id) continue;
+        logInfo("endpoint_failover", {
+          client: context.client,
+          from_endpoint: route.endpoint?.id,
+          to_endpoint: altRoute.endpoint?.id,
+          status: upstream.status,
+          protocol: "responses",
+        });
+        const altResolvedModel = altRoute.upstream_model || resolveModel(requestedModel);
+        const altChatRequest = responsesRequestToChat(body, altResolvedModel);
+        if (altRoute.provider?.type === "workbuddy" && Array.isArray(altChatRequest.body?.messages)) {
+          if (altChatRequest.body.messages.length === 0 || altChatRequest.body.messages[0]?.role !== "system") {
+            altChatRequest.body.messages = [
+              { role: "system", content: "You are a helpful assistant." },
+              ...altChatRequest.body.messages,
+            ];
+          }
+        }
+        try {
+          const altUpstream = await fetchConfiguredOpenAI(
+            altRoute.provider,
+            "/v1/chat/completions",
+            altChatRequest.body,
+            clientReq,
+            signal,
+            !isOpenAIClient(context.client),
+          );
+          if (altUpstream && altUpstream.ok) {
+            upstream = altUpstream;
+            route = altRoute;
+            break;
+          }
+        } catch (err) {
+          logInfo("endpoint_failover_failed", {
+            endpoint: altRoute.endpoint?.id,
+            error: err.message,
+          });
+        }
+      }
+    }
+
     logInfo("openai_responses_response", {
       request_id: context.requestId,
       client: context.client,
@@ -10439,6 +10516,7 @@ function resolveConfiguredModelPrecise(requestedModel, allowedTypes = [], client
       !isCapabilityEndpoint(ep) && hasConfiguredApiKey(ep)
     );
 
+    const matchingCandidates = [];
     for (const ep of endpoints) {
       if (allowed.size !== 0 && !allowed.has(ep.type)) continue;
       let targetModel = text;
@@ -10446,13 +10524,38 @@ function resolveConfiguredModelPrecise(requestedModel, allowedTypes = [], client
         targetModel = ep.model_mapping[text];
       }
       if (ep.models?.includes(targetModel) || ep.name === text || ep.model_mapping?.[text]) {
-        return {
+        matchingCandidates.push({
           model: { id: text, display_name: text, upstream_model: targetModel, aliases: [] },
           provider: endpointProvider(ep),
           endpoint: ep,
           upstream_model: targetModel,
-        };
+        });
       }
+    }
+
+    if (matchingCandidates.length > 0) {
+      let chosen;
+      const wbCandidates = matchingCandidates.filter(c => c.endpoint?.type === "workbuddy");
+      const pool = wbCandidates.length > 1 ? wbCandidates : (
+        matchingCandidates.length > 1 && !matchingCandidates.some(c => c.endpoint?.is_default && c.endpoint?.type !== "workbuddy")
+          ? matchingCandidates
+          : null
+      );
+
+      if (pool && pool.length > 1) {
+        const rrKey = `${c}:${text}`;
+        const currentIdx = ROUTE_ROUND_ROBIN_INDEX.get(rrKey) || 0;
+        chosen = pool[currentIdx % pool.length];
+        ROUTE_ROUND_ROBIN_INDEX.set(rrKey, (currentIdx + 1) % pool.length);
+      } else {
+        chosen = matchingCandidates[0];
+      }
+
+      chosen.candidates = [
+        chosen,
+        ...matchingCandidates.filter(cand => cand.endpoint?.id !== chosen.endpoint?.id),
+      ];
+      return chosen;
     }
   }
   return null;
