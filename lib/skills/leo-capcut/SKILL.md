@@ -29,6 +29,19 @@ natural language
 
 Done when the Timeline IR validates. If the user asked to write into Jianying, also produce an encrypted draft, copy media into the draft, and register the homepage only while Jianying is not running.
 
+## Voiceover & Speech Collaboration Protocol
+
+When a video requires speech synthesis, voiceover narration, or subtitle alignment:
+1. Do not hardcode custom TTS synthesis engines into `leo-capcut`.
+2. Awaken and invoke the peer `omnivoice` skill (`~/.agents/skills/omnivoice`):
+   - Check backend health at `http://localhost:3900/health` (VoiceStudio).
+   - Synthesize narration via `http://localhost:3900/v1/audio/speech` (prioritizing user cloned voice profiles discovered via `/v1/audio/voices`).
+   - Extract millisecond-precision subtitles via `http://localhost:3900/v1/audio/transcriptions` (model `whisper-1`, `response_format=srt`).
+3. Return the generated `.wav`/`.mp3` and `.srt` to `leo-capcut`:
+   - Map narration into `tracks[type=audio]`.
+   - Map synchronized subtitles into `tracks[type=text]`.
+   - Align camera zoom keyframes, kinetic flower text, and shot cuts to speech cadence and word timing.
+
 Resolve SKILL.md as SKILL_ROOT and run:
 
 ```text
