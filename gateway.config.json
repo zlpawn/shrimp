@@ -1000,6 +1000,32 @@
       ],
       "display_name": "LangBot 代理",
       "protocol": "openai"
+    },
+    "zcode": {
+      "endpoints": [
+        {
+          "id": "ep_ec600be6-538a-4473-a6de-2ee75eef1f88",
+          "name": "workbuddy",
+          "type": "workbuddy",
+          "base_url": "http://127.0.0.1:7863/v1",
+          "auth": "none",
+          "models": [
+            "deepseek-v4.1-flash"
+          ],
+          "model_mapping": {},
+          "capabilities": {
+            "reasoning": true,
+            "tools": true
+          },
+          "model_capabilities": {
+            "deepseek-v4.1-flash": {
+              "max_tokens": 16384
+            }
+          }
+        }
+      ],
+      "display_name": "Zcode 代理",
+      "protocol": "openai"
     }
   },
   "tools": {

@@ -77,7 +77,7 @@ test("Codex endpoint editor offers Anthropic Messages protocol and auth selectio
   assert.match(html, /Anthropic Messages 协议/);
   assert.match(
     html,
-    /\['anthropic',\s*'openai-responses',\s*'openai-chat',\s*'grok',\s*'antigravity'\]/,
+    /\['anthropic',\s*'openai-responses',\s*'openai-chat',\s*'workbuddy',\s*'grok',\s*'antigravity'\]/,
   );
   assert.match(html, /<label>鉴权方式<\/label>/);
   assert.match(html, /value="bearer"/);
@@ -597,7 +597,7 @@ test("endpoint type list includes antigravity google subscription label", async 
   const html = await readSources();
   assert.match(html, /value: "antigravity"/);
   assert.match(html, /Antigravity（Google 订阅）/);
-  assert.match(html, /\['anthropic',\s*'openai-responses',\s*'openai-chat',\s*'grok',\s*'antigravity'\]/);
+  assert.match(html, /\['anthropic',\s*'openai-responses',\s*'openai-chat',\s*'workbuddy',\s*'grok',\s*'antigravity'\]/);
   assert.match(html, /Google v1internal gRPC/);
 });
 
@@ -1128,3 +1128,16 @@ test("custom client navigation dynamically renders distinctive icons per client 
   assert.notEqual(hindsightIcon, workbuddyIcon, "Hindsight and WorkBuddy must receive distinct icons");
   assert.match(emojiIcon, /🚀/, "Explicit icon configuration should be rendered");
 });
+
+test("config panel includes WorkBuddy endpoint support and lifecycle controls", async () => {
+  const html = await readSources();
+  assert.match(html, /WorkBuddy 智能体池/);
+  assert.match(html, /workbuddy2api/);
+  assert.match(html, /triggerWorkbuddyLogin/);
+  assert.match(html, /restartWorkbuddyService/);
+  assert.match(html, /pollWorkbuddyStatus/);
+  assert.match(html, /\/v1\/workbuddy\/status/);
+  assert.match(html, /\/v1\/workbuddy\/ensure/);
+  assert.match(html, /\/v1\/workbuddy\/login/);
+});
+

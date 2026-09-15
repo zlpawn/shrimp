@@ -214,11 +214,12 @@ const ENDPOINT_TYPES = [
     { value: "anthropic", label: "Anthropic Messages 协议" },
     { value: "openai-chat", label: "OpenAI Chat 补全格式" },
     { value: "openai-responses", label: "OpenAI Responses (实验性)" },
+    { value: "workbuddy", label: "WorkBuddy 智能体池" },
     { value: "grok", label: "Grok 订阅" },
     { value: "antigravity", label: "Antigravity（Google 订阅）" },
     { value: "codex-subscription", label: "Codex 订阅（ChatGPT）" }
 ];
-const CODEX_ENDPOINT_TYPE_VALUES = ['anthropic', 'openai-responses', 'openai-chat', 'grok', 'antigravity'];
+const CODEX_ENDPOINT_TYPE_VALUES = ['anthropic', 'openai-responses', 'openai-chat', 'workbuddy', 'grok', 'antigravity'];
 
 // Media endpoints use purpose + provider; `type` remains exclusive to chat protocols.
 const MEDIA_ENDPOINT_PURPOSES = [
@@ -4029,7 +4030,7 @@ function createEndpointDetailHTML(client, index, ep) {
     const availableTypes = isEmbedding
         ? [{ value: 'openai-chat', label: 'OpenAI Embeddings 协议' }]
         : (client === 'code' || client === 'desktop')
-        ? ENDPOINT_TYPES.filter(t => ['anthropic', 'openai-chat', 'grok', 'codex-subscription'].includes(t.value))
+        ? ENDPOINT_TYPES.filter(t => ['anthropic', 'openai-chat', 'workbuddy', 'grok', 'codex-subscription'].includes(t.value))
         : ENDPOINT_TYPES.filter(t => [...CODEX_ENDPOINT_TYPE_VALUES, 'codex-subscription'].includes(t.value));
 
     const typeOptions = availableTypes.map(t =>
@@ -4163,6 +4164,39 @@ function createEndpointDetailHTML(client, index, ep) {
                             <p style="margin:0;">${ep.type === 'codex-subscription' ? 'Codex 订阅走 chatgpt.com backend-api/codex/responses，读取本机 ~/.codex/auth.json，不需要 Base URL 或 API Key。请到迷你工具「接入 Codex 订阅」确认登录态。' : 'Antigravity 走 Google Cloud Code v1internal gRPC，使用本地 OAuth 订阅鉴权，不需要 Base URL 或 API Key。请到迷你工具「接入 Antigravity 订阅」完成登录。'}</p>
                         </div>
                     </div>
+                    ` : (ep.type === 'workbuddy') ? `
+                    <div class="form-group full">
+                        <label>WorkBuddy 底层服务与授权状态</label>
+                        <div class="usage-guide" id="wb-status-box-${client}-${index}" style="margin:0; padding:12px; display:flex; flex-direction:column; gap:8px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                                <span id="wb-status-text-${client}-${index}">状态：检测中...</span>
+                                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                                    <button type="button" class="btn btn-sm btn-primary" title="唤起腾讯 CodeBuddy 国际版 (workbuddy.ai) 授权页面" onclick="triggerWorkbuddyLogin('${client}', ${index}, 'global')">一键登录(国际版)</button>
+                                    <button type="button" class="btn btn-sm" title="唤起腾讯 CodeBuddy 国内版 (copilot.tencent.com) 授权页面" onclick="triggerWorkbuddyLogin('${client}', ${index}, 'cn')">一键登录(国内版)</button>
+                                    <button type="button" class="btn btn-sm" onclick="restartWorkbuddyService('${client}', ${index})">启动/就绪服务</button>
+                                    <button type="button" class="btn btn-sm btn-outline" title="添加新的 WorkBuddy 账号节点（自动分配独立端口与独立会话凭据）" onclick="addWorkbuddyAccountNode('${client}')">+ 添加新账号节点</button>
+                                </div>
+                            </div>
+                            <div class="subtext" style="color:var(--text-muted); font-size:12px;">
+                                由本地 <code>workbuddy2api</code> 驱动（端口 ${(() => {
+                                    const m = String(ep.base_url || '').match(/:(\d+)(?:\/|$)/);
+                                    return m ? m[1] : '7863';
+                                })()}），各账号节点拥有独立会话与端口，网关自动实现多账号负载均衡与额度超限故障转移。
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group full">
+                        <label>接口地址 (Base URL)</label>
+                        <input class="mono" type="text" value="${escapeHtml(ep.base_url || 'http://127.0.0.1:7863/v1')}" placeholder="http://127.0.0.1:7863/v1" onchange="updateEndpoint('${client}', ${index}, 'base_url', this.value)">
+                    </div>
+                    <div class="form-group full">
+                        <label>鉴权方式</label>
+                        <select onchange="updateEndpoint('${client}', ${index}, 'auth', this.value)">
+                            <option value="none" ${(ep.auth || 'none') === 'none' ? 'selected' : ''}>不发送密钥（本地默认）</option>
+                            <option value="bearer" ${ep.auth === 'bearer' ? 'selected' : ''}>Bearer Token</option>
+                            <option value="x-api-key" ${ep.auth === 'x-api-key' ? 'selected' : ''}>x-api-key</option>
+                        </select>
+                    </div>
                     ` : `
                     <div class="form-group full">
                         <label>接口地址 (Base URL)</label>
@@ -4178,9 +4212,10 @@ function createEndpointDetailHTML(client, index, ep) {
                     </div>
                     `}
                     `}
-                    ${(isWebSearch || (isMedia ? !isMediaSubscription : (ep.type !== 'antigravity' && ep.type !== 'codex-subscription')))
+                    ${(isWebSearch || (isMedia ? !isMediaSubscription : (ep.type !== 'antigravity' && ep.type !== 'codex-subscription' && ep.type !== 'workbuddy')))
                         ? renderEndpointKeyEditor(client, index, ep)
                         : ''}
+
                     ${(client === 'codex' || client === 'deeptutor') && !isCapabilityNode ? `
                     <div class="form-group full">
                         <label>Codex 能力</label>
@@ -4527,6 +4562,12 @@ function render() {
         renderCustomClientSections();
     }
     void refreshSelectedCredentialPreviews();
+    if (selectedEndpoint) {
+        const selEp = config.clients?.[selectedEndpoint.client]?.endpoints?.[selectedEndpoint.index];
+        if (selEp?.type === 'workbuddy') {
+            void (window as any).pollWorkbuddyStatus?.(selectedEndpoint.client, selectedEndpoint.index);
+        }
+    }
 }
 
 async function refreshSelectedCredentialPreviews() {
@@ -7580,6 +7621,24 @@ window.setAsDefault = async function(client, index) {
 window.updateEndpoint = function(client, index, field, value) {
     const endpoint = config.clients[client].endpoints[index];
     endpoint[field] = value;
+    if (field === 'type') {
+        if (value === 'workbuddy') {
+            if (!endpoint.base_url || endpoint.base_url.includes('api.openai.com')) {
+                endpoint.base_url = 'http://127.0.0.1:7863/v1';
+            }
+            endpoint.auth = 'none';
+            if (!endpoint.name) {
+                endpoint.name = 'WorkBuddy 代理';
+            }
+            endpoint.capabilities = {
+                ...(endpoint.capabilities || {}),
+                reasoning: true,
+                tools: true
+            };
+        }
+        render();
+        return;
+    }
     if (field === 'name' && selectedEndpoint && selectedEndpoint.client === client && selectedEndpoint.index === index) {
         const title = document.querySelector('.detail-title');
         if (title) title.textContent = value || `节点 ${index + 1}`;
@@ -7601,6 +7660,186 @@ window.updateEndpoint = function(client, index, field, value) {
     }
     updateSelectedDraftIndicators();
 }
+
+window.pollWorkbuddyStatus = async function(client: string, index: number) {
+    const textEl = document.getElementById(`wb-status-text-${client}-${index}`);
+    if (!textEl) return;
+    const ep = config.clients?.[client]?.endpoints?.[index];
+    let port = 7863;
+    if (ep?.base_url) {
+        const m = String(ep.base_url).match(/:(\d+)(?:\/|$)/);
+        if (m && m[1]) port = parseInt(m[1], 10);
+    }
+    try {
+        const res = await fetch(`/v1/workbuddy/status?port=${port}`);
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+            const errDetail = typeof data?.error === 'object'
+                ? (data.error?.message || JSON.stringify(data.error))
+                : (data?.error || '无法连接网关');
+            textEl.innerHTML = `<span style="color:var(--text-danger, #ef4444)">检测失败: ${escapeHtml(errDetail)}</span>`;
+            return;
+        }
+        let statusBadge = '';
+        if (!data.installed) {
+            statusBadge = `<span style="color:#f59e0b; font-weight:600;">未安装 (请求时网关将通过 uv 自动静默安装)</span>`;
+        } else if (!data.running) {
+            statusBadge = `<span style="color:#f59e0b; font-weight:600;">已安装，未运行 (发起请求时将自动拉起)</span>`;
+        } else {
+            statusBadge = `<span style="color:#10b981; font-weight:600;">运行中 (PID: ${data.pid}, 端口: ${data.port})</span>`;
+        }
+
+        let sessionBadge = '';
+        const isAuth = Boolean(data.session?.authenticated ?? data.has_session);
+        if (isAuth) {
+            const userText = data.session?.user ? ` (${escapeHtml(data.session.user)})` : '';
+            sessionBadge = `<span style="color:#10b981; font-weight:600;">已授权登录${userText}</span>`;
+        } else {
+            sessionBadge = `<span style="color:#ef4444; font-weight:600;">未登录 (请点击右侧「一键登录」)</span>`;
+        }
+
+        textEl.innerHTML = `服务：${statusBadge} &nbsp;|&nbsp; 账号：${sessionBadge}`;
+    } catch (err: any) {
+        textEl.innerHTML = `<span style="color:var(--text-danger, #ef4444)">检测异常: ${escapeHtml(err?.message || String(err))}</span>`;
+    }
+};
+
+window.triggerWorkbuddyLogin = async function(client: string, index: number, edition: string = 'global') {
+    const textEl = document.getElementById(`wb-status-text-${client}-${index}`);
+    const isGlobal = edition === 'global';
+    const label = isGlobal ? '国际版 (workbuddy.ai)' : '国内版 (copilot.tencent.com)';
+    const endpoint = isGlobal ? 'https://www.workbuddy.ai' : 'https://copilot.tencent.com';
+    const ep = config.clients?.[client]?.endpoints?.[index];
+    let port = 7863;
+    if (ep?.base_url) {
+        const m = String(ep.base_url).match(/:(\d+)(?:\/|$)/);
+        if (m && m[1]) port = parseInt(m[1], 10);
+    }
+    if (textEl) {
+        textEl.innerHTML = `<span style="color:#3b82f6;">正在唤起${label}浏览器登录（端口 ${port}），请在弹出的网页完成登录并授权...</span>`;
+    }
+    showToast(`正在唤起${label}登录(端口 ${port})...`, 'info');
+    try {
+        const res = await fetch('/v1/workbuddy/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ edition, endpoint, port })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+            const errDetail = typeof data?.error === 'object'
+                ? (data.error?.message || JSON.stringify(data.error))
+                : (data?.error || '未知错误');
+            showToast('唤起登录失败: ' + errDetail, 'error');
+            void window.pollWorkbuddyStatus(client, index);
+            return;
+        }
+        if (data.auth_url && textEl) {
+            textEl.innerHTML = `<span style="color:#3b82f6;">已唤起${label}登录授权页面（节点端口 ${port}）。如未自动打开，请<a href="${escapeHtml(data.auth_url)}" target="_blank" style="color:#3b82f6;text-decoration:underline;margin-left:4px;font-weight:600;">点击此处手动打开授权页</a></span>`;
+        }
+        showToast(`已唤起${label}登录授权页面，授权完成后状态将自动刷新`, 'success');
+        let checks = 0;
+        const timer = setInterval(async () => {
+            checks++;
+            try {
+                const statusRes = await fetch(`/v1/workbuddy/status?port=${port}`);
+                const statusData = await statusRes.json();
+                if (statusData.has_session) {
+                    clearInterval(timer);
+                    showToast(`WorkBuddy 节点(:${port}) 登录成功！`, 'success');
+                    void window.pollWorkbuddyStatus(client, index);
+                } else if (checks >= 60) {
+                    clearInterval(timer);
+                    void window.pollWorkbuddyStatus(client, index);
+                }
+            } catch {
+                if (checks >= 60) clearInterval(timer);
+            }
+        }, 2000);
+    } catch (err: any) {
+        showToast('唤起登录异常: ' + (err?.message || String(err)), 'error');
+        void window.pollWorkbuddyStatus(client, index);
+    }
+};
+
+window.restartWorkbuddyService = async function(client: string, index: number) {
+    const textEl = document.getElementById(`wb-status-text-${client}-${index}`);
+    const ep = config.clients?.[client]?.endpoints?.[index];
+    let port = 7863;
+    if (ep?.base_url) {
+        const m = String(ep.base_url).match(/:(\d+)(?:\/|$)/);
+        if (m && m[1]) port = parseInt(m[1], 10);
+    }
+    if (textEl) {
+        textEl.innerHTML = `<span style="color:#3b82f6;">正在启动/就绪服务（端口 ${port}，若未安装将自动安装）...</span>`;
+    }
+    showToast(`正在拉起 WorkBuddy 服务(端口 ${port})...`, 'info');
+    try {
+        const res = await fetch('/v1/workbuddy/ensure', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ port })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+            const errDetail = typeof data?.error === 'object'
+                ? (data.error?.message || JSON.stringify(data.error))
+                : (data?.error || '未知错误');
+            showToast('服务就绪失败: ' + errDetail, 'error');
+        } else {
+            showToast(`WorkBuddy 服务已就绪 (PID: ${data.pid}, 端口: ${data.port})`, 'success');
+        }
+        await window.pollWorkbuddyStatus(client, index);
+    } catch (err: any) {
+        showToast('服务就绪异常: ' + (err?.message || String(err)), 'error');
+        await window.pollWorkbuddyStatus(client, index);
+    }
+};
+
+window.addWorkbuddyAccountNode = function(client: string) {
+    if (!config.clients?.[client]) return;
+    config.clients[client].endpoints = config.clients[client].endpoints || [];
+
+    const usedPorts = new Set<number>();
+    for (const c of Object.values(config.clients || {}) as any[]) {
+        for (const ep of (c.endpoints || [])) {
+            if (ep.type === 'workbuddy' || String(ep.base_url || '').includes('127.0.0.1:786')) {
+                const m = String(ep.base_url || '').match(/:(\d+)(?:\/|$)/);
+                if (m && m[1]) usedPorts.add(parseInt(m[1], 10));
+            }
+        }
+    }
+    let nextPort = 7863;
+    while (usedPorts.has(nextPort)) {
+        nextPort++;
+    }
+
+    const count = (config.clients[client].endpoints || []).filter((ep: any) => ep.type === 'workbuddy').length + 1;
+    const newEp = {
+        id: `ep_workbuddy_${nextPort}`,
+        name: `WorkBuddy 账号 ${count} (:${nextPort})`,
+        type: 'workbuddy',
+        base_url: `http://127.0.0.1:${nextPort}/v1`,
+        auth: 'none',
+        api_key: '',
+        models: [
+            'deepseek-v4.1-flash',
+            'deepseek-v3',
+            'claude-3-7-sonnet',
+            'claude-3-5-sonnet',
+            'gpt-4o'
+        ],
+        model_mapping: {
+            'claude-3-7-sonnet-latest': 'claude-3-7-sonnet',
+            'claude-3-5-sonnet-latest': 'claude-3-5-sonnet'
+        }
+    };
+    config.clients[client].endpoints.push(newEp);
+    const newIndex = config.clients[client].endpoints.length - 1;
+    selectedEndpoint = { client, index: newIndex };
+    render();
+    showToast(`已添加新 WorkBuddy 节点（端口 ${nextPort}），请点击「一键登录」完成该账号授权`, 'info');
+};
 
 window.addApiKey = function(client, index) {
     const endpoint = config.clients?.[client]?.endpoints?.[index];

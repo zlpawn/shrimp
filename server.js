@@ -211,7 +211,8 @@ import {
   formatCompletion,
   formatFailure,
 } from "./lib/remote-agent/index.mjs";
-import { routeNatTraversalRequest } from "./lib/nat-traversal/http/routes.mjs";
+import { routeWorkbuddyRequest } from "./lib/workbuddy/routes.mjs";
+import { ensureReady as ensureWorkbuddyReady } from "./lib/workbuddy/supervisor.mjs";
 import {
   resolveRemoteSessionPaths,
   createRemoteSessionConfigStore,
@@ -1517,6 +1518,11 @@ async function route(req, res) {
       service: ensureMcpManagementService(),
       customClientIds: getCustomClientKeys(),
     });
+    return;
+  }
+  if (reqPath.startsWith("/v1/workbuddy")) {
+    if (!checkLocalAuth(req, res)) return;
+    await routeWorkbuddyRequest(req, res, context, reqPath);
     return;
   }
   if (reqPath.startsWith("/v1/nat-traversal")) {
@@ -5131,12 +5137,21 @@ async function forwardAnthropicMessagesResolved(body, clientReq, clientRes, cont
   }
 
   const upstreamBody =
-    route.provider?.type === "openai-chat"
+    route.provider?.type === "openai-chat" || route.provider?.type === "workbuddy"
       ? anthropicMessagesToOpenAIChat(body, route.model)
       : {
           ...body,
           model: route.model,
         };
+
+  if (route.provider?.type === "workbuddy" && Array.isArray(upstreamBody.messages)) {
+    if (upstreamBody.messages.length === 0 || upstreamBody.messages[0]?.role !== "system") {
+      upstreamBody.messages = [
+        { role: "system", content: "You are a helpful assistant." },
+        ...upstreamBody.messages,
+      ];
+    }
+  }
 
   logInfo("messages_request", {
     request_id: context.requestId,
@@ -5383,7 +5398,7 @@ async function forwardAnthropicMessagesResolved(body, clientReq, clientRes, cont
   }
 
   let upstream =
-    route.provider?.type === "openai-chat"
+    route.provider?.type === "openai-chat" || route.provider?.type === "workbuddy"
       ? await fetchConfiguredOpenAI(route.provider, "/v1/chat/completions", upstreamBody, clientReq)
       : route.provider
         ? await fetchConfiguredAnthropic(route.provider, upstreamBody, clientReq)
@@ -5398,14 +5413,55 @@ async function forwardAnthropicMessagesResolved(body, clientReq, clientRes, cont
       clientReq,
       context,
       fetchAgain: async (retryBody) => {
-        const converted = route.provider.type === "openai-chat"
+        const converted = route.provider.type === "openai-chat" || route.provider.type === "workbuddy"
           ? anthropicMessagesToOpenAIChat(retryBody, route.model)
           : { ...retryBody, model: route.model };
-        return route.provider.type === "openai-chat"
+        return route.provider.type === "openai-chat" || route.provider.type === "workbuddy"
           ? fetchConfiguredOpenAI(route.provider, "/v1/chat/completions", converted, clientReq)
           : fetchConfiguredAnthropic(route.provider, converted, clientReq);
       },
     });
+  }
+
+  // Multi-node failover across candidates on 429/403/5xx
+  if (route.candidates && route.candidates.length > 1 && (upstream.status === 429 || upstream.status === 403 || upstream.status >= 500)) {
+    for (const altRoute of route.candidates) {
+      if (altRoute.endpoint?.id === route.endpoint?.id) continue;
+      logInfo("endpoint_failover", {
+        client: context.client,
+        from_endpoint: route.endpoint?.id,
+        to_endpoint: altRoute.endpoint?.id,
+        status: upstream.status,
+      });
+      const altBody =
+        altRoute.provider?.type === "openai-chat" || altRoute.provider?.type === "workbuddy"
+          ? anthropicMessagesToOpenAIChat(body, altRoute.model || altRoute.upstream_model)
+          : { ...body, model: altRoute.model || altRoute.upstream_model };
+      if (altRoute.provider?.type === "workbuddy" && Array.isArray(altBody.messages)) {
+        if (altBody.messages.length === 0 || altBody.messages[0]?.role !== "system") {
+          altBody.messages = [
+            { role: "system", content: "You are a helpful assistant." },
+            ...altBody.messages,
+          ];
+        }
+      }
+      try {
+        const altUpstream =
+          altRoute.provider?.type === "openai-chat" || altRoute.provider?.type === "workbuddy"
+            ? await fetchConfiguredOpenAI(altRoute.provider, "/v1/chat/completions", altBody, clientReq)
+            : await fetchConfiguredAnthropic(altRoute.provider, altBody, clientReq);
+        if (altUpstream && altUpstream.ok) {
+          upstream = altUpstream;
+          route = altRoute;
+          break;
+        }
+      } catch (err) {
+        logInfo("endpoint_failover_failed", {
+          endpoint: altRoute.endpoint?.id,
+          error: err.message,
+        });
+      }
+    }
   }
   logInfo("messages_response", {
     request_id: context.requestId,
@@ -5414,7 +5470,7 @@ async function forwardAnthropicMessagesResolved(body, clientReq, clientRes, cont
     provider: route.provider?.id || null,
     route: route.kind,
   });
-  if (route.provider?.type === "openai-chat") {
+  if (route.provider?.type === "openai-chat" || route.provider?.type === "workbuddy") {
     if (body.stream) {
       await streamOpenAIChatAsAnthropicMessages(upstream, clientRes, requestedModel, context.requestId);
     } else {
@@ -5475,7 +5531,7 @@ async function forwardOpenAIChatCompletionsResolved(body, clientReq, clientRes, 
   ).trim() || null;
   const route = resolveConfiguredModel(
     requestedModel,
-    ["anthropic", "openai-chat", "openai-responses", "grok", "antigravity", "codex-subscription", "chatgpt-codex"],
+    ["anthropic", "openai-chat", "openai-responses", "grok", "antigravity", "codex-subscription", "chatgpt-codex", "workbuddy"],
     context.client,
     preferredEndpointId,
   );
@@ -5523,6 +5579,15 @@ async function forwardOpenAIChatCompletionsResolved(body, clientReq, clientRes, 
             ...body,
             model: resolvedModel,
           };
+
+  if (route?.provider?.type === "workbuddy" && Array.isArray(upstreamBody.messages)) {
+    if (upstreamBody.messages.length === 0 || upstreamBody.messages[0]?.role !== "system") {
+      upstreamBody.messages = [
+        { role: "system", content: "You are a helpful assistant." },
+        ...upstreamBody.messages,
+      ];
+    }
+  }
 
   logInfo("openai_chat_request", {
     request_id: context.requestId,
@@ -5867,6 +5932,52 @@ async function forwardOpenAIChatCompletionsResolved(body, clientReq, clientRes, 
             : fetchConfiguredOpenAI(route.provider, "/v1/chat/completions", converted, clientReq);
       },
     });
+  }
+
+  // Multi-node failover across candidates on 429/403/5xx
+  if (route?.candidates && route.candidates.length > 1 && (upstream.status === 429 || upstream.status === 403 || upstream.status >= 500)) {
+    for (const altRoute of route.candidates) {
+      if (altRoute.endpoint?.id === route.endpoint?.id) continue;
+      logInfo("endpoint_failover", {
+        client: context.client,
+        from_endpoint: route.endpoint?.id,
+        to_endpoint: altRoute.endpoint?.id,
+        status: upstream.status,
+      });
+      const altResolvedModel = altRoute.upstream_model || resolveModel(requestedModel);
+      const altBody =
+        altRoute.provider?.type === "anthropic"
+          ? openAIChatToAnthropic(body, altResolvedModel, altRoute)
+          : altRoute.provider?.type === "openai-responses"
+            ? openAIChatCompletionsToResponses(body, altResolvedModel)
+            : { ...body, model: altResolvedModel };
+      if (altRoute.provider?.type === "workbuddy" && Array.isArray(altBody.messages)) {
+        if (altBody.messages.length === 0 || altBody.messages[0]?.role !== "system") {
+          altBody.messages = [
+            { role: "system", content: "You are a helpful assistant." },
+            ...altBody.messages,
+          ];
+        }
+      }
+      try {
+        const altUpstream =
+          altRoute.provider?.type === "anthropic"
+            ? await fetchConfiguredAnthropic(altRoute.provider, altBody, clientReq)
+            : altRoute.provider?.type === "openai-responses"
+              ? await fetchConfiguredOpenAI(altRoute.provider, "/responses", altBody, clientReq)
+              : await fetchConfiguredOpenAI(altRoute.provider, "/v1/chat/completions", altBody, clientReq);
+        if (altUpstream && altUpstream.ok) {
+          upstream = altUpstream;
+          route = altRoute;
+          break;
+        }
+      } catch (err) {
+        logInfo("endpoint_failover_failed", {
+          endpoint: altRoute.endpoint?.id,
+          error: err.message,
+        });
+      }
+    }
   }
   logInfo("openai_chat_response", {
     request_id: context.requestId,
@@ -7681,7 +7792,10 @@ async function fetchConfiguredOpenAI(
     );
   }
 
-  const upstreamApiKey = providerApiKey(provider, clientReq);
+  let upstreamApiKey = providerApiKey(provider, clientReq);
+  if (!upstreamApiKey && (provider.type === "workbuddy" || provider.auth === "none")) {
+    upstreamApiKey = "workbuddy";
+  }
   if (!upstreamApiKey) {
     throw httpError(
       401,
@@ -7727,6 +7841,17 @@ async function fetchConfiguredOpenAI(
 
       return res;
     } catch (error) {
+      if (provider.type === "workbuddy" && (error?.code === "ECONNREFUSED" || error?.cause?.code === "ECONNREFUSED" || String(error?.message).includes("ECONNREFUSED"))) {
+        try {
+          const m = String(provider.base_url || "").match(/:(\d+)(?:\/|$)/);
+          const port = m ? parseInt(m[1], 10) : 7863;
+          logInfo("workbuddy_auto_ensure", { provider: provider.id, port });
+          await ensureWorkbuddyReady({ port });
+          return await doFetch(key);
+        } catch (ensureErr) {
+          logInfo("workbuddy_auto_ensure_failed", { error: ensureErr.message });
+        }
+      }
       const message =
         error?.name === "AbortError"
           ? `Timed out calling provider ${provider.id}`
@@ -10115,8 +10240,12 @@ function openAIChatCompletionToAnthropicMessage(upstreamJson, requestedModel) {
   const choice = upstreamJson.choices?.[0] || {};
   const message = choice.message || {};
   const content = [];
-  const text = openAIChatMessageText(message);
+  const reasoning = message.reasoning_content || message.reasoning || null;
+  if (reasoning) {
+    content.push({ type: "thinking", thinking: String(reasoning) });
+  }
 
+  const text = typeof message.content === "string" ? message.content : (openAIContentToText(message.content) || "");
   if (text) content.push({ type: "text", text });
 
   if (Array.isArray(message.tool_calls)) {
@@ -10232,9 +10361,9 @@ function resolveModel(requestedModel) {
 }
 
 function resolveAnthropicRoute(requestedModel, client) {
-  const configured = resolveConfiguredModel(requestedModel, ["anthropic", "openai-chat", "grok", "codex-subscription", "chatgpt-codex"], client);
+  const configured = resolveConfiguredModel(requestedModel, ["anthropic", "openai-chat", "grok", "codex-subscription", "chatgpt-codex", "workbuddy"], client);
   if (configured) {
-    if (!["anthropic", "openai-chat", "grok", "codex-subscription", "chatgpt-codex"].includes(configured.provider.type)) {
+    if (!["anthropic", "openai-chat", "grok", "codex-subscription", "chatgpt-codex", "workbuddy"].includes(configured.provider.type)) {
       throw httpError(
         400,
         `Model ${requestedModel} is configured for provider ${configured.provider.id} (${configured.provider.type}), which cannot serve Anthropic Messages requests yet.`,
@@ -10246,6 +10375,7 @@ function resolveAnthropicRoute(requestedModel, client) {
       provider: configured.provider,
       endpoint: configured.endpoint,
       config: configured.model,
+      candidates: configured.candidates || [],
     };
   }
 
@@ -10260,6 +10390,7 @@ function hasConfiguredApiKey(ep) {
   if (ep.type === "official" || ep.name === "official") return true;
   if (ep.type === "grok") return grokHasCredentials(ep);
   if (ep.type === "antigravity") return true; // OAuth-based, no API key needed
+  if (ep.type === "workbuddy") return true; // Session-based, no API key needed
   if (isCodexSubscriptionProvider(ep)) return Boolean(resolveCodexSubscriptionAuthPresence(ep));
   if (ep.api_keys?.length) {
     return listEndpointCredentials(ep, GATEWAY_SECRETS, process.env).length > 0;
@@ -10327,6 +10458,8 @@ function resolveConfiguredModelPrecise(requestedModel, allowedTypes = [], client
   return null;
 }
 
+const ROUTE_ROUND_ROBIN_INDEX = new Map();
+
 function resolveConfiguredModel(requestedModel, allowedTypes = [], client = null, preferredEndpointId = null) {
   if (!requestedModel) return null;
   const text = String(requestedModel);
@@ -10350,6 +10483,7 @@ function resolveConfiguredModel(requestedModel, allowedTypes = [], client = null
         provider: endpointProvider(internalRoute.endpoint),
         endpoint: internalRoute.endpoint,
         upstream_model: internalRoute.upstream_model,
+        candidates: [],
       };
     }
   }
@@ -10384,37 +10518,17 @@ function resolveConfiguredModel(requestedModel, allowedTypes = [], client = null
             provider: endpointProvider(preferredEp),
             endpoint: preferredEp,
             upstream_model: targetModel,
+            candidates: [],
           };
         }
       }
     }
     
-    // Find the default endpoint first
+    // Find the default endpoint if defined
     const defaultEp = endpoints.find(ep => ep.is_default && (allowed.size === 0 || allowed.has(ep.type)));
 
-    // 1. If default endpoint is defined, check its precise models and mappings first
-    if (defaultEp) {
-      let targetModel = text;
-      let matched = false;
-
-      if (defaultEp.model_mapping && defaultEp.model_mapping[text]) {
-        targetModel = defaultEp.model_mapping[text];
-        matched = true;
-      } else if (defaultEp.models?.includes(text)) {
-        matched = true;
-      }
-
-      if (matched) {
-        return {
-          model: { id: text, display_name: text, upstream_model: targetModel, aliases: [] },
-          provider: endpointProvider(defaultEp),
-          endpoint: defaultEp,
-          upstream_model: targetModel
-        };
-      }
-    }
-
-    // 2. Check all endpoints (including non-default ones) in order for precise matches
+    // 1. Collect all matching candidate endpoints
+    const matchingCandidates = [];
     for (const ep of endpoints) {
       if (allowed.size === 0 || allowed.has(ep.type)) {
         let targetModel = text;
@@ -10423,17 +10537,45 @@ function resolveConfiguredModel(requestedModel, allowedTypes = [], client = null
         }
 
         if (ep.models?.includes(targetModel) || ep.name === text || ep.model_mapping?.[text]) {
-          return {
-             model: { id: text, display_name: text, upstream_model: targetModel, aliases: [] },
-             provider: endpointProvider(ep),
-             endpoint: ep,
-             upstream_model: targetModel
-          };
+          matchingCandidates.push({
+            model: { id: text, display_name: text, upstream_model: targetModel, aliases: [] },
+            provider: endpointProvider(ep),
+            endpoint: ep,
+            upstream_model: targetModel,
+          });
         }
       }
     }
 
-    // 3. Fallback to default endpoint if still not matched
+    if (matchingCandidates.length > 0) {
+      let chosen;
+      // Multi-node pool (e.g. multiple workbuddy nodes or multiple nodes of same type)
+      const wbCandidates = matchingCandidates.filter(c => c.endpoint?.type === "workbuddy");
+      const pool = wbCandidates.length > 1 ? wbCandidates : (
+        matchingCandidates.length > 1 && !matchingCandidates.some(c => c.endpoint?.is_default && c.endpoint?.type !== "workbuddy")
+          ? matchingCandidates
+          : null
+      );
+
+      if (pool && pool.length > 1) {
+        const rrKey = `${c}:${text}`;
+        const currentIdx = ROUTE_ROUND_ROBIN_INDEX.get(rrKey) || 0;
+        chosen = pool[currentIdx % pool.length];
+        ROUTE_ROUND_ROBIN_INDEX.set(rrKey, (currentIdx + 1) % pool.length);
+      } else if (defaultEp) {
+        chosen = matchingCandidates.find(cand => cand.endpoint.id === defaultEp.id) || matchingCandidates[0];
+      } else {
+        chosen = matchingCandidates[0];
+      }
+
+      chosen.candidates = [
+        chosen,
+        ...matchingCandidates.filter(cand => cand.endpoint?.id !== chosen.endpoint?.id),
+      ];
+      return chosen;
+    }
+
+    // 2. Fallback to default endpoint if still not matched
     if (defaultEp) {
       let targetModel = text;
       if (defaultEp.model_mapping && defaultEp.model_mapping[text]) {
@@ -10443,7 +10585,8 @@ function resolveConfiguredModel(requestedModel, allowedTypes = [], client = null
          model: { id: text, display_name: text, upstream_model: targetModel, aliases: [] },
          provider: endpointProvider(defaultEp),
          endpoint: defaultEp,
-         upstream_model: targetModel
+         upstream_model: targetModel,
+         candidates: [],
       };
     }
   }
@@ -11481,8 +11624,10 @@ async function streamOpenAIChatAsAnthropicMessages(upstream, clientRes, requeste
   });
 
   const messageId = `msg_${Date.now()}`;
-  let blockStarted = false;
-  let sawText = false;
+  let blockIndex = 0;
+  let inThinkingBlock = false;
+  let inTextBlock = false;
+  let sawAnyContent = false;
   let finishReason = "end_turn";
 
   writeAnthropicSse(clientRes, "message_start", {
@@ -11500,11 +11645,19 @@ async function streamOpenAIChatAsAnthropicMessages(upstream, clientRes, requeste
   });
 
   const ensureTextBlock = () => {
-    if (blockStarted) return;
-    blockStarted = true;
+    if (inTextBlock) return;
+    if (inThinkingBlock) {
+      writeAnthropicSse(clientRes, "content_block_stop", {
+        type: "content_block_stop",
+        index: blockIndex,
+      });
+      inThinkingBlock = false;
+      blockIndex++;
+    }
+    inTextBlock = true;
     writeAnthropicSse(clientRes, "content_block_start", {
       type: "content_block_start",
-      index: 0,
+      index: blockIndex,
       content_block: { type: "text", text: "" },
     });
   };
@@ -11515,10 +11668,10 @@ async function streamOpenAIChatAsAnthropicMessages(upstream, clientRes, requeste
     if (payload.error) {
       const message = payload.error.message || payload.error.code || payload.error.type || "Unknown upstream error";
       ensureTextBlock();
-      sawText = true;
+      sawAnyContent = true;
       writeAnthropicSse(clientRes, "content_block_delta", {
         type: "content_block_delta",
-        index: 0,
+        index: blockIndex,
         delta: { type: "text_delta", text: `[upstream error] ${message}` },
       });
       return;
@@ -11531,38 +11684,71 @@ async function streamOpenAIChatAsAnthropicMessages(upstream, clientRes, requeste
       finishReason = openAIChatFinishReasonToAnthropic(choice.finish_reason);
     }
 
-    const text = openAIChatDeltaText(delta);
-    if (text) {
-      ensureTextBlock();
-      sawText = true;
+    const reasoning = delta.reasoning_content || delta.reasoning || null;
+    if (reasoning && !inTextBlock) {
+      if (!inThinkingBlock) {
+        inThinkingBlock = true;
+        writeAnthropicSse(clientRes, "content_block_start", {
+          type: "content_block_start",
+          index: blockIndex,
+          content_block: { type: "thinking", thinking: "", signature: "" },
+        });
+      }
+      sawAnyContent = true;
       writeAnthropicSse(clientRes, "content_block_delta", {
         type: "content_block_delta",
-        index: 0,
+        index: blockIndex,
+        delta: { type: "thinking_delta", thinking: String(reasoning) },
+      });
+    }
+
+    const text = typeof delta.content === "string" ? delta.content : (openAIContentToText(delta.content) || (delta.text || ""));
+    if (text) {
+      ensureTextBlock();
+      sawAnyContent = true;
+      writeAnthropicSse(clientRes, "content_block_delta", {
+        type: "content_block_delta",
+        index: blockIndex,
         delta: { type: "text_delta", text },
       });
     }
   });
 
-  if (!blockStarted) ensureTextBlock();
-  if (!sawText) {
-    logInfo("openai_chat_as_anthropic_stream_empty", { request_id: requestId });
-    sawText = true;
-    writeAnthropicSse(clientRes, "content_block_delta", {
-      type: "content_block_delta",
-      index: 0,
-      delta: {
-        type: "text_delta",
-        text: "[upstream returned no text] The provider completed the request without any OpenAI Chat content. Check the upstream model mapping and provider response.",
-      },
+  if (inThinkingBlock) {
+    writeAnthropicSse(clientRes, "content_block_stop", {
+      type: "content_block_stop",
+      index: blockIndex,
+    });
+    inThinkingBlock = false;
+  } else if (inTextBlock) {
+    writeAnthropicSse(clientRes, "content_block_stop", {
+      type: "content_block_stop",
+      index: blockIndex,
+    });
+    inTextBlock = false;
+  } else {
+    ensureTextBlock();
+    if (!sawAnyContent) {
+      logInfo("openai_chat_as_anthropic_stream_empty", { request_id: requestId });
+      sawAnyContent = true;
+      writeAnthropicSse(clientRes, "content_block_delta", {
+        type: "content_block_delta",
+        index: blockIndex,
+        delta: {
+          type: "text_delta",
+          text: "[upstream returned no text] The provider completed the request without any OpenAI Chat content. Check the upstream model mapping and provider response.",
+        },
+      });
+    }
+    writeAnthropicSse(clientRes, "content_block_stop", {
+      type: "content_block_stop",
+      index: blockIndex,
     });
   }
-  writeAnthropicSse(clientRes, "content_block_stop", {
-    type: "content_block_stop",
-    index: 0,
-  });
+
   writeAnthropicSse(clientRes, "message_delta", {
     type: "message_delta",
-    delta: { stop_reason: sawText ? finishReason : "end_turn", stop_sequence: null },
+    delta: { stop_reason: sawAnyContent ? finishReason : "end_turn", stop_sequence: null },
     usage: { output_tokens: 0 },
   });
   writeAnthropicSse(clientRes, "message_stop", { type: "message_stop" });
