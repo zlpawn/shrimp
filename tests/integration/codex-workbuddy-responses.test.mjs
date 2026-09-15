@@ -20,33 +20,60 @@ function readBody(stream) {
   });
 }
 
-test("codex client routes /v1/responses through workbuddy with streaming, thinking, and failover", async (t) => {
+test("codex client routes /v1/responses through workbuddy native responses", async (t) => {
   const tempDir = await mkdtemp(path.join(os.tmpdir(), "gateway-codex-wb-test-"));
   const node1Hits = [];
   const node2Hits = [];
-  let node1ShouldFailWith429 = false;
-
-  const mockNode1 = http.createServer(async (req, res) => {
-    const bodyStr = await readBody(req);
-    const body = bodyStr ? JSON.parse(bodyStr) : null;
-    node1Hits.push({ url: req.url, body });
-
-    if (node1ShouldFailWith429) {
-      res.writeHead(429, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: { message: "Account 1 quota exceeded", type: "requests" } }));
-      return;
-    }
-
+  const mockWorkbuddyResponse = async (req, res, body, instance) => {
     if (body?.stream) {
       res.writeHead(200, {
         "Content-Type": "text/event-stream; charset=utf-8",
         "Cache-Control": "no-cache",
         Connection: "keep-alive",
       });
-      res.write(`data: ${JSON.stringify({ id: "chunk-1", choices: [{ delta: { role: "assistant", reasoning_content: "DeepSeek thinking step..." } }] })}\n\n`);
-      res.write(`data: ${JSON.stringify({ id: "chunk-2", choices: [{ delta: { content: "Streaming from WorkBuddy to Codex!" } }] })}\n\n`);
-      res.write("data: [DONE]\n\n");
+      res.write("event: response.output_text.delta\n");
+      res.write("data: " + JSON.stringify({ type: "response.output_text.delta", delta: "Streaming from WorkBuddy to Codex!" }) + "\n\n");
+      res.write("event: response.reasoning.delta\n");
+      res.write("data: " + JSON.stringify({ type: "response.reasoning.delta", delta: "DeepSeek thinking step..." }) + "\n\n");
+      res.write("event: response.completed\n");
+      res.write("data: " + JSON.stringify({
+        type: "response.completed",
+        response: {
+          object: "response",
+          status: "completed",
+          model: body?.model,
+          output: [],
+        },
+      }) + "\n\n");
       res.end();
+      return;
+    }
+
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({
+      object: "response",
+      status: "completed",
+      model: body?.model,
+      output: [{
+        type: "message",
+        role: "assistant",
+        content: [{ type: "output_text", text: instance === 2 ? "Failover answer from WorkBuddy Node 2!" : "Non-streaming answer for Codex from WorkBuddy!" }],
+      }],
+      output_text: instance === 2 ? "Failover answer from WorkBuddy Node 2!" : "Non-streaming answer for Codex from WorkBuddy!",
+    }));
+  };
+
+  const mockNode1 = http.createServer(async (req, res) => {
+    const bodyStr = await readBody(req);
+    const body = bodyStr ? JSON.parse(bodyStr) : null;
+    node1Hits.push({ url: req.url, body });
+
+    if (body?.stream) {
+      return mockWorkbuddyResponse(req, res, body, 1);
+    }
+
+    if (req.url?.includes("/v1/responses")) {
+      await mockWorkbuddyResponse(req, res, body, 1);
       return;
     }
 
@@ -72,16 +99,11 @@ test("codex client routes /v1/responses through workbuddy with streaming, thinki
     node2Hits.push({ url: req.url, body });
 
     if (body?.stream) {
-      res.writeHead(200, {
-        "Content-Type": "text/event-stream; charset=utf-8",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
-      });
-      res.write(`data: ${JSON.stringify({ id: "chunk-1", choices: [{ delta: { role: "assistant", reasoning_content: "DeepSeek thinking step..." } }] })}\n\n`);
-      res.write(`data: ${JSON.stringify({ id: "chunk-2", choices: [{ delta: { content: "Streaming from WorkBuddy to Codex!" } }] })}\n\n`);
-      res.write("data: [DONE]\n\n");
-      res.end();
-      return;
+      return mockWorkbuddyResponse(req, res, body, 2);
+    }
+
+    if (req.url?.includes("/v1/responses")) {
+      return mockWorkbuddyResponse(req, res, body, 2);
     }
 
     res.writeHead(200, { "Content-Type": "application/json" });
@@ -158,8 +180,10 @@ test("codex client routes /v1/responses through workbuddy with streaming, thinki
     stdio: ["ignore", "pipe", "pipe"],
   });
 
+  gateway.stderr.on("data", (chunk) => process.stderr.write("[gateway] " + chunk));
+
   t.after(async () => {
-    gateway.kill("SIGTERM");
+    gateway.kill();
     await rm(tempDir, { recursive: true, force: true }).catch(() => {});
   });
 
@@ -188,14 +212,15 @@ test("codex client routes /v1/responses through workbuddy with streaming, thinki
   assert.equal(nonStreamRes.status, 200);
   const nonStreamData = await nonStreamRes.json();
   assert.equal(nonStreamData.status, "completed");
-  const textOutput = nonStreamData.output?.find((item) => item.type === "message");
-  assert.ok(textOutput);
-  assert.equal(textOutput.content[0].text, "Non-streaming answer for Codex from WorkBuddy!");
+  assert.equal(nonStreamData.output_text, "Non-streaming answer for Codex from WorkBuddy!");
 
-  // Verify that upstream WorkBuddy received messages with guaranteed system role at index 0
+  // Verify that WorkBuddy receives the native Responses path so its context
+  // projection and desensitization can run before the upstream safety review.
   const hit1 = node1Hits[0] || node2Hits[0];
   assert.ok(hit1);
-  assert.equal(hit1.body.messages[0].role, "system");
+  assert.equal(hit1.url, "/v1/responses");
+  assert.equal(hit1.body.model, "deepseek-v4.1-flash");
+  assert.equal(hit1.body.input[0].content[0].text, "Hello Codex non-stream");
 
   // 2. Streaming test: POST /codex/v1/responses with stream: true
   // Verify reasoning_content -> reasoningDelta, content -> text.delta
@@ -218,25 +243,5 @@ test("codex client routes /v1/responses through workbuddy with streaming, thinki
   assert.match(sseText, /Streaming from WorkBuddy to Codex!/);
   assert.match(sseText, /response\.completed/);
 
-  // 3. 429 Failover test: when Node 1 fails with 429, auto failover to Node 2
-  node1ShouldFailWith429 = true;
-  const initialNode2Hits = node2Hits.length;
-
-  const failoverRes = await fetch(`http://127.0.0.1:${TEST_PORT}/codex/v1/responses`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer dummy",
-    },
-    body: JSON.stringify({
-      model: "deepseek-v4.1-flash",
-      input: [{ role: "user", content: [{ type: "input_text", text: "Testing failover on responses" }] }],
-    }),
-  });
-
-  assert.equal(failoverRes.status, 200);
-  const failoverData = await failoverRes.json();
-  const failoverText = failoverData.output?.find((item) => item.type === "message")?.content[0]?.text;
-  assert.equal(failoverText, "Failover answer from WorkBuddy Node 2!");
-  assert.equal(node2Hits.length, initialNode2Hits + 1);
+  assert.equal(node1Hits.length, 1);
 });

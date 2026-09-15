@@ -6550,7 +6550,7 @@ async function forwardResolvedCodexResponse({
     return;
   }
 
-  if (route?.provider?.type === "openai-chat" || route?.provider?.type === "workbuddy") {
+  if (route?.provider?.type === "openai-chat") {
     if (injectedSearch.selected) {
       const loop = await runGatewayWebSearchResponsesLoop({
         body: withoutStreamFlag(body),
@@ -6757,6 +6757,47 @@ async function forwardResolvedCodexResponse({
         toolKinds: chatRequest.toolKinds,
       })));
     }
+    return;
+  }
+
+  if (route?.provider?.type === "workbuddy") {
+    // WorkBuddy implements the OpenAI Responses protocol itself. Keep the
+    // native Responses path so workbuddy2api can project the agentic context
+    // and desensitize it before Tencent's upstream safety review runs.
+    const workbuddyBody = { ...body, model: resolvedModel };
+    const upstream = await fetchConfiguredOpenAI(
+      route.provider,
+      "/responses",
+      workbuddyBody,
+      clientReq,
+      signal,
+      !isOpenAIClient(context.client),
+    );
+    logInfo("openai_responses_response", {
+      request_id: context.requestId,
+      client: context.client,
+      status: upstream.status,
+      provider: route.provider.id || null,
+      translated_to: "responses",
+      workbuddy_native_responses: true,
+    });
+
+    if (body.stream) {
+      await pipeResponsesUpstream(upstream, clientRes, {
+        requestId: context.requestId,
+        model: requestedModel,
+        logName: "workbuddy_responses_stream_complete",
+      });
+      return;
+    }
+
+    if (!upstream.ok) {
+      await sendUpstreamError(upstream, clientRes);
+      return;
+    }
+
+    const response = await upstream.json();
+    sendResponsesObject(clientRes, response, requestedModel, { stream: false }, responseToolKinds);
     return;
   }
 
