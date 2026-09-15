@@ -54,6 +54,17 @@
             "include_raw_content": false,
             "country": "china"
           }
+        },
+        {
+          "id": "ep_530b5587-59fe-4a65-97d6-4d68f97fc1ba",
+          "name": "openrouter",
+          "enabled": true,
+          "is_default": false,
+          "type": "openai-chat",
+          "base_url": "https://example.com/v1/chat/completions",
+          "models": [
+            "glm-4-flash"
+          ]
         }
       ],
       "model_slots": {
@@ -201,30 +212,6 @@
           }
         },
         {
-          "name": "https://huskyapi.com",
-          "type": "openai-chat",
-          "base_url": "https://huskyapi.com/v1/chat/completions",
-          "models": [],
-          "model_mapping": {},
-          "is_default": false,
-          "id": "ep_22985a51-100c-4a0b-9eeb-05893b7a2640"
-        },
-        {
-          "name": "https://how88.top",
-          "type": "anthropic",
-          "base_url": "https://how88.top",
-          "models": [
-            "claude-opus-4-8-max",
-            "claude-opus-4-7-max"
-          ],
-          "model_mapping": {
-            "claude-opus-4-8-max": "claude-opus-4-8-max",
-            "claude-opus-4-7-max": "claude-opus-4-7-max"
-          },
-          "is_default": false,
-          "id": "ep_69d5336b-018f-473d-8104-8589d343ae60"
-        },
-        {
           "id": "ep_cb36897f-65eb-4671-964f-330709340c57",
           "name": "tavily-search",
           "purpose": "web_search",
@@ -245,16 +232,20 @@
     "codex": {
       "endpoints": [
         {
-          "id": "ep_1357acd3-0f1f-4151-bf10-38a550fec3a4",
-          "name": "基元律动",
-          "type": "openai-chat",
-          "base_url": "https://tokenrhythm.studio/v1",
-          "auth": "bearer",
-          "models": [],
-          "model_mapping": {
-            "deepseek-v4-pro-jiyuan": "deepseek-v4-pro",
-            "glm-5.2-jiyuan": "glm-5.2"
-          }
+          "id": "ep_f8c562e7-e4a0-4f97-a9f0-912b676c7605",
+          "name": "workbuddy",
+          "type": "workbuddy",
+          "base_url": "http://127.0.0.1:7863/v1",
+          "auth": "none",
+          "models": [
+            "DeepSeek-V4.1-Flash"
+          ],
+          "model_mapping": {},
+          "capabilities": {
+            "reasoning": true,
+            "tools": true
+          },
+          "is_default": false
         },
         {
           "id": "ep_f3e23095-9ff5-4e7f-86ef-5119d32d5d21",
@@ -334,26 +325,6 @@
             "gpt-image-2"
           ],
           "model_mapping": {}
-        },
-        {
-          "id": "ep_60df571d-8056-4df0-9ac0-36b0ec182706",
-          "name": "houshan-codingplan-2",
-          "type": "openai-responses",
-          "base_url": "https://ark.cn-beijing.volces.com/api/coding/v3",
-          "auth": "bearer",
-          "models": [],
-          "model_mapping": {
-            "glm-5.2-loe": "glm-5.2"
-          },
-          "capabilities": {
-            "input_modalities": [
-              "text",
-              "image"
-            ],
-            "reasoning": false,
-            "tools": true
-          },
-          "is_default": false
         },
         {
           "id": "ep_4806b00f-553c-4651-b395-23215904373b",
@@ -481,27 +452,6 @@
             "minimax-m3"
           ],
           "model_mapping": {}
-        },
-        {
-          "id": "ep_b7e69222-8a62-4ab8-a2cd-a0f8ab560d3f",
-          "name": "how88.top",
-          "type": "anthropic",
-          "base_url": "https://how88.top",
-          "auth": "bearer",
-          "models": [
-            "claude-opus-4-8-max",
-            "claude-opus-4-7-max"
-          ],
-          "model_mapping": {},
-          "capabilities": {
-            "input_modalities": [
-              "text",
-              "image"
-            ],
-            "reasoning": false,
-            "tools": true
-          },
-          "is_default": false
         },
         {
           "id": "ep_f276eab2-3ae1-4323-89e5-7a085cc36fce",
@@ -915,7 +865,9 @@
           "type": "codex-subscription",
           "base_url": "",
           "auth": "bearer",
-          "models": [],
+          "models": [
+            "gpt-5.6-sol"
+          ],
           "model_mapping": {},
           "capabilities": {
             "input_modalities": [
@@ -1001,30 +953,76 @@
       "display_name": "LangBot 代理",
       "protocol": "openai"
     },
-    "zcode": {
+    "voicestudio": {
       "endpoints": [
         {
-          "id": "ep_ec600be6-538a-4473-a6de-2ee75eef1f88",
+          "id": "ep_b62a1d35-feea-4e06-b225-732ec5b7f75e",
           "name": "workbuddy",
           "type": "workbuddy",
           "base_url": "http://127.0.0.1:7863/v1",
           "auth": "none",
           "models": [
-            "deepseek-v4.1-flash"
+            "DeepSeek-V4.1-Flash"
           ],
           "model_mapping": {},
           "capabilities": {
             "reasoning": true,
             "tools": true
+          }
+        },
+        {
+          "id": "ep_270265b8-b09c-469d-8e07-578882f491b2",
+          "name": "codex 订阅",
+          "type": "codex-subscription",
+          "base_url": "",
+          "auth": "bearer",
+          "models": [
+            "gpt-5.6-sol"
+          ],
+          "model_mapping": {},
+          "capabilities": {
+            "input_modalities": [
+              "text",
+              "image"
+            ],
+            "reasoning": true,
+            "tools": true
+          },
+          "is_default": false
+        },
+        {
+          "id": "ep_e4105c3c-4790-44a3-96b5-0e6fc0551b3a",
+          "name": "deepseek",
+          "type": "openai-responses",
+          "base_url": "https://api.deepseek.com",
+          "auth": "bearer",
+          "models": [
+            "DeepSeek-V4-Flash",
+            "deepseek-v4-pro"
+          ],
+          "model_mapping": {},
+          "capabilities": {
+            "input_modalities": [
+              "text",
+              "image"
+            ],
+            "reasoning": false,
+            "tools": true,
+            "sanitize_dangling_tool_calls": true
           },
           "model_capabilities": {
-            "deepseek-v4.1-flash": {
+            "DeepSeek-V4-Flash": {
+              "image": false,
               "max_tokens": 16384
+            },
+            "deepseek-v4-pro": {
+              "image": false
             }
-          }
+          },
+          "is_default": false
         }
       ],
-      "display_name": "Zcode 代理",
+      "display_name": "VoiceStudio 代理",
       "protocol": "openai"
     }
   },
