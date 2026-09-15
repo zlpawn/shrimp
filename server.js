@@ -12933,8 +12933,8 @@ async function proxyCodexSubscriptionResponse(body, clientReq, clientRes, contex
 function getOfficialCodexAuth(clientReq) {
   const authHeader = clientReq?.headers?.authorization || "";
   if (authHeader.toLowerCase().startsWith("bearer ")) {
-    const accessToken = authHeader.slice(7);
-    if (accessToken && accessToken !== "dummy") {
+    const accessToken = authHeader.slice(7).trim();
+    if (accessToken && accessToken !== "dummy" && accessToken !== "all" && accessToken.startsWith("ey")) {
       return {
         backend: "chatgpt-codex",
         url: "https://chatgpt.com/backend-api/codex/responses",

@@ -276,7 +276,10 @@ function renderCatalog(): string {
           </div>
           <div class="node-card-footer">
             <span>官方 Cloudflare Tunnel 穿透隧道（支持 Windows / macOS）</span>
-            <span class="node-card-cta">进入管理 →</span>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <a class="btn btn-xs" href="https://dash.cloudflare.com/" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" title="访问 Cloudflare 官方控制台">官网 ↗</a>
+              <span class="node-card-cta">进入管理 →</span>
+            </div>
           </div>
         </div>
       </div>
@@ -288,14 +291,13 @@ function renderDiscoverBox(): string {
   const items = state.discoveries || [];
   if (!items.length) {
     return `
-      <div class="nt-discover">
-        <div class="nt-block-head">
-          <h3>本机 frpc 配置检测</h3>
-          <button class="btn" onclick="window.__ntDiscover()">重新检测</button>
+      <details class="nt-details">
+        <summary>🔍 本机 frpc 配置检测 (未发现候选文件)</summary>
+        <div style="margin-top:6px;">
+          <p class="nt-help">未在常见目录找到 frpc.toml / frpc.ini。可把配置放到 ~/frp/frpc.toml 后重检，或手动填写下方表单。</p>
+          <button class="btn btn-xs" onclick="window.__ntDiscover()">重新检测</button>
         </div>
-        <p class="nt-help">未在常见目录找到 frpc.toml / frpc.ini。你也可以手动填写下方表单，或把配置放到 ~/frp/frpc.toml 后再检测。</p>
-        <p class="nt-help">检测范围：用户目录下 frp/frp_*，Downloads/Desktop/Documents；Windows 还会扫各盘符根目录（如 D:\\frp_0.71.0_windows_amd64）。</p>
-      </div>
+      </details>
     `;
   }
 
@@ -310,20 +312,19 @@ function renderDiscoverBox(): string {
   const active = items.find((x) => x.path === (state.selectedDiscoverPath || items[0].path)) || items[0];
 
   return `
-    <div class="nt-discover">
+    <div class="usage-guide nt-block">
       <div class="nt-block-head">
         <h3>本机 frpc 配置检测</h3>
         <div class="nt-inline-actions">
-          <button class="btn" onclick="window.__ntDiscover()">重新检测</button>
-          <button class="btn btn-primary" onclick="window.__ntImportSelected()">导入到表单</button>
+          <button class="btn btn-xs" onclick="window.__ntDiscover()">重新检测</button>
+          <button class="btn btn-xs btn-primary" onclick="window.__ntImportSelected()">导入到表单</button>
         </div>
       </div>
-      <p class="nt-help">检测到 ${items.length} 个候选配置。导入会填充 server/proxies，并尽量推断 Dashboard URL（默认端口 7500）。token 继续留在原 frpc 配置文件中，不写入 gateway secrets。</p>
-      <label class="form-group" style="display:grid;gap:6px;">
-        <span style="font-size:12px;color:var(--text-secondary)">候选配置文件</span>
+      <p class="nt-help">检测到 ${items.length} 个候选配置。导入会填充 server/proxies 并推断 Dashboard URL。</p>
+      <label class="form-group" style="display:grid;gap:4px;">
         <select id="nt-discover-path" onchange="window.__ntSelectDiscover(this.value)">${options}</select>
       </label>
-      <div class="node-card-row" style="margin-top:10px;gap:8px;flex-wrap:wrap;">
+      <div class="node-card-row" style="margin-top:6px;gap:6px;flex-wrap:wrap;">
         <span class="badge">server ${escapeHtml(active.parsed.serverAddr || "-")}:${escapeHtml(String(active.parsed.serverPort || "-"))}</span>
         <span class="badge">${escapeHtml(String(active.parsed.proxyCount || 0))} proxies</span>
         <span class="badge">token ${active.parsed.hasToken ? "有" : "无"}</span>
@@ -343,51 +344,39 @@ function renderFrpcDetail(): string {
 
   return `
     <div class="nt-page">
-      <div class="section-header nt-subhead">
-        <div>
+      <div class="nt-compact-header">
+        <div class="nt-compact-header-left">
+          <button class="btn btn-sm" onclick="window.__ntBackCatalog()">← 返回</button>
           <h2>frp 管理</h2>
-          <p>从本机配置导入或手动编辑，管理 frpc 连接、端口映射与 Dashboard。</p>
-        </div>
-        <div class="section-header-actions">
           <span class="${status.badge}">${escapeHtml(status.text)}</span>
-          <button class="btn" onclick="window.__ntBackCatalog()">返回列表</button>
-          <button class="btn" onclick="window.__ntReload()">刷新</button>
-          <button class="btn btn-primary" onclick="window.__ntSave()">保存配置</button>
+          <span class="badge">PID ${escapeHtml(String(st.provider?.pid || 0))}</span>
+          <span class="badge">${escapeHtml(st.provider?.mode === "external-detected" ? "已检测外部进程" : (st.provider?.mode || "background"))}</span>
+          ${st.provider?.binPath || cfg.frpc?.binPath ? `<span class="badge mono" title="${escapeHtml(st.provider?.binPath || cfg.frpc?.binPath || "")}">frpc</span>` : ""}
+          ${(() => {
+            const source = st.provider?.configPath || configPath || "";
+            return source
+              ? `<span class="badge mono" title="${escapeHtml(source)}">源: ${escapeHtml(source.split(/[\\/]/).pop() || source)}</span>`
+              : "";
+          })()}
+        </div>
+        <div class="nt-compact-header-right">
+          <button class="btn btn-sm" onclick="window.__ntStart()">启动</button>
+          <button class="btn btn-sm" onclick="window.__ntStop()">停止</button>
+          <button class="btn btn-sm" onclick="window.__ntRestart()">重启</button>
+          <button class="btn btn-sm" onclick="window.__ntReload()">刷新</button>
+          <button class="btn btn-sm btn-primary" onclick="window.__ntSave()">保存配置</button>
         </div>
       </div>
 
       ${state.error ? `<div class="nt-alert">${escapeHtml(state.error)}</div>` : ""}
       ${st.provider?.lastError ? `<div class="nt-alert">${escapeHtml(st.provider.lastError)}</div>` : ""}
 
+      ${renderDiscoverBox()}
+
       <div class="usage-guide nt-block">
         <div class="nt-block-head">
-          <h3>运行控制</h3>
-          <div class="nt-inline-actions">
-            <button class="btn" onclick="window.__ntStart()">启动</button>
-            <button class="btn" onclick="window.__ntStop()">停止</button>
-            <button class="btn" onclick="window.__ntRestart()">重启</button>
-          </div>
+          <h3>frpc 连接</h3>
         </div>
-        <div class="node-card-row" style="margin-top:12px;gap:8px;flex-wrap:wrap;">
-          <span class="badge">PID ${escapeHtml(String(st.provider?.pid || 0))}</span>
-          <span class="badge">${escapeHtml(st.provider?.mode === "external-detected" ? "已检测外部进程" : (st.provider?.mode || "background"))}</span>
-          <span class="badge mono" title="${escapeHtml(st.provider?.binPath || cfg.frpc?.binPath || "")}">frpc ${escapeHtml(st.provider?.binPath || cfg.frpc?.binPath || "未找到")}</span>
-          ${(() => {
-            const source = st.provider?.configPath || configPath || "";
-            return source
-              ? `<span class="badge mono" title="${escapeHtml(source)}">配置源 ${escapeHtml(source)}</span>`
-              : "";
-          })()}
-        </div>
-      </div>
-
-      <div class="usage-guide nt-block">
-        ${renderDiscoverBox()}
-      </div>
-
-      <div class="usage-guide nt-block">
-        <h3>frpc 连接</h3>
-        <p class="nt-help">优先从上方检测结果导入。启动时优先直接使用原 frpc 配置文件（含 token），不强制复制到 secrets。</p>
         <div class="nt-form-grid">
           <label class="form-group"><span>serverAddr</span><input id="nt-server-addr" value="${escapeHtml(cfg.frpc?.serverAddr || "")}" oninput="window.__ntMaybeInferDashboard()" /></label>
           <label class="form-group"><span>serverPort</span><input id="nt-server-port" type="number" value="${escapeHtml(String(cfg.frpc?.serverPort ?? 7000))}" /></label>
@@ -399,12 +388,8 @@ function renderFrpcDetail(): string {
       <div class="usage-guide nt-block">
         <div class="nt-block-head">
           <h3>本地映射 Proxies</h3>
-          <button class="btn" onclick="window.__ntAddProxy()">新增映射</button>
+          <button class="btn btn-xs" onclick="window.__ntAddProxy()">新增映射</button>
         </div>
-        <p class="nt-help">
-          Proxies 定义“本机端口如何被 frps 暴露到公网/对端”。例如把本机 22 映射到远端 6007，对端就能通过 frps:6007 连到你的 SSH。
-          导入本机 frpc 配置后会自动带入已有映射。
-        </p>
         <div class="nt-table-wrap">
           <table class="nt-table">
             <thead>
@@ -421,11 +406,11 @@ function renderFrpcDetail(): string {
                           <td><input data-proxy="${i}" data-k="localIp" value="${escapeHtml(p.localIp || "127.0.0.1")}" /></td>
                           <td><input data-proxy="${i}" data-k="localPort" type="number" value="${escapeHtml(String(p.localPort || 0))}" /></td>
                           <td><input data-proxy="${i}" data-k="remotePort" type="number" value="${escapeHtml(String(p.remotePort || 0))}" /></td>
-                          <td><button class="btn" onclick="window.__ntRemoveProxy(${i})">删除</button></td>
+                          <td><button class="btn btn-xs" onclick="window.__ntRemoveProxy(${i})">删除</button></td>
                         </tr>`,
                       )
                       .join("")
-                  : `<tr><td colspan="6"><p class="nt-help">还没有映射。可导入本机配置，或手动新增。</p></td></tr>`
+                  : `<tr><td colspan="6"><p class="nt-help" style="padding:6px;">还没有映射。可导入本机配置，或手动新增。</p></td></tr>`
               }
             </tbody>
           </table>
@@ -433,36 +418,36 @@ function renderFrpcDetail(): string {
       </div>
 
       <div class="usage-guide nt-block">
-        <h3>frps Dashboard</h3>
-        <p class="nt-help">在新标签打开 frps 控制台。用户名/密码可选，仅当 frps 开启了 Dashboard 鉴权时需要。</p>
-        <div class="nt-form-grid" style="margin-top:12px;">
+        <div class="nt-block-head">
+          <h3>frps Dashboard</h3>
+          <div class="nt-inline-actions">
+            <button type="button" class="btn btn-xs nt-btn-open-dashboard" onclick="window.__ntOpenDashboardProxy()">保存并打开 Dashboard</button>
+            ${cfg.frpsDashboard?.url ? `<a class="btn btn-xs" href="${escapeHtml(cfg.frpsDashboard.url)}" target="_blank" rel="noopener noreferrer">原始地址 ↗</a>` : ""}
+          </div>
+        </div>
+        <div class="nt-form-grid">
           <div class="form-group nt-col-2">
             <span>Dashboard URL</span>
-            <div class="nt-url-row">
-              <input id="nt-dash-url" value="${escapeHtml(cfg.frpsDashboard?.url || "")}" placeholder="http://x.x.x.x:7500/static/#/" />
-              <button type="button" class="btn" onclick="window.__ntInferDashboard()" title="根据 frpc 的 serverAddr 生成 http://&lt;serverAddr&gt;:7500/static/#/">从 serverAddr 填充</button>
+            <div class="nt-url-row" style="display:flex;gap:6px;">
+              <input id="nt-dash-url" style="flex:1;" value="${escapeHtml(cfg.frpsDashboard?.url || "")}" placeholder="http://x.x.x.x:7500/static/#/" />
+              <button type="button" class="btn btn-xs" onclick="window.__ntInferDashboard()" title="根据 frpc 的 serverAddr 生成">从 serverAddr 填充</button>
             </div>
-            <p class="nt-help" style="margin-top:6px;">空着时会按 serverAddr + 默认端口 7500 生成；也可手改端口/路径。</p>
           </div>
           <label class="form-group"><span>用户名（可选）</span><input id="nt-dash-user" value="${escapeHtml(state.dashUserDraft)}" placeholder="${cfg.secrets?.dashboardAuthConfigured ? "已配置，留空保留" : ""}" /></label>
           <label class="form-group"><span>密码（可选）</span><input id="nt-dash-pass" type="password" value="${escapeHtml(state.dashPassDraft)}" placeholder="${cfg.secrets?.dashboardAuthConfigured ? "已配置，留空保留" : ""}" /></label>
         </div>
-        <div class="node-card-row" style="margin-top:10px;gap:8px;flex-wrap:wrap;">
-          <span class="badge">可达 ${st.dashboard?.reachable ? "yes" : "no"}</span>
-          <span class="badge">HTTP ${escapeHtml(String(st.dashboard?.statusCode || "-"))}</span>
-          <span class="badge">${escapeHtml(st.dashboard?.message || "无附加信息")}</span>
-        </div>
-        <div class="nt-inline-actions" style="margin-top:12px;">
-          <button type="button" class="btn nt-btn-open-dashboard" onclick="window.__ntOpenDashboardProxy()">保存并打开 Dashboard</button>
-          ${cfg.frpsDashboard?.url ? `<a class="btn" href="${escapeHtml(cfg.frpsDashboard.url)}" target="_blank" rel="noopener noreferrer">打开原始地址</a>` : ""}
+        <div class="node-card-row" style="margin-top:6px;gap:6px;flex-wrap:wrap;">
+          <span class="badge">可达: ${st.dashboard?.reachable ? "yes" : "no"}</span>
+          <span class="badge">HTTP: ${escapeHtml(String(st.dashboard?.statusCode || "-"))}</span>
+          ${st.dashboard?.message ? `<span class="badge">${escapeHtml(st.dashboard.message)}</span>` : ""}
         </div>
         ${renderDashboardHints(cfg, st)}
       </div>
 
-      <div class="usage-guide nt-block">
-        <h3>最近日志</h3>
-        <pre class="nt-log">${escapeHtml(logs.slice(-50).join("\n") || "暂无日志")}</pre>
-      </div>
+      <details class="nt-details" open>
+        <summary>📋 最近日志 (${logs.length} 条)</summary>
+        <pre class="nt-log">${escapeHtml(logs.slice(-100).join("\n") || "暂无日志")}</pre>
+      </details>
     </div>
   `;
 }
@@ -483,102 +468,57 @@ function renderCloudflaredDetail(): string {
 
   return `
     <div class="nt-page">
-      <div class="section-header nt-subhead">
-        <div>
-          <h2>Cloudflare Tunnel 管理</h2>
-          <p>基于 cloudflared 的零公网 IP 穿透，支持 Quick 临时公网与 Token 命名隧道模式。</p>
-        </div>
-        <div class="section-header-actions">
+      <div class="nt-compact-header">
+        <div class="nt-compact-header-left">
+          <button class="btn btn-sm" onclick="window.__ntBackCatalog()">← 返回</button>
+          <h2>Cloudflare Tunnel</h2>
           <span class="${status.badge}">${escapeHtml(status.text)}</span>
-          <button class="btn" onclick="window.__ntBackCatalog()">返回列表</button>
-          <button class="btn" onclick="window.__ntReload()">刷新</button>
-          <button class="btn btn-primary" onclick="window.__ntSave()">保存配置</button>
+          <span class="badge">PID ${escapeHtml(String(cfStatus.pid || 0))}</span>
+          <span class="badge">${escapeHtml(cfStatus.mode === "external-detected" ? "外部常驻服务" : (cfStatus.mode || mode))}</span>
+          ${cfStatus.binPath || binPath ? `<span class="badge mono" title="${escapeHtml(cfStatus.binPath || binPath)}">cloudflared</span>` : ""}
+        </div>
+        <div class="nt-compact-header-right">
+          <a class="btn btn-sm" href="https://dash.cloudflare.com/" target="_blank" rel="noopener noreferrer" title="访问 Cloudflare 官方控制台 (dash.cloudflare.com)">Cloudflare 官网 ↗</a>
+          <button class="btn btn-sm" onclick="window.__ntStart()">启动</button>
+          <button class="btn btn-sm" onclick="window.__ntStop()">停止</button>
+          <button class="btn btn-sm" onclick="window.__ntRestart()">重启</button>
+          <button class="btn btn-sm" onclick="window.__ntReload()">刷新</button>
+          <button class="btn btn-sm btn-primary" onclick="window.__ntSave()">保存配置</button>
         </div>
       </div>
 
       ${state.error ? `<div class="nt-alert">${escapeHtml(state.error)}</div>` : ""}
       ${cfStatus.lastError ? `<div class="nt-alert">${escapeHtml(cfStatus.lastError)}</div>` : ""}
 
-      <div class="usage-guide nt-block">
-        <div class="nt-block-head">
-          <h3>运行控制</h3>
+      ${publicUrl ? `
+        <div class="nt-url-banner">
+          <div class="nt-url-banner-main">
+            <span class="nt-url-label">🌐 公网访问:</span>
+            <a href="${escapeHtml(publicUrl)}" target="_blank" rel="noopener noreferrer" class="nt-url-link mono">${escapeHtml(publicUrl)}</a>
+          </div>
           <div class="nt-inline-actions">
-            <button class="btn" onclick="window.__ntStart()">启动</button>
-            <button class="btn" onclick="window.__ntStop()">停止</button>
-            <button class="btn" onclick="window.__ntRestart()">重启</button>
+            <button class="btn btn-xs" onclick="window.__ntCopyText('${escapeHtml(publicUrl)}')">📋 复制</button>
+            <a class="btn btn-xs" href="${escapeHtml(publicUrl)}" target="_blank" rel="noopener noreferrer">在新标签打开 ↗</a>
           </div>
         </div>
-        <div class="node-card-row" style="margin-top:12px;gap:8px;flex-wrap:wrap;">
-          <span class="badge">PID ${escapeHtml(String(cfStatus.pid || 0))}</span>
-          <span class="badge">模式: ${escapeHtml(cfStatus.mode || mode)}</span>
-          <span class="badge mono" title="${escapeHtml(cfStatus.binPath || binPath || "")}">cloudflared: ${escapeHtml(cfStatus.binPath || binPath || "自动解析")}</span>
+      ` : (cfStatus.status === "running" ? `
+        <div class="nt-url-banner" style="background:var(--bg-secondary);">
+          <span class="mono" style="font-size:12px;">⏳ 正在从 cloudflared 输出流捕获 *.trycloudflare.com 地址，请稍候...</span>
         </div>
-
-        ${publicUrl ? `
-          <div style="margin-top:16px; padding:12px; background:var(--bg-secondary, #f4f4f5); border-radius:8px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span style="font-weight:600; font-size:13px;">🌐 公网访问地址:</span>
-              <a href="${escapeHtml(publicUrl)}" target="_blank" rel="noopener noreferrer" class="mono" style="color:var(--accent-color, #0284c7); text-decoration:underline;">${escapeHtml(publicUrl)}</a>
-            </div>
-            <div style="display:flex; gap:8px;">
-              <button class="btn btn-sm" onclick="window.__ntCopyText('${escapeHtml(publicUrl)}')">📋 复制链接</button>
-              <a class="btn btn-sm" href="${escapeHtml(publicUrl)}" target="_blank" rel="noopener noreferrer">在新标签打开 →</a>
-            </div>
-          </div>
-          ${mode === "quick" ? `<p class="nt-help" style="margin-top:6px;">注：Quick 模式基于 trycloudflare.com 临时分配，进程停止或重启后分配的域名可能会改变。</p>` : ""}
-        ` : (cfStatus.status === "running" ? `
-          <div style="margin-top:12px; padding:10px; background:var(--bg-secondary, #f4f4f5); border-radius:6px;">
-            <span class="mono">正在从 cloudflared 输出流中捕获 trycloudflare.com 域名，请稍候...</span>
-          </div>
-        ` : "")}
-      </div>
+      ` : "")}
 
       <div class="usage-guide nt-block">
         <div class="nt-block-head">
-          <h3>📦 cloudflared 安装指引 (跨平台)</h3>
-        </div>
-        <p class="nt-help">如果本机尚未安装 cloudflared，推荐使用 npm 全局安装（双系统全自动下载官方对应平台二进制并配置环境）：</p>
-        <div class="nt-form-grid" style="margin-top:8px;">
-          <div class="form-group nt-col-2">
-            <span style="font-size:12px;color:var(--text-secondary)">推荐跨平台安装方式 (macOS & Windows):</span>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-              <input readonly value="npm install -g cloudflared" class="mono" style="flex:1;min-width:200px;" />
-              <button class="btn btn-sm" onclick="window.__ntCopyText('npm install -g cloudflared')">复制命令</button>
-              <button class="btn btn-sm btn-primary" id="nt-btn-install-cf" ${state.installingCloudflared ? "disabled" : ""} onclick="window.__ntInstallCloudflared()">
-                ${state.installingCloudflared ? "⏳ 正在安装..." : "⚡ 网关一键安装"}
-              </button>
-            </div>
-            ${state.installingCloudflared ? `
-              <div style="margin-top:8px;padding:8px 12px;background:var(--bg-secondary, #f4f4f5);border-radius:6px;font-size:12px;display:flex;align-items:center;gap:8px;">
-                <span>正在后台执行 <code>npm install -g cloudflared</code>，请稍候（通常需 15~30 秒自动下载对应平台二进制）...</span>
-              </div>
-            ` : ""}
-            ${state.installOutput ? `
-              <details style="margin-top:8px;font-size:12px;background:var(--bg-secondary, #f4f4f5);padding:6px 10px;border-radius:6px;" open>
-                <summary style="cursor:pointer;color:var(--text-secondary);font-weight:600;">最近安装输出日志</summary>
-                <pre class="nt-log" style="margin-top:6px;max-height:160px;font-size:11px;overflow:auto;white-space:pre-wrap;">${escapeHtml(state.installOutput)}</pre>
-              </details>
-            ` : ""}
-          </div>
-          <div class="form-group">
-            <span style="font-size:12px;color:var(--text-secondary)">macOS (Homebrew):</span>
-            <input readonly value="brew install cloudflared" class="mono" />
-          </div>
-          <div class="form-group">
-            <span style="font-size:12px;color:var(--text-secondary)">Windows (winget):</span>
-            <input readonly value="winget install --id Cloudflare.cloudflared" class="mono" />
+          <h3>Tunnel 连接配置</h3>
+          <div class="nt-inline-actions">
+            <a class="btn btn-xs" href="https://one.dash.cloudflare.com/" target="_blank" rel="noopener noreferrer" title="直接前往 Cloudflare Zero Trust 控制台创建/获取 Tunnel Token">Zero Trust 控制台 ↗</a>
           </div>
         </div>
-      </div>
-
-      <div class="usage-guide nt-block">
-        <h3>Tunnel 连接配置</h3>
-        <p class="nt-help">配置启动模式、本地映射地址以及 Cloudflare Tunnel Token。凭据安全存放在 nat-traversal.secrets.json，绝不污染模型配置。</p>
-        <div class="nt-form-grid" style="margin-top:12px;">
+        <div class="nt-form-grid">
           <label class="form-group">
             <span>穿透模式 (Mode)</span>
             <select id="nt-cf-mode" onchange="window.__ntCfModeChange(this.value)">
-              <option value="quick" ${mode === "quick" ? "selected" : ""}>Quick 模式 (零配置 *.trycloudflare.com 临时公网)</option>
+              <option value="quick" ${mode === "quick" ? "selected" : ""}>Quick 模式 (*.trycloudflare.com 临时分配)</option>
               <option value="token" ${mode === "token" ? "selected" : ""}>Token 模式 (Cloudflare Zero Trust 永久命名隧道)</option>
             </select>
           </label>
@@ -588,8 +528,8 @@ function renderCloudflaredDetail(): string {
           </label>
           <label class="form-group nt-col-2" id="nt-cf-token-group" style="${mode === "token" ? "" : "display:none;"}">
             <span style="display:flex; justify-content:space-between; align-items:center;">
-              <span>Tunnel Token (仅 Token 模式需要)</span>
-              <span class="badge ${tokenConfigured ? "badge-default" : ""}" style="font-size:11px;">
+              <span>Tunnel Token (仅 Token 模式需要，可在 <a href="https://one.dash.cloudflare.com/" target="_blank" rel="noopener noreferrer" style="color:var(--accent-color);text-decoration:underline;">Zero Trust 控制台</a> 创建并获取)</span>
+              <span class="badge ${tokenConfigured ? "badge-default" : ""}" style="font-size:10px;">
                 ${tokenConfigured ? "已配置" : "未配置"}
               </span>
             </span>
@@ -611,10 +551,48 @@ function renderCloudflaredDetail(): string {
         </div>
       </div>
 
-      <div class="usage-guide nt-block">
-        <h3>最近日志</h3>
-        <pre class="nt-log">${escapeHtml(logs.slice(-50).join("\n") || "暂无日志")}</pre>
-      </div>
+      <details class="nt-details" ${binPath || cfStatus.binPath ? "" : "open"}>
+        <summary>📦 cloudflared 安装与服务化后台运行指引 (点击展开/折叠)</summary>
+        <div style="display:grid; gap:8px; margin-top:8px;">
+          <div style="font-size:12px; color:var(--text-secondary); line-height:1.5;">
+            <strong>后台独立常驻（不随网关关闭）：</strong>
+            推荐使用系统服务 <code>cloudflared service install [TOKEN]</code>（Windows 服务 / macOS launchd，由操作系统 services 管理，完全脱离网关生命周期）。网关启动后会自动检测并接管外部运行状态。
+          </div>
+          <div class="nt-form-grid">
+            <div class="form-group nt-col-2">
+              <span style="font-size:11px;">全局安装方式 (全自动下载官方二进制):</span>
+              <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                <input readonly value="npm install -g cloudflared" class="mono" style="flex:1;min-width:180px;" />
+                <button class="btn btn-xs" onclick="window.__ntCopyText('npm install -g cloudflared')">复制</button>
+                <button class="btn btn-xs btn-primary" id="nt-btn-install-cf" ${state.installingCloudflared ? "disabled" : ""} onclick="window.__ntInstallCloudflared()">
+                  ${state.installingCloudflared ? "⏳ 安装中..." : "⚡ 网关一键安装"}
+                </button>
+              </div>
+              ${state.installingCloudflared ? `
+                <div style="margin-top:4px;padding:4px 8px;background:var(--bg-secondary);border-radius:4px;font-size:11px;">
+                  正在后台静默执行 <code>npm install -g cloudflared</code>，请稍候（通常需 10~20 秒）...
+                </div>
+              ` : ""}
+              ${state.installOutput ? `
+                <pre class="nt-log" style="margin-top:6px;max-height:80px;">${escapeHtml(state.installOutput)}</pre>
+              ` : ""}
+            </div>
+            <div class="form-group">
+              <span style="font-size:11px;">Windows 原生后台启动 (PowerShell 隐藏窗口):</span>
+              <input readonly value='Start-Process cloudflared -ArgumentList "tunnel --url http://127.0.0.1:8788" -WindowStyle Hidden' class="mono" />
+            </div>
+            <div class="form-group">
+              <span style="font-size:11px;">macOS / Linux 独立后台启动:</span>
+              <input readonly value="nohup cloudflared tunnel --url http://127.0.0.1:8788 > /dev/null 2>&1 &" class="mono" />
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="nt-details" open>
+        <summary>📋 最近日志 (${logs.length} 条)</summary>
+        <pre class="nt-log">${escapeHtml(logs.slice(-100).join("\n") || "暂无日志")}</pre>
+      </details>
     </div>
   `;
 }

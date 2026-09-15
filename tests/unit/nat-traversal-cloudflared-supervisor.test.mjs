@@ -157,3 +157,41 @@ test("cloudflared supervisor lifecycle with fake runner", async (t) => {
   assert.equal(supervisor.getStatus().status, "stopped");
   assert.equal(fs.existsSync(pidPath), false);
 });
+test("cloudflared supervisor adopts running external cloudflared process", async (t) => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "cf-adopt-"));
+  const pidPath = path.join(tmpDir, "cloudflared.pid");
+  const logPath = path.join(tmpDir, "cloudflared.log");
+  t.after(() => fs.rmSync(tmpDir, { recursive: true, force: true }));
+
+  const externalPid = 123456;
+  let isRunning = true;
+  const supervisor = createCloudflaredSupervisor({
+    binPath: "cloudflared",
+    pidPath,
+    logPath,
+    discoverProcess: () => (isRunning ? externalPid : 0),
+    isProcessRunning: (pid) => pid === externalPid && isRunning,
+    killProcess: (pid) => {
+      if (pid === externalPid) {
+        isRunning = false;
+        return true;
+      }
+      return false;
+    },
+  });
+
+  // getStatus should auto-discover and adopt the external process
+  const st = supervisor.getStatus();
+  assert.equal(st.status, "running");
+  assert.equal(st.pid, externalPid);
+  assert.equal(st.adopted, true);
+  assert.equal(st.mode, "external-detected");
+  assert.equal(fs.existsSync(pidPath), true);
+  assert.equal(Number(fs.readFileSync(pidPath, "utf8")), externalPid);
+
+  // Stopping it clears state
+  await supervisor.stop();
+  assert.equal(supervisor.getStatus().status, "stopped");
+  assert.equal(fs.existsSync(pidPath), false);
+});
+
