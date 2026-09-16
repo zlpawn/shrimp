@@ -92,3 +92,4 @@ gateway-8789.log*
 /nat-traversal.secrets.json
 /nat-traversal/
 /scheduler.config.json
+punk-assets/

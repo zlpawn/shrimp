@@ -7970,7 +7970,8 @@ async function fetchConfiguredOpenAI(
           const m = String(provider.base_url || "").match(/:(\d+)(?:\/|$)/);
           const port = m ? parseInt(m[1], 10) : 7863;
           logInfo("workbuddy_auto_ensure", { provider: provider.id, port });
-          await ensureWorkbuddyReady({ port });
+          const matchedAcc = Array.isArray(provider.accounts) ? provider.accounts.find((a) => a.port === port) : null;
+          await ensureWorkbuddyReady({ port, edition: matchedAcc?.edition || provider.edition || "" });
           return await doFetch(key);
         } catch (ensureErr) {
           logInfo("workbuddy_auto_ensure_failed", { error: ensureErr.message });

@@ -1081,7 +1081,7 @@
             "DeepSeek-V4.1-Flash-wb": "deepseek-v4.1-flash"
           },
           "capabilities": {
-            "reasoning": true,
+            "reasoning": false,
             "tools": true
           },
           "is_default": false,
