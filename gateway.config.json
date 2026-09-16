@@ -77,6 +77,33 @@
     "desktop": {
       "endpoints": [
         {
+          "id": "ep_45245859-6bb6-40b0-a36a-bc5f5d6b53d7",
+          "name": "workbuddy",
+          "type": "workbuddy",
+          "base_url": "http://127.0.0.1:7863/v1",
+          "auth": "none",
+          "models": [],
+          "model_mapping": {
+            "claude-opus-4-8-max": "DeepSeek-V4.1-Flash"
+          },
+          "capabilities": {
+            "reasoning": true,
+            "tools": true
+          },
+          "is_default": false,
+          "model_labels": {
+            "claude-opus-4-8-max": "DeepSeek-V4.1-Flash-wb"
+          },
+          "accounts": [
+            {
+              "id": "acc_7863",
+              "port": 7863,
+              "name": "账号 1",
+              "edition": "global"
+            }
+          ]
+        },
+        {
           "id": "ep_11d5e024-d847-4a20-bbbf-f929557bd41c",
           "name": "智谱",
           "type": "anthropic",
@@ -237,15 +264,23 @@
           "type": "workbuddy",
           "base_url": "http://127.0.0.1:7863/v1",
           "auth": "none",
-          "models": [
-            "DeepSeek-V4.1-Flash"
-          ],
-          "model_mapping": {},
+          "models": [],
+          "model_mapping": {
+            "DeepSeek-V4.1-Flash-wb": "DeepSeek-V4.1-Flash"
+          },
           "capabilities": {
             "reasoning": true,
             "tools": true
           },
-          "is_default": false
+          "is_default": false,
+          "accounts": [
+            {
+              "id": "acc_7863",
+              "port": 7863,
+              "name": "账号 1",
+              "edition": "global"
+            }
+          ]
         },
         {
           "id": "ep_f3e23095-9ff5-4e7f-86ef-5119d32d5d21",
@@ -968,7 +1003,15 @@
           "capabilities": {
             "reasoning": true,
             "tools": true
-          }
+          },
+          "accounts": [
+            {
+              "id": "acc_7863",
+              "port": 7863,
+              "name": "账号 1",
+              "edition": "global"
+            }
+          ]
         },
         {
           "id": "ep_270265b8-b09c-469d-8e07-578882f491b2",
@@ -1023,6 +1066,57 @@
         }
       ],
       "display_name": "VoiceStudio 代理",
+      "protocol": "openai"
+    },
+    "zcode": {
+      "endpoints": [
+        {
+          "id": "ep_bd601662-5ff3-4e97-9319-6a4baf2df9dc",
+          "name": "workbuddy",
+          "type": "workbuddy",
+          "base_url": "http://127.0.0.1:7863/v1",
+          "auth": "none",
+          "models": [],
+          "model_mapping": {
+            "DeepSeek-V4.1-Flash-wb": "deepseek-v4.1-flash"
+          },
+          "capabilities": {
+            "reasoning": true,
+            "tools": true
+          },
+          "is_default": false,
+          "accounts": [
+            {
+              "id": "acc_7863",
+              "port": 7863,
+              "name": "账号 1",
+              "edition": "global"
+            }
+          ]
+        },
+        {
+          "id": "ep_9d968095-ebcb-4a42-8cfa-a2990bfb74f9",
+          "name": "deepseek",
+          "type": "openai-chat",
+          "base_url": "https://api.deepseek.com",
+          "auth": "bearer",
+          "models": [
+            "deepseek-flash"
+          ],
+          "model_mapping": {},
+          "capabilities": {
+            "input_modalities": [
+              "text",
+              "image"
+            ],
+            "reasoning": false,
+            "tools": true,
+            "sanitize_dangling_tool_calls": true
+          },
+          "is_default": false
+        }
+      ],
+      "display_name": "zcode 代理",
       "protocol": "openai"
     }
   },

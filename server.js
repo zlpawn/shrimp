@@ -5426,11 +5426,13 @@ async function forwardAnthropicMessagesResolved(body, clientReq, clientRes, cont
   // Multi-node failover across candidates on 429/403/5xx
   if (route.candidates && route.candidates.length > 1 && (upstream.status === 429 || upstream.status === 403 || upstream.status >= 500)) {
     for (const altRoute of route.candidates) {
-      if (altRoute.endpoint?.id === route.endpoint?.id) continue;
+      if (altRoute === route || (altRoute.endpoint?.id === route.endpoint?.id && (altRoute.account_id ? altRoute.account_id === route.account_id : altRoute.provider?.base_url === route.provider?.base_url))) continue;
       logInfo("endpoint_failover", {
         client: context.client,
         from_endpoint: route.endpoint?.id,
         to_endpoint: altRoute.endpoint?.id,
+        from_account: route.account_id,
+        to_account: altRoute.account_id,
         status: upstream.status,
       });
       const altBody =
@@ -5937,11 +5939,13 @@ async function forwardOpenAIChatCompletionsResolved(body, clientReq, clientRes, 
   // Multi-node failover across candidates on 429/403/5xx
   if (route?.candidates && route.candidates.length > 1 && (upstream.status === 429 || upstream.status === 403 || upstream.status >= 500)) {
     for (const altRoute of route.candidates) {
-      if (altRoute.endpoint?.id === route.endpoint?.id) continue;
+      if (altRoute === route || (altRoute.endpoint?.id === route.endpoint?.id && (altRoute.account_id ? altRoute.account_id === route.account_id : altRoute.provider?.base_url === route.provider?.base_url))) continue;
       logInfo("endpoint_failover", {
         client: context.client,
         from_endpoint: route.endpoint?.id,
         to_endpoint: altRoute.endpoint?.id,
+        from_account: route.account_id,
+        to_account: altRoute.account_id,
         status: upstream.status,
       });
       const altResolvedModel = altRoute.upstream_model || resolveModel(requestedModel);
@@ -6685,11 +6689,13 @@ async function forwardResolvedCodexResponse({
     // Multi-node failover across candidates on 429/403/5xx
     if (route.candidates && route.candidates.length > 1 && (upstream.status === 429 || upstream.status === 403 || upstream.status >= 500)) {
       for (const altRoute of route.candidates) {
-        if (altRoute.endpoint?.id === route.endpoint?.id) continue;
+        if (altRoute === route || (altRoute.endpoint?.id === route.endpoint?.id && (altRoute.account_id ? altRoute.account_id === route.account_id : altRoute.provider?.base_url === route.provider?.base_url))) continue;
         logInfo("endpoint_failover", {
           client: context.client,
           from_endpoint: route.endpoint?.id,
           to_endpoint: altRoute.endpoint?.id,
+          from_account: route.account_id,
+          to_account: altRoute.account_id,
           status: upstream.status,
           protocol: "responses",
         });
@@ -10494,6 +10500,8 @@ function resolveAnthropicRoute(requestedModel, client) {
       endpoint: configured.endpoint,
       config: configured.model,
       candidates: configured.candidates || [],
+      account_id: configured.account_id,
+      account: configured.account,
     };
   }
 
@@ -10565,12 +10573,26 @@ function resolveConfiguredModelPrecise(requestedModel, allowedTypes = [], client
         targetModel = ep.model_mapping[text];
       }
       if (ep.models?.includes(targetModel) || ep.name === text || ep.model_mapping?.[text]) {
-        matchingCandidates.push({
-          model: { id: text, display_name: text, upstream_model: targetModel, aliases: [] },
-          provider: endpointProvider(ep),
-          endpoint: ep,
-          upstream_model: targetModel,
-        });
+        if (ep.type === "workbuddy" && Array.isArray(ep.accounts) && ep.accounts.length > 0) {
+          for (const acc of ep.accounts) {
+            const accPort = Number(acc.port) || 7863;
+            matchingCandidates.push({
+              model: { id: text, display_name: text, upstream_model: targetModel, aliases: [] },
+              provider: { ...endpointProvider(ep), base_url: `http://127.0.0.1:${accPort}/v1` },
+              endpoint: ep,
+              account_id: acc.id || String(accPort),
+              account: acc,
+              upstream_model: targetModel,
+            });
+          }
+        } else {
+          matchingCandidates.push({
+            model: { id: text, display_name: text, upstream_model: targetModel, aliases: [] },
+            provider: endpointProvider(ep),
+            endpoint: ep,
+            upstream_model: targetModel,
+          });
+        }
       }
     }
 
@@ -10594,7 +10616,7 @@ function resolveConfiguredModelPrecise(requestedModel, allowedTypes = [], client
 
       chosen.candidates = [
         chosen,
-        ...matchingCandidates.filter(cand => cand.endpoint?.id !== chosen.endpoint?.id),
+        ...matchingCandidates.filter(cand => cand !== chosen),
       ];
       return chosen;
     }
@@ -10657,6 +10679,28 @@ function resolveConfiguredModel(requestedModel, allowedTypes = [], client = null
           matched = true;
         }
         if (matched) {
+          if (preferredEp.type === "workbuddy" && Array.isArray(preferredEp.accounts) && preferredEp.accounts.length > 0) {
+            const accCandidates = preferredEp.accounts.map((acc) => {
+              const accPort = Number(acc.port) || 7863;
+              return {
+                model: { id: text, display_name: text, upstream_model: targetModel, aliases: [] },
+                provider: { ...endpointProvider(preferredEp), base_url: `http://127.0.0.1:${accPort}/v1` },
+                endpoint: preferredEp,
+                account_id: acc.id || String(accPort),
+                account: acc,
+                upstream_model: targetModel,
+              };
+            });
+            const rrKey = `${c}:${preferredId}:${text}`;
+            const currentIdx = ROUTE_ROUND_ROBIN_INDEX.get(rrKey) || 0;
+            const chosen = accCandidates[currentIdx % accCandidates.length];
+            ROUTE_ROUND_ROBIN_INDEX.set(rrKey, (currentIdx + 1) % accCandidates.length);
+            chosen.candidates = [
+              chosen,
+              ...accCandidates.filter((cand) => cand !== chosen),
+            ];
+            return chosen;
+          }
           return {
             model: { id: text, display_name: text, upstream_model: targetModel, aliases: [] },
             provider: endpointProvider(preferredEp),
@@ -10681,12 +10725,26 @@ function resolveConfiguredModel(requestedModel, allowedTypes = [], client = null
         }
 
         if (ep.models?.includes(targetModel) || ep.name === text || ep.model_mapping?.[text]) {
-          matchingCandidates.push({
-            model: { id: text, display_name: text, upstream_model: targetModel, aliases: [] },
-            provider: endpointProvider(ep),
-            endpoint: ep,
-            upstream_model: targetModel,
-          });
+          if (ep.type === "workbuddy" && Array.isArray(ep.accounts) && ep.accounts.length > 0) {
+            for (const acc of ep.accounts) {
+              const accPort = Number(acc.port) || 7863;
+              matchingCandidates.push({
+                model: { id: text, display_name: text, upstream_model: targetModel, aliases: [] },
+                provider: { ...endpointProvider(ep), base_url: `http://127.0.0.1:${accPort}/v1` },
+                endpoint: ep,
+                account_id: acc.id || String(accPort),
+                account: acc,
+                upstream_model: targetModel,
+              });
+            }
+          } else {
+            matchingCandidates.push({
+              model: { id: text, display_name: text, upstream_model: targetModel, aliases: [] },
+              provider: endpointProvider(ep),
+              endpoint: ep,
+              upstream_model: targetModel,
+            });
+          }
         }
       }
     }
@@ -10714,7 +10772,7 @@ function resolveConfiguredModel(requestedModel, allowedTypes = [], client = null
 
       chosen.candidates = [
         chosen,
-        ...matchingCandidates.filter(cand => cand.endpoint?.id !== chosen.endpoint?.id),
+        ...matchingCandidates.filter(cand => cand !== chosen),
       ];
       return chosen;
     }
@@ -10724,6 +10782,28 @@ function resolveConfiguredModel(requestedModel, allowedTypes = [], client = null
       let targetModel = text;
       if (defaultEp.model_mapping && defaultEp.model_mapping[text]) {
         targetModel = defaultEp.model_mapping[text];
+      }
+      if (defaultEp.type === "workbuddy" && Array.isArray(defaultEp.accounts) && defaultEp.accounts.length > 0) {
+        const accCandidates = defaultEp.accounts.map((acc) => {
+          const accPort = Number(acc.port) || 7863;
+          return {
+            model: { id: text, display_name: text, upstream_model: targetModel, aliases: [] },
+            provider: { ...endpointProvider(defaultEp), base_url: `http://127.0.0.1:${accPort}/v1` },
+            endpoint: defaultEp,
+            account_id: acc.id || String(accPort),
+            account: acc,
+            upstream_model: targetModel,
+          };
+        });
+        const rrKey = `${c}:default:${text}`;
+        const currentIdx = ROUTE_ROUND_ROBIN_INDEX.get(rrKey) || 0;
+        const chosen = accCandidates[currentIdx % accCandidates.length];
+        ROUTE_ROUND_ROBIN_INDEX.set(rrKey, (currentIdx + 1) % accCandidates.length);
+        chosen.candidates = [
+          chosen,
+          ...accCandidates.filter((cand) => cand !== chosen),
+        ];
+        return chosen;
       }
       return {
          model: { id: text, display_name: text, upstream_model: targetModel, aliases: [] },

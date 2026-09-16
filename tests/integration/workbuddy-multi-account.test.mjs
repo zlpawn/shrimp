@@ -74,20 +74,26 @@ test("workbuddy multi-account round-robin and 429 failover", async (t) => {
         protocol: "anthropic",
         endpoints: [
           {
-            id: "ep-wb-acc-1",
-            name: "WorkBuddy 账号 1 (:17891)",
+            id: "ep-wb-consolidated",
+            name: "WorkBuddy",
             type: "workbuddy",
             base_url: `http://127.0.0.1:${mockPort1}/v1`,
             auth: "none",
             models: ["deepseek-v4.1-flash"],
-          },
-          {
-            id: "ep-wb-acc-2",
-            name: "WorkBuddy 账号 2 (:17892)",
-            type: "workbuddy",
-            base_url: `http://127.0.0.1:${mockPort2}/v1`,
-            auth: "none",
-            models: ["deepseek-v4.1-flash"],
+            accounts: [
+              {
+                id: "acc-1",
+                port: mockPort1,
+                name: "账号 1",
+                edition: "global",
+              },
+              {
+                id: "acc-2",
+                port: mockPort2,
+                name: "账号 2",
+                edition: "global",
+              },
+            ],
           },
         ],
       },
