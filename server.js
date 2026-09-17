@@ -6787,6 +6787,8 @@ async function forwardResolvedCodexResponse({
         },
         ...workbuddyBody.input,
       ];
+    } else if (!workbuddyBody.instructions && (!Array.isArray(workbuddyBody.input) || workbuddyBody.input.length === 0)) {
+      workbuddyBody.instructions = "You are a helpful assistant.";
     }
     const upstream = await fetchConfiguredOpenAI(
       route.provider,
@@ -6819,7 +6821,10 @@ async function forwardResolvedCodexResponse({
       return;
     }
 
-    const response = await upstream.json();
+    const contentType = upstream.headers.get("content-type") || "";
+    const response = contentType.includes("text/event-stream")
+      ? await collectResponsesStream(upstream.body, requestedModel)
+      : await upstream.json();
     sendResponsesObject(clientRes, response, requestedModel, { stream: false }, responseToolKinds);
     return;
   }
@@ -11105,37 +11110,48 @@ async function streamAnthropicAsOpenAIChat(upstream, clientRes, requestedModel, 
   const completionId = `chatcmpl_${Date.now()}`;
   const created = Math.floor(Date.now() / 1000);
   let sentRole = false;
+  let sawToolUse = false;
+  const toolCallsByIndex = new Map();
+  let nextToolIndex = 0;
+  let inputTokens = 0;
+  let outputTokens = 0;
+
+  const ensureRole = () => {
+    if (sentRole) return;
+    sentRole = true;
+    writeOpenAISse(clientRes, {
+      id: completionId,
+      object: "chat.completion.chunk",
+      created,
+      model: requestedModel || "custom-model",
+      choices: [{ index: 0, delta: { role: "assistant" }, finish_reason: null }],
+    });
+  };
+
+  const getOrInitTool = (blockIndex, block = {}) => {
+    const key = blockIndex != null ? blockIndex : nextToolIndex;
+    if (toolCallsByIndex.has(key)) return toolCallsByIndex.get(key);
+    const tool = {
+      index: nextToolIndex++,
+      id: block.id || `call_${Date.now()}_${nextToolIndex}`,
+      name: block.name || "tool",
+      started: false,
+    };
+    toolCallsByIndex.set(key, tool);
+    sawToolUse = true;
+    return tool;
+  };
 
   await consumeSse(upstream.body, (eventName, payloadText) => {
+    if (eventName === "ping" || (!payloadText && eventName === "ping")) {
+      clientRes.write(": ping\n\n");
+      return;
+    }
+    if (payloadText === "[DONE]") return;
+
     const payload = parseJsonMaybe(payloadText) || {};
-    if (!sentRole && (eventName === "message_start" || eventName === "content_block_start")) {
-      writeOpenAISse(clientRes, {
-        id: completionId,
-        object: "chat.completion.chunk",
-        created,
-        model: requestedModel || "custom-model",
-        choices: [{ index: 0, delta: { role: "assistant" }, finish_reason: null }],
-      });
-      sentRole = true;
-    }
 
-    if (eventName === "content_block_delta" && payload.delta?.type === "text_delta") {
-      writeOpenAISse(clientRes, {
-        id: completionId,
-        object: "chat.completion.chunk",
-        created,
-        model: requestedModel || "custom-model",
-        choices: [
-          {
-            index: 0,
-            delta: { content: payload.delta.text || "" },
-            finish_reason: null,
-          },
-        ],
-      });
-    }
-
-    if (eventName === "message_delta") {
+    if (eventName === "error") {
       writeOpenAISse(clientRes, {
         id: completionId,
         object: "chat.completion.chunk",
@@ -11145,10 +11161,174 @@ async function streamAnthropicAsOpenAIChat(upstream, clientRes, requestedModel, 
           {
             index: 0,
             delta: {},
-            finish_reason: anthropicStopReasonToOpenAI(payload.delta?.stop_reason, false),
+            finish_reason: "error",
           },
         ],
+        error: payload.error || payload,
       });
+      return;
+    }
+
+    if (eventName === "message_start") {
+      inputTokens = payload.message?.usage?.input_tokens || inputTokens;
+      ensureRole();
+      return;
+    }
+
+    if (eventName === "content_block_start") {
+      const block = payload.content_block || {};
+      if (block.type === "tool_use") {
+        ensureRole();
+        const tool = getOrInitTool(payload.index, block);
+        if (!tool.started) {
+          tool.started = true;
+          const initialArgs = block.input && Object.keys(block.input).length
+            ? JSON.stringify(block.input)
+            : "";
+          writeOpenAISse(clientRes, {
+            id: completionId,
+            object: "chat.completion.chunk",
+            created,
+            model: requestedModel || "custom-model",
+            choices: [
+              {
+                index: 0,
+                delta: {
+                  tool_calls: [
+                    {
+                      index: tool.index,
+                      id: tool.id,
+                      type: "function",
+                      function: {
+                        name: tool.name,
+                        arguments: initialArgs,
+                      },
+                    },
+                  ],
+                },
+                finish_reason: null,
+              },
+            ],
+          });
+        }
+      } else {
+        ensureRole();
+      }
+      return;
+    }
+
+    if (eventName === "content_block_delta") {
+      const delta = payload.delta || {};
+      if (delta.type === "text_delta" && delta.text) {
+        ensureRole();
+        writeOpenAISse(clientRes, {
+          id: completionId,
+          object: "chat.completion.chunk",
+          created,
+          model: requestedModel || "custom-model",
+          choices: [
+            {
+              index: 0,
+              delta: { content: delta.text },
+              finish_reason: null,
+            },
+          ],
+        });
+      } else if (delta.type === "thinking_delta" && delta.thinking) {
+        ensureRole();
+        writeOpenAISse(clientRes, {
+          id: completionId,
+          object: "chat.completion.chunk",
+          created,
+          model: requestedModel || "custom-model",
+          choices: [
+            {
+              index: 0,
+              delta: { reasoning_content: delta.thinking },
+              finish_reason: null,
+            },
+          ],
+        });
+      } else if (delta.type === "input_json_delta" && delta.partial_json) {
+        ensureRole();
+        const tool = getOrInitTool(payload.index);
+        if (!tool.started) {
+          tool.started = true;
+          writeOpenAISse(clientRes, {
+            id: completionId,
+            object: "chat.completion.chunk",
+            created,
+            model: requestedModel || "custom-model",
+            choices: [
+              {
+                index: 0,
+                delta: {
+                  tool_calls: [
+                    {
+                      index: tool.index,
+                      id: tool.id,
+                      type: "function",
+                      function: {
+                        name: tool.name,
+                        arguments: delta.partial_json,
+                      },
+                    },
+                  ],
+                },
+                finish_reason: null,
+              },
+            ],
+          });
+        } else {
+          writeOpenAISse(clientRes, {
+            id: completionId,
+            object: "chat.completion.chunk",
+            created,
+            model: requestedModel || "custom-model",
+            choices: [
+              {
+                index: 0,
+                delta: {
+                  tool_calls: [
+                    {
+                      index: tool.index,
+                      function: {
+                        arguments: delta.partial_json,
+                      },
+                    },
+                  ],
+                },
+                finish_reason: null,
+              },
+            ],
+          });
+        }
+      }
+      return;
+    }
+
+    if (eventName === "message_delta") {
+      outputTokens = payload.usage?.output_tokens || outputTokens;
+      const stopReason = payload.delta?.stop_reason;
+      writeOpenAISse(clientRes, {
+        id: completionId,
+        object: "chat.completion.chunk",
+        created,
+        model: requestedModel || "custom-model",
+        choices: [
+          {
+            index: 0,
+            delta: {},
+            finish_reason: anthropicStopReasonToOpenAI(stopReason, sawToolUse),
+          },
+        ],
+        usage: {
+          prompt_tokens: inputTokens,
+          completion_tokens: outputTokens,
+          total_tokens: inputTokens + outputTokens,
+        },
+      });
+      return;
     }
   });
 

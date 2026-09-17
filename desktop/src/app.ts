@@ -4206,7 +4206,7 @@ function createEndpointDetailHTML(client, index, ep) {
                                             <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
                                                 <button type="button" class="btn btn-sm btn-primary" title="唤起腾讯 CodeBuddy 国际版 (workbuddy.ai) 网页授权" onclick="triggerWorkbuddyAccountLogin('${client}', ${index}, ${accIdx}, 'global')">一键登录(国际版)</button>
                                                 <button type="button" class="btn btn-sm" title="唤起腾讯 CodeBuddy 国内版 (copilot.tencent.com) 网页授权" onclick="triggerWorkbuddyAccountLogin('${client}', ${index}, ${accIdx}, 'cn')">一键登录(国内版)</button>
-                                                <button type="button" class="btn btn-sm" title="检测并拉起本地驱动服务" onclick="restartWorkbuddyAccountService('${client}', ${index}, ${accIdx})">启动服务</button>
+                                                <button type="button" id="wb-acc-btn-service-${client}-${index}-${accIdx}" class="btn btn-sm" title="检测并拉起/重启本地驱动服务" onclick="restartWorkbuddyAccountService('${client}', ${index}, ${accIdx})">启动服务</button>
                                                 ${wbAccounts.length > 1 ? `
                                                 <button type="button" class="btn btn-sm btn-danger" title="从该节点移除此账号" onclick="removeWorkbuddyAccount('${client}', ${index}, ${accIdx})">
                                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
@@ -7718,13 +7718,18 @@ window.pollWorkbuddyStatus = async function(client: string, index: number) {
                 return;
             }
 
+            const btnEl = document.getElementById(`wb-acc-btn-service-${client}-${index}-${accIdx}`);
             if (serviceEl) {
                 if (!data.installed) {
                     serviceEl.innerHTML = `<span style="color:#f59e0b; font-weight:600;">未安装驱动</span>`;
+                    if (btnEl) btnEl.textContent = '安装驱动';
                 } else if (!data.running) {
                     serviceEl.innerHTML = `<span style="color:var(--text-muted); font-weight:600;">未运行（调用时自启）</span>`;
+                    if (btnEl) btnEl.textContent = '启动服务';
                 } else {
-                    serviceEl.innerHTML = `<span style="color:#10b981; font-weight:600;">运行中 (PID: ${data.pid})</span>`;
+                    const pidText = data.pid ? ` (PID: ${data.pid})` : '';
+                    serviceEl.innerHTML = `<span style="color:#10b981; font-weight:600;">运行中${pidText}</span>`;
+                    if (btnEl) btnEl.textContent = '重启服务';
                 }
             }
 
@@ -7898,12 +7903,22 @@ window.installWorkbuddy = async function(client: string, index: number) {
     const accName = acc?.name || `账号 (:${port})`;
 
     const serviceEl = document.getElementById(`wb-acc-service-${client}-${index}-${accIdx}`);
+    const btnEl = document.getElementById(`wb-acc-btn-service-${client}-${index}-${accIdx}`);
+    const isRestart = btnEl?.textContent?.includes('重启');
+
     if (serviceEl) {
-        serviceEl.innerHTML = `<span style="color:#3b82f6;">拉起中...</span>`;
+        serviceEl.innerHTML = `<span style="color:#3b82f6;">${isRestart ? '重启中...' : '拉起中...'}</span>`;
     }
-    showToast(`正在就绪「${accName}」后台驱动服务(端口 ${port})...`, 'info');
+    showToast(`正在${isRestart ? '重启' : '就绪'}「${accName}」后台驱动服务(端口 ${port})...`, 'info');
 
     try {
+        if (isRestart) {
+            await fetch('/v1/workbuddy/stop', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ port })
+            });
+        }
         const res = await fetch('/v1/workbuddy/ensure', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -7914,13 +7929,14 @@ window.installWorkbuddy = async function(client: string, index: number) {
             const errDetail = typeof data?.error === 'object'
                 ? (data.error?.message || JSON.stringify(data.error))
                 : (data?.error || '未知错误');
-            showToast('服务启动失败: ' + errDetail, 'error');
+            showToast('服务操作失败: ' + errDetail, 'error');
         } else {
-            showToast(`「${accName}」服务就绪 (PID: ${data.pid}, 端口: ${data.port})`, 'success');
+            const pidInfo = data.pid ? ` (PID: ${data.pid})` : '';
+            showToast(`「${accName}」服务${isRestart ? '重启成功' : '就绪'}${pidInfo}`, 'success');
         }
         await window.pollWorkbuddyStatus(client, index);
     } catch (err: any) {
-        showToast('服务启动异常: ' + (err?.message || String(err)), 'error');
+        showToast('服务操作异常: ' + (err?.message || String(err)), 'error');
         await window.pollWorkbuddyStatus(client, index);
     }
 };

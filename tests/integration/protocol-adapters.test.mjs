@@ -968,3 +968,139 @@ test("Chat Completions client receives Responses function calls and reasoning in
   }]);
 });
 
+test("Chat Completions client receives Anthropic tool_calls and reasoning in stream", async (t) => {
+  const mock = http.createServer((request, response) => {
+    response.writeHead(200, {
+      "content-type": "text/event-stream; charset=utf-8",
+      "cache-control": "no-cache",
+      connection: "keep-alive",
+    });
+
+    const events = [
+      { event: "message_start", data: { type: "message_start", message: { id: "msg_test", usage: { input_tokens: 25 } } } },
+      { event: "ping", data: { type: "ping" } },
+      { event: "content_block_start", data: { type: "content_block_start", index: 0, content_block: { type: "thinking", thinking: "" } } },
+      { event: "content_block_delta", data: { type: "content_block_delta", index: 0, delta: { type: "thinking_delta", thinking: "Analyzing code..." } } },
+      { event: "content_block_stop", data: { type: "content_block_stop", index: 0 } },
+      { event: "content_block_start", data: { type: "content_block_start", index: 1, content_block: { type: "text", text: "" } } },
+      { event: "content_block_delta", data: { type: "content_block_delta", index: 1, delta: { type: "text_delta", text: "I will read the file." } } },
+      { event: "content_block_stop", data: { type: "content_block_stop", index: 1 } },
+      { event: "content_block_start", data: { type: "content_block_start", index: 2, content_block: { type: "tool_use", id: "call_read_001", name: "read_file", input: {} } } },
+      { event: "content_block_delta", data: { type: "content_block_delta", index: 2, delta: { type: "input_json_delta", partial_json: '{"file": ' } } },
+      { event: "content_block_delta", data: { type: "content_block_delta", index: 2, delta: { type: "input_json_delta", partial_json: '"test.js"}' } } },
+      { event: "content_block_stop", data: { type: "content_block_stop", index: 2 } },
+      { event: "message_delta", data: { type: "message_delta", delta: { stop_reason: "tool_use" }, usage: { output_tokens: 30 } } },
+      { event: "message_stop", data: { type: "message_stop" } },
+    ];
+
+    for (const item of events) {
+      if (item.event) response.write(`event: ${item.event}\n`);
+      response.write(`data: ${JSON.stringify(item.data)}\n\n`);
+    }
+    response.end();
+  });
+  const mockPort = await listen(mock);
+  t.after(() => mock.close());
+
+  const reservation = http.createServer();
+  const gatewayPort = await listen(reservation);
+  await new Promise((resolve) => reservation.close(resolve));
+
+  const tempDir = await mkdtemp(path.join(tmpdir(), "local-ai-gateway-anthropic-stream-"));
+  t.after(() => rm(tempDir, { recursive: true, force: true }));
+  const configFile = path.join(tempDir, "gateway.config.json");
+  await writeFile(configFile, JSON.stringify({
+    server: { host: "127.0.0.1", port: gatewayPort },
+    clients: {
+      zcode: {
+        protocol: "openai",
+        endpoints: [{
+          name: "mock-anthropic-ep",
+          type: "anthropic",
+          base_url: `http://127.0.0.1:${mockPort}`,
+          api_key: "env:MOCK_API_KEY",
+          models: ["anthropic-test-model"],
+          model_mapping: { "GLM-5.3-ait": "anthropic-test-model" },
+        }],
+      },
+    },
+  }));
+
+  const gateway = spawn(process.execPath, ["server.js"], {
+    cwd: ROOT,
+    env: {
+      ...process.env,
+      GATEWAY_CONFIG_FILE: configFile,
+      GATEWAY_NO_OPEN: "1",
+      GATEWAY_PORT: String(gatewayPort),
+      CLAUDE_3P_SYNC_DISABLED: "1",
+      MOCK_API_KEY: "test-key",
+    },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  t.after(() => {
+    if (gateway.exitCode == null) gateway.kill();
+  });
+  await waitForHealth(gatewayPort, gateway);
+
+  const response = await fetch(`http://127.0.0.1:${gatewayPort}/zcode/chat/completions`, {
+    method: "POST",
+    headers: {
+      authorization: "Bearer test-key",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "GLM-5.3-ait",
+      stream: true,
+      messages: [{ role: "user", content: "Read test.js" }],
+      tools: [{
+        type: "function",
+        function: {
+          name: "read_file",
+          parameters: { type: "object", properties: { file: { type: "string" } } },
+        },
+      }],
+    }),
+  });
+
+  assert.equal(response.status, 200);
+  const text = await response.text();
+  const lines = text.split("\n").filter((l) => l.startsWith("data: ") && l !== "data: [DONE]");
+  const chunks = lines.map((l) => JSON.parse(l.slice(6)));
+
+  let accumulatedReasoning = "";
+  let accumulatedContent = "";
+  let toolCallName = "";
+  let toolCallId = "";
+  let accumulatedArgs = "";
+  let finalFinishReason = null;
+
+  for (const chunk of chunks) {
+    const choice = chunk.choices?.[0];
+    if (choice?.delta?.reasoning_content) {
+      accumulatedReasoning += choice.delta.reasoning_content;
+    }
+    if (choice?.delta?.content) {
+      accumulatedContent += choice.delta.content;
+    }
+    if (choice?.delta?.tool_calls) {
+      for (const tc of choice.delta.tool_calls) {
+        if (tc.id) toolCallId = tc.id;
+        if (tc.function?.name) toolCallName = tc.function.name;
+        if (tc.function?.arguments) accumulatedArgs += tc.function.arguments;
+      }
+    }
+    if (choice?.finish_reason) {
+      finalFinishReason = choice.finish_reason;
+    }
+  }
+
+  assert.equal(accumulatedReasoning, "Analyzing code...");
+  assert.equal(accumulatedContent, "I will read the file.");
+  assert.equal(toolCallName, "read_file");
+  assert.equal(toolCallId, "call_read_001");
+  assert.equal(accumulatedArgs, '{"file": "test.js"}');
+  assert.equal(finalFinishReason, "tool_calls");
+});
+
+

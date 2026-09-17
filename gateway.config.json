@@ -84,7 +84,7 @@
           "auth": "none",
           "models": [],
           "model_mapping": {
-            "claude-opus-4-8-max": "DeepSeek-V4.1-Flash"
+            "claude-opus-4-8-max": "deepseek-v4.1-flash"
           },
           "capabilities": {
             "reasoning": true,
@@ -266,7 +266,7 @@
           "auth": "none",
           "models": [],
           "model_mapping": {
-            "DeepSeek-V4.1-Flash-wb": "DeepSeek-V4.1-Flash"
+            "DeepSeek-V4.1-Flash-wb": "deepseek-v4.1-flash"
           },
           "capabilities": {
             "reasoning": true,
@@ -997,7 +997,7 @@
           "base_url": "http://127.0.0.1:7863/v1",
           "auth": "none",
           "models": [
-            "DeepSeek-V4.1-Flash"
+            "deepseek-v4.1-flash"
           ],
           "model_mapping": {},
           "capabilities": {
@@ -1070,6 +1070,28 @@
     },
     "zcode": {
       "endpoints": [
+        {
+          "id": "ep_894567dd-1bbb-443b-85bd-4e71f2100c33",
+          "name": "ait",
+          "type": "anthropic",
+          "base_url": "https://openapi-ait.ke.com",
+          "auth": "bearer",
+          "models": [],
+          "model_mapping": {
+            "GLM-5.3-ait": "GLM-5.3",
+            "deepseek-v4.1-flash-ait": "deepseek-v4.1-flash"
+          },
+          "capabilities": {
+            "sanitize_dangling_tool_calls": true
+          },
+          "model_labels": {
+            "claude-haiku-4-5-max": "glm-5.2-ait",
+            "claude-haiku-4-5": "glm-5.3-ait",
+            "claude-opus-4-6-max": "deepseek-v4-flash-ait",
+            "claude-haiku-4-0": "gpt-5.6-sol-ait"
+          },
+          "is_default": false
+        },
         {
           "id": "ep_bd601662-5ff3-4e97-9319-6a4baf2df9dc",
           "name": "workbuddy",
