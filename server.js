@@ -5144,12 +5144,18 @@ async function forwardAnthropicMessagesResolved(body, clientReq, clientRes, cont
           model: route.model,
         };
 
-  if (route.provider?.type === "workbuddy" && Array.isArray(upstreamBody.messages)) {
-    if (upstreamBody.messages.length === 0 || upstreamBody.messages[0]?.role !== "system") {
-      upstreamBody.messages = [
-        { role: "system", content: "You are a helpful assistant." },
-        ...upstreamBody.messages,
-      ];
+  if (route.provider?.type === "workbuddy") {
+    const convId = body.conversation_id || context.conversationId || clientReq?.headers?.["x-conversation-id"] || "";
+    if (convId && upstreamBody) {
+      upstreamBody.conversation_id = convId;
+    }
+    if (Array.isArray(upstreamBody.messages)) {
+      if (upstreamBody.messages.length === 0 || upstreamBody.messages[0]?.role !== "system") {
+        upstreamBody.messages = [
+          { role: "system", content: "You are a helpful assistant." },
+          ...upstreamBody.messages,
+        ];
+      }
     }
   }
 
@@ -6554,7 +6560,7 @@ async function forwardResolvedCodexResponse({
     return;
   }
 
-  if (route?.provider?.type === "openai-chat") {
+  if (route?.provider?.type === "openai-chat" || route?.provider?.type === "workbuddy") {
     if (injectedSearch.selected) {
       const loop = await runGatewayWebSearchResponsesLoop({
         body: withoutStreamFlag(body),
@@ -6643,12 +6649,18 @@ async function forwardResolvedCodexResponse({
     }
 
     const chatRequest = responsesRequestToChat(body, resolvedModel);
-    if (route.provider?.type === "workbuddy" && Array.isArray(chatRequest.body?.messages)) {
-      if (chatRequest.body.messages.length === 0 || chatRequest.body.messages[0]?.role !== "system") {
-        chatRequest.body.messages = [
-          { role: "system", content: "You are a helpful assistant." },
-          ...chatRequest.body.messages,
-        ];
+    if (route.provider?.type === "workbuddy") {
+      const convId = body.conversation_id || context.conversationId || clientReq?.headers?.["x-conversation-id"] || "";
+      if (convId && chatRequest.body) {
+        chatRequest.body.conversation_id = convId;
+      }
+      if (Array.isArray(chatRequest.body?.messages)) {
+        if (chatRequest.body.messages.length === 0 || chatRequest.body.messages[0]?.role !== "system") {
+          chatRequest.body.messages = [
+            { role: "system", content: "You are a helpful assistant." },
+            ...chatRequest.body.messages,
+          ];
+        }
       }
     }
     let upstream = await fetchConfiguredOpenAI(
@@ -6763,69 +6775,6 @@ async function forwardResolvedCodexResponse({
         toolKinds: chatRequest.toolKinds,
       })));
     }
-    return;
-  }
-
-  if (route?.provider?.type === "workbuddy") {
-    // WorkBuddy implements the OpenAI Responses protocol itself. Keep the
-    // native Responses path so workbuddy2api can project the agentic context
-    // and desensitize it before Tencent's upstream safety review runs.
-    const workbuddyBody = { ...body, model: resolvedModel };
-    // Tencent CodeBuddy rejects the request unless its first projected message
-    // has the system role. workbuddy2api preserves this input shape verbatim,
-    // so restore the same guarantee the former chat path provided.
-    if (Array.isArray(workbuddyBody.input) && (
-      workbuddyBody.input.length === 0
-      || workbuddyBody.input[0]?.role !== "system"
-      || workbuddyBody.input[0]?.type !== "message"
-    )) {
-      workbuddyBody.input = [
-        {
-          type: "message",
-          role: "system",
-          content: [{ type: "input_text", text: "You are a helpful assistant." }],
-        },
-        ...workbuddyBody.input,
-      ];
-    } else if (!workbuddyBody.instructions && (!Array.isArray(workbuddyBody.input) || workbuddyBody.input.length === 0)) {
-      workbuddyBody.instructions = "You are a helpful assistant.";
-    }
-    const upstream = await fetchConfiguredOpenAI(
-      route.provider,
-      "/responses",
-      workbuddyBody,
-      clientReq,
-      signal,
-      !isOpenAIClient(context.client),
-    );
-    logInfo("openai_responses_response", {
-      request_id: context.requestId,
-      client: context.client,
-      status: upstream.status,
-      provider: route.provider.id || null,
-      translated_to: "responses",
-      workbuddy_native_responses: true,
-    });
-
-    if (body.stream) {
-      await pipeResponsesUpstream(upstream, clientRes, {
-        requestId: context.requestId,
-        model: requestedModel,
-        logName: "workbuddy_responses_stream_complete",
-      });
-      return;
-    }
-
-    if (!upstream.ok) {
-      await sendUpstreamError(upstream, clientRes);
-      return;
-    }
-
-    const contentType = upstream.headers.get("content-type") || "";
-    const response = contentType.includes("text/event-stream")
-      ? await collectResponsesStream(upstream.body, requestedModel)
-      : await upstream.json();
-    sendResponsesObject(clientRes, response, requestedModel, { stream: false }, responseToolKinds);
     return;
   }
 

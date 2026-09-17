@@ -4165,67 +4165,94 @@ function createEndpointDetailHTML(client, index, ep) {
                         </div>
                     </div>
                     ` : (ep.type === 'workbuddy') ? (() => {
-                        const wbAccounts = (Array.isArray(ep.accounts) && ep.accounts.length > 0)
-                            ? ep.accounts
-                            : (() => {
-                                const m = String(ep.base_url || '').match(/:(\d+)(?:\/|$)/);
-                                const port = m ? parseInt(m[1], 10) : 7863;
-                                return [{ id: `acc_${port}`, port, name: '账号 1', edition: 'global' }];
-                            })();
-                        ep.accounts = wbAccounts;
                         return `
                         <div class="form-group full">
+                            <!-- Legacy UV Warning Banner -->
+                            <div id="wb-legacy-uv-banner-${client}-${index}" style="display:none; margin-bottom:12px; padding:10px 14px; background:rgba(239, 68, 68, 0.08); border:1px solid rgba(239, 68, 68, 0.3); border-radius:8px; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                                <div style="font-size:12px; color:#ef4444;">
+                                    <strong>⚠️ 检测到旧版 Python 驱动冲突：</strong> 本机通过 uv tool 安装了旧版 workbuddy2api，可能会占用 7863 端口并干扰原生智能体池。
+                                </div>
+                                <button type="button" class="btn btn-sm btn-danger" onclick="cleanupLegacyUv('${client}', ${index})">一键清理旧驱动</button>
+                            </div>
+
+                            <!-- Overview & Control Card -->
+                            <div class="card" style="margin:0 0 12px 0; padding:12px 14px; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:8px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                        <label style="margin:0; font-weight:600; font-size:14px;">WorkBuddy 智能体驱动</label>
+                                        <span id="wb-sys-info-${client}-${index}" class="badge" style="font-family:monospace; background:var(--bg-tertiary); font-size:11px;">系统检测中...</span>
+                                        <span id="wb-service-status-${client}-${index}" class="badge" style="font-size:11px;">检测中...</span>
+                                    </div>
+                                    <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                                        <button type="button" id="wb-btn-service-${client}-${index}" class="btn btn-sm" title="检测并拉起/重启本地核心驱动" onclick="restartWorkbuddyAccountService('${client}', ${index})">启动服务</button>
+                                        <button type="button" class="btn btn-sm" title="刷新状态" onclick="pollWorkbuddyStatus('${client}', ${index})">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; font-size:11px; color:var(--text-muted); margin-top:8px; padding-top:8px; border-top:1px solid var(--border-color);">
+                                    <div id="wb-driver-path-${client}-${index}">驱动路径: 检测中...</div>
+                                    <div class="mono" style="opacity:0.85;">单进程原生池 (:7863) · 权重轮询 & 熔断降级</div>
+                                </div>
+                            </div>
+
+                            <!-- Automation & Prompt Mode Settings Card -->
+                            <div class="card" style="margin:0 0 12px 0; padding:12px 14px; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:8px;">
+                                <div style="font-weight:600; font-size:13px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                                    <span>自动化运维 & 提示词策略</span>
+                                    <span class="mono" style="font-size:11px; color:var(--text-muted);">~/.workbuddy2api/config.json</span>
+                                </div>
+                                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:12px; align-items:center;">
+                                    <div>
+                                        <label style="font-size:12px; display:block; margin-bottom:4px; font-weight:500;">提示词模式</label>
+                                        <select id="wb-cfg-prompt-mode-${client}-${index}" class="input-sm" style="width:100%; font-size:12px;" onchange="updateWorkbuddyConfigField('${client}', ${index}, 'prompt_mode', this.value)">
+                                            <option value="passthrough" selected>透传模式 (passthrough - 默认，不修改系统提示词)</option>
+                                            <option value="append">增强模式 (append - 追加 CodeBuddy 指令)</option>
+                                            <option value="custom">替换模式 (custom - 覆盖系统提示词)</option>
+                                        </select>
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; gap:8px; padding-top:2px;">
+                                        <label style="display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
+                                            <input type="checkbox" id="wb-cfg-checkin-${client}-${index}" checked onchange="updateWorkbuddyConfigField('${client}', ${index}, 'checkin_enabled', this.checked)">
+                                            <span>自动每日签到 (默认开启，定时 09:00 / 21:00 自动领积分)</span>
+                                        </label>
+                                        <label style="display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
+                                            <input type="checkbox" id="wb-cfg-keepalive-${client}-${index}" checked onchange="updateWorkbuddyConfigField('${client}', ${index}, 'keepalive_enabled', this.checked)">
+                                            <span>活跃度保活 (默认开启，定时保活防止账号会话过期)</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Account Pool Header -->
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
                                 <div>
-                                    <label style="margin:0; font-weight:600; font-size:14px;">WorkBuddy 账号池（已接入 ${wbAccounts.length} 个账号）</label>
+                                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                        <label style="margin:0; font-weight:600; font-size:14px;">已接入账号池</label>
+                                        <span class="badge" id="wb-stat-summary-${client}-${index}" style="font-size:11px;">检测中...</span>
+                                        <span class="badge badge-success" style="font-size:11px;" title="基于 conversation_id 自动粘滞同一账号，避免多轮问答上下文错乱">原生会话保持</span>
+                                    </div>
                                     <div class="subtext" style="color:var(--text-muted); font-size:12px; margin-top:2px;">
-                                        所有账号共享本节点的模型列表与映射；请求自动轮询负载均衡，遇 403/429 自动在账号池内故障转移。
+                                        所有账号共享节点模型列表；请求自动轮询调度，遇 403/429 自动在池内故障转移。
                                     </div>
                                 </div>
                                 <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                                    <button type="button" class="btn btn-sm btn-outline" title="安装或更新 workbuddy2api 驱动（uv tool install workbuddy2api）" onclick="installWorkbuddy('${client}', ${index})">安装/更新驱动</button>
-                                    <button type="button" class="btn btn-sm btn-primary" title="为该节点添加新账号（自动分配独立端口与独立会话凭据）" onclick="addWorkbuddyAccount('${client}', ${index})">
-                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:2px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>添加账号
+                                    <button type="button" class="btn btn-sm btn-primary" title="唤起腾讯 CodeBuddy 国际版 (workbuddy.ai) 网页授权" onclick="triggerWorkbuddyAccountLogin('${client}', ${index}, 'global')">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:3px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                        一键登录(国际版)
+                                    </button>
+                                    <button type="button" class="btn btn-sm" title="唤起腾讯 CodeBuddy 国内版 (copilot.tencent.com) 网页授权" onclick="triggerWorkbuddyAccountLogin('${client}', ${index}, 'cn')">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:3px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                        一键登录(国内版)
                                     </button>
                                 </div>
                             </div>
-                            <div class="wb-accounts-container" id="wb-account-list-${client}-${index}" style="display:flex; flex-direction:column; gap:10px;">
-                                ${wbAccounts.map((acc: any, accIdx: number) => {
-                                    const port = Number(acc.port) || 7863;
-                                    const accName = escapeHtml(acc.name || `账号 ${accIdx + 1}`);
-                                    const isDefault = accIdx === 0;
-                                    return `
-                                    <div class="card wb-account-item" id="wb-acc-row-${client}-${index}-${accIdx}" style="margin:0; padding:12px; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:8px;">
-                                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
-                                            <div style="display:flex; align-items:center; gap:8px;">
-                                                <span class="badge" style="font-family:monospace; background:var(--bg-tertiary); font-weight:700; padding:4px 8px; border-radius:5px; border:1px solid var(--border-color); font-size:12px;">:${port}</span>
-                                                <input type="text" class="input-sm" style="width:130px; font-size:13px; font-weight:600; padding:4px 8px;" value="${accName}" placeholder="账号名称" onchange="updateWorkbuddyAccount('${client}', ${index}, ${accIdx}, 'name', this.value)">
-                                                <span class="badge badge-info" style="font-size:11px; padding:3px 6px;">${acc.edition === 'cn' ? '国内版' : '国际版'}</span>
-                                                ${isDefault ? '<span class="badge" style="font-size:10px; background:var(--bg-tertiary); color:var(--text-muted);">主端口</span>' : ''}
-                                            </div>
-                                            <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
-                                                <button type="button" class="btn btn-sm btn-primary" title="唤起腾讯 CodeBuddy 国际版 (workbuddy.ai) 网页授权" onclick="triggerWorkbuddyAccountLogin('${client}', ${index}, ${accIdx}, 'global')">一键登录(国际版)</button>
-                                                <button type="button" class="btn btn-sm" title="唤起腾讯 CodeBuddy 国内版 (copilot.tencent.com) 网页授权" onclick="triggerWorkbuddyAccountLogin('${client}', ${index}, ${accIdx}, 'cn')">一键登录(国内版)</button>
-                                                <button type="button" id="wb-acc-btn-service-${client}-${index}-${accIdx}" class="btn btn-sm" title="检测并拉起/重启本地驱动服务" onclick="restartWorkbuddyAccountService('${client}', ${index}, ${accIdx})">启动服务</button>
-                                                ${wbAccounts.length > 1 ? `
-                                                <button type="button" class="btn btn-sm btn-danger" title="从该节点移除此账号" onclick="removeWorkbuddyAccount('${client}', ${index}, ${accIdx})">
-                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                                </button>
-                                                ` : ''}
-                                            </div>
-                                        </div>
-                                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; font-size:12px; background:var(--bg-tertiary); padding:6px 10px; border-radius:6px; border:1px solid var(--border-color);">
-                                            <div style="display:flex; gap:12px; flex-wrap:wrap;">
-                                                <span>服务：<span id="wb-acc-service-${client}-${index}-${accIdx}">检测中...</span></span>
-                                                <span>账号：<span id="wb-acc-session-${client}-${index}-${accIdx}">检测中...</span></span>
-                                            </div>
-                                            <div class="mono" style="font-size:11px; color:var(--text-muted); opacity:0.85;">
-                                                ${port === 7863 ? '~/.codebuddy-session.json' : `~/.workbuddy2api/sessions/session-${port}.json`}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    `;
-                                }).join('')}
+
+                            <!-- Accounts Container -->
+                            <div class="wb-accounts-container" id="wb-account-list-${client}-${index}" style="display:flex; flex-direction:column; gap:8px;">
+                                <div style="padding:16px; text-align:center; color:var(--text-muted); font-size:13px; background:var(--bg-secondary); border-radius:8px; border:1px dashed var(--border-color);">
+                                    正在检测账号池状态...
+                                </div>
                             </div>
                         </div>
                         `;
@@ -7696,166 +7723,278 @@ window.updateEndpoint = function(client, index, field, value) {
 window.pollWorkbuddyStatus = async function(client: string, index: number) {
     const ep = config.clients?.[client]?.endpoints?.[index];
     if (!ep || ep.type !== 'workbuddy') return;
-    const accounts = (Array.isArray(ep.accounts) && ep.accounts.length > 0)
-        ? ep.accounts
-        : [{ port: 7863 }];
 
-    await Promise.all(accounts.map(async (acc: any, accIdx: number) => {
-        const port = Number(acc.port) || 7863;
-        const serviceEl = document.getElementById(`wb-acc-service-${client}-${index}-${accIdx}`);
-        const sessionEl = document.getElementById(`wb-acc-session-${client}-${index}-${accIdx}`);
-        if (!serviceEl && !sessionEl) return;
+    const sysInfoEl = document.getElementById(`wb-sys-info-${client}-${index}`);
+    const serviceStatusEl = document.getElementById(`wb-service-status-${client}-${index}`);
+    const driverPathEl = document.getElementById(`wb-driver-path-${client}-${index}`);
+    const btnServiceEl = document.getElementById(`wb-btn-service-${client}-${index}`);
+    const legacyUvBannerEl = document.getElementById(`wb-legacy-uv-banner-${client}-${index}`);
+    const statSummaryEl = document.getElementById(`wb-stat-summary-${client}-${index}`);
+    const accountListEl = document.getElementById(`wb-account-list-${client}-${index}`);
+    const promptModeEl = document.getElementById(`wb-cfg-prompt-mode-${client}-${index}`) as HTMLSelectElement | null;
+    const checkinEl = document.getElementById(`wb-cfg-checkin-${client}-${index}`) as HTMLInputElement | null;
+    const keepaliveEl = document.getElementById(`wb-cfg-keepalive-${client}-${index}`) as HTMLInputElement | null;
 
-        try {
-            const res = await fetch(`/v1/workbuddy/status?port=${port}`);
-            const data = await res.json();
-            if (!res.ok || !data.success) {
-                const errDetail = typeof data?.error === 'object'
-                    ? (data.error?.message || JSON.stringify(data.error))
-                    : (data?.error || '无法连接');
-                if (serviceEl) serviceEl.innerHTML = `<span style="color:var(--text-danger, #ef4444)">异常: ${escapeHtml(errDetail)}</span>`;
-                if (sessionEl) sessionEl.innerHTML = `<span style="color:var(--text-danger, #ef4444)">检测失败</span>`;
-                return;
-            }
-
-            const btnEl = document.getElementById(`wb-acc-btn-service-${client}-${index}-${accIdx}`);
-            if (serviceEl) {
-                if (!data.installed) {
-                    serviceEl.innerHTML = `<span style="color:#f59e0b; font-weight:600;">未安装驱动</span>`;
-                    if (btnEl) btnEl.textContent = '安装驱动';
-                } else if (!data.running) {
-                    serviceEl.innerHTML = `<span style="color:var(--text-muted); font-weight:600;">未运行（调用时自启）</span>`;
-                    if (btnEl) btnEl.textContent = '启动服务';
-                } else {
-                    const pidText = data.pid ? ` (PID: ${data.pid})` : '';
-                    serviceEl.innerHTML = `<span style="color:#10b981; font-weight:600;">运行中${pidText}</span>`;
-                    if (btnEl) btnEl.textContent = '重启服务';
-                }
-            }
-
-            if (sessionEl) {
-                const isAuth = Boolean(data.session?.authenticated ?? data.has_session);
-                if (isAuth) {
-                    const userText = data.session?.user ? ` (${escapeHtml(data.session.user)})` : '';
-                    sessionEl.innerHTML = `<span style="color:#10b981; font-weight:600;">已授权${userText}</span>`;
-                } else {
-                    sessionEl.innerHTML = `<span style="color:#ef4444; font-weight:600;">未登录 (请点击登录)</span>`;
-                }
-            }
-        } catch (err: any) {
-            if (serviceEl) serviceEl.innerHTML = `<span style="color:var(--text-danger, #ef4444)">连接失败</span>`;
-            if (sessionEl) sessionEl.innerHTML = `<span style="color:var(--text-danger, #ef4444)">检测失败</span>`;
-        }
-    }));
-};
-
-window.installWorkbuddy = async function(client: string, index: number) {
-    showToast('正在通过 uv 安装/更新 workbuddy2api，请稍候...', 'info');
     try {
-        const res = await fetch('/v1/workbuddy/install', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: '{}',
-        });
+        const res = await fetch('/v1/workbuddy/status?port=7863');
         const data = await res.json();
         if (!res.ok || !data.success) {
-            const detail = typeof data?.error === 'object'
-                ? (data.error?.message || JSON.stringify(data.error))
-                : (data?.error || '未知错误');
-            showToast('workbuddy2api 安装失败: ' + detail, 'error');
+            if (serviceStatusEl) {
+                serviceStatusEl.className = 'badge badge-danger';
+                serviceStatusEl.textContent = '异常: ' + (data?.error || '无法连接');
+            }
+            return;
+        }
+
+        // 1. System & Binary Info
+        if (sysInfoEl) {
+            const osName = data.platform === 'win32' ? 'Windows' : data.platform === 'darwin' ? 'macOS' : (data.platform || '系统');
+            const archName = data.arch === 'arm64' ? 'Apple Silicon / ARM64' : (data.arch || 'x64');
+            sysInfoEl.textContent = `${osName} (${archName})`;
+        }
+
+        if (driverPathEl) {
+            const binSourceLabel = data.binSource === 'bundled' ? '网关内置独立单文件' : data.binSource === 'user' ? '用户级目录' : (data.binSource || '系统');
+            driverPathEl.textContent = `核心驱动: ${data.binPath || '未检测到'} · ${binSourceLabel}`;
+        }
+
+        // 2. Legacy UV detection banner
+        if (legacyUvBannerEl) {
+            if (data.legacy_uv?.detected) {
+                legacyUvBannerEl.style.display = 'flex';
+                const ver = data.legacy_uv.version ? ` (v${data.legacy_uv.version})` : '';
+                legacyUvBannerEl.querySelector('div')!.innerHTML = `<strong>⚠️ 检测到旧版 Python 驱动冲突${ver}：</strong> 本机通过 uv tool 安装了旧版 workbuddy2api，可能会占用 7863 端口并干扰原生智能体池。`;
+            } else {
+                legacyUvBannerEl.style.display = 'none';
+            }
+        }
+
+        // 3. Service Status & Control Button
+        if (serviceStatusEl) {
+            if (!data.installed) {
+                serviceStatusEl.className = 'badge badge-warning';
+                serviceStatusEl.textContent = '未安装驱动';
+                if (btnServiceEl) btnServiceEl.textContent = '安装驱动';
+            } else if (!data.running) {
+                serviceStatusEl.className = 'badge';
+                serviceStatusEl.style.background = 'var(--bg-tertiary)';
+                serviceStatusEl.style.color = 'var(--text-muted)';
+                serviceStatusEl.textContent = '未运行（请求时自启）';
+                if (btnServiceEl) btnServiceEl.textContent = '启动服务';
+            } else {
+                serviceStatusEl.className = 'badge badge-success';
+                serviceStatusEl.textContent = `运行中 (PID: ${data.pid || '就绪'})`;
+                if (btnServiceEl) btnServiceEl.textContent = '重启服务';
+            }
+        }
+
+        // 4. Config sync
+        if (data.config) {
+            if (promptModeEl && !promptModeEl.matches(':focus')) {
+                promptModeEl.value = data.config.prompt?.mode || 'passthrough';
+            }
+            if (checkinEl && !checkinEl.matches(':focus')) {
+                checkinEl.checked = data.config.schedule?.checkin_enabled ?? true;
+            }
+            if (keepaliveEl && !keepaliveEl.matches(':focus')) {
+                keepaliveEl.checked = data.config.schedule?.keepalive_enabled ?? true;
+            }
+        }
+
+        // 5. Account pool list
+        const poolAccounts = Array.isArray(data.pool?.accounts) ? data.pool.accounts : [];
+        const localAccounts = Array.isArray(data.accounts) ? data.accounts : [];
+        const displayAccounts: any[] = [];
+        const seenUids = new Set<string>();
+
+        for (const la of localAccounts) {
+            const uid = String(la.uid || la.username || '');
+            if (!uid) continue;
+            seenUids.add(uid);
+            const pa = poolAccounts.find((p: any) => String(p.username || p.uid || '') === uid);
+            displayAccounts.push({
+                uid,
+                name: la.nickname || la.username || la.user || `用户 ${uid}`,
+                edition: la.realm || la.edition || (pa?.edition) || 'global',
+                cooling: Boolean(pa?.cooling),
+                cooldown_remaining: pa?.cooldown_remaining || '',
+                failures: pa?.failures || 0,
+                authenticated: la.authenticated !== false,
+                expiresAt: la.expiresAt,
+                file: la.file || `workbuddy-${uid}.json`,
+            });
+        }
+
+        for (const pa of poolAccounts) {
+            const uid = String(pa.username || pa.uid || '');
+            if (!uid || seenUids.has(uid)) continue;
+            seenUids.add(uid);
+            displayAccounts.push({
+                uid,
+                name: pa.username || `用户 ${uid}`,
+                edition: pa.edition || 'global',
+                cooling: Boolean(pa.cooling),
+                cooldown_remaining: pa.cooldown_remaining || '',
+                failures: pa.failures || 0,
+                authenticated: true,
+                file: `workbuddy-${uid}.json`,
+            });
+        }
+
+        const healthyCount = displayAccounts.filter(a => a.authenticated && !a.cooling).length;
+        const coolingCount = displayAccounts.filter(a => a.cooling).length;
+
+        if (statSummaryEl) {
+            statSummaryEl.textContent = `${displayAccounts.length} 个账号 (${healthyCount} 可用${coolingCount > 0 ? `, ${coolingCount} 冷却` : ''})`;
+            statSummaryEl.className = healthyCount > 0 ? 'badge badge-success' : 'badge';
+        }
+
+        if (accountListEl) {
+            if (displayAccounts.length === 0) {
+                accountListEl.innerHTML = `
+                    <div style="padding:20px; text-align:center; color:var(--text-muted); font-size:13px; background:var(--bg-secondary); border-radius:8px; border:1px dashed var(--border-color);">
+                        当前账号池为空。请点击上方「一键登录 (国际版)」或「一键登录 (国内版)」完成首次授权，支持多账号智能轮询与故障转移。
+                    </div>
+                `;
+            } else {
+                accountListEl.innerHTML = displayAccounts.map((acc: any) => {
+                    const accName = escapeHtml(acc.name);
+                    const uidStr = escapeHtml(acc.uid);
+                    const isGlobal = acc.edition === 'global' || acc.edition === 'intl';
+                    const editionBadge = isGlobal
+                        ? '<span class="badge badge-info" style="font-size:11px; padding:2px 6px;">国际版</span>'
+                        : '<span class="badge" style="font-size:11px; padding:2px 6px; background:rgba(59,130,246,0.15); color:#2563eb; border:1px solid rgba(59,130,246,0.3);">国内版</span>';
+                    
+                    let statusBadge = '';
+                    if (acc.cooling) {
+                        statusBadge = `<span class="badge badge-warning" style="font-size:11px;">冷却中 (${escapeHtml(acc.cooldown_remaining || '熔断保护')})</span>`;
+                    } else if (acc.authenticated) {
+                        statusBadge = '<span class="badge badge-success" style="font-size:11px;">健康可用</span>';
+                    } else {
+                        statusBadge = '<span class="badge badge-danger" style="font-size:11px;">凭据已失效</span>';
+                    }
+
+                    const expiryText = acc.expiresAt
+                        ? `凭据有效期至: ${new Date(acc.expiresAt).toLocaleDateString()}`
+                        : '';
+
+                    return `
+                    <div class="card wb-account-card" style="margin:0; padding:12px; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:8px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+                            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                <span style="font-weight:600; font-size:13px;">${accName}</span>
+                                <span class="mono" style="font-size:11px; color:var(--text-muted); background:var(--bg-tertiary); padding:2px 6px; border-radius:4px; border:1px solid var(--border-color);">UID: ${uidStr}</span>
+                                ${editionBadge}
+                                ${statusBadge}
+                            </div>
+                            <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                                <button type="button" class="btn btn-sm" title="重新授权此账号" onclick="triggerWorkbuddyAccountLogin('${client}', ${index}, '${isGlobal ? 'global' : 'cn'}')">重新登录</button>
+                                <button type="button" class="btn btn-sm btn-danger" title="从本地账号池删除此账号" onclick="deleteWorkbuddyAccount('${client}', ${index}, '${uidStr}', '${accName}')">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                    删除
+                                </button>
+                            </div>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; font-size:11px; color:var(--text-muted); background:var(--bg-tertiary); padding:6px 10px; border-radius:6px; border:1px solid var(--border-color);">
+                            <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                                <span>失败次数: ${acc.failures || 0}</span>
+                                ${expiryText ? `<span>${expiryText}</span>` : ''}
+                            </div>
+                            <div class="mono" style="opacity:0.85;">
+                                ~/.workbuddy2api/auths/${escapeHtml(acc.file)}
+                            </div>
+                        </div>
+                    </div>
+                    `;
+                }).join('');
+            }
+        }
+    } catch (err: any) {
+        if (serviceStatusEl) {
+            serviceStatusEl.className = 'badge badge-danger';
+            serviceStatusEl.textContent = '无法连接服务';
+        }
+    }
+};
+
+(window as any).cleanupLegacyUv = async function(client: string, index: number) {
+    showToast('正在清理旧版 uv tool workbuddy2api，请稍候...', 'info');
+    try {
+        const res = await fetch('/v1/workbuddy/cleanup-uv', { method: 'POST' });
+        const data = await res.json();
+        if (data.success && data.ok) {
+            showToast('旧版驱动已成功清理！', 'success');
         } else {
-            showToast(`workbuddy2api 安装成功${data.binPath ? `：${data.binPath}` : ''}`, 'success');
+            showToast('清理旧版驱动失败: ' + (data.error || data.reason || '未知原因'), 'warning');
         }
         await window.pollWorkbuddyStatus(client, index);
     } catch (err: any) {
-        showToast('workbuddy2api 安装异常: ' + (err?.message || String(err)), 'error');
+        showToast('清理旧版驱动异常: ' + (err?.message || String(err)), 'error');
         await window.pollWorkbuddyStatus(client, index);
     }
 };
 
-(window as any).addWorkbuddyAccount = function(client: string, index: number) {
-    const ep = config.clients?.[client]?.endpoints?.[index];
-    if (!ep) return;
-
-    if (!Array.isArray(ep.accounts) || ep.accounts.length === 0) {
-        const m = String(ep.base_url || '').match(/:(\d+)(?:\/|$)/);
-        const port = m ? parseInt(m[1], 10) : 7863;
-        ep.accounts = [{ id: `acc_${port}`, port, name: '账号 1', edition: 'global' }];
-    }
-
-    const usedPorts = new Set<number>();
-    for (const c of Object.values(config.clients || {}) as any[]) {
-        for (const item of (c.endpoints || [])) {
-            if (Array.isArray(item.accounts)) {
-                for (const a of item.accounts) {
-                    if (a.port) usedPorts.add(Number(a.port));
-                }
-            }
-            if (item.type === 'workbuddy' || String(item.base_url || '').includes('127.0.0.1:786')) {
-                const m = String(item.base_url || '').match(/:(\d+)(?:\/|$)/);
-                if (m && m[1]) usedPorts.add(parseInt(m[1], 10));
-            }
+(window as any).updateWorkbuddyConfigField = async function(client: string, index: number, field: string, value: any) {
+    try {
+        const res = await fetch('/v1/workbuddy/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ [field]: value }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast('WorkBuddy 配置已保存', 'success');
+        } else {
+            showToast('配置保存失败: ' + (data.error || '未知错误'), 'error');
         }
+        await window.pollWorkbuddyStatus(client, index);
+    } catch (err: any) {
+        showToast('保存配置异常: ' + (err?.message || String(err)), 'error');
     }
-    let nextPort = 7863;
-    while (usedPorts.has(nextPort)) {
-        nextPort++;
-    }
-
-    const newNum = ep.accounts.length + 1;
-    ep.accounts.push({
-        id: `acc_${nextPort}`,
-        port: nextPort,
-        name: `账号 ${newNum}`,
-        edition: 'global'
-    });
-
-    render();
-    updateSelectedDraftIndicators();
-    showToast(`已在当前 WorkBuddy 节点添加「账号 ${newNum}」（端口 ${nextPort}），请点击该行「一键登录」`, 'success');
-    void window.pollWorkbuddyStatus(client, index);
 };
 
-(window as any).removeWorkbuddyAccount = function(client: string, index: number, accIdx: number) {
-    const ep = config.clients?.[client]?.endpoints?.[index];
-    if (!ep?.accounts || ep.accounts.length <= 1) {
-        showToast('节点中至少保留一个账号', 'warning');
+(window as any).deleteWorkbuddyAccount = async function(client: string, index: number, uid: string, name: string) {
+    if (!confirm(`确定要从账号池中删除账号「${name}」吗？\n删除后该账号凭据将被清除。`)) {
         return;
     }
-    const removed = ep.accounts.splice(accIdx, 1)[0];
-    render();
-    updateSelectedDraftIndicators();
-    showToast(`已从账号池移除 ${removed.name || '账号'}（端口 ${removed.port}）`, 'info');
-    void window.pollWorkbuddyStatus(client, index);
+    showToast(`正在删除账号「${name}」...`, 'info');
+    try {
+        const res = await fetch('/v1/workbuddy/account/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uid }),
+        });
+        const data = await res.json();
+        if (data.success && data.ok) {
+            showToast(`账号「${name}」已成功移除`, 'success');
+        } else {
+            showToast('删除账号失败: ' + (data.error || '未知错误'), 'error');
+        }
+        await window.pollWorkbuddyStatus(client, index);
+    } catch (err: any) {
+        showToast('删除账号异常: ' + (err?.message || String(err)), 'error');
+        await window.pollWorkbuddyStatus(client, index);
+    }
 };
 
-(window as any).updateWorkbuddyAccount = function(client: string, index: number, accIdx: number, field: string, value: any) {
-    const ep = config.clients?.[client]?.endpoints?.[index];
-    if (!ep?.accounts?.[accIdx]) return;
-    ep.accounts[accIdx][field] = value;
-    updateSelectedDraftIndicators();
-};
-
-(window as any).triggerWorkbuddyAccountLogin = async function(client: string, index: number, accIdx: number, edition: string = 'global') {
-    const ep = config.clients?.[client]?.endpoints?.[index];
-    const acc = ep?.accounts?.[accIdx];
-    const port = acc ? Number(acc.port) || 7863 : 7863;
-    const accName = acc?.name || `账号 (:${port})`;
+(window as any).triggerWorkbuddyAccountLogin = async function(client: string, index: number, edition: string = 'global') {
     const isGlobal = edition === 'global';
     const label = isGlobal ? '国际版 (workbuddy.ai)' : '国内版 (copilot.tencent.com)';
-    const endpoint = isGlobal ? 'https://www.workbuddy.ai' : 'https://copilot.tencent.com';
-
-    const sessionEl = document.getElementById(`wb-acc-session-${client}-${index}-${accIdx}`);
-    if (sessionEl) {
-        sessionEl.innerHTML = `<span style="color:#3b82f6;">唤起登录中...</span>`;
-    }
-    showToast(`正在唤起「${accName}」${label}登录(端口 ${port})...`, 'info');
+    showToast(`正在唤起「${label}」登录授权...`, 'info');
 
     try {
+        // Record current local accounts count
+        let initialCount = 0;
+        try {
+            const preRes = await fetch('/v1/workbuddy/status?port=7863');
+            const preData = await preRes.json();
+            initialCount = preData.local_accounts_count || 0;
+        } catch {}
+
         const res = await fetch('/v1/workbuddy/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ edition, endpoint, port })
+            body: JSON.stringify({ edition, port: 7863 }),
         });
         const data = await res.json();
         if (!res.ok || !data.success) {
@@ -7863,28 +8002,25 @@ window.installWorkbuddy = async function(client: string, index: number) {
                 ? (data.error?.message || JSON.stringify(data.error))
                 : (data?.error || '未知错误');
             showToast('唤起登录失败: ' + errDetail, 'error');
-            void window.pollWorkbuddyStatus(client, index);
+            await window.pollWorkbuddyStatus(client, index);
             return;
         }
 
-        if (data.auth_url && sessionEl) {
-            sessionEl.innerHTML = `<span style="color:#3b82f6;">已唤起授权页，<a href="${escapeHtml(data.auth_url)}" target="_blank" style="color:#3b82f6;text-decoration:underline;font-weight:600;">手动打开</a></span>`;
-        }
-        showToast(`已唤起「${accName}」${label}登录授权页面，登录后状态将自动同步`, 'success');
+        showToast(`已拉起「${label}」授权页面，请在打开的浏览器中完成登录`, 'success');
 
         let checks = 0;
         const timer = setInterval(async () => {
             checks++;
             try {
-                const statusRes = await fetch(`/v1/workbuddy/status?port=${port}`);
+                const statusRes = await fetch('/v1/workbuddy/status?port=7863');
                 const statusData = await statusRes.json();
-                if (statusData.has_session) {
+                if (statusData.has_session && (statusData.local_accounts_count > initialCount || checks > 5)) {
                     clearInterval(timer);
-                    showToast(`「${accName}」(:${port}) 授权登录成功！`, 'success');
-                    void window.pollWorkbuddyStatus(client, index);
+                    showToast(`「${label}」账号授权成功，已同步至账号池！`, 'success');
+                    await window.pollWorkbuddyStatus(client, index);
                 } else if (checks >= 60) {
                     clearInterval(timer);
-                    void window.pollWorkbuddyStatus(client, index);
+                    await window.pollWorkbuddyStatus(client, index);
                 }
             } catch {
                 if (checks >= 60) clearInterval(timer);
@@ -7892,47 +8028,37 @@ window.installWorkbuddy = async function(client: string, index: number) {
         }, 2000);
     } catch (err: any) {
         showToast('唤起登录异常: ' + (err?.message || String(err)), 'error');
-        void window.pollWorkbuddyStatus(client, index);
+        await window.pollWorkbuddyStatus(client, index);
     }
 };
 
-(window as any).restartWorkbuddyAccountService = async function(client: string, index: number, accIdx: number) {
-    const ep = config.clients?.[client]?.endpoints?.[index];
-    const acc = ep?.accounts?.[accIdx];
-    const port = acc ? Number(acc.port) || 7863 : 7863;
-    const accName = acc?.name || `账号 (:${port})`;
-
-    const serviceEl = document.getElementById(`wb-acc-service-${client}-${index}-${accIdx}`);
-    const btnEl = document.getElementById(`wb-acc-btn-service-${client}-${index}-${accIdx}`);
+(window as any).restartWorkbuddyAccountService = async function(client: string, index: number) {
+    const btnEl = document.getElementById(`wb-btn-service-${client}-${index}`);
     const isRestart = btnEl?.textContent?.includes('重启');
-
-    if (serviceEl) {
-        serviceEl.innerHTML = `<span style="color:#3b82f6;">${isRestart ? '重启中...' : '拉起中...'}</span>`;
-    }
-    showToast(`正在${isRestart ? '重启' : '就绪'}「${accName}」后台驱动服务(端口 ${port})...`, 'info');
+    showToast(`正在${isRestart ? '重启' : '拉起'} WorkBuddy 核心驱动服务...`, 'info');
 
     try {
         if (isRestart) {
             await fetch('/v1/workbuddy/stop', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ port })
+                body: JSON.stringify({ port: 7863 }),
             });
         }
         const res = await fetch('/v1/workbuddy/ensure', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ port })
+            body: JSON.stringify({ port: 7863 }),
         });
         const data = await res.json();
         if (!res.ok || !data.success) {
             const errDetail = typeof data?.error === 'object'
                 ? (data.error?.message || JSON.stringify(data.error))
                 : (data?.error || '未知错误');
-            showToast('服务操作失败: ' + errDetail, 'error');
+            showToast('驱动服务操作失败: ' + errDetail, 'error');
         } else {
             const pidInfo = data.pid ? ` (PID: ${data.pid})` : '';
-            showToast(`「${accName}」服务${isRestart ? '重启成功' : '就绪'}${pidInfo}`, 'success');
+            showToast(`WorkBuddy 服务${isRestart ? '重启成功' : '就绪'}${pidInfo}`, 'success');
         }
         await window.pollWorkbuddyStatus(client, index);
     } catch (err: any) {
@@ -7942,11 +8068,27 @@ window.installWorkbuddy = async function(client: string, index: number) {
 };
 
 window.triggerWorkbuddyLogin = function(client: string, index: number, edition: string = 'global') {
-    return (window as any).triggerWorkbuddyAccountLogin(client, index, 0, edition);
+    return (window as any).triggerWorkbuddyAccountLogin(client, index, edition);
 };
 
 window.restartWorkbuddyService = function(client: string, index: number) {
-    return (window as any).restartWorkbuddyAccountService(client, index, 0);
+    return (window as any).restartWorkbuddyAccountService(client, index);
+};
+
+window.installWorkbuddy = function(client: string, index: number) {
+    return (window as any).restartWorkbuddyAccountService(client, index);
+};
+
+(window as any).addWorkbuddyAccount = function(client: string, index: number) {
+    return (window as any).triggerWorkbuddyAccountLogin(client, index, 'global');
+};
+
+(window as any).removeWorkbuddyAccount = function(client: string, index: number) {
+    return (window as any).pollWorkbuddyStatus(client, index);
+};
+
+(window as any).updateWorkbuddyAccount = function(client: string, index: number) {
+    return (window as any).pollWorkbuddyStatus(client, index);
 };
 
 window.addApiKey = function(client, index) {

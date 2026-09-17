@@ -27,7 +27,7 @@ test("multi-account path resolution isolates port 7863 and port 7864", () => {
 
   // Secondary port 7864 uses isolated session/pid/log files
   const session7864 = resolveSessionFile(7864);
-  assert.ok(session7864.endsWith("sessions/session-7864.json"));
+  assert.ok(session7864.endsWith(path.join("sessions", "session-7864.json")));
   assert.notEqual(session7864, session7863);
 
   const pid7864 = resolvePidFile(7864);

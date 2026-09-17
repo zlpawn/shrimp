@@ -31,35 +31,33 @@ test("codex client routes /v1/responses through workbuddy native responses", asy
         "Cache-Control": "no-cache",
         Connection: "keep-alive",
       });
-      res.write("event: response.output_text.delta\n");
-      res.write("data: " + JSON.stringify({ type: "response.output_text.delta", delta: "Streaming from WorkBuddy to Codex!" }) + "\n\n");
-      res.write("event: response.reasoning.delta\n");
-      res.write("data: " + JSON.stringify({ type: "response.reasoning.delta", delta: "DeepSeek thinking step..." }) + "\n\n");
-      res.write("event: response.completed\n");
       res.write("data: " + JSON.stringify({
-        type: "response.completed",
-        response: {
-          object: "response",
-          status: "completed",
-          model: body?.model,
-          output: [],
-        },
+        id: "chatcmpl-wb-1",
+        object: "chat.completion.chunk",
+        choices: [{ index: 0, delta: { reasoning_content: "DeepSeek thinking step..." } }],
       }) + "\n\n");
+      res.write("data: " + JSON.stringify({
+        id: "chatcmpl-wb-2",
+        object: "chat.completion.chunk",
+        choices: [{ index: 0, delta: { content: "Streaming from WorkBuddy to Codex!" } }],
+      }) + "\n\n");
+      res.write("data: [DONE]\n\n");
       res.end();
       return;
     }
 
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({
-      object: "response",
-      status: "completed",
+      id: "chatcmpl-wb-nonstream",
+      object: "chat.completion",
       model: body?.model,
-      output: [{
-        type: "message",
-        role: "assistant",
-        content: [{ type: "output_text", text: instance === 2 ? "Failover answer from WorkBuddy Node 2!" : "Non-streaming answer for Codex from WorkBuddy!" }],
+      choices: [{
+        index: 0,
+        message: {
+          role: "assistant",
+          content: instance === 2 ? "Failover answer from WorkBuddy Node 2!" : "Non-streaming answer for Codex from WorkBuddy!",
+        },
       }],
-      output_text: instance === 2 ? "Failover answer from WorkBuddy Node 2!" : "Non-streaming answer for Codex from WorkBuddy!",
     }));
   };
 
@@ -214,14 +212,13 @@ test("codex client routes /v1/responses through workbuddy native responses", asy
   assert.equal(nonStreamData.status, "completed");
   assert.equal(nonStreamData.output_text, "Non-streaming answer for Codex from WorkBuddy!");
 
-  // Verify that WorkBuddy receives the native Responses path so its context
-  // projection and desensitization can run before the upstream safety review.
+  // Verify that WorkBuddy receives translated Chat Completions request
   const hit1 = node1Hits[0] || node2Hits[0];
   assert.ok(hit1);
-  assert.equal(hit1.url, "/v1/responses");
+  assert.ok(hit1.url.includes("/v1/chat/completions"));
   assert.equal(hit1.body.model, "deepseek-v4.1-flash");
-  assert.equal(hit1.body.input[0].role, "system");
-  assert.equal(hit1.body.input[1].content[0].text, "Hello Codex non-stream");
+  assert.equal(hit1.body.messages[0].role, "system");
+  assert.equal(hit1.body.messages[1].content[0].text, "Hello Codex non-stream");
 
   // 2. Streaming test: POST /codex/v1/responses with stream: true
   // Verify reasoning_content -> reasoningDelta, content -> text.delta
