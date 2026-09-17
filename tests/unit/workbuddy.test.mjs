@@ -9,6 +9,7 @@ import {
   pollAndSaveSession,
   readSessionInfo,
   resolveBinary,
+  resolveWorkbuddyBinary,
 } from "../../lib/workbuddy/supervisor.mjs";
 import { routeWorkbuddyRequest } from "../../lib/workbuddy/routes.mjs";
 import { EventEmitter } from "node:events";
@@ -16,11 +17,11 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-test("supervisor resolves uv and workbuddy2api binaries", () => {
+test("supervisor resolves uv and workbuddy binaries", () => {
   const uvBin = resolveBinary("uv");
   assert.ok(uvBin, "uv binary should be resolved");
-  const wbBin = resolveBinary("workbuddy2api");
-  assert.ok(wbBin, "workbuddy2api binary should be resolved");
+  const wb = resolveWorkbuddyBinary();
+  assert.ok(wb.binaryPath, "workbuddy binary should be resolved");
 });
 
 test("resolveBinary detects Windows executable extensions", () => {

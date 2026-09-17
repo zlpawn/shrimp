@@ -7930,6 +7930,10 @@ window.pollWorkbuddyStatus = async function(client: string, index: number) {
                                 </div>
                             </div>
                             <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                                <button type="button" class="btn btn-sm btn-outline" id="wb-test-btn-${uidStr}" title="测试账号连通性 (发送 hello 请求)" onclick="testWorkbuddyAccount('${client}', ${index}, '${uidStr}', this)">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:3px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                                    测试账号
+                                </button>
                                 <button type="button" class="btn btn-sm btn-outline" title="重新授权此账号" onclick="triggerWorkbuddyAccountLogin('${client}', ${index}, '${isGlobal ? 'global' : 'cn'}')">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:3px;"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
                                     重新授权
@@ -7949,6 +7953,7 @@ window.pollWorkbuddyStatus = async function(client: string, index: number) {
                                 ~/.workbuddy2api/auths/${escapeHtml(acc.file)}
                             </div>
                         </div>
+                        <div id="wb-test-result-${uidStr}"></div>
                     </div>
                     `;
                 }).join('');
@@ -8028,12 +8033,18 @@ window.pollWorkbuddyStatus = async function(client: string, index: number) {
     showToast(`正在唤起「${label}」登录授权...`, 'info');
 
     try {
-        // Record current local accounts count
+        // Record current local accounts count and existing UIDs
         let initialCount = 0;
+        const initialUids = new Set<string>();
         try {
             const preRes = await fetch('/v1/workbuddy/status?port=7863');
             const preData = await preRes.json();
             initialCount = preData.local_accounts_count || 0;
+            if (Array.isArray(preData.accounts)) {
+                for (const a of preData.accounts) {
+                    if (a.uid) initialUids.add(a.uid);
+                }
+            }
         } catch {}
 
         const res = await fetch('/v1/workbuddy/login', {
@@ -8051,29 +8062,155 @@ window.pollWorkbuddyStatus = async function(client: string, index: number) {
             return;
         }
 
+        const loginState = data.state;
         showToast(`已拉起「${label}」授权页面，请在打开的浏览器中完成登录`, 'success');
 
         let checks = 0;
-        const timer = setInterval(async () => {
-            checks++;
+        let finished = false;
+
+        const checkAuthSuccess = async () => {
+            if (finished) return true;
             try {
+                // 1. Check poller state if state token is available
+                if (loginState) {
+                    try {
+                        const pollerRes = await fetch(`/v1/workbuddy/login/status?state=${encodeURIComponent(loginState)}`);
+                        if (pollerRes.ok) {
+                            const pollerData = await pollerRes.json();
+                            if (pollerData?.poller?.status === 'success') {
+                                finished = true;
+                                showToast(`「${label}」账号授权成功，已同步至账号池！`, 'success');
+                                await window.pollWorkbuddyStatus(client, index);
+                                return true;
+                            }
+                        }
+                    } catch {}
+                }
+
+                // 2. Check local accounts count or newly added accounts
                 const statusRes = await fetch('/v1/workbuddy/status?port=7863');
                 const statusData = await statusRes.json();
-                if (statusData.has_session && (statusData.local_accounts_count > initialCount || checks > 5)) {
-                    clearInterval(timer);
+                let hasNewAccount = false;
+                if (Array.isArray(statusData.accounts)) {
+                    for (const a of statusData.accounts) {
+                        if (a.uid && !initialUids.has(a.uid)) {
+                            hasNewAccount = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (hasNewAccount || statusData.local_accounts_count > initialCount) {
+                    finished = true;
                     showToast(`「${label}」账号授权成功，已同步至账号池！`, 'success');
                     await window.pollWorkbuddyStatus(client, index);
-                } else if (checks >= 60) {
-                    clearInterval(timer);
+                    return true;
+                }
+            } catch {}
+            return false;
+        };
+
+        // Window focus listener: immediately check and update UI when user switches back from browser
+        const onFocus = async () => {
+            if (finished) {
+                window.removeEventListener('focus', onFocus);
+                return;
+            }
+            const done = await checkAuthSuccess();
+            if (done) {
+                clearInterval(timer);
+                window.removeEventListener('focus', onFocus);
+            }
+        };
+        window.addEventListener('focus', onFocus);
+
+        const timer = setInterval(async () => {
+            checks++;
+            const done = await checkAuthSuccess();
+            if (done || checks >= 90) {
+                clearInterval(timer);
+                window.removeEventListener('focus', onFocus);
+                if (!done && checks >= 90) {
                     await window.pollWorkbuddyStatus(client, index);
                 }
-            } catch {
-                if (checks >= 60) clearInterval(timer);
             }
         }, 2000);
     } catch (err: any) {
         showToast('唤起登录异常: ' + (err?.message || String(err)), 'error');
         await window.pollWorkbuddyStatus(client, index);
+    }
+};
+
+(window as any).testWorkbuddyAccount = async function(client: string, index: number, uid: string, btnEl?: HTMLElement) {
+    const originalHtml = btnEl ? btnEl.innerHTML : '';
+    if (btnEl) {
+        btnEl.setAttribute('disabled', 'true');
+        btnEl.innerHTML = `<span style="display:inline-block; width:12px; height:12px; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:wb-spin 0.6s linear infinite; vertical-align:middle; margin-right:4px;"></span>测试中...`;
+    }
+
+    const resultBox = document.getElementById(`wb-test-result-${uid}`);
+    if (resultBox) {
+        resultBox.innerHTML = `<div style="margin-top:8px; padding:6px 12px; background:var(--bg-tertiary); border:1px solid var(--border-color); border-radius:6px; font-size:12px; color:var(--text-muted);"><span style="display:inline-block; width:10px; height:10px; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:wb-spin 0.6s linear infinite; vertical-align:middle; margin-right:6px;"></span>正在向上游发送测试请求 (Prompt: "hello")...</div>`;
+    }
+    showToast('正在发送测试请求...', 'info');
+
+    try {
+        const res = await fetch('/v1/workbuddy/account/test', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uid, prompt: 'hello' }),
+        });
+        const data = await res.json();
+        const latency = data.latencyMs ? `${data.latencyMs}ms` : '';
+        const creditsText = data.credits !== undefined ? ` · 剩余积分: ${data.credits}` : '';
+
+        if (data.ok) {
+            showToast(`账号测试成功 (${latency})${creditsText}`, 'success');
+            if (resultBox) {
+                resultBox.innerHTML = `
+                    <div style="margin-top:8px; padding:8px 12px; background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.25); border-radius:6px; font-size:12px; color:#16a34a;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; font-weight:600; margin-bottom:4px;">
+                            <span>✓ 账号测试通过 (耗时 ${latency})${creditsText}</span>
+                            <span class="badge badge-success" style="font-size:10px; padding:1px 6px;">HTTP 200</span>
+                        </div>
+                        <div style="color:var(--text-primary); font-size:11.5px; word-break:break-all;">
+                            <strong>上游响应:</strong> ${escapeHtml(data.reply || 'OK')}
+                        </div>
+                    </div>
+                `;
+            }
+        } else {
+            const errMsg = data.message || data.error || '请求异常';
+            showToast(`账号测试未通过: ${errMsg}`, 'error');
+            if (resultBox) {
+                resultBox.innerHTML = `
+                    <div style="margin-top:8px; padding:8px 12px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); border-radius:6px; font-size:12px; color:#dc2626;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; font-weight:600; margin-bottom:4px;">
+                            <span>✗ 测试失败 ${latency ? `(耗时 ${latency})` : ''}${creditsText}</span>
+                            ${data.status ? `<span class="badge badge-danger" style="font-size:10px; padding:1px 6px;">HTTP ${data.status}</span>` : ''}
+                        </div>
+                        <div style="color:var(--text-primary); font-size:11.5px; word-break:break-all;">
+                            <strong>上游提示:</strong> ${escapeHtml(errMsg)}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+    } catch (err: any) {
+        const msg = err?.message || String(err);
+        showToast('测试请求异常: ' + msg, 'error');
+        if (resultBox) {
+            resultBox.innerHTML = `
+                <div style="margin-top:8px; padding:6px 12px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); border-radius:6px; font-size:12px; color:#dc2626;">
+                    ✗ 测试请求发送失败: ${escapeHtml(msg)}
+                </div>
+            `;
+        }
+    } finally {
+        if (btnEl) {
+            btnEl.removeAttribute('disabled');
+            btnEl.innerHTML = originalHtml;
+        }
     }
 };
 
