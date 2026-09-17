@@ -220,7 +220,8 @@ test("codex client routes /v1/responses through workbuddy native responses", asy
   assert.ok(hit1);
   assert.equal(hit1.url, "/v1/responses");
   assert.equal(hit1.body.model, "deepseek-v4.1-flash");
-  assert.equal(hit1.body.input[0].content[0].text, "Hello Codex non-stream");
+  assert.equal(hit1.body.input[0].role, "system");
+  assert.equal(hit1.body.input[1].content[0].text, "Hello Codex non-stream");
 
   // 2. Streaming test: POST /codex/v1/responses with stream: true
   // Verify reasoning_content -> reasoningDelta, content -> text.delta

@@ -56,6 +56,8 @@ __pycache__/
 _inspect_repo/
 .understand-anything/
 .worktrees/
+.prototype-jy-draft-poc/
+.work-destiny/
 
 # codeg transfer artifacts (bundles, zips, patches, scratch clones)
 codeg-*

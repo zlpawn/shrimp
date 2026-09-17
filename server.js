@@ -6771,6 +6771,23 @@ async function forwardResolvedCodexResponse({
     // native Responses path so workbuddy2api can project the agentic context
     // and desensitize it before Tencent's upstream safety review runs.
     const workbuddyBody = { ...body, model: resolvedModel };
+    // Tencent CodeBuddy rejects the request unless its first projected message
+    // has the system role. workbuddy2api preserves this input shape verbatim,
+    // so restore the same guarantee the former chat path provided.
+    if (Array.isArray(workbuddyBody.input) && (
+      workbuddyBody.input.length === 0
+      || workbuddyBody.input[0]?.role !== "system"
+      || workbuddyBody.input[0]?.type !== "message"
+    )) {
+      workbuddyBody.input = [
+        {
+          type: "message",
+          role: "system",
+          content: [{ type: "input_text", text: "You are a helpful assistant." }],
+        },
+        ...workbuddyBody.input,
+      ];
+    }
     const upstream = await fetchConfiguredOpenAI(
       route.provider,
       "/responses",
