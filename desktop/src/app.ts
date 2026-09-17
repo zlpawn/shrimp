@@ -4175,75 +4175,100 @@ function createEndpointDetailHTML(client, index, ep) {
                                 <button type="button" class="btn btn-sm btn-danger" onclick="cleanupLegacyUv('${client}', ${index})">一键清理旧驱动</button>
                             </div>
 
-                            <!-- Overview & Control Card -->
-                            <div class="card" style="margin:0 0 12px 0; padding:12px 14px; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:8px;">
-                                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-                                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                                        <label style="margin:0; font-weight:600; font-size:14px;">WorkBuddy 智能体驱动</label>
-                                        <span id="wb-sys-info-${client}-${index}" class="badge" style="font-family:monospace; background:var(--bg-tertiary); font-size:11px;">系统检测中...</span>
-                                        <span id="wb-service-status-${client}-${index}" class="badge" style="font-size:11px;">检测中...</span>
+                            <!-- Overview & Control Hero Bar -->
+                            <div class="card wb-config-card" style="margin-bottom:14px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                                        <div style="width:36px; height:36px; border-radius:8px; background:linear-gradient(135deg, #2563eb, #7c3aed); display:flex; align-items:center; justify-content:center; color:white; flex-shrink:0; box-shadow:0 2px 6px rgba(37,99,235,0.2);">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2 2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"></path><rect x="4" y="8" width="16" height="12" rx="2"></rect><circle cx="9" cy="14" r="1"></circle><circle cx="15" cy="14" r="1"></circle></svg>
+                                        </div>
+                                        <div>
+                                            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                                <label style="margin:0; font-weight:700; font-size:14px; color:var(--text-primary);">WorkBuddy 智能体池驱动</label>
+                                                <span id="wb-sys-info-${client}-${index}" class="wb-config-path">系统检测中...</span>
+                                                <span id="wb-service-status-${client}-${index}" class="badge" style="font-size:11.5px;">检测中...</span>
+                                            </div>
+                                            <div id="wb-driver-path-${client}-${index}" style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">
+                                                驱动核心: 检测中...
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
-                                        <button type="button" id="wb-btn-service-${client}-${index}" class="btn btn-sm" title="检测并拉起/重启本地核心驱动" onclick="restartWorkbuddyAccountService('${client}', ${index})">启动服务</button>
-                                        <button type="button" class="btn btn-sm" title="刷新状态" onclick="pollWorkbuddyStatus('${client}', ${index})">
+                                    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                                        <button type="button" id="wb-btn-service-${client}-${index}" class="btn btn-sm btn-outline" title="检测并拉起/重启本地核心驱动" onclick="restartWorkbuddyAccountService('${client}', ${index})">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                                            启动服务
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline" title="刷新状态" onclick="pollWorkbuddyStatus('${client}', ${index})">
                                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
                                         </button>
                                     </div>
                                 </div>
-                                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; font-size:11px; color:var(--text-muted); margin-top:8px; padding-top:8px; border-top:1px solid var(--border-color);">
-                                    <div id="wb-driver-path-${client}-${index}">驱动路径: 检测中...</div>
-                                    <div class="mono" style="opacity:0.85;">单进程原生池 (:7863) · 权重轮询 & 熔断降级</div>
-                                </div>
                             </div>
 
-                            <!-- Automation & Prompt Mode Settings Card -->
-                            <div class="card" style="margin:0 0 12px 0; padding:12px 14px; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:8px;">
-                                <div style="font-weight:600; font-size:13px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-                                    <span>自动化运维 & 提示词策略</span>
-                                    <span class="mono" style="font-size:11px; color:var(--text-muted);">~/.workbuddy2api/config.json</span>
-                                </div>
-                                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:12px; align-items:center;">
-                                    <div>
-                                        <label style="font-size:12px; display:block; margin-bottom:4px; font-weight:500;">提示词模式</label>
-                                        <select id="wb-cfg-prompt-mode-${client}-${index}" class="input-sm" style="width:100%; font-size:12px;" onchange="updateWorkbuddyConfigField('${client}', ${index}, 'prompt_mode', this.value)">
-                                            <option value="passthrough" selected>透传模式 (passthrough - 默认，不修改系统提示词)</option>
-                                            <option value="append">增强模式 (append - 追加 CodeBuddy 指令)</option>
-                                            <option value="custom">替换模式 (custom - 覆盖系统提示词)</option>
-                                        </select>
+                            <!-- Automation & Policy Card with Smooth Toggle Switch -->
+                            <div class="card wb-config-card" style="margin-bottom:16px;">
+                                <div class="wb-config-header">
+                                    <div class="wb-config-title">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                                        <span>自动化运维 & 提示词策略</span>
                                     </div>
-                                    <div style="display:flex; flex-direction:column; gap:8px; padding-top:2px;">
-                                        <label style="display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
-                                            <input type="checkbox" id="wb-cfg-checkin-${client}-${index}" checked onchange="updateWorkbuddyConfigField('${client}', ${index}, 'checkin_enabled', this.checked)">
-                                            <span>自动每日签到 (默认开启，定时 09:00 / 21:00 自动领积分)</span>
-                                        </label>
-                                        <label style="display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
-                                            <input type="checkbox" id="wb-cfg-keepalive-${client}-${index}" checked onchange="updateWorkbuddyConfigField('${client}', ${index}, 'keepalive_enabled', this.checked)">
-                                            <span>活跃度保活 (默认开启，定时保活防止账号会话过期)</span>
-                                        </label>
+                                    <span class="wb-config-path">~/.workbuddy2api/config.json</span>
+                                </div>
+                                <div class="wb-settings-grid">
+                                    <div class="wb-select-field">
+                                        <label class="wb-select-label" for="wb-cfg-prompt-mode-${client}-${index}">提示词策略 (Prompt Mode)</label>
+                                        <select id="wb-cfg-prompt-mode-${client}-${index}" class="wb-select-input" onchange="updateWorkbuddyConfigField('${client}', ${index}, 'prompt_mode', this.value)">
+                                            <option value="passthrough" selected>透传模式 (passthrough - 推荐，零干预原始提示词)</option>
+                                            <option value="append">增强模式 (append - 追加 CodeBuddy 角色指令)</option>
+                                            <option value="custom">替换模式 (custom - 覆盖为系统预设提示词)</option>
+                                        </select>
+                                        <div class="wb-select-hint">透传模式下原样转发客户端输入，保障与 Claude / OpenAI 行为一致。</div>
+                                    </div>
+                                    <div class="wb-switches-group">
+                                        <div class="wb-switch-row">
+                                            <label class="wb-switch-text" for="wb-cfg-checkin-${client}-${index}">
+                                                <span class="wb-switch-title">自动每日签到</span>
+                                                <span class="wb-switch-desc">默认开启 · 定时 09:00 / 21:00 自动打卡领取积分</span>
+                                            </label>
+                                            <label class="wb-switch">
+                                                <input type="checkbox" id="wb-cfg-checkin-${client}-${index}" checked onchange="updateWorkbuddyConfigField('${client}', ${index}, 'checkin_enabled', this.checked)">
+                                                <span class="wb-slider"></span>
+                                            </label>
+                                        </div>
+                                        <div class="wb-switch-row">
+                                            <label class="wb-switch-text" for="wb-cfg-keepalive-${client}-${index}">
+                                                <span class="wb-switch-title">活跃度保活</span>
+                                                <span class="wb-switch-desc">默认开启 · 定时向服务发心跳，防止 Token 凭据过期</span>
+                                            </label>
+                                            <label class="wb-switch">
+                                                <input type="checkbox" id="wb-cfg-keepalive-${client}-${index}" checked onchange="updateWorkbuddyConfigField('${client}', ${index}, 'keepalive_enabled', this.checked)">
+                                                <span class="wb-slider"></span>
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Account Pool Header -->
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
                                 <div>
                                     <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                                        <label style="margin:0; font-weight:600; font-size:14px;">已接入账号池</label>
-                                        <span class="badge" id="wb-stat-summary-${client}-${index}" style="font-size:11px;">检测中...</span>
+                                        <label style="margin:0; font-weight:700; font-size:14px; color:var(--text-primary);">已接入账号池</label>
+                                        <span class="badge" id="wb-stat-summary-${client}-${index}" style="font-size:11.5px;">检测中...</span>
                                         <span class="badge badge-success" style="font-size:11px;" title="基于 conversation_id 自动粘滞同一账号，避免多轮问答上下文错乱">原生会话保持</span>
                                     </div>
-                                    <div class="subtext" style="color:var(--text-muted); font-size:12px; margin-top:2px;">
+                                    <div class="subtext" style="color:var(--text-muted); font-size:12px; margin-top:3px;">
                                         所有账号共享节点模型列表；请求自动轮询调度，遇 403/429 自动在池内故障转移。
                                     </div>
                                 </div>
-                                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                                <div style="display:flex; gap:8px; flex-wrap:wrap;">
                                     <button type="button" class="btn btn-sm btn-primary" title="唤起腾讯 CodeBuddy 国际版 (workbuddy.ai) 网页授权" onclick="triggerWorkbuddyAccountLogin('${client}', ${index}, 'global')">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:3px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                                        一键登录(国际版)
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                        + 一键登录(国际版)
                                     </button>
-                                    <button type="button" class="btn btn-sm" title="唤起腾讯 CodeBuddy 国内版 (copilot.tencent.com) 网页授权" onclick="triggerWorkbuddyAccountLogin('${client}', ${index}, 'cn')">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:3px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                                        一键登录(国内版)
+                                    <button type="button" class="btn btn-sm btn-outline" title="唤起腾讯 CodeBuddy 国内版 (copilot.tencent.com) 网页授权" onclick="triggerWorkbuddyAccountLogin('${client}', ${index}, 'cn')">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                        + 一键登录(国内版)
                                     </button>
                                 </div>
                             </div>
@@ -7852,8 +7877,18 @@ window.pollWorkbuddyStatus = async function(client: string, index: number) {
         if (accountListEl) {
             if (displayAccounts.length === 0) {
                 accountListEl.innerHTML = `
-                    <div style="padding:20px; text-align:center; color:var(--text-muted); font-size:13px; background:var(--bg-secondary); border-radius:8px; border:1px dashed var(--border-color);">
-                        当前账号池为空。请点击上方「一键登录 (国际版)」或「一键登录 (国内版)」完成首次授权，支持多账号智能轮询与故障转移。
+                    <div style="padding:32px 20px; text-align:center; background:var(--bg-secondary); border-radius:10px; border:1px dashed var(--border-color);">
+                        <div style="width:44px; height:44px; margin:0 auto 12px auto; border-radius:50%; background:var(--bg-tertiary); display:flex; align-items:center; justify-content:center; color:var(--text-muted);">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                        </div>
+                        <div style="font-weight:600; font-size:14px; color:var(--text-primary); margin-bottom:4px;">当前智能体池暂未接入账号</div>
+                        <div style="font-size:12px; color:var(--text-muted); max-width:440px; margin:0 auto 16px auto; line-height:1.5;">
+                            点击右上角「一键登录」唤起 CodeBuddy 国际版或国内版网页授权，授权成功后账号凭据自动落盘，支持多账号智能负载均衡。
+                        </div>
+                        <div style="display:flex; justify-content:center; gap:8px;">
+                            <button type="button" class="btn btn-sm btn-primary" onclick="triggerWorkbuddyAccountLogin('${client}', ${index}, 'global')">一键登录 (国际版)</button>
+                            <button type="button" class="btn btn-sm btn-outline" onclick="triggerWorkbuddyAccountLogin('${client}', ${index}, 'cn')">一键登录 (国内版)</button>
+                        </div>
                     </div>
                 `;
             } else {
@@ -7862,16 +7897,16 @@ window.pollWorkbuddyStatus = async function(client: string, index: number) {
                     const uidStr = escapeHtml(acc.uid);
                     const isGlobal = acc.edition === 'global' || acc.edition === 'intl';
                     const editionBadge = isGlobal
-                        ? '<span class="badge badge-info" style="font-size:11px; padding:2px 6px;">国际版</span>'
-                        : '<span class="badge" style="font-size:11px; padding:2px 6px; background:rgba(59,130,246,0.15); color:#2563eb; border:1px solid rgba(59,130,246,0.3);">国内版</span>';
+                        ? '<span class="badge" style="font-size:11px; padding:2px 8px; background:rgba(99,102,241,0.12); color:#6366f1; border:1px solid rgba(99,102,241,0.25); border-radius:999px;">国际版 · workbuddy.ai</span>'
+                        : '<span class="badge" style="font-size:11px; padding:2px 8px; background:rgba(14,165,233,0.12); color:#0284c7; border:1px solid rgba(14,165,233,0.25); border-radius:999px;">国内版 · CodeBuddy</span>';
                     
                     let statusBadge = '';
                     if (acc.cooling) {
-                        statusBadge = `<span class="badge badge-warning" style="font-size:11px;">冷却中 (${escapeHtml(acc.cooldown_remaining || '熔断保护')})</span>`;
+                        statusBadge = `<span class="badge" style="font-size:11px; padding:2px 8px; background:rgba(245,158,11,0.12); color:#d97706; border:1px solid rgba(245,158,11,0.25); border-radius:999px;">⏱ 冷却中 (${escapeHtml(acc.cooldown_remaining || '熔断保护')})</span>`;
                     } else if (acc.authenticated) {
-                        statusBadge = '<span class="badge badge-success" style="font-size:11px;">健康可用</span>';
+                        statusBadge = '<span class="badge badge-success" style="font-size:11px; padding:2px 8px; border-radius:999px;">● 健康可用</span>';
                     } else {
-                        statusBadge = '<span class="badge badge-danger" style="font-size:11px;">凭据已失效</span>';
+                        statusBadge = '<span class="badge badge-danger" style="font-size:11px; padding:2px 8px; border-radius:999px;">● 凭据已失效</span>';
                     }
 
                     const expiryText = acc.expiresAt
@@ -7879,25 +7914,35 @@ window.pollWorkbuddyStatus = async function(client: string, index: number) {
                         : '';
 
                     return `
-                    <div class="card wb-account-card" style="margin:0; padding:12px; background:var(--bg-secondary); border:1px solid var(--border-color); border-radius:8px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
-                            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                                <span style="font-weight:600; font-size:13px;">${accName}</span>
-                                <span class="mono" style="font-size:11px; color:var(--text-muted); background:var(--bg-tertiary); padding:2px 6px; border-radius:4px; border:1px solid var(--border-color);">UID: ${uidStr}</span>
-                                ${editionBadge}
-                                ${statusBadge}
+                    <div class="card wb-account-card">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+                            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                                <div class="wb-account-avatar ${isGlobal ? '' : 'cn'}">
+                                    ${isGlobal ? 'WB' : 'CB'}
+                                </div>
+                                <div>
+                                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                        <span style="font-weight:600; font-size:13.5px; color:var(--text-primary);">${accName}</span>
+                                        <span class="wb-config-path">UID: ${uidStr}</span>
+                                        ${editionBadge}
+                                        ${statusBadge}
+                                    </div>
+                                </div>
                             </div>
                             <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
-                                <button type="button" class="btn btn-sm" title="重新授权此账号" onclick="triggerWorkbuddyAccountLogin('${client}', ${index}, '${isGlobal ? 'global' : 'cn'}')">重新登录</button>
+                                <button type="button" class="btn btn-sm btn-outline" title="重新授权此账号" onclick="triggerWorkbuddyAccountLogin('${client}', ${index}, '${isGlobal ? 'global' : 'cn'}')">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:3px;"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                                    重新授权
+                                </button>
                                 <button type="button" class="btn btn-sm btn-danger" title="从本地账号池删除此账号" onclick="deleteWorkbuddyAccount('${client}', ${index}, '${uidStr}', '${accName}')">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:2px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                                     删除
                                 </button>
                             </div>
                         </div>
-                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; font-size:11px; color:var(--text-muted); background:var(--bg-tertiary); padding:6px 10px; border-radius:6px; border:1px solid var(--border-color);">
-                            <div style="display:flex; gap:12px; flex-wrap:wrap;">
-                                <span>失败次数: ${acc.failures || 0}</span>
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; font-size:11.5px; color:var(--text-muted); background:var(--bg-tertiary); padding:6px 12px; border-radius:6px; border:1px solid var(--border-color);">
+                            <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center;">
+                                <span>失败次数: <strong style="color:var(--text-primary);">${acc.failures || 0}</strong></span>
                                 ${expiryText ? `<span>${expiryText}</span>` : ''}
                             </div>
                             <div class="mono" style="opacity:0.85;">

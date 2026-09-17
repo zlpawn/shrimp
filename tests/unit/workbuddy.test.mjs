@@ -99,6 +99,7 @@ test("pollAndSaveSession writes token when account data is unavailable", async (
       state,
       endpoint: "https://login.invalid",
       sessionFile,
+      authDir: path.join(dir, "auths"),
       timeoutMs: 100,
       accountTimeoutMs: 10,
       stopImpl: async () => ({}),
