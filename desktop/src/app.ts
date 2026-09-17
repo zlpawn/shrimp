@@ -7901,7 +7901,10 @@ window.pollWorkbuddyStatus = async function(client: string, index: number) {
                         : '<span class="badge" style="font-size:11px; padding:2px 8px; background:rgba(14,165,233,0.12); color:#0284c7; border:1px solid rgba(14,165,233,0.25); border-radius:999px;">国内版 · CodeBuddy</span>';
                     
                     let statusBadge = '';
-                    if (acc.cooling) {
+                    if (acc.disabled) {
+                        const reasonTip = acc.disabled_reason || acc.reason || '已禁用 (需重新登录/被上游风控)';
+                        statusBadge = `<span class="badge badge-danger" style="font-size:11px; padding:2px 8px; border-radius:999px;" title="${escapeHtml(reasonTip)}">🚫 已禁用 (${escapeHtml(reasonTip.slice(0, 18))}${reasonTip.length > 18 ? '...' : ''})</span>`;
+                    } else if (acc.cooling) {
                         statusBadge = `<span class="badge" style="font-size:11px; padding:2px 8px; background:rgba(245,158,11,0.12); color:#d97706; border:1px solid rgba(245,158,11,0.25); border-radius:999px;">⏱ 冷却中 (${escapeHtml(acc.cooldown_remaining || '熔断保护')})</span>`;
                     } else if (acc.authenticated) {
                         statusBadge = '<span class="badge badge-success" style="font-size:11px; padding:2px 8px; border-radius:999px;">● 健康可用</span>';
@@ -7934,6 +7937,12 @@ window.pollWorkbuddyStatus = async function(client: string, index: number) {
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:3px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
                                     测试账号
                                 </button>
+                                ${acc.disabled ? `
+                                <button type="button" class="btn btn-sm btn-outline" style="color:#d97706; border-color:#f59e0b;" title="清除上游风控/禁用标记并重新纳入可用池" onclick="reviveWorkbuddyAccount('${client}', ${index}, '${uidStr}', this)">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:2px;"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                                    解除禁用
+                                </button>
+                                ` : ''}
                                 <button type="button" class="btn btn-sm btn-outline" title="重新授权此账号" onclick="triggerWorkbuddyAccountLogin('${client}', ${index}, '${isGlobal ? 'global' : 'cn'}')">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:3px;"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
                                     重新授权
@@ -7944,6 +7953,11 @@ window.pollWorkbuddyStatus = async function(client: string, index: number) {
                                 </button>
                             </div>
                         </div>
+                        ${acc.disabled && (acc.disabled_reason || acc.reason) ? `
+                        <div style="margin-bottom:8px; padding:6px 12px; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); border-left:3px solid #ef4444; border-radius:6px; font-size:11.5px; color:var(--text-primary);">
+                            <strong style="color:#dc2626;">禁用原因：</strong> ${escapeHtml(acc.disabled_reason || acc.reason)}
+                        </div>
+                        ` : ''}
                         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; font-size:11.5px; color:var(--text-muted); background:var(--bg-tertiary); padding:6px 12px; border-radius:6px; border:1px solid var(--border-color);">
                             <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center;">
                                 <span>失败次数: <strong style="color:var(--text-primary);">${acc.failures || 0}</strong></span>
@@ -8181,19 +8195,56 @@ window.pollWorkbuddyStatus = async function(client: string, index: number) {
             }
         } else {
             const errMsg = data.message || data.error || '请求异常';
+            const isRiskBlocked = Boolean(
+                data.isRiskBlocked ||
+                data.code === 11140 ||
+                errMsg.includes('11140') ||
+                errMsg.includes('request illegal') ||
+                errMsg.includes('安全审核')
+            );
             showToast(`账号测试未通过: ${errMsg}`, 'error');
             if (resultBox) {
-                resultBox.innerHTML = `
-                    <div style="margin-top:8px; padding:8px 12px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); border-radius:6px; font-size:12px; color:#dc2626;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; font-weight:600; margin-bottom:4px;">
-                            <span>✗ 测试失败 ${latency ? `(耗时 ${latency})` : ''}${creditsText}</span>
-                            ${data.status ? `<span class="badge badge-danger" style="font-size:10px; padding:1px 6px;">HTTP ${data.status}</span>` : ''}
+                if (isRiskBlocked) {
+                    resultBox.innerHTML = `
+                        <div style="margin-top:8px; padding:10px 12px; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); border-left:4px solid #f59e0b; border-radius:6px; font-size:12px; color:var(--text-primary);">
+                            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; font-weight:600; margin-bottom:6px;">
+                                <span style="color:#d97706; display:flex; align-items:center; gap:4px;">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                                    上游账号级风控拦截 (错误码: 11140 · request illegal)
+                                </span>
+                                ${creditsText ? `<span class="badge" style="background:#fef3c7; color:#b45309; border:1px solid #fde68a; font-size:10.5px; padding:1px 6px;">${creditsText.replace(/^ · /, '')}</span>` : ''}
+                            </div>
+                            <div style="font-size:12px; line-height:1.6; color:var(--text-secondary); margin-bottom:8px;">
+                                <strong>原因诊断：</strong>此报错并非测试内容违规（测试文本仅为 "hello"）。这是腾讯 WorkBuddy 国际版 (workbuddy.ai) 对新注册海外账号施加的<strong>推理门禁/环境风控</strong>。虽然该账号仍保有积分与有效凭据，但上游接口拦截了调用权限。
+                            </div>
+                            <div style="background:var(--bg-secondary); padding:8px 12px; border-radius:5px; font-size:11.5px; line-height:1.6; border:1px solid var(--border-color); margin-bottom:8px;">
+                                <strong style="color:var(--text-primary);">推荐解决步骤：</strong>
+                                <ol style="margin:4px 0 0 18px; padding:0;">
+                                    <li><strong>优先切换为国内版 (强烈推荐)</strong>：切换为【国内版】微信或 QQ 扫码授权，国内版 (copilot.tencent.com) 接口稳定可靠无海外门禁风控，且支持每日自动签到领额度。</li>
+                                    <li><strong>刷新授权会话</strong>：点击该账号旁的【重新授权】重新走一遍浏览器登录，获取全新会话凭据后再试。</li>
+                                    <li><strong>网页端激活</strong>：在浏览器登录 <a href="https://www.workbuddy.ai" target="_blank" style="color:var(--color-primary); text-decoration:underline;">workbuddy.ai</a>，在官方网页尝试发送一次对话以激活海外账号权限。</li>
+                                </ol>
+                            </div>
+                            <div style="display:flex; justify-content:flex-end; gap:8px;">
+                                <button type="button" class="btn btn-sm btn-outline" style="font-size:11px;" onclick="reviveWorkbuddyAccount('${client}', ${index}, '${uid}', this)">
+                                    ↺ 解除账号池禁用标记
+                                </button>
+                            </div>
                         </div>
-                        <div style="color:var(--text-primary); font-size:11.5px; word-break:break-all;">
-                            <strong>上游提示:</strong> ${escapeHtml(errMsg)}
+                    `;
+                } else {
+                    resultBox.innerHTML = `
+                        <div style="margin-top:8px; padding:8px 12px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); border-radius:6px; font-size:12px; color:#dc2626;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; font-weight:600; margin-bottom:4px;">
+                                <span>✗ 测试失败 ${latency ? `(耗时 ${latency})` : ''}${creditsText}</span>
+                                ${data.status ? `<span class="badge badge-danger" style="font-size:10px; padding:1px 6px;">HTTP ${data.status}</span>` : ''}
+                            </div>
+                            <div style="color:var(--text-primary); font-size:11.5px; word-break:break-all;">
+                                <strong>上游提示:</strong> ${escapeHtml(errMsg)}
+                            </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                }
             }
         }
     } catch (err: any) {
@@ -8206,6 +8257,37 @@ window.pollWorkbuddyStatus = async function(client: string, index: number) {
                 </div>
             `;
         }
+    } finally {
+        if (btnEl) {
+            btnEl.removeAttribute('disabled');
+            btnEl.innerHTML = originalHtml;
+        }
+    }
+};
+
+(window as any).reviveWorkbuddyAccount = async function(client: string, index: number, uid: string, btnEl?: HTMLElement) {
+    const originalHtml = btnEl ? btnEl.innerHTML : '';
+    if (btnEl) {
+        btnEl.setAttribute('disabled', 'true');
+        btnEl.innerHTML = `<span style="display:inline-block; width:10px; height:10px; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:wb-spin 0.6s linear infinite; vertical-align:middle; margin-right:4px;"></span>处理中...`;
+    }
+    showToast('正在解除账号禁用状态...', 'info');
+
+    try {
+        const res = await fetch('/v1/workbuddy/account/revive', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uid }),
+        });
+        const data = await res.json();
+        if (data.success && data.ok) {
+            showToast('✓ 账号已解除禁用并重新纳入可用池', 'success');
+            await (window as any).pollWorkbuddyStatus(client, index);
+        } else {
+            showToast('解除禁用失败: ' + (data.error || '未知错误'), 'error');
+        }
+    } catch (err: any) {
+        showToast('请求异常: ' + (err?.message || String(err)), 'error');
     } finally {
         if (btnEl) {
             btnEl.removeAttribute('disabled');

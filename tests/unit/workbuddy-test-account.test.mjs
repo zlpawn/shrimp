@@ -130,6 +130,8 @@ test("testAccount surfaces upstream error with displayMsg on 403 safety review",
     assert.equal(res.ok, false);
     assert.equal(res.status, 403);
     assert.equal(res.code, 11140);
+    assert.equal(res.isRiskBlocked, true);
+    assert.ok(res.advice && res.advice.includes("国内版"));
     assert.match(res.message, /内容未通过安全审核/);
     assert.equal(res.credits, 250);
   } finally {
@@ -137,7 +139,48 @@ test("testAccount surfaces upstream error with displayMsg on 403 safety review",
   }
 });
 
-test("routes handle GET /v1/workbuddy/login/status and POST /v1/workbuddy/account/test", async () => {
+test("reviveAccount clears disabled state in state.json", async () => {
+  const tmpDir = path.join(os.tmpdir(), "wb-test-revive-" + Date.now());
+  fs.mkdirSync(tmpDir, { recursive: true });
+  const stateFile = path.join(tmpDir, "state.json");
+  fs.writeFileSync(
+    stateFile,
+    JSON.stringify({
+      accounts: {
+        "uid-banned-1": {
+          credits: 100,
+          disabled: true,
+          reason: "account banned by upstream (11140 request illegal), re-login required",
+          consecutive_fails: 5,
+        },
+      },
+    })
+  );
+
+  try {
+    const { reviveAccount } = await import("../../lib/workbuddy/supervisor.mjs");
+    let stopped = false;
+    let started = false;
+    const res = await reviveAccount({
+      uid: "uid-banned-1",
+      stateFile,
+      stopImpl: async () => { stopped = true; },
+      startImpl: async () => { started = true; },
+    });
+
+    assert.equal(res.ok, true);
+    assert.equal(res.found, true);
+
+    const after = JSON.parse(fs.readFileSync(stateFile, "utf8"));
+    assert.equal(after.accounts["uid-banned-1"].disabled, false);
+    assert.equal(after.accounts["uid-banned-1"].reason, "");
+    assert.equal(after.accounts["uid-banned-1"].consecutive_fails, 0);
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test("routes handle GET /v1/workbuddy/login/status, POST /v1/workbuddy/account/test, and POST /v1/workbuddy/account/revive", async () => {
   // Test GET /v1/workbuddy/login/status
   {
     const req = new EventEmitter();
@@ -182,5 +225,29 @@ test("routes handle GET /v1/workbuddy/login/status and POST /v1/workbuddy/accoun
     assert.equal(parsed.success, true);
     assert.equal(parsed.ok, false);
     assert.match(parsed.error, /未找到账号凭据文件/);
+  }
+
+  // Test POST /v1/workbuddy/account/revive
+  {
+    const req = new EventEmitter();
+    req.method = "POST";
+    req.url = "/v1/workbuddy/account/revive";
+
+    let statusCode = null;
+    let responseData = "";
+    const res = {
+      writeHead(code) { statusCode = code; },
+      end(data) { responseData = data; },
+    };
+
+    const promise = routeWorkbuddyRequest(req, res, {}, "/v1/workbuddy/account/revive");
+    req.emit("data", Buffer.from(JSON.stringify({ uid: "mock_uid" })));
+    req.emit("end");
+    await promise;
+
+    assert.equal(statusCode, 200);
+    const parsed = JSON.parse(responseData);
+    assert.equal(parsed.success, true);
+    assert.equal(parsed.ok, true);
   }
 });
