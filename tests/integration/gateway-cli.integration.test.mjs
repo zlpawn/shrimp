@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
@@ -56,6 +56,45 @@ test("cross-platform gateway CLI manages an isolated gateway on port 8788", asyn
   assert.match(stopped.stdout, /Gateway stopped/);
   await waitForPortFree(testPort);
   assert.equal(await isPortFree(testPort), true);
+});
+
+test("gateway restart recovers gracefully from a stale recycled PID file", async (t) => {
+  const runtimeDir = await mkdtemp(path.join(os.tmpdir(), "gateway-cli-stale-"));
+  const env = {
+    ...process.env,
+    NODE_ENV: "test",
+    GATEWAY_NO_OPEN: "1",
+  };
+
+  t.after(async () => {
+    await run(["stop", "--root", rootDir, "--runtime-dir", runtimeDir, "--port", String(testPort), "--force"], env)
+      .catch(() => {});
+    await rm(runtimeDir, { recursive: true, force: true });
+  });
+
+  assert.equal(await isPortFree(testPort), true, `port ${testPort} must be free before this test`);
+
+  // Write a stale pid file pointing to process.pid (an alive process, but not listening on 8788)
+  await writeFile(
+    path.join(runtimeDir, "gateway.pid.json"),
+    JSON.stringify({
+      pid: process.pid,
+      port: testPort,
+      instanceId: "recycled-pid-instance",
+    }),
+  );
+
+  const restarted = await run(
+    ["restart", "--test", "--root", rootDir, "--runtime-dir", runtimeDir],
+    env,
+  );
+  assert.match(restarted.stdout, /Gateway started on 127\.0\.0\.1:8788/);
+
+  const health = await fetch(`http://127.0.0.1:${testPort}/health`).then((response) => response.json());
+  assert.equal(health.ok, true);
+
+  await run(["stop", "--test", "--root", rootDir, "--runtime-dir", runtimeDir], env);
+  await waitForPortFree(testPort);
 });
 
 function run(args, env) {

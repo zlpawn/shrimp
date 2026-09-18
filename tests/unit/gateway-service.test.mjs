@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { access, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -15,6 +15,7 @@ import {
   recoverMetadataFromHealth,
   resolveGatewayPort,
   processProbeIndicatesRunning,
+  runGatewayCommand,
 } from "../../lib/cli-core/gateway-service.mjs";
 
 test("gateway arguments keep the command simple while supporting isolated ports", () => {
@@ -158,5 +159,44 @@ test("test environment disables browser and client config synchronization", () =
   assert.equal(env.CLAUDE_CODE_SYNC_DISABLED, "1");
   assert.equal(env.CODEX_WRITE_MODEL_CATALOG_DISABLED, "1");
   assert.equal(env.LOG_FILE, path.resolve("D:\\runtime", "gateway.log"));
+});
+
+test("stopGateway cleans up stale PID file when PID is alive but not listening on port", async (t) => {
+  const runtimeDir = await mkdtemp(path.join(os.tmpdir(), "gateway-stale-pid-"));
+  t.after(() => rm(runtimeDir, { recursive: true, force: true }));
+
+  const pidFile = path.join(runtimeDir, "gateway.pid.json");
+  // process.pid is currently running, but NOT listening on port 59999
+  await writeFile(
+    pidFile,
+    JSON.stringify({
+      pid: process.pid,
+      port: 59999,
+      instanceId: "stale-instance-123",
+    }),
+  );
+
+  const logs = [];
+  const fakeIo = { log: (msg) => logs.push(msg), error: (msg) => logs.push(msg) };
+
+  await runGatewayCommand(
+    {
+      command: "stop",
+      rootDir: runtimeDir,
+      runtimeDir,
+      port: 59999,
+      force: false,
+    },
+    fakeIo,
+  );
+
+  let exists = true;
+  try {
+    await access(pidFile);
+  } catch {
+    exists = false;
+  }
+  assert.equal(exists, false);
+  assert.ok(logs.some((l) => l.includes("not running")));
 });
 
