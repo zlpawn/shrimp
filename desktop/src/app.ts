@@ -4167,12 +4167,10 @@ function createEndpointDetailHTML(client, index, ep) {
                     ` : (ep.type === 'workbuddy') ? (() => {
                         return `
                         <div class="form-group full">
-                            <!-- Legacy UV Warning Banner -->
-                            <div id="wb-legacy-uv-banner-${client}-${index}" style="display:none; margin-bottom:12px; padding:10px 14px; background:rgba(239, 68, 68, 0.08); border:1px solid rgba(239, 68, 68, 0.3); border-radius:8px; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-                                <div style="font-size:12px; color:#ef4444;">
-                                    <strong>⚠️ 检测到旧版 Python 驱动冲突：</strong> 本机通过 uv tool 安装了旧版 workbuddy2api，可能会占用 7863 端口并干扰原生智能体池。
-                                </div>
-                                <button type="button" class="btn btn-sm btn-danger" onclick="cleanupLegacyUv('${client}', ${index})">一键清理旧驱动</button>
+                            <!-- Legacy UV / Command Conflict Banner -->
+                            <div id="wb-legacy-uv-banner-${client}-${index}" style="display:none; margin-bottom:12px; padding:12px 14px; border-radius:8px; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                                <div id="wb-legacy-uv-content-${client}-${index}" style="font-size:12px; flex:1; min-width:260px;"></div>
+                                <div id="wb-legacy-uv-actions-${client}-${index}" style="display:flex; gap:8px; align-items:center;"></div>
                             </div>
 
                             <!-- Overview & Control Hero Bar -->
@@ -4194,6 +4192,10 @@ function createEndpointDetailHTML(client, index, ep) {
                                         </div>
                                     </div>
                                     <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                                        <button type="button" id="wb-btn-scan-${client}-${index}" class="btn btn-sm btn-outline" title="扫描排查本机是否存在冲突的旧版 workbuddy2api 指令、uv/pipx 工具或残留环境" onclick="scanWorkbuddyLegacyCommands('${client}', ${index}, this)">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                            检测旧指令
+                                        </button>
                                         <button type="button" id="wb-btn-service-${client}-${index}" class="btn btn-sm btn-outline" title="检测并拉起/重启本地核心驱动" onclick="restartWorkbuddyAccountService('${client}', ${index})">
                                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
                                             启动服务
@@ -7785,13 +7787,7 @@ window.pollWorkbuddyStatus = async function(client: string, index: number) {
 
         // 2. Legacy UV detection banner
         if (legacyUvBannerEl) {
-            if (data.legacy_uv?.detected) {
-                legacyUvBannerEl.style.display = 'flex';
-                const ver = data.legacy_uv.version ? ` (v${data.legacy_uv.version})` : '';
-                legacyUvBannerEl.querySelector('div')!.innerHTML = `<strong>⚠️ 检测到旧版 Python 驱动冲突${ver}：</strong> 本机通过 uv tool 安装了旧版 workbuddy2api，可能会占用 7863 端口并干扰原生智能体池。`;
-            } else {
-                legacyUvBannerEl.style.display = 'none';
-            }
+            renderWorkbuddyLegacyBanner(legacyUvBannerEl, client, index, data, false);
         }
 
         // 3. Service Status & Control Button
@@ -7981,20 +7977,132 @@ window.pollWorkbuddyStatus = async function(client: string, index: number) {
     }
 };
 
-(window as any).cleanupLegacyUv = async function(client: string, index: number) {
-    showToast('正在清理旧版 uv tool workbuddy2api，请稍候...', 'info');
+function renderWorkbuddyLegacyBanner(
+    bannerEl: HTMLElement,
+    client: string,
+    index: number,
+    data: any,
+    isManualScan: boolean = false
+) {
+    const textEl = document.getElementById(`wb-legacy-uv-content-${client}-${index}`);
+    const actionsEl = document.getElementById(`wb-legacy-uv-actions-${client}-${index}`);
+    const legacy = data.legacy_commands || (data.legacy_uv?.detected ? {
+        detected: true,
+        findings: [{
+            type: 'uv',
+            label: `uv tool workbuddy2api${data.legacy_uv.version ? ` (v${data.legacy_uv.version})` : ''}`,
+            detail: '本机通过 uv tool 安装了旧版 workbuddy2api，可能会占用 7863 端口并干扰原生智能体池。',
+            canAutoClean: true,
+        }],
+    } : { detected: false });
+
+    if (legacy.detected) {
+        bannerEl.style.display = 'flex';
+        bannerEl.style.background = 'rgba(239, 68, 68, 0.08)';
+        bannerEl.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+
+        const findingsHtml = Array.isArray(legacy.findings) && legacy.findings.length > 0
+            ? `<div style="margin-top:6px; display:flex; flex-direction:column; gap:4px;">` +
+              legacy.findings.map((f: any) => `
+                <div style="display:flex; align-items:flex-start; gap:6px; font-size:12px; color:var(--text-primary);">
+                    <span style="color:#ef4444; font-weight:bold;">•</span>
+                    <div><strong>${escapeHtml(f.label)}</strong>: <span style="color:var(--text-muted);">${escapeHtml(f.detail || '')}</span></div>
+                </div>
+              `).join('') +
+              `</div>`
+            : ``;
+
+        if (textEl) {
+            textEl.innerHTML = `
+                <div style="font-size:12.5px; color:#ef4444; font-weight:700;">
+                    ⚠️ 检测到旧版 Python 驱动 / 残留指令冲突：
+                </div>
+                ${findingsHtml}
+                <div style="font-size:11.5px; color:var(--text-muted); margin-top:4px;">
+                    旧版指令可能会抢占 7863 端口或干扰网关内置单文件驱动。建议点击右侧按钮一键清理。
+                </div>
+            `;
+        }
+        if (actionsEl) {
+            actionsEl.innerHTML = `
+                <button type="button" class="btn btn-sm btn-danger" onclick="cleanupLegacyUv('${client}', ${index})">一键清理冲突</button>
+                <button type="button" class="btn btn-sm btn-outline" style="font-size:11.5px; padding:3px 8px; border:none;" onclick="document.getElementById('wb-legacy-uv-banner-${client}-${index}')!.style.display='none'">忽略</button>
+            `;
+        }
+    } else {
+        if (isManualScan) {
+            bannerEl.style.display = 'flex';
+            bannerEl.style.background = 'rgba(34, 197, 94, 0.08)';
+            bannerEl.style.border = '1px solid rgba(34, 197, 94, 0.25)';
+            if (textEl) {
+                textEl.innerHTML = `
+                    <div style="font-size:12.5px; color:#16a34a; font-weight:700;">
+                        ✅ 系统环境排查正常
+                    </div>
+                    <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">
+                        未检测到通过 uv tool 或 pipx 安装的旧版 workbuddy2api，系统 PATH 中无残留冲突指令，系统环境纯净。
+                    </div>
+                `;
+            }
+            if (actionsEl) {
+                actionsEl.innerHTML = `
+                    <button type="button" class="btn btn-sm btn-outline" style="font-size:11.5px; padding:2px 10px;" onclick="document.getElementById('wb-legacy-uv-banner-${client}-${index}')!.style.display='none'">关闭</button>
+                `;
+            }
+        } else {
+            bannerEl.style.display = 'none';
+        }
+    }
+}
+
+(window as any).scanWorkbuddyLegacyCommands = async function(client: string, index: number, btnEl?: HTMLElement) {
+    const bannerEl = document.getElementById(`wb-legacy-uv-banner-${client}-${index}`);
+    const origHtml = btnEl ? btnEl.innerHTML : '';
+    if (btnEl) {
+        btnEl.setAttribute('disabled', 'true');
+        btnEl.innerHTML = `<span class="spinner" style="width:11px; height:11px; display:inline-block; vertical-align:middle; margin-right:4px;"></span> 排查中...`;
+    }
+
     try {
-        const res = await fetch('/v1/workbuddy/cleanup-uv', { method: 'POST' });
+        const res = await fetch('/v1/workbuddy/check-legacy', { method: 'POST' });
+        const data = await res.json();
+        if (btnEl) {
+            btnEl.removeAttribute('disabled');
+            btnEl.innerHTML = origHtml;
+        }
+
+        if (bannerEl) {
+            renderWorkbuddyLegacyBanner(bannerEl, client, index, data, true);
+        }
+
+        if (data.detected) {
+            showToast(`⚠️ 检测到 ${data.findings?.length || 1} 项旧版残留指令或环境冲突，已在上方展开排查详情！`, 'warning');
+        } else {
+            showToast('✅ 系统环境纯净：未检测到任何冲突的旧版 workbuddy2api 指令或残留环境。', 'success');
+        }
+    } catch (err: any) {
+        if (btnEl) {
+            btnEl.removeAttribute('disabled');
+            btnEl.innerHTML = origHtml;
+        }
+        showToast('排查失败: ' + (err?.message || String(err)), 'error');
+    }
+};
+
+(window as any).cleanupLegacyUv = async function(client: string, index: number) {
+    showToast('正在清理冲突的旧版驱动与残留环境，请稍候...', 'info');
+    try {
+        const res = await fetch('/v1/workbuddy/cleanup-legacy', { method: 'POST' });
         const data = await res.json();
         if (data.success && data.ok) {
-            showToast('旧版驱动已成功清理！', 'success');
+            showToast('旧版驱动与残留环境已成功清理！', 'success');
         } else {
-            showToast('清理旧版驱动失败: ' + (data.error || data.reason || '未知原因'), 'warning');
+            showToast('清理结果: ' + (data.error || '部分项目未清理成功'), 'warning');
         }
-        await window.pollWorkbuddyStatus(client, index);
+        await (window as any).pollWorkbuddyStatus(client, index);
     } catch (err: any) {
         showToast('清理旧版驱动异常: ' + (err?.message || String(err)), 'error');
-        await window.pollWorkbuddyStatus(client, index);
+        await (window as any).pollWorkbuddyStatus(client, index);
     }
 };
 

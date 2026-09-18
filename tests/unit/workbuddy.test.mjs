@@ -10,6 +10,8 @@ import {
   readSessionInfo,
   resolveBinary,
   resolveWorkbuddyBinary,
+  checkLegacyCommands,
+  cleanupLegacyCommands,
 } from "../../lib/workbuddy/supervisor.mjs";
 import { routeWorkbuddyRequest } from "../../lib/workbuddy/routes.mjs";
 import { EventEmitter } from "node:events";
@@ -182,4 +184,58 @@ test("routeWorkbuddyRequest returns 404 for unknown subpath", async () => {
 
   await routeWorkbuddyRequest(req, res, {}, "/v1/workbuddy/non-existent");
   assert.equal(statusCode, 404);
+});
+
+test("checkLegacyCommands returns structured inspection report", async () => {
+  const report = await checkLegacyCommands();
+  assert.equal(typeof report.detected, "boolean");
+  assert.ok(Array.isArray(report.findings));
+  assert.equal(typeof report.uv, "object");
+  assert.equal(typeof report.pipx, "object");
+  assert.equal(typeof report.externalBin, "object");
+  assert.equal(typeof report.summary, "string");
+});
+
+test("routeWorkbuddyRequest handles POST /v1/workbuddy/check-legacy and /v1/workbuddy/cleanup-legacy", async () => {
+  // Test check-legacy
+  const checkReq = new EventEmitter();
+  checkReq.method = "POST";
+  checkReq.url = "/v1/workbuddy/check-legacy";
+
+  let statusCode = null;
+  let responseData = "";
+  const checkRes = {
+    writeHead(code) {
+      statusCode = code;
+    },
+    end(data) {
+      responseData = data;
+    },
+  };
+
+  await routeWorkbuddyRequest(checkReq, checkRes, {}, "/v1/workbuddy/check-legacy");
+  assert.equal(statusCode, 200);
+  const parsedCheck = JSON.parse(responseData);
+  assert.equal(parsedCheck.success, true);
+  assert.equal(typeof parsedCheck.detected, "boolean");
+
+  // Test cleanup-legacy
+  const cleanReq = new EventEmitter();
+  cleanReq.method = "POST";
+  cleanReq.url = "/v1/workbuddy/cleanup-legacy";
+
+  const cleanRes = {
+    writeHead(code) {
+      statusCode = code;
+    },
+    end(data) {
+      responseData = data;
+    },
+  };
+
+  await routeWorkbuddyRequest(cleanReq, cleanRes, {}, "/v1/workbuddy/cleanup-legacy");
+  assert.equal(statusCode, 200);
+  const parsedClean = JSON.parse(responseData);
+  assert.equal(parsedClean.success, true);
+  assert.equal(typeof parsedClean.ok, "boolean");
 });

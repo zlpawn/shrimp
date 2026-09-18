@@ -42,6 +42,7 @@ pnpm-debug.log*
 coverage/
 .nyc_output/
 dist/
+!desktop/dist/
 .tmp-codex-*/
 
 # OS/editor noise
