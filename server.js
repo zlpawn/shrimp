@@ -1362,6 +1362,49 @@ async function forwardOpenAIEmbeddings(body, req, res, context) {
   }
 }
 
+let _panelBuildPromise = null;
+function ensurePanelBuild() {
+  if (_panelBuildPromise) return _panelBuildPromise;
+  const bundlePath = path.join(PROJECT_ROOT, "desktop", "dist", "panel.bundle.js");
+  const esbuildConfig = path.join(PROJECT_ROOT, "desktop", "esbuild.config.mjs");
+  const srcDir = path.join(PROJECT_ROOT, "desktop", "src");
+  if (!fs.existsSync(esbuildConfig) || !fs.existsSync(srcDir)) return Promise.resolve();
+
+  let needsBuild = !fs.existsSync(bundlePath);
+  if (!needsBuild) {
+    try {
+      const bundleMtime = fs.statSync(bundlePath).mtimeMs;
+      const checkNewer = (dir) => {
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        for (const entry of entries) {
+          const full = path.join(dir, entry.name);
+          if (entry.isDirectory()) {
+            if (checkNewer(full)) return true;
+          } else if (entry.isFile() && (entry.name.endsWith(".ts") || entry.name.endsWith(".css") || entry.name.endsWith(".html"))) {
+            if (fs.statSync(full).mtimeMs > bundleMtime) return true;
+          }
+        }
+        return false;
+      };
+      needsBuild = checkNewer(srcDir);
+    } catch {}
+  }
+
+  if (!needsBuild) return Promise.resolve();
+
+  _panelBuildPromise = new Promise((resolve) => {
+    try {
+      execFileSync(process.execPath, [esbuildConfig], { stdio: "ignore", timeout: 15000 });
+    } catch (err) {
+      console.warn("[PanelBuild] Auto-build failed:", err.message);
+    } finally {
+      _panelBuildPromise = null;
+      resolve();
+    }
+  });
+  return _panelBuildPromise;
+}
+
 async function route(req, res) {
   const context = getRequestContext(req);
   req.gatewayContext = context;
@@ -1398,6 +1441,7 @@ async function route(req, res) {
 
   const reqPath = context.path;
 
+
   // --- Static assets for modularized config panel ---
   if (url.pathname.startsWith("/desktop/dist/") && req.method === "GET") {
     const distRoot = path.join(PROJECT_ROOT, "desktop", "dist");
@@ -1405,6 +1449,9 @@ async function route(req, res) {
     if (!filePath.startsWith(distRoot + path.sep)) {
       sendJson(res, 403, { error: "forbidden" });
       return;
+    }
+    if (!fs.existsSync(filePath)) {
+      await ensurePanelBuild();
     }
     if (!fs.existsSync(filePath)) {
       sendJson(res, 404, { error: "not found" });
@@ -1423,6 +1470,7 @@ async function route(req, res) {
 
 
   if ((reqPath === "/" || reqPath === "/config") && req.method === "GET") {
+    await ensurePanelBuild();
     const htmlPath = path.join(PROJECT_ROOT, "desktop", "index.html");
     if (fs.existsSync(htmlPath)) {
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
