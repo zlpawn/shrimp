@@ -1,0 +1,356 @@
+{
+  "beijia-reach-event": {
+    "desc": "消息触达通知事件 (维修/改约/工单状态通知)",
+    "aliases": ["触达", "消息触达", "reach-event"],
+    "app": "iot-platform",
+    "test": "kafka08-test.mars.ljnode.com:9092,kafka09-test.mars.ljnode.com:9092",
+    "prod": "kafka118-online.zeus.ljnode.com:9092,kafka119-online.zeus.ljnode.com:9092",
+    "sample": {
+      "eventType": "MAINTAIN_ACCEPT_ORDER",
+      "bizType": "maintain",
+      "traceId": "mock-trace-888",
+      "eventTime": 1788766622652,
+      "extra": {
+        "productName": "门锁测试",
+        "status": "师傅已接单"
+      }
+    }
+  },
+  "huiju-iot-service-order-event": {
+    "desc": "汇寓IoT服务工单流转事件",
+    "aliases": ["服务工单", "工单事件", "service-order"],
+    "app": "iot-platform",
+    "test": {
+      "broker": "kafka08-test.mars.ljnode.com:9092,kafka09-test.mars.ljnode.com:9092",
+      "topic": "test-huiju-iot-service-order-event"
+    },
+    "prod": "kafka118-online.zeus.ljnode.com:9092,kafka119-online.zeus.ljnode.com:9092",
+    "sample": {
+      "orderCode": "T010020260907153621",
+      "businessType": "maintain",
+      "status": "师傅已接单"
+    }
+  },
+  "beijia-service-order-change": {
+    "desc": "社区服务下单与订单变更事件",
+    "aliases": ["社区订单", "订单变更", "order-change"],
+    "app": "iot-platform",
+    "test": "kafka04-test.lianjia.com:9092,kafka05-test.lianjia.com:9092",
+    "prod": "common-queue04-matrix.zeus.lianjia.com:9092,kafka116-online.zeus.ljnode.com:9092"
+  },
+  "live_score_test": {
+    "desc": "测试环境专属调试与连通性验证 Topic",
+    "aliases": ["调试主题", "ping", "test-ping"],
+    "app": "test-system",
+    "test": "kafka08-test.mars.ljnode.com:9092,kafka09-test.mars.ljnode.com:9092"
+  },
+  "beijia-iot-metadata-change": {
+    "desc": "IoT设备元数据变更通知事件",
+    "aliases": ["元数据变更", "metadata-change", "设备元数据"],
+    "app": "iot-platform",
+    "test": "kafka08-test.mars.ljnode.com:9092,kafka09-test.mars.ljnode.com:9092",
+    "prod": "kafka118-online.zeus.ljnode.com:9092,kafka119-online.zeus.ljnode.com:9092"
+  },
+  "personless-houseview-delayqueue-prod": {
+    "desc": "iot-platform 业务事件 (topic)",
+    "app": "iot-platform",
+    "test": {
+      "broker": "kafka01-test.lianjia.com:9092,kafka02-test.lianjia.com:9092,kafka03-test.lianjia.com:9092",
+      "topic": "personless-houseview-delayqueue-test"
+    },
+    "prod": "kafka01-matrix.zeus.lianjia.com:9092,kafka02-matrix.zeus.lianjia.com:9092,kafka03-matrix.zeus.lianjia.com:9092"
+  },
+  "huiju-iot-sell-order-change": {
+    "desc": "iot-platform 业务事件 (topics)",
+    "app": "iot-platform",
+    "test": "kafka01-test.lianjia.com:9092,kafka02-test.lianjia.com:9092,kafka03-test.lianjia.com:9092",
+    "prod": "kafka01-matrix.zeus.lianjia.com:9092,kafka02-matrix.zeus.lianjia.com:9092,kafka03-matrix.zeus.lianjia.com:9092"
+  },
+  "huiju-iot-warehouse-order-change": {
+    "desc": "beijia-iot-warehouse 业务事件 (topics)",
+    "app": "beijia-iot-warehouse"
+  },
+  "huiju-iot-operate-log": {
+    "desc": "iot-erp-finance 业务事件 (topics)",
+    "app": "iot-erp-finance"
+  },
+  "chat_common_topic_prod": {
+    "desc": "refactor-agent-framework 业务事件 (topic)",
+    "app": "refactor-agent-framework",
+    "test": {
+      "broker": "",
+      "topic": "chat_common_topic_test"
+    }
+  },
+  "lock_up_1": {
+    "desc": "iot-device-access 业务事件 (topic)",
+    "app": "iot-device-access",
+    "test": {
+      "broker": "kafka11-test.mars.ljnode.com:9092,kafka12-test.mars.ljnode.com:9092,kafka13-test.mars.ljnode.com:9092",
+      "topic": "smoke-sensor"
+    },
+    "prod": "common-queue-04-01-online.zeus.ljnode.com:9092,common-queue-04-02-online.zeus.ljnode.com:9092,common-queue-04-03-online.zeus.ljnode.com:9092"
+  },
+  "device-event-report": {
+    "desc": "iot-device-access 业务事件 (topics)",
+    "app": "iot-device-access",
+    "test": "kafka11-test.mars.ljnode.com:9092,kafka12-test.mars.ljnode.com:9092,kafka13-test.mars.ljnode.com:9092",
+    "prod": "common-queue-04-01-online.zeus.ljnode.com:9092,common-queue-04-02-online.zeus.ljnode.com:9092,common-queue-04-03-online.zeus.ljnode.com:9092"
+  },
+  "huiju-iot-service-order-event": {
+    "desc": "iot-device-adaptor 业务事件 (topics)",
+    "app": "iot-device-adaptor",
+    "test": {
+      "broker": "",
+      "topic": "test-huiju-iot-service-order-event"
+    }
+  },
+  "smoke-sensor": {
+    "desc": "iot-device-adaptor 业务事件 (topic)",
+    "app": "iot-device-adaptor"
+  },
+  "ke_ai_card_realtime_record_asr_segment": {
+    "desc": "cangjie 业务事件 (topics)",
+    "app": "cangjie",
+    "test": {
+      "broker": "kafka11-test.mars.ljnode.com:9092,kafka12-test.mars.ljnode.com:9092,kafka13-test.mars.ljnode.com:9092",
+      "topic": "ke_ai_card_realtime_record_asr_segment_test"
+    },
+    "prod": "common-queue-04-01-online.zeus.ljnode.com:9092,common-queue-04-02-online.zeus.ljnode.com:9092,common-queue-04-03-online.zeus.ljnode.com:9092"
+  },
+  "ke_cangjie_wxwork_queue_prod": {
+    "desc": "cangjie 业务事件 (topic)",
+    "app": "cangjie",
+    "test": {
+      "broker": "kafka11-test.mars.ljnode.com:9092,kafka12-test.mars.ljnode.com:9092,kafka13-test.mars.ljnode.com:9092",
+      "topic": "ke_cangjie_wxwork_queue_test"
+    },
+    "prod": "common-queue-04-01-online.zeus.ljnode.com:9092,common-queue-04-02-online.zeus.ljnode.com:9092,common-queue-04-03-online.zeus.ljnode.com:9092"
+  },
+  "ai_card_status_event": {
+    "desc": "cangjie-data-hub 业务事件 (topics)",
+    "app": "cangjie-data-hub",
+    "test": {
+      "broker": "kafka11-test.mars.ljnode.com:9092,kafka12-test.mars.ljnode.com:9092,kafka13-test.mars.ljnode.com:9092",
+      "topic": "ai_card_status_event_test"
+    },
+    "prod": "common-queue-04-01-online.zeus.ljnode.com:9092,common-queue-04-02-online.zeus.ljnode.com:9092,common-queue-04-03-online.zeus.ljnode.com:9092"
+  },
+  "speech-aicard-record-new-raw": {
+    "desc": "cangjie-data-hub 业务事件 (receive.topic)",
+    "app": "cangjie-data-hub",
+    "test": {
+      "broker": "kafka11-test.mars.ljnode.com:9092,kafka12-test.mars.ljnode.com:9092,kafka13-test.mars.ljnode.com:9092",
+      "topic": "utopia-smart-construction-video-process-result"
+    },
+    "prod": "common-queue-04-01-online.zeus.ljnode.com:9092,common-queue-04-02-online.zeus.ljnode.com:9092,common-queue-04-03-online.zeus.ljnode.com:9092"
+  },
+  "user-profile-400-asr-message": {
+    "desc": "dial-insight-memory 业务事件 (topics)",
+    "app": "dial-insight-memory"
+  },
+  "ai_card_record_common_event": {
+    "desc": "iot-power-core 业务事件 (topic)",
+    "app": "iot-power-core",
+    "test": {
+      "broker": "broker0.kafka-test.ke.com:3001,broker1.kafka-test.ke.com:3001,broker2.kafka-test.ke.com:3001",
+      "topic": "ai_card_record_common_event_test-pdtest"
+    },
+    "prod": "${KAFKA_BROKERS:localhost:9092}"
+  },
+  "topic1": {
+    "desc": "utopia-scs-algo 业务事件 (topics)",
+    "app": "utopia-scs-algo",
+    "test": {
+      "broker": "kafka11-test.mars.ljnode.com:9092,kafka12-test.mars.ljnode.com:9092,kafka13-test.mars.ljnode.com:9092",
+      "topic": "utopia-scs-algo-result"
+    },
+    "prod": "common-queue-04-01-online.zeus.ljnode.com:9092,common-queue-04-02-online.zeus.ljnode.com:9092,common-queue-04-03-online.zeus.ljnode.com:9092"
+  },
+  "dev-epx-m10665xmarsxtestxmysqlxljnodexcom-10665-utopia_scs_linjing": {
+    "desc": "utopia-scs-recorder 业务事件 (topics)",
+    "app": "utopia-scs-recorder",
+    "test": {
+      "broker": "kafka11-test.mars.ljnode.com:9092,kafka12-test.mars.ljnode.com:9092,kafka13-test.mars.ljnode.com:9092",
+      "topic": "dial-insight-memory-biz-infra-event-origin"
+    },
+    "prod": "kafka10-test.mars.ljnode.com:9092,kafka09-test.mars.ljnode.com:9092,kafka08-test.mars.ljnode.com:9092"
+  },
+  "linjing-inspect-video-algo-result": {
+    "desc": "utopia-scs-recorder 业务事件 (topic)",
+    "app": "utopia-scs-recorder",
+    "test": "kafka11-test.mars.ljnode.com:9092,kafka12-test.mars.ljnode.com:9092,kafka13-test.mars.ljnode.com:9092",
+    "prod": "kafka10-test.mars.ljnode.com:9092,kafka09-test.mars.ljnode.com:9092,kafka08-test.mars.ljnode.com:9092"
+  },
+  "epx-m6446xzeusxmysqlxljnodexcom-6446-scs_tenant_1": {
+    "desc": "utopia-scs-saas 业务事件 (kafka.scs-tenant-1.epx.topic)",
+    "app": "utopia-scs-saas",
+    "test": {
+      "broker": "kafka08-test.mars.ljnode.com:9092,kafka09-test.mars.ljnode.com:9092,kafka10-test.mars.ljnode.com:9092",
+      "topic": "dev-epx-10x26x33x129-10665-scs_tenant_1"
+    },
+    "prod": "kafka118-online.zeus.ljnode.com:9092,kafka119-online.zeus.ljnode.com:9092,kafka120-online.zeus.ljnode.com:9092"
+  },
+  "kelive-resource-event-prod": {
+    "desc": "utopia-scs-saas 业务事件 (topic)",
+    "app": "utopia-scs-saas",
+    "test": {
+      "broker": "kafka08-test.mars.ljnode.com:9092,kafka09-test.mars.ljnode.com:9092,kafka10-test.mars.ljnode.com:9092",
+      "topic": "kelive-resource-event-test2"
+    },
+    "prod": "kafka118-online.zeus.ljnode.com:9092,kafka119-online.zeus.ljnode.com:9092,kafka120-online.zeus.ljnode.com:9092"
+  },
+  "utopia-scs-event": {
+    "desc": "utopia-scs-saas 业务事件 (topics)",
+    "app": "utopia-scs-saas",
+    "test": {
+      "broker": "kafka08-test.mars.ljnode.com:9092,kafka09-test.mars.ljnode.com:9092,kafka10-test.mars.ljnode.com:9092",
+      "topic": "nrs-sales-project-test-event"
+    },
+    "prod": "kafka118-online.zeus.ljnode.com:9092,kafka119-online.zeus.ljnode.com:9092,kafka120-online.zeus.ljnode.com:9092"
+  },
+  "iot-tx-explorer-event": {
+    "desc": "utopia-scs-saas 业务事件 (kafka.device.event.topic)",
+    "app": "utopia-scs-saas",
+    "test": {
+      "broker": "kafka08-test.mars.ljnode.com:9092,kafka09-test.mars.ljnode.com:9092,kafka10-test.mars.ljnode.com:9092",
+      "topic": "test-iot-tx-explorer-event"
+    },
+    "prod": "kafka118-online.zeus.ljnode.com:9092,kafka119-online.zeus.ljnode.com:9092,kafka120-online.zeus.ljnode.com:9092"
+  },
+  "epx-m6763xzeusxmysqlxljnodexcom-6763-scs_tenant_42": {
+    "desc": "utopia-scs-saas 业务事件 (kafka.scs-tenant-42.epx.topic)",
+    "app": "utopia-scs-saas",
+    "test": {
+      "broker": "kafka08-test.mars.ljnode.com:9092,kafka09-test.mars.ljnode.com:9092,kafka10-test.mars.ljnode.com:9092",
+      "topic": "dev-epx-m10665xmarsxtestxmysqlxljnodexcom-10665-scs_tenant_42"
+    },
+    "prod": "kafka118-online.zeus.ljnode.com:9092,kafka119-online.zeus.ljnode.com:9092,kafka120-online.zeus.ljnode.com:9092"
+  },
+  "epx-m6763xzeusxmysqlxljnodexcom-6763-scs_tenant_2": {
+    "desc": "utopia-scs-saas 业务事件 (kafka.scs-tenant-2.epx.topic)",
+    "app": "utopia-scs-saas",
+    "test": {
+      "broker": "kafka08-test.mars.ljnode.com:9092,kafka09-test.mars.ljnode.com:9092,kafka10-test.mars.ljnode.com:9092",
+      "topic": "dev-epx-m10665xmarsxtestxmysqlxljnodexcom-10665-scs_tenant_2"
+    },
+    "prod": "kafka118-online.zeus.ljnode.com:9092,kafka119-online.zeus.ljnode.com:9092,kafka120-online.zeus.ljnode.com:9092"
+  },
+  "epx-m6763xzeusxmysqlxljnodexcom-6763-scs_tenant_3": {
+    "desc": "utopia-scs-saas 业务事件 (kafka.scs-tenant-3.epx.topic)",
+    "app": "utopia-scs-saas",
+    "test": {
+      "broker": "kafka08-test.mars.ljnode.com:9092,kafka09-test.mars.ljnode.com:9092,kafka10-test.mars.ljnode.com:9092",
+      "topic": "dev-epx-m10665xmarsxtestxmysqlxljnodexcom-10665-scs_tenant_3"
+    },
+    "prod": "kafka118-online.zeus.ljnode.com:9092,kafka119-online.zeus.ljnode.com:9092,kafka120-online.zeus.ljnode.com:9092"
+  },
+  "epx-m6763xzeusxmysqlxljnodexcom-6763-scs_tenant_4": {
+    "desc": "utopia-scs-saas 业务事件 (kafka.scs-tenant-4.epx.topic)",
+    "app": "utopia-scs-saas",
+    "test": {
+      "broker": "kafka08-test.mars.ljnode.com:9092,kafka09-test.mars.ljnode.com:9092,kafka10-test.mars.ljnode.com:9092",
+      "topic": "dev-epx-m10665xmarsxtestxmysqlxljnodexcom-10665-scs_tenant_3"
+    },
+    "prod": "kafka118-online.zeus.ljnode.com:9092,kafka119-online.zeus.ljnode.com:9092,kafka120-online.zeus.ljnode.com:9092"
+  },
+  "epx-m6763xzeusxmysqlxljnodexcom-6763-scs_tenant_5": {
+    "desc": "utopia-scs-saas 业务事件 (kafka.scs-tenant-5.epx.topic)",
+    "app": "utopia-scs-saas",
+    "test": {
+      "broker": "kafka08-test.mars.ljnode.com:9092,kafka09-test.mars.ljnode.com:9092,kafka10-test.mars.ljnode.com:9092",
+      "topic": "dev-epx-m10665xmarsxtestxmysqlxljnodexcom-10665-scs_tenant_5"
+    },
+    "prod": "kafka118-online.zeus.ljnode.com:9092,kafka119-online.zeus.ljnode.com:9092,kafka120-online.zeus.ljnode.com:9092"
+  },
+  "epx-m6763xzeusxmysqlxljnodexcom-6763-scs_tenant_6": {
+    "desc": "utopia-scs-saas 业务事件 (kafka.scs-tenant-6.epx.topic)",
+    "app": "utopia-scs-saas",
+    "test": {
+      "broker": "kafka08-test.mars.ljnode.com:9092,kafka09-test.mars.ljnode.com:9092,kafka10-test.mars.ljnode.com:9092",
+      "topic": "dev-epx-m10665xmarsxtestxmysqlxljnodexcom-10665-scs_tenant_3"
+    },
+    "prod": "kafka118-online.zeus.ljnode.com:9092,kafka119-online.zeus.ljnode.com:9092,kafka120-online.zeus.ljnode.com:9092"
+  },
+  "epx-m6763xzeusxmysqlxljnodexcom-6763-scs_tenant_7": {
+    "desc": "utopia-scs-saas 业务事件 (kafka.scs-tenant-7.epx.topic)",
+    "app": "utopia-scs-saas",
+    "test": {
+      "broker": "kafka08-test.mars.ljnode.com:9092,kafka09-test.mars.ljnode.com:9092,kafka10-test.mars.ljnode.com:9092",
+      "topic": "dev-epx-m10665xmarsxtestxmysqlxljnodexcom-10665-scs_tenant_3"
+    },
+    "prod": "kafka118-online.zeus.ljnode.com:9092,kafka119-online.zeus.ljnode.com:9092,kafka120-online.zeus.ljnode.com:9092"
+  },
+  "epx-m6763xzeusxmysqlxljnodexcom-6763-scs_tenant_8": {
+    "desc": "utopia-scs-saas 业务事件 (kafka.scs-tenant-8.epx.topic)",
+    "app": "utopia-scs-saas",
+    "test": {
+      "broker": "kafka08-test.mars.ljnode.com:9092,kafka09-test.mars.ljnode.com:9092,kafka10-test.mars.ljnode.com:9092",
+      "topic": "dev-epx-m10665xmarsxtestxmysqlxljnodexcom-10665-scs_tenant_3"
+    },
+    "prod": "kafka118-online.zeus.ljnode.com:9092,kafka119-online.zeus.ljnode.com:9092,kafka120-online.zeus.ljnode.com:9092"
+  },
+  "epx-m6763xzeusxmysqlxljnodexcom-6763-scs_tenant_9": {
+    "desc": "utopia-scs-saas 业务事件 (kafka.scs-tenant-9.epx.topic)",
+    "app": "utopia-scs-saas",
+    "test": {
+      "broker": "kafka08-test.mars.ljnode.com:9092,kafka09-test.mars.ljnode.com:9092,kafka10-test.mars.ljnode.com:9092",
+      "topic": "dev-epx-m10665xmarsxtestxmysqlxljnodexcom-10665-scs_tenant_3"
+    },
+    "prod": "kafka118-online.zeus.ljnode.com:9092,kafka119-online.zeus.ljnode.com:9092,kafka120-online.zeus.ljnode.com:9092"
+  },
+  "epx-m6763xzeusxmysqlxljnodexcom-6763-scs_tenant_10": {
+    "desc": "utopia-scs-saas 业务事件 (kafka.scs-tenant-10.epx.topic)",
+    "app": "utopia-scs-saas",
+    "test": {
+      "broker": "kafka08-test.mars.ljnode.com:9092,kafka09-test.mars.ljnode.com:9092,kafka10-test.mars.ljnode.com:9092",
+      "topic": "dev-epx-m10665xmarsxtestxmysqlxljnodexcom-10665-scs_tenant_3"
+    },
+    "prod": "kafka118-online.zeus.ljnode.com:9092,kafka119-online.zeus.ljnode.com:9092,kafka120-online.zeus.ljnode.com:9092"
+  },
+  "epx-m6763xzeusxmysqlxljnodexcom-6763-scs_tenant_11": {
+    "desc": "utopia-scs-saas 业务事件 (kafka.scs-tenant-11.epx.topic)",
+    "app": "utopia-scs-saas",
+    "test": {
+      "broker": "kafka08-test.mars.ljnode.com:9092,kafka09-test.mars.ljnode.com:9092,kafka10-test.mars.ljnode.com:9092",
+      "topic": "dev-epx-m10665xmarsxtestxmysqlxljnodexcom-10665-scs_tenant_3"
+    },
+    "prod": "kafka118-online.zeus.ljnode.com:9092,kafka119-online.zeus.ljnode.com:9092,kafka120-online.zeus.ljnode.com:9092"
+  },
+  "epx-m6763xzeusxmysqlxljnodexcom-6763-scs_tenant_12": {
+    "desc": "utopia-scs-saas 业务事件 (kafka.scs-tenant-12.epx.topic)",
+    "app": "utopia-scs-saas",
+    "test": {
+      "broker": "kafka08-test.mars.ljnode.com:9092,kafka09-test.mars.ljnode.com:9092,kafka10-test.mars.ljnode.com:9092",
+      "topic": "dev-epx-m10665xmarsxtestxmysqlxljnodexcom-10665-scs_tenant_3"
+    },
+    "prod": "kafka118-online.zeus.ljnode.com:9092,kafka119-online.zeus.ljnode.com:9092,kafka120-online.zeus.ljnode.com:9092"
+  },
+  "epx-m6763xzeusxmysqlxljnodexcom-6763-scs_tenant_13": {
+    "desc": "utopia-scs-saas 业务事件 (kafka.scs-tenant-13.epx.topic)",
+    "app": "utopia-scs-saas",
+    "test": {
+      "broker": "kafka08-test.mars.ljnode.com:9092,kafka09-test.mars.ljnode.com:9092,kafka10-test.mars.ljnode.com:9092",
+      "topic": "dev-epx-m10665xmarsxtestxmysqlxljnodexcom-10665-scs_tenant_3"
+    },
+    "prod": "kafka118-online.zeus.ljnode.com:9092,kafka119-online.zeus.ljnode.com:9092,kafka120-online.zeus.ljnode.com:9092"
+  },
+  "epx-m6763xzeusxmysqlxljnodexcom-6763-scs_tenant_14": {
+    "desc": "utopia-scs-saas 业务事件 (kafka.scs-tenant-14.epx.topic)",
+    "app": "utopia-scs-saas",
+    "test": {
+      "broker": "kafka08-test.mars.ljnode.com:9092,kafka09-test.mars.ljnode.com:9092,kafka10-test.mars.ljnode.com:9092",
+      "topic": "dev-epx-m10665xmarsxtestxmysqlxljnodexcom-10665-scs_tenant_3"
+    },
+    "prod": "kafka118-online.zeus.ljnode.com:9092,kafka119-online.zeus.ljnode.com:9092,kafka120-online.zeus.ljnode.com:9092"
+  },
+  "epx-m6763xzeusxmysqlxljnodexcom-6763-scs_tenant_99": {
+    "desc": "utopia-scs-saas 业务事件 (kafka.scs-tenant-99.epx.topic)",
+    "app": "utopia-scs-saas",
+    "test": {
+      "broker": "kafka08-test.mars.ljnode.com:9092,kafka09-test.mars.ljnode.com:9092,kafka10-test.mars.ljnode.com:9092",
+      "topic": "dev-epx-m10665xmarsxtestxmysqlxljnodexcom-10665-scs_tenant_99"
+    },
+    "prod": "kafka118-online.zeus.ljnode.com:9092,kafka119-online.zeus.ljnode.com:9092,kafka120-online.zeus.ljnode.com:9092"
+  }
+}

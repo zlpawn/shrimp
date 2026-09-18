@@ -253,5 +253,21 @@
   },
   "device-adaptor": {
     "realAppId": "zulin-iot-device-adaptor"
+  },
+  "smart-customer-service": {
+    "realAppId": "smart-customer-service",
+    "ci": {
+      "workflowId": "6aa902005e698546c30e5ce6",
+      "workflowName": "test 构建",
+      "defaultBranch": "master",
+      "gitAddress": "https://git.lianjia.com/iot/v2/smart-customer-service.git"
+    },
+    "deploy": {
+      "test": {
+        "workloadId": "env-smart-customer-service-test-d85",
+        "workloadName": "scs-test",
+        "deployType": "normal"
+      }
+    }
   }
 }

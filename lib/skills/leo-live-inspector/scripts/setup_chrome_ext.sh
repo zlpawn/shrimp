@@ -6,15 +6,14 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXT_DIR=""
 
-# 1. 优先定位用户全局 Skill 目录
-if [ -d "$HOME/.agents/skills/leo-live-inspector/resources/chrome_extension" ]; then
-    EXT_DIR="$HOME/.agents/skills/leo-live-inspector/resources/chrome_extension"
-# 2. 次级定位本地仓库 Skill 目录
-elif [ -d "$SCRIPT_DIR/../resources/chrome_extension" ]; then
+# 1. 优先定位当前 Skill 内置扩展目录
+if [ -d "$SCRIPT_DIR/../resources/chrome_extension" ]; then
     EXT_DIR="$(cd "$SCRIPT_DIR/../resources/chrome_extension" && pwd)"
-# 3. 兜底定位 extensions 源码目录
-elif [ -d "$SCRIPT_DIR/../../../extensions/leo-cookie-txt-locally" ]; then
-    EXT_DIR="$(cd "$SCRIPT_DIR/../../../extensions/leo-cookie-txt-locally" && pwd)"
+# 2. 次级定位用户全局 Skill 目录
+elif [ -d "$HOME/.agents/skills/leo-live-inspector/resources/chrome_extension" ]; then
+    EXT_DIR="$HOME/.agents/skills/leo-live-inspector/resources/chrome_extension"
+elif [ -d "$HOME/.gemini/config/skills/leo-live-inspector/resources/chrome_extension" ]; then
+    EXT_DIR="$HOME/.gemini/config/skills/leo-live-inspector/resources/chrome_extension"
 fi
 
 if [ -z "$EXT_DIR" ] || [ ! -d "$EXT_DIR" ]; then

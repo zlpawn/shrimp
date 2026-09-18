@@ -1,11 +1,11 @@
 @echo off
 setlocal enabledelayedexpansion
 
-:: 1. 优先定位 Skill 内置的自包含扩展目录 (即使脱离网关独立分发也能 100% 找到)
+:: 1. 优先定位 Skill 内置的自包含扩展目录
 set "EXT_DIR=%~dp0..\resources\chrome_extension"
 if not exist "!EXT_DIR!" (
-    :: 2. 次级兜底：尝试定位 Monorepo 根目录下的 extensions 目录
-    set "EXT_DIR=%~dp0..\..\..\extensions\leo-cookie-txt-locally"
+    :: 2. 次级兜底：尝试定位用户全局 Skill 目录
+    set "EXT_DIR=%USERPROFILE%\.agents\skills\leo-live-inspector\resources\chrome_extension"
 )
 
 if exist "!EXT_DIR!" (

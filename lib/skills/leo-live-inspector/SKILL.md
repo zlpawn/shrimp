@@ -1,25 +1,29 @@
 ---
 name: leo-live-inspector
-description: 线上与测试环境全场景数据探查、日志检索、TraceId 链路回溯、Apollo 实时配置查询与测试环境配置安全修改发布、线上变更参谋建议、以及页面数据探索中枢。涵盖核心能力：(1) FAST / Kibana 线上日志毫秒级极速直连检索、入参出参抓取与 500 异常排查；(2) Apollo 配置中心免鉴权秒级直连探查、测试环境两阶段安全修改发布、以及生产环境配置变更参谋建议单自动生成；(3) TraceId 全链路时序回溯与 Mermaid 交互图自动生成；(4) ES 索引自学习与 Chrome 扩展探针自愈，以及后台页面点击探查。
+description: 线上与测试环境全场景数据探查、日志检索、TraceId 链路回溯、Apollo 实时配置查询与测试环境配置安全修改发布、线上变更参谋建议、测试环境 CI 自动化构建与工作负载部署、以及页面数据探索中枢。涵盖核心能力：(1) FAST / Kibana 线上日志毫秒级极速直连检索；(2) Apollo 配置中心免鉴权秒级直连探查与安全修改；(3) 测试环境 CI 自动化构建与工作负载镜像部署闭环（严禁生产直写，新人自动嗅探）；(4) TraceId 全链路时序回溯与 Mermaid 交互图；(5) Kafka 消息无损只读探查与测试模拟投递；(6) 数据库双模查询；(7) 后台页面点击探查。
 ---
 
-# 🔍 Leo Live Inspector (线上数据探查、日志检索、Trace 链路透视与 Apollo 配置中枢)
+# 🔍 Leo Live Inspector (线上数据探查、日志检索、Trace 链路透视、Apollo 配置与测试构建部署中枢)
 
-本 Skill 专门指导 AI 执行线上生产环境与测试环境的 **全场景数据观测、诊断与配置协同治理（Observe, Diagnose & Configure）**：
+本 Skill 专门指导 AI 执行线上生产环境与测试环境的 **全场景数据观测、诊断、配置与交付闭环（Observe, Diagnose, Configure & Deliver）**：
 1. **⚡ FAST / Kibana 毫秒级日志检索**：直连内网 ES 网关，快速捞取微服务报错日志、接口真实请求入参 (`request_in`) 与响应结果 (`request_out`)；
-2. **⚙️ Apollo 配置中心线上线下双轨体系（探查、修改与变更参谋）**：直连 Apollo ConfigService 秒级读取全量实时配置；【测试环境】支持热修改发布与两阶段 Diff 确认闭环；【生产环境】坚守“零直写原则”，自动进入变更参谋模式，生成高可读性《线上变更建议单》与 Portal 官方直达链接；
-3. **🧵 TraceId 全链路时序还原**：跨微服务追溯完整请求生命周期，自动提炼调用步骤并绘制 **Mermaid 时序交互图**；
-4. **🧭 索引自学习与 Chrome 扩展探针自愈**：初次查询新服务自动通过 Chrome 扩展探针（Leo cookie.txt Locally）提取 ES cluster/index 映射并本地持久化；
-5. **🌐 后台页面点击与数据探查（扩展能力）**：支持借助浏览器自动化/扩展能力在后台管理系统、运维看板中通过页面点击和元素审查提取业务数据。
+2. **📡 Kafka 消息无损只读探查与测试环境模拟投递**：以 Topic 为核心资产，支持【零 Commit、零 Rebalance】秒级拉取线上/测试最新消息，支持分区水位排查与关键词过滤；测试环境支持利用 Sample 模板快速灌入数据模拟上游；
+3. **⚙️ Apollo 配置中心线上线下双轨体系（探查、修改与变更参谋）**：直连 Apollo ConfigService 秒级读取全量实时配置；【测试环境】支持热修改发布与两阶段 Diff 确认闭环；【生产环境】坚守“零直写原则”，自动进入变更参谋模式，生成高可读性《线上变更建议单》与 Portal 官方直达链接；
+4. **🧵 TraceId 全链路时序还原**：跨微服务追溯完整请求生命周期，自动提炼调用步骤并绘制 **Mermaid 时序交互图**；
+5. **🚀 CI 自动化构建与测试环境工作负载镜像部署**：直连 Shipwright 平台触发指定代码分支构建，实时轮询构建进度与产物镜像，自动覆盖更新测试环境工作负载（仅限 test 环境，严禁生产环境直写；支持未配置服务动态嗅探与自学习）；
+6. **🧭 索引与资产自学习（双层持久化）**：初次查询新服务或新 Topic 自动就地嗅探或直连探针提取，统一沉淀至 `~/.shrimp/skills/live-inspector/`；
+7. **🌐 后台页面点击与数据探查（扩展能力）**：支持借助浏览器自动化/扩展能力在后台管理系统、运维看板中通过页面点击和元素审查提取业务数据。
 
 > ⚠️ **【核心执行原则：AI 全自动后台执行，严禁要求用户手动运行命令】**
-> - **底层脚本（`scripts/fast_query.js`、`scripts/apollo_query.js` 与 `scripts/apollo_modify.js`）是 AI 专用的后台探查与配置工具**。
-> - 用户只负责用自然语言表达排查、查配置、改测试配置或提线上变更意图（如 *“帮我看下 500 报错”*、*“根据 traceId 画个时序图”*、*“查下 iot-platform 的 apollo 配置”*、*“把测试环境 liveRunner 白名单加上 12”*、*“线上把 saas 超时改大”*）。
+> - **底层脚本（`scripts/fast_query.js`、`scripts/apollo_modify.js` 与 `scripts/ci_deploy.js` 等）是 AI 专用的后台探查与交付工具**。
+> - 用户只负责用自然语言表达排查、查配置、改测试配置、部署测试环境或提线上变更意图（如 *“帮我看下 500 报错”*、*“根据 traceId 画个时序图”*、*“查下 iot-platform 的 apollo 配置”*、*“把当前 master 分支构建部署到测试环境”*、*“线上把 saas 超时改大”*）。
 > - **AI 必须在后台自动解析意图并主动执行对应脚本**：
 >   - **查日志/查配置/查库**：AI 后台静默执行，提取关键日志、出入参、实时配置或调用链，交付结构化表格与结论。
+>   - **测试环境 CI 构建与部署（全自动闭环）**：AI 后台自动识别当前 Git 仓库/服务与分支，触发构建并轮询镜像出炉，自动下发测试环境负载部署并交付汇总报告；遇未配置服务自动动态发现并自学习缓存。
 >   - **测试环境 Apollo 修改（两阶段风控原则）**：AI **必须先执行 Pre-flight（Dry-Run）**，向用户展示【变更前 vs 变更后】Diff 对比单，**等待用户明确确认**后再追加 `--confirm` 执行发布并校验。
->   - **生产环境 Apollo 变更（参谋原则，绝对禁止直写）**：AI **绝对禁止直接调用写接口修改线上配置**！后台通过只读探查抓取线上现状，生成包含【变更前 vs 建议后】Diff 对比、所属 Namespace、推荐发布属性（SWITCH 业务开关）及影响分析的《线上配置变更建议单》，并附带官方生产 Portal 直达链接，引导负责人在受控审批流中人工审核与发布。
+>   - **生产环境变更与部署（参谋原则，绝对禁止直写）**：AI **绝对禁止直接调用写接口修改线上配置或触发生产部署**！后台生成包含参数对比、风险评估的《线上变更建议单》，并附带官方生产发布/配置 Portal 直达链接，引导负责人在受控审批流中人工审核与发布。
 > - **切勿在回复中输出“请您手动在终端运行 node scripts/...”等推卸给用户的言论。**
+
 
 ---
 
@@ -29,6 +33,14 @@ description: 线上与测试环境全场景数据探查、日志检索、TraceId
 
 | 用户自然语言诉求示例 | AI 后台自动执行的标准命令 | 预期交付产物 |
 | :--- | :--- | :--- |
+| **“把当前分支构建部署到测试环境”** | `node scripts/ci_deploy.js` | 自动识别当前 Git 仓库与分支，触发 Shipwright 构建并自动部署测试环境负载 |
+| **“构建部署 smart-customer-service 的 master 分支”** | `node scripts/ci_deploy.js smart-customer-service -b master` | 触发指定服务与分支构建，轮询镜像后部署测试环境 |
+| **“只构建 smart-customer-service 不部署”** | `node scripts/ci_deploy.js smart-customer-service --build-only` | 触发构建流水线，轮询至产物镜像生成并回显镜像地址 |
+| **“把 smart-customer-service 最新镜像部署到测试”** | `node scripts/ci_deploy.js smart-customer-service --deploy-only` | 自动拉取最近构建完成的镜像，覆盖更新测试工作负载 |
+| **“指定镜像 hub.ke.com/... 部署测试环境”** | `node scripts/ci_deploy.js smart-customer-service --deploy-only -i <image>` | 针对指定镜像下发测试环境热更新并校验状态 |
+| **“查看 smart-customer-service 最近构建的镜像”** | `node scripts/ci_deploy.js smart-customer-service --list-images` | 提取最近 5 次构建产物的镜像地址与生成时间 |
+| **“新人首次部署未知微服务 (如 my-new-svc)”** | `node scripts/ci_deploy.js my-new-svc` | **自动嗅探** CI 流水线与测试工作负载，校验后自动自学习沉淀本地缓存 |
+| **“把 smart-customer-service 部署到线上/生产环境”** | **执行发布参谋模式 (坚决拦截生产直写)** | **严禁自动化生产部署！**<br>交付《生产环境部署参谋单》（含镜像版本、Commit、构建时间）并附带官方控制台直达链接，引导负责人在生产平台审批发布 |
 | *“查下 iot-platform 最新 10 条日志”* | `node scripts/fast_query.js -a iot-platform -t 15m -n 10` | 格式化概况与最新日志表格 |
 | *“看下刚才报的 500 错误/异常堆栈”* | `node scripts/fast_query.js -a <app> --level ERROR -t 30m -n 10` | 异常原因、报错位置与堆栈解析 |
 | *“根据 TraceId 361922-10... 抓下调用链路”* | `node scripts/fast_query.js -a <app> --traceId "361922-10..."` | **必须输出 Mermaid 时序交互图** 与关键调用耗时 |
@@ -56,8 +68,14 @@ description: 线上与测试环境全场景数据探查、日志检索、TraceId
 | **"往测试环境 saas 库插一条配置数据"** | `node scripts/test_mysql_query.js saas "INSERT INTO t_config (key_name, value) VALUES ('test_key', 'val')"` | DML 写入，返回 affectedRows + insertId |
 | **"更新测试环境 iot 库的设备状态"** | `node scripts/test_mysql_query.js iot "UPDATE t_device SET status = 0 WHERE sn = 'abc123'"` | 有 WHERE 条件直接执行，返回 changedRows |
 | **"删除测试环境 saas 的过期临时数据"** | `node scripts/test_mysql_query.js saas "DELETE FROM t_temp WHERE created_at < '2026-01-01'"` | 有 WHERE 条件直接执行 |
-| **"在测试环境 saas 建一张临时表"** | `node scripts/test_mysql_query.js saas "CREATE TABLE t_tmp (id BIGINT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(64))"` | DDL 结构变更，返回执行结果 |
 | **“指定端口 6763 和库名查线上 SQL”** | `node scripts/cloud_mysql_query.js 6763 utopia_scs_recorder "SELECT count(*) FROM image_understanding_detail"` | 线上自定义端口与库名统计输出 |
+| **“查下 beijia-reach-event 最新的 3 条消息 (线上)”** | `node scripts/kafka_query.js -t beijia-reach-event -n 3` | 格式化 JSON 消息体、Partition、Offset 与时间展示 (Zero-Commit) |
+| **“查下【测试环境】工单流转事件消息”** | `node scripts/kafka_query.js -t 工单 -e test -n 3` | 自动匹配测试 Topic 与 Broker 进行无损拉取 |
+| **“看下触达消息的各分区水位/有没有积压”** | `node scripts/kafka_query.js -t 触达 --offsets-only` | 分区 Low/High 水位与消息总数看板 |
+| **“查下包含工单号 T010020260907 的 Kafka 消息”** | `node scripts/kafka_query.js -t 工单 -q "T010020260907"` | 按单号或关键词在消息体内精准过滤 |
+| **“往测试环境发一条工单流转测试消息”** | `node scripts/kafka_send.js -t 工单 --use-sample -s orderCode=T-TEST-001 -s status=已接单` | 自动利用 Sample 模板替换字段并投递至测试集群 |
+| **“往测试环境某个 topic 发送特定 JSON 消息”** | `node scripts/kafka_send.js -t <topic> -d '<json>'` | 写入测试 Broker 并回显 Partition 与 Offset |
+| **“扫描工程目录更新 Kafka 资产沉淀”** | `node scripts/kafka_scan.js -o resources/default_kafka.json` | 批量扫描四大主目录并更新内置资产库 |
 
 ---
 
@@ -65,13 +83,15 @@ description: 线上与测试环境全场景数据探查、日志检索、TraceId
 
 ```mermaid
 flowchart TD
-    A["用户提出自然语言诉求 (查日志 / 查配置 / 改测试配置 / 提线上变更 / 追链路 / 查数据库)"] --> B{"意图类型判定"}
+    A["用户提出自然语言诉求 (查日志 / 查配置 / 改测试配置 / 提线上变更 / 追链路 / 查库 / 测试构建部署)"] --> B{"意图类型判定"}
     
     B -->|"查日志 / 500 报错"| C1["后台执行 scripts/fast_query.js (-a, --level ERROR)"]
     B -->|"追溯 TraceId"| C2["后台执行 scripts/fast_query.js (--traceId)"]
     B -->|"查 Apollo 配置/开关"| C3["后台执行 scripts/apollo_query.js (appId, keyword)"]
     B -->|"改【测试环境】Apollo 配置"| C7["后台执行 scripts/apollo_modify.js [Dry-run Diff]"]
     B -->|"提【线上生产】Apollo 变更"| C8["后台执行 scripts/apollo_query.js (只读摸底)"]
+    B -->|"测试环境 CI 构建与部署"| C9["后台执行 scripts/ci_deploy.js (-b, --deploy-only 等)"]
+    B -->|"提【线上生产】镜像发布"| C10["触发生产发布参谋拦截 (严禁直写)"]
     B -->|"查线上生产数据库"| C4["后台执行 scripts/cloud_mysql_query.js (appId, sql)"]
     B -->|"查线下/测试数据库"| C5["后台执行 scripts/test_mysql_query.js (appId, [ds], sql)"]
     B -->|"后台页面点击探查"| C6["通过 Chrome 扩展探针访问后台页面检索"]
@@ -81,12 +101,15 @@ flowchart TD
     C3 --> D3["结构化提取配置 Key，美化内嵌 JSON 对象"]
     C7 --> D7["展示【修改前 vs 修改后】Diff 对比单并等待用户确认"]
     D7 -->|用户明确确认| E7["后台追加 --confirm 执行修改与发布，并校验热生效"]
-    C8 --> D8["生成《线上变更建议单》(Diff + 风险评估) ＋ 生产 Portal 直达链接"]
+    C8 --> D8["生成《线上配置变更建议单》(Diff + 风险评估) ＋ 生产 Portal 直达链接"]
     D8 --> E8["引导负责人在官方 Portal 亲自走合规审批与发布 (零越权、零资损)"]
+    C9 --> D9["自动识别服务/分支 -> 触发构建 -> 轮询镜像 -> 更新测试负载 -> 校验状态"]
+    C10 --> D10["生成《生产发布参谋建议单》(镜像信息 + 风险提示) ＋ Cloud 控制台直达链接"]
+    D10 --> E10["引导负责人在服务云控制台人工审核镜像并发布"]
     C4 & C5 --> D4["格式化 Markdown 数据表格，标注耗时与行数"]
     C6 --> D5["解析页面 DOM / Network 返回数据"]
 
-    D1 & D2 & D3 & D4 & D5 & E7 & E8 --> E["向用户交付高可读性诊断报告与结论"]
+    D1 & D2 & D3 & D4 & D5 & D9 & E7 & E8 & E10 --> E["向用户交付高可读性交付/诊断报告与结论"]
     E -.-> F["💡 若需免发版订正脏数据，主动引导唤起 leo-live-runner"]
 ```
 
@@ -261,58 +284,144 @@ AI 后台执行 `node scripts/test_mysql_query.js <service|host> [datasource|sql
 > 2. **智能目录引导**：若缺少密码，AI 主动引导用户切换至该项目的本地代码根目录（例如 `cd /Users/pa/project/JZ/utopia-scs-saas`），脚本将自动就地从 `application-test.yml` / `.env.test` 解析密码并直连；
 > 3. **验通即静默沉淀**：一旦握手测试成功，系统无感沉淀至 `~/.shrimp/skills/live-inspector/test_databases.json`，后续永久免输。
 
+## 📡 4. Kafka 消息无损只读探查与安全模拟投递 (`scripts/kafka_query.js` & `scripts/kafka_send.js`)
+
+### 4.1 核心设计理念
+1. **以 Topic 为核心资产（扁平化）**：打破“必须先找微服务”的束缚，Topic 全局唯一，直接通过 Topic 名或中文别名即可秒级查询与发送；
+2. **双层持久化机制**：
+   - **内置预置**：[`resources/default_kafka.json`](resources/default_kafka.json)（出厂自带常用主目录 37+ 核心 Topic）；
+   - **本地自学习**：`~/.shrimp/skills/live-inspector/kafka_catalog.json`（支持 `--save` 随时沉淀新项目或自定义 Topic）；
+3. **零 Commit 与零 Rebalance 保障**：
+   - 探查严格采用随机临时 GroupId（`leo-peek-${Date.now()}`）与 `autoCommit: false`；
+   - 严禁任何提交行为，对线上/测试正常消费组完全透明；
+4. **测试环境安全投递与 Mock 上游**：
+   - 默认环境为 `test`，向 `prod` 写入会被强制拦截（必须附加 `--force-danger-confirm`）；
+   - 支持利用 Topic 预存的 `sample` 模板，通过 `-s key=val` 自动替换字段并刷新当前时间戳，实现秒级模拟上游事件；
+5. **多工具联动排障（闭环威力）**：
+   - 从 Kafka 查出的消息自带 `traceId` ➡️ 自动顺藤摸瓜调用 `fast_query.js --traceId` 追查下游消费端的执行日志与 Mermaid 时序交互图！
+
+### 4.2 常用命令速查
+
+| 操作场景 | 推荐命令 | 说明 |
+| :--- | :--- | :--- |
+| **查最新消息 (线上)** | `node scripts/kafka_query.js -t <topic> -n 3` | 默认查线上最新 3 条，格式化回显 JSON 消息 |
+| **查最新消息 (测试)** | `node scripts/kafka_query.js -t <topic> -e test -n 3` | 自动路由至测试环境对应集群与测试 Topic |
+| **查分区水位/积压** | `node scripts/kafka_query.js -t <topic> --offsets-only` | 输出各分区的 Low / High 水位与消息总数看板 |
+| **按单号/关键词筛选** | `node scripts/kafka_query.js -t <topic> -q "<orderId>"` | 在拉取的消息中过滤指定业务关键词 |
+| **指定分区拉取** | `node scripts/kafka_query.js -t <topic> -p 0 -n 2` | 仅从指定分区拉取消息 |
+| **基于模板发送测试消息** | `node scripts/kafka_send.js -t <topic> --use-sample -s status=已完成` | 自动套用 Sample 模板并覆盖指定字段 |
+| **直接发送自定义 JSON** | `node scripts/kafka_send.js -t <topic> -d '{"orderId":"123"}'` | 投递到测试环境并回显 Partition 与 Offset |
+| **全量扫描更新资产** | `node scripts/kafka_scan.js -o resources/default_kafka.json` | 扫描 IOT/HT/ZK/JZ 目录并刷新内置预置库 |
+
 ---
 
-## 📊 4. AI 交付呈现规范
+## 🚀 5. CI 构建与测试环境工作负载自动化部署 (`scripts/ci_deploy.js`)
+
+### 5.1 CLI 参数速查
+AI 后台执行 `node scripts/ci_deploy.js [serviceId] [options]`：
+
+| 参数/选项 | 简写 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `[serviceId]` | `-s, --service` | 自动识别 | 目标微服务 ID 或别名 (如 `smart-customer-service`, `saas`, `algo`)，未提供时自动根据当前本地 Git 仓库或目录识别 |
+| `--branch` | `-b` | 自动识别 | 构建的代码分支，未提供时自动执行 `git rev-parse --abbrev-ref HEAD` 提取当前分支 (如 `master`, `main`, `feat/xxx`) |
+| `--build-only` | - | `false` | 仅触发 Shipwright CI 构建并轮询镜像出炉，不执行工作负载部署 |
+| `--deploy-only` | - | `false` | 仅执行测试环境工作负载镜像部署 (未显式指定 `--image` 时自动使用该微服务最近构建成功的镜像) |
+| `--image` | `-i` | `null` | 显式指定部署的目标镜像完整地址 (如 `hub.ke.com/smart-customer-service/...:tag`) |
+| `--list-images` | `-l` | `false` | 查询并列出该微服务历史构建成功的镜像列表、版本 Tag 与生成时间 |
+| `--dry-run` | - | `false` | 安全预检模式，仅解析并打印识别到的 CI 流水线、工作负载配置与分支信息，不发起实际写操作 |
+| `--timeout` | - | `15m` | 构建轮询最大超时时间 (支持 `10m`, `900s` 等) |
+| `--set-cookie` | - | - | 保存更新服务云与 Shipwright 平台统一 Session Cookie 凭证至本地缓存 |
+| `--json` | - | `false` | 输出纯 JSON 数据结果 |
+
+---
+
+### 5.2 新人与未收录服务零配置自适应 (Auto-Discovery & Self-Learning)
+为确保新同学或新微服务无需手动改写配置文件即可无缝使用，底层引擎内置了两阶段动态发现与自愈闭环：
+
+1. **自动识别项目**：若未显式指定服务名，脚本自动读取本地 Git 仓库的 remote URL 或当前工程根目录名推导微服务 ID；
+2. **流水线与工作负载动态探测 (Auto-Discovery)**：
+   - 若服务未收录在内置清单中，脚本自动调用 Shipwright API（`POST /workflow-context/v1/workflows/query`）依据服务名与 `env: test` 匹配测试环境 CI 流水线 ID；
+   - 自动调用服务云 API（`GET /cloud-proxy-api/cloud-application/app/{serviceId}/virtual-services`）检索匹配环境为 `test` 的工作负载 ID；
+3. **静默自学习沉淀**：
+   - 探测验通后，自动将 `ciWorkflowId` 和 `testWorkloadId` 持久化写入 `~/.shrimp/skills/live-inspector/service_catalog.json`；
+   - 下次执行直接命中本地缓存，实现 **0 手动配置、0 维护成本、越用越聪明**。
+
+---
+
+### 5.3 🛡️ 生产发布安全铁律 (Strict Test-Only & Production Advisor SOP)
+
+> 🚨 **【生产环境铁律：严禁自动化脚本直写生产容器】**
+> - 生产环境镜像部署直接影响线上真实业务，严禁任何 AI Agent 或自动化脚本绕过官方发布平台直接更新生产虚拟服务容器！
+> - **自动化构建部署能力绝对仅对测试环境 (`test`) 开放**。
+
+#### 生产变更参谋模式 (Advisor SOP)
+当用户提出“把这个分支/镜像部署到线上/生产环境”时，AI 自动触发发布参谋模式：
+1. **阻断直写**：底层脚本拦截任何目标为 `prod` / `online` 的部署指令；
+2. **生成《生产环境部署参谋单》**：
+   - 🎯 **应用信息**：微服务名称 (`serviceId`)；
+   - 🏷️ **推荐发布镜像**：展示经过测试验证的最新产物镜像 Tag（例如 `hub.ke.com/{app}:{timestamp}-{branch}-{hash}`）；
+   - 📝 **代码变更摘要**：关联的 Git Commit、分支名称、构建人与构建时间；
+3. **交付官方控制台直达链接**：
+   ```text
+   🔗 服务云生产工作负载控制台直达链接:
+   https://cloud.intra.ke.com/console/project/cloud/application/{serviceId}/virtual-service-list
+   ```
+4. **引导负责人审批发布**：指引业务负责人在服务云控制台选择该镜像，发起标准的生产发布与审批流程。
+
+---
+
+## 📊 6. AI 交付呈现规范
 
 1. **日志排查交付**：概况元信息 ➕ 结构化明细表格 ➕ 异常原因与堆栈分析；
 2. **TraceId 追溯交付**：**强制绘制清晰的 Mermaid 时序交互图**（展示 上游 -> 微服务 -> DB/Redis/下游）；
 3. **Apollo 配置交付**：标明配置中心来源、命名空间、配置 Key、格式化解析后的 JSON 结构，并解释业务含义；
-4. **协同引导**：当发现数据异常或开关需要动态干预时，主动提示可唤起 `leo-live-runner` 进行免发版处理。
+4. **CI 构建与测试部署交付**：汇报服务名称、构建分支、流水线 ID、轮询耗时、出炉镜像地址，以及测试环境工作负载更新生效状态；
+5. **协同引导**：当发现数据异常或开关需要动态干预时，主动提示可唤起 `leo-live-runner` 进行免发版处理。
 
 ---
 
-## 🔌 5. 跨平台 Token/Cookie 凭证获取与 Chrome 插件引导规范
+## 🔌 7. 跨平台 Token/Cookie 凭证获取与 Chrome 插件引导规范
 
-当执行查库或日志自愈遇到 **凭证缺失** 或 **凭证过期（302 重定向）** 时，AI 必须根据用户操作系统（Mac / Windows）主动提供清晰、精准的引导，严禁仅抛出冷冰冰的报错或模糊的 F12 指引：
+当执行查库、日志自愈或 CI 构建部署遇到 **凭证缺失** 或 **凭证过期（302 重定向 / 401 鉴权失败）** 时，AI 必须根据用户操作系统（Mac / Windows）主动提供清晰、精准的引导，严禁仅抛出冷冰冰的报错或模糊的 F12 指引：
 
 ### 🔑 核心凭证 Key 速查
+* **服务云构建部署 / Shipwright 流水线**：目标页面 `https://cloud.intra.ke.com` 与 `https://shipwright.ke.com` ➔ 核心凭证：**完整 Cookie 字符串**（必须包含 `EGG_SESS` 或 `session_id`，通常兼具 `cloud_console_token_egg`）
+* **服务云 MySQL 查库**：目标页面 `https://cloud.intra.ke.com/database/mysql/self-check` ➔ 核心 Key: **`cloud_console_token_egg`**（`2.0...` 开头长串，或直接使用上述完整 Cookie 字符串）
 * **Apollo 测试环境配置修改**：目标页面 `http://test-apollo.portal.life.ke.com` ➔ 核心 Key: **`jt_apollo_login_token`**
-* **服务云 MySQL 查库**：目标页面 `https://cloud.intra.ke.com/database/mysql/self-check` ➔ 核心 Key: **`cloud_console_token_egg`**（`2.0...` 开头长串）
 * **FAST 日志全量自愈**：目标页面 `https://fast.ke.com` ➔ 核心 Key: **`_secondx`**（32位十六进制字符串）
+
+> 💡 **多系统通用凭证机制**：
+> - `cloud_console_token_egg` 仅支持云控制台部分接口（如 MySQL 查库），而 Shipwright CI 流水线与 Cloud 工作负载热更新依赖内网统一 SSO 鉴权体系（基于 `EGG_SESS` / `session_id`）；
+> - 用户在登录 `cloud.intra.ke.com` 或 `shipwright.ke.com` 后，直接复制完整的 Cookie 文本；
+> - AI 执行 `node scripts/ci_deploy.js --set-cookie "..."` 保存至 `~/.shrimp/skills/live-inspector/cloud_token.json` 后，底层将**自动兼容服务云查库与 CI 构建部署两大通道**，全流程通用！
 
 ---
 
-### 🖥️ 分平台 Chrome 插件安装与引导流程（首选推荐）
+### 🖥️ 分平台 Chrome 插件手动导入与引导流程（首选推荐）
 
 #### 🍏 macOS 用户引导指引：
-1. **一键自动安装（最推荐）**：在终端执行：
-   ```bash
-   bash ~/.agents/skills/leo-live-inspector/scripts/setup_chrome_ext.sh
-   ```
-   *脚本会自动定位插件目录并复制到剪贴板，同时替您打开 Chrome 扩展管理页。*
-2. **或者手动在 Chrome 加载**：
+1. **手动在 Chrome 加载插件**：
    * 打开 `chrome://extensions/` 并开启右上角【开发者模式】；
    * 点击左上角【加载已解压的扩展程序】；
-   * 按快捷键 `Cmd + Shift + G`，粘贴插件路径：
-     `~/.agents/skills/leo-live-inspector/resources/chrome_extension`（或工程下的 `resources/chrome_extension`），回车并确认。
-3. **获取凭证**：
-   * 打开目标页面（服务云或 FAST）；
+   * 按快捷键 `Cmd + Shift + G`，粘贴 AI 给出的插件绝对路径，回车并确认；
+   * 常用安装路径（AI 应优先给出当前生效的绝对路径）：
+     `~/.agents/skills/leo-live-inspector/resources/chrome_extension`（或工程下的 `resources/chrome_extension`）。
+2. **获取凭证**：
+   * 打开目标页面（服务云 `cloud.intra.ke.com`、Shipwright 或 FAST）；
    * 点击浏览器右上角拼图中的 **Leo cookie.txt Locally** 图标；
-   * 在列表中找到对应 Key（**`cloud_console_token_egg`** 或 **`_secondx`**），点击右侧 **【复制】** 发给 AI；
-   * *（或者直接点击【📥 下载 cookies.txt】，脚本会自动从 Downloads 目录读取，免手动粘贴）*。
+   * 点击 **【📥 下载 cookies.txt】**（脚本会自动从 Downloads 目录智能读取，免手动粘贴），或直接点击 **【复制】** 完整 Cookie 文本发给 AI；
+   * （单项 Key 查询时可在列表中找到对应 Key 如 `cloud_console_token_egg`、`_secondx` 或 `jt_apollo_login_token` 复制）。
 
 #### 🪟 Windows 用户引导指引：
-1. **一键自动安装（最推荐）**：
-   * 双击运行 Skill 目录下的 `scripts\setup_chrome_ext.bat`；
-   * *批处理脚本会自动通过 `%~dp0` 动态获取当前盘符的绝对路径并塞入 Windows 剪贴板，同时打开 Chrome 扩展页。*
-2. **或者手动在 Chrome 加载**：
+1. **手动在 Chrome 加载插件**：
    * 打开 `chrome://extensions/` 并开启右上角【开发者模式】；
    * 点击左上角【加载已解压的扩展程序】；
-   * 在弹窗路径栏直接按 `Ctrl + V` 粘贴剪贴板中的路径并回车确认。
-3. **获取凭证**：
-   * 打开服务云或 FAST 页面，点击插件图标；
-   * 对应 Key 点击 **【复制】** 发给 AI（或点击【📥 下载 cookies.txt】）。
+   * 在弹窗路径栏粘贴 AI 给出的插件绝对路径并回车确认；
+   * 常用安装路径（AI 应优先给出当前生效的绝对路径）：
+     `%USERPROFILE%\.agents\skills\leo-live-inspector\resources\chrome_extension`（或工程下的 `resources\chrome_extension`）。
+2. **获取凭证**：
+   * 打开目标页面，点击插件图标；
+   * 点击 **【📥 下载 cookies.txt】** 或点击 **【复制】** 完整 Cookie 文本发给 AI。
 
 ---
 
@@ -320,12 +429,13 @@ AI 后台执行 `node scripts/test_mysql_query.js <service|host> [datasource|sql
 如果用户由于安全策略无法安装插件，AI 指引其按以下步骤手动复制：
 1. 在已登录的目标页面按 `F12` 打开控制台；
 2. 切换到【Application (应用)】➔ 左侧展开【Cookies】➔ 点击对应域名；
-3. 搜索并双击复制对应的 Key（查库找 `cloud_console_token_egg`，日志找 `_secondx`），复制后发给 AI。
+3. 复制完整的 Cookie 请求头（在 Network 选项卡中任意选中一个请求，复制 Request Headers 中的 `Cookie: ...` 内容发给 AI）。
 
 ---
 
 ## 📚 规范与实战文档索引
 
+- **CI 构建与测试环境部署手册**：[references/ci-deploy-guide.md](references/ci-deploy-guide.md)
 - **Apollo 配置探查协议与实战手册**：[references/apollo-config-guide.md](references/apollo-config-guide.md)
 - **FAST 日志协议与检索自愈机制**：[references/fast-log-guide.md](references/fast-log-guide.md)
 - **后台页面点击与数据探查指南**：[references/page-inspect-guide.md](references/page-inspect-guide.md)
