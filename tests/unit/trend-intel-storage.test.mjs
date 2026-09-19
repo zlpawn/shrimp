@@ -55,18 +55,25 @@ test("config-store - should read default config and update dynamic focus topics"
   assert.equal(cfg.scheduler.interval_minutes, 30);
   assert.ok(Array.isArray(cfg.focus_topics));
   assert.ok(cfg.focus_topics.length >= 2);
+  assert.ok(Array.isArray(cfg.geek_feeds));
+  assert.equal(cfg.geek_feeds.some(f => f.id === "linux_do"), true);
 
   store.update({
     scheduler: { enabled: false, interval_minutes: 60 },
     focus_topics: [
       ...cfg.focus_topics,
       { id: "custom_1", name: "二次元", icon: "🎮", enabled: true, keywords: ["原神", "黑神话"] }
+    ],
+    geek_feeds: [
+      ...cfg.geek_feeds,
+      { id: "custom_feed", name: "自定义RSS", url: "https://example.com/rss", enabled: true }
     ]
   });
 
   const updated = store.get();
   assert.equal(updated.scheduler.interval_minutes, 60);
   assert.equal(updated.focus_topics.find(t => t.id === "custom_1")?.name, "二次元");
+  assert.equal(updated.geek_feeds.find(f => f.id === "custom_feed")?.name, "自定义RSS");
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 

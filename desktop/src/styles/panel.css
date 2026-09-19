@@ -7480,6 +7480,7 @@ input:focus, select:focus {
   gap: 8px;
 }
 
+
 /* Bottom Save Action Bar */
 .trend-intel-settings-bottom-bar {
   margin-top: 24px;
@@ -8022,6 +8023,465 @@ input:focus, select:focus {
   color: var(--danger);
   cursor: pointer;
   font-size: 14px;
+}
+
+/* --- Geek Feeds Pure Text Card & Stealth Styles --- */
+
+.trend-intel-geek-card {
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+  font-family: var(--font-mono, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace);
+}
+
+.geek-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 12px;
+}
+
+.geek-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.geek-card-icon {
+  font-size: 20px;
+}
+
+.geek-card-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.geek-card-subtitle {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-family: var(--font-sans, system-ui, sans-serif);
+}
+
+.geek-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.geek-search-box input {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  background: var(--input-bg);
+  color: var(--text-primary);
+  width: 150px;
+}
+
+.geek-feed-pills {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.geek-pill {
+  font-size: 11.5px;
+  padding: 3px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  background: var(--input-bg);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: var(--font-sans, system-ui, sans-serif);
+}
+
+.geek-pill:hover {
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
+}
+
+.geek-pill.active {
+  background: var(--brand-primary, #6366f1);
+  color: #ffffff;
+  border-color: var(--brand-primary, #6366f1);
+  font-weight: 600;
+}
+
+.geek-pill.disabled {
+  opacity: 0.5;
+}
+
+/* Boss Key Stealth Mode Terminal Box */
+.trend-intel-stealth-terminal {
+  background: #0d1117;
+  color: #c9d1d9;
+  border: 1px solid #30363d;
+  border-radius: var(--radius-md);
+  padding: 14px;
+  font-family: Consolas, "Fira Code", monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  cursor: pointer;
+  user-select: none;
+}
+
+.stealth-terminal-header {
+  display: flex;
+  justify-content: space-between;
+  color: #8b949e;
+  border-bottom: 1px solid #21262d;
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+  font-size: 11px;
+}
+
+.stealth-terminal-logs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stealth-line .time {
+  color: #6e7681;
+}
+
+.stealth-line .badge {
+  color: #58a6ff;
+  font-weight: 600;
+}
+
+.stealth-line.info .badge {
+  color: #58a6ff;
+}
+
+.stealth-line.debug .badge {
+  color: #7ee787;
+}
+
+.stealth-line.trace .badge {
+  color: #d2a8ff;
+}
+
+.stealth-line.prompt {
+  color: #8b949e;
+  margin-top: 6px;
+}
+
+.stealth-line .cursor {
+  animation: trend-intel-spin 1s step-end infinite;
+  display: inline-block;
+  font-weight: bold;
+}
+
+/* Geek Stream List */
+.geek-stream-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 600px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.geek-stream-row {
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: border-color 0.15s ease;
+}
+
+.geek-stream-row:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+.geek-row-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+
+.geek-meta-time {
+  color: var(--text-secondary);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.geek-meta-source {
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--brand-primary, #6366f1);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.geek-row-title {
+  color: var(--text-primary);
+  font-weight: 600;
+  text-decoration: none;
+  flex: 1;
+  min-width: 200px;
+  line-height: 1.4;
+}
+
+.geek-row-title:hover {
+  color: var(--brand-primary, #6366f1);
+  text-decoration: underline;
+}
+
+.geek-row-title .ext-arrow {
+  font-size: 10px;
+  opacity: 0.6;
+  margin-left: 2px;
+}
+
+.geek-row-btns {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.geek-ai-btn {
+  background: rgba(99, 102, 241, 0.12) !important;
+  color: var(--brand-primary, #6366f1) !important;
+  border: 1px solid rgba(99, 102, 241, 0.3) !important;
+}
+
+.geek-ai-btn:hover {
+  background: rgba(99, 102, 241, 0.22) !important;
+}
+
+.geek-row-snippet {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  padding-left: 2px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.geek-ai-box {
+  margin-top: 4px;
+  padding: 8px 10px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: var(--radius-sm);
+  font-size: 11.5px;
+  color: var(--text-primary);
+  line-height: 1.5;
+  font-family: var(--font-sans, system-ui, sans-serif);
+}
+
+.geek-ai-box.error {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.25);
+  color: var(--danger);
+}
+
+.geek-ai-header {
+  font-weight: 600;
+  margin-bottom: 2px;
+  color: #10b981;
+}
+
+/* Geek Feeds in Settings View */
+.trend-intel-geek-feeds-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.geek-feed-setting-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.geek-feed-main-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.geek-feed-cookie-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+.geek-feed-cookie-line input {
+  flex: 1;
+  font-family: var(--font-mono, monospace);
+  font-size: 11.5px !important;
+}
+
+.geek-feed-setting-row.disabled {
+  opacity: 0.6;
+}
+
+.geek-feed-setting-row input {
+  font-size: 12.5px;
+  padding: 4px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+.geek-feed-add-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.geek-feed-add-form input {
+  font-size: 12.5px;
+  padding: 4px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--input-bg);
+  color: var(--text-primary);
+}
+
+
+/* Cloudflare Protection Guidance Card */
+.geek-cf-card {
+  padding: 16px;
+  background: rgba(234, 179, 8, 0.08);
+  border: 1px solid rgba(234, 179, 8, 0.25);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-sans, system-ui, sans-serif);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 10px 0;
+}
+
+.geek-cf-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.geek-cf-header .cf-icon {
+  font-size: 26px;
+  flex-shrink: 0;
+}
+
+.geek-cf-title-wrap h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.geek-cf-title-wrap p {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.geek-cf-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+  background: var(--input-bg);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+}
+
+.geek-cf-steps strong {
+  color: var(--brand-primary, #6366f1);
+}
+
+.geek-cf-steps kbd {
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+}
+
+.geek-cf-steps code {
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--brand-primary, #6366f1);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+}
+
+.geek-cf-quick-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.geek-cf-quick-input input {
+  flex: 1;
+  min-width: 250px;
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+.geek-empty-box,
+.geek-loading-box {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 12px;
 }
 
 /* ==========================================================================

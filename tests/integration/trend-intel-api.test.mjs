@@ -352,3 +352,89 @@ test("scheduler - crawl_enabled/brief_enabled sub-switches and rescheduleCrawl",
     fs.rmSync(dataDir, { recursive: true, force: true });
   }
 });
+
+test("routes - GET /v1/trend-intel/geek-items and POST /v1/trend-intel/summarize-item", async () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "trend-intel-geek-test-"));
+  const service = createTrendIntelService({ dataDir });
+  service.db.saveRawItems([{
+    id: "linux_do:https://linux.do/t/123",
+    source: "rss",
+    platform: "linux_do",
+    country: "CN",
+    language: "zh",
+    type: "rss",
+    title: "【开源】自制轻量级 AI 代理网关",
+    url: "https://linux.do/t/123",
+    rank: 1,
+    previous_rank: 0,
+    velocity: "0",
+    score: 0,
+    first_seen_at: new Date().toISOString(),
+    last_seen_at: new Date().toISOString(),
+    collected_at: new Date().toISOString(),
+    raw: {
+      title: "【开源】自制轻量级 AI 代理网关",
+      summary: "这是一个基于 Node.js 的轻量级网关，支持全协议适配。",
+      platformName: "LINUX DO 每日热榜",
+      icon: "🐧"
+    }
+  }]);
+
+  const server = http.createServer(async (req, res) => {
+    const handled = await routeTrendIntelRequest(req, res, service);
+    if (!handled) {
+      res.statusCode = 404;
+      res.end();
+    }
+  });
+
+  await new Promise(r => server.listen(0, "127.0.0.1", r));
+  const port = server.address().port;
+
+  try {
+    const res = await fetch(`http://127.0.0.1:${port}/v1/trend-intel/geek-items?feed=linux_do`);
+    assert.equal(res.status, 200);
+    const data = await res.json();
+    assert.ok(Array.isArray(data.feeds));
+    assert.ok(data.feeds.some(f => f.id === "linux_do"));
+    assert.ok(Array.isArray(data.items));
+    assert.equal(data.items.length, 1);
+    assert.equal(data.items[0].title, "【开源】自制轻量级 AI 代理网关");
+    assert.ok(data.counts);
+    assert.equal(data.counts.linux_do, 1);
+    assert.equal(data.counts.all, 1);
+
+    const sumRes = await fetch(`http://127.0.0.1:${port}/v1/trend-intel/summarize-item`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: "【开源】自制轻量级 AI 代理网关",
+        content: "这是一个基于 Node.js 的轻量级网关，支持全协议适配。"
+      })
+    });
+    assert.equal(sumRes.status, 200);
+    const sumData = await sumRes.json();
+    assert.ok(sumData.summary);
+
+    // Ingest geek topics from browser
+    const ingestRes = await fetch(`http://127.0.0.1:${port}/v1/trend-intel/ingest-geek`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        platform: "linux_do",
+        items: [
+          { id: 2001, title: "【社区精选】Discourse RSS 订阅技巧", views: 1200, posts_count: 24, excerpt: "技巧分享" }
+        ]
+      })
+    });
+    assert.equal(ingestRes.status, 200);
+    const ingestData = await ingestRes.json();
+    assert.equal(ingestData.success, true);
+    assert.equal(ingestData.count, 1);
+  } finally {
+    server.close();
+    service.destroy();
+    fs.rmSync(dataDir, { recursive: true, force: true });
+  }
+});
+

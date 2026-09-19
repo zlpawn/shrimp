@@ -16,6 +16,16 @@ export interface FocusTopic {
   rss_sources: string[];
 }
 
+export interface GeekFeed {
+  id: string;
+  name: string;
+  icon: string;
+  url: string;
+  enabled: boolean;
+  category?: string;
+  cookie?: string;
+}
+
 export interface TrendIntelConfig {
   scheduler: {
     enabled: boolean;
@@ -33,6 +43,7 @@ export interface TrendIntelConfig {
   };
   platforms: Record<string, boolean>;
   focus_topics: FocusTopic[];
+  geek_feeds?: GeekFeed[];
   data_dir?: string;
 }
 
@@ -155,16 +166,17 @@ export const TOPIC_PRESETS: { name: string; icon: string; keywords: string[]; rs
 ];
 
 export const RECOMMENDED_RSS_SOURCES = [
+  { name: "LINUX DO 每日热门", url: "https://linux.do/top/daily.rss", icon: "🐧" },
+  { name: "V2EX 技术热议", url: "https://www.v2ex.com/index.xml", icon: "💻" },
   { name: "36氪快讯", url: "https://36kr.com/feed", icon: "⚡" },
-  { name: "少数派", url: "https://sspai.com/feed", icon: "📱" },
-  { name: "V2EX 技术热议", url: "https://www.v2ex.com/index.xml", icon: "💻" }
+  { name: "少数派", url: "https://sspai.com/feed", icon: "📱" }
 ];
 
-export const COMMON_EMOJIS = ["🤖", "🚗", "📈", "💻", "🎮", "🛍️", "⚡", "🏥", "🔬", "📱", "🚀", "🎬", "🎯", "🔥", "💡"];
+export const COMMON_EMOJIS = ["🤖", "🐧", "🚗", "📈", "💻", "🎮", "🛍️", "⚡", "🏥", "🔬", "📱", "🚀", "🎬", "🎯", "🔥", "💡"];
 
 // --- Module State ---
 
-export type SubView = "brief" | "raw" | "explorer" | "settings";
+export type SubView = "brief" | "raw" | "explorer" | "settings" | "geek";
 
 const state = {
   activeView: "brief" as SubView,
@@ -178,6 +190,16 @@ const state = {
   briefDate: new Date().toISOString().slice(0, 10),
   brief: null as DailyBrief | null,
   briefViewMode: "cards" as "cards" | "markdown",
+
+  // Geek Feeds Pure Text Reader View
+  geekPlatform: "all",
+  geekItems: [] as RawItem[],
+  geekFeeds: [] as GeekFeed[],
+  geekCounts: {} as Record<string, number>,
+  geekLoading: false,
+  geekStealthMode: false,
+  geekSearch: "",
+  geekSummaries: {} as Record<string, { loading: boolean; text?: string; error?: string }>,
   
   // Raw Feeds View
   rawPlatform: "all",
@@ -303,10 +325,62 @@ export async function loadConfig(): Promise<void> {
     state.config = cfg;
     state.configDraft = JSON.parse(JSON.stringify(cfg));
     state.gatewayConfig = gwCfg;
+    if (Array.isArray(cfg.geek_feeds)) {
+      state.geekFeeds = cfg.geek_feeds;
+    }
   } catch (err: any) {
     state.error = err?.message || "配置加载失败";
   }
   render();
+}
+
+export async function loadGeekItems(targetFeed?: string): Promise<void> {
+  state.geekLoading = true;
+  render();
+  try {
+    const qs = new URLSearchParams();
+    const feedToFetch = targetFeed !== undefined ? targetFeed : state.geekPlatform;
+    if (feedToFetch && feedToFetch !== "all") {
+      qs.set("feed", feedToFetch);
+    }
+    qs.set("limit", "150");
+    const res = await apiFetch<{ feeds: GeekFeed[]; items: RawItem[]; counts?: Record<string, number> }>(`/v1/trend-intel/geek-items?${qs.toString()}`);
+    state.geekFeeds = Array.isArray(res.feeds) ? res.feeds : [];
+    state.geekItems = Array.isArray(res.items) ? res.items : [];
+    if (res.counts) {
+      state.geekCounts = res.counts;
+    }
+  } catch (err: any) {
+    state.error = err?.message || "极客速览数据加载失败";
+  } finally {
+    state.geekLoading = false;
+    render();
+  }
+}
+
+export async function triggerSummarizeGeekItem(itemId: string): Promise<void> {
+  const item = state.geekItems.find(it => it.id === itemId);
+  if (!item) return;
+
+  state.geekSummaries[itemId] = { loading: true };
+  render();
+
+  try {
+    const raw = (item as any).raw || {};
+    const res = await apiFetch<{ summary: string; model: string }>("/v1/trend-intel/summarize-item", {
+      method: "POST",
+      body: JSON.stringify({
+        title: item.title,
+        content: raw.description || raw.summary || "",
+        url: item.url || ""
+      })
+    });
+    state.geekSummaries[itemId] = { loading: false, text: res.summary };
+  } catch (err: any) {
+    state.geekSummaries[itemId] = { loading: false, error: err?.message || "总结生成失败" };
+  } finally {
+    render();
+  }
 }
 
 export async function triggerCrawl(): Promise<void> {
@@ -316,6 +390,7 @@ export async function triggerCrawl(): Promise<void> {
     const res = await apiFetch<{ count: number; duration_ms: number }>("/v1/trend-intel/crawl", { method: "POST" });
     showToast(`抓取完成！共捕获 ${res.count} 条热榜条目 (${res.duration_ms}ms)`, "success");
     // Reload relevant views
+    void loadGeekItems();
     if (state.activeView === "raw") await loadRawItems();
     if (state.activeView === "explorer") await loadEvents();
   } catch (err: any) {
@@ -429,9 +504,23 @@ export function copyEventIdeatePrompt(evt: TrendEvent): void {
 
 // --- Render Helpers ---
 
+function formatTimeShort(dateStr?: string): string {
+  if (!dateStr) return "";
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "";
+    const hours = String(d.getHours()).padStart(2, "0");
+    const mins = String(d.getMinutes()).padStart(2, "0");
+    return `${hours}:${mins}`;
+  } catch {
+    return "";
+  }
+}
+
 function renderHeaderNav(): string {
   const tabs = [
     { id: "brief" as SubView, label: "📰 今日简报", desc: "Daily Brief" },
+    { id: "geek" as SubView, label: "💻 极客速览", desc: "Geek Reader" },
     { id: "raw" as SubView, label: "📑 原始榜单", desc: "Raw Feeds" },
     { id: "explorer" as SubView, label: "📈 趋势大盘", desc: "Trend Explorer" },
     { id: "settings" as SubView, label: "⚙️ 模块配置", desc: "Settings" }
@@ -677,6 +766,245 @@ function parseMarkdownToSections(md: string, eventLinks?: Record<string, { url?:
   return sections;
 }
 
+// --- Sub-View 1.5: Geek Feeds (Pure-Text Reader Card) ---
+
+function renderGeekCard(isFullPage = false): string {
+  const feeds = state.geekFeeds || [];
+  const currentFeed = feeds.find(f => f.id === state.geekPlatform);
+  const items = (state.geekItems || []).filter(item => {
+    if (state.geekPlatform !== "all" && item.platform !== state.geekPlatform) {
+      return false;
+    }
+    if (!state.geekSearch) return true;
+    const q = state.geekSearch.toLowerCase();
+    const raw = (item as any).raw || {};
+    const text = `${item.title || ""} ${raw.summary || ""} ${raw.description || ""}`.toLowerCase();
+    return text.includes(q);
+  });
+
+  const getFeedCount = (feedId: string): number => {
+    if (state.geekCounts && state.geekCounts[feedId] !== undefined) {
+      return state.geekCounts[feedId];
+    }
+    return (state.geekItems || []).filter(i => i.platform === feedId).length;
+  };
+  const totalCount = state.geekCounts?.all ?? (state.geekItems || []).length;
+
+  return `
+    <div class="trend-intel-geek-card ${isFullPage ? "full-page" : ""}">
+      <div class="geek-card-header">
+        <div class="geek-title-group">
+          <span class="geek-card-icon">💻</span>
+          <div>
+            <div class="geek-card-title">极客纯文本速览 (Geek Feeds)</div>
+            <div class="geek-card-subtitle">等宽终端排版 · 摸鱼防窥 · 支持 LINUX DO / V2EX / 自定义 RSS</div>
+          </div>
+        </div>
+        <div class="geek-header-actions">
+          <div class="geek-search-box">
+            <input 
+              type="text" 
+              placeholder="过滤标题/摘要..." 
+              value="${escapeHtml(state.geekSearch)}" 
+              oninput="window.__trendIntelSearchGeek(this.value)" />
+          </div>
+          <button 
+            class="btn btn-xs btn-outline" 
+            onclick="window.__trendIntelCopySyncScript()" 
+            title="复制 1 键同步脚本：在已打开的 linux.do 网页控制台 (F12) 粘贴回车即可秒同步最新热帖">
+            ⚡ 复制同步脚本
+          </button>
+          <button 
+            class="btn btn-xs ${state.geekStealthMode ? "btn-warning" : "btn-secondary"}" 
+            onclick="window.__trendIntelToggleStealth()" 
+            title="快捷切换摸鱼伪装模式（伪装成网关运行日志）">
+            ${state.geekStealthMode ? "🟢 退出伪装" : "🕶️ 摸鱼伪装 (Boss Key)"}
+          </button>
+          <button 
+            class="btn btn-xs" 
+            onclick="window.__trendIntelRefreshGeek()" 
+            ${state.geekLoading || state.crawling ? "disabled" : ""}
+            title="刷新极客资讯">
+            🔄 刷新
+          </button>
+          <button 
+            class="btn btn-xs" 
+            onclick="window.__trendIntelSwitchView('settings')" 
+            title="去配置更多 RSS 订阅源">
+            ⚙️ 订阅管理
+          </button>
+        </div>
+      </div>
+
+      <!-- Feed Pills -->
+      <div class="geek-feed-pills">
+        <button 
+          class="geek-pill ${state.geekPlatform === "all" ? "active" : ""}" 
+          onclick="window.__trendIntelSetGeekPlatform('all')">
+          🌐 全部订阅 (${totalCount})
+        </button>
+        ${feeds.map(feed => {
+          const isSelected = state.geekPlatform === feed.id;
+          const count = getFeedCount(feed.id);
+          const needsCookie = feed.id === "linux_do" && !feed.cookie;
+          const badgeText = needsCookie && count === 0 ? "⚠️待授权" : String(count);
+          return `
+            <button 
+              class="geek-pill ${isSelected ? "active" : ""} ${feed.enabled === false ? "disabled" : ""} ${needsCookie && count === 0 ? "needs-auth" : ""}" 
+              onclick="window.__trendIntelSetGeekPlatform('${escapeHtml(feed.id)}')">
+              ${escapeHtml(feed.icon || "💻")} ${escapeHtml(feed.name)} (${badgeText})
+            </button>
+          `;
+        }).join("")}
+      </div>
+
+      <!-- Main Body -->
+      ${state.geekStealthMode ? `
+        <div class="trend-intel-stealth-terminal" onclick="window.__trendIntelToggleStealth()" title="点击任意位置恢复纯文本资讯流">
+          <div class="stealth-terminal-header">
+            <span>TERMINAL · [Shrimp Gateway Daemon - Telemetry Monitor]</span>
+            <span class="stealth-hint">(已开启伪装，点击任意位置恢复)</span>
+          </div>
+          <div class="stealth-terminal-logs">
+            <div class="stealth-line info"><span class="time">[18:32:01.402]</span> <span class="badge">[SYSTEM/INIT]</span> Node.js runtime active. Memory RSS: 64.2 MB.</div>
+            <div class="stealth-line debug"><span class="time">[18:32:05.118]</span> <span class="badge">[ROUTE-PROXY]</span> Upstream socket keep-alive pool recycled. Health: OK.</div>
+            <div class="stealth-line info"><span class="time">[18:32:11.890]</span> <span class="badge">[TELEMETRY]</span> Syncing token usage records: 1,420 prompt tokens committed to SQLite WAL.</div>
+            <div class="stealth-line trace"><span class="time">[18:32:18.005]</span> <span class="badge">[CACHE-ENGINE]</span> LRU cache hit ratio 98.7%. Garbage collector idle.</div>
+            <div class="stealth-line debug"><span class="time">[18:32:24.712]</span> <span class="badge">[DISPATCHER]</span> Thread pool worker #2 heartbeat ack (latency 0.8ms).</div>
+            <div class="stealth-line prompt"><span class="time">[18:32:30.000]</span> <span class="cursor">_</span> Metric telemetry idle...</div>
+          </div>
+        </div>
+      ` : (state.geekLoading ? `
+        <div class="geek-loading-box">
+          <div class="trend-intel-spinner"></div>
+          <p>正在读取极客资讯流…</p>
+        </div>
+      ` : (items.length === 0 ? `
+        ${state.geekPlatform === "linux_do" ? `
+          <div class="geek-cf-card">
+            <div class="geek-cf-header">
+              <span class="cf-icon">${currentFeed?.cookie ? "🐧" : "🛡️"}</span>
+              <div class="cf-title-wrap">
+                <h4>LINUX DO 社区热榜 · ${currentFeed?.cookie ? "后台静默抓取已就绪" : "需要授权访客凭证 (Cookie)"}</h4>
+                <p>${currentFeed?.cookie 
+                  ? "网关已配置 Cloudflare 访客凭证。后台离屏引擎可全自动静默过盾拉取，无需在浏览器打开目标网站。" 
+                  : "LINUX DO 开启了 Cloudflare 5秒盾防护。网关只需您一次性粘贴访客凭证（无需注册账号），即可永久在后台为您全自动静默抓取。"}</p>
+              </div>
+            </div>
+
+            ${!currentFeed?.cookie ? `
+              <!-- 未授权时展示极简获取指引与快捷输入框 -->
+              <div class="geek-cf-steps">
+                <div><strong>📋 首次使用 3 步获取凭证（无需账号）：</strong></div>
+                <div style="margin-left: 8px;">
+                  1. 在电脑的 Chrome 或 Edge 浏览器中访问一次 <a href="https://linux.do" target="_blank" style="color:var(--brand-primary); text-decoration:underline;">https://linux.do</a>。<br/>
+                  2. 按键盘 <kbd>F12</kbd> 打开开发者工具，切到「<strong>应用 (Application)</strong> / <strong>存储</strong>」➔「<strong>Cookie</strong>」➔「https://linux.do」。<br/>
+                  3. 找到名为 <code>cf_clearance</code> 的条目，复制其 Cookie 值并粘贴到下方：
+                </div>
+              </div>
+              <div class="geek-cf-quick-input" style="margin-top: 6px;">
+                <input 
+                  type="password" 
+                  id="quick-feed-cookie-linux_do" 
+                  placeholder="在此粘贴 cf_clearance 的值 (例如: m9Qmlvwb...)" />
+                <button class="btn btn-sm btn-primary" onclick="window.__trendIntelQuickSaveCookie('linux_do')">
+                  💾 保存凭证并立即开始静默抓取
+                </button>
+                <button class="btn btn-sm" onclick="window.__trendIntelSwitchView('settings')">
+                  ⚙️ 更多订阅设置
+                </button>
+              </div>
+            ` : `
+              <!-- 已授权但暂无缓存时的操作面板 -->
+              <div class="geek-cf-steps">
+                <div style="border-left: 3px solid var(--brand-primary, #6366f1); padding-left: 10px;">
+                  <div><strong>🚀 全自动静默抓取：</strong> 当前网关凭证有效，点击下方按钮立即让后台离屏引擎抓取最新热帖：</div>
+                  <div style="display:flex; gap:8px; margin-top:8px;">
+                    <button class="btn btn-sm btn-primary" onclick="window.__trendIntelRefreshGeek()">
+                      🔄 立即自动抓取最新热帖
+                    </button>
+                    <button class="btn btn-sm" onclick="window.__trendIntelSwitchView('settings')">
+                      ⚙️ 查看 / 更换 Cookie 配置
+                    </button>
+                  </div>
+                </div>
+              </div>
+            `}
+          </div>
+        ` : (state.geekPlatform !== "all" && getFeedCount(state.geekPlatform) === 0 ? `
+          <div class="geek-empty-box">
+            <div style="font-size: 24px; margin-bottom: 8px;">📡</div>
+            <p><strong>「${escapeHtml(currentFeed?.name || state.geekPlatform)}」暂无抓取数据</strong></p>
+            <p style="font-size: 11.5px; color: var(--text-secondary); margin-top: 4px;">
+              可能尚未执行抓取、订阅源暂时无法连通或需登录 Cookie。你可以点击上方「🔄 刷新」重试。
+            </p>
+            <div style="margin-top: 12px; display: flex; justify-content: center; gap: 8px;">
+              <button class="btn btn-sm" onclick="window.__trendIntelRefreshGeek()">🔄 立即拉取</button>
+              <button class="btn btn-sm" onclick="window.__trendIntelSwitchView('settings')">⚙️ 检查订阅配置</button>
+            </div>
+          </div>
+        ` : `
+          <div class="geek-empty-box">
+            <p>暂无极客资讯。点击上方「🔄 刷新」或「立即抓取榜单」开始抓取订阅源。</p>
+          </div>
+        `)}
+      ` : `
+        <div class="geek-stream-list">
+          ${items.map(item => {
+            const raw = (item as any).raw || {};
+            const feedMeta = feeds.find(f => f.id === item.platform) || { name: raw.platformName || item.platform, icon: raw.icon || "💻" };
+            const timeStr = item.first_seen_at ? formatTimeShort(item.first_seen_at) : "";
+            const summaryText = raw.summary || "";
+            const aiSummary = state.geekSummaries[item.id];
+
+            return `
+              <div class="geek-stream-row">
+                <div class="geek-row-meta">
+                  <span class="geek-meta-time">${escapeHtml(timeStr)}</span>
+                  <span class="geek-meta-source">${escapeHtml(feedMeta.icon || "💻")} ${escapeHtml(feedMeta.name || item.platform)}</span>
+                  <a class="geek-row-title" href="${escapeHtml(item.url || "#")}" target="_blank" rel="noreferrer" title="新标签页打开原帖：${escapeHtml(item.title)}">
+                    ${escapeHtml(item.title)}
+                    <span class="ext-arrow">↗</span>
+                  </a>
+                  <div class="geek-row-btns">
+                    <button class="btn btn-xs geek-ai-btn" onclick="window.__trendIntelSummarizeGeekItem('${escapeHtml(item.id)}')">
+                      ${aiSummary?.loading ? "⏳ 总结中…" : "🤖 AI 总结"}
+                    </button>
+                    ${item.url ? `
+                      <button class="btn btn-xs" onclick="window.__trendIntelCopyUrl('${escapeHtml(item.url)}')">
+                        📋 链接
+                      </button>
+                    ` : ""}
+                  </div>
+                </div>
+                ${summaryText ? `
+                  <div class="geek-row-snippet">${escapeHtml(summaryText)}</div>
+                ` : ""}
+                ${aiSummary?.text ? `
+                  <div class="geek-ai-box">
+                    <div class="geek-ai-header">🤖 <strong>大模型精要提炼：</strong></div>
+                    <div class="geek-ai-content">${escapeHtml(aiSummary.text).replace(/\n/g, "<br/>")}</div>
+                  </div>
+                ` : (aiSummary?.error ? `
+                  <div class="geek-ai-box error">⚠️ 提炼失败: ${escapeHtml(aiSummary.error)}</div>
+                ` : "")}
+              </div>
+            `;
+          }).join("")}
+        </div>
+      `))}
+    </div>
+  `;
+}
+
+function renderGeekFeedsView(): string {
+  return `
+    <div class="trend-intel-view trend-intel-geek-view">
+      ${renderGeekCard(true)}
+    </div>
+  `;
+}
+
 // --- Sub-View 1: Daily Brief ---
 
 function renderBriefView(): string {
@@ -743,6 +1071,9 @@ function renderBriefView(): string {
           </div>
         </div>
       ` : ""}
+
+      <!-- Geek Feeds Pure-Text Reader Card -->
+      ${renderGeekCard(false)}
 
       <!-- Content Area -->
       ${state.loading ? `
@@ -1485,6 +1816,103 @@ function renderSettingsView(): string {
           </div>
         </div>
 
+        <!-- 3.5. 极客资讯订阅源管理 (Geek Feeds) -->
+        <div class="card">
+          <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div>
+              <h4>📡 极客资讯订阅源管理 (Geek Feeds - RSS / 独立社区)</h4>
+              <p style="margin:0; font-size:12px; color:var(--text-secondary);">配置纯文本速览与抓取的技术社区、论坛或博客 RSS/Atom 订阅源，支持一键增删改查与启停。</p>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <button class="btn btn-sm btn-primary" onclick="window.__trendIntelSaveSettings()" ${state.saving ? "disabled" : ""}>
+                ${state.saving ? "保存中…" : "保存订阅配置"}
+              </button>
+            </div>
+          </div>
+
+          <!-- Presets Quick Bar for Geek Feeds -->
+          <div class="trend-intel-presets-bar">
+            <div class="presets-label">
+              <span>⚡ 常用极客社区预设一键导入：</span>
+            </div>
+            <div class="presets-buttons">
+              <button class="btn btn-xs preset-btn" onclick="window.__trendIntelAddGeekFeedPreset('linux_do')">🐧 + LINUX DO (每日热门)</button>
+              <button class="btn btn-xs preset-btn" onclick="window.__trendIntelAddGeekFeedPreset('v2ex')">💻 + V2EX (技术热议)</button>
+              <button class="btn btn-xs preset-btn" onclick="window.__trendIntelAddGeekFeedPreset('36kr')">⚡ + 36氪 (快讯)</button>
+              <button class="btn btn-xs preset-btn" onclick="window.__trendIntelAddGeekFeedPreset('sspai')">📱 + 少数派 (深度博客)</button>
+            </div>
+          </div>
+
+          <!-- Feeds List -->
+          <div class="trend-intel-geek-feeds-list">
+            ${(d.geek_feeds || []).length === 0 ? `
+              <div class="trend-intel-empty-topics">
+                <p>暂无订阅源，可点击上方快捷导入，或在下方添加自定义 RSS 地址。</p>
+              </div>
+            ` : (d.geek_feeds || []).map((feed, fIdx) => `
+              <div class="geek-feed-setting-row ${feed.enabled !== false ? "enabled" : "disabled"}">
+                <div class="geek-feed-main-line">
+                  <input 
+                    type="text" 
+                    value="${escapeHtml(feed.icon || "💻")}" 
+                    style="width: 44px; text-align: center;" 
+                    placeholder="图标"
+                    title="图标"
+                    onchange="window.__trendIntelUpdateGeekFeed(${fIdx}, 'icon', this.value)" />
+                  <input 
+                    type="text" 
+                    value="${escapeHtml(feed.name || "")}" 
+                    style="width: 170px;" 
+                    placeholder="订阅源名称"
+                    title="订阅源名称"
+                    onchange="window.__trendIntelUpdateGeekFeed(${fIdx}, 'name', this.value)" />
+                  <input 
+                    type="text" 
+                    value="${escapeHtml(feed.url || "")}" 
+                    style="flex: 1; min-width: 220px; font-family: monospace; font-size: 12px;" 
+                    placeholder="RSS / Atom 地址 (https://...)"
+                    title="订阅源 URL"
+                    onchange="window.__trendIntelUpdateGeekFeed(${fIdx}, 'url', this.value)" />
+                  <label class="trend-intel-switch" title="启用/停用该订阅源">
+                    <input 
+                      type="checkbox" 
+                      ${feed.enabled !== false ? "checked" : ""} 
+                      onchange="window.__trendIntelUpdateGeekFeed(${fIdx}, 'enabled', this.checked)" />
+                    <span class="trend-intel-switch-track" aria-hidden="true"></span>
+                  </label>
+                  <button class="btn btn-xs text-danger" onclick="window.__trendIntelRemoveGeekFeed(${fIdx})" title="删除此订阅源">
+                    🗑️
+                  </button>
+                </div>
+                <div class="geek-feed-cookie-line">
+                  <span class="cookie-label">🍪 访问 Cookie (可选，用于绕过 Cloudflare 5秒盾/登录)：</span>
+                  <input 
+                    type="password" 
+                    value="${escapeHtml(feed.cookie || "")}" 
+                    placeholder="如: cf_clearance=...; _t=..." 
+                    title="设置请求该源时携带的 Cookie"
+                    onchange="window.__trendIntelUpdateGeekFeed(${fIdx}, 'cookie', this.value)" />
+                  ${feed.cookie ? `
+                    <button class="btn btn-xs" onclick="window.__trendIntelUpdateGeekFeed(${fIdx}, 'cookie', '')" title="清空 Cookie">
+                      清空
+                    </button>
+                  ` : ""}
+                </div>
+              </div>
+            `).join("")}
+
+            <!-- Add Custom Feed Inline Form -->
+            <div class="geek-feed-add-form">
+              <input type="text" id="new-geek-feed-icon" placeholder="图标" value="📰" style="width:44px; text-align:center;" />
+              <input type="text" id="new-geek-feed-name" placeholder="订阅源名称 (如: 某技术博客)" style="width:170px;" />
+              <input type="text" id="new-geek-feed-url" placeholder="RSS 地址 (https://...)" style="flex:1; min-width: 220px; font-family: monospace; font-size: 12px;" />
+              <button class="btn btn-sm" onclick="window.__trendIntelAddCustomGeekFeed()">
+                + 添加订阅源
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- 4. 3-Tier Cascaded Model Selector -->
         <div class="card">
           <div class="card-header">
@@ -1597,6 +2025,9 @@ export function render(): void {
     case "brief":
       body = renderBriefView();
       break;
+    case "geek":
+      body = renderGeekFeedsView();
+      break;
     case "raw":
       body = renderRawFeedsView();
       break;
@@ -1629,16 +2060,186 @@ export function render(): void {
 export function initTrendIntel(): void {
   void loadConfig();
   void loadBrief();
+  void loadGeekItems("all");
 }
 
 (window as any).__trendIntelSwitchView = (view: SubView) => {
   state.activeView = view;
   state.error = "";
   if (view === "brief" && !state.brief) void loadBrief();
+  if (view === "geek" && state.geekItems.length === 0) void loadGeekItems("all");
   if (view === "raw" && state.rawItems.length === 0) void loadRawItems();
   if (view === "explorer" && state.events.length === 0) void loadEvents();
   if (view === "settings") void loadConfig();
   render();
+};
+
+(window as any).__trendIntelSetGeekPlatform = (platform: string) => {
+  state.geekPlatform = platform;
+  render();
+};
+
+(window as any).__trendIntelSearchGeek = (query: string) => {
+  state.geekSearch = query;
+  render();
+};
+
+(window as any).__trendIntelToggleStealth = () => {
+  state.geekStealthMode = !state.geekStealthMode;
+  render();
+};
+
+(window as any).__trendIntelRefreshGeek = async () => {
+  const linuxDoFeed = state.geekFeeds?.find(f => f.id === "linux_do");
+  if (state.geekPlatform === "linux_do" && !linuxDoFeed?.cookie) {
+    showToast("🐧 LINUX DO 尚未配置访客凭证 (cf_clearance)，请在下方输入框粘贴凭证保存！", "warning");
+    return;
+  }
+
+  state.geekLoading = true;
+  render();
+  try {
+    showToast("正在拉取最新极客订阅源…", "info");
+    await triggerCrawl();
+    await loadGeekItems("all");
+    showToast("极客订阅源刷新完成！", "success");
+  } catch (err: any) {
+    showToast(`刷新失败: ${err?.message || err}`, "error");
+  } finally {
+    state.geekLoading = false;
+    render();
+  }
+};
+
+(window as any).__trendIntelQuickSaveCookie = async (feedId: string) => {
+  const input = document.getElementById(`quick-feed-cookie-${feedId}`) as HTMLInputElement;
+  let cookieVal = input ? input.value.trim() : "";
+  if (!cookieVal) {
+    showToast("请输入有效 Cookie 凭证 (例如: cf_clearance=...)", "warning");
+    return;
+  }
+
+  // 自动为纯 token 补齐键名
+  if (!cookieVal.includes("=")) {
+    cookieVal = `cf_clearance=${cookieVal}`;
+  }
+
+  if (!state.configDraft) {
+    await loadConfig();
+  }
+  if (!state.configDraft) return;
+
+  state.configDraft.geek_feeds = state.configDraft.geek_feeds || [];
+  let feed = state.configDraft.geek_feeds.find(f => f.id === feedId);
+  if (!feed) {
+    feed = {
+      id: feedId,
+      name: feedId === "linux_do" ? "LINUX DO 每日热榜" : feedId,
+      icon: feedId === "linux_do" ? "🐧" : "💻",
+      url: feedId === "linux_do" ? "https://linux.do/top/daily.rss" : "",
+      enabled: true,
+      category: "community",
+      cookie: cookieVal
+    };
+    state.configDraft.geek_feeds.push(feed);
+  } else {
+    feed.cookie = cookieVal;
+  }
+
+  showToast("正在保存 Cookie 并尝试重新抓取…", "info");
+  try {
+    await saveSettings();
+    await triggerCrawl();
+    await loadGeekItems("all");
+    showToast("Cookie 保存并重新抓取完成！", "success");
+  } catch (err: any) {
+    showToast(`操作失败: ${err?.message || err}`, "error");
+  }
+};
+
+(window as any).__trendIntelCopySyncScript = () => {
+  const code = `fetch('/top.json').then(r=>r.json()).then(d=>fetch('http://127.0.0.1:8787/v1/trend-intel/ingest-geek',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({platform:'linux_do',items:d.topic_list.topics})})).then(r=>r.json()).then(r=>alert('🎉 成功同步 '+r.count+' 篇 LINUX DO 热门到网关！')).catch(e=>alert('同步失败:'+e.message));`;
+  copyText(code, "已复制 1 键同步脚本！在 linux.do 网页按 F12 ➔ 控制台 (Console) 粘贴回车即可！");
+};
+
+(window as any).__trendIntelSummarizeGeekItem = (itemId: string) => {
+  void triggerSummarizeGeekItem(itemId);
+};
+
+(window as any).__trendIntelCopyUrl = (url: string) => {
+  if (url) copyText(url, "已复制文章链接到剪贴板！");
+};
+
+(window as any).__trendIntelUpdateGeekFeed = (idx: number, field: string, val: any) => {
+  if (!state.configDraft?.geek_feeds?.[idx]) return;
+  (state.configDraft.geek_feeds[idx] as any)[field] = val;
+  render();
+};
+
+(window as any).__trendIntelRemoveGeekFeed = (idx: number) => {
+  if (!state.configDraft?.geek_feeds) return;
+  state.configDraft.geek_feeds.splice(idx, 1);
+  render();
+};
+
+(window as any).__trendIntelAddGeekFeedPreset = (presetKey: string) => {
+  if (!state.configDraft) return;
+  state.configDraft.geek_feeds = state.configDraft.geek_feeds || [];
+  const preset = RECOMMENDED_RSS_SOURCES.find(r => r.name.toLowerCase().includes(presetKey) || r.url.includes(presetKey));
+  if (!preset) return;
+
+  const exists = state.configDraft.geek_feeds.some(f => f.url === preset.url);
+  if (exists) {
+    showToast(`订阅源「${preset.name}」已存在`, "info");
+    return;
+  }
+
+  const id = presetKey === "linux_do" ? "linux_do" : (presetKey === "v2ex" ? "v2ex" : `feed_${Date.now()}`);
+  state.configDraft.geek_feeds.push({
+    id,
+    name: preset.name,
+    icon: preset.icon,
+    url: preset.url,
+    enabled: true,
+    category: "tech"
+  });
+  render();
+  showToast(`已添加「${preset.name}」到订阅列表`, "info");
+};
+
+(window as any).__trendIntelAddCustomGeekFeed = () => {
+  if (!state.configDraft) return;
+  const iconInput = document.getElementById("new-geek-feed-icon") as HTMLInputElement;
+  const nameInput = document.getElementById("new-geek-feed-name") as HTMLInputElement;
+  const urlInput = document.getElementById("new-geek-feed-url") as HTMLInputElement;
+
+  const icon = iconInput?.value?.trim() || "📰";
+  const name = nameInput?.value?.trim();
+  const url = urlInput?.value?.trim();
+
+  if (!name || !url) {
+    showToast("请输入订阅源名称和有效的 RSS 地址", "warning");
+    return;
+  }
+  if (!/^https?:\/\//i.test(url)) {
+    showToast("订阅源地址必须以 http:// 或 https:// 开头", "warning");
+    return;
+  }
+
+  state.configDraft.geek_feeds = state.configDraft.geek_feeds || [];
+  state.configDraft.geek_feeds.push({
+    id: `custom_${Date.now()}`,
+    name,
+    icon,
+    url,
+    enabled: true,
+    category: "custom"
+  });
+
+  if (nameInput) nameInput.value = "";
+  if (urlInput) urlInput.value = "";
+  render();
+  showToast(`已添加自定义订阅源「${name}」`, "success");
 };
 
 (window as any).__trendIntelChangeDate = (date: string) => {
