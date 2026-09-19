@@ -1,0 +1,61 @@
+name: Bold Editorial
+mood: High-impact, magazine-style, dramatic. Maximum contrast with bold typography.
+
+color_scheme:
+  primary: "#000000"      # Pure black
+  secondary: "#333333"    # Dark gray
+  accent: "#ff2d55"       # Vivid red
+  background: "#ffffff"   # White
+  text: "#111111"         # Near-black
+  card_bg: "#f5f5f5"      # Light gray
+  chart_colors:
+    - "#ff2d55"            # Vivid red (accent)
+    - "#007aff"            # Blue
+    - "#ff9500"            # Orange
+    - "#34c759"            # Green
+    - "#af52de"            # Purple
+    - "#5856d6"            # Indigo
+    - "#ff3b30"            # Red-orange
+    - "#00c7be"            # Mint
+
+typography:
+  heading_font: "Playfair Display, Georgia, 'PingFang SC', 'Microsoft YaHei', serif"
+  body_font: "Source Sans 3, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif"
+  cjk_font: "'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif"
+  scale: 1.1
+
+card_style:
+  border_radius: 0
+  shadow: "none"
+  border: "3px solid #000000"
+  gap: 20
+
+gradients:
+  hero_bg: "linear-gradient(180deg, #000000 0%, #1a1a1a 100%)"
+  card_highlight: "linear-gradient(180deg, #f5f5f5 0%, #ffffff 100%)"
+
+elevation:
+  shadow_sm: "none"
+  shadow_md: "4px 4px 0 #000000"
+  shadow_lg: "8px 8px 0 #000000"
+
+decoration:
+  pattern: "none"
+  pattern_opacity: 0
+  icon_style: "filled"
+  icon_weight: 2
+
+slide_type_overrides:
+  cover:
+    card_bg: "#000000"
+    text: "#ffffff"
+    heading_scale: 1.5
+  quote:
+    card_bg: "#ff2d55"
+    text: "#ffffff"
+    body_font_style: "italic"
+  data:
+    heading_scale: 0.9
+  section_divider:
+    background: "#000000"
+    text: "#ff2d55"

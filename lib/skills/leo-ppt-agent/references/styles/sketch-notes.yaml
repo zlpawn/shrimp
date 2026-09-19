@@ -1,0 +1,61 @@
+name: Sketch Notes
+mood: Hand-drawn, informal, visual thinking. Sketchbook feel with loose strokes.
+
+color_scheme:
+  primary: "#2c2c2c"      # Pen black
+  secondary: "#666666"    # Pencil gray
+  accent: "#e63946"       # Red marker
+  background: "#fdf8ef"   # Cream paper
+  text: "#2c2c2c"         # Pen black
+  card_bg: "#fff8e7"      # Warm paper
+  chart_colors:
+    - "#e63946"            # Red marker (accent)
+    - "#457b9d"            # Blue
+    - "#2a9d8f"            # Teal
+    - "#e9c46a"            # Yellow
+    - "#f4a261"            # Orange
+    - "#264653"            # Dark teal
+    - "#a8dadc"            # Light blue
+    - "#6d6875"            # Mauve
+
+typography:
+  heading_font: "Architects Daughter, 'Comic Sans MS', 'PingFang SC', 'Microsoft YaHei', cursive"
+  body_font: "Kalam, 'Comic Sans MS', 'PingFang SC', 'Microsoft YaHei', cursive"
+  cjk_font: "'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif"
+  scale: 1.0
+
+card_style:
+  border_radius: 8
+  shadow: "none"
+  border: "2px solid #2c2c2c"
+  gap: 20
+
+gradients:
+  hero_bg: "linear-gradient(180deg, #fdf8ef 0%, #fff8e7 100%)"
+  card_highlight: "linear-gradient(180deg, #fff8e7 0%, #fdf8ef 100%)"
+
+elevation:
+  shadow_sm: "none"
+  shadow_md: "3px 3px 0 #d4c9b0"
+  shadow_lg: "5px 5px 0 #d4c9b0"
+
+decoration:
+  pattern: "dots"
+  pattern_opacity: 0.05
+  icon_style: "outline"
+  icon_weight: 2
+
+slide_type_overrides:
+  cover:
+    card_bg: "#2c2c2c"
+    text: "#fdf8ef"
+    heading_scale: 1.3
+  quote:
+    card_bg: "#fff8e7"
+    text: "#e63946"
+    body_font_style: "italic"
+  data:
+    heading_scale: 0.9
+  section_divider:
+    background: "#2c2c2c"
+    text: "#fdf8ef"

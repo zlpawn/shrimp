@@ -1,0 +1,61 @@
+name: Pixel Art
+mood: Retro, playful, 8-bit nostalgic. Sharp edges, bright primary colors.
+
+color_scheme:
+  primary: "#222034"      # Dark pixel blue
+  secondary: "#45283c"    # Dark pixel brown
+  accent: "#99e550"       # Pixel green
+  background: "#222034"   # Dark background
+  text: "#ffffff"         # White
+  card_bg: "#323c39"      # Dark green-gray
+  chart_colors:
+    - "#99e550"            # Pixel green (accent)
+    - "#6abe30"            # Dark green
+    - "#37946e"            # Teal
+    - "#5fcde4"            # Cyan
+    - "#cbdbfc"            # Light blue
+    - "#d77bba"            # Pink
+    - "#d95763"            # Red
+    - "#fbf236"            # Yellow
+
+typography:
+  heading_font: "'Press Start 2P', 'Courier New', 'PingFang SC', 'Microsoft YaHei', monospace"
+  body_font: "VT323, 'Courier New', 'PingFang SC', 'Microsoft YaHei', monospace"
+  cjk_font: "'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif"
+  scale: 0.9
+
+card_style:
+  border_radius: 0
+  shadow: "4px 4px 0 rgba(0,0,0,0.5)"
+  border: "3px solid #ffffff"
+  gap: 16
+
+gradients:
+  hero_bg: "linear-gradient(180deg, #222034 0%, #323c39 100%)"
+  card_highlight: "linear-gradient(180deg, #323c39 0%, #222034 100%)"
+
+elevation:
+  shadow_sm: "2px 2px 0 rgba(0,0,0,0.3)"
+  shadow_md: "4px 4px 0 rgba(0,0,0,0.5)"
+  shadow_lg: "6px 6px 0 rgba(0,0,0,0.5)"
+
+decoration:
+  pattern: "grid"
+  pattern_opacity: 0.06
+  icon_style: "filled"
+  icon_weight: 2
+
+slide_type_overrides:
+  cover:
+    card_bg: "#222034"
+    text: "#99e550"
+    heading_scale: 1.2
+  quote:
+    card_bg: "#323c39"
+    text: "#99e550"
+    body_font_style: "normal"
+  data:
+    heading_scale: 0.85
+  section_divider:
+    background: "#222034"
+    text: "#99e550"

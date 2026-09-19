@@ -1,0 +1,61 @@
+name: Intuition Machine
+mood: Neural, futuristic, AI-native. Glowing green and pink on dark substrate.
+
+color_scheme:
+  primary: "#00e676"      # Neural green
+  secondary: "#69f0ae"    # Light green
+  accent: "#ff4081"       # Hot pink
+  background: "#0a0a0a"   # Near-black
+  text: "#e0e0e0"         # Light gray
+  card_bg: "#1a1a1a"      # Dark card
+  chart_colors:
+    - "#ff4081"            # Hot pink (accent)
+    - "#00e676"            # Green
+    - "#448aff"            # Blue
+    - "#ffea00"            # Yellow
+    - "#e040fb"            # Purple
+    - "#00e5ff"            # Cyan
+    - "#ff6e40"            # Deep orange
+    - "#b2ff59"            # Light green
+
+typography:
+  heading_font: "Space Grotesk, Inter, 'PingFang SC', 'Microsoft YaHei', sans-serif"
+  body_font: "Inter, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif"
+  cjk_font: "'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif"
+  scale: 1.0
+
+card_style:
+  border_radius: 12
+  shadow: "0 0 12px rgba(0,230,118,0.08)"
+  border: "1px solid rgba(0,230,118,0.15)"
+  gap: 20
+
+gradients:
+  hero_bg: "linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%)"
+  card_highlight: "linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%)"
+
+elevation:
+  shadow_sm: "0 0 4px rgba(0,230,118,0.05)"
+  shadow_md: "0 0 12px rgba(0,230,118,0.08)"
+  shadow_lg: "0 0 30px rgba(255,64,129,0.12)"
+
+decoration:
+  pattern: "grid"
+  pattern_opacity: 0.04
+  icon_style: "outline"
+  icon_weight: 1
+
+slide_type_overrides:
+  cover:
+    card_bg: "#0a0a0a"
+    text: "#00e676"
+    heading_scale: 1.3
+  quote:
+    card_bg: "#1a1a1a"
+    text: "#ff4081"
+    body_font_style: "normal"
+  data:
+    heading_scale: 0.9
+  section_divider:
+    background: "#0a0a0a"
+    text: "#00e676"

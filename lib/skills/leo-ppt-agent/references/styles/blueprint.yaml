@@ -1,0 +1,61 @@
+name: Blueprint
+mood: Technical, precise, engineering-grade. Grid-based clarity with drafting aesthetics.
+
+color_scheme:
+  primary: "#1e3a5f"      # Deep blueprint blue
+  secondary: "#2c5282"    # Medium blue
+  accent: "#63b3ed"       # Light blue highlight
+  background: "#0d2137"   # Dark navy
+  text: "#e2e8f0"         # Light gray
+  card_bg: "#1a3352"      # Dark blue card
+  chart_colors:
+    - "#63b3ed"            # Light blue (accent)
+    - "#48bb78"            # Green
+    - "#f6ad55"            # Orange
+    - "#fc8181"            # Red
+    - "#b794f4"            # Purple
+    - "#4fd1c5"            # Teal
+    - "#fbb6ce"            # Pink
+    - "#faf089"            # Yellow
+
+typography:
+  heading_font: "JetBrains Mono, 'Courier New', 'PingFang SC', 'Microsoft YaHei', monospace"
+  body_font: "Inter, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif"
+  cjk_font: "'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif"
+  scale: 0.95
+
+card_style:
+  border_radius: 4
+  shadow: "none"
+  border: "1px solid rgba(99,179,237,0.3)"
+  gap: 20
+
+gradients:
+  hero_bg: "linear-gradient(180deg, #0d2137 0%, #1e3a5f 100%)"
+  card_highlight: "linear-gradient(180deg, #1a3352 0%, #0d2137 100%)"
+
+elevation:
+  shadow_sm: "0 0 0 rgba(0,0,0,0)"
+  shadow_md: "0 0 8px rgba(99,179,237,0.1)"
+  shadow_lg: "0 0 20px rgba(99,179,237,0.15)"
+
+decoration:
+  pattern: "grid"
+  pattern_opacity: 0.08
+  icon_style: "outline"
+  icon_weight: 1
+
+slide_type_overrides:
+  cover:
+    card_bg: "#1e3a5f"
+    text: "#ffffff"
+    heading_scale: 1.2
+  quote:
+    card_bg: "#1a3352"
+    text: "#63b3ed"
+    body_font_style: "normal"
+  data:
+    heading_scale: 0.9
+  section_divider:
+    background: "#1e3a5f"
+    text: "#63b3ed"

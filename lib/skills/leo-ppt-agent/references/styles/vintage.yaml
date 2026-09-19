@@ -1,0 +1,61 @@
+name: Vintage
+mood: Aged, warm, timeless. Sepia tones with classic typography.
+
+color_scheme:
+  primary: "#5d4037"      # Brown
+  secondary: "#8d6e63"    # Light brown
+  accent: "#bf360c"       # Burnt orange
+  background: "#faf3e8"   # Cream
+  text: "#3e2723"         # Dark brown
+  card_bg: "#f5ebe0"      # Warm beige
+  chart_colors:
+    - "#bf360c"            # Burnt orange (accent)
+    - "#5d4037"            # Brown
+    - "#827717"            # Olive
+    - "#4e342e"            # Dark brown
+    - "#ad1457"            # Burgundy
+    - "#00695c"            # Dark teal
+    - "#e65100"            # Deep orange
+    - "#33691e"            # Forest green
+
+typography:
+  heading_font: "Libre Baskerville, Georgia, 'PingFang SC', 'Microsoft YaHei', serif"
+  body_font: "Lora, Georgia, 'PingFang SC', 'Microsoft YaHei', serif"
+  cjk_font: "'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif"
+  scale: 1.0
+
+card_style:
+  border_radius: 4
+  shadow: "0 2px 8px rgba(93,64,55,0.1)"
+  border: "1px solid #d7ccc8"
+  gap: 24
+
+gradients:
+  hero_bg: "linear-gradient(180deg, #5d4037 0%, #795548 100%)"
+  card_highlight: "linear-gradient(180deg, #f5ebe0 0%, #faf3e8 100%)"
+
+elevation:
+  shadow_sm: "0 1px 2px rgba(93,64,55,0.06)"
+  shadow_md: "0 2px 8px rgba(93,64,55,0.1)"
+  shadow_lg: "0 8px 24px rgba(93,64,55,0.15)"
+
+decoration:
+  pattern: "none"
+  pattern_opacity: 0
+  icon_style: "outline"
+  icon_weight: 1.5
+
+slide_type_overrides:
+  cover:
+    card_bg: "#5d4037"
+    text: "#faf3e8"
+    heading_scale: 1.3
+  quote:
+    card_bg: "#5d4037"
+    text: "#faf3e8"
+    body_font_style: "italic"
+  data:
+    heading_scale: 0.9
+  section_divider:
+    background: "#5d4037"
+    text: "#faf3e8"

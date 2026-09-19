@@ -1,0 +1,209 @@
+{
+  "version": "1.1.0",
+  "last_updated": "2026-03-23",
+  "total_count": {
+    "prompts": 4,
+    "styles": 17,
+    "assets": 1
+  },
+  "resources": [
+    {
+      "id": "prompt-outline-architect",
+      "domain": "prompt",
+      "name": "Outline Architect",
+      "file_path": "prompts/outline-architect.md",
+      "keywords": ["outline", "structure", "pyramid", "金字塔", "大纲"],
+      "description": "Pyramid Principle methodology for PPT outline generation",
+      "use_cases": ["PPT structure planning", "content organization"]
+    },
+    {
+      "id": "prompt-bento-grid-layout",
+      "domain": "prompt",
+      "name": "Bento Grid Layout",
+      "file_path": "prompts/bento-grid-layout.md",
+      "keywords": ["bento", "grid", "layout", "cards", "便当", "网格", "布局"],
+      "description": "Bento Grid card-based layout specification for presentation slides",
+      "use_cases": ["slide layout", "card arrangement", "visual hierarchy"]
+    },
+    {
+      "id": "prompt-svg-generator",
+      "domain": "prompt",
+      "name": "SVG Generator",
+      "file_path": "prompts/svg-generator.md",
+      "keywords": ["svg", "generate", "slide", "presentation", "幻灯片"],
+      "description": "SVG presentation page generation rules and templates",
+      "use_cases": ["SVG slide creation", "design implementation"]
+    },
+    {
+      "id": "prompt-cognitive-design-principles",
+      "domain": "prompt",
+      "name": "Cognitive Design Principles",
+      "file_path": "prompts/cognitive-design-principles.md",
+      "keywords": ["cognitive", "mayer", "miller", "gestalt", "hierarchy", "认知", "心理学"],
+      "description": "Evidence-based cognitive science principles for presentation design (Miller's Law, Mayer's principles, Gestalt, cognitive load theory)",
+      "use_cases": ["slide content planning", "layout decisions", "information density management"]
+    },
+    {
+      "id": "style-business",
+      "domain": "style",
+      "name": "Business Professional",
+      "file_path": "styles/business.yaml",
+      "keywords": ["business", "professional", "corporate", "商务", "专业"],
+      "description": "Clean, authoritative business style with navy blue and warm orange accent",
+      "use_cases": ["corporate presentations", "business reports", "investor pitches"]
+    },
+    {
+      "id": "style-tech",
+      "domain": "style",
+      "name": "Tech Modern",
+      "file_path": "styles/tech.yaml",
+      "keywords": ["tech", "modern", "dark", "科技", "现代", "暗色"],
+      "description": "Dark mode tech style with indigo and cyan accents",
+      "use_cases": ["tech demos", "product launches", "developer talks"]
+    },
+    {
+      "id": "style-creative",
+      "domain": "style",
+      "name": "Creative Bold",
+      "file_path": "styles/creative.yaml",
+      "keywords": ["creative", "bold", "colorful", "创意", "大胆", "鲜艳"],
+      "description": "Energetic creative style with violet, pink, and amber",
+      "use_cases": ["design presentations", "marketing pitches", "creative proposals"]
+    },
+    {
+      "id": "style-minimal",
+      "domain": "style",
+      "name": "Minimal Clean",
+      "file_path": "styles/minimal.yaml",
+      "keywords": ["minimal", "clean", "simple", "极简", "简洁"],
+      "description": "Serene minimal style with maximum whitespace and subtle accents",
+      "use_cases": ["keynotes", "academic presentations", "thought leadership"]
+    },
+    {
+      "id": "style-blueprint",
+      "domain": "style",
+      "name": "Blueprint",
+      "file_path": "styles/blueprint.yaml",
+      "keywords": ["blueprint", "engineering", "technical", "grid", "蓝图", "工程"],
+      "description": "Technical engineering-grid style with drafting aesthetics on dark navy",
+      "use_cases": ["engineering talks", "technical architecture", "system design"]
+    },
+    {
+      "id": "style-bold-editorial",
+      "domain": "style",
+      "name": "Bold Editorial",
+      "file_path": "styles/bold-editorial.yaml",
+      "keywords": ["editorial", "magazine", "bold", "contrast", "杂志", "大胆"],
+      "description": "High-impact magazine style with maximum contrast and bold typography",
+      "use_cases": ["impact presentations", "brand launches", "manifesto talks"]
+    },
+    {
+      "id": "style-chalkboard",
+      "domain": "style",
+      "name": "Chalkboard",
+      "file_path": "styles/chalkboard.yaml",
+      "keywords": ["chalkboard", "chalk", "education", "school", "黑板", "教育"],
+      "description": "Warm chalk-on-slate educational style with hand-drawn feel",
+      "use_cases": ["educational content", "teaching", "workshops"]
+    },
+    {
+      "id": "style-editorial-infographic",
+      "domain": "style",
+      "name": "Editorial Infographic",
+      "file_path": "styles/editorial-infographic.yaml",
+      "keywords": ["infographic", "data", "editorial", "信息图", "数据"],
+      "description": "Data-driven magazine-quality style for data storytelling",
+      "use_cases": ["data presentations", "research reports", "analytics reviews"]
+    },
+    {
+      "id": "style-fantasy-animation",
+      "domain": "style",
+      "name": "Fantasy Animation",
+      "file_path": "styles/fantasy-animation.yaml",
+      "keywords": ["fantasy", "magic", "animation", "whimsical", "奇幻", "魔法"],
+      "description": "Magical style with rich purples, gold accents, and ethereal glow",
+      "use_cases": ["storytelling", "creative pitches", "entertainment"]
+    },
+    {
+      "id": "style-intuition-machine",
+      "domain": "style",
+      "name": "Intuition Machine",
+      "file_path": "styles/intuition-machine.yaml",
+      "keywords": ["ai", "neural", "machine", "futuristic", "AI", "智能", "未来"],
+      "description": "Neural AI-native style with glowing green and pink on dark substrate",
+      "use_cases": ["AI presentations", "ML demos", "futurism talks"]
+    },
+    {
+      "id": "style-notion",
+      "domain": "style",
+      "name": "Notion",
+      "file_path": "styles/notion.yaml",
+      "keywords": ["notion", "structured", "clean", "systematic", "笔记", "结构化"],
+      "description": "Notion-like structured clarity with clean hierarchy and muted colors",
+      "use_cases": ["team updates", "project reviews", "documentation talks"]
+    },
+    {
+      "id": "style-pixel-art",
+      "domain": "style",
+      "name": "Pixel Art",
+      "file_path": "styles/pixel-art.yaml",
+      "keywords": ["pixel", "retro", "8-bit", "gaming", "像素", "复古"],
+      "description": "8-bit retro style with sharp edges and bright primary colors",
+      "use_cases": ["gaming presentations", "retro themes", "fun talks"]
+    },
+    {
+      "id": "style-scientific",
+      "domain": "style",
+      "name": "Scientific",
+      "file_path": "styles/scientific.yaml",
+      "keywords": ["scientific", "academic", "research", "学术", "科学", "研究"],
+      "description": "Academic style with clean blue tones and scholarly typography",
+      "use_cases": ["academic talks", "research presentations", "conference papers"]
+    },
+    {
+      "id": "style-sketch-notes",
+      "domain": "style",
+      "name": "Sketch Notes",
+      "file_path": "styles/sketch-notes.yaml",
+      "keywords": ["sketch", "handdrawn", "notes", "informal", "手绘", "笔记"],
+      "description": "Hand-drawn sketchbook style with loose strokes on cream paper",
+      "use_cases": ["brainstorming", "workshop recaps", "informal talks"]
+    },
+    {
+      "id": "style-vector-illustration",
+      "domain": "style",
+      "name": "Vector Illustration",
+      "file_path": "styles/vector-illustration.yaml",
+      "keywords": ["vector", "flat", "illustration", "modern", "矢量", "插画"],
+      "description": "Flat modern style with clean geometric shapes and bold colors",
+      "use_cases": ["product demos", "startup pitches", "modern presentations"]
+    },
+    {
+      "id": "style-vintage",
+      "domain": "style",
+      "name": "Vintage",
+      "file_path": "styles/vintage.yaml",
+      "keywords": ["vintage", "retro", "classic", "aged", "复古", "经典"],
+      "description": "Warm aged style with sepia tones and classic serif typography",
+      "use_cases": ["history presentations", "brand heritage", "storytelling"]
+    },
+    {
+      "id": "style-watercolor",
+      "domain": "style",
+      "name": "Watercolor",
+      "file_path": "styles/watercolor.yaml",
+      "keywords": ["watercolor", "pastel", "soft", "artistic", "水彩", "柔和"],
+      "description": "Soft artistic style with pastel washes and gentle color blending",
+      "use_cases": ["art presentations", "wellness", "lifestyle talks"]
+    },
+    {
+      "id": "asset-preview-template",
+      "domain": "asset",
+      "name": "HTML Preview Template",
+      "file_path": "assets/preview-template.html",
+      "keywords": ["preview", "html", "gallery", "present", "预览", "展示"],
+      "description": "Interactive HTML preview page template with Gallery/Scroll/Present modes and keyboard navigation",
+      "use_cases": ["delivery phase", "slide preview", "presentation viewing"]
+    }
+  ]
+}

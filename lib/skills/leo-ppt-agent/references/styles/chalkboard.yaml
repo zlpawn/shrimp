@@ -1,0 +1,61 @@
+name: Chalkboard
+mood: Warm, educational, nostalgic. Chalk-on-slate hand-drawn feel.
+
+color_scheme:
+  primary: "#2d4a3e"      # Dark green slate
+  secondary: "#3d6b5a"    # Medium green
+  accent: "#f5e6ab"       # Chalk yellow
+  background: "#1a3329"   # Deep chalkboard green
+  text: "#e8e0d0"         # Chalk white
+  card_bg: "#264539"      # Slightly lighter green
+  chart_colors:
+    - "#f5e6ab"            # Chalk yellow (accent)
+    - "#7ecfc0"            # Chalk teal
+    - "#f0a0a0"            # Chalk pink
+    - "#a0c4f0"            # Chalk blue
+    - "#c4a0f0"            # Chalk purple
+    - "#f0c4a0"            # Chalk orange
+    - "#a0f0c4"            # Chalk mint
+    - "#f0f0a0"            # Chalk lime
+
+typography:
+  heading_font: "Caveat, 'Comic Sans MS', 'PingFang SC', 'Microsoft YaHei', cursive"
+  body_font: "Patrick Hand, 'Comic Sans MS', 'PingFang SC', 'Microsoft YaHei', cursive"
+  cjk_font: "'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif"
+  scale: 1.05
+
+card_style:
+  border_radius: 2
+  shadow: "none"
+  border: "2px dashed rgba(232,224,208,0.3)"
+  gap: 24
+
+gradients:
+  hero_bg: "linear-gradient(180deg, #1a3329 0%, #264539 100%)"
+  card_highlight: "linear-gradient(180deg, #264539 0%, #1a3329 100%)"
+
+elevation:
+  shadow_sm: "none"
+  shadow_md: "none"
+  shadow_lg: "0 0 20px rgba(0,0,0,0.3)"
+
+decoration:
+  pattern: "none"
+  pattern_opacity: 0
+  icon_style: "outline"
+  icon_weight: 2
+
+slide_type_overrides:
+  cover:
+    card_bg: "#1a3329"
+    text: "#f5e6ab"
+    heading_scale: 1.3
+  quote:
+    card_bg: "#264539"
+    text: "#f5e6ab"
+    body_font_style: "italic"
+  data:
+    heading_scale: 0.9
+  section_divider:
+    background: "#2d4a3e"
+    text: "#f5e6ab"

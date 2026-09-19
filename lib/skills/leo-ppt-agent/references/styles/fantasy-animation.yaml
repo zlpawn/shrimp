@@ -1,0 +1,61 @@
+name: Fantasy Animation
+mood: Magical, whimsical, enchanting. Rich purples and gold with ethereal glow.
+
+color_scheme:
+  primary: "#4a1a6b"      # Deep purple
+  secondary: "#6b3fa0"    # Medium purple
+  accent: "#ffd700"       # Gold
+  background: "#1a0a2e"   # Dark midnight
+  text: "#f0e6ff"         # Lavender white
+  card_bg: "#2d1450"      # Dark purple card
+  chart_colors:
+    - "#ffd700"            # Gold (accent)
+    - "#ff6b9d"            # Pink
+    - "#4ecdc4"            # Teal
+    - "#a78bfa"            # Violet
+    - "#ff8a65"            # Coral
+    - "#69f0ae"            # Mint green
+    - "#ffab40"            # Amber
+    - "#7c4dff"            # Deep violet
+
+typography:
+  heading_font: "Cinzel, Georgia, 'PingFang SC', 'Microsoft YaHei', serif"
+  body_font: "Quicksand, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif"
+  cjk_font: "'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif"
+  scale: 1.0
+
+card_style:
+  border_radius: 20
+  shadow: "0 4px 20px rgba(255,215,0,0.1)"
+  border: "1px solid rgba(255,215,0,0.2)"
+  gap: 24
+
+gradients:
+  hero_bg: "linear-gradient(135deg, #1a0a2e 0%, #4a1a6b 50%, #1a0a2e 100%)"
+  card_highlight: "linear-gradient(180deg, #2d1450 0%, #1a0a2e 100%)"
+
+elevation:
+  shadow_sm: "0 2px 4px rgba(255,215,0,0.05)"
+  shadow_md: "0 4px 20px rgba(255,215,0,0.1)"
+  shadow_lg: "0 8px 40px rgba(255,215,0,0.15)"
+
+decoration:
+  pattern: "dots"
+  pattern_opacity: 0.04
+  icon_style: "duotone"
+  icon_weight: 1.5
+
+slide_type_overrides:
+  cover:
+    card_bg: "#4a1a6b"
+    text: "#ffd700"
+    heading_scale: 1.4
+  quote:
+    card_bg: "#2d1450"
+    text: "#ffd700"
+    body_font_style: "italic"
+  data:
+    heading_scale: 0.9
+  section_divider:
+    background: "#4a1a6b"
+    text: "#ffd700"

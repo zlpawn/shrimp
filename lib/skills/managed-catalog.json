@@ -1,7 +1,29 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-11T14:39:41.767Z",
+  "updatedAt": "2026-09-19T02:20:41.488Z",
   "skills": [
+    {
+      "id": "leo-ppt-agent",
+      "name": "leo-ppt-agent",
+      "title": "Leo AI PPT 演示助手",
+      "summary": "基于多智能体流水线与便当网格（Bento Grid）生成高颜值可编辑 PPT 演示文稿，支持 17 种专业风格、金字塔结构大纲、HTML 全屏翻页与 PPTX 导出。",
+      "category": "creative",
+      "categoryLabel": "创意与演示",
+      "icon": "📊",
+      "featured": true,
+      "tags": [
+        "ppt",
+        "slides",
+        "bento-grid",
+        "svg",
+        "presentation",
+        "幻灯片",
+        "演示文稿"
+      ],
+      "requiresDaemon": false,
+      "promoted": true,
+      "managed": true
+    },
     {
       "id": "leo-tdx-stock",
       "name": "leo-tdx-stock",

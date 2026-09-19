@@ -1,0 +1,23 @@
+{
+  "name": "leo-ppt-agent",
+  "version": "1.0.0",
+  "description": "基于多智能体流水线与便当网格（Bento Grid）生成高颜值可编辑 PPT 演示文稿，支持 17 种专业风格、金字塔结构大纲、HTML 全屏翻页与 PPTX 导出。",
+  "main": "scripts/export_pptx.py",
+  "scripts": {
+    "export-pptx": "uv run scripts/export_pptx.py",
+    "preview": "python scripts/preview.py"
+  },
+  "keywords": [
+    "ppt",
+    "slides",
+    "agent",
+    "bento-grid",
+    "svg",
+    "pptx",
+    "presentation"
+  ],
+  "engines": {
+    "python": ">=3.10",
+    "node": ">=18.0.0"
+  }
+}

@@ -1,0 +1,60 @@
+name: Vector Illustration
+mood: Flat, modern, vibrant. Clean geometric shapes with bold flat colors.
+
+color_scheme:
+  primary: "#2d3436"      # Charcoal
+  secondary: "#636e72"    # Gray
+  accent: "#0984e3"       # Bright blue
+  background: "#f5f6fa"   # Soft gray
+  text: "#2d3436"         # Charcoal
+  card_bg: "#ffffff"      # White
+  chart_colors:
+    - "#0984e3"            # Blue (accent)
+    - "#00b894"            # Mint
+    - "#fdcb6e"            # Yellow
+    - "#e17055"            # Coral
+    - "#6c5ce7"            # Purple
+    - "#00cec9"            # Cyan
+    - "#fab1a0"            # Salmon
+    - "#55efc4"            # Green
+
+typography:
+  heading_font: "Poppins, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif"
+  body_font: "Nunito, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif"
+  cjk_font: "'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif"
+  scale: 1.0
+
+card_style:
+  border_radius: 16
+  shadow: "0 4px 12px rgba(0,0,0,0.08)"
+  gap: 24
+
+gradients:
+  hero_bg: "linear-gradient(135deg, #0984e3 0%, #74b9ff 100%)"
+  card_highlight: "linear-gradient(180deg, #ffffff 0%, #f5f6fa 100%)"
+
+elevation:
+  shadow_sm: "0 2px 4px rgba(0,0,0,0.04)"
+  shadow_md: "0 4px 12px rgba(0,0,0,0.08)"
+  shadow_lg: "0 12px 32px rgba(0,0,0,0.12)"
+
+decoration:
+  pattern: "dots"
+  pattern_opacity: 0.04
+  icon_style: "filled"
+  icon_weight: 1.5
+
+slide_type_overrides:
+  cover:
+    card_bg: "#0984e3"
+    text: "#ffffff"
+    heading_scale: 1.3
+  quote:
+    card_bg: "#dfe6e9"
+    text: "#2d3436"
+    body_font_style: "italic"
+  data:
+    heading_scale: 0.9
+  section_divider:
+    background: "#2d3436"
+    text: "#ffffff"

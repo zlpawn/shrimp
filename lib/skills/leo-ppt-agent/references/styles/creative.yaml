@@ -1,0 +1,60 @@
+name: Creative Bold
+mood: Energetic, expressive, memorable. Bold colors and dynamic composition.
+
+color_scheme:
+  primary: "#7c3aed"      # Violet
+  secondary: "#ec4899"    # Pink
+  accent: "#d97706"       # Dark amber (WCAG AA fix)
+  background: "#faf5ff"   # Soft lavender
+  text: "#1e1b4b"         # Deep indigo
+  card_bg: "#ffffff"      # White cards
+  chart_colors:            # Multi-series data viz; [0]=accent
+    - "#d97706"            # Dark amber (accent)
+    - "#7c3aed"            # Violet
+    - "#ec4899"            # Pink
+    - "#14b8a6"            # Teal
+    - "#f43f5e"            # Rose
+    - "#3b82f6"            # Blue
+    - "#84cc16"            # Lime
+    - "#f97316"            # Orange
+
+typography:
+  heading_font: "Montserrat, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif"
+  body_font: "Plus Jakarta Sans, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif"
+  cjk_font: "'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif"
+  scale: 1.05
+
+card_style:
+  border_radius: 20
+  shadow: "0 4px 16px rgba(124,58,237,0.12)"
+  gap: 24
+
+gradients:
+  hero_bg: "linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)"
+  card_highlight: "linear-gradient(180deg, #ffffff 0%, #faf5ff 100%)"
+
+elevation:
+  shadow_sm: "0 1px 3px rgba(124,58,237,0.06)"
+  shadow_md: "0 4px 16px rgba(124,58,237,0.12)"
+  shadow_lg: "0 12px 40px rgba(124,58,237,0.2)"
+
+decoration:
+  pattern: "dots"
+  pattern_opacity: 0.05
+  icon_style: "duotone"
+  icon_weight: 2
+
+slide_type_overrides:
+  cover:
+    card_bg: "#7c3aed"
+    text: "#ffffff"
+    heading_scale: 1.4
+  quote:
+    card_bg: "#ec4899"
+    text: "#ffffff"
+    body_font_style: "italic"
+  data:
+    heading_scale: 0.9
+  section_divider:
+    background: "#7c3aed"
+    text: "#ffffff"

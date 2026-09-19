@@ -1,0 +1,62 @@
+name: Scientific
+mood: Academic, precise, scholarly. Clean blue with structured data emphasis.
+
+color_scheme:
+  primary: "#1565c0"      # Academic blue
+  secondary: "#42a5f5"    # Light blue
+  accent: "#ff7043"       # Warm orange
+  background: "#fafafa"   # Near-white
+  text: "#212121"         # Dark gray
+  card_bg: "#ffffff"      # White
+  chart_colors:
+    - "#ff7043"            # Warm orange (accent)
+    - "#1565c0"            # Blue
+    - "#2e7d32"            # Green
+    - "#7b1fa2"            # Purple
+    - "#c62828"            # Red
+    - "#00838f"            # Teal
+    - "#ef6c00"            # Deep orange
+    - "#4527a0"            # Deep purple
+
+typography:
+  heading_font: "Merriweather, Georgia, 'PingFang SC', 'Microsoft YaHei', serif"
+  body_font: "Source Sans 3, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif"
+  cjk_font: "'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif"
+  mono_font: "JetBrains Mono, Menlo, monospace"
+  scale: 0.95
+
+card_style:
+  border_radius: 4
+  shadow: "0 1px 3px rgba(0,0,0,0.06)"
+  border: "1px solid #e0e0e0"
+  gap: 24
+
+gradients:
+  hero_bg: "linear-gradient(180deg, #1565c0 0%, #1976d2 100%)"
+  card_highlight: "linear-gradient(180deg, #ffffff 0%, #fafafa 100%)"
+
+elevation:
+  shadow_sm: "0 1px 2px rgba(0,0,0,0.04)"
+  shadow_md: "0 2px 6px rgba(0,0,0,0.08)"
+  shadow_lg: "0 6px 20px rgba(0,0,0,0.12)"
+
+decoration:
+  pattern: "none"
+  pattern_opacity: 0
+  icon_style: "outline"
+  icon_weight: 1.5
+
+slide_type_overrides:
+  cover:
+    card_bg: "#1565c0"
+    text: "#ffffff"
+    heading_scale: 1.2
+  quote:
+    card_bg: "#e3f2fd"
+    text: "#1565c0"
+    body_font_style: "italic"
+  data:
+    heading_scale: 0.9
+  section_divider:
+    background: "#1565c0"
+    text: "#ffffff"

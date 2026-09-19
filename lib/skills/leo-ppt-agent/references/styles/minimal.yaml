@@ -1,0 +1,61 @@
+name: Minimal Clean
+mood: Serene, focused, elegant. Maximum whitespace, minimum visual noise.
+
+color_scheme:
+  primary: "#18181b"      # Near-black
+  secondary: "#71717a"    # Zinc gray
+  accent: "#3b82f6"       # Blue (used sparingly)
+  background: "#fafafa"   # Off-white
+  text: "#27272a"         # Dark zinc
+  card_bg: "#ffffff"      # Pure white
+  chart_colors:            # Multi-series data viz; [0]=accent
+    - "#3b82f6"            # Blue (accent)
+    - "#71717a"            # Zinc gray
+    - "#f59e0b"            # Amber
+    - "#10b981"            # Emerald
+    - "#ef4444"            # Red
+    - "#8b5cf6"            # Violet
+    - "#06b6d4"            # Cyan
+    - "#d946ef"            # Fuchsia
+
+typography:
+  heading_font: "Instrument Serif, Georgia, 'PingFang SC', 'Microsoft YaHei', serif"
+  body_font: "Work Sans, Inter, 'PingFang SC', 'Microsoft YaHei', sans-serif"
+  cjk_font: "'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif"
+  mono_font: "JetBrains Mono, Geist Mono, Menlo, monospace"
+  scale: 0.95
+
+card_style:
+  border_radius: 8
+  shadow: "0 1px 3px rgba(0,0,0,0.05)"
+  gap: 28
+
+gradients:
+  hero_bg: "linear-gradient(180deg, #fafafa 0%, #f5f5f5 100%)"
+  card_highlight: "linear-gradient(180deg, #ffffff 0%, #fafafa 100%)"
+
+elevation:
+  shadow_sm: "0 1px 2px rgba(0,0,0,0.03)"
+  shadow_md: "0 2px 8px rgba(0,0,0,0.06)"
+  shadow_lg: "0 8px 24px rgba(0,0,0,0.1)"
+
+decoration:
+  pattern: "none"
+  pattern_opacity: 0
+  icon_style: "outline"
+  icon_weight: 1
+
+slide_type_overrides:
+  cover:
+    card_bg: "#18181b"
+    text: "#fafafa"
+    heading_scale: 1.2
+  quote:
+    card_bg: "#fafafa"
+    text: "#18181b"
+    body_font_style: "italic"
+  data:
+    heading_scale: 0.9
+  section_divider:
+    background: "#18181b"
+    text: "#fafafa"

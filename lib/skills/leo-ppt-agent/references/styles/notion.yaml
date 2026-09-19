@@ -1,0 +1,61 @@
+name: Notion
+mood: Structured, clear, systematic. Notion-like clarity with clean hierarchy.
+
+color_scheme:
+  primary: "#37352f"      # Notion dark
+  secondary: "#787774"    # Notion gray
+  accent: "#2eaadc"       # Notion blue
+  background: "#ffffff"   # White
+  text: "#37352f"         # Notion dark
+  card_bg: "#f7f6f3"      # Notion light bg
+  chart_colors:
+    - "#2eaadc"            # Blue (accent)
+    - "#6940a5"            # Purple
+    - "#d44c47"            # Red
+    - "#cb912f"            # Yellow
+    - "#448361"            # Green
+    - "#d9730d"            # Orange
+    - "#9065b0"            # Lavender
+    - "#337ea9"            # Dark blue
+
+typography:
+  heading_font: "Inter, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif"
+  body_font: "Inter, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif"
+  cjk_font: "'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif"
+  scale: 0.95
+
+card_style:
+  border_radius: 6
+  shadow: "none"
+  border: "1px solid #e9e9e7"
+  gap: 24
+
+gradients:
+  hero_bg: "linear-gradient(180deg, #37352f 0%, #4a4a46 100%)"
+  card_highlight: "linear-gradient(180deg, #f7f6f3 0%, #ffffff 100%)"
+
+elevation:
+  shadow_sm: "0 1px 1px rgba(0,0,0,0.03)"
+  shadow_md: "0 2px 4px rgba(0,0,0,0.06)"
+  shadow_lg: "0 4px 12px rgba(0,0,0,0.08)"
+
+decoration:
+  pattern: "none"
+  pattern_opacity: 0
+  icon_style: "outline"
+  icon_weight: 1.5
+
+slide_type_overrides:
+  cover:
+    card_bg: "#37352f"
+    text: "#ffffff"
+    heading_scale: 1.2
+  quote:
+    card_bg: "#f7f6f3"
+    text: "#37352f"
+    body_font_style: "italic"
+  data:
+    heading_scale: 0.9
+  section_divider:
+    background: "#37352f"
+    text: "#ffffff"

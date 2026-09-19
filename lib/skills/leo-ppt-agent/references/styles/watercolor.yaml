@@ -1,0 +1,60 @@
+name: Watercolor
+mood: Soft, artistic, dreamy. Pastel washes with gentle color blending.
+
+color_scheme:
+  primary: "#5c6bc0"      # Soft indigo
+  secondary: "#7986cb"    # Light indigo
+  accent: "#ec407a"       # Soft pink
+  background: "#fafafa"   # Near-white
+  text: "#37474f"         # Blue gray
+  card_bg: "#ffffff"      # White
+  chart_colors:
+    - "#ec407a"            # Soft pink (accent)
+    - "#5c6bc0"            # Indigo
+    - "#66bb6a"            # Green
+    - "#ffa726"            # Orange
+    - "#ab47bc"            # Purple
+    - "#26c6da"            # Cyan
+    - "#ef5350"            # Red
+    - "#8d6e63"            # Brown
+
+typography:
+  heading_font: "Cormorant Garamond, Georgia, 'PingFang SC', 'Microsoft YaHei', serif"
+  body_font: "Lato, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif"
+  cjk_font: "'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif"
+  scale: 1.0
+
+card_style:
+  border_radius: 24
+  shadow: "0 4px 16px rgba(92,107,192,0.1)"
+  gap: 28
+
+gradients:
+  hero_bg: "linear-gradient(135deg, #e8eaf6 0%, #fce4ec 50%, #e0f7fa 100%)"
+  card_highlight: "linear-gradient(180deg, #ffffff 0%, #f3e5f5 50%, #ffffff 100%)"
+
+elevation:
+  shadow_sm: "0 2px 4px rgba(92,107,192,0.06)"
+  shadow_md: "0 4px 16px rgba(92,107,192,0.1)"
+  shadow_lg: "0 8px 32px rgba(236,64,122,0.12)"
+
+decoration:
+  pattern: "none"
+  pattern_opacity: 0
+  icon_style: "outline"
+  icon_weight: 1
+
+slide_type_overrides:
+  cover:
+    card_bg: "#e8eaf6"
+    text: "#37474f"
+    heading_scale: 1.3
+  quote:
+    card_bg: "#fce4ec"
+    text: "#37474f"
+    body_font_style: "italic"
+  data:
+    heading_scale: 0.9
+  section_divider:
+    background: "#5c6bc0"
+    text: "#ffffff"
