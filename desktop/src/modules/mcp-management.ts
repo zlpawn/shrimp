@@ -138,7 +138,7 @@ const MCP_TEMPLATES: McpTemplate[] = [
     icon: "🗄️",
     transport: "stdio",
     command: "node",
-    argsList: ["./mcps/database-hub/index.mjs"],
+    argsList: ["./lib/skills/leo-database-hub/scripts/mcp/index.mjs"],
     envList: [
       { key: "order_center", value: "mysql://root:123456@127.0.0.1:3306/orders_db" },
       { key: "cache_redis", value: "redis://:auth123@127.0.0.1:6379/0" },

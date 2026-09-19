@@ -420,6 +420,33 @@ test("service state auto-detects in-repo custom MCPs under mcps/ directory", () 
   }
 });
 
+test("service state auto-detects in-repo custom MCPs under lib/skills directory", () => {
+  const root = makeRoot();
+  try {
+    const skillDir = path.join(root, "lib", "skills", "leo-test-mcp");
+    fs.mkdirSync(path.join(skillDir, "scripts", "mcp"), { recursive: true });
+    fs.writeFileSync(path.join(skillDir, "scripts", "mcp", "index.mjs"), "// test mcp");
+    fs.writeFileSync(
+      path.join(skillDir, "package.json"),
+      JSON.stringify({
+        name: "leo-test-mcp",
+        mcp: { "test-mcp": "./scripts/mcp/index.mjs" },
+      }),
+    );
+
+    const { service } = makeService(root);
+    const s = service.state();
+    assert.ok(Array.isArray(s.inRepoMcps));
+    const found = s.inRepoMcps.find((m) => m.name === "test-mcp");
+    assert.ok(found);
+    assert.equal(found.lang, "node");
+    assert.equal(found.command, "node");
+    assert.deepEqual(found.args, ["./lib/skills/leo-test-mcp/scripts/mcp/index.mjs"]);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("service state ignores empty in-repo MCP directories", () => {
   const root = makeRoot();
   try {
@@ -509,6 +536,30 @@ test("distribution expands relative mcps args to absolute paths for client confi
     const parsed = JSON.parse(fs.readFileSync(clientPaths.claude, "utf8"));
     const distributedArgs = parsed.managedMcpServers.find((server) => server.name === "in_repo_db").args;
     const expectedAbsolute = path.resolve(root, "mcps/database-hub/index.mjs").replace(/\\/g, "/");
+    assert.deepEqual(distributedArgs, [expectedAbsolute]);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("distribution expands relative lib/skills args to absolute paths for client configs", () => {
+  const root = makeRoot();
+  try {
+    const { service, clientPaths } = makeService(root, { claudeText: "{}" });
+    service.upsertServer({
+      name: "skill_db",
+      title: "Skill DB Hub",
+      transport: "stdio",
+      command: "node",
+      args: ["./lib/skills/leo-database-hub/scripts/mcp/index.mjs"],
+      distribution: { claude: true },
+      env: { order_db: "sqlite:///d:/data/app.db" },
+    });
+
+    service.apply({ targets: { claude: true } });
+    const parsed = JSON.parse(fs.readFileSync(clientPaths.claude, "utf8"));
+    const distributedArgs = parsed.managedMcpServers.find((server) => server.name === "skill_db").args;
+    const expectedAbsolute = path.resolve(root, "lib/skills/leo-database-hub/scripts/mcp/index.mjs").replace(/\\/g, "/");
     assert.deepEqual(distributedArgs, [expectedAbsolute]);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });

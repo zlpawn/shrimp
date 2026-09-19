@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { runCli } from "../../clis/leo-database-hub/lib/cli.mjs";
+import { runCli } from "../../lib/skills/leo-database-hub/scripts/cli/lib/cli.mjs";
 import { scanInRepoClis } from "../../lib/cli-core/discovery.mjs";
 import { SkillInstaller } from "../../lib/session-sync/skill-installer.mjs";
 
@@ -84,7 +84,7 @@ test("in-repo CLI discovery exposes leo-database-hub", () => {
   const cli = scanInRepoClis(process.cwd()).find((item) => item.name === "leo-database-hub");
   assert.ok(cli);
   assert.equal(cli.lang, "node");
-  assert.equal(cli.args[0], "./clis/leo-database-hub/index.mjs");
+  assert.equal(cli.args[0], "./lib/skills/leo-database-hub/scripts/cli/index.mjs");
 });
 
 test("managed skill library exposes leo-database-hub", () => {

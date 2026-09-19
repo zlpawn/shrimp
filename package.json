@@ -14,9 +14,6 @@
     "desktop/index.html",
     "desktop/dist",
     "clis/README.md",
-    "clis/leo-wendao",
-    "clis/leo-database-hub",
-    "clis/leo-tdx",
     "lib",
     "scripts",
     "server.js",
@@ -49,7 +46,7 @@
   "scripts": {
     "init": "node scripts/init-config.mjs",
     "start": "node server.js",
-    "check": "node --check server.js && node --check scripts/gateway.mjs && node --check scripts/init-config.mjs && node --check bin/shrimp.js && node --check clis/leo-lantern/index.mjs && node --check mcps/leo-lantern/index.mjs && node --check clis/leo-lantern/lib/cli.mjs && node --check clis/leo-lantern/lib/server.mjs && node --check mcps/leo-lantern/lib/mcp-server.mjs && node --check mcps/leo-lantern/lib/server.mjs && node --check clis/leo-wendao/index.mjs && node --check clis/leo-wendao/wendao.mjs && node --check clis/leo-database-hub/index.mjs && node --check clis/leo-database-hub/lib/cli.mjs && node --check clis/leo-tdx/index.mjs && node --check clis/leo-tdx/lib/cli.mjs && node --check clis/leo-tdx/lib/mcp.mjs && node --check clis/leo-tdx/lib/token.mjs && node --check extensions/leo-cookie-txt-locally/poll-loop.mjs",
+    "check": "node --check server.js && node --check scripts/gateway.mjs && node --check scripts/init-config.mjs && node --check bin/shrimp.js && node --check lib/skills/leo-lantern/scripts/cli/index.mjs && node --check lib/skills/leo-lantern/scripts/cli/lib/cli.mjs && node --check lib/skills/leo-lantern/scripts/cli/lib/server.mjs && node --check lib/skills/leo-lantern/scripts/mcp/index.mjs && node --check lib/skills/leo-lantern/scripts/mcp/lib/mcp-server.mjs && node --check lib/skills/leo-lantern/scripts/mcp/lib/server.mjs && node --check lib/skills/leo-xiecheng-wendao/scripts/cli/index.mjs && node --check lib/skills/leo-xiecheng-wendao/scripts/cli/wendao.mjs && node --check lib/skills/leo-database-hub/scripts/cli/index.mjs && node --check lib/skills/leo-database-hub/scripts/cli/lib/cli.mjs && node --check lib/skills/leo-database-hub/scripts/mcp/index.mjs && node --check lib/skills/leo-tdx-stock/scripts/cli/index.mjs && node --check lib/skills/leo-tdx-stock/scripts/cli/lib/cli.mjs && node --check lib/skills/leo-tdx-stock/scripts/cli/lib/mcp.mjs && node --check lib/skills/leo-tdx-stock/scripts/cli/lib/token.mjs && node --check extensions/leo-cookie-txt-locally/poll-loop.mjs",
     "doctor": "node scripts/doctor.mjs",
     "validate:config": "node scripts/validate-config.mjs",
     "codex:catalog": "node scripts/codex-catalog.mjs",
@@ -85,7 +82,7 @@
     "test:trend-intel": "node --test tests/unit/trend-intel-*.test.mjs tests/integration/trend-intel-*.test.mjs",
     "test:kb": "node --test tests/unit/kb-*.test.mjs",
     "test:scheduler": "node --test tests/unit/scheduler-*.test.mjs tests/integration/scheduler-api.test.mjs",
-    "test:leo-lantern": "node --test --test-concurrency=1 clis/leo-lantern/tests/*.test.mjs mcps/leo-lantern/tests/*.test.mjs",
+    "test:leo-lantern": "node --test --test-concurrency=1 lib/skills/leo-lantern/tests/*.test.mjs",
     "test:live-inspector-mysql": "node --test tests/unit/leo-live-inspector-sql-analysis.test.mjs tests/unit/leo-live-inspector-test-mysql-cli.test.mjs",
     "sync:extension": "node -e \"import('node:fs').then(fs => fs.cpSync('extensions/leo-cookie-txt-locally', 'lib/skills/leo-live-inspector/resources/chrome_extension', { recursive: true, force: true }))\"",
     "test": "npm run test:trend-intel"

@@ -35,3 +35,11 @@ leo-database-hub redis keys <connection> --pattern 'user:*'
 leo-database-hub redis get <connection> <key>
 leo-database-hub redis exec <connection> SET key value --write
 ```
+
+> **提示（脱离网关自包含运行）**：
+> - **独立 CLI 模式**：可在技能目录直接通过 Node.js 执行命令行交互：
+>   `node ./scripts/cli/index.mjs connections`
+> - **独立 MCP 模式**：客户端（如 Claude Desktop / Codex）可直接将以下命令注册为 Stdio MCP 服务：
+>   `node <skillDir>/scripts/mcp/index.mjs`
+
+

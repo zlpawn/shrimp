@@ -7,15 +7,15 @@ import test from "node:test";
 import {
   loadConnectionStore,
   summarizeConnections,
-} from "../../clis/leo-database-hub/lib/config/store.mjs";
-import { resolveConnection } from "../../clis/leo-database-hub/lib/config/resolver.mjs";
-import { createAdapterRegistry } from "../../clis/leo-database-hub/lib/core/registry.mjs";
+} from "../../lib/skills/leo-database-hub/scripts/cli/lib/config/store.mjs";
+import { resolveConnection } from "../../lib/skills/leo-database-hub/scripts/cli/lib/config/resolver.mjs";
+import { createAdapterRegistry } from "../../lib/skills/leo-database-hub/scripts/cli/lib/core/registry.mjs";
 import {
   classifySqlCommand,
   classifyRedisCommand,
   authorizeOperation,
-} from "../../clis/leo-database-hub/lib/core/policy.mjs";
-import { splitSqlScript } from "../../clis/leo-database-hub/lib/sql/splitter.mjs";
+} from "../../lib/skills/leo-database-hub/scripts/cli/lib/core/policy.mjs";
+import { splitSqlScript } from "../../lib/skills/leo-database-hub/scripts/cli/lib/sql/splitter.mjs";
 
 const testAdapter = {
   id: "mysql",

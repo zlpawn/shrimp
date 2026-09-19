@@ -25,7 +25,7 @@
       "transport": "stdio",
       "command": "node",
       "args": [
-        "./mcps/database-hub/index.mjs"
+        "./lib/skills/leo-database-hub/scripts/mcp/index.mjs"
       ],
       "url": "",
       "distribution": {

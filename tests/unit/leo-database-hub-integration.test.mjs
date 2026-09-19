@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { runCli } from "../../clis/leo-database-hub/lib/cli.mjs";
+import { runCli } from "../../lib/skills/leo-database-hub/scripts/cli/lib/cli.mjs";
 
 test("CLI executes an end-to-end SQLite query and transaction", async () => {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), "leo-db-e2e-"));

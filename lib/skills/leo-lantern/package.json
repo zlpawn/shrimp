@@ -1,0 +1,15 @@
+{
+  "name": "leo-lantern",
+  "version": "0.1.0",
+  "description": "Chrome 浏览器远程 CDP 控制与无头自动化智能体技能",
+  "type": "module",
+  "bin": {
+    "leo-lantern": "./scripts/cli/index.mjs"
+  },
+  "mcp": {
+    "leo-lantern": "./scripts/mcp/index.mjs"
+  },
+  "scripts": {
+    "test": "node --test --test-concurrency=1 tests/*.test.mjs"
+  }
+}

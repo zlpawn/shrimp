@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-19T02:20:41.488Z",
+  "updatedAt": "2026-09-19T09:13:05.609Z",
   "skills": [
     {
       "id": "leo-ppt-agent",
@@ -19,111 +19,6 @@
         "presentation",
         "幻灯片",
         "演示文稿"
-      ],
-      "requiresDaemon": false,
-      "promoted": true,
-      "managed": true
-    },
-    {
-      "id": "leo-tdx-stock",
-      "name": "leo-tdx-stock",
-      "title": "Leo TDX 股票数据",
-      "summary": "通过 leo-tdx CLI 查询通达信股票行情、K 线、选股、指标、公告、研报、资讯与宏观数据，内置市场代码映射和 token 安全流程。",
-      "category": "research",
-      "categoryLabel": "研究与知识",
-      "icon": "📈",
-      "featured": false,
-      "tags": [
-        "tdx",
-        "stock",
-        "finance",
-        "股票",
-        "行情",
-        "K线"
-      ],
-      "requiresDaemon": false,
-      "promoted": true,
-      "managed": true
-    },
-    {
-      "id": "leo-tdx-stock",
-      "name": "leo-tdx-stock",
-      "title": "Leo TDX 股票数据",
-      "summary": "通过 leo-tdx CLI 查询通达信股票行情、K 线、选股、指标、公告、研报、资讯与宏观数据，内置市场代码映射和 token 安全流程。",
-      "category": "research",
-      "categoryLabel": "研究与知识",
-      "icon": "📈",
-      "featured": false,
-      "tags": [
-        "tdx",
-        "stock",
-        "finance",
-        "股票",
-        "行情",
-        "K线"
-      ],
-      "requiresDaemon": false,
-      "promoted": true,
-      "managed": true
-    },
-    {
-      "id": "leo-tdx-stock",
-      "name": "leo-tdx-stock",
-      "title": "Leo TDX 股票数据",
-      "summary": "通过 leo-tdx CLI 查询通达信股票行情、K 线、选股、指标、公告、研报、资讯与宏观数据，内置市场代码映射和 token 安全流程。",
-      "category": "research",
-      "categoryLabel": "研究与知识",
-      "icon": "📈",
-      "featured": false,
-      "tags": [
-        "tdx",
-        "stock",
-        "finance",
-        "股票",
-        "行情",
-        "K线"
-      ],
-      "requiresDaemon": false,
-      "promoted": true,
-      "managed": true
-    },
-    {
-      "id": "leo-tdx-stock",
-      "name": "leo-tdx-stock",
-      "title": "Leo TDX 股票数据",
-      "summary": "通过 leo-tdx CLI 查询通达信股票行情、K 线、选股、指标、公告、研报、资讯与宏观数据，内置市场代码映射和 token 安全流程。",
-      "category": "research",
-      "categoryLabel": "研究与知识",
-      "icon": "📈",
-      "featured": false,
-      "tags": [
-        "tdx",
-        "stock",
-        "finance",
-        "股票",
-        "行情",
-        "K线"
-      ],
-      "requiresDaemon": false,
-      "promoted": true,
-      "managed": true
-    },
-    {
-      "id": "leo-tdx-stock",
-      "name": "leo-tdx-stock",
-      "title": "Leo TDX 股票数据",
-      "summary": "通过 leo-tdx CLI 查询通达信股票行情、K 线、选股、指标、公告、研报、资讯与宏观数据，内置市场代码映射和 token 安全流程。",
-      "category": "research",
-      "categoryLabel": "研究与知识",
-      "icon": "📈",
-      "featured": false,
-      "tags": [
-        "tdx",
-        "stock",
-        "finance",
-        "股票",
-        "行情",
-        "K线"
       ],
       "requiresDaemon": false,
       "promoted": true,
@@ -512,6 +407,26 @@
         "自动化剪辑",
         "特效",
         "草稿"
+      ],
+      "requiresDaemon": false,
+      "promoted": true,
+      "managed": true
+    },
+    {
+      "id": "leo-lantern",
+      "name": "leo-lantern",
+      "title": "Leo Lantern 浏览器自动化控制",
+      "summary": "通过 leo-lantern CLI/服务实现 Chrome 浏览器远程调试 (CDP) 控制与无头自动化，支持页面导航、元素交互、DOM 快照、网络抓包与 Cookie 提取。",
+      "category": "automation",
+      "categoryLabel": "自动化与扩展",
+      "icon": "🏮",
+      "featured": false,
+      "tags": [
+        "browser",
+        "cdp",
+        "automation",
+        "chrome",
+        "cookie"
       ],
       "requiresDaemon": false,
       "promoted": true,

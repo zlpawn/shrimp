@@ -10,10 +10,10 @@ import {
   readToken,
   saveToken,
   queryWendao,
-} from "../../clis/leo-wendao/wendao.mjs";
+} from "../../lib/skills/leo-xiecheng-wendao/scripts/cli/wendao.mjs";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const wendaoDir = path.join(projectRoot, "clis", "leo-wendao");
+const wendaoDir = path.join(projectRoot, "lib", "skills", "leo-xiecheng-wendao", "scripts", "cli");
 
 function tempHome() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "wendao-cli-test-"));
@@ -26,7 +26,7 @@ test("leo-wendao in-repo CLI is discoverable as a Node CLI", async () => {
   assert.ok(cli, "scanInRepoClis must discover leo-wendao");
   assert.equal(cli.lang, "node");
   assert.equal(cli.command, "node");
-  assert.equal(cli.args[0], "./clis/leo-wendao/index.mjs");
+  assert.equal(cli.args[0], "./lib/skills/leo-xiecheng-wendao/scripts/cli/index.mjs");
   assert.match(cli.description, /携程问道/u);
 });
 
@@ -154,7 +154,7 @@ test("wendao SKILL.md instructs agents to use the CLI without reading the token"
     path.join(projectRoot, "lib", "skills", "leo-xiecheng-wendao", "SKILL.md"),
     "utf8",
   );
-  assert.match(skill, /^---\nname: leo-xiecheng-wendao\n/u);
+  assert.match(skill, /^---\r?\nname: leo-xiecheng-wendao\r?\n/u);
   assert.match(skill, /leo-wendao "用户的完整问题原文"/u);
   assert.match(skill, /60 秒/u);
   assert.match(skill, /永远不要.*token/u);
@@ -173,7 +173,7 @@ test("leo-xiecheng-wendao is a managed skill and installs from the skill library
     const installed = SkillInstaller.installBaseSkill(tempDir, "leo-xiecheng-wendao");
     assert.equal(fs.existsSync(installed), true);
     const content = fs.readFileSync(installed, "utf8");
-    assert.match(content, /^---\nname: leo-xiecheng-wendao\n/u);
+    assert.match(content, /^---\r?\nname: leo-xiecheng-wendao\r?\n/u);
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
@@ -210,7 +210,7 @@ test("wendao CLI no-argument invocation fails with usage only", async () => {
 test("wendao CLI login --stdin writes restricted credentials", async () => {
   const { spawn } = await import("node:child_process");
   const home = tempHome();
-  const env = { ...process.env, HOME: home, WENDAO_API_KEY: "", SHRIMP_SECRETS_DIR: "" };
+  const env = { ...process.env, HOME: home, USERPROFILE: home, WENDAO_API_KEY: "", SHRIMP_SECRETS_DIR: "" };
   const tokenPath = path.join(home, ".shrimp", "secrets", "wendao", "token");
 
   try {

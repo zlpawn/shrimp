@@ -4,9 +4,9 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { sqliteAdapter as baseSqliteAdapter } from "../../clis/leo-database-hub/lib/adapters/sqlite.mjs";
-import { mysqlAdapter } from "../../clis/leo-database-hub/lib/adapters/mysql.mjs";
-import { redisAdapter } from "../../clis/leo-database-hub/lib/adapters/redis.mjs";
+import { sqliteAdapter as baseSqliteAdapter } from "../../lib/skills/leo-database-hub/scripts/cli/lib/adapters/sqlite.mjs";
+import { mysqlAdapter } from "../../lib/skills/leo-database-hub/scripts/cli/lib/adapters/mysql.mjs";
+import { redisAdapter } from "../../lib/skills/leo-database-hub/scripts/cli/lib/adapters/redis.mjs";
 
 const sqliteAdapter = baseSqliteAdapter.withDependencies();
 

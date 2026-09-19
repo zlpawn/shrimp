@@ -21,3 +21,8 @@ leo-wendao "用户的完整问题原文"
 - 同一问题 60 秒内不要重复调用；CLI 已内置 4s/8s 两次短结果重试。
 - 如果提示 token 未配置，告诉用户运行 `leo-wendao login`；不要让用户把 token 发到聊天里。
 - 永远不要查看、读取、输出或复制 token 文件；token 也不会出现在命令行参数中。
+
+> **提示（脱离网关自包含运行）**：
+> 若未注册全局 `leo-wendao` 命令，可在技能目录直接通过 Node.js 执行：
+> `node ./scripts/cli/index.mjs "用户的完整问题原文"`
+

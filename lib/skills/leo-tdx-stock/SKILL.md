@@ -34,3 +34,8 @@ description: 通过 leo-tdx CLI 查询通达信股票、K 线、选股、指标�
 - 港股不支持实时 quotes / K 线，改用 lookup、report、news。
 - 单次返回不超过 100 条，除非用户明确要求更多。
 - 优先使用具体子命令；`leo-tdx call` 仅用于 schema 明确后的低频兜底。
+
+> **提示（脱离网关自包含运行）**：
+> 若未注册全局 `leo-tdx` 命令，可在技能目录直接通过 Node.js 执行：
+> `node ./scripts/cli/index.mjs <command>`
+

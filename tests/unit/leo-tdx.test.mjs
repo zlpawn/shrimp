@@ -11,9 +11,9 @@ import {
   readToken,
   resolveSecretPaths,
   saveToken,
-} from "../../clis/leo-tdx/lib/token.mjs";
-import { createMcpClient, McpError } from "../../clis/leo-tdx/lib/mcp.mjs";
-import { runCli } from "../../clis/leo-tdx/lib/cli.mjs";
+} from "../../lib/skills/leo-tdx-stock/scripts/cli/lib/token.mjs";
+import { createMcpClient, McpError } from "../../lib/skills/leo-tdx-stock/scripts/cli/lib/mcp.mjs";
+import { runCli } from "../../lib/skills/leo-tdx-stock/scripts/cli/lib/cli.mjs";
 import { scanInRepoClis } from "../../lib/cli-core/discovery.mjs";
 import { SkillInstaller } from "../../lib/session-sync/skill-installer.mjs";
 
@@ -286,7 +286,7 @@ test("tools command can emit a compact name-only list for agents", async () => {
 test("leo-tdx in-repo CLI and managed skill are discoverable", async () => {
   const cli = scanInRepoClis(process.cwd()).find((item) => item.name === "leo-tdx");
   assert.ok(cli);
-  assert.equal(cli.args[0], "./clis/leo-tdx/index.mjs");
+  assert.equal(cli.args[0], "./lib/skills/leo-tdx-stock/scripts/cli/index.mjs");
 
   const skill = SkillInstaller.getManagedSkill("leo-tdx-stock");
   assert.ok(skill);

@@ -1,0 +1,12 @@
+{
+  "name": "leo-tdx-stock",
+  "version": "1.0.0",
+  "description": "通过 leo-tdx CLI 查询通达信股票、K 线、选股、指标、公告、研报、资讯与宏观数据",
+  "type": "module",
+  "bin": {
+    "leo-tdx": "./scripts/cli/index.mjs"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  }
+}

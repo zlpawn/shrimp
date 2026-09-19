@@ -38,7 +38,7 @@ test("agent bootstrap flow: init -> endpoint add -> doctor", async (t) => {
     "--name", "openrouter",
     "--type", "openai-chat",
     "--base-url", "https://example.com/v1/chat/completions",
-    "--models", "glm-4-flash",
+    "--models", "custom-glm-4",
     "--api-key", "sk-test",
   ]);
   const addJson = JSON.parse(add.stdout);

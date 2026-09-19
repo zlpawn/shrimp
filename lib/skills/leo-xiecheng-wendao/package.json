@@ -1,0 +1,12 @@
+{
+  "name": "leo-xiecheng-wendao",
+  "version": "0.1.0",
+  "description": "查询携程问道获取机票、酒店、行程、景点、美食、签证和交通等旅行建议",
+  "type": "module",
+  "bin": {
+    "leo-wendao": "./scripts/cli/index.mjs"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  }
+}
