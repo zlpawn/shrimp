@@ -4263,15 +4263,25 @@ function createEndpointDetailHTML(client, index, ep) {
                                         所有账号共享节点模型列表；请求自动轮询调度，遇 403/429 自动在池内故障转移。
                                     </div>
                                 </div>
-                                <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                                    <button type="button" class="btn btn-sm btn-primary" title="唤起腾讯 CodeBuddy 国际版 (workbuddy.ai) 网页授权" onclick="triggerWorkbuddyAccountLogin('${client}', ${index}, 'global')">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                                        + 一键登录(国际版)
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline" title="唤起腾讯 CodeBuddy 国内版 (copilot.tencent.com) 网页授权" onclick="triggerWorkbuddyAccountLogin('${client}', ${index}, 'cn')">
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                                        + 一键登录(国内版)
-                                    </button>
+                                <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                                    <div style="display:inline-flex; border-radius:6px; overflow:hidden; border:1px solid rgba(99,102,241,0.3);">
+                                        <button type="button" class="btn btn-sm btn-primary" style="border-radius:0; border:none;" title="唤起腾讯 CodeBuddy 国际版 (workbuddy.ai) 网页授权" onclick="triggerWorkbuddyAccountLogin('${client}', ${index}, 'global')">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                            + 一键登录(国际版)
+                                        </button>
+                                        <button type="button" class="btn btn-sm" style="border-radius:0; border:none; border-left:1px solid rgba(255,255,255,0.25); background:#3730a3; color:white; padding:0 8px; font-size:12px;" title="复制国际版授权链接（适合在无痕模式或其它浏览器中登录第二个账号）" onclick="triggerWorkbuddyAccountLogin('${client}', ${index}, 'global', true)">
+                                            复制链接
+                                        </button>
+                                    </div>
+                                    <div style="display:inline-flex; border-radius:6px; overflow:hidden; border:1px solid var(--border-color);">
+                                        <button type="button" class="btn btn-sm btn-outline" style="border-radius:0; border:none;" title="唤起腾讯 CodeBuddy 国内版 (copilot.tencent.com) 网页授权" onclick="triggerWorkbuddyAccountLogin('${client}', ${index}, 'cn')">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                            + 一键登录(国内版)
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline" style="border-radius:0; border:none; border-left:1px solid var(--border-color); padding:0 8px; font-size:12px;" title="复制国内版授权链接（适合在无痕模式或其它浏览器中登录第二个账号）" onclick="triggerWorkbuddyAccountLogin('${client}', ${index}, 'cn', true)">
+                                            复制链接
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -7881,9 +7891,11 @@ window.pollWorkbuddyStatus = async function(client: string, index: number) {
                         <div style="font-size:12px; color:var(--text-muted); max-width:440px; margin:0 auto 16px auto; line-height:1.5;">
                             点击右上角「一键登录」唤起 CodeBuddy 国际版或国内版网页授权，授权成功后账号凭据自动落盘，支持多账号智能负载均衡。
                         </div>
-                        <div style="display:flex; justify-content:center; gap:8px;">
+                        <div style="display:flex; justify-content:center; gap:8px; flex-wrap:wrap;">
                             <button type="button" class="btn btn-sm btn-primary" onclick="triggerWorkbuddyAccountLogin('${client}', ${index}, 'global')">一键登录 (国际版)</button>
+                            <button type="button" class="btn btn-sm btn-outline" title="复制国际版授权链接（适合在无痕模式或其它浏览器中登录第二个账号）" onclick="triggerWorkbuddyAccountLogin('${client}', ${index}, 'global', true)">📋 复制国际版链接 (无痕)</button>
                             <button type="button" class="btn btn-sm btn-outline" onclick="triggerWorkbuddyAccountLogin('${client}', ${index}, 'cn')">一键登录 (国内版)</button>
+                            <button type="button" class="btn btn-sm btn-outline" title="复制国内版授权链接（适合在无痕模式或其它浏览器中登录第二个账号）" onclick="triggerWorkbuddyAccountLogin('${client}', ${index}, 'cn', true)">📋 复制国内版链接 (无痕)</button>
                         </div>
                     </div>
                 `;
@@ -8149,10 +8161,10 @@ function renderWorkbuddyLegacyBanner(
     }
 };
 
-(window as any).triggerWorkbuddyAccountLogin = async function(client: string, index: number, edition: string = 'global') {
+(window as any).triggerWorkbuddyAccountLogin = async function(client: string, index: number, edition: string = 'global', copyOnly: boolean = false) {
     const isGlobal = edition === 'global';
     const label = isGlobal ? '国际版 (workbuddy.ai)' : '国内版 (copilot.tencent.com)';
-    showToast(`正在唤起「${label}」登录授权...`, 'info');
+    showToast(`正在${copyOnly ? '生成' : '唤起'}「${label}」授权${copyOnly ? '链接' : ''}...`, 'info');
 
     try {
         // Record current local accounts count and existing UIDs
@@ -8172,7 +8184,7 @@ function renderWorkbuddyLegacyBanner(
         const res = await fetch('/v1/workbuddy/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ edition, port: 7863 }),
+            body: JSON.stringify({ edition, port: 7863, open_browser: !copyOnly }),
         });
         const data = await res.json();
         if (!res.ok || !data.success) {
@@ -8185,7 +8197,21 @@ function renderWorkbuddyLegacyBanner(
         }
 
         const loginState = data.state;
-        showToast(`已拉起「${label}」授权页面，请在打开的浏览器中完成登录`, 'success');
+        const authUrl = data.auth_url;
+
+        if (copyOnly) {
+            try {
+                await navigator.clipboard.writeText(authUrl);
+                showToast(`已复制「${label}」授权链接到剪贴板！请直接在无痕窗口或其它浏览器中粘贴打开并完成登录`, 'success', 8000);
+            } catch {
+                prompt('请复制以下授权链接并在无痕窗口或其它浏览器中打开：', authUrl);
+            }
+        } else {
+            try {
+                await navigator.clipboard.writeText(authUrl);
+            } catch {}
+            showToast(`已拉起「${label}」授权页面（链接已同步复制，如需新账号可在无痕窗口粘贴）`, 'success', 6000);
+        }
 
         let checks = 0;
         let finished = false;
