@@ -186,6 +186,7 @@ import { routeDreamSkinRequest } from "./lib/dream-skin/http/routes.mjs";
 import {
   resolveNatTraversalPaths,
   createNatTraversalConfigStore,
+  routeNatTraversalRequest,
 } from "./lib/nat-traversal/index.mjs";
 import { createNatTraversalService } from "./lib/nat-traversal/application/service.mjs";
 import { createCommandAppsService } from "./lib/command-apps/application/service.mjs";
