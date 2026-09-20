@@ -1138,7 +1138,7 @@
           "is_default": false
         }
       ],
-      "display_name": "zcode 代理",
+      "display_name": "ZCode 代理",
       "protocol": "openai"
     }
   },
