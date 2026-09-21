@@ -346,3 +346,37 @@ test("index - crawlAllActivePlatforms should orchestrate fetching across active 
   assert.ok(errorsReported.some((e) => e.id === "failing_platform"));
   assert.ok(errorsReported.some((e) => e.id === "https://failing-feed.com/rss"));
 });
+
+test("index - crawlAllActivePlatforms skips geek_feeds with on_demand crawl_mode when isScheduled is true", async () => {
+  const mockFetch = async () => ({
+    ok: true,
+    status: 200,
+    text: async () => `<?xml version="1.0"?><rss><channel><item><title>Item 1</title><link>https://example.com/1</link></item></channel></rss>`
+  });
+
+  const config = {
+    platforms: {},
+    geek_feeds: [
+      { id: "feed_auto", name: "自动抓取", url: "https://auto.com/rss", enabled: true, crawl_mode: "interval" },
+      { id: "feed_manual", name: "手动抓取", url: "https://manual.com/rss", enabled: true, crawl_mode: "on_demand" }
+    ]
+  };
+
+  // Scheduled crawl should only fetch feed_auto
+  const scheduledItems = await crawlAllActivePlatforms(config, {
+    fetchImpl: mockFetch,
+    isScheduled: true
+  });
+  assert.equal(scheduledItems.length, 1);
+  assert.equal(scheduledItems[0].platform, "feed_auto");
+
+  // Manual crawl should fetch both
+  const manualItems = await crawlAllActivePlatforms(config, {
+    fetchImpl: mockFetch,
+    isScheduled: false
+  });
+  assert.equal(manualItems.length, 2);
+  const platforms = manualItems.map((i) => i.platform);
+  assert.ok(platforms.includes("feed_auto"));
+  assert.ok(platforms.includes("feed_manual"));
+});

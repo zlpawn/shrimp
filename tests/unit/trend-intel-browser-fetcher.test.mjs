@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import {
   normalizeDiscourseTopics,
   findBrowserExecutable,
-  getAvailablePort
+  getAvailablePort,
+  getRealisticUserAgent
 } from "../../lib/trend-intel/providers/browser-fetcher.mjs";
 
 test("browser-fetcher - normalizeDiscourseTopics handles topics correctly", () => {
@@ -64,4 +65,19 @@ test("browser-fetcher - getAvailablePort returns a free port number", async () =
   const port = await getAvailablePort(9500);
   assert.ok(typeof port === "number");
   assert.ok(port >= 9500);
+});
+
+test("browser-fetcher - getRealisticUserAgent returns realistic OS-specific user agents without Headless", () => {
+  const darwinUa = getRealisticUserAgent("darwin");
+  const winUa = getRealisticUserAgent("win32");
+  const linuxUa = getRealisticUserAgent("linux");
+
+  assert.match(darwinUa, /Macintosh.*Chrome/);
+  assert.doesNotMatch(darwinUa, /Headless/i);
+
+  assert.match(winUa, /Windows NT.*Chrome/);
+  assert.doesNotMatch(winUa, /Headless/i);
+
+  assert.match(linuxUa, /X11.*Linux.*Chrome/);
+  assert.doesNotMatch(linuxUa, /Headless/i);
 });
