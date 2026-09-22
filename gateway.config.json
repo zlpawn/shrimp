@@ -266,7 +266,7 @@
           "auth": "none",
           "models": [],
           "model_mapping": {
-            "DeepSeek-V4.1-Flash-wb": "deepseek-v4.1-flash"
+            "DeepSeek-V4.1-Flash-wb": "global:deepseek-v4.1-flash"
           },
           "capabilities": {
             "reasoning": true,
