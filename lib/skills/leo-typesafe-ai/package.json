@@ -1,0 +1,19 @@
+{
+  "name": "leo-typesafe-ai",
+  "version": "0.1.0",
+  "description": "Provider-neutral TypeSafe/System One decisions with OpenRouter, TypeSafe official, and custom compatible endpoints",
+  "type": "module",
+  "bin": {
+    "leo-typesafe-ai": "./scripts/decide.mjs"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "sync:check": "node scripts/sync-official.mjs --check",
+    "sync:diff": "node scripts/sync-official.mjs --diff"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT"
+}
+

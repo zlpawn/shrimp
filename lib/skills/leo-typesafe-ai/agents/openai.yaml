@@ -1,0 +1,5 @@
+interface:
+  display_name: "Leo TypeSafe AI"
+  short_description: "多供应商 TypeSafe 结构化判断与概率决策。"
+  default_prompt: "Use $leo-typesafe-ai to design or run a typed Choice, Noul, or Score decision workflow."
+

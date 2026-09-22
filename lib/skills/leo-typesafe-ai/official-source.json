@@ -1,0 +1,8 @@
+{
+  "name": "typesafe-ai",
+  "license": "MIT",
+  "source": "~/.agents/skills/typesafe-ai/SKILL.md",
+  "snapshot": "references/official-typesafe-ai.md",
+  "sha256": "0ab58b7533ebe4ba5342ad6260d69e492cd0955ca9d3ee20b3c91375eea0203d",
+  "synced_at": "2026-09-22T15:21:48.455Z"
+}

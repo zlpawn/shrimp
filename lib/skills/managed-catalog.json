@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-19T09:13:05.609Z",
+  "updatedAt": "2026-09-22T15:30:00.000Z",
   "skills": [
     {
       "id": "leo-ppt-agent",
@@ -427,6 +427,29 @@
         "automation",
         "chrome",
         "cookie"
+      ],
+      "requiresDaemon": false,
+      "promoted": true,
+      "managed": true
+    },
+    {
+      "id": "leo-typesafe-ai",
+      "name": "leo-typesafe-ai",
+      "title": "Leo TypeSafe AI",
+      "summary": "基于 TypeSafe System One 的多供应商结构化 AI 判断技能，支持 Choice、Noul、Score、概率与置信度工作流，内置 OpenRouter、TypeSafe 官方和自定义兼容端点调用，并可同步官方 skill 更新。",
+      "category": "development",
+      "categoryLabel": "开发工程",
+      "icon": "🧠",
+      "featured": false,
+      "tags": [
+        "typesafe",
+        "system-one",
+        "decisions",
+        "openrouter",
+        "classification",
+        "routing",
+        "scoring",
+        "结构化判断"
       ],
       "requiresDaemon": false,
       "promoted": true,
