@@ -1071,6 +1071,34 @@
     "zcode": {
       "endpoints": [
         {
+          "id": "ep_4a7b4137-b912-4358-867a-228d66332a78",
+          "name": "grok-subscription",
+          "type": "openai-responses",
+          "base_url": "https://cli-chat-proxy.grok.com/v1",
+          "models": [
+            "grok-4.5",
+            "grok-4.6"
+          ],
+          "model_mapping": {},
+          "capabilities": {
+            "input_modalities": [
+              "text",
+              "image"
+            ],
+            "reasoning": true,
+            "tools": true
+          },
+          "model_capabilities": {
+            "grok-4.5": {
+              "context_window": 500000
+            },
+            "grok-4.6": {
+              "context_window": 500000
+            }
+          },
+          "is_default": false
+        },
+        {
           "id": "ep_894567dd-1bbb-443b-85bd-4e71f2100c33",
           "name": "ait",
           "type": "anthropic",
@@ -1100,7 +1128,7 @@
           "auth": "none",
           "models": [],
           "model_mapping": {
-            "DeepSeek-V4.1-Flash-wb": "deepseek-v4.1-flash"
+            "DeepSeek-V4.1-Flash-wb": "global:deepseek-v4.1-flash"
           },
           "capabilities": {
             "reasoning": false,
