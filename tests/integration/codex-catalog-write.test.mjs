@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { once } from "node:events";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import http from "node:http";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -189,6 +189,138 @@ test("saving config rewrites the Codex model catalog file", async (t) => {
   assert.match(reveal.headers.get("cache-control") || "", /no-store/);
   assert.equal(reveal.headers.get("access-control-allow-origin"), null);
   assert.deepEqual(await reveal.json(), { api_key: "env:TEST_KEY" });
+});
+
+test("catalog combines a non-empty Desktop cache with newer bundled Codex models", async (t) => {
+  const reservation = http.createServer();
+  const gatewayPort = await listen(reservation);
+  await closeServer(reservation);
+
+  const tempDir = await mkdtemp(path.join(tmpdir(), "codex-catalog-sources-"));
+  t.after(() => rm(tempDir, { recursive: true, force: true }));
+
+  const homeDir = path.join(tempDir, "home");
+  const codexDir = path.join(homeDir, ".codex");
+  const binDir = path.join(tempDir, "bin");
+  await mkdir(codexDir, { recursive: true });
+  await mkdir(binDir, { recursive: true });
+  await writeFile(path.join(codexDir, "models_cache.json"), JSON.stringify({
+    models: [{
+      slug: "gpt-5.5",
+      display_name: "GPT-5.5 from cache",
+      visibility: "list",
+      supported_in_api: true,
+    }],
+  }));
+  const fakeCodex = path.join(binDir, "codex");
+  await writeFile(fakeCodex, `#!/bin/sh
+printf '%s\\n' '{"models":[{"slug":"gpt-6-astra","display_name":"GPT-6-Astra","visibility":"list","supported_in_api":true}]}'
+`);
+  await chmod(fakeCodex, 0o755);
+
+  const configPath = path.join(tempDir, "gateway.config.json");
+  const catalogPath = path.join(tempDir, "gateway-model-catalog.json");
+  await writeFile(configPath, JSON.stringify({
+    server: { host: "127.0.0.1", port: gatewayPort },
+    clients: {
+      codex: {
+        endpoints: [{
+          id: "ep_chat",
+          name: "chat",
+          type: "openai-chat",
+          base_url: "https://example.invalid/chat/completions",
+          api_key: "env:TEST_KEY",
+          models: ["third-party-a"],
+        }],
+      },
+    },
+  }));
+
+  const gateway = spawn(process.execPath, ["server.js"], {
+    cwd: ROOT,
+    env: {
+      ...process.env,
+      HOME: homeDir,
+      PATH: `${binDir}${path.delimiter}${process.env.PATH || ""}`,
+      GATEWAY_CONFIG_FILE: configPath,
+      GATEWAY_SECRETS_FILE: path.join(tempDir, "gateway.secrets.json"),
+      GATEWAY_PORT: String(gatewayPort),
+      GATEWAY_NO_OPEN: "1",
+      CLAUDE_3P_SYNC_DISABLED: "1",
+      CODEX_MODEL_CATALOG_PATH: catalogPath,
+      CODEX_MODELS_LIVE_DISABLED: "1",
+      TEST_KEY: "test",
+    },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  t.after(async () => {
+    if (gateway.exitCode == null) {
+      const exited = once(gateway, "exit");
+      gateway.kill();
+      await exited;
+    }
+  });
+  await waitForHealth(gatewayPort, gateway);
+
+  const catalog = JSON.parse(await readFile(catalogPath, "utf8"));
+  const slugs = catalog.models.map((model) => model.slug);
+  assert.equal(slugs.includes("gpt-5.5"), true);
+  assert.equal(slugs.includes("gpt-6-astra"), true);
+  assert.equal(slugs.includes("third-party-a"), true);
+});
+
+test("codex catalog script combines cached, bundled, and custom models", async (t) => {
+  const tempDir = await mkdtemp(path.join(tmpdir(), "codex-catalog-script-sources-"));
+  t.after(() => rm(tempDir, { recursive: true, force: true }));
+
+  const homeDir = path.join(tempDir, "home");
+  const codexDir = path.join(homeDir, ".codex");
+  const binDir = path.join(tempDir, "bin");
+  await mkdir(codexDir, { recursive: true });
+  await mkdir(binDir, { recursive: true });
+  await writeFile(path.join(codexDir, "models_cache.json"), JSON.stringify({
+    models: [{ slug: "gpt-5.5", display_name: "GPT-5.5 from cache" }],
+  }));
+  const fakeCodex = path.join(binDir, "codex");
+  await writeFile(fakeCodex, `#!/bin/sh
+printf '%s\\n' '{"models":[{"slug":"gpt-6-astra","display_name":"GPT-6-Astra"}]}'
+`);
+  await chmod(fakeCodex, 0o755);
+
+  const configPath = path.join(tempDir, "gateway.config.json");
+  const catalogPath = path.join(tempDir, "gateway-model-catalog.json");
+  await writeFile(configPath, JSON.stringify({
+    server: { host: "127.0.0.1", port: 8787 },
+    clients: {
+      codex: {
+        endpoints: [{
+          id: "ep_chat",
+          name: "chat",
+          type: "openai-chat",
+          models: ["third-party-a"],
+        }],
+      },
+    },
+  }));
+
+  const child = spawnSync(process.execPath, ["scripts/codex-catalog.mjs"], {
+    cwd: ROOT,
+    env: {
+      ...process.env,
+      HOME: homeDir,
+      PATH: `${binDir}${path.delimiter}${process.env.PATH || ""}`,
+      GATEWAY_CONFIG_FILE: configPath,
+      CODEX_MODEL_CATALOG_PATH: catalogPath,
+    },
+    encoding: "utf8",
+  });
+  assert.equal(child.status, 0, child.stderr);
+
+  const catalog = JSON.parse(await readFile(catalogPath, "utf8"));
+  const slugs = catalog.models.map((model) => model.slug);
+  assert.equal(slugs.includes("gpt-5.5"), true);
+  assert.equal(slugs.includes("gpt-6-astra"), true);
+  assert.equal(slugs.includes("third-party-a"), true);
 });
 
 test("saving duplicate public model ids returns conflict suggestions", async (t) => {

@@ -4,6 +4,10 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { buildCodexCatalog } from "../lib/codex/model-catalog.mjs";
+import {
+  isOfficialCodexModelId,
+  mergeOfficialCatalogModels,
+} from "../lib/codex/official-models.mjs";
 
 const PROJECT_ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const DEFAULT_CONFIG_PATH = path.join(PROJECT_ROOT, "gateway.config.json");
@@ -59,8 +63,8 @@ function readJson(filePath) {
 }
 
 function loadBundledCodexModels() {
-  // Prefer Desktop live cache so newly rolled-out official models appear.
   const cachePath = path.join(os.homedir(), ".codex", "models_cache.json");
+  let cacheModels = [];
   try {
     if (fs.existsSync(cachePath)) {
       const parsed = JSON.parse(fs.readFileSync(cachePath, "utf8").replace(/^﻿/, ""));
@@ -69,19 +73,13 @@ function loadBundledCodexModels() {
         : Array.isArray(parsed?.data)
           ? parsed.data
           : [];
-      const fromCache = models
-        .filter((model) => model && isOfficialCodexModel(model.slug || model.id))
-        .map((model) => ({
-          ...model,
-          slug: model.slug || model.id,
-          display_name: model.display_name || model.slug || model.id,
-        }));
-      if (fromCache.length) return fromCache;
+      cacheModels = models;
     }
   } catch (error) {
     console.warn(`Warning: failed to read Desktop models_cache.json: ${error.message}`);
   }
 
+  let bundledModels = [];
   try {
     const output = execFileSync("codex", ["debug", "models", "--bundled"], {
       encoding: "utf8",
@@ -89,15 +87,16 @@ function loadBundledCodexModels() {
       timeout: 15000,
     });
     const parsed = JSON.parse(output);
-    return Array.isArray(parsed.models) ? parsed.models : [];
+    bundledModels = Array.isArray(parsed.models) ? parsed.models : [];
   } catch (error) {
     console.warn(`Warning: failed to read bundled Codex models: ${error.message}`);
-    return [];
   }
+
+  return mergeOfficialCatalogModels(cacheModels, bundledModels);
 }
 
 function isOfficialCodexModel(slug) {
-  return /^gpt-|^o\d/i.test(String(slug || ""));
+  return isOfficialCodexModelId(slug);
 }
 
 function verifyWithCodex(catalogPath, customModels) {
@@ -124,6 +123,7 @@ function verifyWithCodex(catalogPath, customModels) {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
     timeout: 20000,
+    maxBuffer: 16 * 1024 * 1024,
   });
   const parsed = JSON.parse(output);
   const modelIds = new Set((parsed.models || []).map((model) => model.slug));

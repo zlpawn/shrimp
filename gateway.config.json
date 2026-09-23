@@ -1128,7 +1128,7 @@
           "auth": "none",
           "models": [],
           "model_mapping": {
-            "DeepSeek-V4.1-Flash-wb": "deepseek-v4.1-flash"
+            "DeepSeek-V4.1-Flash-wb": "global:deepseek-v4.1-flash"
           },
           "capabilities": {
             "reasoning": false,
@@ -1174,15 +1174,6 @@
     "claude_model_catalog": {
       "user_models": [],
       "disabled_builtin_models": []
-    }
-  },
-  "sessionSync": {
-    "skillMounts": {
-      "leo-typesafe-ai": {
-        "antigravity": false,
-        "claude": false,
-        "codex": true
-      }
     }
   }
 }

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   isOfficialCodexModelId,
+  mergeOfficialCatalogModels,
   mergeOfficialDiscoveryModels,
   officialModelsFromOpenAIList,
 } from "../../lib/codex/official-models.mjs";
@@ -27,6 +28,21 @@ test("merge keeps bundled rows and adds live-only official ids", () => {
   assert.deepEqual(merged.map((model) => model.id), ["gpt-5.5", "gpt-5.6"]);
   assert.equal(merged[0].display_name, "GPT-5.5");
   assert.equal(merged[1].display_name, "GPT-5.6");
+});
+
+test("catalog merge keeps cached metadata and adds bundled-only models", () => {
+  const merged = mergeOfficialCatalogModels(
+    [{ slug: "gpt-5.5", display_name: "Cached GPT-5.5", cache_only: true }],
+    [
+      { slug: "gpt-5.5", display_name: "Bundled GPT-5.5" },
+      { slug: "gpt-6-astra", display_name: "GPT-6-Astra" },
+      { slug: "claude-opus", display_name: "Ignore" },
+    ],
+  );
+
+  assert.deepEqual(merged.map((model) => model.slug), ["gpt-5.5", "gpt-6-astra"]);
+  assert.equal(merged[0].display_name, "Cached GPT-5.5");
+  assert.equal(merged[0].cache_only, true);
 });
 
 test("OpenAI /v1/models payload is filtered to official-looking ids", () => {

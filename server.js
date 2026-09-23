@@ -35,6 +35,7 @@ import { bindRequestAbort } from "./lib/codex/request-abort.mjs";
 import { collectResponsesStream } from "./lib/codex/responses-collector.mjs";
 import {
   isOfficialCodexModelId,
+  mergeOfficialCatalogModels,
   mergeOfficialDiscoveryModels,
   officialModelsFromOpenAIList,
 } from "./lib/codex/official-models.mjs";
@@ -12870,22 +12871,20 @@ function logLine(entry) {
 
 function loadOfficialCodexCatalogModels() {
   const fromDesktopCache = loadOfficialCodexModelsFromDesktopCache();
-  let models = [...fromDesktopCache];
-
-  if (!models.length) {
-    try {
-      const output = execFileSync("codex", ["debug", "models", "--bundled"], {
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "ignore"],
-        timeout: 15000,
-      });
-      const parsed = JSON.parse(output);
-      const bundled = Array.isArray(parsed.models) ? parsed.models : [];
-      models = bundled.filter((model) => isBundledOfficialCodexModel(model.slug));
-    } catch {
-      // Fall through to seed models.
-    }
+  let bundledModels = [];
+  try {
+    const output = execFileSync("codex", ["debug", "models", "--bundled"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+      timeout: 15000,
+    });
+    const parsed = JSON.parse(output);
+    const bundled = Array.isArray(parsed.models) ? parsed.models : [];
+    bundledModels = bundled.filter((model) => isBundledOfficialCodexModel(model.slug));
+  } catch {
+    // Keep using the Desktop cache and seed models when the command is unavailable.
   }
+  const models = mergeOfficialCatalogModels(fromDesktopCache, bundledModels);
 
   const defaultInstructions =
     "You are Codex, a coding agent. Follow the active system and developer instructions.";
