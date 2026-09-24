@@ -13163,7 +13163,7 @@ async function fetchCodexSubscriptionResponses(provider, body, clientReq, signal
       // chatgpt-codex rejects non-stream requests.
       stream: auth.backend === "chatgpt-codex" ? true : Boolean(body?.stream),
     };
-    return await fetchWithOptionalProxy(auth.url, {
+    return await fetchWithOptionalProxy(provider?.base_url || auth.url, {
       method: "POST",
       headers: officialUpstreamHeaders(clientReq, auth),
       body: JSON.stringify(normalizeOfficialCodexBody(outbound, auth.backend)),
@@ -13205,7 +13205,7 @@ async function proxyCodexSubscriptionResponse(body, clientReq, clientRes, contex
   const requestSignal = signal || controller.signal;
 
   try {
-    const upstream = await fetchWithOptionalProxy(auth.url, {
+    const upstream = await fetchWithOptionalProxy(provider?.base_url || auth.url, {
       method: "POST",
       headers: officialUpstreamHeaders(clientReq, auth),
       body: JSON.stringify(normalizeOfficialCodexBody(outboundBody, auth.backend)),
@@ -13279,7 +13279,7 @@ async function proxyCodexSubscriptionResponse(body, clientReq, clientRes, contex
     logInfo("openai_responses_upstream_fetch_failed", {
       request_id: context.requestId,
       backend: auth.backend,
-      url: auth.url,
+      url: provider?.base_url || auth.url,
       proxy: proxyUrl || null,
       error: String(error?.message || error),
       cause: cause || null,

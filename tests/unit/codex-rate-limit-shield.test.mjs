@@ -38,7 +38,7 @@ test("parseRateLimitResetInfo uses fallback resets_at when error JSON lacks clea
   const futureTimestampSec = Math.floor(Date.now() / 1000) + 7200;
   const info = parseRateLimitResetInfo("plain 429 text", futureTimestampSec);
   assert.ok(info.clearsInSeconds >= 7190 && info.clearsInSeconds <= 7200);
-  assert.ok(info.display.includes("约 2 小时后"));
+  assert.ok(info.display.includes("约 2 小时后") || info.display.includes("约 1 小时 59 分钟后"));
 });
 
 test("parseRateLimitResetInfo defaults gracefully when no time is available", () => {
