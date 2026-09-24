@@ -8,6 +8,8 @@ import path from "node:path";
 import test from "node:test";
 
 const ROOT = path.resolve(import.meta.dirname, "../..");
+process.env.NO_PROXY = process.env.NO_PROXY ? `${process.env.NO_PROXY},127.0.0.1,localhost` : "127.0.0.1,localhost";
+process.env.no_proxy = process.env.NO_PROXY;
 
 async function listen(server) {
   server.listen(0, "127.0.0.1");
@@ -46,7 +48,7 @@ test("saving config rewrites the Codex model catalog file", async (t) => {
   await closeServer(reservation);
 
   const tempDir = await mkdtemp(path.join(tmpdir(), "codex-catalog-write-"));
-  t.after(() => rm(tempDir, { recursive: true, force: true }));
+  t.after(() => rm(tempDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }));
 
   const configPath = path.join(tempDir, "gateway.config.json");
   const secretsPath = path.join(tempDir, "gateway.secrets.json");
@@ -197,7 +199,7 @@ test("catalog combines a non-empty Desktop cache with newer bundled Codex models
   await closeServer(reservation);
 
   const tempDir = await mkdtemp(path.join(tmpdir(), "codex-catalog-sources-"));
-  t.after(() => rm(tempDir, { recursive: true, force: true }));
+  t.after(() => rm(tempDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }));
 
   const homeDir = path.join(tempDir, "home");
   const codexDir = path.join(homeDir, ".codex");
@@ -212,11 +214,11 @@ test("catalog combines a non-empty Desktop cache with newer bundled Codex models
       supported_in_api: true,
     }],
   }));
-  const fakeCodex = path.join(binDir, "codex");
-  await writeFile(fakeCodex, `#!/bin/sh
-printf '%s\\n' '{"models":[{"slug":"gpt-6-astra","display_name":"GPT-6-Astra","visibility":"list","supported_in_api":true}]}'
-`);
-  await chmod(fakeCodex, 0o755);
+  const fakeCodex = path.join(binDir, process.platform === "win32" ? "codex.cmd" : "codex");
+  await writeFile(fakeCodex, process.platform === "win32"
+    ? `@echo off\necho {"models":[{"slug":"gpt-6-astra","display_name":"GPT-6-Astra","visibility":"list","supported_in_api":true}]}\n`
+    : `#!/bin/sh\nprintf '%s\\n' '{"models":[{"slug":"gpt-6-astra","display_name":"GPT-6-Astra","visibility":"list","supported_in_api":true}]}'\n`);
+  if (process.platform !== "win32") await chmod(fakeCodex, 0o755);
 
   const configPath = path.join(tempDir, "gateway.config.json");
   const catalogPath = path.join(tempDir, "gateway-model-catalog.json");
@@ -242,6 +244,7 @@ printf '%s\\n' '{"models":[{"slug":"gpt-6-astra","display_name":"GPT-6-Astra","v
       ...process.env,
       HOME: homeDir,
       PATH: `${binDir}${path.delimiter}${process.env.PATH || ""}`,
+      CODEX_CLI_PATH: fakeCodex,
       GATEWAY_CONFIG_FILE: configPath,
       GATEWAY_SECRETS_FILE: path.join(tempDir, "gateway.secrets.json"),
       GATEWAY_PORT: String(gatewayPort),
@@ -271,7 +274,7 @@ printf '%s\\n' '{"models":[{"slug":"gpt-6-astra","display_name":"GPT-6-Astra","v
 
 test("codex catalog script combines cached, bundled, and custom models", async (t) => {
   const tempDir = await mkdtemp(path.join(tmpdir(), "codex-catalog-script-sources-"));
-  t.after(() => rm(tempDir, { recursive: true, force: true }));
+  t.after(() => rm(tempDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }));
 
   const homeDir = path.join(tempDir, "home");
   const codexDir = path.join(homeDir, ".codex");
@@ -281,11 +284,11 @@ test("codex catalog script combines cached, bundled, and custom models", async (
   await writeFile(path.join(codexDir, "models_cache.json"), JSON.stringify({
     models: [{ slug: "gpt-5.5", display_name: "GPT-5.5 from cache" }],
   }));
-  const fakeCodex = path.join(binDir, "codex");
-  await writeFile(fakeCodex, `#!/bin/sh
-printf '%s\\n' '{"models":[{"slug":"gpt-6-astra","display_name":"GPT-6-Astra"}]}'
-`);
-  await chmod(fakeCodex, 0o755);
+  const fakeCodex = path.join(binDir, process.platform === "win32" ? "codex.cmd" : "codex");
+  await writeFile(fakeCodex, process.platform === "win32"
+    ? `@echo off\necho {"models":[{"slug":"gpt-6-astra","display_name":"GPT-6-Astra"}]}\n`
+    : `#!/bin/sh\nprintf '%s\\n' '{"models":[{"slug":"gpt-6-astra","display_name":"GPT-6-Astra"}]}'\n`);
+  if (process.platform !== "win32") await chmod(fakeCodex, 0o755);
 
   const configPath = path.join(tempDir, "gateway.config.json");
   const catalogPath = path.join(tempDir, "gateway-model-catalog.json");
@@ -309,6 +312,7 @@ printf '%s\\n' '{"models":[{"slug":"gpt-6-astra","display_name":"GPT-6-Astra"}]}
       ...process.env,
       HOME: homeDir,
       PATH: `${binDir}${path.delimiter}${process.env.PATH || ""}`,
+      CODEX_CLI_PATH: fakeCodex,
       GATEWAY_CONFIG_FILE: configPath,
       CODEX_MODEL_CATALOG_PATH: catalogPath,
     },
@@ -328,7 +332,7 @@ test("saving duplicate public model ids returns conflict suggestions", async (t)
   const gatewayPort = await listen(reservation);
   await closeServer(reservation);
   const tempDir = await mkdtemp(path.join(tmpdir(), "gateway-conflict-save-"));
-  t.after(() => rm(tempDir, { recursive: true, force: true }));
+  t.after(() => rm(tempDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }));
   const configPath = path.join(tempDir, "gateway.config.json");
   await writeFile(configPath, JSON.stringify({
     server: { host: "127.0.0.1", port: gatewayPort },

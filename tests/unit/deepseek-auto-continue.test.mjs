@@ -394,3 +394,38 @@ test("sanitizeDeepSeekResponsesInput proactively injects agent execution rules w
   assert.equal(sanitized.input[0].role, "system");
   assert.match(JSON.stringify(sanitized.input[0].content), /Agent Execution Rules for DeepSeek/);
 });
+
+test("sanitizeDeepSeekResponsesInput skips agent execution rules when injectAgentRules is false", () => {
+  const source = {
+    model: "deepseek-chat",
+    tools: [{ type: "function", name: "shell_command" }],
+    input: [
+      {
+        type: "message",
+        role: "user",
+        content: [{ type: "input_text", text: "run task" }],
+      },
+    ],
+  };
+
+  const sanitized = sanitizeDeepSeekResponsesInput(source, { injectAgentRules: false });
+  assert.equal(sanitized.input.length, 1);
+  assert.equal(sanitized.input[0].role, "user");
+  assert.doesNotMatch(JSON.stringify(sanitized.input), /Agent Execution Rules for DeepSeek/);
+});
+
+test("resolveDeepSeekAutoContinueSettings respects inject_agent_rules in config", () => {
+  const disabled = resolveDeepSeekAutoContinueSettings({
+    config: {
+      tools: {
+        deepseek_auto_continue: {
+          inject_agent_rules: false,
+        },
+      },
+    },
+  });
+  assert.equal(disabled.inject_agent_rules, false);
+
+  const defaultSettings = resolveDeepSeekAutoContinueSettings();
+  assert.equal(defaultSettings.inject_agent_rules, true);
+});

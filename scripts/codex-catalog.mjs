@@ -8,6 +8,7 @@ import {
   isOfficialCodexModelId,
   mergeOfficialCatalogModels,
 } from "../lib/codex/official-models.mjs";
+import { resolveCodexCliInvocation } from "../lib/codex/cli-path.mjs";
 
 const PROJECT_ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const DEFAULT_CONFIG_PATH = path.join(PROJECT_ROOT, "gateway.config.json");
@@ -81,10 +82,12 @@ function loadBundledCodexModels() {
 
   let bundledModels = [];
   try {
-    const output = execFileSync("codex", ["debug", "models", "--bundled"], {
+    const invocation = resolveCodexCliInvocation(["debug", "models", "--bundled"]);
+    const output = execFileSync(invocation.command, invocation.args, {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
       timeout: 15000,
+      windowsHide: true,
     });
     const parsed = JSON.parse(output);
     bundledModels = Array.isArray(parsed.models) ? parsed.models : [];
@@ -119,11 +122,13 @@ function verifyWithCodex(catalogPath, customModels) {
     "model_providers.custom.experimental_bearer_token=\"dummy\"",
   ];
 
-  const output = execFileSync("codex", codexArgs, {
+  const invocation = resolveCodexCliInvocation(codexArgs);
+  const output = execFileSync(invocation.command, invocation.args, {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
     timeout: 20000,
     maxBuffer: 16 * 1024 * 1024,
+    windowsHide: true,
   });
   const parsed = JSON.parse(output);
   const modelIds = new Set((parsed.models || []).map((model) => model.slug));

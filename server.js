@@ -39,9 +39,11 @@ import {
   mergeOfficialDiscoveryModels,
   officialModelsFromOpenAIList,
 } from "./lib/codex/official-models.mjs";
+import { resolveCodexCliInvocation } from "./lib/codex/cli-path.mjs";
 import { unifyCodexHistory } from "./lib/codex/history-unify.mjs";
 import { pipeResponsesSsePassthrough } from "./lib/codex/responses-passthrough.mjs";
 import { applyAnthropicConstraints } from "./lib/codex/anthropic-constraints.mjs";
+import { handleOfficialRateLimit } from "./lib/codex/rate-limit-shield.mjs";
 import {
   normalizeCustomInput,
   ResponsesWriter,
@@ -1396,7 +1398,7 @@ function ensurePanelBuild() {
 
   _panelBuildPromise = new Promise((resolve) => {
     try {
-      execFileSync(process.execPath, [esbuildConfig], { stdio: "ignore", timeout: 15000 });
+      execFileSync(process.execPath, [esbuildConfig], { stdio: "ignore", timeout: 15000, windowsHide: true });
     } catch (err) {
       console.warn("[PanelBuild] Auto-build failed:", err.message);
     } finally {
@@ -3328,6 +3330,7 @@ if (reqPath === "/v1/config/secret" && req.method === "GET") {
         preserve_stage_text: incoming?.preserve_stage_text !== false,
         prompt: String(incoming?.prompt || DEFAULT_DEEPSEEK_AUTO_CONTINUE_SETTINGS.prompt).trim()
           || DEFAULT_DEEPSEEK_AUTO_CONTINUE_SETTINGS.prompt,
+        inject_agent_rules: incoming?.inject_agent_rules !== false,
       };
       const nextConfig = {
         ...GATEWAY_CONFIG,
@@ -7191,7 +7194,8 @@ async function proxyOfficialCodexImages(kind, clientReq, clientRes, context, sig
   headers.Accept = firstHeaderValue(clientReq.headers.accept) || "application/json";
 
   try {
-    const upstream = await fetchWithOptionalProxy(auth.url, {
+    const targetUrl = provider?.base_url || auth.url;
+    const upstream = await fetchWithOptionalProxy(targetUrl, {
       method: "POST",
       headers,
       body,
@@ -7289,6 +7293,22 @@ async function proxyOfficialCodexResponse(body, clientReq, clientRes, context, s
       stripped_hosted_tools: withTools.stripped_types || [],
       originator: firstHeaderValue(clientReq.headers["originator"]) || null,
     });
+    if (upstream.status === 429) {
+      const shieldEnabled = GATEWAY_CONFIG.clients?.codex?.rate_limit_shield?.enabled !== false;
+      if (shieldEnabled) {
+        const errorText = await upstream.text();
+        const handled = await handleOfficialRateLimit({
+          upstream,
+          clientRes,
+          body,
+          requestedModel: body.model || null,
+          requestId: context.requestId,
+          logInfo,
+          errorText,
+        });
+        if (handled) return;
+      }
+    }
 
     if (body.stream) {
       await pipeResponsesUpstream(upstream, clientRes, {
@@ -7629,7 +7649,13 @@ function convertResponsesOutputToolKinds(response, toolKinds = new Map()) {
 
 function sanitizeProviderResponsesInput(body, provider = null) {
   if (isDeepSeekResponsesModel(body?.model, provider)) {
-    return sanitizeDeepSeekResponsesInput(body);
+    const dsSettings = resolveDeepSeekAutoContinueSettings({
+      config: GATEWAY_CONFIG,
+      env: process.env,
+    });
+    return sanitizeDeepSeekResponsesInput(body, {
+      injectAgentRules: dsSettings.inject_agent_rules,
+    });
   }
   return sanitizeResponsesInput(body);
 }
@@ -12873,10 +12899,12 @@ function loadOfficialCodexCatalogModels() {
   const fromDesktopCache = loadOfficialCodexModelsFromDesktopCache();
   let bundledModels = [];
   try {
-    const output = execFileSync("codex", ["debug", "models", "--bundled"], {
+    const invocation = resolveCodexCliInvocation(["debug", "models", "--bundled"]);
+    const output = execFileSync(invocation.command, invocation.args, {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],
       timeout: 15000,
+      windowsHide: true,
     });
     const parsed = JSON.parse(output);
     const bundled = Array.isArray(parsed.models) ? parsed.models : [];
@@ -13205,6 +13233,22 @@ async function proxyCodexSubscriptionResponse(body, clientReq, clientRes, contex
       stripped_hosted_tools: withTools.stripped_types || [],
       originator: firstHeaderValue(clientReq.headers["originator"]) || null,
     });
+    if (upstream.status === 429) {
+      const shieldEnabled = GATEWAY_CONFIG.clients?.codex?.rate_limit_shield?.enabled !== false;
+      if (shieldEnabled) {
+        const errorText = await upstream.text();
+        const handled = await handleOfficialRateLimit({
+          upstream,
+          clientRes,
+          body,
+          requestedModel: body.model || null,
+          requestId: context.requestId,
+          logInfo,
+          errorText,
+        });
+        if (handled) return;
+      }
+    }
 
     if (clientWantsStream) {
       await pipeResponsesUpstream(upstream, clientRes, {
@@ -13253,7 +13297,7 @@ function getOfficialCodexAuth(clientReq) {
     if (accessToken && accessToken !== "dummy" && accessToken !== "all" && accessToken.startsWith("ey")) {
       return {
         backend: "chatgpt-codex",
-        url: "https://chatgpt.com/backend-api/codex/responses",
+        url: process.env.CODEX_OFFICIAL_URL || "https://chatgpt.com/backend-api/codex/responses",
         accessToken,
         accountId: clientReq.headers["chatgpt-account-id"] || "",
       };
@@ -13268,7 +13312,7 @@ function getOfficialCodexAuth(clientReq) {
       if (accessToken) {
         return {
           backend: "chatgpt-codex",
-          url: "https://chatgpt.com/backend-api/codex/responses",
+          url: process.env.CODEX_OFFICIAL_URL || "https://chatgpt.com/backend-api/codex/responses",
           accessToken,
           accountId,
         };

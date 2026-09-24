@@ -130,20 +130,6 @@
           }
         },
         {
-          "id": "ep_7c7373fc-bba6-4732-bf0d-ffeea1b4a486",
-          "name": "huoshan-agentplan",
-          "type": "anthropic",
-          "base_url": "https://ark.cn-beijing.volces.com/api/plan",
-          "auth": "bearer",
-          "models": [],
-          "model_mapping": {
-            "claude-sonnet-4-5-max": "glm-5.2"
-          },
-          "model_labels": {
-            "claude-sonnet-4-5-max": "glm-5.2-ag"
-          }
-        },
-        {
           "id": "ep_396943be-f876-40a9-9c31-6b56c0d8545b",
           "name": "ait",
           "type": "anthropic",
@@ -194,7 +180,8 @@
           ],
           "model_mapping": {
             "claude-sonnet-4-5": "grok-4.5",
-            "claude-haiku-4-0-max": "grok-4.6"
+            "claude-haiku-4-0-max": "grok-4.6",
+            "claude-opus-4-8": "grok-4.7"
           },
           "is_default": true,
           "id": "ep_b83be2be-8d46-4765-8484-4626a8c6fd5a",
@@ -208,34 +195,8 @@
           },
           "model_labels": {
             "claude-sonnet-4-5": "grok-4.5-subscription",
-            "claude-haiku-4-0-max": "grok-4.6-subscription"
-          }
-        },
-        {
-          "name": "huoshan-codingplan",
-          "type": "anthropic",
-          "base_url": "https://ark.cn-beijing.volces.com/api/coding",
-          "models": [
-            "glm-5.2",
-            "minimax-m3",
-            "deepseek-v4-pro"
-          ],
-          "model_mapping": {
-            "claude-haiku-3-9": "glm-5.2",
-            "claude-opus-4-8": "deepseek-v4-pro",
-            "claude-haiku-3-8": "minimax-m3"
-          },
-          "is_default": false,
-          "id": "ep_0bb74284-d8fc-4fe7-bef4-54c32c8ee333",
-          "model_capabilities": {
-            "glm-5.2": {
-              "image": false
-            }
-          },
-          "model_labels": {
-            "claude-haiku-3-9": "glm-5.2-cp",
-            "claude-opus-4-8": "deepseek-v4-pro-cp",
-            "claude-haiku-3-8": "minimax-m3-cp"
+            "claude-haiku-4-0-max": "grok-4.6-subscription",
+            "claude-opus-4-8": "grok-4.7-subscription"
           }
         },
         {
@@ -311,8 +272,7 @@
           "base_url": "https://api.deepseek.com",
           "auth": "bearer",
           "models": [
-            "DeepSeek-V4-Flash",
-            "deepseek-v4-pro"
+            "deepseek-flash"
           ],
           "model_mapping": {},
           "capabilities": {
@@ -323,15 +283,6 @@
             "reasoning": false,
             "tools": true,
             "sanitize_dangling_tool_calls": true
-          },
-          "model_capabilities": {
-            "DeepSeek-V4-Flash": {
-              "image": false,
-              "max_tokens": 16384
-            },
-            "deepseek-v4-pro": {
-              "image": false
-            }
           },
           "is_default": false
         },
@@ -362,24 +313,6 @@
           "model_mapping": {}
         },
         {
-          "id": "ep_4806b00f-553c-4651-b395-23215904373b",
-          "name": "codex 订阅",
-          "type": "codex-subscription",
-          "base_url": "",
-          "auth": "bearer",
-          "models": [],
-          "model_mapping": {},
-          "capabilities": {
-            "input_modalities": [
-              "text",
-              "image"
-            ],
-            "reasoning": true,
-            "tools": true
-          },
-          "is_default": false
-        },
-        {
           "id": "ep_48cfa1ed-c07a-43bb-bdc4-f5bfd47e3602",
           "name": "huoshan-agentplan",
           "purpose": "embedding",
@@ -393,28 +326,6 @@
           "model_mapping": {},
           "embedding_model": "doubao-embedding-vision",
           "dimensions": 1024
-        },
-        {
-          "id": "ep_9bb49155-e9e0-46ff-8e7d-6458943dca61",
-          "name": "huoshan-agentplan",
-          "type": "openai-responses",
-          "base_url": "https://ark.cn-beijing.volces.com/api/plan/v3",
-          "auth": "bearer",
-          "models": [
-            "kimi-k3"
-          ],
-          "model_mapping": {
-            "glm-5.2-ag": "glm-5.2"
-          },
-          "capabilities": {
-            "input_modalities": [
-              "text",
-              "image"
-            ],
-            "reasoning": true,
-            "tools": true
-          },
-          "is_default": false
         },
         {
           "id": "ep_36e0017d-bb25-4b0d-87f1-2def4971c91e",
@@ -517,37 +428,11 @@
           "is_default": false
         },
         {
-          "name": "huoshan-codingplan",
-          "type": "openai-responses",
-          "base_url": "https://ark.cn-beijing.volces.com/api/coding/v3",
-          "models": [
-            "glm-5.2",
-            "minimax-m3"
-          ],
-          "model_mapping": {},
-          "capabilities": {
-            "input_modalities": [
-              "text",
-              "image"
-            ],
-            "reasoning": true,
-            "tools": true
-          },
-          "is_default": true,
-          "id": "ep_5f9be1d4-8d1f-4b4d-9e56-3c396fde4d7e",
-          "model_capabilities": {
-            "glm-5.2": {
-              "image": false
-            }
-          }
-        },
-        {
           "id": "ep_antigravity",
           "name": "Antigravity",
           "type": "antigravity",
           "models": [
-            "gemini-3.6-flash-high",
-            "gemini-3.7-flash-high"
+            "gemini-3.8-flash-high"
           ],
           "model_mapping": {},
           "capabilities": {
@@ -647,26 +532,6 @@
           "model_mapping": {}
         },
         {
-          "id": "ep_2307f181-5b6f-497c-8ae8-bb81a662ec8c",
-          "name": "how88.top",
-          "type": "anthropic",
-          "base_url": "https://how88.top",
-          "auth": "bearer",
-          "models": [
-            "claude-opus-4-8-max",
-            "claude-opus-4-7-max"
-          ],
-          "model_mapping": {},
-          "capabilities": {
-            "input_modalities": [
-              "text",
-              "image"
-            ],
-            "reasoning": false,
-            "tools": true
-          }
-        },
-        {
           "id": "ep_05615efd-1340-4828-925f-2bfa56798a87",
           "name": "grok-subscription",
           "type": "grok",
@@ -685,39 +550,11 @@
           }
         },
         {
-          "name": "huoshan-codingplan",
-          "type": "openai-responses",
-          "base_url": "https://ark.cn-beijing.volces.com/api/coding/v3",
-          "models": [
-            "glm-5.2",
-            "minimax-m3",
-            "deepseek-v4-pro"
-          ],
-          "model_mapping": {},
-          "capabilities": {
-            "input_modalities": [
-              "text",
-              "image"
-            ],
-            "reasoning": true,
-            "tools": true
-          },
-          "is_default": true,
-          "id": "ep_f812a9c4-1a56-4964-b56f-881b69483ee2",
-          "model_capabilities": {
-            "glm-5.2": {
-              "image": false
-            }
-          }
-        },
-        {
           "id": "ep_19caa0bf-f2c8-4925-8999-4ed6bd2d2efd",
           "name": "Antigravity",
           "type": "antigravity",
           "models": [
-            "gemini-3.6-flash-high",
-            "gemini-3.6-flash-medium",
-            "gemini-3.6-flash-low"
+            "gemini-3.8-flash-high"
           ],
           "model_mapping": {},
           "capabilities": {
@@ -766,8 +603,6 @@
           "name": "Antigravity",
           "type": "antigravity",
           "models": [
-            "gemini-3.6-flash-high",
-            "gemini-3.7-flash-high",
             "gemini-3.8-flash-high"
           ],
           "model_mapping": {},
@@ -788,7 +623,8 @@
           "base_url": "https://cli-chat-proxy.grok.com/v1",
           "models": [
             "grok-4.5",
-            "grok-4.6"
+            "grok-4.6",
+            "grok-4.7"
           ],
           "model_mapping": {},
           "capabilities": {
@@ -837,34 +673,6 @@
     },
     "deepseek": {
       "endpoints": [
-        {
-          "id": "ep_b11495f6-e1dd-4b25-95c2-38482bce471e",
-          "name": "grok-subscription",
-          "type": "grok",
-          "base_url": "https://cli-chat-proxy.grok.com/v1",
-          "models": [
-            "grok-4.5",
-            "grok-4.6"
-          ],
-          "model_mapping": {},
-          "capabilities": {
-            "input_modalities": [
-              "text",
-              "image"
-            ],
-            "reasoning": true,
-            "tools": true
-          },
-          "model_capabilities": {
-            "grok-4.5": {
-              "context_window": 500000
-            },
-            "grok-4.6": {
-              "context_window": 500000
-            }
-          },
-          "is_default": false
-        },
         {
           "id": "ep_925cd7e5-2146-4094-b542-7e202e9247ba",
           "name": "智谱",
@@ -919,8 +727,6 @@
           "name": "Antigravity",
           "type": "antigravity",
           "models": [
-            "gemini-3.6-flash-high",
-            "gemini-3.7-flash-high",
             "gemini-3.8-flash-high"
           ],
           "model_mapping": {},
@@ -941,7 +747,8 @@
           "base_url": "https://cli-chat-proxy.grok.com/v1",
           "models": [
             "grok-4.5",
-            "grok-4.6"
+            "grok-4.6",
+            "grok-4.7"
           ],
           "model_mapping": {},
           "capabilities": {
@@ -991,29 +798,6 @@
     "voicestudio": {
       "endpoints": [
         {
-          "id": "ep_b62a1d35-feea-4e06-b225-732ec5b7f75e",
-          "name": "workbuddy",
-          "type": "workbuddy",
-          "base_url": "http://127.0.0.1:7863/v1",
-          "auth": "none",
-          "models": [
-            "deepseek-v4.1-flash"
-          ],
-          "model_mapping": {},
-          "capabilities": {
-            "reasoning": true,
-            "tools": true
-          },
-          "accounts": [
-            {
-              "id": "acc_7863",
-              "port": 7863,
-              "name": "账号 1",
-              "edition": "global"
-            }
-          ]
-        },
-        {
           "id": "ep_270265b8-b09c-469d-8e07-578882f491b2",
           "name": "codex 订阅",
           "type": "codex-subscription",
@@ -1040,8 +824,7 @@
           "base_url": "https://api.deepseek.com",
           "auth": "bearer",
           "models": [
-            "DeepSeek-V4-Flash",
-            "deepseek-v4-pro"
+            "deepseek-flash"
           ],
           "model_mapping": {},
           "capabilities": {
@@ -1052,15 +835,6 @@
             "reasoning": false,
             "tools": true,
             "sanitize_dangling_tool_calls": true
-          },
-          "model_capabilities": {
-            "DeepSeek-V4-Flash": {
-              "image": false,
-              "max_tokens": 16384
-            },
-            "deepseek-v4-pro": {
-              "image": false
-            }
           },
           "is_default": false
         }
@@ -1077,7 +851,8 @@
           "base_url": "https://cli-chat-proxy.grok.com/v1",
           "models": [
             "grok-4.5",
-            "grok-4.6"
+            "grok-4.6",
+            "grok-4.7"
           ],
           "model_mapping": {},
           "capabilities": {
@@ -1174,6 +949,14 @@
     "claude_model_catalog": {
       "user_models": [],
       "disabled_builtin_models": []
+    },
+    "deepseek_auto_continue": {
+      "enabled": false,
+      "max_attempts": 0,
+      "require_agent_context": true,
+      "preserve_stage_text": true,
+      "prompt": "请立即直接调用工具执行下一步操作，禁止输出自然语言确认、开场白或阶段性总结。",
+      "inject_agent_rules": false
     }
   }
 }

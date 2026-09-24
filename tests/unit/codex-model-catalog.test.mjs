@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -183,6 +183,7 @@ test("official Codex ID loading uses the bundled command and bounded timeout", (
   const warnings = [];
   const ids = loadOfficialCodexIds({
     warnings,
+    platform: "linux",
     execFile(command, args, options) {
       invocation = { command, args, options };
       return JSON.stringify({ models: [{ slug: "gpt-5.5" }] });
@@ -194,7 +195,80 @@ test("official Codex ID loading uses the bundled command and bounded timeout", (
   assert.deepEqual(invocation.args, ["debug", "models", "--bundled"]);
   assert.equal(invocation.options.timeout, 15_000);
   assert.deepEqual(invocation.options.stdio, ["ignore", "pipe", "ignore"]);
+  assert.equal(invocation.options.windowsHide, true);
   assert.deepEqual(warnings, []);
+});
+
+test("official Codex ID loading prefers the explicitly configured CLI path", () => {
+  let invocation;
+  const configuredCli = "C:\\Users\\tester\\AppData\\Local\\OpenAI\\Codex\\bin\\current\\codex.exe";
+
+  loadOfficialCodexIds({
+    env: { CODEX_CLI_PATH: configuredCli },
+    execFile(command, args, options) {
+      invocation = { command, args, options };
+      return JSON.stringify({ models: [{ slug: "gpt-6-astra" }] });
+    },
+  });
+
+  assert.equal(invocation.command, configuredCli);
+});
+
+test("official Codex ID loading invokes configured Windows command shims through cmd.exe", () => {
+  let invocation;
+  const configuredCli = "D:\\nodejs\\codex.cmd";
+
+  loadOfficialCodexIds({
+    env: { CODEX_CLI_PATH: configuredCli, ComSpec: "C:\\Windows\\System32\\cmd.exe" },
+    platform: "win32",
+    execFile(command, args) {
+      invocation = { command, args };
+      return JSON.stringify({ models: [{ slug: "gpt-6-astra" }] });
+    },
+  });
+
+  assert.equal(invocation.command, "C:\\Windows\\System32\\cmd.exe");
+  assert.deepEqual(invocation.args, [
+    "/d",
+    "/s",
+    "/c",
+    configuredCli,
+    "debug",
+    "models",
+    "--bundled",
+  ]);
+});
+
+test("official Codex ID loading discovers the newest Windows Desktop CLI", () => {
+  const tempDir = mkdtempSync(path.join(os.tmpdir(), "codex-cli-discovery-"));
+  const binDir = path.join(tempDir, "OpenAI", "Codex", "bin");
+  const olderDir = path.join(binDir, "older-runtime");
+  const currentDir = path.join(binDir, "current-runtime");
+  const olderCli = path.join(olderDir, "codex.exe");
+  const currentCli = path.join(currentDir, "codex.exe");
+
+  try {
+    mkdirSync(olderDir, { recursive: true });
+    mkdirSync(currentDir, { recursive: true });
+    writeFileSync(olderCli, "older");
+    writeFileSync(currentCli, "current");
+    utimesSync(olderCli, new Date("2026-08-01T00:00:00Z"), new Date("2026-08-01T00:00:00Z"));
+    utimesSync(currentCli, new Date("2026-09-23T00:00:00Z"), new Date("2026-09-23T00:00:00Z"));
+
+    let commandUsed;
+    loadOfficialCodexIds({
+      env: { LOCALAPPDATA: tempDir },
+      platform: "win32",
+      execFile(command) {
+        commandUsed = command;
+        return JSON.stringify({ models: [{ slug: "gpt-6-astra" }] });
+      },
+    });
+
+    assert.equal(commandUsed, currentCli);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
 });
 
 test("official Codex ID loading falls back to a warning without leaking errors", () => {
@@ -241,7 +315,11 @@ test("validate-config continues after official ID lookup failure without leaking
       {
         cwd: path.resolve("."),
         encoding: "utf8",
-        env: { ...process.env, PATH: tempDir },
+        env: {
+          ...process.env,
+          PATH: tempDir,
+          CODEX_CLI_PATH: path.join(tempDir, "missing-codex.exe"),
+        },
         timeout: 5_000,
       },
     );

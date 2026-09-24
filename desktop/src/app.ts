@@ -348,6 +348,7 @@ const DEFAULT_DEEPSEEK_AUTO_CONTINUE_UI = {
     require_agent_context: true,
     preserve_stage_text: true,
     prompt: '请立即直接调用工具执行下一步操作，禁止输出自然语言确认、开场白或阶段性总结。',
+    inject_agent_rules: true,
 };
 
 function getDeepSeekAutoContinueConfig() {
@@ -361,6 +362,7 @@ function getDeepSeekAutoContinueConfig() {
         require_agent_context: current.require_agent_context !== false,
         preserve_stage_text: current.preserve_stage_text !== false,
         prompt: String(current.prompt || DEFAULT_DEEPSEEK_AUTO_CONTINUE_UI.prompt).trim() || DEFAULT_DEEPSEEK_AUTO_CONTINUE_UI.prompt,
+        inject_agent_rules: current.inject_agent_rules !== false,
     };
     return config.tools.deepseek_auto_continue;
 }
@@ -388,11 +390,13 @@ function readDeepSeekAutoContinueForm() {
     const prompt = document.getElementById('dsac-prompt');
     const sample = document.getElementById('dsac-sample-text');
     const hasTools = document.getElementById('dsac-has-tools');
+    const injectAgentRules = document.getElementById('dsac-inject-agent-rules') as HTMLInputElement | null;
     return {
         enabled: enabled ? enabled.checked : deepseekAutoContinueState.settings.enabled,
         max_attempts: maxAttempts ? Math.max(0, Math.min(3, Number(maxAttempts.value || 0))) : deepseekAutoContinueState.settings.max_attempts,
         require_agent_context: requireAgent ? requireAgent.checked : deepseekAutoContinueState.settings.require_agent_context,
         preserve_stage_text: preserveStage ? preserveStage.checked : deepseekAutoContinueState.settings.preserve_stage_text,
+        inject_agent_rules: injectAgentRules ? injectAgentRules.checked : deepseekAutoContinueState.settings.inject_agent_rules !== false,
         prompt: prompt ? String(prompt.value || '').trim() : deepseekAutoContinueState.settings.prompt,
         sampleText: sample ? String(sample.value || '') : deepseekAutoContinueState.sampleText,
         hasTools: hasTools ? hasTools.checked : deepseekAutoContinueState.hasTools,
@@ -423,6 +427,9 @@ window.renderDeepSeekAutoContinueDetail = function() {
     const preserveBadge = st.preserve_stage_text !== false
         ? '<span class="badge">保留阶段总结</span>'
         : '<span class="badge">仅返回后续轮</span>';
+    const rulesBadge = st.inject_agent_rules !== false
+        ? '<span class="badge">注入 Agent 规范</span>'
+        : '<span class="badge">原始指令纯净</span>';
     const attemptsBadge = `<span class="badge">最多 ${escapeHtml(String(st.max_attempts ?? 1))} 次</span>`;
     const busyText = deepseekAutoContinueState.loading
         ? '加载中…'
@@ -504,6 +511,7 @@ window.renderDeepSeekAutoContinueDetail = function() {
                         ${attemptsBadge}
                         ${modeBadge}
                         ${preserveBadge}
+                        ${rulesBadge}
                     </div>
                     <div class="node-card-footer">
                         <span>${escapeHtml(busyText)}</span>
@@ -543,6 +551,10 @@ window.renderDeepSeekAutoContinueDetail = function() {
                             <label class="capability-option">
                                 <input class="capability-checkbox" id="dsac-preserve-stage" type="checkbox" ${st.preserve_stage_text ? 'checked' : ''}>
                                 <span>保留阶段总结</span>
+                            </label>
+                            <label class="capability-option">
+                                <input class="capability-checkbox" id="dsac-inject-agent-rules" type="checkbox" ${st.inject_agent_rules !== false ? 'checked' : ''}>
+                                <span>注入 Agent 执行规范</span>
                             </label>
                         </div>
                     </div>
@@ -639,6 +651,7 @@ window.saveDeepSeekAutoContinueSettings = async function() {
             require_agent_context: form.require_agent_context,
             preserve_stage_text: form.preserve_stage_text,
             prompt: form.prompt || DEFAULT_DEEPSEEK_AUTO_CONTINUE_UI.prompt,
+            inject_agent_rules: form.inject_agent_rules,
         };
         const res = await fetch('/v1/tools/deepseek-auto-continue', {
             method: 'POST',
@@ -680,6 +693,7 @@ window.evaluateDeepSeekAutoContinueSample = async function() {
         require_agent_context: form.require_agent_context,
         preserve_stage_text: form.preserve_stage_text,
         prompt: form.prompt || DEFAULT_DEEPSEEK_AUTO_CONTINUE_UI.prompt,
+        inject_agent_rules: form.inject_agent_rules,
     };
     if (toolsView === 'deepseek-auto-continue') renderDeepSeekAutoContinueDetail();
     try {

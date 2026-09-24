@@ -13,4 +13,6 @@ test("config panel exposes DeepSeek auto-continue mini-tool", async () => {
   assert.match(app, /\/v1\/tools\/deepseek-auto-continue/);
   assert.match(app, /require_agent_context/);
   assert.match(app, /preserve_stage_text/);
+  assert.match(app, /inject_agent_rules/);
+  assert.match(app, /注入 Agent 执行规范/);
 });
