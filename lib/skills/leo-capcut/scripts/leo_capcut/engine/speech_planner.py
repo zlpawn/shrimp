@@ -87,23 +87,31 @@ def plan_speech_cut(
     
     # 1. Detect inter-word silences
     prev_end = 0
+    prev_is_filler = False
     for seg in transcript_segments:
         s = seg.get("start_us", 0)
         e = seg.get("end_us", 0)
         text = seg.get("text", "").strip()
+        is_filler = bool(text in filler_set and (e - s) > 0)
         if s - prev_end > min_silence_us:
-            # Cut silence keeping 100ms buffer, except at very start of video
-            cut_start = 0 if prev_end == 0 else prev_end + 100_000
-            cut_end = s - 100_000
+            # Cut silence keeping 100ms buffer, except at very start of video or adjacent to filler words
+            cut_start = prev_end if (prev_is_filler or prev_end == 0) else prev_end + 100_000
+            cut_end = s if is_filler else s - 100_000
             if cut_end > cut_start:
                 cuts.append((cut_start, cut_end))
-        if text in filler_set and (e - s) > 0:
+        elif prev_is_filler and is_filler and s > prev_end:
+            cuts.append((prev_end, s))
+        if is_filler:
             cuts.append((s, e))
+            prev_is_filler = True
+        else:
+            prev_is_filler = False
         prev_end = max(prev_end, e)
     
     # Trailing silence
     if total_duration_us - prev_end > min_silence_us:
-        cuts.append((prev_end + 100_000, total_duration_us))
+        cut_start = prev_end if prev_is_filler else prev_end + 100_000
+        cuts.append((cut_start, total_duration_us))
 
     keeps = compute_keep_intervals(total_duration_us, cuts)
     time_map = TimeMap(keeps)

@@ -282,5 +282,113 @@ class CliEngineCommandsTests(unittest.TestCase):
         self.assertTrue(out_mp4.is_file())
 
 
+    def test_cli_speech_cut_timeline_has_source_start_us(self):
+        video_file = self.temp_dir / "speech_src.mp4"
+        cmd_v = [
+            "ffmpeg", "-y", "-f", "lavfi", "-i", "color=c=black:s=320x240:d=6",
+            "-c:v", "libx264", "-pix_fmt", "yuv420p", str(video_file)
+        ]
+        subprocess.run(cmd_v, check=True, capture_output=True)
+
+        transcript_file = self.temp_dir / "transcript_src.json"
+        transcript = [
+            {"start_us": 0, "end_us": 2_000_000, "text": "第一句话"},
+            {"start_us": 2_000_000, "end_us": 3_000_000, "text": "呃"},
+            {"start_us": 4_500_000, "end_us": 6_000_000, "text": "第二句话"},
+        ]
+        transcript_file.write_text(json.dumps(transcript), encoding="utf-8")
+
+        tl_out = self.temp_dir / "out_speech_tl.json"
+        res = subprocess.run(
+            [
+                sys.executable,
+                str(CLI_PATH),
+                "speech-cut",
+                "--media",
+                str(video_file),
+                "--transcript",
+                str(transcript_file),
+                "--remove-silence-over",
+                "0.6",
+                "--remove-fillers",
+                "呃",
+                "--out-timeline",
+                str(tl_out),
+            ],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(res.returncode, 0, msg=res.stderr)
+        self.assertTrue(tl_out.is_file())
+        tl_data = json.loads(tl_out.read_text(encoding="utf-8"))
+        video_track = next(t for t in tl_data["tracks"] if t["type"] == "video")
+        clips = video_track["clips"]
+        self.assertEqual(len(clips), 2)
+        self.assertEqual(clips[0]["source_start_us"], 0)
+        self.assertEqual(clips[1]["source_start_us"], 4_400_000)
+
+    def test_cli_speech_cut_with_font_and_draft_output(self):
+        video_file = self.temp_dir / "speech_font_vid.mp4"
+        cmd_v = [
+            "ffmpeg", "-y", "-f", "lavfi", "-i", "color=c=blue:s=320x240:d=6",
+            "-c:v", "libx264", "-pix_fmt", "yuv420p", str(video_file)
+        ]
+        subprocess.run(cmd_v, check=True, capture_output=True)
+
+        transcript_file = self.temp_dir / "transcript_font.json"
+        transcript = [
+            {"start_us": 0, "end_us": 2_000_000, "text": "第一句话"},
+            {"start_us": 2_000_000, "end_us": 3_000_000, "text": "呃"},
+            {"start_us": 4_500_000, "end_us": 6_000_000, "text": "第二句话"},
+        ]
+        transcript_file.write_text(json.dumps(transcript), encoding="utf-8")
+
+        dummy_font = self.temp_dir / "CustomBrandFont.ttf"
+        dummy_font.write_bytes(b"custom font binary")
+
+        draft_target = self.temp_dir / "draft_out_proj"
+        res = subprocess.run(
+            [
+                sys.executable,
+                str(CLI_PATH),
+                "speech-cut",
+                "--media",
+                str(video_file),
+                "--transcript",
+                str(transcript_file),
+                "--remove-silence-over",
+                "0.6",
+                "--remove-fillers",
+                "呃",
+                "--out-draft",
+                str(draft_target),
+                "--font",
+                str(dummy_font),
+            ],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(res.returncode, 0, msg=res.stderr)
+        self.assertTrue(draft_target.is_dir())
+        
+        # Verify font was copied to resources/fonts
+        font_in_draft = draft_target / "resources" / "fonts" / "CustomBrandFont.ttf"
+        self.assertTrue(font_in_draft.is_file())
+
+        # Verify draft_content.json has font material registered
+        draft_content_path = draft_target / "draft_content.json"
+        self.assertTrue(draft_content_path.is_file())
+        from leo_capcut.engine.draft_modifier import read_draft_content
+        draft_content = read_draft_content(draft_target)
+        fonts = draft_content.get("materials", {}).get("fonts", [])
+        self.assertTrue(any(f.get("title") == "CustomBrandFont" for f in fonts))
+
+        # Verify second video segment has source offset > 0
+        v_track = next(t for t in draft_content["tracks"] if t["type"] == "video")
+        self.assertEqual(len(v_track["segments"]), 2)
+        seg2_source_start = v_track["segments"][1]["source_timerange"]["start"]
+        self.assertEqual(seg2_source_start, 4_400_000)
+
+
 if __name__ == "__main__":
     unittest.main()

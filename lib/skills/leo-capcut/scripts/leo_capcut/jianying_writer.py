@@ -192,9 +192,10 @@ def build_draft_payloads(
                     material_cache[asset.id] = material
                 speed_val = clip.speed if clip.speed is not None else 1.0
                 source_duration = round(clip.duration_us * speed_val)
-                if int(material.duration) < source_duration:
-                    material.duration = source_duration
-                source = draft.Timerange(0, source_duration)
+                source_start = int(clip.source_start_us or 0)
+                if int(material.duration) < source_start + source_duration:
+                    material.duration = source_start + source_duration
+                source = draft.Timerange(source_start, source_duration)
                 if track.type == "video":
                     has_settings = (
                         clip.flip_horizontal

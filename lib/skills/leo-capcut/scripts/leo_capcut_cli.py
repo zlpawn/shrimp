@@ -276,6 +276,7 @@ def cmd_speech_cut(args: argparse.Namespace) -> int:
             Clip(
                 id=f"v_seg_{idx}",
                 asset_id=media_asset_id,
+                source_start_us=s,
                 start_us=timeline_cursor,
                 duration_us=dur,
                 audio_fade_in_us=20_000,
@@ -360,6 +361,29 @@ def cmd_speech_cut(args: argparse.Namespace) -> int:
         result_payload["draft"] = published_info
     if exported_path:
         result_payload["export_path"] = exported_path
+    if getattr(args, "out_timeline", None):
+        out_tl_path = Path(args.out_timeline).resolve()
+        out_tl_path.parent.mkdir(parents=True, exist_ok=True)
+        from dataclasses import asdict
+        tl_dict = {
+            "schema_version": timeline.schema_version,
+            "project_name": timeline.project_name,
+            "canvas": asdict(timeline.canvas),
+            "duration_us": timeline.duration_us,
+            "assets": [asdict(a) for a in timeline.assets],
+            "tracks": [
+                {
+                    "id": t.id,
+                    "type": t.type,
+                    "name": t.name,
+                    "clips": [asdict(c) for c in t.clips],
+                }
+                for t in timeline.tracks
+            ],
+        }
+        out_tl_path.write_text(json.dumps(tl_dict, ensure_ascii=False, indent=2), encoding="utf-8")
+        result_payload["timeline_file"] = str(out_tl_path)
+
     if not published_info and not exported_path:
         result_payload["timeline"] = {
             "duration_us": timeline.duration_us,
@@ -485,6 +509,7 @@ def main() -> int:
     speech_cut.add_argument("--bgm", help="Path to background music audio file")
     speech_cut.add_argument("--bgm-volume", type=float, default=0.2, help="BGM volume multiplier (default 0.2)")
     speech_cut.add_argument("--out-draft", help="Output draft directory to publish")
+    speech_cut.add_argument("--out-timeline", help="Output Timeline IR JSON file path")
     speech_cut.add_argument("--export", help="Output MP4 file path for headless export")
     speech_cut.add_argument("--font", help="Path to custom font file")
     speech_cut.add_argument("--name", help="Project name")

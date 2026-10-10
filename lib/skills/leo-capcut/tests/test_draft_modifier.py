@@ -322,5 +322,29 @@ class DraftModifierTests(unittest.TestCase):
         target_dir = src_draft.parent / "target_corrupt"
         self.assertFalse(target_dir.exists())
 
+    def test_modify_draft_copy_crypto_fuse_triggers_on_node_verification_failure(self):
+        src_draft = self.temp_dir / "src_fuse_verify"
+        src_draft.mkdir()
+        (src_draft / "draft_content.json").write_text(
+            json.dumps(self.sample_content),
+            encoding="utf-8",
+        )
+
+        with patch("leo_capcut.engine.draft_modifier.IsolatedJianyingCodec.encode", return_value=b"DUMMY_ENCODED"), \
+             patch("leo_capcut.engine.draft_modifier.IsolatedJianyingCodec.decode", return_value={"corrupted": True}):
+            with self.assertRaises(RuntimeError) as ctx:
+                modify_draft_copy(
+                    src_draft,
+                    "target_fuse_verify",
+                    [],
+                    publish=False,
+                    env={"install_dir": "D:/dummy/install", "jianying_running": False},
+                )
+            self.assertIn("Crypto fuse triggered: round-trip node verification failed", str(ctx.exception))
+
+        target_dir = src_draft.parent / "target_fuse_verify"
+        self.assertFalse(target_dir.exists())
+
+
 if __name__ == "__main__":
     unittest.main()

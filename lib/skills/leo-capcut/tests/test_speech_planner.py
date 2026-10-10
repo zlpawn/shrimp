@@ -55,10 +55,25 @@ class SpeechPlannerTests(unittest.TestCase):
             {"start_us": 4_500_000, "end_us": 6_000_000, "text": "欢迎收看"},  # silence between 3.2s and 4.5s is 1.3s (>0.6s)
         ]
         keeps, shifted_subs, tm = plan_speech_cut(total_us, transcript, remove_silence_over_sec=0.6, fillers=["呃", "啊"])
-        self.assertTrue(len(keeps) >= 2)
+        self.assertEqual(keeps, [(0, 2_000_000), (4_400_000, 6_000_000)])
         self.assertEqual(len(shifted_subs), 2)
         self.assertEqual(shifted_subs[0]["text"], "大家好")
         self.assertEqual(shifted_subs[1]["text"], "欢迎收看")
+
+    def test_plan_speech_cut_silence_adjacent_to_filler_both_sides(self):
+        total_us = 7_000_000
+        transcript = [
+            {"start_us": 0, "end_us": 1_000_000, "text": "第一段"},
+            # Silence 1s-2.5s (1.5s > 0.6s) before filler
+            {"start_us": 2_500_000, "end_us": 3_500_000, "text": "那个"},  # filler
+            # Silence 3.5s-5s (1.5s > 0.6s) after filler
+            {"start_us": 5_000_000, "end_us": 7_000_000, "text": "第二段"},
+        ]
+        keeps, shifted_subs, tm = plan_speech_cut(
+            total_us, transcript, remove_silence_over_sec=0.6, fillers=["那个"]
+        )
+        self.assertEqual(keeps, [(0, 1_100_000), (4_900_000, 7_000_000)])
+        self.assertEqual(len(shifted_subs), 2)
 
 if __name__ == "__main__":
     unittest.main()

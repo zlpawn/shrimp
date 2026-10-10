@@ -31,6 +31,7 @@ class Clip:
     start_us: int
     duration_us: int
     asset_id: str | None = None
+    source_start_us: int | None = None
     text: str | None = None
     volume: float | None = None
     mix_mode: str | None = None
@@ -249,6 +250,7 @@ def validate_timeline(payload: Mapping[str, Any] | Timeline) -> Timeline:
                     start_us=start_us,
                     duration_us=clip_duration,
                     asset_id=asset_id.strip() if isinstance(asset_id, str) else None,
+                    source_start_us=_require_int(clip_raw, "source_start_us", f"clip {clip_index}", min_value=0) if clip_raw.get("source_start_us") is not None else None,
                     text=text.strip() if isinstance(text, str) else None,
                     volume=float(clip_raw["volume"]) if isinstance(clip_raw.get("volume"), (int, float)) else None,
                     mix_mode=str(clip_raw["mix_mode"]) if clip_raw.get("mix_mode") else None,

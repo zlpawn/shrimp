@@ -279,6 +279,9 @@ def modify_draft_copy(
             codec = IsolatedJianyingCodec(Path(install_dir))
             # Strict fuse: do not swallow exceptions or silently downgrade to plaintext
             encoded_bytes = codec.encode(patched)
+            verified = codec.decode(encoded_bytes)
+            if "tracks" not in verified or "materials" not in verified:
+                raise RuntimeError("Crypto fuse triggered: round-trip node verification failed")
             (dest_dir / "draft_content.json").write_bytes(encoded_bytes)
         else:
             (dest_dir / "draft_content.json").write_text(

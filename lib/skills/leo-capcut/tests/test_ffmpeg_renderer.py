@@ -179,6 +179,75 @@ class FfmpegRendererTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             assert_render_quality(Path("non_existent_file_abc999.mp4"), expected_duration_us=1_000_000)
 
+    def test_compile_filtergraph_multi_clip_trim_concat_audio(self):
+        tl = Timeline(
+            schema_version="1.0",
+            project_name="multi_clip_demo",
+            canvas=Canvas(width=1080, height=1920, fps=30),
+            duration_us=2_500_000,
+            assets=[
+                Asset(id="a_v", kind="video", uri="D:/video.mp4", duration_us=5_000_000),
+            ],
+            tracks=[
+                Track(id="t_v", type="video", name="Main", clips=[
+                    Clip(id="c1", asset_id="a_v", source_start_us=500_000, start_us=0, duration_us=1_000_000, audio_fade_in_us=20_000),
+                    Clip(id="c2", asset_id="a_v", source_start_us=2_000_000, start_us=1_000_000, duration_us=1_500_000, audio_fade_out_us=20_000),
+                ]),
+            ]
+        )
+        inputs, filters, out_v, out_a = compile_filtergraph(tl)
+        filter_str = ";".join(filters)
+        self.assertIn("trim=start=0.5:end=1.5", filter_str)
+        self.assertIn("trim=start=2:end=3.5", filter_str)
+        self.assertIn("atrim=start=0.5:end=1.5", filter_str)
+        self.assertIn("atrim=start=2:end=3.5", filter_str)
+        self.assertIn("[v_clip_0][v_clip_1]concat=n=2:v=1:a=0[v_base]", filter_str)
+        self.assertIn("[a_clip_0][a_clip_1]concat=n=2:v=0:a=1[a_speech]", filter_str)
+        self.assertIn("[a_speech]aformat=", filter_str)
+
+    def test_render_timeline_mp4_multi_clip_with_video_audio(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            video_asset = tmp_path / "speech_source.mp4"
+            out_mp4 = tmp_path / "multi_rendered.mp4"
+
+            # Create 4-second video asset WITH audio stream
+            cmd = [
+                "ffmpeg", "-y",
+                "-f", "lavfi", "-i", "color=c=green:s=320x240:d=4",
+                "-f", "lavfi", "-i", "sine=frequency=1000:duration=4",
+                "-c:v", "libx264", "-pix_fmt", "yuv420p",
+                "-c:a", "aac",
+                str(video_asset)
+            ]
+            subprocess.run(cmd, check=True, capture_output=True)
+
+            tl = Timeline(
+                schema_version="1.0",
+                project_name="multi_render_test",
+                canvas=Canvas(width=320, height=240, fps=30),
+                duration_us=2_000_000,
+                assets=[
+                    Asset(id="a_v", kind="video", uri=str(video_asset).replace("\\", "/"), duration_us=4_000_000),
+                ],
+                tracks=[
+                    Track(id="t_v", type="video", name="Main", clips=[
+                        Clip(id="c1", asset_id="a_v", source_start_us=500_000, start_us=0, duration_us=1_000_000, audio_fade_in_us=20_000),
+                        Clip(id="c2", asset_id="a_v", source_start_us=2_000_000, start_us=1_000_000, duration_us=1_000_000, audio_fade_out_us=20_000),
+                    ]),
+                ]
+            )
+
+            res_path = render_timeline_mp4(tl, out_mp4)
+            self.assertEqual(res_path, out_mp4)
+            self.assertTrue(out_mp4.is_file())
+            self.assertGreater(out_mp4.stat().st_size, 0)
+
+            meta = assert_render_quality(out_mp4, expected_duration_us=2_000_000)
+            codec_types = [s.get("codec_type") for s in meta.get("streams", [])]
+            self.assertIn("video", codec_types)
+            self.assertIn("audio", codec_types)
+
 
 if __name__ == "__main__":
     unittest.main()
