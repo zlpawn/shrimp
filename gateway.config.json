@@ -882,7 +882,8 @@
           "models": [],
           "model_mapping": {
             "GLM-5.3-ait": "GLM-5.3",
-            "deepseek-v4.1-flash-ait": "deepseek-v4.1-flash"
+            "deepseek-v4.1-flash-ait": "deepseek-v4.1-flash",
+            "gpt-6.1-sol-ait": "gpt-6.1-sol"
           },
           "capabilities": {
             "sanitize_dangling_tool_calls": true
