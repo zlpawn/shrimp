@@ -68,17 +68,21 @@ def inspect_draft_dict(content: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def read_draft_content(draft_dir: Path) -> dict[str, Any]:
+def read_draft_content(draft_dir: Path, env: dict[str, Any] | None = None) -> dict[str, Any]:
     """Read and decrypt draft_content.json from a draft directory."""
     draft_path = Path(draft_dir) / "draft_content.json"
     if not draft_path.is_file():
         raise FileNotFoundError(f"draft_content.json not found in {draft_dir}")
 
     raw = draft_path.read_bytes()
+    if raw.startswith(b"\xef\xbb\xbf"):
+        raw = raw[3:]
+
     if raw.lstrip().startswith(b"{"):
         return json.loads(raw.decode("utf-8"))
 
-    env = detect_environment()
+    if env is None:
+        env = detect_environment()
     install_dir = env.get("install_dir")
     if not install_dir:
         raise RuntimeError("Cannot decrypt draft: Jianying install directory not found")
@@ -87,10 +91,10 @@ def read_draft_content(draft_dir: Path) -> dict[str, Any]:
     return codec.decode(raw)
 
 
-def inspect_draft(draft_dir: Path) -> dict[str, Any]:
+def inspect_draft(draft_dir: Path, env: dict[str, Any] | None = None) -> dict[str, Any]:
     """Inspect an existing draft folder and return its high-level structure."""
     draft_dir = Path(draft_dir)
-    content = read_draft_content(draft_dir)
+    content = read_draft_content(draft_dir, env=env)
     summary = inspect_draft_dict(content)
     summary["draft_id"] = content.get("id", "")
     summary["draft_name"] = draft_dir.name
@@ -122,10 +126,10 @@ def apply_patch_operations(
 
         if action in ("replace_audio", "replace_asset") and target_track:
             new_asset = Path(op["new_asset"])
-            dest = asset_copy_dir / new_asset.name
+            mat_id = uuid.uuid4().hex
+            dest = asset_copy_dir / f"{mat_id[:8]}_{new_asset.name}"
             if new_asset.resolve() != dest.resolve():
                 shutil.copy2(new_asset, dest)
-            mat_id = uuid.uuid4().hex
 
             track_type = target_track.get("type", "audio")
             if track_type == "audio":
@@ -184,9 +188,11 @@ def publish_draft_safely(
     draft_id: str,
     draft_name: str,
     duration_us: int = 0,
+    env: dict[str, Any] | None = None,
 ) -> Path | None:
     """Register a draft to root_meta_info.json safely with backup and process check."""
-    env = detect_environment()
+    if env is None:
+        env = detect_environment()
     if env.get("jianying_running", False):
         raise RuntimeError(
             "Jianying is currently running; please close it before registering drafts to avoid corrupted metadata."
@@ -229,6 +235,7 @@ def modify_draft_copy(
     out_name: str,
     operations: list[dict[str, Any]],
     publish: bool = True,
+    env: dict[str, Any] | None = None,
 ) -> Path:
     """Safely clone an existing draft directory and apply patch operations."""
     src_draft_dir = Path(src_draft_dir)
@@ -236,60 +243,86 @@ def modify_draft_copy(
     if dest_dir.exists():
         raise FileExistsError(f"Target draft directory already exists: {dest_dir}")
 
-    shutil.copytree(src_draft_dir, dest_dir)
-    asset_dir = dest_dir / "agent_media"
-    asset_dir.mkdir(parents=True, exist_ok=True)
+    if env is None:
+        env = detect_environment()
 
-    content = read_draft_content(src_draft_dir)
-    new_id = str(uuid.uuid4()).upper()
-    content["id"] = new_id
-
-    patched = apply_patch_operations(content, operations, asset_copy_dir=asset_dir)
-
-    # Encode with codec if available, otherwise write JSON text
-    env = detect_environment()
-    install_dir = env.get("install_dir")
-    encoded_bytes = None
-    if install_dir:
-        try:
-            codec = IsolatedJianyingCodec(Path(install_dir))
-            encoded_bytes = codec.encode(patched)
-        except Exception:
-            encoded_bytes = None
-
-    if encoded_bytes is not None:
-        (dest_dir / "draft_content.json").write_bytes(encoded_bytes)
-    else:
-        (dest_dir / "draft_content.json").write_text(
-            json.dumps(patched, ensure_ascii=False, indent=2),
-            encoding="utf-8",
+    # Pre-check running state before copying to avoid partial/orphaned state
+    if publish and env.get("jianying_running", False):
+        raise RuntimeError(
+            "Jianying is currently running; please close it before registering drafts to avoid corrupted metadata."
         )
 
-    meta_path = dest_dir / "draft_meta_info.json"
-    if meta_path.is_file():
-        try:
+    shutil.copytree(src_draft_dir, dest_dir)
+    try:
+        asset_dir = dest_dir / "agent_media"
+        asset_dir.mkdir(parents=True, exist_ok=True)
+
+        content = read_draft_content(src_draft_dir, env=env)
+        new_id = str(uuid.uuid4()).upper()
+        content["id"] = new_id
+
+        patched = apply_patch_operations(content, operations, asset_copy_dir=asset_dir)
+
+        # Check whether source draft was encrypted
+        src_content_file = src_draft_dir / "draft_content.json"
+        src_raw = src_content_file.read_bytes() if src_content_file.is_file() else b""
+        if src_raw.startswith(b"\xef\xbb\xbf"):
+            src_raw = src_raw[3:]
+        needs_encryption = not src_raw.lstrip().startswith(b"{") if src_raw else False
+
+        install_dir = env.get("install_dir")
+        if needs_encryption and not install_dir:
+            raise RuntimeError("Draft requires encryption but Jianying install directory not found")
+
+        encoded_bytes = None
+        if install_dir:
+            codec = IsolatedJianyingCodec(Path(install_dir))
+            # Strict fuse: do not swallow exceptions or silently downgrade to plaintext
+            encoded_bytes = codec.encode(patched)
+            (dest_dir / "draft_content.json").write_bytes(encoded_bytes)
+        else:
+            (dest_dir / "draft_content.json").write_text(
+                json.dumps(patched, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+
+        meta_path = dest_dir / "draft_meta_info.json"
+        if meta_path.is_file():
             meta_raw = meta_path.read_bytes()
-            if meta_raw.lstrip().startswith(b"{"):
+            if meta_raw.startswith(b"\xef\xbb\xbf"):
+                meta_raw = meta_raw[3:]
+            meta_is_plain = meta_raw.lstrip().startswith(b"{")
+            if meta_is_plain:
                 meta_data = json.loads(meta_raw.decode("utf-8"))
             elif install_dir:
                 codec = IsolatedJianyingCodec(Path(install_dir))
                 meta_data = codec.decode(meta_raw)
             else:
-                meta_data = None
-            if meta_data is not None:
-                meta_data["draft_id"] = new_id
-                meta_data["draft_name"] = out_name
-                if encoded_bytes is not None:
-                    meta_path.write_bytes(codec.encode(meta_data))
-                else:
-                    meta_path.write_text(
-                        json.dumps(meta_data, ensure_ascii=False, indent=2),
-                        encoding="utf-8",
-                    )
-        except Exception:
-            pass
+                raise RuntimeError("draft_meta_info.json is encrypted but Jianying install directory not found")
 
-    if publish:
-        publish_draft_safely(dest_dir, new_id, out_name, duration_us=patched.get("duration", 0))
+            meta_data["draft_id"] = new_id
+            meta_data["draft_name"] = out_name
 
-    return dest_dir
+            if install_dir:
+                codec = IsolatedJianyingCodec(Path(install_dir))
+                meta_path.write_bytes(codec.encode(meta_data))
+            else:
+                meta_path.write_text(
+                    json.dumps(meta_data, ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
+
+        if publish:
+            publish_draft_safely(
+                dest_dir,
+                new_id,
+                out_name,
+                duration_us=patched.get("duration", 0),
+                env=env,
+            )
+
+        return dest_dir
+    except Exception:
+        if dest_dir.exists():
+            shutil.rmtree(dest_dir, ignore_errors=True)
+        raise

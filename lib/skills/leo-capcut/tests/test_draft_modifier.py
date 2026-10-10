@@ -9,12 +9,15 @@ ENGINE_DIR = Path(__file__).resolve().parents[1] / "scripts"
 if str(ENGINE_DIR) not in sys.path:
     sys.path.insert(0, str(ENGINE_DIR))
 
+from unittest.mock import patch
+
 from leo_capcut.engine.draft_modifier import (
     inspect_draft_dict,
     apply_patch_operations,
     read_draft_content,
     inspect_draft,
     modify_draft_copy,
+    publish_draft_safely,
 )
 
 class DraftModifierTests(unittest.TestCase):
@@ -141,6 +144,183 @@ class DraftModifierTests(unittest.TestCase):
 
         with self.assertRaises(FileExistsError):
             modify_draft_copy(src_draft, "existing_target", [], publish=False)
+
+    def test_publish_draft_safely_refuses_when_running(self):
+        draft_dir = self.temp_dir / "draft_test"
+        draft_dir.mkdir()
+        with patch("leo_capcut.engine.draft_modifier.detect_environment", return_value={"jianying_running": True}):
+            with self.assertRaises(RuntimeError) as ctx:
+                publish_draft_safely(draft_dir, "draft-1", "draft_test")
+            self.assertIn("running", str(ctx.exception).lower())
+
+    def test_publish_draft_safely_creates_backup_and_registers(self):
+        draft_dir = self.temp_dir / "draft_proj"
+        draft_dir.mkdir()
+
+        user_data = self.temp_dir / "user_data"
+        reg_dir = user_data / "Projects" / "com.lveditor.draft"
+        reg_dir.mkdir(parents=True)
+        root_meta = reg_dir / "root_meta_info.json"
+        initial_payload = {
+            "all_draft_store": [
+                {
+                    "draft_id": "existing-001",
+                    "draft_name": "existing_project",
+                    "draft_fold_path": "D:/drafts/existing_project",
+                    "tm_duration": 1_000_000,
+                }
+            ]
+        }
+        root_meta.write_text(json.dumps(initial_payload, indent=2), encoding="utf-8")
+
+        mock_env = {
+            "jianying_running": False,
+            "user_data": str(user_data),
+        }
+        with patch("leo_capcut.engine.draft_modifier.detect_environment", return_value=mock_env):
+            backup_file = publish_draft_safely(
+                draft_dir,
+                draft_id="new-002",
+                draft_name="new_project",
+                duration_us=3_000_000,
+            )
+
+        self.assertIsNotNone(backup_file)
+        self.assertTrue(backup_file.is_file())
+        backup_content = json.loads(backup_file.read_text(encoding="utf-8"))
+        self.assertEqual(len(backup_content["all_draft_store"]), 1)
+
+        updated_content = json.loads(root_meta.read_text(encoding="utf-8"))
+        self.assertEqual(len(updated_content["all_draft_store"]), 2)
+        new_entry = updated_content["all_draft_store"][1]
+        self.assertEqual(new_entry["draft_id"], "new-002")
+        self.assertEqual(new_entry["draft_name"], "new_project")
+        self.assertEqual(new_entry["tm_duration"], 3_000_000)
+
+    def test_publish_draft_safely_rolls_back_on_failure(self):
+        draft_dir = self.temp_dir / "draft_fail"
+        draft_dir.mkdir()
+
+        user_data = self.temp_dir / "user_data_fail"
+        reg_dir = user_data / "Projects" / "com.lveditor.draft"
+        reg_dir.mkdir(parents=True)
+        root_meta = reg_dir / "root_meta_info.json"
+        original_bytes = b'{"all_draft_store": [{"draft_id": "safe-001"}]}'
+        root_meta.write_bytes(original_bytes)
+
+        mock_env = {
+            "jianying_running": False,
+            "user_data": str(user_data),
+        }
+
+        # Simulate exception during json write
+        with patch("leo_capcut.engine.draft_modifier.detect_environment", return_value=mock_env):
+            with patch("json.dumps", side_effect=RuntimeError("serialization exploded")):
+                with self.assertRaises(RuntimeError):
+                    publish_draft_safely(draft_dir, "new-id", "new_name")
+
+        # Verify root_meta was rolled back to original_bytes
+        self.assertEqual(root_meta.read_bytes(), original_bytes)
+
+    def test_modify_draft_copy_cleans_up_on_failure(self):
+        src_draft = self.temp_dir / "src_for_cleanup"
+        src_draft.mkdir()
+        (src_draft / "draft_content.json").write_text(
+            json.dumps(self.sample_content),
+            encoding="utf-8",
+        )
+
+        with patch("leo_capcut.engine.draft_modifier.apply_patch_operations", side_effect=ValueError("Patch crashed")):
+            with self.assertRaises(ValueError):
+                modify_draft_copy(src_draft, "cleaned_up_target", [], publish=False)
+
+        target_dir = src_draft.parent / "cleaned_up_target"
+        self.assertFalse(target_dir.exists())
+
+    def test_modify_draft_copy_refuses_when_running_before_copy(self):
+        src_draft = self.temp_dir / "src_running"
+        src_draft.mkdir()
+        (src_draft / "draft_content.json").write_text(
+            json.dumps(self.sample_content),
+            encoding="utf-8",
+        )
+
+        with patch("leo_capcut.engine.draft_modifier.detect_environment", return_value={"jianying_running": True}):
+            with self.assertRaises(RuntimeError) as ctx:
+                modify_draft_copy(src_draft, "should_not_exist", [], publish=True)
+            self.assertIn("running", str(ctx.exception).lower())
+
+        target_dir = src_draft.parent / "should_not_exist"
+        self.assertFalse(target_dir.exists())
+
+    def test_read_draft_content_handles_utf8_bom(self):
+        draft_dir = self.temp_dir / "bom_draft"
+        draft_dir.mkdir()
+        bom_bytes = b"\xef\xbb\xbf" + json.dumps(self.sample_content).encode("utf-8")
+        (draft_dir / "draft_content.json").write_bytes(bom_bytes)
+
+        loaded = read_draft_content(draft_dir)
+        self.assertEqual(loaded["id"], "draft-001")
+
+    def test_apply_patch_avoids_asset_name_collision(self):
+        dir_a = self.temp_dir / "dir_a"
+        dir_b = self.temp_dir / "dir_b"
+        dir_a.mkdir()
+        dir_b.mkdir()
+        audio_a = dir_a / "same_name.mp3"
+        audio_b = dir_b / "same_name.mp3"
+        audio_a.write_bytes(b"content-a")
+        audio_b.write_bytes(b"content-b")
+
+        ops = [
+            {"action": "replace_audio", "track_id": "track_a1", "new_asset": str(audio_a)},
+            {"action": "replace_audio", "track_id": "track_a1", "new_asset": str(audio_b)},
+        ]
+        asset_dir = self.temp_dir / "assets_target"
+        asset_dir.mkdir()
+        apply_patch_operations(self.sample_content, ops, asset_dir)
+
+        copied_files = list(asset_dir.glob("*.mp3"))
+        self.assertEqual(len(copied_files), 2)
+        for f in copied_files:
+            self.assertTrue(f.name.endswith("_same_name.mp3"))
+
+    def test_modify_draft_copy_fuse_aborts_when_codec_fails(self):
+        src_draft = self.temp_dir / "src_fuse"
+        src_draft.mkdir()
+        (src_draft / "draft_content.json").write_text(
+            json.dumps(self.sample_content),
+            encoding="utf-8",
+        )
+
+        with patch("leo_capcut.engine.draft_modifier.IsolatedJianyingCodec.encode", side_effect=RuntimeError("codec exploded")):
+            with self.assertRaises(RuntimeError) as ctx:
+                modify_draft_copy(
+                    src_draft,
+                    "target_fuse",
+                    [],
+                    publish=False,
+                    env={"install_dir": "D:/dummy/install", "jianying_running": False},
+                )
+            self.assertIn("codec exploded", str(ctx.exception))
+
+        target_dir = src_draft.parent / "target_fuse"
+        self.assertFalse(target_dir.exists())
+
+    def test_modify_draft_copy_aborts_when_meta_corrupted(self):
+        src_draft = self.temp_dir / "src_meta_corrupt"
+        src_draft.mkdir()
+        (src_draft / "draft_content.json").write_text(
+            json.dumps(self.sample_content),
+            encoding="utf-8",
+        )
+        (src_draft / "draft_meta_info.json").write_bytes(b"{not valid json")
+
+        with self.assertRaises(Exception):
+            modify_draft_copy(src_draft, "target_corrupt", [], publish=False, env={"install_dir": ""})
+
+        target_dir = src_draft.parent / "target_corrupt"
+        self.assertFalse(target_dir.exists())
 
 if __name__ == "__main__":
     unittest.main()
