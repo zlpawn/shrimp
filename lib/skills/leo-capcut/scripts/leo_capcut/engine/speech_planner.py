@@ -92,8 +92,8 @@ def plan_speech_cut(
         e = seg.get("end_us", 0)
         text = seg.get("text", "").strip()
         if s - prev_end > min_silence_us:
-            # Cut silence keeping 100ms buffer
-            cut_start = prev_end + 100_000
+            # Cut silence keeping 100ms buffer, except at very start of video
+            cut_start = 0 if prev_end == 0 else prev_end + 100_000
             cut_end = s - 100_000
             if cut_end > cut_start:
                 cuts.append((cut_start, cut_end))
