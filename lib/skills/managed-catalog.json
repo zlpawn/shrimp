@@ -1,7 +1,30 @@
 {
   "version": 1,
-  "updatedAt": "2026-09-22T15:30:00.000Z",
+  "updatedAt": "2026-10-11T14:30:00.000Z",
   "skills": [
+    {
+      "id": "leo-fooocus-imagine",
+      "name": "leo-fooocus-imagine",
+      "title": "Leo Fooocus 本地图片生成",
+      "summary": "自动检测或安装本地 Fooocus，以后台服务和版本自适应 API 完成文生图、变体、放大、局部重绘、扩图、参考图生成与持续迭代。",
+      "category": "media",
+      "categoryLabel": "媒体创作",
+      "icon": "🎨",
+      "featured": true,
+      "tags": [
+        "fooocus",
+        "image",
+        "local-ai",
+        "inpaint",
+        "outpaint",
+        "upscale",
+        "图片生成",
+        "本地生图"
+      ],
+      "requiresDaemon": false,
+      "promoted": true,
+      "managed": true
+    },
     {
       "id": "leo-ppt-agent",
       "name": "leo-ppt-agent",

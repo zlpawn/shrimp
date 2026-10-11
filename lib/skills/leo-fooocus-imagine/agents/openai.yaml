@@ -1,0 +1,6 @@
+interface:
+  display_name: "Leo Fooocus Imagine"
+  short_description: "本地安装、运行 Fooocus 并持续生成和调整图片"
+  default_prompt: "Use $leo-fooocus-imagine to generate or iteratively edit an image with local Fooocus."
+policy:
+  allow_implicit_invocation: true

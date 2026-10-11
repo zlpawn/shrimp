@@ -1,0 +1,12 @@
+{
+  "name": "leo-fooocus-imagine",
+  "version": "0.1.0",
+  "description": "本地 Fooocus 的幂等安装、后台生命周期管理、文生图与图片迭代 CLI",
+  "type": "module",
+  "bin": {
+    "leo-fooocus-imagine": "./scripts/leo_fooocus_imagine.mjs"
+  },
+  "scripts": {
+    "test": "node --test ../../../tests/unit/leo-fooocus-imagine-skill.test.mjs"
+  }
+}
