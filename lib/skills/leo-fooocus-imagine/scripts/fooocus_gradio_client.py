@@ -13,10 +13,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-import requests
-from gradio_client import Client
-
-
 def label_of(component: dict[str, Any]) -> str:
     props = component.get("props") or {}
     return f"{props.get('label') or ''} {props.get('elem_id') or ''}".strip().lower()
@@ -28,6 +24,114 @@ def semantic_id(components: dict[int, dict[str, Any]], input_ids: list[int], nee
         if any(needle in label for needle in needles):
             return component_id
     return None
+
+
+def component_choices(component: dict[str, Any]) -> list[Any]:
+    choices = (component.get("props") or {}).get("choices") or []
+    return [item[1] if isinstance(item, list) and len(item) > 1 else item[0] if isinstance(item, list) else item for item in choices]
+
+
+def discover_lora_slots(components: dict[int, dict[str, Any]], input_ids: list[int]) -> list[dict[str, int]]:
+    slots = []
+    for index, component_id in enumerate(input_ids):
+        component = components.get(component_id, {})
+        label = label_of(component)
+        if component.get("type") != "dropdown" or not label.startswith("lora "):
+            continue
+        before = input_ids[index - 1] if index > 0 else None
+        after = input_ids[index + 1] if index + 1 < len(input_ids) else None
+        if before is None or after is None:
+            continue
+        if components.get(before, {}).get("type") == "checkbox" and "weight" in label_of(components.get(after, {})):
+            slots.append({"enabled": before, "model": component_id, "weight": after})
+    return slots
+
+
+def discover_control_slots(components: dict[int, dict[str, Any]], input_ids: list[int]) -> list[dict[str, int]]:
+    slots = []
+    for index, component_id in enumerate(input_ids):
+        component = components.get(component_id, {})
+        choices = {str(item).lower() for item in component_choices(component)}
+        if component.get("type") != "radio" or not {"imageprompt", "pyracanny", "cpds", "faceswap"}.issubset(choices):
+            continue
+        preceding = input_ids[max(0, index - 3):index]
+        if len(preceding) != 3:
+            continue
+        image_id, stop_id, weight_id = preceding
+        if components.get(image_id, {}).get("type") == "image" and "stop at" in label_of(components.get(stop_id, {})) and "weight" in label_of(components.get(weight_id, {})):
+            slots.append({"image": image_id, "stop_at": stop_id, "weight": weight_id, "type": component_id})
+    return slots
+
+
+def discover_enhance(components: dict[int, dict[str, Any]], input_ids: list[int]) -> dict[str, int | None]:
+    image_id = semantic_id(components, input_ids, ["use with enhance"])
+    master_id = next((
+        item for item in input_ids
+        if components.get(item, {}).get("type") == "checkbox" and label_of(components.get(item, {})) == "enhance"
+    ), None)
+    enabled_ids = [item for item in input_ids if components.get(item, {}).get("type") == "checkbox" and label_of(components.get(item, {})) == "enable"]
+    first_enabled = next((item for item in enabled_ids if image_id is not None and input_ids.index(item) > input_ids.index(image_id)), None)
+    search_ids = input_ids[input_ids.index(first_enabled):] if first_enabled is not None else []
+    return {
+        "master_enabled": master_id,
+        "input": image_id,
+        "enabled": first_enabled,
+        "detection_prompt": semantic_id(components, search_ids, ["detection prompt"]),
+        "positive_prompt": semantic_id(components, search_ids, ["enhancement positive prompt"]),
+        "negative_prompt": semantic_id(components, search_ids, ["enhancement negative prompt"]),
+        "mask_model": semantic_id(components, search_ids, ["mask generation model"]),
+        "sam_model": semantic_id(components, search_ids, ["sam model"]),
+        "box_threshold": semantic_id(components, search_ids, ["box threshold"]),
+        "text_threshold": semantic_id(components, search_ids, ["text threshold"]),
+        "max_detections": semantic_id(components, search_ids, ["maximum number of detections"]),
+    }
+
+
+def discover_describe_plan(config: dict[str, Any]) -> dict[str, Any]:
+    components = {item["id"]: item for item in config.get("components", [])}
+    for index, dependency in enumerate(config.get("dependencies", [])):
+        inputs = dependency.get("inputs", [])
+        outputs = dependency.get("outputs", [])
+        methods = semantic_id(components, inputs, ["content type"])
+        image = next((item for item in inputs if components.get(item, {}).get("type") == "image"), None)
+        apply_styles = semantic_id(components, inputs, ["apply styles"])
+        prompt_output = semantic_id(components, outputs, ["positive_prompt", "prompt"])
+        styles_output = semantic_id(components, outputs, ["selected styles"])
+        if dependency.get("trigger") == "click" and None not in (methods, image, apply_styles, prompt_output, styles_output):
+            return {
+                "fn": index,
+                "methods": methods,
+                "image": image,
+                "apply_styles": apply_styles,
+                "prompt_output": prompt_output,
+                "styles_output": styles_output,
+            }
+    raise RuntimeError("Could not discover Fooocus describe API from /config")
+
+
+def parse_lora_specs(values: list[str] | None) -> list[tuple[str, float]]:
+    result = []
+    for value in values or []:
+        parts = value.rsplit("|", 1)
+        model = parts[0].strip()
+        if not model:
+            raise ValueError("LoRA model filename cannot be empty")
+        result.append((model, float(parts[1]) if len(parts) == 2 and parts[1].strip() else 1.0))
+    return result
+
+
+def parse_control_specs(values: list[str] | None) -> list[tuple[str, str, float, float]]:
+    result = []
+    for value in values or []:
+        parts = value.rsplit("|", 3)
+        if len(parts) < 2:
+            raise ValueError("Control specification must be IMAGE|TYPE[|STOP_AT|WEIGHT]")
+        image = Path(parts[0]).expanduser().resolve()
+        control_type = parts[1].strip()
+        stop_at = float(parts[2]) if len(parts) >= 3 and parts[2].strip() else 0.5
+        weight = float(parts[3]) if len(parts) >= 4 and parts[3].strip() else 0.6
+        result.append((str(image), control_type, stop_at, weight))
+    return result
 
 
 def discover_plan(config: dict[str, Any]) -> dict[str, Any]:
@@ -79,6 +183,9 @@ def discover_plan(config: dict[str, Any]) -> dict[str, Any]:
         "input_ids": input_ids,
         "components": components,
         "semantics": semantics,
+        "lora_slots": discover_lora_slots(components, input_ids),
+        "control_slots": discover_control_slots(components, input_ids),
+        "enhance": discover_enhance(components, input_ids),
     }
 
 
@@ -156,7 +263,55 @@ def copy_results(files: list[Path], output_dir: str | None) -> list[Path]:
     return copied
 
 
+def validated_image_path(value: str | None, label: str) -> str:
+    if not value:
+        raise ValueError(f"{label} is required")
+    image = Path(value).expanduser().resolve()
+    if not image.is_file():
+        raise FileNotFoundError(f"{label} does not exist: {image}")
+    return str(image)
+
+
+def apply_loras(plan: dict[str, Any], overrides: dict[int, Any], values: list[str] | None) -> list[tuple[str, float]]:
+    specs = parse_lora_specs(values)
+    slots = plan.get("lora_slots", [])
+    if len(specs) > len(slots):
+        raise ValueError(f"Fooocus exposes {len(slots)} LoRA slots, but {len(specs)} were requested")
+    for slot, (model, weight) in zip(slots, specs):
+        choices = [str(item) for item in component_choices(plan["components"][slot["model"]])]
+        if choices and model not in choices:
+            raise ValueError(f"LoRA is not available in Fooocus: {model}")
+        overrides[slot["enabled"]] = True
+        overrides[slot["model"]] = model
+        overrides[slot["weight"]] = weight
+    return specs
+
+
+def apply_controls(plan: dict[str, Any], overrides: dict[int, Any], values: list[str] | None) -> list[tuple[str, str, float, float]]:
+    specs = parse_control_specs(values)
+    slots = plan.get("control_slots", [])
+    if len(specs) > len(slots):
+        raise ValueError(f"Fooocus exposes {len(slots)} control slots, but {len(specs)} were requested")
+    for slot, (image, control_type, stop_at, weight) in zip(slots, specs):
+        if not Path(image).is_file():
+            raise FileNotFoundError(f"Control image does not exist: {image}")
+        choices = [str(item) for item in component_choices(plan["components"][slot["type"]])]
+        matched = next((item for item in choices if item.lower() == control_type.lower()), None)
+        if matched is None:
+            raise ValueError(f"Unsupported Fooocus control type: {control_type}; choices: {', '.join(choices)}")
+        overrides[slot["image"]] = image
+        overrides[slot["stop_at"]] = stop_at
+        overrides[slot["weight"]] = weight
+        overrides[slot["type"]] = matched
+    if specs and plan.get("semantics", {}).get("input_enabled") is not None:
+        overrides[plan["semantics"]["input_enabled"]] = True
+    return specs
+
+
 def generate(args: argparse.Namespace) -> dict[str, Any]:
+    import requests
+    from gradio_client import Client
+
     url = args.url.rstrip("/")
     config_response = requests.get(f"{url}/config", timeout=15)
     config_response.raise_for_status()
@@ -185,6 +340,8 @@ def generate(args: argparse.Namespace) -> dict[str, Any]:
         put("aspect_ratio", parse_ratio(args.aspect_ratio, component.get("props", {}).get("choices") or []))
     if args.styles and semantics.get("styles") is not None:
         put("styles", [item.strip() for item in args.styles.split(",") if item.strip()])
+    loras = apply_loras(plan, overrides, args.lora)
+    controls = apply_controls(plan, overrides, args.control)
 
     mode = args.mode.lower()
     if mode != "text":
@@ -266,6 +423,112 @@ def generate(args: argparse.Namespace) -> dict[str, Any]:
             "aspect_ratio": args.aspect_ratio,
             "source_image": str(Path(args.input).expanduser().resolve()) if args.input else None,
             "mask": str(Path(args.mask).expanduser().resolve()) if args.mask else None,
+            "loras": [{"model": model, "weight": weight} for model, weight in loras],
+            "controls": [
+                {"image": image, "type": control_type, "stop_at": stop_at, "weight": weight}
+                for image, control_type, stop_at, weight in controls
+            ],
+        },
+    }
+
+
+def describe(args: argparse.Namespace) -> dict[str, Any]:
+    import requests
+    from gradio_client import Client
+
+    url = args.url.rstrip("/")
+    config_response = requests.get(f"{url}/config", timeout=15)
+    config_response.raise_for_status()
+    plan = discover_describe_plan(config_response.json())
+    image = validated_image_path(args.input, "Input image")
+    methods = [item.strip() for item in args.content_type.split(",") if item.strip()]
+    result = Client(url, verbose=False).predict(methods, image, args.apply_styles, fn_index=plan["fn"])
+    if not isinstance(result, (list, tuple)) or len(result) < 2:
+        raise RuntimeError("Fooocus describe returned an unexpected result")
+    return {
+        "status": "success",
+        "backend": "official-gradio",
+        "capability": "describe",
+        "description": result[0],
+        "styles": result[1] if isinstance(result[1], list) else [],
+        "metadata": {"source_image": image, "content_types": methods},
+    }
+
+
+def enhance(args: argparse.Namespace) -> dict[str, Any]:
+    import requests
+    from gradio_client import Client
+
+    url = args.url.rstrip("/")
+    config_response = requests.get(f"{url}/config", timeout=15)
+    config_response.raise_for_status()
+    plan = discover_plan(config_response.json())
+    components = plan["components"]
+    semantics = plan["semantics"]
+    enhance_plan = plan.get("enhance", {})
+    source_image = validated_image_path(args.input, "Input image")
+    if enhance_plan.get("input") is None or enhance_plan.get("enabled") is None:
+        raise RuntimeError("Could not discover Fooocus Enhance inputs")
+    overrides: dict[int, Any] = {
+        enhance_plan["input"]: source_image,
+        enhance_plan["enabled"]: True,
+    }
+    if enhance_plan.get("master_enabled") is not None:
+        overrides[enhance_plan["master_enabled"]] = True
+    values = {
+        "prompt": args.prompt,
+        "negative": args.negative,
+        "model": args.model,
+        "refiner": args.refiner,
+        "performance": args.performance,
+    }
+    for name, value in values.items():
+        component_id = semantics.get(name)
+        if component_id is not None and value is not None:
+            overrides[component_id] = value
+    selected_seed = args.seed if args.seed is not None else random.randint(1, 2**31 - 1)
+    if semantics.get("seed") is not None:
+        overrides[semantics["seed"]] = str(selected_seed)
+    enhance_values = {
+        "detection_prompt": args.detection_prompt,
+        "positive_prompt": args.prompt,
+        "negative_prompt": args.negative,
+        "mask_model": args.mask_model,
+        "sam_model": args.sam_model,
+        "box_threshold": args.box_threshold,
+        "text_threshold": args.text_threshold,
+        "max_detections": args.max_detections,
+    }
+    for name, value in enhance_values.items():
+        component_id = enhance_plan.get(name)
+        if component_id is not None and value is not None:
+            overrides[component_id] = value
+    loras = apply_loras(plan, overrides, args.lora)
+    call_args = []
+    for component_id in plan["input_ids"]:
+        component = components[component_id]
+        if component.get("type") == "state":
+            continue
+        call_args.append(overrides.get(component_id, (component.get("props") or {}).get("value")))
+    output_root = output_root_from_cwd()
+    started_at = datetime.now().timestamp()
+    client = Client(url, verbose=False)
+    client.predict(*call_args, fn_index=plan["prepare_fn"])
+    client.predict(fn_index=plan["generate_fn"])
+    files = newest_outputs(output_root, started_at)
+    if not files:
+        raise RuntimeError(f"Fooocus Enhance completed but no new image appeared under {output_root}")
+    files = copy_results(files, args.output_dir)
+    return {
+        "status": "success",
+        "backend": "official-gradio",
+        "capability": "enhance",
+        "seed": selected_seed,
+        "images": [str(item.resolve()) for item in files],
+        "metadata": {
+            "source_image": source_image,
+            "detection_prompt": args.detection_prompt,
+            "loras": [{"model": model, "weight": weight} for model, weight in loras],
         },
     }
 
@@ -292,7 +555,34 @@ def parser() -> argparse.ArgumentParser:
     command.add_argument("--inpaint-prompt")
     command.add_argument("--outpaint")
     command.add_argument("--uov-method")
+    command.add_argument("--lora", action="append", default=[])
+    command.add_argument("--control", action="append", default=[])
     command.add_argument("--json", action="store_true")
+    describe_command = sub.add_parser("describe")
+    describe_command.add_argument("--url", default="http://127.0.0.1:7865")
+    describe_command.add_argument("--input", required=True)
+    describe_command.add_argument("--content-type", default="Photograph")
+    describe_command.add_argument("--no-apply-styles", dest="apply_styles", action="store_false")
+    describe_command.set_defaults(apply_styles=True)
+    describe_command.add_argument("--json", action="store_true")
+    enhance_command = sub.add_parser("enhance")
+    enhance_command.add_argument("--url", default="http://127.0.0.1:7865")
+    enhance_command.add_argument("--input", required=True)
+    enhance_command.add_argument("--prompt", default="")
+    enhance_command.add_argument("--negative")
+    enhance_command.add_argument("--detection-prompt", default="face")
+    enhance_command.add_argument("--mask-model", default="sam")
+    enhance_command.add_argument("--sam-model", default="vit_b")
+    enhance_command.add_argument("--box-threshold", type=float)
+    enhance_command.add_argument("--text-threshold", type=float)
+    enhance_command.add_argument("--max-detections", type=int)
+    enhance_command.add_argument("--model")
+    enhance_command.add_argument("--refiner")
+    enhance_command.add_argument("--performance")
+    enhance_command.add_argument("--seed", type=int)
+    enhance_command.add_argument("--lora", action="append", default=[])
+    enhance_command.add_argument("--output-dir")
+    enhance_command.add_argument("--json", action="store_true")
     return root
 
 
@@ -301,6 +591,10 @@ def main() -> int:
     try:
         if args.command == "generate":
             result = generate(args)
+        elif args.command == "describe":
+            result = describe(args)
+        elif args.command == "enhance":
+            result = enhance(args)
         else:
             raise ValueError(f"Unknown command: {args.command}")
         if args.json:

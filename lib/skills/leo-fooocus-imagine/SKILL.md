@@ -1,6 +1,6 @@
 ---
 name: leo-fooocus-imagine
-description: Use when the user wants to install, start, diagnose, or use local Fooocus for text-to-image, variations, upscaling, inpainting, outpainting, reference-image generation, or iterative image refinement. Reuse an existing installation and keep Fooocus running in the background unless the user explicitly asks to close it.
+description: Use when the user wants to install, start, diagnose, or use local Fooocus for image generation and iteration, including LoRA, ControlNet, image description, enhancement, variations, upscaling, inpainting, outpainting, and reference images. Reuse an existing installation and keep Fooocus running in the background unless the user explicitly asks to close it.
 ---
 
 # Leo Fooocus Imagine
@@ -66,15 +66,37 @@ node <skill-dir>/scripts/leo_fooocus_imagine.mjs generate \
   --mode image-prompt --input "/absolute/reference.png" \
   --prompt "same visual identity, winter clothing" --json
 
+# List models available in the running Fooocus instance
+node <skill-dir>/scripts/leo_fooocus_imagine.mjs models --json
+
+# Generate with one or more LoRAs
+node <skill-dir>/scripts/leo_fooocus_imagine.mjs generate \
+  --prompt "cinematic portrait" \
+  --lora "detail.safetensors|0.7" --lora "lighting.safetensors|0.4" --json
+
+# Generate with one or more Fooocus control images
+node <skill-dir>/scripts/leo_fooocus_imagine.mjs generate \
+  --prompt "architectural concept art" \
+  --control "/absolute/edges.png|PyraCanny|0.5|0.6" --json
+
+# Describe an image; the first call may download the BLIP caption model
+node <skill-dir>/scripts/leo_fooocus_imagine.mjs describe \
+  --input "/absolute/source.png" --content-type "Photograph" --json
+
+# Detect and enhance a face or other described region
+node <skill-dir>/scripts/leo_fooocus_imagine.mjs enhance \
+  --input "/absolute/source.png" --detection-prompt "face" \
+  --prompt "natural facial detail" --json
+
 # Only after an explicit user request to close Fooocus
 node <skill-dir>/scripts/leo_fooocus_imagine.mjs stop --json
 ```
 
-Useful options: `--fooocus-home`, `--port`, `--model`, `--refiner`, `--styles`, `--performance`, `--seed`, `--output-format`, and `--output-dir`.
+Useful options: `--fooocus-home`, `--port`, `--model`, `--refiner`, `--lora MODEL|WEIGHT`, `--control IMAGE|TYPE|STOP_AT|WEIGHT`, `--styles`, `--performance`, `--seed`, `--output-format`, and `--output-dir`. Repeat `--lora` and `--control` to use multiple live Fooocus slots.
 
 ## Backend and compatibility rules
 
-The default adapter targets original Fooocus's Gradio server. It fetches `/config`, discovers the preparation and generator dependencies from component semantics, builds arguments from live defaults, and overrides only requested fields. Do not hard-code `fn_index` values: Fooocus 2.5.5 often uses 67 and 68, but UI changes can move them.
+The default adapter targets original Fooocus's Gradio server. It fetches `/config`, discovers generation, LoRA, ControlNet, Describe, and Enhance controls from component semantics, builds arguments from live defaults, and overrides only requested fields. Do not hard-code `fn_index` values: Fooocus 2.5.5 often uses 67 and 68 for generation, but UI changes can move them.
 
 When the runtime exposes a structured Fooocus REST API instead, add or select a REST adapter behind the same CLI contract. Read [references/extension-guide.md](references/extension-guide.md) before changing adapters, adding commands, or supporting a new Fooocus version.
 

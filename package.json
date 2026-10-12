@@ -83,7 +83,7 @@
     "test:kb": "node --test tests/unit/kb-*.test.mjs",
     "test:scheduler": "node --test tests/unit/scheduler-*.test.mjs tests/integration/scheduler-api.test.mjs",
     "test:leo-lantern": "node --test --test-concurrency=1 lib/skills/leo-lantern/tests/*.test.mjs",
-    "test:leo-fooocus-imagine": "node --test tests/unit/leo-fooocus-imagine-skill.test.mjs",
+    "test:leo-fooocus-imagine": "node --test tests/unit/leo-fooocus-imagine-skill.test.mjs && python tests/unit/test_fooocus_gradio_client.py -v",
     "test:leo-typesafe-ai": "node --test lib/skills/leo-typesafe-ai/tests/*.test.mjs",
     "test:live-inspector-mysql": "node --test tests/unit/leo-live-inspector-sql-analysis.test.mjs tests/unit/leo-live-inspector-test-mysql-cli.test.mjs",
     "sync:extension": "node -e \"import('node:fs').then(fs => fs.cpSync('extensions/leo-cookie-txt-locally', 'lib/skills/leo-live-inspector/resources/chrome_extension', { recursive: true, force: true }))\"",

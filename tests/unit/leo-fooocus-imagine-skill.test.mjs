@@ -9,7 +9,9 @@ import {
   buildLaunchSpec,
   buildInstallPlan,
   detectFooocusInstallations,
+  discoverAdvancedCapabilities,
   discoverGenerationPlan,
+  discoverModelInventory,
   extractOfficialWindowsDownload,
   findAvailablePort,
   parseCliArgs,
@@ -59,6 +61,61 @@ test("CLI parses generation and lifecycle commands without coupling to a Fooocus
   assert.equal(parsed.options.mask, "mask.png");
   assert.equal(parsed.options.aspectRatio, "1:1");
   assert.equal(parsed.options.json, true);
+});
+
+test("CLI preserves repeated LoRA and ControlNet specifications", () => {
+  const parsed = parseCliArgs([
+    "generate",
+    "--prompt", "portrait",
+    "--lora", "detail.safetensors|0.7",
+    "--lora", "lighting.safetensors|0.4",
+    "--control", "C:\\images\\pose.png|PyraCanny|0.65|0.8",
+    "--control", "C:\\images\\face.png|FaceSwap|0.9|0.75",
+  ]);
+  assert.deepEqual(parsed.options.lora, ["detail.safetensors|0.7", "lighting.safetensors|0.4"]);
+  assert.deepEqual(parsed.options.control, [
+    "C:\\images\\pose.png|PyraCanny|0.65|0.8",
+    "C:\\images\\face.png|FaceSwap|0.9|0.75",
+  ]);
+});
+
+test("advanced capabilities are reported only when their live components exist", () => {
+  const config = {
+    components: [
+      { id: 10, type: "checkboxgroup", props: { label: "Content Type" } },
+      { id: 11, type: "image", props: { label: "Image" } },
+      { id: 12, type: "checkbox", props: { label: "Apply Styles" } },
+      { id: 13, type: "textbox", props: { elem_id: "positive_prompt" } },
+      { id: 14, type: "checkboxgroup", props: { label: "Selected Styles" } },
+      { id: 20, type: "dropdown", props: { label: "LoRA 1" } },
+      { id: 21, type: "slider", props: { label: "Weight" } },
+      { id: 30, type: "radio", props: { label: "Type", choices: [["ImagePrompt", "ImagePrompt"], ["PyraCanny", "PyraCanny"], ["CPDS", "CPDS"], ["FaceSwap", "FaceSwap"]] } },
+      { id: 40, type: "checkbox", props: { label: "Enhance" } },
+      { id: 41, type: "image", props: { label: "Use with Enhance, skips image generation" } },
+    ],
+    dependencies: [
+      { trigger: "click", inputs: [10, 11, 12], outputs: [13, 14] },
+    ],
+  };
+  assert.deepEqual(discoverAdvancedCapabilities(config), ["lora", "controlnet", "describe", "enhance"]);
+  assert.deepEqual(discoverAdvancedCapabilities({ components: [], dependencies: [] }), []);
+});
+
+test("model inventory exposes live checkpoint, refiner, and LoRA choices", () => {
+  const inventory = discoverModelInventory({
+    components: [
+      { id: 1, type: "dropdown", props: { label: "Base Model (SDXL only)", choices: [["base-a.safetensors", "base-a.safetensors"]] } },
+      { id: 2, type: "dropdown", props: { label: "Refiner (SDXL or SD 1.5)", choices: ["None", "refiner-a.safetensors"] } },
+      { id: 5, type: "dropdown", props: { label: "Refiner swap method", choices: ["joint", "separate", "vae"] } },
+      { id: 3, type: "dropdown", props: { label: "LoRA 1", choices: [["None", "None"], ["detail.safetensors", "detail.safetensors"]] } },
+      { id: 4, type: "dropdown", props: { label: "LoRA 2", choices: [["None", "None"], ["detail.safetensors", "detail.safetensors"]] } },
+    ],
+  });
+  assert.deepEqual(inventory, {
+    checkpoints: ["base-a.safetensors"],
+    refiners: ["refiner-a.safetensors"],
+    loras: ["detail.safetensors"],
+  });
 });
 
 test("managed installation state remains a discovery candidate across restarts", async () => {

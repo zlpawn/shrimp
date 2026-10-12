@@ -29,10 +29,19 @@ A Windows portable installation contains `Fooocus/launch.py` and `python_embeded
 | Change a local region | `inpaint` | input image, mask, prompt |
 | Extend the canvas | `outpaint` | input image, directions, prompt |
 | Preserve/reference identity or style | `image-prompt` | reference image, prompt |
-| Improve detected faces/details | `enhance` (planned adapter capability) | input image, detection target |
-| Caption an image | `describe` (planned adapter capability) | input image |
+| Improve detected faces/details | `enhance` | input image, detection target |
+| Caption an image | `describe` | input image |
 
-The current original-Gradio adapter implements text, vary, upscale, inpaint, outpaint and one reference image. Capabilities reported by `doctor` should become adapter-derived as advanced adapters are added.
+The current original-Gradio adapter implements text, vary, upscale, inpaint, outpaint, reference images, LoRA, ControlNet, image description, and first-stage Enhance. Capabilities reported by `doctor` are derived from the live Fooocus schema.
+
+## Advanced image controls
+
+- Repeat `--lora MODEL|WEIGHT` to fill available LoRA slots. Use `models --json` before choosing a filename; the adapter validates it against live choices.
+- Repeat `--control IMAGE|TYPE|STOP_AT|WEIGHT` to fill available Fooocus control slots. Supported live types are `ImagePrompt`, `PyraCanny`, `CPDS`, and `FaceSwap`.
+- `ImagePrompt` transfers broad visual identity or style, `PyraCanny` follows strong edges, `CPDS` follows depth/composition, and `FaceSwap` uses a face reference.
+- `describe` returns a caption and suggested styles. Its first use may download the official BLIP caption model (about 855 MB).
+- `enhance` detects a requested region and runs Fooocus enhancement on it. Its first use may download GroundingDINO and SAM-related models.
+- The number of usable LoRAs and controls is limited by the slots exposed by the running Fooocus version. Do not silently discard excess requests.
 
 ## Models and downloads
 

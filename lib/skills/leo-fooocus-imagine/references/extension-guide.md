@@ -46,7 +46,7 @@ For a FastAPI adapter, discover from `/openapi.json`, prefer asynchronous jobs, 
 3. Implement it in each compatible adapter or leave it absent from that adapter's capability report.
 4. Add one concise example to `SKILL.md` only when users/agents need a new invocation pattern; keep detailed schemas here.
 
-Good future additions include face/detail enhancement, multi-ControlNet, mask generation, image description, LoRA/model management, metadata replay, job cancellation, queued generation, and versioned update/rollback.
+The original-Gradio adapter currently supports multiple LoRA and ControlNet slots, image description, and first-stage face/detail enhancement. Good future additions include mask generation, richer model management, metadata replay, job cancellation, queued generation, additional Enhance stages, and versioned update/rollback.
 
 ## Updating Fooocus
 
