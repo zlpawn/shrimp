@@ -28,6 +28,11 @@ test("skill package exposes the extensible Fooocus lifecycle contract", () => {
   assert.match(skill, /用户明确.*关闭|explicit.*stop/i);
   assert.ok(fs.existsSync(path.join(skillDir, "references", "extension-guide.md")));
   assert.ok(fs.existsSync(path.join(skillDir, "scripts", "fooocus_gradio_client.py")));
+  assert.ok(fs.existsSync(path.join(skillDir, "scripts", "fooocus_model_manager.mjs")));
+  assert.match(skill, /calling model makes the creative decision/i);
+  assert.match(skill, /every model download requires explicit confirmation/i);
+  assert.match(skill, /inspect-model/i);
+  assert.match(skill, /download-model/i);
 });
 
 test("skill is registered in the managed media catalog", () => {

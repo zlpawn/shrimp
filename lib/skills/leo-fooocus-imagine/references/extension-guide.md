@@ -7,7 +7,8 @@ This Skill is a stable façade over evolving Fooocus runtimes. Extend behind the
 1. **Lifecycle** — installation discovery, idempotent install, process state, logs, health and explicit stop.
 2. **Capability model** — stable operation names such as `text-to-image`, `vary`, `upscale`, `inpaint`, `outpaint`, `image-prompt`, `enhance`, and `describe`.
 3. **Backend adapters** — translate the capability request to original Gradio, Fooocus-API/FastAPI, or a future official API.
-4. **Artifacts** — normalize generated images, seeds, metadata and diagnostics into one result shape.
+4. **Model facts** — expose local inventory and verify exact external files while leaving creative selection to the calling model.
+5. **Artifacts** — normalize generated images, seeds, metadata and diagnostics into one result shape.
 
 ## Stable result contract
 
@@ -46,7 +47,7 @@ For a FastAPI adapter, discover from `/openapi.json`, prefer asynchronous jobs, 
 3. Implement it in each compatible adapter or leave it absent from that adapter's capability report.
 4. Add one concise example to `SKILL.md` only when users/agents need a new invocation pattern; keep detailed schemas here.
 
-The original-Gradio adapter currently supports multiple LoRA and ControlNet slots, image description, and first-stage face/detail enhancement. Good future additions include mask generation, richer model management, metadata replay, job cancellation, queued generation, additional Enhance stages, and versioned update/rollback.
+The original-Gradio adapter currently supports multiple LoRA and ControlNet slots, image description, and first-stage face/detail enhancement. The CLI also exposes local model inventory and confirmation-gated Hugging Face Safetensors installation without embedding a fixed recommendation catalog. Good future additions include mask generation, metadata replay, job cancellation, queued generation, additional Enhance stages, and versioned update/rollback.
 
 ## Updating Fooocus
 

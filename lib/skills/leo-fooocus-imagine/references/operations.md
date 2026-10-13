@@ -45,16 +45,24 @@ The current original-Gradio adapter implements text, vary, upscale, inpaint, out
 
 ## Models and downloads
 
-- Check available checkpoint and LoRA filenames before selecting them.
+- Run `models --json` before selecting a model. Its `selectionGuide` is the stable contract for the calling model's creative judgment.
+- Choose across medium, subject, use case, style, realism, identity needs, and commercial constraints. Do not route from a single keyword.
+- Prefer an adequate local model. If local filenames do not provide enough evidence, retain the working default or explain the uncertainty instead of pretending to know the model's style.
+- For an external model, identify one exact public Hugging Face repository file, then run `inspect-model --repo OWNER/REPO --file FILE.safetensors --type checkpoint|lora`.
+- `inspect-model` accepts only an SDXL-compatible Safetensors file with concrete size and a recognized license, pins the repository revision, and returns the exact destination plus a short-lived plan ID.
+- Present those facts to the user. Every model download requires explicit confirmation; only then run `download-model --plan PLAN_ID --confirm`.
+- The downloader stores partial data outside Fooocus-visible model directories, resumes with HTTP Range, validates size and SHA-256 when available, validates the Safetensors header, and atomically installs the final file.
+- After installation, rerun `models --json`. If Fooocus does not list the file yet, report that a restart may be required; do not stop it without the user's request.
 - Treat `.aria2` as a resumable-download sidecar, not a model.
 - Do not delete a partial download while an aria2 process is active.
-- Do not download a missing multi-GB checkpoint merely because a preset is selected. Explain and obtain intent unless the user already asked to install/use that model.
+- Do not treat a general image-generation request or a request to “use a better model” as approval to download a specific file.
 - Validate completed checkpoints by nontrivial size and, when Fooocus reports `MetadataIncompleteBuffer` or `PytorchStreamReader`, quarantine the corrupt file before redownloading.
 
 ## Diagnostics
 
 - **API unavailable:** inspect logs and verify process/port identity.
 - **Unsupported proxy scheme:** remove `ALL_PROXY/all_proxy` only in Fooocus/client child environments; retain HTTP(S) proxy variables if usable and always set loopback `NO_PROXY`.
+- **Hugging Face or installer `fetch failed`:** the Node CLI enables environment proxy support before network requests. Configure `HTTPS_PROXY` or `HTTP_PROXY`; keep `NO_PROXY` for loopback addresses used by Fooocus.
 - **CUDA OOM:** reduce image count, avoid simultaneous models/refiner, use low-VRAM launch options, then retry once with the same prompt/seed.
 - **Driver crash (`nvcuda64.dll`):** report the driver-level crash; API/UI changes will not fix it. Restart once only after preserving logs.
 - **Schema drift:** fail with the discovered component/dependency summary and add/update an adapter; never guess `fn_index`.
