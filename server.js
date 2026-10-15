@@ -7194,8 +7194,7 @@ async function proxyOfficialCodexImages(kind, clientReq, clientRes, context, sig
   headers.Accept = firstHeaderValue(clientReq.headers.accept) || "application/json";
 
   try {
-    const targetUrl = provider?.base_url || auth.url;
-    const upstream = await fetchWithOptionalProxy(targetUrl, {
+    const upstream = await fetchWithOptionalProxy(auth.url, {
       method: "POST",
       headers,
       body,
@@ -13349,7 +13348,8 @@ function getOfficialCodexImageAuth(clientReq, kind = "generations") {
   // chatgpt-codex subscription path used by Desktop's built-in image_gen.
   return {
     ...auth,
-    url: `https://chatgpt.com/backend-api/codex/${imagePath}`,
+    url: process.env.CODEX_OFFICIAL_IMAGE_URL
+      || `https://chatgpt.com/backend-api/codex/${imagePath}`,
   };
 }
 

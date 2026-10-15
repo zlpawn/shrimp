@@ -117,6 +117,47 @@ function codexPost(port, body, headers = {}) {
   });
 }
 
+function codexImagePost(port, body, headers = {}) {
+  return fetch(`http://127.0.0.1:${port}/codex/v1/images/generations`, {
+    method: "POST",
+    headers: {
+      authorization: "Bearer dummy",
+      "content-type": "application/json",
+      originator: "Codex Desktop",
+      ...headers,
+    },
+    body: JSON.stringify(body),
+  });
+}
+
+test("Codex built-in image generation forwards to the official image backend", async (t) => {
+  let receivedBody = null;
+  const upstream = http.createServer((req, res) => {
+    const chunks = [];
+    req.on("data", (chunk) => chunks.push(chunk));
+    req.on("end", () => {
+      receivedBody = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ data: [{ b64_json: "test-image" }] }));
+    });
+  });
+
+  const upstreamPort = await listen(upstream);
+  t.after(() => closeServer(upstream));
+
+  const { gatewayPort } = await startGateway(t, { clients: { codex: { endpoints: [] } } }, {
+    CODEX_OFFICIAL_IMAGE_URL: `http://127.0.0.1:${upstreamPort}/backend-api/codex/images/generations`,
+  });
+
+  const body = { model: "gpt-image-2", prompt: "two realistic cats", size: "1024x1536" };
+  const res = await codexImagePost(gatewayPort, body);
+  const json = await res.json();
+
+  assert.equal(res.status, 200);
+  assert.deepEqual(receivedBody, body);
+  assert.deepEqual(json, { data: [{ b64_json: "test-image" }] });
+});
+
 test("Codex 429 Rate Limit Shield intercepts streaming 429 into 200 OK SSE events", async (t) => {
   const upstream = http.createServer((req, res) => {
     req.resume();
