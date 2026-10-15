@@ -44,6 +44,7 @@ import { unifyCodexHistory } from "./lib/codex/history-unify.mjs";
 import { pipeResponsesSsePassthrough } from "./lib/codex/responses-passthrough.mjs";
 import { applyAnthropicConstraints } from "./lib/codex/anthropic-constraints.mjs";
 import { handleOfficialRateLimit } from "./lib/codex/rate-limit-shield.mjs";
+import { startDesktopApiShield } from "./lib/codex/desktop-api-shield.mjs";
 import {
   normalizeCustomInput,
   ResponsesWriter,
@@ -124,6 +125,7 @@ import {
   createProxyAgent,
   defaultProxyConfig,
   getEffectiveProxyUrl,
+  resolveOutboundProxyAgent,
 } from "./lib/config/proxy-resolver.mjs";
 import { createDefaultStrategies } from "./lib/models/strategies/index.mjs";
 import { mergeClaudeOfficialModels, BUILTIN_CLAUDE_OFFICIAL_MODELS } from "./lib/config/claude-official-models.mjs";
@@ -1180,6 +1182,23 @@ server.listen(LISTEN_PORT, LISTEN_HOST, () => {
     // scheduler.config.json so they survive gateway restarts.
     applySchedulerBootConfig();
   });
+
+  // Start Codex Desktop API Shield (listens on localhost:8000 to neutralize desktop UI send button locks)
+  const codexDesktopShieldEnabled =
+    GATEWAY_CONFIG.clients?.codex?.rate_limit_shield?.desktop_api_enabled !== false &&
+    GATEWAY_CONFIG.clients?.codex?.rate_limit_shield?.enabled !== false;
+
+  if (codexDesktopShieldEnabled) {
+    const shieldPort = Number(GATEWAY_CONFIG.clients?.codex?.rate_limit_shield?.port || 8000);
+    const shieldHost = GATEWAY_CONFIG.clients?.codex?.rate_limit_shield?.host || "127.0.0.1";
+    startDesktopApiShield({
+      port: shieldPort,
+      host: shieldHost,
+      getProxyAgent: () => resolveOutboundProxyAgent(null, GATEWAY_CONFIG.proxy),
+      logInfo: (msg) => console.log(msg),
+      logError: (msg) => console.error(msg),
+    });
+  }
 
   console.log(`Ark Anthropic messages URL: ${ARK_MESSAGES_URL}`);
   console.log(`Ark Codex/OpenAI URL: ${ARK_CODEX_BASE_URL}`);
