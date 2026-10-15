@@ -1,0 +1,14 @@
+{
+  "name": "leo-wechat-to-html",
+  "version": "1.1.0",
+  "description": "微信公众号文章像素级离线 HTML 原版还原与结构化 Markdown 本地化抓取器",
+  "type": "module",
+  "bin": {
+    "wechat-dl": "./scripts/wechat-dl.mjs"
+  },
+  "dependencies": {
+    "cheerio": "^1.2.0",
+    "turndown": "^7.2.4",
+    "turndown-plugin-gfm": "^1.0.2"
+  }
+}

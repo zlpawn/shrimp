@@ -477,6 +477,27 @@
       "requiresDaemon": false,
       "promoted": true,
       "managed": true
+    },
+    {
+      "id": "leo-wechat-to-html",
+      "name": "leo-wechat-to-html",
+      "title": "Leo 微信公众号文章高保真归档",
+      "summary": "像素级离线 HTML 原版还原与结构化 Markdown 本地化抓取器，突破微信防盗链与反爬，全量并发下载高清原图与原生内联 CSS，提供 100% 离线脱网可读的 HTML 原文与结构化 Markdown。",
+      "category": "research",
+      "categoryLabel": "研究与知识",
+      "icon": "📰",
+      "featured": true,
+      "tags": [
+        "wechat",
+        "html",
+        "markdown",
+        "crawler",
+        "archive",
+        "微信公众号"
+      ],
+      "requiresDaemon": false,
+      "promoted": true,
+      "managed": true
     }
   ]
 }
