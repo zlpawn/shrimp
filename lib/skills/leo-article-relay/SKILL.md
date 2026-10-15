@@ -1,14 +1,14 @@
 ---
-name: leo-wechat-to-html
-description: "微信公众号文章像素级离线 HTML 原版还原与结构化 Markdown 本地化抓取器。突破腾讯防盗链与反爬验证，全量并发下载高清原图与原生内联 CSS，生成 100% 离线脱网可读的 HTML 原文与清洗后的结构化 Markdown（含 Frontmatter、表格重构与代码块）。支持单个/多个 URL 传参、链接清单文件、标准输入管道（Stdin）及与 Craft 笔记深度联动批量下载。Use when user asks to '下载公众号文章', '抓取微信文章', '微信文章转HTML', '保存公众号文章', '下载微信排版', provides WeChat URLs (mp.weixin.qq.com), or wants to extract WeChat links from Craft notes."
+name: leo-article-relay
+description: "全能文章高保真脱机归档、知识库持久化与多端（Craft/Obsidian）高保真中继同步引擎。突破腾讯防盗链与反爬验证，全量并发下载高清原图与原生内联 CSS，生成 100% 离线脱网可读的 HTML 原文与清洗后的结构化 Markdown（含 Frontmatter、表格重构与代码块）。支持 Obsidian Vault 智能持久化路由、~/.shrimp 保底存储、以及 1:1 逐字无损直传 Craft 官方云端 CDN 图床的中继同步。Use when user asks to '下载公众号文章', '抓取微信文章', '微信文章转HTML', '保存公众号文章', '同步文章到Craft', '同步到知识库', 'article relay', '剪藏文章', '中继同步', provides article URLs (mp.weixin.qq.com, etc.), or wants to relay articles into Obsidian/Craft."
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
   author: "Leo"
 ---
 
-# Leo WeChat to HTML & Markdown (微信公众号文章高保真本地化引擎)
+# Leo Article Relay (全能文章高保真归档与知识中继引擎)
 
-专为微信公众号深度打造的本地化归档与知识沉淀 Skill。一键突破微信移动端反爬防护与 `mmbiz.qpic.cn` 图片防盗链，秒级直取服务端原生内容，提供 **「像素级脱网 HTML」** 与 **「结构化 Markdown」** 双重交付。
+专为长文、公众号与技术博客深度打造的知识摄取与多端中继 Skill。一键突破反爬防护与图片防盗链，秒级直取服务端原生内容，提供 **「像素级脱网 HTML」**、**「结构化 Markdown」** 与 **「Craft 官方图床直传中继」** 多端交付。
 
 ---
 
@@ -47,18 +47,18 @@ wechat-articles/
 为了避免将爬取的文章散落在临时的代码工程中，本 Skill 采用严格的 **「本地中枢与知识库持久化路由」** 架构：
 
 - **本地技能专有目录（保底存储）**：
-  `~/.shrimp/skills/leo-wechat-to-html/articles/`
+  `~/.shrimp/skills/leo-article-relay/articles/`
   所有未配置外部知识库的文章均统一存放在此，彻底与开发代码仓库隔离。
 - **外部知识库持久化配置文件**：
-  `~/.shrimp/skills/leo-wechat-to-html/vault`
+  `~/.shrimp/skills/leo-article-relay/vault`
   记录用户指定的 Obsidian Vault 或自定义知识库完整绝对路径。
 
 #### 首次运行询问与路由逻辑 (Agent 交互 SOP)：
-1. **检查配置**：检查 `~/.shrimp/skills/leo-wechat-to-html/vault` 是否存在。
+1. **检查配置**：检查 `~/.shrimp/skills/leo-article-relay/vault` 是否存在。
 2. **主动询问（若未配置）**：
    - 首次使用时，Agent 主动询问用户：“请问你的知识库目录在哪里？文章希望沉淀到哪个文件夹下？（如：`~/Documents/Obsidian Vault/Articles`）”
-   - 将用户指定的目录写入 `~/.shrimp/skills/leo-wechat-to-html/vault`，后续所有 Agent 调用均可直接复用，无需重复询问。
-   - 若用户无独立知识库，则默认使用 `~/.shrimp/skills/leo-wechat-to-html/articles/`。
+   - 将用户指定的目录写入 `~/.shrimp/skills/leo-article-relay/vault`，后续所有 Agent 调用均可直接复用，无需重复询问。
+   - 若用户无独立知识库，则默认使用 `~/.shrimp/skills/leo-article-relay/articles/`。
 3. **查看与重设命令**：
    ```bash
    # 查看当前配置的知识库路径
@@ -72,16 +72,16 @@ wechat-articles/
 
 ## 常用 CLI 命令
 
-脚本位于：`/Users/pa/.agents/skills/leo-wechat-to-html/scripts/wechat-dl.mjs`
+脚本位于：`/Users/pa/.agents/skills/leo-article-relay/scripts/wechat-dl.mjs`
 
 ### 1. 抓取单个或多个微信文章链接（自动路由到配置的知识库或 ~/.shrimp）
 ```bash
-node /Users/pa/.agents/skills/leo-wechat-to-html/scripts/wechat-dl.mjs "<url1>" ["<url2>"]
+node /Users/pa/.agents/skills/leo-article-relay/scripts/wechat-dl.mjs "<url1>" ["<url2>"]
 ```
 
 ### 2. 显式指定输出目录
 ```bash
-node /Users/pa/.agents/skills/leo-wechat-to-html/scripts/wechat-dl.mjs "<url1>" -o /path/to/custom/dir
+node /Users/pa/.agents/skills/leo-article-relay/scripts/wechat-dl.mjs "<url1>" -o /path/to/custom/dir
 ```
 
 ### 2. 从链接清单文本文件中批量抓取
@@ -91,7 +91,7 @@ node /Users/pa/.agents/skills/leo-wechat-to-html/scripts/wechat-dl.mjs -f links.
 
 ### 3. 从终端管道或标准输入（Stdin）抓取
 ```bash
-cat article_urls.txt | node /Users/pa/.agents/skills/leo-wechat-to-html/scripts/wechat-dl.mjs -s -o ./wechat-articles
+cat article_urls.txt | node /Users/pa/.agents/skills/leo-article-relay/scripts/wechat-dl.mjs -s -o ./wechat-articles
 ```
 
 ### 4. 与 Craft 笔记深度联动（一阶段 -> 二阶段桥梁）
@@ -100,7 +100,7 @@ cat article_urls.txt | node /Users/pa/.agents/skills/leo-wechat-to-html/scripts/
 2. 提取文本中出现的 `https://mp.weixin.qq.com/s/...` 链接；
 3. 直接调用 CLI 脚本批量保存至本地：
 ```bash
-node /Users/pa/.agents/skills/leo-wechat-to-html/scripts/wechat-dl.mjs "<extracted_url1>" "<extracted_url2>" -o ./wechat-articles
+node /Users/pa/.agents/skills/leo-article-relay/scripts/wechat-dl.mjs "<extracted_url1>" "<extracted_url2>" -o ./wechat-articles
 ```
 
 ---
@@ -128,7 +128,7 @@ node /Users/pa/.agents/skills/leo-wechat-to-html/scripts/wechat-dl.mjs "<extract
 #### Step 1: 准备分块与图床映射
 运行切片预处理脚本，自动反解公网图床 URL、清理 Frontmatter、转义特殊字符并切分文件：
 ```bash
-node /Users/pa/.agents/skills/leo-wechat-to-html/scripts/prepare-craft-chunks.mjs "<articleDir>"
+node /Users/pa/.agents/skills/leo-article-relay/scripts/prepare-craft-chunks.mjs "<articleDir>"
 ```
 输出：`<articleDir>/craft-chunks/` 包含切片文件 `chunk_01.md`, `chunk_02.md` ... 及 `manifest.json`。
 

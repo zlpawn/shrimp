@@ -1,7 +1,7 @@
 {
-  "name": "leo-wechat-to-html",
-  "version": "1.1.0",
-  "description": "微信公众号文章像素级离线 HTML 原版还原与结构化 Markdown 本地化抓取器",
+  "name": "leo-article-relay",
+  "version": "1.2.0",
+  "description": "全能文章脱机归档、知识库持久化与多端（Craft/Obsidian）高保真中继同步引擎",
   "type": "module",
   "bin": {
     "wechat-dl": "./scripts/wechat-dl.mjs"
