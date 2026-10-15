@@ -74,6 +74,56 @@ node /Users/pa/.agents/skills/leo-wechat-to-html/scripts/wechat-dl.mjs "<extract
 
 ---
 
+## 微信文章全量同步至 Craft 知识库标准工作流 (Craft Sync Pipeline)
+
+当用户要求将微信文章**誊抄/同步到 Craft 笔记**时，必须严格遵守以下 **1:1 原文保真与原生图床上传标准**，**严禁自行压缩概括或摘要技术内容**。
+
+### 1. 核心工作原理与避坑原则
+
+1. **零删减、零摘要**：技术文章与实战教程必须全文 1:1 逐字逐句誊抄，完整保留所有代码注释、LaTeX 公式、数据表格与排版细节。
+2. **原生图片自动上传机制**：
+   - ⚠️ **切勿直接传本地相对路径**（如 `![](images/img_001.png)`）：Craft 服务端无法访问本地硬盘，会导致图片显示损坏。
+   - ✅ **必须使用原始公网图床 URL**（如 `https://mmbiz.qpic.cn/...`）：当向 Craft 发送带有公网 URL 的 Markdown 图片标记时，Craft 后端会**自动抓取图片并转存到 Craft 官方 CDN**，并在笔记中生成真正的原生 Image Block（`uploaded: true`）。
+3. **分块注入防超时与截断 (Chunking)**：
+   - 长文切勿单次全部传入，单次 `blocks add` 限制在 **<= 12KB**（约 20~40 个 Block），按 `##` 或 `###` 章节边界切割，杜绝 CLI 超时或截断。
+4. **特殊字符与命令语法防护**：
+   - Python 代码中的多行注释三引号（`"""`）会提前闭合 Craft CLI 的 `--markdown "..."` 参数，导致命令解析失败。必须在预处理时规范化为单引号 `'''` 或 `#` 单行注释。
+   - 避免在命令中未转义分号 `;`，防止被 Craft 识别为批量命令分隔符。
+
+---
+
+### 2. 自动化执行 SOP（四步法）
+
+#### Step 1: 准备分块与图床映射
+运行切片预处理脚本，自动反解公网图床 URL、清理 Frontmatter、转义特殊字符并切分文件：
+```bash
+node /Users/pa/.agents/skills/leo-wechat-to-html/scripts/prepare-craft-chunks.mjs "<articleDir>"
+```
+输出：`<articleDir>/craft-chunks/` 包含切片文件 `chunk_01.md`, `chunk_02.md` ... 及 `manifest.json`。
+
+#### Step 2: 定位目标文件夹并在 Craft 中创建文档
+```bash
+# 1. 查找或创建目标专栏文件夹（如 "微信公众号文章"）
+folders list --filter "微信公众号文章"
+
+# 2. 在该文件夹下创建文档
+documents create --title "<文章标题>" --folder <folderId>
+# 记录返回的 rootBlockId（如 b7ee59e7-55c1-0af3-34d8-a21c02436b14）
+```
+
+#### Step 3: 按序追加切片块 (Blocks Add)
+按顺序读取 `chunk_XX.md` 内容，依次调用 `craft_write` MCP 工具：
+```bash
+blocks add --id <rootBlockId> --markdown "<chunk_content>"
+```
+
+#### Step 4: 结果自检与深度链接返回
+1. 调用 `craft_read` 校验文档末尾内容，确认全部章节已追加。
+2. 校验图片块是否全部包含 `uploaded: true`。
+3. 向用户返回文档标题及 `craftdocs://open?spaceId=...&documentId=...` 客户端快速打开链接。
+
+---
+
 ## 参数选项一览
 
 | 参数 | 简写 | 默认值 | 说明 |
@@ -90,3 +140,4 @@ node /Users/pa/.agents/skills/leo-wechat-to-html/scripts/wechat-dl.mjs "<extract
 
 - **请求机制**：默认模拟微信 iOS 移动客户端专属 UA，直连服务端渲染通道，单篇耗时仅需 2~5 秒。
 - **人机滑块验证兜底**：若某 IP 频繁高并发请求触发了微信的滑块验证码页面（含 `secitptpage/verify`），脚本会明确提示。此时 Agent 可使用 `ego-browser` 唤起一个带界面的窗口供人工滑动一次，之后即可长效恢复纯脚本秒级运行。
+
