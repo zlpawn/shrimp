@@ -42,15 +42,46 @@ wechat-articles/
   - 剔除底部关注二维码、微信点赞在看卡片与广告噪音。
 - **图片双链支持**：默认标准 Markdown 格式，亦支持 Obsidian 双链语法（`![[img_001.png]]`）。
 
+### 2. 知识库目录规范与中枢存储机制 (Storage & Vault Hierarchy)
+
+为了避免将爬取的文章散落在临时的代码工程中，本 Skill 采用严格的 **「本地中枢与知识库持久化路由」** 架构：
+
+- **本地技能专有目录（保底存储）**：
+  `~/.shrimp/skills/leo-wechat-to-html/articles/`
+  所有未配置外部知识库的文章均统一存放在此，彻底与开发代码仓库隔离。
+- **外部知识库持久化配置文件**：
+  `~/.shrimp/skills/leo-wechat-to-html/vault`
+  记录用户指定的 Obsidian Vault 或自定义知识库完整绝对路径。
+
+#### 首次运行询问与路由逻辑 (Agent 交互 SOP)：
+1. **检查配置**：检查 `~/.shrimp/skills/leo-wechat-to-html/vault` 是否存在。
+2. **主动询问（若未配置）**：
+   - 首次使用时，Agent 主动询问用户：“请问你的知识库目录在哪里？文章希望沉淀到哪个文件夹下？（如：`~/Documents/Obsidian Vault/Articles`）”
+   - 将用户指定的目录写入 `~/.shrimp/skills/leo-wechat-to-html/vault`，后续所有 Agent 调用均可直接复用，无需重复询问。
+   - 若用户无独立知识库，则默认使用 `~/.shrimp/skills/leo-wechat-to-html/articles/`。
+3. **查看与重设命令**：
+   ```bash
+   # 查看当前配置的知识库路径
+   node wechat-dl.mjs --get-vault
+
+   # 手动设置/修改知识库路径
+   node wechat-dl.mjs --set-vault "~/Documents/Obsidian Vault/Articles"
+   ```
+
 ---
 
 ## 常用 CLI 命令
 
 脚本位于：`/Users/pa/.agents/skills/leo-wechat-to-html/scripts/wechat-dl.mjs`
 
-### 1. 抓取单个或多个微信文章链接
+### 1. 抓取单个或多个微信文章链接（自动路由到配置的知识库或 ~/.shrimp）
 ```bash
-node /Users/pa/.agents/skills/leo-wechat-to-html/scripts/wechat-dl.mjs "<url1>" ["<url2>"] -o ./wechat-articles
+node /Users/pa/.agents/skills/leo-wechat-to-html/scripts/wechat-dl.mjs "<url1>" ["<url2>"]
+```
+
+### 2. 显式指定输出目录
+```bash
+node /Users/pa/.agents/skills/leo-wechat-to-html/scripts/wechat-dl.mjs "<url1>" -o /path/to/custom/dir
 ```
 
 ### 2. 从链接清单文本文件中批量抓取
