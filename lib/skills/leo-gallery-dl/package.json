@@ -1,0 +1,11 @@
+{
+  "name": "leo-gallery-dl",
+  "version": "1.0.0",
+  "description": "基于 gallery-dl 与 uv tool 的图像画廊、插画相册、漫画及社交媒体图集批量采集与版本自愈技能",
+  "type": "module",
+  "scripts": {
+    "check": "gallery-dl --version",
+    "install-tool": "uv tool install gallery-dl",
+    "upgrade-tool": "uv tool upgrade gallery-dl"
+  }
+}

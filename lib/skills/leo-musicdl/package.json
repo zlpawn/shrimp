@@ -1,0 +1,11 @@
+{
+  "name": "leo-musicdl",
+  "version": "1.0.0",
+  "description": "基于 musicdl 与 uv tool 的全网高品质音乐搜索、歌单/专辑解析与批量下载技能",
+  "type": "module",
+  "scripts": {
+    "check": "musicdl --version",
+    "install-tool": "uv tool install musicdl",
+    "upgrade-tool": "uv tool upgrade musicdl"
+  }
+}

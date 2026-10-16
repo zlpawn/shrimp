@@ -1,0 +1,11 @@
+{
+  "name": "leo-yt-dlp",
+  "version": "1.0.0",
+  "description": "基于 yt-dlp 与 uv tool 的全功能高质量媒体抓取、音频提取与故障自愈技能",
+  "type": "module",
+  "scripts": {
+    "check": "yt-dlp --version",
+    "install-tool": "uv tool install yt-dlp",
+    "upgrade-tool": "uv tool upgrade yt-dlp"
+  }
+}

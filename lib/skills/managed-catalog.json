@@ -26,6 +26,77 @@
       "managed": true
     },
     {
+      "id": "leo-yt-dlp",
+      "name": "leo-yt-dlp",
+      "title": "Leo yt-dlp 媒体下载与提取",
+      "summary": "基于 yt-dlp 与 uv tool 的全能音视频高质量下载与音频提取技能，无缝联动 leo-lantern 自动导出浏览器 Cookie 绕过风控，支持版本自愈更新与 B站/YouTube 专项优化。",
+      "category": "media",
+      "categoryLabel": "媒体创作",
+      "icon": "🎬",
+      "featured": true,
+      "tags": [
+        "yt-dlp",
+        "video-download",
+        "audio-extract",
+        "uv-tool",
+        "bilibili",
+        "youtube",
+        "视频下载",
+        "音频提取"
+      ],
+      "requiresDaemon": false,
+      "promoted": true,
+      "managed": true
+    },
+    {
+      "id": "leo-gallery-dl",
+      "name": "leo-gallery-dl",
+      "title": "Leo gallery-dl 图集相册采集",
+      "summary": "基于 gallery-dl 与 uv tool 的图像画廊、插画相册、漫画及社交媒体图集批量采集技能，联动 leo-lantern 自动导出浏览器 Cookie 绕过登录限制，支持增量去重归档与版本自愈。",
+      "category": "media",
+      "categoryLabel": "媒体创作",
+      "icon": "🖼️",
+      "featured": true,
+      "tags": [
+        "gallery-dl",
+        "image-download",
+        "comics",
+        "manga",
+        "pixiv",
+        "twitter",
+        "uv-tool",
+        "图集下载",
+        "相册采集"
+      ],
+      "requiresDaemon": false,
+      "promoted": true,
+      "managed": true
+    },
+    {
+      "id": "leo-musicdl",
+      "name": "leo-musicdl",
+      "title": "Leo musicdl 音乐搜索与下载",
+      "summary": "基于 musicdl 与 uv tool 的全网高品质音乐搜索、歌单/专辑解析与批量下载技能，支持 QQ音乐/网易云双优选源与 leo-yt-dlp 联动兜底。",
+      "category": "media",
+      "categoryLabel": "媒体创作",
+      "icon": "🎵",
+      "featured": true,
+      "tags": [
+        "musicdl",
+        "music-download",
+        "songs",
+        "playlists",
+        "qq-music",
+        "netease-music",
+        "uv-tool",
+        "音乐搜索",
+        "歌曲下载"
+      ],
+      "requiresDaemon": false,
+      "promoted": true,
+      "managed": true
+    },
+    {
       "id": "leo-ppt-agent",
       "name": "leo-ppt-agent",
       "title": "Leo AI PPT 演示助手",
