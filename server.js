@@ -1183,9 +1183,9 @@ server.listen(LISTEN_PORT, LISTEN_HOST, () => {
     applySchedulerBootConfig();
   });
 
-  // Start Codex Desktop API Shield (listens on localhost:8000 to neutralize desktop UI send button locks)
+  // Start Codex Desktop API Shield (only if explicitly enabled in gateway config)
   const codexDesktopShieldEnabled =
-    GATEWAY_CONFIG.clients?.codex?.rate_limit_shield?.desktop_api_enabled !== false &&
+    GATEWAY_CONFIG.clients?.codex?.rate_limit_shield?.desktop_api_enabled === true &&
     GATEWAY_CONFIG.clients?.codex?.rate_limit_shield?.enabled !== false;
 
   if (codexDesktopShieldEnabled) {
