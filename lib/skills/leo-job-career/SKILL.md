@@ -32,11 +32,15 @@ node lib/skills/leo-job-career/scripts/leo_job_career.mjs doctor
 node lib/skills/leo-job-career/scripts/leo_job_career.mjs auth status
 ```
 
-- **凭证导入指引**：如果凭证缺失，提示用户在 Chrome 中使用 `Leo cookie.txt Locally` 扩展进入 `zhipin.com` 点击 **Copy Cookie Header**。
-- 用户复制后执行导入：
+- **凭证全自动获取（首选）**：若 Chrome 浏览器已登录并开启 `leo-lantern` 桥接，直接执行全自动提取：
+  ```bash
+  node lib/skills/leo-job-career/scripts/leo_job_career.mjs auth auto
+  ```
+- **手动剪贴板导入（备用）**：在 Chrome 中点击 `Leo cookie.txt Locally` 扩展的 **Copy Cookie Header**，然后执行导入：
   ```bash
   node lib/skills/leo-job-career/scripts/leo_job_career.mjs auth import-clipboard
   ```
+
 
 ### 2. 市场岗位侦察与采集 (Market Init & Update)
 
