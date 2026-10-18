@@ -77,14 +77,16 @@ node lib/skills/leo-job-career/scripts/leo_job_career.mjs gap report
 ```
 
 - **报告特色**：
-  - 真实公司清单溯源（大厂、中厂、AI创企）；
-  - 核心能力对照表格（技能 | 出处公司与梯队 | 市场权重 | 你的状态 | 诊断结论）；
-  - 各梯队差异化侧重剖析（大厂重底层与超高并发系统治理、中厂重业务落地工程提效、创企重前沿技术与全栈自主闭环）；
-  - **100% 透明缺口归类**：高亮 Top 2~3 个最致命的核心硬骨头，并完整列出所有次要缺口与加分项；
+  - **AI Agent 研发工程为主线**：以智能体范式与状态机容错、Tool Calling/MCP、长上下文工程、流式网关、企业级RAG、推理物理账本与代码沙箱 7 大维度为主轴，坚决杜绝原始标签（MySQL/Docker/Oracle）对核心能力画像的噪音干扰；
+  - **真实大厂 JD 原文 1:1 映射**：溯源阿里千问、字节、京东、小红书等一线大厂真实招聘原文，并对照大厂 P7 技术面深挖考核内核；
+  - **9年资深底座护城河定锚**：自动将 Java 底层、分布式微服务、海量存储与高并发治理对齐为“稳固基本盘（大厂P7基石）”，杜绝误判为“尚未接触”；
+  - **市场权重数学计算标准化**：显式提供渗透率计算公式与分层判定标准，供下游大模型与学习规划 Skill 精确消费；
+  - **全景透明缺口归类**：高亮 Top 3 致命硬骨头，并完整列出进阶工程化攻坚项与语言生态协同定位；
   - 本地单一文件落盘（`~/.shrimp/leo-job-career/reports/gap-analysis-report.md`），无缝接力后续学习规划 Skill。
 
 ## 参考规范与文档
 
-- 数据接口与字段规范：[references/boss-data-contract.md](references/boss-data-contract.md)
+- 数据接口与反爬防御规范：[references/boss-data-contract.md](references/boss-data-contract.md)
 - 岗位质量与零外包拦截规范：[references/job-quality-policy.md](references/job-quality-policy.md)
-- 市场分析与P7标杆定义：[references/market-analysis.md](references/market-analysis.md)
+- 市场分析、能力画像与P7标杆定义：[references/market-analysis.md](references/market-analysis.md)
+

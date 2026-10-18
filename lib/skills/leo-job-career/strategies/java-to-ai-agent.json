@@ -1,0 +1,253 @@
+{
+  "id": "java-to-ai-agent",
+  "name": "Java 资深研发转型 AI Agent 架构师 (大厂 P7)",
+  "description": "专用于 5-10 年 Java 分布式系统资深工程师向大模型应用架构师 / AI Agent 研发专家转型的能力画像与消歧策略",
+  "target_role_patterns": [
+    "agent",
+    "ai agent",
+    "智能体",
+    "大模型应用",
+    "java agent",
+    "ai platform"
+  ],
+  "search_matrix": {
+    "default_queries": [
+      "ai agent",
+      "agent",
+      "大模型agent",
+      "智能体",
+      "AI Agent架构师",
+      "大模型应用 架构",
+      "Java 智能体",
+      "Java 大模型应用",
+      "AI 平台 后端",
+      "大模型平台 后端",
+      "AI 应用 技术负责人",
+      "Java 技术专家 大模型"
+    ]
+  },
+  "disambiguation": {
+    "role_family": "ai_agent",
+    "description": "规避 Java APM / JVM 字节码探针 JavaAgent 的同名混淆",
+    "negative_patterns": [
+      "-javaagent",
+      "字节码插桩",
+      "skywalking",
+      "arthas",
+      "pinpoint",
+      "apm探针",
+      "字节码注入",
+      "cat监控"
+    ],
+    "negative_action": "exclude_if_no_llm_terms",
+    "positive_llm_terms": [
+      "llm",
+      "大模型",
+      "智能体",
+      "agent",
+      "prompt",
+      "rag",
+      "mcp",
+      "langchain",
+      "dify",
+      "openai",
+      "qwen",
+      "通义千问",
+      "chatgpt",
+      "function calling",
+      "知识库"
+    ]
+  },
+  "relevance_rules": {
+    "candidate_background": "java_backend_senior",
+    "candidate_primary_language": "Java",
+    "filter_python_only": true
+  },
+  "weight_thresholds": {
+    "top_blocker": 70,
+    "secondary_gap": 50
+  },
+  "capability_rubric": {
+    "core_dimensions": [
+      {
+        "key": "agent_orchestration",
+        "skill": "Agent 核心范式编排与状态机容错",
+        "category": "agent_core",
+        "tier_weight": 95,
+        "frequency": 87,
+        "tiers": ["大厂", "知名AI创企", "中厂"],
+        "company_sources": ["阿里巴巴千问事业部", "字节跳动", "百度", "滴滴", "360集团", "作业帮"],
+        "jd_quote": "“负责企业级 Agent 框架设计，主导复杂任务的多智能体规划、决策与调度流转，保障复杂业务流顺利交付”",
+        "p7_rubric": "严审非快乐路径（Sad Path）：ReAct/Plan-and-Solve 状态机流转、死循环环路检测、工具调用非预期返回的自愈降级与不可变消息驱动架构。",
+        "user_status": "了解 + 做过Demo",
+        "conclusion": "🔴 最高优先级核心硬骨头（大厂P7关键生死线）",
+        "reason": "业务 Demo 逻辑多停留在 Happy Path。大厂 P7 技术面严审非快乐路径（Sad Path）：ReAct / Plan-and-Solve 状态机流转、死循环环路检测、工具调用非预期返回的自愈降级与不可变消息驱动架构。"
+      },
+      {
+        "key": "tool_calling_mcp",
+        "skill": "Tool Calling、协议工程与 MCP 落地",
+        "category": "agent_core",
+        "tier_weight": 92,
+        "frequency": 78,
+        "tiers": ["大厂", "知名AI创企"],
+        "company_sources": ["阿里巴巴集团", "智谱AI", "字节跳动", "集思科技", "生数科技"],
+        "jd_quote": "“负责基于 LLM 的 Tool/Plugin 工具链体系建设，支持 Function Call，提高工具调用的准确率与稳定性”",
+        "p7_rubric": "底层 Logits 约束机制、JSON 损坏的自动修复重试（JSON repair）、Anthropic MCP 标准协议对接、工具调用的超时与幂等防重机制。",
+        "user_status": "了解 + 做过Demo",
+        "conclusion": "🔴 最高优先级核心硬骨头（大厂P7关键生死线）",
+        "reason": "缺乏对大模型 Function Calling 底层 Logits 约束机制、JSON 损坏语法容错（JSON repair / 反思重试）、Anthropic MCP (Model Context Protocol) 标准规范落地及工具鉴权与幂等防重机制的工程化物理防御方案。"
+      },
+      {
+        "key": "context_engineering",
+        "skill": "长上下文工程与注意力治理 (Context Engineering)",
+        "category": "agent_core",
+        "tier_weight": 88,
+        "frequency": 72,
+        "tiers": ["大厂", "中厂", "知名AI创企"],
+        "company_sources": ["北京可达智灵科技", "联想(北京)", "字节跳动", "阿里巴巴千问事业部"],
+        "jd_quote": "“负责长文档解析、长对话历史管理与提示词工程，优化推理延迟与上下文利用效率”",
+        "p7_rubric": "突破无脑长上下文思维，解决 Transformer O(S^2) Attention 算力悬崖与 Softmax 分母注意力稀释（Lost in the Middle）；掌握滑动状态机分页与 Prefix Caching（公共前缀缓存命中提升 80%），大幅降低 TTFT 首字延迟与 Token 开销。",
+        "user_status": "了解 + 做过Demo",
+        "conclusion": "🔴 最高优先级核心硬骨头（大厂P7关键生死线）",
+        "reason": "长上下文拼接引发 Transformer O(S^2) Attention 算力悬崖与 Softmax 分母注意力稀释（Lost in the Middle）。大厂要求掌握滑动窗口与状态机分页、摘要分块（Map-Reduce）以及利用 Prefix Caching（公共前缀缓存命中提升 80%）将首字延迟（TTFT）大幅降低的架构设计。"
+      },
+      {
+        "key": "streaming_gateway",
+        "skill": "生产级流式传输与网关治理 (SSE & BPE乱码)",
+        "category": "agent_core",
+        "tier_weight": 85,
+        "frequency": 68,
+        "tiers": ["大厂", "中厂"],
+        "company_sources": ["字节跳动", "上海某大型人工智能公司", "北京水滴科技", "清枢科技"],
+        "jd_quote": "“负责大模型应用服务与网关研发，支持流式交互（SSE），保障千万级高并发下的低延迟与高可用”",
+        "p7_rubric": "Netty/WebFlux 流式管道设计、Byte-level BPE 多字节乱码机制（中文 3 字节跨 Token 截断防御与 CharsetDecoder 状态恢复）、全链路 Trace 观测与分布式限流熔断。",
+        "user_status": "了解 + 做过Demo",
+        "conclusion": "🟡 次要与进阶工程化攻坚项",
+        "reason": "高并发流式推送到前端时，因 Byte-level BPE 多字节切分（中文汉字跨 Token 3 字节切分）导致偶发乱码，需在 Netty/WebFlux 网关层设计状态化解码器（CharsetDecoder）；并需落地 OpenTelemetry 全链路 Trace 与高并发限流熔断。"
+      },
+      {
+        "key": "rag_system",
+        "skill": "企业级 RAG 检索增强与防幻觉体系",
+        "category": "agent_core",
+        "tier_weight": 82,
+        "frequency": 65,
+        "tiers": ["大厂", "中厂", "知名AI创企"],
+        "company_sources": ["阿里巴巴集团", "金山云", "懂车帝", "APUS", "可为天下"],
+        "jd_quote": "“负责企业知识库建设，结合向量数据库与检索引擎，优化召回精度与排序，解决大模型生成幻觉”",
+        "p7_rubric": "拒绝简单单向量检索；考核 Hybrid Search（Dense Vector + BM25 稀疏检索）、Cross-Encoder Rerank 二次精排、文档层级分块（Chunking）与 Grounding 事实校验评测体系。",
+        "user_status": "了解 + 做过Demo",
+        "conclusion": "🟡 次要与进阶工程化攻坚项",
+        "reason": "拒绝简单的单向量余弦检索。大厂核心考核：Hybrid Search（Dense Vector + BM25 稀疏检索）、Cross-Encoder Rerank 二次精排、文档层级分块（Chunking）与 Grounding 事实校验评测体系。"
+      },
+      {
+        "key": "llm_physics",
+        "skill": "大模型底层物理账本与成本延迟核算",
+        "category": "agent_core",
+        "tier_weight": 80,
+        "frequency": 60,
+        "tiers": ["大厂", "知名AI创企"],
+        "company_sources": ["阿里巴巴千问事业部", "字节跳动", "百度", "智谱AI"],
+        "jd_quote": "“深入理解 LLM 生成原理，具备模型推理加速、吞吐优化与 Token 成本控制经验”",
+        "p7_rubric": "Prefill（并行/计算受限）vs Decode（串行/访存受限）本质差异；严控输出 Token 收益远超压缩输入 Prompt；KV Cache 显存占用与商业成本核算。",
+        "user_status": "了解 + 做过Demo",
+        "conclusion": "🟡 次要与进阶工程化攻坚项",
+        "reason": "大厂 P7 架构辩护关键：深度理解 Prefill（并行/计算受限）与 Decode（串行/访存受限）的本质区别；理解严控输出 Token 收益远超压缩输入 Prompt；掌握 KV Cache 显存占用公式与商业成本核算。"
+      },
+      {
+        "key": "sandbox_execution",
+        "skill": "计算卸载与代码解释器安全沙箱",
+        "category": "agent_core",
+        "tier_weight": 75,
+        "frequency": 52,
+        "tiers": ["大厂", "中厂", "知名AI创企"],
+        "company_sources": ["数驱互动", "清枢科技", "万联智链", "可为天下", "小红书"],
+        "jd_quote": "“负责代码执行沙箱建设，支持多语言脚本动态运行，保障执行安全与环境隔离”",
+        "p7_rubric": "区分大模型概率型语义推理与图灵确定性计算；将算术与统计运算降级为编写 Python 脚本，由 Java 调度 Docker 断网隔离沙箱执行，解耦推理与执行防线。",
+        "user_status": "了解 + 做过Demo",
+        "conclusion": "🟡 次要与进阶工程化攻坚项",
+        "reason": "区分大模型概率型语义推理与图灵确定性计算。对于复杂数学统计和报表，大模型降级为编写 Python 脚本，由 Java 调度隔离的 Docker/断网沙箱执行，实现确定性与安全性的工程解耦。"
+      }
+    ],
+    "baseline_dimensions": [
+      {
+        "skill": "Java 底层机制与高并发治理",
+        "company_sources": ["阿里巴巴千问事业部", "字节跳动", "京东集团", "联想(北京)"],
+        "frequency": 45,
+        "tiers": ["大厂", "中厂", "知名AI创企"],
+        "jd_quote": "“精通 Java 基础，熟悉多线程、并发处理、JVM 基本原理，具备线上复杂故障排查调优经验”",
+        "p7_rubric": "JMM 内存模型、线程池调优、CompletableFuture 异步流水线、JVM GC 与高并发非阻塞架构。",
+        "user_status": "熟练掌握 (9年经验)",
+        "conclusion": "✅ 稳固基本盘（大厂P7基石）",
+        "reason": "精通 JMM 内存模型、线程池、CompletableFuture 异步编排与 JVM 性能调优，为不稳定的大模型调用提供强有力的 Java 运行时护城河。"
+      },
+      {
+        "skill": "企业级微服务与分布式系统",
+        "company_sources": ["字节跳动", "阿里巴巴集团", "水滴科技", "小红书"],
+        "frequency": 38,
+        "tiers": ["大厂", "中厂"],
+        "jd_quote": "“深入理解分布式系统架构，熟练使用 SpringCloud 等框架，具备 RPC、分布式事务、分布式锁实战经验”",
+        "p7_rubric": "分布式一致性、服务网格治理、容灾降级、高可用链路设计与复杂商业系统技术权衡。",
+        "user_status": "熟练掌握 (9年经验)",
+        "conclusion": "✅ 稳固基本盘（大厂P7基石）",
+        "reason": "深谙 Spring Boot/Cloud、RPC 通信、分布式事务、分布式锁与容灾高可用治理，具备驾驭复杂商业系统的架构底蕴。"
+      },
+      {
+        "skill": "海量数据与高并发存储缓存",
+        "company_sources": ["小红书", "字节跳动", "金山云", "腾讯"],
+        "frequency": 42,
+        "tiers": ["大厂", "中厂"],
+        "jd_quote": "“精通 MySQL、Redis、Kafka 等存储与中间件，具备海量数据高并发读写及缓存设计优化经验”",
+        "p7_rubric": "MySQL 索引执行计划与分库分表、Redis 高级数据结构与缓存穿透/击穿/雪崩防护、Kafka 高吞吐与消息不丢不重。",
+        "user_status": "熟练掌握 (9年经验)",
+        "conclusion": "✅ 稳固基本盘（大厂P7基石）",
+        "reason": "精通 MySQL 索引优化与分库分表、Redis 高级数据结构与缓存防击穿、Kafka 高吞吐消息队列管道，胜任 Agent 状态与消息的高效持久化。"
+      },
+      {
+        "skill": "容器化与基础工程设施",
+        "company_sources": ["金山云", "清枢科技", "上海某大型电商", "可为天下"],
+        "frequency": 25,
+        "tiers": ["大厂", "中厂"],
+        "jd_quote": "“熟练使用 Docker、Linux 常用命令，熟悉标准 CI/CD 自动化流水线与云原生架构”",
+        "p7_rubric": "Docker 容器隔离原理、Linux 内核参数性能排查、云原生容器网络与自动化交付。",
+        "user_status": "熟练掌握 (9年经验)",
+        "conclusion": "✅ 稳固基本盘（大厂P7基石）",
+        "reason": "熟练掌握 Docker 容器编排、Linux 系统性能排查与标准 CI/CD 流水线，为代码解释器沙箱及 Agent 独立部署提供现成的运维保障。"
+      },
+      {
+        "skill": "系统架构设计与大型项目落地",
+        "company_sources": ["字节跳动", "小红书", "枫叶互动", "上海某AI公司"],
+        "frequency": 28,
+        "tiers": ["大厂", "中厂", "知名AI创企"],
+        "jd_quote": "“具有大型复杂系统架构设计能力，能独立主导核心模块研发与技术攻关，具备跨团队技术影响力”",
+        "p7_rubric": "DDD 领域驱动设计、技术方案权衡选型、业务抽象与团队技术把控，具备大厂 P7 的架构定力。",
+        "user_status": "熟练掌握 (9年经验)",
+        "conclusion": "✅ 稳固基本盘（大厂P7基石）",
+        "reason": "具备 9 年大型项目主导经验与领域驱动设计（DDD）能力，能清晰权衡架构复杂度与业务收益，具备大厂 P7 的技术决策领导力。"
+      }
+    ],
+    "ecosystem_dimensions": [
+      {
+        "skill": "Python（算法协同与前沿生态阅读）",
+        "company_sources": ["阿里巴巴千问事业部", "字节跳动", "联想(北京)", "生数科技"],
+        "frequency": 44,
+        "tiers": ["大厂", "中厂", "知名AI创企"],
+        "jd_quote": "“掌握 Python/Java 任意一门语言，具备良好的代码编写能力，有大模型开源框架经验更佳”",
+        "p7_rubric": "无缝阅读开源框架（LangChain/AgentScope）底层源码，能编写 Python 代码解释器脚本与测试套件，无需成为底层算法科学家。",
+        "user_status": "生态阅读掌握（非阻碍项）",
+        "conclusion": "🌐 算法协同工具（无需转型算法）",
+        "reason": "大厂 P7 研发岗绝非招聘初级调包算法工程师，而是需要资深架构师用 Java 兜底系统。Python 仅作为前沿 Agent 开源生态代码阅读与编写沙箱测试脚本的协同工具。"
+      },
+      {
+        "skill": "Golang / C++（系统网关高并发视野）",
+        "company_sources": ["某大型互联网公司", "字节跳动", "安哲科技", "车来了"],
+        "frequency": 27,
+        "tiers": ["大厂", "知名AI创企"],
+        "jd_quote": "“熟悉 Go/C++ 具备高并发网关开发经验者优先”",
+        "p7_rubric": "了解高并发协程机制与网关吞吐理念，面试不卡特定语言细节，核心考察架构设计与高并发治理思想。",
+        "user_status": "技术视野了解（非阻碍项）",
+        "conclusion": "🌐 视野拓展加分项（非核心卡点）",
+        "reason": "部分网关或高性能推理框架采用 Go/C++ 编写，理解其协程与并发设计理念即可，面试不卡语言细节，核心看分布式网关与高并发思想。"
+      }
+    ]
+  }
+}

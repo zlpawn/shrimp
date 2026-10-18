@@ -1,0 +1,81 @@
+{
+  "id": "generic-software-architect",
+  "name": "通用后端 / 架构师技术能力画像",
+  "description": "面向常规互联网后端、分布式系统、微服务架构师职级的通用人岗能力诊断策略",
+  "target_role_patterns": [
+    "后端架构师",
+    "技术专家",
+    "后端开发",
+    "分布式架构师",
+    "架构师"
+  ],
+  "search_matrix": {
+    "default_queries": [
+      "后端架构师",
+      "Java 架构师",
+      "技术专家 后端",
+      "分布式系统架构师"
+    ]
+  },
+  "disambiguation": {
+    "role_family": "backend_architecture",
+    "negative_patterns": [],
+    "negative_action": "none"
+  },
+  "relevance_rules": {
+    "candidate_background": "backend_senior",
+    "candidate_primary_language": "Java"
+  },
+  "weight_thresholds": {
+    "top_blocker": 65,
+    "secondary_gap": 40
+  },
+  "capability_rubric": {
+    "core_dimensions": [
+      {
+        "key": "distributed_architecture",
+        "skill": "分布式系统架构设计与高可用容灾",
+        "category": "architecture_core",
+        "tier_weight": 90,
+        "frequency": 80,
+        "tiers": ["大厂", "中厂"],
+        "company_sources": ["一线互联网大厂", "成熟自研中厂"],
+        "jd_quote": "“负责千万级日活高并发分布式系统架构设计，主导容灾多活、异地双活与稳定性建设”",
+        "p7_rubric": "分布式CAP/BASE定理落地权衡、分布式事务（Saga/TCC）、高可用多活单元化架构与故障逃逸防御。",
+        "user_status": "熟练掌握",
+        "conclusion": "✅ 稳固基本盘（核心基石）",
+        "reason": "具备大型分布式架构设计与千万级高并发实战经验。"
+      },
+      {
+        "key": "performance_tuning",
+        "skill": "底层并发机制与高并发性能调优",
+        "category": "performance_core",
+        "tier_weight": 85,
+        "frequency": 75,
+        "tiers": ["大厂", "中厂"],
+        "company_sources": ["一线互联网大厂", "成熟自研中厂"],
+        "jd_quote": "“精通内存模型、锁机制、线程池优化与底层性能调优，解决复杂线上故障”",
+        "p7_rubric": "JMM内存屏障、锁膨胀机制、JVM GC深度排查、内核参数与网络I/O多路复用模型调优。",
+        "user_status": "熟练掌握",
+        "conclusion": "✅ 稳固基本盘（核心基石）",
+        "reason": "精通底层高并发机制与复杂生产环境性能排障。"
+      },
+      {
+        "key": "storage_architecture",
+        "skill": "海量存储与高并发缓存架构",
+        "category": "storage_core",
+        "tier_weight": 80,
+        "frequency": 70,
+        "tiers": ["大厂", "中厂"],
+        "company_sources": ["一线互联网大厂", "成熟自研中厂"],
+        "jd_quote": "“精通 MySQL 分库分表、分布式缓存及高吞吐消息管道架构设计”",
+        "p7_rubric": "存储引擎底层机制、分布式缓存一致性保证、消息削峰填谷与延迟队列高可靠治理。",
+        "user_status": "熟练掌握",
+        "conclusion": "✅ 稳固基本盘（核心基石）",
+        "reason": "具备成熟的海量数据持久化与缓存架构方案设计能力。"
+      }
+    ],
+    "baseline_dimensions": [],
+    "ecosystem_dimensions": []
+  }
+}
