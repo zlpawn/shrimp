@@ -569,6 +569,27 @@
       "requiresDaemon": false,
       "promoted": true,
       "managed": true
+    },
+    {
+      "id": "leo-ai-transcoder",
+      "name": "leo-ai-transcoder",
+      "title": "Leo AI Transcoder (Java 破壁转译)",
+      "summary": "面向传统 Java 后端工程师的 AI/Agent 认知破壁与面试转译中枢。以 Java 数据结构、面向对象、并发编程与微服务协作范式进行降维转译，剥离算法训练噪音，提炼高频面试真题与架构防御方案。支持对话交互答疑，在用户确认搞懂后主动引导沉淀至 Obsidian 或 Craft。",
+      "category": "ai",
+      "categoryLabel": "人工智能",
+      "icon": "☕",
+      "featured": true,
+      "tags": [
+        "java",
+        "agent",
+        "interview",
+        "transcoder",
+        "llm",
+        "mental-model"
+      ],
+      "requiresDaemon": false,
+      "promoted": true,
+      "managed": true
     }
   ]
 }
