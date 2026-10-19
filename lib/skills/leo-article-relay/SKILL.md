@@ -86,7 +86,7 @@ node /Users/pa/.agents/skills/leo-article-relay/scripts/wechat-dl.mjs "<url1>" -
 
 ### 2. 从链接清单文本文件中批量抓取
 ```bash
-node /Users/pa/.agents/skills/leo-wechat-to-html/scripts/wechat-dl.mjs -f links.txt -o ./wechat-articles
+node /Users/pa/.agents/skills/leo-article-relay/scripts/wechat-dl.mjs -f links.txt -o ./wechat-articles
 ```
 
 ### 3. 从终端管道或标准输入（Stdin）抓取

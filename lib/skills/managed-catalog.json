@@ -369,25 +369,6 @@
       "managed": true
     },
     {
-      "id": "leo-cookie-exporter",
-      "name": "leo-cookie-exporter",
-      "title": "Cookie Exporter",
-      "summary": "导出浏览器 cookie 为 Netscape 格式 cookies.txt，供 yt-dlp 使用。优先经网关扩展任务（export-via-extension）；本地 export_cookies.py 作离线备用，支持 Chrome/Edge/Brave/Firefox。",
-      "category": "download",
-      "categoryLabel": "下载采集",
-      "icon": "🍪",
-      "featured": false,
-      "tags": [
-        "browser-extension",
-        "cookie",
-        "download",
-        "yt-dlp"
-      ],
-      "requiresDaemon": false,
-      "promoted": true,
-      "managed": true
-    },
-    {
       "id": "leo-debrief-performance-master",
       "name": "leo-debrief-performance-master",
       "title": "Debrief Performance Master",
@@ -550,16 +531,19 @@
       "managed": true
     },
     {
-      "id": "leo-wechat-to-html",
-      "name": "leo-wechat-to-html",
-      "title": "Leo 微信公众号文章高保真归档",
-      "summary": "像素级离线 HTML 原版还原与结构化 Markdown 本地化抓取器，突破微信防盗链与反爬，全量并发下载高清原图与原生内联 CSS，提供 100% 离线脱网可读的 HTML 原文与结构化 Markdown。",
+      "id": "leo-article-relay",
+      "name": "leo-article-relay",
+      "title": "Leo 全能文章高保真归档与知识中继",
+      "summary": "全能文章高保真脱机归档、知识库持久化与多端（Craft/Obsidian）高保真中继同步引擎。突破腾讯防盗链与反爬，全量并发下载高清原图与原生内联 CSS，提供 100% 离线脱网可读的 HTML 原文、结构化 Markdown 与 Craft 官方图床直传中继。",
       "category": "research",
       "categoryLabel": "研究与知识",
       "icon": "📰",
       "featured": true,
       "tags": [
+        "article",
         "wechat",
+        "craft",
+        "obsidian",
         "html",
         "markdown",
         "crawler",
