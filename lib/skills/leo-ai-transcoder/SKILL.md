@@ -84,10 +84,10 @@ flowchart TD
     • 视野加分项（模型选型一句话谈资）
     • 算法噪音（直接丢弃，不花一秒时间）"]
     
-    STEP2["第二步：Java 范式破壁转译 (Java Mental Model)
-    • 张量 ➔ Java 多维数组与对象模型
-    • 算子 ➔ Stream / 并发 / 工具类
-    • 机制 ➔ 微服务协作 / 管道流水线"]
+    STEP2["第二步：三维物理穿透与 Java 破壁 (3D Grounding)
+    • 链路与机理定位（小白级透彻：在哪个阶段？怎么起作用？）
+    • Java 数据结构还原（float[] / Map / POJO / 极简代码）
+    • 动静与软硬件解耦（代码 vs 数据，CPU vs GPU 显存）"]
     
     STEP3["第三步：Java 工程落地落点 (Engineering Grounding)
     • 原生 Java 优先，Multi-Agent 适度引入 AgentScope 2.0
@@ -107,14 +107,33 @@ flowchart TD
 * **【视野加分项】**：模型选型与技术报告中高频出现的技术名词（如 RoPE、RMSNorm、SwiGLU），仅需记住“一句话本质作用”，不记数学细节。
 * **【算法噪音（直接丢弃）】**：反向传播、梯度下降算法、损失函数数学推导、权重初始化分布、PyTorch 多维张量切片变形 API 等，明确告知“Java 工程师完全不需要掌握，面试零收益，果断跳过”。
 
-### Step 2. Java 范式破壁转译 (Java Mental Model)
-* **拒绝数学公式堆砌**：用直观的比喻（如“开会交流 vs 各自消化”、“相亲条件匹配”、“卷面分 vs 录取百分比”）。
-* **对齐 Java 数据结构**：
-  * 标量/向量/张量 $\rightarrow$ `float` / `float[]` / `float[B][S][D]`；
-  * Embedding $\rightarrow$ `float[][] embeddingTable`（基于词表索引的静态查表操作）；
-  * Attention 相似度点积 $\rightarrow$ 两个数组对应项相乘累加的简单 `for` 循环；
-  * Softmax $\rightarrow$ 指数拉大差距并按总和归一化为百分比；
-  * 具体对照细节详见：`references/java-mental-model-dictionary.md`。
+### Step 2. 三维物理穿透与 Java 范式破壁 (The 3D Physical Grounding)
+
+无论面对什么 AI 顶层概念、参数或运行机制，**严禁使用悬浮抽象的学术黑话**，必须遵循以下“三维物理穿透法则”将其彻底讲透：
+
+#### 维度一：链路与机理定位（小白级透彻讲解 · 核心主线）
+> ⚠️ **新手零假设准则（把用户当小白）**：
+> 绝不默认用户知道任何底层黑话（如什么是 Prefill、Logits、Attention 矩阵）。必须从“用户敲下回车”到“屏幕吐出文字”的时序全链路，像讲生产车间流水线一样讲得明明白白：
+1. **底层到底在哪个阶段起作用？（Where）**：
+   - 用直观的时间线清晰指出它在整个请求生命周期的**哪一个具体环节**生效：
+     `用户输入 ➔ Tokenizer分词 ➔ Embedding查表 ➔ 48层Transformer流水线(QKV注意力+SwiGLU消化) ➔ LogitsProcessor后处理拦截 ➔ Softmax概率归一化 ➔ 采样抽签 ➔ While循环终止哨兵 ➔ 吐字输出`
+   - **击碎认知误区**：明确指出流水线上的其他大件（尤其是巨型 48 层神经网络）知不知道它的存在？（例如：`temperature`、`presence_penalty`、`stop` 属于最后的后处理拦截器，48 层骨干网络全程根本不知情）。
+2. **底层到底是怎么起的作用？（How · 物理机理大白话）**：
+   - 彻底讲透它在底层到底干了什么不可压缩的物理动作。使用通俗生动的生活比喻（如“给出现过的词一刀切扣分”、“除以温度系数拉大考卷分差”、“像字典一样按编码查表”），把抽象机理拆解得直观接地气。
+
+#### 维度二：Java 数据结构与原生代码还原（保留核心底座）
+- 拒绝任何数学公式和高深算子堆砌，直接还原为 Java 工程师最熟悉的原生载体：
+  - **核心载体映射**：
+    - 标量 / 向量 / 矩阵 / 张量 $\rightarrow$ `float` / `float[]` / `float[][]` / `float[B][S][D]`；
+    - 词表 / 静态字典 $\rightarrow$ `Map<String, Integer>` / `float[vocab_size][d_model]`；
+    - 动态序列与缓存 $\rightarrow$ `List<float[]>` / 循环缓冲区。
+  - **极简白盒代码**：必须给出几行最纯粹的 Java 原生循环、数组加减、条件分支或 Stream 伪代码，把黑盒变成一目了然的 Java 机械动作。
+  - 具体对照细节详见：`references/java-mental-model-dictionary.md`。
+
+#### 维度三：动静与软硬件解耦（系统边界透视 · 必备补充）
+- 帮助工程师在大脑中建立起完整的服务器物理机架与软硬件边界：
+  1. **动 vs 静**：它是**写死在推理引擎（vLLM / llama.cpp / C++）里的可执行算子代码**，还是**从模型文件（`model.safetensors`）反序列化载入的静态只读权重数据**？
+  2. **软硬件归属**：它是跑在 **CPU** 上的常规逻辑（如 Tokenizer 字符串切分、`stop` 字符串匹配），还是霸占在 **GPU 显存（HBM）** 里的高并发浮点矩阵运算？是请求级的瞬态临时变量，还是会话/全局共享的常驻缓存？
 
 ### Step 3. Java 工程落地落点 (Engineering Grounding)
 * **代码实现原则**：
