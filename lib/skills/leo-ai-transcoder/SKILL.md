@@ -26,7 +26,7 @@ description: "面向传统 Java 后端工程师的 AI/Agent 认知破壁与面�
 * **【第一优先级：用户输入文本为主线】**：
   若用户提供了公众号文章（如阿里技术的 Transformer 篇）或技术长文，**必须优先沿着文章本身的逻辑脉络、工程语言和案例进行讲解**。充分尊重文章中生动、通俗的工程视角，不节外生枝。
 * **【第二优先级：本地课程作为补充参考，绝非唯一依据】**：
-  本地课程 `/Users/pa/project/AI-SU/ai-engineering-from-scratch/`（rohitg00/ai-engineering-from-scratch）是高价值的**理论参考与查验锚点之一，但绝不是唯一事实依据**。
+  本地课程（路径取自 config 的 `anchors.ai_theory_course_repo`；rohitg00/ai-engineering-from-scratch）是高价值的**理论参考与查验锚点之一，但绝不是唯一事实依据**。
   > ⚠️ **严防学术教条**：该课程部分章节偏学术和数学推导，**严禁生搬硬套其晦涩推导把用户带进泥潭**。只有在文章未涉及某些关键底层机制、或需要引申技术深度/面试考点时，再取其精华为参考，并以通俗的 Java 心智模型重新转译。无需强制死板标注。
 
 ### 2. Java 原生数据结构与并发规范：本机真实 JDK
@@ -34,8 +34,8 @@ description: "面向传统 Java 后端工程师的 AI/Agent 认知破壁与面�
 * **执行约束**：涉及标准类库（如 `float[]` 内存开销、`ByteBuffer`、`CharsetDecoder` 状态恢复解码、`CompletableFuture` 编排、`ArrayBlockingQueue`、`ReentrantLock` 等），直接以本机 SDKMAN 管理的真实 JDK 规范为准，绝不臆造未经验证的 Java API。
 
 ### 3. AgentScope 2.0 Java 生态：官方正统源码库
-* **官方源码物理路径**：默认指向 `/Users/pa/project/IOT/KF/ASDK/agentscope-java-2.0.3`（官方 AgentScope Java 2.0.3 完整工程）；
-* **执行约束**：当需要多智能体协作或框架演示时，直接对齐 `agentscope-core` 中真实的类与包结构（如 `io.agentscope.core.message.Msg`、`MsgRole`、`io.agentscope.core.agent.Agent`、`io.agentscope.core.skill.AgentSkill` 等），确保代码真实可编译。
+* **官方源码物理路径**：取自 config 的 `anchors.agentscope_java_repo`（官方 AgentScope Java 完整工程，当前配置为 2.0.3）；
+* **执行约束**：当需要多智能体协作或框架演示时，**先到该源码仓库的 `agentscope-core` 中查证真实的类名、方法签名与返回类型，再写代码或讲解，不凭记忆**（例如 `Agent` 的调用方法是返回 `Mono<Msg>` 的 `call(...)`，而不是 `reply(...)`），确保代码真实可编译。详见 `references/agentscope-java-patterns.md`。
 
 ### 4. 初次使用冷启动询问协议（First-Run Setup Protocol · 强制执行）
 当任何 Agent 调用本 Skill 时，**必须首先检查 `~/.shrimp/skills/leo-ai-transcoder/config.json` 是否存在**：
@@ -51,7 +51,8 @@ description: "面向传统 Java 后端工程师的 AI/Agent 认知破壁与面�
     > 您可以直接回复『确认默认探测路径』，或修改为您实际的本地目录。”
   * 待用户回复确认或提供新路径后，Agent 自动将配置写入 `~/.shrimp/skills/leo-ai-transcoder/config.json`，再进入主转译流程。
 * **【若该配置文件已存在】**：
-  * 直接静默读取，迅速进入技术转译与教学流程；如遇某路径失效，提示用户更新即可。
+  * 直接静默读取，迅速进入技术转译与教学流程；
+  * **路径缺失或无效时同样询问并写回**：若本次任务需要用到的某个锚点（如 `agentscope_java_repo`、`java_sdk_root`）在 config 中为空，或该路径在磁盘上不存在，则暂停并只询问该路径（给出可探测到的候选），待用户确认后写回 `config.json` 并更新 `updated_at`，再继续；本次用不到的锚点不要打扰用户。
 
 ---
 
@@ -138,7 +139,7 @@ flowchart TD
 ### Step 3. Java 工程落地落点 (Engineering Grounding)
 * **代码实现原则**：
   1. **纯原生 Java 优先**：优先采用最质朴的 Java 代码（POJO、标准数组、`Map`、`CompletableFuture`、`Stream`、`ReentrantLock`）构建逻辑骨架，消除任何框架黑盒。
-  2. **进阶多 Agent 框架选择**：当且仅当场景涉及复杂的 Multi-Agent 协作、消息流转、会话隔离或 Agent 通信拓扑时，**首选引入阿里巴巴开源的 AgentScope 2.0 Java 生态范式**（基于 `Msg`、`Agent`、`Pipeline`、`MsgHub` 模式），具体参照 `references/agentscope-java-patterns.md`。
+  2. **进阶多 Agent 框架选择**：当且仅当场景涉及复杂的 Multi-Agent 协作、消息流转、会话隔离或 Agent 通信拓扑时，**首选引入阿里巴巴开源的 AgentScope Java 生态范式**（基于 `Msg` 消息契约、`Agent.call(...)` 响应式调用、`MiddlewareBase` 洋葱式中间件、`AgentSkill` 技能插拔），具体参照 `references/agentscope-java-patterns.md`，API 细节一律先查源码再写。
 * **与工程痛点结合**：必须落到具体的 Java 生产问题（如 SSE 流式响应字节断裂乱码、长上下文下 TTFT 首字延迟剧增、Prompt 前缀命中 Prefix Cache 优化、代码执行断网沙箱等）。
 
 ### Step 4. 面试连环追问与降维武器 (Interview Weaponization)
@@ -201,7 +202,7 @@ flowchart TD
          │
          ├── 1. 更新字典：在 references/java-mental-model-dictionary.md 追加 Java 结构映射
          ├── 2. 更新面试库：在 references/interview-rubric-and-weapons.md 追加高频题与底层答法
-         ├── 3. 更新 AgentScope 模式：在 references/agentscope-java-patterns.md 追加实际代码段
+         ├── 3. 更新 AgentScope 模式：在 references/agentscope-java-patterns.md 追加经源码核对的类/模式对照（不放可复制的 API 示例代码，避免随版本过时）
          └── 4. 动态路径自适应：任何路径变更仅需修改 ~/.shrimp/skills/leo-ai-transcoder/config.json
 ```
 
