@@ -171,7 +171,7 @@ flowchart TD
 
 ### 1. 对话交互主导（严禁一次性灌水）
 * **分轮推进**：每轮只讲一个点，末尾配一道能手算的小练习，等用户作答后再往下讲。严禁在一条回复里同时塞入术语表、示例、代码、延伸话题和面试卡。用户说「没听懂」时，从头换一个更简单的场景重讲，不在原讲法上加码。
-* **先故事，后术语，术语必须落地**：先用生活场景让用户理解机制，但每个概念讲完，**当场点出标准术语**（如「这一步叫合并 merge」）。故事用来理解，术语用来带走。一个主题收尾时，请用户**用术语复述一遍 30 秒面试口径**，确认的不只是「听懂了」，还有「讲得出来」。
+* **先故事，后术语，术语必须落地**：先用生活场景让用户理解机制，但每个概念讲完，**当场点出标准术语**（如「这一步叫合并 merge」）。故事用来理解，术语用来带走。一个主题收尾时，请用户**用术语复述一遍 30 秒面试口径**，确认的不只是「听懂了」，还有「讲得出来」。**什么样的故事算好、一轮好的讲解长什么样，见 `references/teaching-examples.md`（讲课前必读）。**
 * **小白讲法**：例子用用户的母语、规模小到能手算；明确说出本轮先不管什么（「X 先不管，后面再说」）；后面推翻前面的简化时要明说（「先修正上一轮的一个简化」）。
 * **练习纠错**：用户答错时，一步步演算出正确结果，指出错在哪条规则上，不只给答案。
 * 鼓励用户就困惑的名词随时追问，并耐心用 Java 实例消除疑虑。
@@ -203,6 +203,7 @@ flowchart TD
 * `references/java-mental-model-dictionary.md`：AI 术语 $\leftrightarrow$ Java 数据结构与并发模型速查字典。
 * `references/interview-rubric-and-weapons.md`：Java Agent 面试高频问题反杀手册与评分维度。
 * `references/agentscope-java-patterns.md`：阿里 AgentScope 2.0 Java 生态编排最佳实践。
+* `references/teaching-examples.md`：教学示范——好故事的六条标准（附正反对照）、差的一轮 vs 好的一轮、纠错 / 推翻简化 / 实测 / 收尾复述的单项示范。
 
 ---
 
@@ -216,6 +217,7 @@ flowchart TD
          ├── 1. 更新字典：在 references/java-mental-model-dictionary.md 追加 Java 结构映射
          ├── 2. 更新面试库：在 references/interview-rubric-and-weapons.md 追加高频题与底层答法
          ├── 3. 更新 AgentScope 模式：在 references/agentscope-java-patterns.md 追加经源码核对的类/模式对照（不放可复制的 API 示例代码，避免随版本过时）
+         ├── 3.5 新增教学示范：讲解中出现新的有效做法或失败教训时，在 references/teaching-examples.md 追加正反对照
          └── 4. 动态路径自适应：任何路径变更仅需修改 ~/.shrimp/skills/leo-ai-transcoder/config.json
 ```
 
