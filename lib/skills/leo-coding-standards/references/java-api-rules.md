@@ -45,7 +45,7 @@
 | 空集合判断 | `org.apache.commons.collections4.CollectionUtils#isEmpty`、`org.apache.commons.collections4.CollectionUtils#isNotEmpty` |
 | 创建可变空列表 | `com.google.common.collect.Lists#newArrayList()` |
 | 从 `Iterable` 创建可变集合 | `com.google.common.collect.Sets#newHashSet(java.lang.Iterable<? extends E>)` |
-| 明确判断装箱布尔值为 `false` | `org.apache.commons.lang3.BooleanUtils#isFalse` |
+| 明确判断装箱布尔值为 `false`，或否定判断（包括基本类型 `boolean` 避免 `!` 漏读） | `org.apache.commons.lang3.BooleanUtils#isFalse` |
 | 将可空值转换为 Optional | `java.util.Optional#ofNullable` |
 
 这是团队首选清单，不是无条件替换表。先匹配业务语义，再决定是否使用。
@@ -90,9 +90,14 @@ if (CollectionUtils.isNotEmpty(events)) {
 if (BooleanUtils.isFalse(command.getEnabled())) {
     disableFeature();
 }
+
+// 即便是基本类型 boolean，否定判断（!isValid）也统一使用 BooleanUtils.isFalse，提高可读性并消除 ! 符号容易被肉眼忽略的隐患
+if (BooleanUtils.isFalse(isValid)) {
+    handleInvalid();
+}
 ```
 
-注意 `BooleanUtils.isFalse(null)` 为 `false`。只有业务语义确实是“明确为 false”时才使用；若 `null` 也表示禁用，必须显式表达该规则。
+注意 `BooleanUtils.isFalse(null)` 为 `false`。只有业务语义确实是“明确为 false”时才使用；若 `null` 也表示禁用，必须显式表达该规则。否定/假值判断统一推荐使用 `BooleanUtils.isFalse` 代替 `!` 取反运算符。
 
 ### 可变集合
 
