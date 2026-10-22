@@ -33,6 +33,10 @@ description: "面向传统 Java 后端工程师的 AI/Agent 认知破壁与面�
 * **物理路径**：`~/.sdkman/candidates/java/current`（当前指向 JDK 25，备选 JDK 17 / JDK 8）；
 * **执行约束**：涉及标准类库（如 `float[]` 内存开销、`ByteBuffer`、`CharsetDecoder` 状态恢复解码、`CompletableFuture` 编排、`ArrayBlockingQueue`、`ReentrantLock` 等），直接以本机 SDKMAN 管理的真实 JDK 规范为准，绝不臆造未经验证的 Java API。
 * **具体数值先实测再讲**：讲解中要给出的具体数值（如字符的 UTF-8 字节值、数组长度、`byte` 的打印结果），先用本机 JDK（或 Python）实际跑一遍，再把实测结果讲给用户，不凭记忆给数字。实测中暴露的坑（如 Java `byte` 有符号，需 `& 0xFF`）本身就是好素材。
+* **Token 相关数值用现成脚本实测**：`scripts/token_lab.py`（用 `uv run` 运行，依赖自动准备）。
+  * `count`：用本地 tiktoken 切分文本，列出每个 Token 的字节与不完整的字；无需任何配置，但词表只对 OpenAI 模型准确；
+  * `models` / `probe`：调用兼容 OpenAI 规范的接口，列出可用模型，或按多个输出上限调用并打印停止原因、用量、文本末尾与 logprobs 字节。配置文件为 `~/.shrimp/skills/leo-ai-transcoder/credentials.json`（`base_url`、`api_key`、可选 `model`）。未配置时提示用户可以配置，但不强制，`count` 不受影响；用户可随时替换 `base_url` 与 `api_key`；脚本与输出都不得打印 key；
+  * 不同模型 / 网关对输出上限、`logprobs`、推理强度的支持差别很大，推理模型的思考 Token 也计入输出上限。讲解中引用接口行为时，以本次实测为准，并说明测的是哪个模型。
 
 ### 3. AgentScope 2.0 Java 生态：官方正统源码库
 * **官方源码物理路径**：取自 config 的 `anchors.agentscope_java_repo`（官方 AgentScope Java 完整工程，当前配置为 2.0.3）；
@@ -203,6 +207,7 @@ flowchart TD
 * `references/java-mental-model-dictionary.md`：AI 术语 $\leftrightarrow$ Java 数据结构与并发模型速查字典。
 * `references/interview-rubric-and-weapons.md`：Java Agent 面试高频问题反杀手册与评分维度。
 * `references/agentscope-java-patterns.md`：阿里 AgentScope 2.0 Java 生态编排最佳实践。
+* `scripts/token_lab.py`：Token 实测脚本（本地 tiktoken 切分、兼容 OpenAI 接口的截断与用量探测）。
 * `references/teaching-examples.md`：教学示范——好故事的六条标准（附正反对照）、差的一轮 vs 好的一轮、纠错 / 推翻简化 / 实测 / 收尾复述的单项示范。
 
 ---
