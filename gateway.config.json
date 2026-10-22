@@ -978,19 +978,5 @@
       "prompt": "请立即直接调用工具执行下一步操作，禁止输出自然语言确认、开场白或阶段性总结。",
       "inject_agent_rules": false
     }
-  },
-  "sessionSync": {
-    "skillMounts": {
-      "leo-fooocus-imagine": {
-        "antigravity": false,
-        "claude": false,
-        "codex": true
-      },
-      "leo-ai-transcoder": {
-        "antigravity": false,
-        "claude": false,
-        "codex": true
-      }
-    }
   }
 }

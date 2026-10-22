@@ -10,7 +10,7 @@ description: "面向资深 Java 工程师向 AI Agent 转型与求职进阶的�
 ## 核心设计与原则
 
 1. **零网关依赖**：本 Skill 的底层采集与分析由独立 Node.js 脚本驱动，不依赖 local-ai-gateway 常驻服务或 8787 端口。
-2. **私密与安全**：所有个人画像、Cookie 凭证及抓取的岗位数据全部保存在本地 `~/.shrimp/leo-job-career/`，严禁在聊天对话中输出任何 Cookie 明文。
+2. **私密与安全**：所有个人画像、Cookie 凭证及抓取的岗位数据全部保存在本地 `~/.shrimp/skills/leo-job-career/`，严禁在聊天对话中输出任何 Cookie 明文。
 3. **只读安全红线**：严禁调用任何可能修改账户状态的写接口（如打招呼、收藏、投递等）；遇验证码立即安全暂停。
 4. **100% 零容忍外包拦截**：无论公司规模多大、是否上市，只要具有外包外派或劳务派遣属性，一律绝对熔断过滤。
 5. **全景透明单一 Markdown 交付**：对话中直接渲染完整诊断报告，同时本地保存 `gap-analysis-report.md`，完整呈现所有维度的技能差距（突出 Top 2~3 核心硬骨头，同时公开所有次要缺口与加分项），供后续独立的学习规划 Skill 直接作为上下文输入。
@@ -86,7 +86,7 @@ node lib/skills/leo-job-career/scripts/leo_job_career.mjs gap report
   - **9年资深底座护城河定锚**：自动将 Java 底层、分布式微服务、海量存储与高并发治理对齐为“稳固基本盘（大厂P7基石）”，杜绝误判为“尚未接触”；
   - **市场权重数学计算标准化**：显式提供渗透率计算公式与分层判定标准，供下游大模型与学习规划 Skill 精确消费；
   - **全景透明缺口归类**：高亮 Top 3 致命硬骨头，并完整列出进阶工程化攻坚项与语言生态协同定位；
-  - 本地单一文件落盘（`~/.shrimp/leo-job-career/reports/gap-analysis-report.md`），无缝接力后续学习规划 Skill。
+  - 本地单一文件落盘（`~/.shrimp/skills/leo-job-career/reports/gap-analysis-report.md`），无缝接力后续学习规划 Skill。
 
 ## 参考规范与文档
 
