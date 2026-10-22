@@ -842,6 +842,20 @@
     "zcode": {
       "endpoints": [
         {
+          "id": "ep_3ddbcbd5-d007-46ba-958c-fd5fb1dea887",
+          "name": "视觉兜底 ait ",
+          "purpose": "vision_fallback",
+          "vision_fallback_enabled": true,
+          "vision_model": "qwen3.7-plus",
+          "type": "anthropic",
+          "base_url": "https://openapi-ait.ke.com",
+          "auth": "bearer",
+          "models": [
+            "qwen3.7-plus"
+          ],
+          "model_mapping": {}
+        },
+        {
           "id": "ep_4a7b4137-b912-4358-867a-228d66332a78",
           "name": "grok-subscription",
           "type": "grok",
@@ -884,6 +898,14 @@
           },
           "capabilities": {
             "sanitize_dangling_tool_calls": true
+          },
+          "model_capabilities": {
+            "GLM-5.3": {
+              "image": false
+            },
+            "GLM-5.3-ait": {
+              "image": false
+            }
           },
           "model_labels": {
             "claude-haiku-4-5-max": "glm-5.2-ait",
