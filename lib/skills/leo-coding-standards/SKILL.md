@@ -60,3 +60,10 @@ description: Use when writing, modifying, refactoring, testing, or reviewing Jav
 - 审查时按 [审查清单](references/review-checklist.md) 显式报告具体问题。
 - 不在每次编码任务后输出逐项规范清单。
 - 本 skill 不主动启动编译、测试、格式化或静态分析；用户明确要求或其他开发、验证 skill 可以执行这些工作。
+
+### 7. 提交规范（Commit Message）
+
+执行代码提交时：
+
+1. 必须先查阅项目近期的 Git 提交记录（如 `git log -n 5`），提取并遵循当前项目既有的 Commit Message 格式规范（如类型前缀、作用域 scope、中英文习惯、Issue 关联等）。
+2. 若历史提交风格不统一、无法明确推断规范，或对本次提交的信息格式与范围有任何不清楚之处，必须主动向用户提问确认，不得自行臆测。
