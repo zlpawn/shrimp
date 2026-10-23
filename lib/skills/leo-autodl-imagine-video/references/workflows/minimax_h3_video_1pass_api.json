@@ -30,34 +30,22 @@
   },
   "121": {
     "inputs": {
-      "samples": [
-        "125",
-        0
-      ],
-      "audio_vae": [
-        "120",
-        0
-      ]
+      "samples": ["125", 0],
+      "audio_vae": ["120", 0]
     },
     "class_type": "LTXVAudioVAEDecode",
     "_meta": {
-      "title": "BUILDER OUTPUT - Decode MiniMax Generated Audio"
+      "title": "Decode MiniMax Generated Audio"
     }
   },
   "122": {
     "inputs": {
-      "samples": [
-        "125",
-        0
-      ],
-      "vae": [
-        "119",
-        0
-      ]
+      "samples": ["125", 0],
+      "vae": ["119", 0]
     },
     "class_type": "VAEDecode",
     "_meta": {
-      "title": "VAE Decode"
+      "title": "Decode MiniMax Generated Video"
     }
   },
   "123": {
@@ -72,12 +60,9 @@
   "124": {
     "inputs": {
       "scheduler": "simple",
-      "steps": 20,
+      "steps": 10,
       "denoise": 1,
-      "model": [
-        "174",
-        0
-      ]
+      "model": ["174", 0]
     },
     "class_type": "BasicScheduler",
     "_meta": {
@@ -86,26 +71,11 @@
   },
   "125": {
     "inputs": {
-      "noise": [
-        "129",
-        0
-      ],
-      "guider": [
-        "126",
-        0
-      ],
-      "sampler": [
-        "123",
-        0
-      ],
-      "sigmas": [
-        "124",
-        0
-      ],
-      "latent_image": [
-        "136",
-        1
-      ]
+      "noise": ["129", 0],
+      "guider": ["126", 0],
+      "sampler": ["123", 0],
+      "sigmas": ["124", 0],
+      "latent_image": ["136", 1]
     },
     "class_type": "SamplerCustomAdvanced",
     "_meta": {
@@ -114,14 +84,8 @@
   },
   "126": {
     "inputs": {
-      "model": [
-        "174",
-        0
-      ],
-      "conditioning": [
-        "136",
-        0
-      ]
+      "model": ["174", 0],
+      "conditioning": ["136", 0]
     },
     "class_type": "BasicGuider",
     "_meta": {
@@ -136,7 +100,7 @@
     },
     "class_type": "CLIPLoader",
     "_meta": {
-      "title": "Load CLIP"
+      "title": "Load CLIP (Qwen3-VL 32B)"
     }
   },
   "129": {
@@ -145,110 +109,50 @@
     },
     "class_type": "RandomNoise",
     "_meta": {
-      "title": "BUILDER INPUT - Seed"
+      "title": "Random Seed"
     }
   },
   "131": {
     "inputs": {
       "expression": "max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17",
-      "values.a": [
-        "132",
-        0
-      ]
+      "values.a": ["132", 0]
     },
     "class_type": "ComfyMathExpression",
     "_meta": {
-      "title": "H3 Duration To Valid Frame Count"
+      "title": "H3 Duration To Valid Frame Count (17n+5)"
     }
   },
   "132": {
     "inputs": {
-      "value": 5
+      "value": 3.0
     },
     "class_type": "PrimitiveFloat",
     "_meta": {
-      "title": "BUILDER INPUT - Duration"
+      "title": "Duration (Seconds)"
     }
   },
   "136": {
     "inputs": {
-      "prompt": [
-        "138",
-        0
-      ],
-      "width": [
-        "115",
-        0
-      ],
-      "height": [
-        "115",
-        1
-      ],
-      "length": [
-        "131",
-        1
-      ],
+      "prompt": ["138", 0],
+      "width": ["115", 0],
+      "height": ["115", 1],
+      "length": ["131", 1],
       "ref_image_size": "match",
-      "clip": [
-        "128",
-        0
-      ],
-      "vae": [
-        "119",
-        0
-      ],
-      "audio_vae": [
-        "120",
-        0
-      ],
-      "ref_images.ref_image_0": [
-        "180",
-        0
-      ],
-      "ref_images.ref_image_1": [
-        "180",
-        1
-      ],
-      "ref_images.ref_image_2": [
-        "180",
-        2
-      ],
-      "ref_images.ref_image_3": [
-        "180",
-        3
-      ],
-      "ref_images.ref_image_4": [
-        "180",
-        4
-      ],
-      "ref_images.ref_image_5": [
-        "180",
-        5
-      ],
-      "ref_images.ref_image_6": [
-        "180",
-        6
-      ],
-      "ref_images.ref_image_7": [
-        "180",
-        7
-      ],
-      "ref_images.ref_image_8": [
-        "180",
-        8
-      ],
-      "ref_videos.ref_video_0": [
-        "180",
-        9
-      ],
-      "ref_videos.ref_video_1": [
-        "180",
-        10
-      ],
-      "ref_videos.ref_video_2": [
-        "180",
-        11
-      ]
+      "clip": ["128", 0],
+      "vae": ["119", 0],
+      "audio_vae": ["120", 0],
+      "ref_images.ref_image_0": ["180", 0],
+      "ref_images.ref_image_1": ["180", 1],
+      "ref_images.ref_image_2": ["180", 2],
+      "ref_images.ref_image_3": ["180", 3],
+      "ref_images.ref_image_4": ["180", 4],
+      "ref_images.ref_image_5": ["180", 5],
+      "ref_images.ref_image_6": ["180", 6],
+      "ref_images.ref_image_7": ["180", 7],
+      "ref_images.ref_image_8": ["180", 8],
+      "ref_videos.ref_video_0": ["180", 9],
+      "ref_videos.ref_video_1": ["180", 10],
+      "ref_videos.ref_video_2": ["180", 11]
     },
     "class_type": "MiniMaxH3ReferenceToVideo",
     "_meta": {
@@ -257,16 +161,16 @@
   },
   "138": {
     "inputs": {
-      "value": "Generate the requested video and its synchronized native audio together. Include the exact lyric or dialogue line and complete audio direction in this prompt."
+      "value": "Generate the requested video and its synchronized native audio together."
     },
     "class_type": "PrimitiveStringMultiline",
     "_meta": {
-      "title": "BUILDER INPUT - Prompt With Lyric Dialogue And Audio Direction"
+      "title": "Prompt With Lyric Dialogue And Audio Direction"
     }
   },
   "141": {
     "inputs": {
-      "model_name": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+      "model_name": "minimax/minimax_h3_ref2va_pruned_int8_convrot.safetensors",
       "weight_dtype": "default",
       "compute_dtype": "default",
       "patch_cublaslinear": false,
@@ -282,7 +186,7 @@
     "inputs": {
       "frame_rate": 24,
       "loop_count": 0,
-      "filename_prefix": "MiniMaxH3_BuiltInAudio_Builder",
+      "filename_prefix": "MiniMaxH3_Video",
       "format": "video/h264-mp4",
       "pix_fmt": "yuv420p",
       "crf": 19,
@@ -290,18 +194,12 @@
       "trim_to_audio": false,
       "pingpong": false,
       "save_output": true,
-      "images": [
-        "122",
-        0
-      ],
-      "audio": [
-        "121",
-        0
-      ]
+      "images": ["122", 0],
+      "audio": ["121", 0]
     },
     "class_type": "VHS_VideoCombine",
     "_meta": {
-      "title": "BUILDER OUTPUT - Video With MiniMax Generated Audio"
+      "title": "Combine Video With MiniMax Generated Audio"
     }
   },
   "174": {
@@ -310,10 +208,7 @@
       "start_percent": 0.2,
       "end_percent": 0.9,
       "verbose": false,
-      "model": [
-        "141",
-        0
-      ]
+      "model": ["141", 0]
     },
     "class_type": "EasyCache",
     "_meta": {
@@ -327,7 +222,7 @@
     },
     "class_type": "VRGDG_MiniMaxH3ReferenceMediaFromPaths",
     "_meta": {
-      "title": "BUILDER INPUTS - Ordered H3 Reference Images And Videos"
+      "title": "Ordered H3 Reference Images And Videos"
     }
   }
 }

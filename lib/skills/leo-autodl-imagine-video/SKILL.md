@@ -1,129 +1,108 @@
 ---
 name: leo-autodl-imagine-video
-description: "Universal Agent skill to dispatch AI image generation (SDXL/FLUX/Z-Image/Illustrious with LoRA, or MiniMax H3 32B Qwen3-VL multi-reference image generation) and native audio-synced video generation (MiniMax H3 Text/Reference-to-Video) to remote AutoDL GPU instances via ComfyUI REST API, with staging output management and user-confirmed lifecycle control via AutoDL OpenAPI."
+description: "MiniMax-H3 dedicated cloud image & audio-synced video generation skill on AutoDL ComfyUI. Prioritizes mature battle-tested MiniMax-H3 workflows (U00~U43 & VRGDG API templates) for text/multi-reference image generation, storyboards, and native audio video generation, while empowering Agents to dynamically inspect nodes, patch/customize ComfyUI workflows, and continuously evolve scenario recipes."
 ---
 
 # leo-autodl-imagine-video
 
-基于 AutoDL 云端旗舰 GPU（RTX 5090 / 4090 / vGPU-32G）的通用远程 **双引擎文生图（`sdxl` + `minimax_h3`）/ 多参考图编辑 / 音画同步文生视频 / 参考图生视频** Agent 技能。
+基于 AutoDL 共创云 (`www.autodl.art`) 旗舰 GPU 与 ComfyUI 的 **MiniMax-H3 专属远程生图与音画同步生视频技能**。
+生图与生视频**统一采用 `MiniMax-H3` 体系**（`MiniMax-H3 DiT` + `Qwen3-VL 32B` 多模态编码器 + `MiniMax Video/Audio VAE`），兼具顶级的多参考图一致性、复杂分镜理解力与原生同步音频生成能力。
 
 ---
 
-## 1. 核心行为铁律 (Core Behavioral Rules — 必读)
+## 1. 核心工作流与三大铁律 (Core Philosophy & Iron Rules)
 
 > [!IMPORTANT]
-> 1. **严禁私自关机（Mandatory User Confirmation for Power-Off）**：
->    * **Agent 绝不能在任务完成后私自调用 `--power-off` / `client.power_off()` 关机！**
->    * 必须先询问用户是否还需要继续生成，**仅在用户明确回复确认关机后**，才允许传入 `--confirm`（或 `confirm=True`）执行关机。未传确认标志时脚本会自动拦截拒绝。
-> 2. **默认暂存输出与按需导出清理（Staging Directory & Cleanup）**：
->    * 所有生成的图片和视频默认统一保存在 **`~/.shrimp/skills/leo-autodl-imagine-video/outputs/`** 暂存目录下，不污染用户当前项目目录。
->    * 当用户选定最终满意的视频或图片、或指定保存位置时，调用 `--export <文件名> --to <用户目标路径> --clean-others`（或 `client.export_asset(..., clean_others=True)`）将其移动到用户指定目录，并清理暂存目录中无用的中间图片与视频。
+> 1. **“先选成熟流 $\to$ 不满意再调优 $\to$ 沉淀新配方”三步法**：
+>    * **第一步（优先选用成熟工作流）**：接到生图或生视频任务时，优先使用 `references/workflows/` 中已沉淀的成熟工作流（或从远端 `/root/ComfyUI/` 预置的 40+ 个成熟 `U00~U43` / `VRGDG` 工作流中选取）跑出初版。
+>    * **第二步（按需动态调优工作流）**：若用户对初版效果不满意（如“画面发糊/油腻”、“参考图人物不像”、“动作幅度不够”），查阅 [workflow_tuning_guide.md](references/workflow_tuning_guide.md)，使用 `--workflow`、`--patch` 或修改工作流 JSON（换 `FeiHou`/`Dasiwa`/`Singularity` 底模、挂 `电影感H3` LoRA、换 `MiniMax-H3-X2-Detail-v1` VAE、调低 `EasyCache` 阈值或启用二采）。
+>    * **第三步（反哺沉淀）**：验证出效果极佳的新工作流或调优配方后，将其存入 `references/workflows/` 与 `references/scenarios/`，让技能持续进化。
+> 2. **严禁私自关机（Mandatory User Confirmation for Power-Off）**：
+>    * **Agent 绝不能在任务结束后私自调用 `--power-off` / `client.power_off()` 关机！**
+>    * 必须先询问用户是否还有后续生成或调优需求，**仅在用户明确回复确认关机后**，才允许传入 `--confirm`（或 `confirm=True`）执行关机。
+> 3. **默认暂存输出与按需导出清理（Staging & Cleanup）**：
+>    * 所有生成的图片和视频默认统一保存在 **`~/.shrimp/skills/leo-autodl-imagine-video/outputs/`** 暂存目录，不污染当前项目目录。
+>    * 当用户选定最终满意的产物后，使用 `--export <文件名> --to <用户目标路径> --clean-others` 将其移至指定位置并清理无用的中间草稿。
 
 ---
 
-## 2. 目录架构与环境隔离规范
+## 2. 模块化知识库与成熟工作流导航 (`references/`)
 
-* **技能源码目录**：
-  * 项目仓库路径：`lib/skills/leo-autodl-imagine-video/`
-  * 全局技能路径：`~/agents/skills/leo-autodl-imagine-video/`
-* **专用持久化虚拟环境**：`~/.shrimp/skills/leo-autodl-imagine-video/.venv/`（预装 `paramiko`、`requests`；亦支持 `uv run scripts/client.py`）
-* **运行时凭证配置（Git 隔离）**：`~/.shrimp/skills/leo-autodl-imagine-video/config.json`
-* **默认媒体暂存目录**：`~/.shrimp/skills/leo-autodl-imagine-video/outputs/`
+本技能的知识库按**环境协议、调优总纲、业务场景、工作流 JSON** 四层模块化组织，支持不断扩展沉淀：
 
----
-
-## 3. 核心 API 速查表 (API Overview for Agents)
-
-### 3.1 生图 API (`generate_image` / `--image`) —— 支持 `sdxl` 与 `minimax_h3` 双引擎
-* **底层协议**：SSH 隧道调用远端 ComfyUI `POST http://127.0.0.1:6006/prompt` $\to$ 轮询 `GET /history/{prompt_id}` $\to$ SFTP 下载至 `~/.shrimp/skills/leo-autodl-imagine-video/outputs/`。
-* **双引擎对比**：
-  * `--engine sdxl`（默认）：使用 `CheckpointLoaderSimple`（114+ 款写实/二次元底模）+ 可选 `LoraLoader`，5~6 秒极速出图。模板：[sdxl_txt2img_api.json](references/workflows/sdxl_txt2img_api.json)
-  * `--engine minimax_h3`：**生图同样可用 MiniMax-H3！** 使用 `DiffusionModelLoaderKJ` (`minimax_h3_ref2va`) + `Qwen3-VL 32B` 多模态编码器 + `MiniMaxH3ReferenceToVideo(length=5)` + `ImageFromBatch` 抽取单帧。支持传入 **1~9 张参考图 (`--ref-images`)** 进行角色一致多图编辑、换装、场景迁移或 5 宫格电影剧照分镜板生成，且与生视频共享显存模型零切换开销！模板：[minimax_h3_txt2img_api.json](references/workflows/minimax_h3_txt2img_api.json)
-
-| 参数 (SDK / CLI) | 类型 | 默认值 | 说明 |
-| :--- | :--- | :--- | :--- |
-| `prompt` / `--prompt` | `str` | **(必填)** | 正向提示词（画面主体、光影、构图、画质） |
-| `engine` / `--engine` | `str` | `"sdxl"` | `"sdxl"`（标准底模+LoRA）或 `"minimax_h3"`（H3 32B 编码器生图/多参考图编辑） |
-| `negative_prompt` / `--negative-prompt` | `str` | `"low quality..."` | 负向提示词（`sdxl` 专用） |
-| `width` / `--width` | `int` | `1024` | 图像宽度（32 的倍数，如 `1024`, `1280`, `2048`） |
-| `height` / `--height` | `int` | `1024` | 图像高度（32 的倍数，如 `1024`, `736`, `768`, `2048`） |
-| `steps` / `--steps` | `int` | 自动适配 | `sdxl` 默认 `20`；`minimax_h3` 默认 `12` |
-| `cfg` / `--cfg` | `float` | 自动适配 | `sdxl` 默认 `7.0`；`minimax_h3` 默认 `1.0` |
-| `sampler_name` / `--sampler` | `str` | 自动适配 | `sdxl` 默认 `"dpmpp_2m"`；`minimax_h3` 默认 `"euler"` |
-| `scheduler` / `--scheduler` | `str` | 自动适配 | `sdxl` 默认 `"karras"`；`minimax_h3` 默认 `"beta"` |
-| `checkpoint` / `--checkpoint` | `str` | `"Juggernaut-XI-byRunDiffusion.safetensors"` | `sdxl` 底模文件名 |
-| `lora_name` / `--lora` | `str` | `None` | `sdxl` 可选挂载的 LoRA 文件名 |
-| `reference_images` / `--ref-images` | `list` / `str` | `None` | `minimax_h3` 支持传入 1~9 张本地参考图（逗号分隔） |
-| `seed` / `--seed` | `int` | 随机 | 随机种子 |
-| `output_dir` / `--output-dir` | `str` | `~/.shrimp/.../outputs` | 默认暂存目录 |
-
-### 3.2 生视频 API (`generate_video` / `--video`) —— MiniMax H3 音画同步
-* **标准节点图模板**：[minimax_h3_video_audio_api.json](references/workflows/minimax_h3_video_audio_api.json)
-* **核心参数**：
-
-| 参数 (SDK / CLI) | 类型 | 默认值 | 说明 |
-| :--- | :--- | :--- | :--- |
-| `prompt` / `--prompt` | `str` | **(必填)** | 画面描述 + 镜头运镜 + 环境音效/BGM + 角色台词（原生联合生成画面与同步音频） |
-| `duration` / `--duration` | `float` | `3.0` | 视频时长（秒，推荐 `3.0 ~ 10.0`） |
-| `aspect_ratio` / `--aspect-ratio` | `str` | `"16:9"` | 宽高比：`16:9`, `9:16`, `1:1`, `4:3`, `3:4`, `2:3`, `3:2`, `21:9` |
-| `megapixels` / `--megapixels` | `float` | `0.9` | 画面总像素百万数（默认 `0.9` 对应 `1280x736`） |
-| `steps` / `--steps` | `int` | `10` | 采样步数（启用 `EasyCache` 下 `10` 步约 19 秒） |
-| `reference_images` / `--ref-images` | `list` / `str` | `None` | 本地参考图路径（1~9 张，逗号分隔），驱动图生视频/多图参考生视频 |
-| `diffusion_model` / `--diffusion-model` | `str` | `"minimax/minimax_h3_ref2va_pruned_int8_convrot.safetensors"` | 视频主模型 |
-| `crf` / `--crf` | `int` | `19` | H.264 MP4 压制质量 |
-| `output_dir` / `--output-dir` | `str` | `~/.shrimp/.../outputs` | 默认暂存目录 |
-
-### 3.3 资产导出清理与实例运维 API
-* `client.export_asset(src_file, target_path, move=True, clean_others=False)` / `--export <文件名> --to <目标路径> [--clean-others]`：将用户选定的最终图片或视频移动到用户指定目录，并可选清理暂存目录中其余无用文件。
-* `client.clean_outputs()` / `--clean-outputs`：清理 `~/.shrimp/skills/leo-autodl-imagine-video/outputs/` 下所有无用暂存图片与视频。
-* `client.probe()` / `--probe`：检测 SSH 连通性、GPU 显存与 ComfyUI 状态（端口变更自动通过 OpenAPI 自愈）。
-* `client.power_on()` / `--power-on`：调用 AutoDL OpenAPI 远程有卡开机并自动刷新 SSH 端口。
-* `client.power_off(confirm=True)` / `--power-off --confirm`：**（必须获用户明确同意后调用）** 远程关机并停止计费。
-* `client.list_models(category)` / `--list-models [all|checkpoints|diffusion_models|clips|vaes|loras]`：枚举云端可用模型。
+* **环境与远端工作流索引**：[references/autodl_env_and_api.md](references/autodl_env_and_api.md)
+  * AutoDL OpenAPI 开关机与动态端口自愈协议 + 远端 `/root/ComfyUI/` 预置 **43+ 个成熟 MiniMax-H3 工作流 (`U00~U43` & `VRGDG`)** 完整目录索引。
+* **工作流构建与画质调优总纲**：[references/workflow_tuning_guide.md](references/workflow_tuning_guide.md)
+  * 云端所有可用 `MiniMax-H3` 主模型、`Qwen3-VL 32B` 编码器、`X2-Detail VAE`、`电影感H3 LoRA` 选型表，以及“去糊/去油腻/锁脸/武戏高动态/文戏台词”四大定向调优处方。
+* **分场景实战指南 (`references/scenarios/`)**：
+  * [scenarios/image_gen_and_edit.md](references/scenarios/image_gen_and_edit.md) —— **场景 1：MiniMax-H3 高清生图、1~9 张参考图锁脸换装、2048x2048 电影剧照分镜板**（基于 `U33`）
+  * [scenarios/video_t2v_and_ref2v.md](references/scenarios/video_t2v_and_ref2v.md) —— **场景 2：音画同步文生视频与多图参考生视频**（基于 `VRGDG` 官流）
+  * [scenarios/video_cinematic_and_action.md](references/scenarios/video_cinematic_and_action.md) —— **场景 3：高清去油腻电影流、高动态武戏与细腻台词文戏进阶调优**（基于 `FeiHou + 电影感LoRA + X2-Detail VAE`）
+* **即用型 API 工作流模板库 (`references/workflows/`)**：
+  * [workflows/minimax_h3_image_u33_api.json](references/workflows/minimax_h3_image_u33_api.json) —— 生图 / 多图参考编辑 / 宫格分镜板标准流
+  * [workflows/minimax_h3_video_1pass_api.json](references/workflows/minimax_h3_video_1pass_api.json) —— 音画同步快速单采视频流（~19s 极速出片）
+  * [workflows/minimax_h3_video_cinematic_lora_api.json](references/workflows/minimax_h3_video_cinematic_lora_api.json) —— 高清去油腻电影感视频流（搭载 `FeiHou` + `电影感H3 LoRA` + `X2-Detail VAE`）
 
 ---
 
-## 4. 快速调用示例 (Quick Start)
-
-### 4.1 CLI 命令行调用
+## 3. CLI 与工作流编排命令速查
 
 ```bash
 PYTHON_BIN="$HOME/.shrimp/skills/leo-autodl-imagine-video/.venv/Scripts/python.exe"
 CLI_PATH="lib/skills/leo-autodl-imagine-video/scripts/client.py"
 
-# 1. 探活 / 远程开机
+# ==================== A. 探活、远程开机与模型/节点自省 ====================
+# 1. 探活（若端口变更自动通过 OpenAPI 刷新自愈）
 & $PYTHON_BIN $CLI_PATH --probe --json
+
+# 2. 远程一键有卡开机
 & $PYTHON_BIN $CLI_PATH --power-on --json
 
-# 2. 使用 SDXL 引擎极速生图（默认存入 ~/.shrimp/skills/leo-autodl-imagine-video/outputs/）
-& $PYTHON_BIN $CLI_PATH --image --engine sdxl \
-  --prompt "A serene cybernetic cat sitting on a neon rooftop, 8k, photorealistic" \
-  --width 1024 --height 1024 --steps 20 --json
+# 3. 查询云端 MiniMax-H3 可用模型/VAE/LoRA 清单，或查看任意 ComfyUI 节点输入定义
+& $PYTHON_BIN $CLI_PATH --list-models all --json
+& $PYTHON_BIN $CLI_PATH --inspect-node MiniMaxH3ReferenceToVideo --json
 
-# 3. 使用 MiniMax-H3 引擎生图（支持 32B Qwen3-VL 复杂提示词与 --ref-images 多图参考）
-& $PYTHON_BIN $CLI_PATH --image --engine minimax_h3 \
-  --prompt "A cinematic close-up portrait of a cyberpunk girl in neon rain, glowing blue eyes, 8k photorealistic masterpiece" \
+# 4. 列出或拉取 AutoDL 远端预置的 43+ 个成熟工作流 (U00~U43)
+& $PYTHON_BIN $CLI_PATH --list-remote-workflows --json
+& $PYTHON_BIN $CLI_PATH --fetch-remote-workflow "/root/ComfyUI/user/default/workflows/U视频-MINIMAX-H3/U17-MiniMax-H3-latent放大模型双采加速-高动态不糊-去油腻-修音频-全能工作流.json"
+
+# ==================== B. MiniMax-H3 生图与多图编辑 ====================
+# 5. 单张写实生图 / 角色定妆照（默认存入 ~/.shrimp/skills/leo-autodl-imagine-video/outputs/）
+& $PYTHON_BIN $CLI_PATH --image \
+  --prompt "写实电影剧照，35mm镜头，雨夜霓虹街头，身穿黑风衣的赛博少女回眸，真实皮肤纹理，8K" \
   --width 1280 --height 736 --steps 12 --json
 
-# 4. 使用 MiniMax-H3 生成音画同步视频
+# 6. 多参考图合拍 / 换装 / 锁脸（支持 1~9 张参考图，开启 --ref-image-size max 高保真）
+& $PYTHON_BIN $CLI_PATH --image \
+  --ref-images "D:/assets/face.png,D:/assets/outfit.png" --ref-image-size max \
+  --diffusion-model "minimax/minimax_h3_hybrid_fl2va_ref2va_b25-49-int8.safetensors" \
+  --clip-model "qwen3vl_32b_minimax_h3_int8_convrot.safetensors" \
+  --prompt "Image 1(角色参考): 严格保留图1五官与发型。Image 2(服装参考): 穿上图2服饰站在霓虹天台上，电影级光影。" \
+  --width 1280 --height 736 --steps 15 --json
+
+# ==================== C. MiniMax-H3 音画同步生视频与动态调优 ====================
+# 7. 快速音画同步视频初稿 (1-pass 标准流)
 & $PYTHON_BIN $CLI_PATH --video \
-  --prompt "A sleek futuristic sports car speeding through neon rain at night, roaring V8 engine sound, heavy rain and thunder audio, 8k cinematic" \
-  --duration 3.0 --aspect-ratio "16:9" --steps 10 --json
+  --prompt "A sleek cyberpunk sports car speeding through neon rain, dynamic tracking shot. Audio direction: roaring V8 engine, heavy rain and thunder, dark synthwave bass." \
+  --duration 4.0 --aspect-ratio "16:9" --steps 10 --json
 
-# 5. 用户选定满意产物后，移动至用户指定的目录并清理无用的中间图片/视频
-& $PYTHON_BIN $CLI_PATH --export "MiniMaxH3_Image_00001_.png" --to "D:/my-project/assets/hero.png" --clean-others --json
+# 8. 切换至【高清去油腻电影感工作流】+ 动态 Patch 任意节点参数
+& $PYTHON_BIN $CLI_PATH --video \
+  --workflow "minimax_h3_video_cinematic_lora_api.json" \
+  --ref-images "C:/Users/xtea/.shrimp/skills/leo-autodl-imagine-video/outputs/MiniMaxH3_Image_00001_.png" \
+  --ref-image-size max \
+  --patch "160.inputs.strength_model=0.8" \
+  --patch "174.inputs.reuse_threshold=0.08" \
+  --prompt "图1中的少女在雨夜缓缓转头，轻声说：'好久不见。' Audio direction: 清冷年轻女性中文配音：'好久不见。' 伴随雨滴声。" \
+  --duration 4.0 --steps 16 --crf 17 --json
 
-# 6. 【仅在用户明确确认关机后】执行远程关机停止计费
+# 9. 直接运行 Agent 自己编写或重组的工作流 JSON 文件
+& $PYTHON_BIN $CLI_PATH --run-workflow "path/to/custom_minimax_workflow.json" --ref-images "ref.png" --json
+
+# ==================== D. 最终资产导出、清理与确认关机 ====================
+# 10. 将用户满意的最终产物移至用户指定目录，并清理暂存目录中其余无用草稿
+& $PYTHON_BIN $CLI_PATH --export "MiniMaxH3_Cinematic_HD_00001-audio.mp4" --to "D:/my-project/videos/" --clean-others --json
+
+# 11. 【仅在用户明确确认同意关机后执行】远程关机停止计费
 & $PYTHON_BIN $CLI_PATH --power-off --confirm --json
 ```
-
----
-
-## 5. 深入参考文档与工作流资产 (References)
-
-* **生图真实 API 与双引擎（`sdxl` / `minimax_h3`）详解**：[references/image_generation.md](references/image_generation.md)
-* **生视频真实 API 与 MiniMax H3 15 节点拓扑详解**：[references/video_generation.md](references/video_generation.md)
-* **AutoDL 官方 OpenAPI、关机确认铁律与暂存清理手册**：[references/troubleshooting.md](references/troubleshooting.md)
-* **SDXL 生图 ComfyUI JSON 模板**：[references/workflows/sdxl_txt2img_api.json](references/workflows/sdxl_txt2img_api.json)
-* **MiniMax H3 生图 ComfyUI JSON 模板**：[references/workflows/minimax_h3_txt2img_api.json](references/workflows/minimax_h3_txt2img_api.json)
-* **MiniMax H3 音画同步生视频 ComfyUI JSON 模板**：[references/workflows/minimax_h3_video_audio_api.json](references/workflows/minimax_h3_video_audio_api.json)

@@ -30,7 +30,7 @@
       "vae_name": "minimax_h3_video_vae_fp16.safetensors"
     },
     "_meta": {
-      "title": "Load MiniMax H3 VAE"
+      "title": "Load MiniMax H3 Video/Image VAE"
     }
   },
   "10": {
