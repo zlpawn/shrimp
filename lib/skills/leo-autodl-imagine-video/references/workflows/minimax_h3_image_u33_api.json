@@ -33,16 +33,6 @@
       "title": "Load MiniMax H3 Video/Image VAE"
     }
   },
-  "10": {
-    "class_type": "VRGDG_MiniMaxH3ReferenceMediaFromPaths",
-    "inputs": {
-      "image_paths": "[]",
-      "video_references": "[]"
-    },
-    "_meta": {
-      "title": "Ordered H3 Reference Images (0-9 refs)"
-    }
-  },
   "4": {
     "class_type": "MiniMaxH3ReferenceToVideo",
     "inputs": {
@@ -52,19 +42,10 @@
       "width": 1280,
       "height": 736,
       "length": 5,
-      "ref_image_size": "match",
-      "ref_images.ref_image_0": ["10", 0],
-      "ref_images.ref_image_1": ["10", 1],
-      "ref_images.ref_image_2": ["10", 2],
-      "ref_images.ref_image_3": ["10", 3],
-      "ref_images.ref_image_4": ["10", 4],
-      "ref_images.ref_image_5": ["10", 5],
-      "ref_images.ref_image_6": ["10", 6],
-      "ref_images.ref_image_7": ["10", 7],
-      "ref_images.ref_image_8": ["10", 8]
+      "ref_image_size": "match"
     },
     "_meta": {
-      "title": "MiniMax H3 Image / Multi-Reference Conditioning (length=5)"
+      "title": "MiniMax H3 Image Conditioning (length=5)"
     }
   },
   "5": {
@@ -84,7 +65,7 @@
       "negative": ["5", 0],
       "latent_image": ["4", 1],
       "seed": 888888,
-      "steps": 12,
+      "steps": 10,
       "cfg": 1.0,
       "sampler_name": "euler",
       "scheduler": "beta",

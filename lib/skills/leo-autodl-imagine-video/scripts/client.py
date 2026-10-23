@@ -321,9 +321,9 @@ def main():
     # 3. 通用工作流执行与 MiniMax-H3 生图/生视频
     parser.add_argument("--run-workflow", type=str, help="直接执行指定的工作流 JSON 模板名或本地 JSON 文件路径")
     parser.add_argument("--video", action="store_true", help="执行 MiniMax-H3 音画同步生视频")
-    parser.add_argument("--image", action="store_true", help="执行 MiniMax-H3 高清生图 / 多参考图编辑 / 宫格分镜生成")
-    parser.add_argument("--workflow", type=str, default=None, help="指定使用的工作流模板文件名（如 minimax_h3_video_cinematic_lora_api.json）")
-    parser.add_argument("--patch", action="append", help="动态覆盖工作流任意节点属性，如 --patch '174.inputs.reuse_threshold=0.1' 或 JSON 字符串（可多次传入）")
+    parser.add_argument("--image", action="store_true", help="执行 MiniMax-H3 高清生图")
+    parser.add_argument("--workflow", type=str, default=None, help="指定使用的工作流模板文件名（默认生图用 minimax_h3_image_u33_api.json，生视频用 minimax_h3_video_1pass_api.json）")
+    parser.add_argument("--patch", action="append", help="动态覆盖工作流任意节点属性，如 --patch '174.inputs.reuse_threshold=0.15' 或 JSON 字符串（可多次传入）")
 
     # 4. MiniMax-H3 核心可调参数
     parser.add_argument("--prompt", type=str, help="提示词（支持画面+运镜+音效+台词，或 <Picture 1> 多图绑定指令）")
