@@ -5,11 +5,17 @@ from pathlib import Path
 
 DEFAULT_CONFIG_DIR = Path.home() / ".shrimp" / "skills" / "leo-autodl-imagine-video"
 CONFIG_FILE = DEFAULT_CONFIG_DIR / "config.json"
+DEFAULT_OUTPUT_DIR = DEFAULT_CONFIG_DIR / "outputs"
 
 
 def get_config_path() -> Path:
     DEFAULT_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     return CONFIG_FILE
+
+
+def get_default_output_dir() -> Path:
+    DEFAULT_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    return DEFAULT_OUTPUT_DIR
 
 
 def load_config() -> dict:

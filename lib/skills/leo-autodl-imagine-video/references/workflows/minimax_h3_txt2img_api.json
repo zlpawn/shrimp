@@ -1,0 +1,128 @@
+{
+  "1": {
+    "class_type": "DiffusionModelLoaderKJ",
+    "inputs": {
+      "model_name": "minimax/minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+      "weight_dtype": "default",
+      "compute_dtype": "default",
+      "patch_cublaslinear": false,
+      "sage_attention": "auto",
+      "enable_fp16_accumulation": true
+    },
+    "_meta": {
+      "title": "Load MiniMax H3 Diffusion Model"
+    }
+  },
+  "2": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "_meta": {
+      "title": "Load Qwen3-VL 32B Text Encoder"
+    }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    },
+    "_meta": {
+      "title": "Load MiniMax H3 VAE"
+    }
+  },
+  "10": {
+    "class_type": "VRGDG_MiniMaxH3ReferenceMediaFromPaths",
+    "inputs": {
+      "image_paths": "[]",
+      "video_references": "[]"
+    },
+    "_meta": {
+      "title": "Ordered H3 Reference Images (0-9 refs)"
+    }
+  },
+  "4": {
+    "class_type": "MiniMaxH3ReferenceToVideo",
+    "inputs": {
+      "clip": ["2", 0],
+      "vae": ["3", 0],
+      "prompt": "A cinematic close-up portrait of a cyberpunk girl in neon rain, glowing blue eyes, 8k photorealistic masterpiece",
+      "width": 1280,
+      "height": 736,
+      "length": 5,
+      "ref_image_size": "match",
+      "ref_images.ref_image_0": ["10", 0],
+      "ref_images.ref_image_1": ["10", 1],
+      "ref_images.ref_image_2": ["10", 2],
+      "ref_images.ref_image_3": ["10", 3],
+      "ref_images.ref_image_4": ["10", 4],
+      "ref_images.ref_image_5": ["10", 5],
+      "ref_images.ref_image_6": ["10", 6],
+      "ref_images.ref_image_7": ["10", 7],
+      "ref_images.ref_image_8": ["10", 8]
+    },
+    "_meta": {
+      "title": "MiniMax H3 Image / Multi-Reference Conditioning (length=5)"
+    }
+  },
+  "5": {
+    "class_type": "ConditioningZeroOut",
+    "inputs": {
+      "conditioning": ["4", 0]
+    },
+    "_meta": {
+      "title": "Zero Out Negative Conditioning"
+    }
+  },
+  "6": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": ["1", 0],
+      "positive": ["4", 0],
+      "negative": ["5", 0],
+      "latent_image": ["4", 1],
+      "seed": 888888,
+      "steps": 12,
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "beta",
+      "denoise": 1.0
+    },
+    "_meta": {
+      "title": "KSampler (euler + beta, cfg=1.0)"
+    }
+  },
+  "7": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["6", 0],
+      "vae": ["3", 0]
+    },
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "8": {
+    "class_type": "ImageFromBatch",
+    "inputs": {
+      "image": ["7", 0],
+      "batch_index": 0,
+      "length": 1
+    },
+    "_meta": {
+      "title": "Extract Single Frame Image"
+    }
+  },
+  "9": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": ["8", 0],
+      "filename_prefix": "MiniMaxH3_Image"
+    },
+    "_meta": {
+      "title": "Save Image"
+    }
+  }
+}
