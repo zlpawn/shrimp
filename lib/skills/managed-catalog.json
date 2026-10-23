@@ -574,6 +574,30 @@
       "requiresDaemon": false,
       "promoted": true,
       "managed": true
+    },
+    {
+      "id": "leo-autodl-imagine-video",
+      "name": "leo-autodl-imagine-video",
+      "title": "Leo AutoDL 云端生图与音画同步生视频",
+      "summary": "基于 AutoDL 云端旗舰 GPU（RTX 5090/4090）与 ComfyUI API 的通用远程文生图（SDXL/Flux/Illustrious/LoRA）与音画同步生视频（MiniMax H3 文生视频/参考图生视频）技能，集成官方 OpenAPI 一键远程开关机与动态 SSH 端口自愈。",
+      "category": "media",
+      "categoryLabel": "媒体创作",
+      "icon": "🎥",
+      "featured": true,
+      "tags": [
+        "autodl",
+        "comfyui",
+        "minimax-h3",
+        "sdxl",
+        "video-generation",
+        "image-generation",
+        "cloud-gpu",
+        "云端生图",
+        "音画同步视频"
+      ],
+      "requiresDaemon": false,
+      "promoted": true,
+      "managed": true
     }
   ]
 }

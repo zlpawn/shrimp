@@ -1,0 +1,12 @@
+{
+  "name": "leo-autodl-imagine-video",
+  "version": "1.0.0",
+  "description": "基于 AutoDL 云端旗舰 GPU 与 ComfyUI API 的通用远程文生图、LoRA 生图与 MiniMax H3 音画同步生视频技能，支持官方 OpenAPI 远程开关机与动态端口自愈",
+  "type": "module",
+  "scripts": {
+    "probe": "uv run scripts/client.py --probe --json",
+    "power-on": "uv run scripts/client.py --power-on --json",
+    "power-off": "uv run scripts/client.py --power-off --json",
+    "list-models": "uv run scripts/client.py --list-models --json"
+  }
+}
