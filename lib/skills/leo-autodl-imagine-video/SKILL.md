@@ -50,7 +50,8 @@ description: "MiniMax-H3 dedicated cloud image & audio-synced video generation s
 
 ```bash
 PYTHON_BIN="$HOME/.shrimp/skills/leo-autodl-imagine-video/.venv/Scripts/python.exe"
-CLI_PATH="lib/skills/leo-autodl-imagine-video/scripts/client.py"
+# CLI_PATH 取当前 SKILL.md 所在目录下的 scripts/client.py（如 "$HOME/.agents/skills/leo-autodl-imagine-video/scripts/client.py"）
+CLI_PATH="$HOME/.agents/skills/leo-autodl-imagine-video/scripts/client.py"
 
 # 1. 探活 / 远程开机
 & $PYTHON_BIN $CLI_PATH --probe --json
