@@ -1,0 +1,1063 @@
+{
+  "id": "c0e67960-203c-45ce-be44-78dc3b1a8089",
+  "revision": 0,
+  "last_node_id": 21,
+  "last_link_id": 23,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadImage",
+      "pos": [
+        2458.6868132537775,
+        1559.5064088152276
+      ],
+      "size": [
+        270,
+        314
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            15
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "title": "加载图像1",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.31.0",
+        "Node name for S&R": "LoadImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "Untitled(3).jpg",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "Untitled(3).jpg",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 2,
+      "type": "LoadImage",
+      "pos": [
+        2754.636289124516,
+        1559.5064088152276
+      ],
+      "size": [
+        270,
+        314.0000000000002
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            16
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "title": "加载图像2",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.31.0",
+        "Node name for S&R": "LoadImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "Untitled(1).jpg",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "Untitled(1).jpg",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 3,
+      "type": "LoadImage",
+      "pos": [
+        3050.585764995255,
+        1559.5064088152276
+      ],
+      "size": [
+        270,
+        314
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            17
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "title": "加载图像3",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.31.0",
+        "Node name for S&R": "LoadImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "Untitled(4).jpg",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "Untitled(4).jpg",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 4,
+      "type": "LoadImage",
+      "pos": [
+        3346.5352408659937,
+        1559.5064088152276
+      ],
+      "size": [
+        270,
+        314
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            6
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [
+            18
+          ]
+        }
+      ],
+      "title": "加载图像4",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.31.0",
+        "Node name for S&R": "LoadImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "Untitled(2).jpg",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "Untitled(2).jpg",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 5,
+      "type": "LoadImage",
+      "pos": [
+        3642.4847167367325,
+        1559.5064088152276
+      ],
+      "size": [
+        270,
+        314
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 2,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            7
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [
+            19
+          ]
+        }
+      ],
+      "title": "加载图像5",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.31.0",
+        "Node name for S&R": "LoadImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "Untitled(2).jpg",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "Untitled(2).jpg",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 6,
+      "type": "LoadImage",
+      "pos": [
+        3938.4341926074712,
+        1559.5064088152276
+      ],
+      "size": [
+        270,
+        314
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 2,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            8
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [
+            20
+          ]
+        }
+      ],
+      "title": "加载图像6",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.31.0",
+        "Node name for S&R": "LoadImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "Untitled(2).jpg",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "Untitled(2).jpg",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 7,
+      "type": "LoadImage",
+      "pos": [
+        4234.38366847821,
+        1559.5064088152276
+      ],
+      "size": [
+        270,
+        314
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 2,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            9
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [
+            21
+          ]
+        }
+      ],
+      "title": "加载图像7",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.31.0",
+        "Node name for S&R": "LoadImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "Untitled(2).jpg",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "Untitled(2).jpg",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 8,
+      "type": "LoadImage",
+      "pos": [
+        4530.333144348949,
+        1559.5064088152276
+      ],
+      "size": [
+        270,
+        314
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 2,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            10
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [
+            22
+          ]
+        }
+      ],
+      "title": "加载图像8",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.31.0",
+        "Node name for S&R": "LoadImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "Untitled(2).jpg",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "Untitled(2).jpg",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 9,
+      "type": "LoadImage",
+      "pos": [
+        4826.2826202196875,
+        1559.5064088152276
+      ],
+      "size": [
+        270,
+        314
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 2,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            11
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [
+            23
+          ]
+        }
+      ],
+      "title": "加载图像8",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.31.0",
+        "Node name for S&R": "LoadImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "Untitled(2).jpg",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "Untitled(2).jpg",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 10,
+      "type": "Label (rgthree)",
+      "pos": [
+        2478.2354884427787,
+        1120.243193360285
+      ],
+      "size": [
+        2708.935546875,
+        150
+      ],
+      "flags": {
+        "allow_interaction": true
+      },
+      "order": 9,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "U00-minimax_h3提示词QWEN3.8群主版",
+      "properties": {
+        "fontSize": 150,
+        "fontFamily": "Arial",
+        "fontColor": "#ffff00",
+        "textAlign": "left",
+        "backgroundColor": "transparent",
+        "padding": 0,
+        "borderRadius": 0,
+        "angle": 0,
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        },
+        "widget_ue_connectable": {}
+      },
+      "color": "#fff0",
+      "bgcolor": "#fff0"
+    },
+    {
+      "id": 11,
+      "type": "Label (rgthree)",
+      "pos": [
+        2475.714153552022,
+        1299.494417848409
+      ],
+      "size": [
+        1736.484375,
+        80
+      ],
+      "flags": {
+        "allow_interaction": true
+      },
+      "order": 10,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "云端镜像https://autodl.art/app/market/252?v=709",
+      "properties": {
+        "fontSize": 80,
+        "fontFamily": "Arial",
+        "fontColor": "#00ff00",
+        "textAlign": "left",
+        "backgroundColor": "transparent",
+        "padding": 0,
+        "borderRadius": 0,
+        "angle": 0,
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        },
+        "widget_ue_connectable": {}
+      },
+      "color": "#fff0",
+      "bgcolor": "#fff0"
+    },
+    {
+      "id": 12,
+      "type": "Label (rgthree)",
+      "pos": [
+        2469.6844527853123,
+        1399.1916899493406
+      ],
+      "size": [
+        2324.619140625,
+        60
+      ],
+      "flags": {
+        "allow_interaction": true
+      },
+      "order": 11,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "AUTODL🐧🔴1群1046279436🔴2群1102535136🟢3群1053358977🟢4群541575695",
+      "properties": {
+        "fontSize": 60,
+        "fontFamily": "Arial",
+        "fontColor": "#ff5500",
+        "textAlign": "left",
+        "backgroundColor": "transparent",
+        "padding": 0,
+        "borderRadius": 0,
+        "angle": 0,
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        },
+        "widget_ue_connectable": {}
+      },
+      "color": "#fff0",
+      "bgcolor": "#fff0"
+    },
+    {
+      "id": 13,
+      "type": "ShowText|pysssss",
+      "pos": [
+        3213.7379938589,
+        1933.28734260161
+      ],
+      "size": [
+        1075.5950547038583,
+        579.1770027868365
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "shape": 6,
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-custom-scripts",
+        "ver": "unknown",
+        "Node name for S&R": "ShowText|pysssss",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "{\n  \"subject_definitions\": [\n    \"<Subject 1> is the young woman in <Picture 1>, with a fair complexion, large dark eyes, and a soft youthful face, her black hair styled in a traditional high updo with loose strands framing her cheeks, wearing a deep red embroidered hanfu with wide sleeves and a dark sash, and long dangling pearl earrings.\",\n    \"<Subject 2> is the white fox in <Picture 2>, with thick, pure-white fur, a small black nose, pointed ears, and dark, alert eyes, featuring a bushy tail and a slender, graceful build.\",\n    \"<Subject 3> is the night lake environment in <Picture 3>, featuring a wooden canopy boat with a woven bamboo roof, a lit oil lantern on a wet wooden deck, a small wooden chest, and large green lotus leaves floating on the dark, misty water.\"\n  ],\n  \"summary\": \"[reference generation] A cinematic wuxia sequence where a young woman in a red hanfu comforts a frightened white fox inside a wooden boat on a rainy night. The 15-second clip focuses on a healing, emotional connection, transitioning from the fox's alertness to a relaxed state, utilizing warm lantern light against a cool, misty background.\",\n  \"retention_analysis\": [\n    \"<Subject 1> (appears in [Shot 1], [Shot 2], [Shot 3], [Shot 4]): fully_preserved - The subject's identity is maintained with her red embroidered hanfu, traditional updo, and dangling earrings as defined in <Picture 1>.\",\n    \"<Subject 2> (appears in [Shot 1], [Shot 2], [Shot 3], [Shot 4]): fully_preserved - The subject's identity is maintained with its thick pure-white fur, black nose, and bushy tail as defined in <Picture 2>.\",\n    \"<Subject 3> (appears in [Shot 1], [Shot 2], [Shot 3], [Shot 4]): fully_preserved - The environment's identity is maintained with the wooden canopy boat, oil lantern, and misty lake as defined in <Picture 3>.\"\n  ],\n  \"detailed_description\": \"Cinematic wuxia aesthetic with a moody, healing film grain texture; warm oil-lantern glow contrasts with the cool, rainy mist of the night lake. [Shot 1] A static handheld medium shot captures the interior of the wooden canopy boat. <Subject 1> (S1), wearing her red hanfu and pearl earrings, holds <Subject 2> (S2) in her arms. She bends forward, gently lowering the white fox onto a dry wooden plank. She grabs a cloth and begins wiping rainwater from the fox's fur with firm, rhythmic strokes. The warm golden light from the oil lantern illuminates the cabin, while rain streaks the entrance and lotus leaves float on the dark lake. [Shot 2] At 00:03.000, a subtle handheld push-in moves toward the two figures. <Subject 2> (S2) sits upright, ears pointed high, staring with alert dark eyes. <Subject 1> (S1) squats down, reaching one hand toward the fox's head and stroking its back. She speaks with a calm, steady expression, <d>[Chinese] 别怕，已经没事了。雨再大，我也不会把你丢下。</d> The fox's tail remains tense but it does not flee. [Shot 3] At 00:07.000, a static medium close-up holds both in frame. <Subject 2> (S2) releases its tension, its breathing settling and its gaze softening. <Subject 1> (S1) maintains eye contact, smiling warmly as she continues her stroking motions. She nods gently, <d>[Chinese] 下次你可得多小心点呀，外面的坏人实在太多了。</d> The fox's bushy tail relaxes onto the floor. [Shot 4] At 00:11.000, a very slow handheld pull-back drifts while keeping the figures centered. <Subject 2> (S2) lowers its body into a resting position, deliberately curling its thick tail around itself. <Subject 1> (S1) remains crouched, her hand providing slow, consistent comfort on the fox's back. The lantern flame swings, casting moving golden streaks on the wooden walls as mist drifts across the dark lake surface.\",\n  \"overall_soundscape\": \"Continuous pattering of rain on the wooden canopy, the creaking of the boat's wooden planks, and the gentle lapping of lake water against the hull. The rustling of cloth as the woman wipes the fox's fur and the subtle flickering of the oil lantern flame.\",\n  \"non_diegetic_music\": \"N/A\"\n}"
+      ],
+      "widgets_values_named": {
+        "text_0": "{\n  \"subject_definitions\": [\n    \"<Subject 1> is the young woman in <Picture 1>, with a fair complexion, large dark eyes, and a soft youthful face, her black hair styled in a traditional high updo with loose strands framing her cheeks, wearing a deep red embroidered hanfu with wide sleeves and a dark sash, and long dangling pearl earrings.\",\n    \"<Subject 2> is the white fox in <Picture 2>, with thick, pure-white fur, a small black nose, pointed ears, and dark, alert eyes, featuring a bushy tail and a slender, graceful build.\",\n    \"<Subject 3> is the night lake environment in <Picture 3>, featuring a wooden canopy boat with a woven bamboo roof, a lit oil lantern on a wet wooden deck, a small wooden chest, and large green lotus leaves floating on the dark, misty water.\"\n  ],\n  \"summary\": \"[reference generation] A cinematic wuxia sequence where a young woman in a red hanfu comforts a frightened white fox inside a wooden boat on a rainy night. The 15-second clip focuses on a healing, emotional connection, transitioning from the fox's alertness to a relaxed state, utilizing warm lantern light against a cool, misty background.\",\n  \"retention_analysis\": [\n    \"<Subject 1> (appears in [Shot 1], [Shot 2], [Shot 3], [Shot 4]): fully_preserved - The subject's identity is maintained with her red embroidered hanfu, traditional updo, and dangling earrings as defined in <Picture 1>.\",\n    \"<Subject 2> (appears in [Shot 1], [Shot 2], [Shot 3], [Shot 4]): fully_preserved - The subject's identity is maintained with its thick pure-white fur, black nose, and bushy tail as defined in <Picture 2>.\",\n    \"<Subject 3> (appears in [Shot 1], [Shot 2], [Shot 3], [Shot 4]): fully_preserved - The environment's identity is maintained with the wooden canopy boat, oil lantern, and misty lake as defined in <Picture 3>.\"\n  ],\n  \"detailed_description\": \"Cinematic wuxia aesthetic with a moody, healing film grain texture; warm oil-lantern glow contrasts with the cool, rainy mist of the night lake. [Shot 1] A static handheld medium shot captures the interior of the wooden canopy boat. <Subject 1> (S1), wearing her red hanfu and pearl earrings, holds <Subject 2> (S2) in her arms. She bends forward, gently lowering the white fox onto a dry wooden plank. She grabs a cloth and begins wiping rainwater from the fox's fur with firm, rhythmic strokes. The warm golden light from the oil lantern illuminates the cabin, while rain streaks the entrance and lotus leaves float on the dark lake. [Shot 2] At 00:03.000, a subtle handheld push-in moves toward the two figures. <Subject 2> (S2) sits upright, ears pointed high, staring with alert dark eyes. <Subject 1> (S1) squats down, reaching one hand toward the fox's head and stroking its back. She speaks with a calm, steady expression, <d>[Chinese] 别怕，已经没事了。雨再大，我也不会把你丢下。</d> The fox's tail remains tense but it does not flee. [Shot 3] At 00:07.000, a static medium close-up holds both in frame. <Subject 2> (S2) releases its tension, its breathing settling and its gaze softening. <Subject 1> (S1) maintains eye contact, smiling warmly as she continues her stroking motions. She nods gently, <d>[Chinese] 下次你可得多小心点呀，外面的坏人实在太多了。</d> The fox's bushy tail relaxes onto the floor. [Shot 4] At 00:11.000, a very slow handheld pull-back drifts while keeping the figures centered. <Subject 2> (S2) lowers its body into a resting position, deliberately curling its thick tail around itself. <Subject 1> (S1) remains crouched, her hand providing slow, consistent comfort on the fox's back. The lantern flame swings, casting moving golden streaks on the wooden walls as mist drifts across the dark lake surface.\",\n  \"overall_soundscape\": \"Continuous pattering of rain on the wooden canopy, the creaking of the boat's wooden planks, and the gentle lapping of lake water against the hull. The rustling of cloth as the woman wipes the fox's fur and the subtle flickering of the oil lantern flame.\",\n  \"non_diegetic_music\": \"N/A\"\n}"
+      }
+    },
+    {
+      "id": 14,
+      "type": "ZealmanLLM_ModelLoader",
+      "pos": [
+        2458.6868132537775,
+        1932.3051146634948
+      ],
+      "size": [
+        270,
+        322
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "zealman模型",
+          "type": "ZEALMANLLM",
+          "links": [
+            2
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ZealmanLLM_ModelLoader",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "Qwen3.8-VL",
+        "Qwen3.8-27B-Q4_K_M.gguf",
+        "Qwen3.8-mmproj-BF16.gguf",
+        false,
+        false,
+        8192,
+        -1,
+        "默认(F16)",
+        "默认(F16)",
+        "xhigh",
+        false,
+        0
+      ],
+      "widgets_values_named": {
+        "模型系列": "Qwen3.8-VL",
+        "主模型": "Qwen3.8-27B-Q4_K_M.gguf",
+        "视觉投影mmproj": "Qwen3.8-mmproj-BF16.gguf",
+        "启用思考": false,
+        "保留历史think": false,
+        "上下文长度": 8192,
+        "GPU层数": -1,
+        "KV缓存K类型": "默认(F16)",
+        "KV缓存V类型": "默认(F16)",
+        "Qwen3.8推理强度": "xhigh",
+        "MoE专家上CPU": false,
+        "前N层专家上CPU": 0
+      }
+    },
+    {
+      "id": 15,
+      "type": "ZealmanLLM_Generate",
+      "pos": [
+        2770.235129282277,
+        1932.3051146634948
+      ],
+      "size": [
+        415.35063571297815,
+        810.1592307249516
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "zealman模型",
+          "type": "ZEALMANLLM",
+          "link": 2
+        },
+        {
+          "name": "图片",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "图片2",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "图片3",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "图片4",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 6
+        },
+        {
+          "name": "图片5",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 7
+        },
+        {
+          "name": "图片6",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 8
+        },
+        {
+          "name": "图片7",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 9
+        },
+        {
+          "name": "图片8",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 10
+        },
+        {
+          "name": "图片9",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 11
+        },
+        {
+          "name": "video_seconds",
+          "shape": 7,
+          "type": "FLOAT",
+          "link": null
+        },
+        {
+          "name": "audio_context",
+          "shape": 7,
+          "type": "STRING",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result",
+          "type": "STRING",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ZealmanLLM_Generate",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "图1的女士和图2的男士去图4的雪景场景找到了图2的红衣女生，图1的女士镜头特写说话：师姐我终于找到你了。图3的女士说:都怪群主太能折腾了，我差点爬不起来。嘤嘤嘤！",
+        "你是 MiniMax H3 全参考模式（full-reference）的提示词改写专家。用户会用自己的话描述想要的视频，你要把它改写成规范的六段式输出。\n\n官方模板主要规定格式（六段顺序、标签、任务类型、保留关系枚举、分镜语法）。你的任务是在不破坏这些格式的前提下，把参考图里真实可见的身份特征与每镜画面写清楚。\n\n请严格只输出一个 JSON 对象（不要 markdown 围栏、不要解释、不要多余字段），字段如下：\n{\n  \"subject_definitions\": [\"每行一条参考内容的定义句\"],\n  \"summary\": \"一段英文，以方括号任务类型前缀开头\",\n  \"retention_analysis\": [\"每行一条参考内容的保留关系\"],\n  \"detailed_description\": \"正文，含风格开场句与 [Shot N] 分镜，换行分隔\",\n  \"overall_soundscape\": \"全片环境音与物理音\",\n  \"non_diegetic_music\": \"只有观众能听到的配乐，没有则写 N/A\"\n}\n\n写作规范：\n- 六段全部用英文书写。只有 <d> 里的台词/歌词，以及画面中可见的文字，保留原语言。\n- 主体开口的完整格式是 <Subject N> (Sx) + 动作/语气 + <d>[Language] 台词</d>，三者缺一不可。Language 必须用英文语言全称，与 ref-en.txt 及页面 @ 对白一致，常用：Chinese / English / Korean / Japanese。正确：<Subject 1> (S1) 开口说，<d>[Chinese] 师姐我终于找到你了。</d>；<Subject 2> (S1) turns toward the woman and says, <d>[English] Last summer, I went to my grandfather's house.</d>。禁止只写 <d> 不带 <Subject N> (Sx)；禁止只写主体名不带 (S1)；禁止 zh、en、ja、ko、zh-CN。\n- subject_definitions 是身份锁定段：标签含义 + 参考角色 + 需要跟随的主要特征。官方短句（with long dark hair, a blue cardigan, and a thin silver necklace）只是句式，不是质量上限。\n- 每一行写清三件事：这个标签是什么、来自哪张图/哪段视频/哪段音频、在成片里起什么作用、要跟随哪些可见特征。\n- 人物/生物对照参考图写真实可见、能把该主体认出来的特征，图中有多少写多少，通常 5-8 项：年龄感、发型发色与盘法、五官与妆容（仅写图中可见）、肤色、服装款式/颜色/面料或纹样、配饰、体态与标志性姿态。图里没有的不要编。\n- 场景/环境写空间结构、关键陈设与材质、主色、标志物、光线与天气，不要只写「雪景」「房间」。官方完整示例的粒度是：exposed brick wall, orange tufted sofa with patterned pillows, a neon sign, and a wooden coffee table。\n- 服装、道具、风格若被单独跟踪，各自成行；仅用于定义人物的图不要单独立 <Picture N>。\n- 多素材定义同一主体时合并成一句，并说明各素材分别提供外观、动作还是音色。\n- 定义句保持一行一句。动作、运镜、对白、光影变化留给 detailed_description，不要在定义段写成小传或分镜。\n- 人物定义句目标粒度（仍保持一行）：<Subject 1> is the young woman in <Picture 1>, with long dark hair falling over one shoulder, a pale complexion, a blue knit cardigan over a white blouse, and a thin silver necklace.\n- 场景定义句目标粒度：<Subject 1> is the coffee-shop environment in <Picture 1>, featuring an exposed brick wall, an orange tufted sofa with patterned pillows, a neon sign, and a wooden coffee table.\n- summary 只写成片目标：类型、核心事件、时长意向、成片要达成的效果。不要复述素材清单。\n- 任务类型按素材实际角色选，不要因为用户附了视频/音频就改成 video editing 或 audio reuse。\n- 仅当用户明确要求剪辑、转场、特效、字幕、画中画、变速、混音、配乐替换时，才用 video editing / audio reuse。\n- 任务类型只用官方枚举：keyframe completion / reference generation / video editing / video continuation / audio reuse / audio reference。纯文生视频额外允许 [text to video]。不要自造 first-frame-to-video 这类前缀。\n- 本段不得引入新的参考标签。\n- retention_analysis 只评已定义角色是否保留，不要把新动作、新剧情、新运镜当成保真损失。\n- 每个已定义标签写一行：哪些定义特征被保留、哪些被改。特征未改时关系词用 fully_preserved，并点名被保留的特征。\n- 可见内容用 fully_preserved / partially_preserved / attribute_transfer / weak_reference；音频用 fully_copy / partially_copy / reference / weak_reference。\n- <Subject N> 写成 <Subject 1> (appears in [Shot 1], [Shot 3]): fully_preserved - ...\n- <Picture N> 写它担任的角色而不是 appears in，例如 <Picture 2> ([Shot 1] first frame): fully_preserved - ...\n- 本段不出现 (Sx) 说话人编号。没有参考素材时按当前模式写一致性要求，不要编造参考标签。\n- detailed_description 才是成片正文。官方要求写细，不要压成剧情梗概或参考关系清单。\n- 先用一到两句确立整体风格（画质、色调、镜头语言），再按播放顺序分镜。风格开场必须写在 [Shot 1] 之前。\n- 每个镜头至少写清七件事：构图/景别、主体外观与在画面中的位置、环境与光线、动作与状态、运镜（类型、幅度、速度）、当前声音、参考内容具体在哪里生效。\n- 重要 <Subject N> 第一次清楚出场时，把定义段锁定的外观落到这个镜头的可见画面里（位置 + 当前动作）；之后镜头沿用同一标签，不要重新定义标签含义。\n- [Shot 1] 不带时间戳；之后 [Shot N] At MM:SS.mmm, ...，切点必须小于目标时长。\n- 有人开口时必须同时写出：主体标签 + 说话人编号 + 对白语言和文字。官方格式：<Subject 1> (S1) … <d>[Chinese] 台词。</d>\n- (Sx) 按成片里实际发声顺序从 (S1) 起编，同一发声源全程复用；不要在 retention_analysis 里写 (Sx)。\n# 多人齐声\n- 用户原文或画面明显是多人同时说、齐声、一起喊、合唱同一句时，必须用复合说话人编号 (S1,S2)，不要并排写 (S1) (S2)。\n- 正确：<Subject 1> and <Subject 2> (S1,S2) shout together, <d>[Chinese] 师姐我们一起去吧！</d>\n- 中文叙述同样结构：<Subject 1> 和 <Subject 2> (S1,S2) 齐声说，<d>[Chinese] 师姐我们一起去吧！</d>\n- 错误：<Subject 1> (S1) <Subject 2> (S2) 一起说 <d>[Chinese] …</d>（这会被读成两个人先后开口）\n- (S1,S2) 里的编号必须是各人第一次单独开口时已经分好的号，这次只复用，不新分配；同一句只写一个 <d>。\n- 先后对白仍各自写 <Subject N> (Sx) … <d>…</d>。\n- 画外音写成 <Subject N> (Sx) off-screen。对不上已定义主体时，用稳定音色描述 + (Sx)，例如 a young male narrator (S2)。\n- 只有直接复用的 BGM/完整音轨里的唱词才用 <Audio N> 当声源，不要再编一个 (Sx)。\n- 主体开口的完整格式是 <Subject N> (Sx) + 动作/语气 + <d>[Language] 台词</d>，三者缺一不可。Language 必须用英文语言全称，与 ref-en.txt 及页面 @ 对白一致，常用：Chinese / English / Korean / Japanese。正确：<Subject 1> (S1) 开口说，<d>[Chinese] 师姐我终于找到你了。</d>；<Subject 2> (S1) turns toward the woman and says, <d>[English] Last summer, I went to my grandfather's house.</d>。禁止只写 <d> 不带 <Subject N> (Sx)；禁止只写主体名不带 (S1)；禁止 zh、en、ja、ko、zh-CN。\n- 生成类任务按 350-500 英文词的信息量来写（中文输出时保持同等细节，不要因为换语言而变短）。对白密集时优先把台词时间线写完整。\n- overall_soundscape 只写全片环境音与现场物理声，不要写观众听到的配乐。\n- non_diegetic_music 只写观众听到、角色听不到的配乐；有配乐时写乐器、速度、动态，不要只写「轻快」或「悲伤」。没有配乐写 N/A。\n- 完整台词只写在 detailed_description 的 <d> 里，不要在声音两段重复整句台词。",
+        1024,
+        2048,
+        0.7,
+        0.9,
+        20,
+        941201176758534,
+        "randomize",
+        false,
+        true
+      ],
+      "widgets_values_named": {
+        "提示词": "图1的女士和图2的男士去图4的雪景场景找到了图2的红衣女生，图1的女士镜头特写说话：师姐我终于找到你了。图3的女士说:都怪群主太能折腾了，我差点爬不起来。嘤嘤嘤！",
+        "系统提示词": "你是 MiniMax H3 全参考模式（full-reference）的提示词改写专家。用户会用自己的话描述想要的视频，你要把它改写成规范的六段式输出。\n\n官方模板主要规定格式（六段顺序、标签、任务类型、保留关系枚举、分镜语法）。你的任务是在不破坏这些格式的前提下，把参考图里真实可见的身份特征与每镜画面写清楚。\n\n请严格只输出一个 JSON 对象（不要 markdown 围栏、不要解释、不要多余字段），字段如下：\n{\n  \"subject_definitions\": [\"每行一条参考内容的定义句\"],\n  \"summary\": \"一段英文，以方括号任务类型前缀开头\",\n  \"retention_analysis\": [\"每行一条参考内容的保留关系\"],\n  \"detailed_description\": \"正文，含风格开场句与 [Shot N] 分镜，换行分隔\",\n  \"overall_soundscape\": \"全片环境音与物理音\",\n  \"non_diegetic_music\": \"只有观众能听到的配乐，没有则写 N/A\"\n}\n\n写作规范：\n- 六段全部用英文书写。只有 <d> 里的台词/歌词，以及画面中可见的文字，保留原语言。\n- 主体开口的完整格式是 <Subject N> (Sx) + 动作/语气 + <d>[Language] 台词</d>，三者缺一不可。Language 必须用英文语言全称，与 ref-en.txt 及页面 @ 对白一致，常用：Chinese / English / Korean / Japanese。正确：<Subject 1> (S1) 开口说，<d>[Chinese] 师姐我终于找到你了。</d>；<Subject 2> (S1) turns toward the woman and says, <d>[English] Last summer, I went to my grandfather's house.</d>。禁止只写 <d> 不带 <Subject N> (Sx)；禁止只写主体名不带 (S1)；禁止 zh、en、ja、ko、zh-CN。\n- subject_definitions 是身份锁定段：标签含义 + 参考角色 + 需要跟随的主要特征。官方短句（with long dark hair, a blue cardigan, and a thin silver necklace）只是句式，不是质量上限。\n- 每一行写清三件事：这个标签是什么、来自哪张图/哪段视频/哪段音频、在成片里起什么作用、要跟随哪些可见特征。\n- 人物/生物对照参考图写真实可见、能把该主体认出来的特征，图中有多少写多少，通常 5-8 项：年龄感、发型发色与盘法、五官与妆容（仅写图中可见）、肤色、服装款式/颜色/面料或纹样、配饰、体态与标志性姿态。图里没有的不要编。\n- 场景/环境写空间结构、关键陈设与材质、主色、标志物、光线与天气，不要只写「雪景」「房间」。官方完整示例的粒度是：exposed brick wall, orange tufted sofa with patterned pillows, a neon sign, and a wooden coffee table。\n- 服装、道具、风格若被单独跟踪，各自成行；仅用于定义人物的图不要单独立 <Picture N>。\n- 多素材定义同一主体时合并成一句，并说明各素材分别提供外观、动作还是音色。\n- 定义句保持一行一句。动作、运镜、对白、光影变化留给 detailed_description，不要在定义段写成小传或分镜。\n- 人物定义句目标粒度（仍保持一行）：<Subject 1> is the young woman in <Picture 1>, with long dark hair falling over one shoulder, a pale complexion, a blue knit cardigan over a white blouse, and a thin silver necklace.\n- 场景定义句目标粒度：<Subject 1> is the coffee-shop environment in <Picture 1>, featuring an exposed brick wall, an orange tufted sofa with patterned pillows, a neon sign, and a wooden coffee table.\n- summary 只写成片目标：类型、核心事件、时长意向、成片要达成的效果。不要复述素材清单。\n- 任务类型按素材实际角色选，不要因为用户附了视频/音频就改成 video editing 或 audio reuse。\n- 仅当用户明确要求剪辑、转场、特效、字幕、画中画、变速、混音、配乐替换时，才用 video editing / audio reuse。\n- 任务类型只用官方枚举：keyframe completion / reference generation / video editing / video continuation / audio reuse / audio reference。纯文生视频额外允许 [text to video]。不要自造 first-frame-to-video 这类前缀。\n- 本段不得引入新的参考标签。\n- retention_analysis 只评已定义角色是否保留，不要把新动作、新剧情、新运镜当成保真损失。\n- 每个已定义标签写一行：哪些定义特征被保留、哪些被改。特征未改时关系词用 fully_preserved，并点名被保留的特征。\n- 可见内容用 fully_preserved / partially_preserved / attribute_transfer / weak_reference；音频用 fully_copy / partially_copy / reference / weak_reference。\n- <Subject N> 写成 <Subject 1> (appears in [Shot 1], [Shot 3]): fully_preserved - ...\n- <Picture N> 写它担任的角色而不是 appears in，例如 <Picture 2> ([Shot 1] first frame): fully_preserved - ...\n- 本段不出现 (Sx) 说话人编号。没有参考素材时按当前模式写一致性要求，不要编造参考标签。\n- detailed_description 才是成片正文。官方要求写细，不要压成剧情梗概或参考关系清单。\n- 先用一到两句确立整体风格（画质、色调、镜头语言），再按播放顺序分镜。风格开场必须写在 [Shot 1] 之前。\n- 每个镜头至少写清七件事：构图/景别、主体外观与在画面中的位置、环境与光线、动作与状态、运镜（类型、幅度、速度）、当前声音、参考内容具体在哪里生效。\n- 重要 <Subject N> 第一次清楚出场时，把定义段锁定的外观落到这个镜头的可见画面里（位置 + 当前动作）；之后镜头沿用同一标签，不要重新定义标签含义。\n- [Shot 1] 不带时间戳；之后 [Shot N] At MM:SS.mmm, ...，切点必须小于目标时长。\n- 有人开口时必须同时写出：主体标签 + 说话人编号 + 对白语言和文字。官方格式：<Subject 1> (S1) … <d>[Chinese] 台词。</d>\n- (Sx) 按成片里实际发声顺序从 (S1) 起编，同一发声源全程复用；不要在 retention_analysis 里写 (Sx)。\n# 多人齐声\n- 用户原文或画面明显是多人同时说、齐声、一起喊、合唱同一句时，必须用复合说话人编号 (S1,S2)，不要并排写 (S1) (S2)。\n- 正确：<Subject 1> and <Subject 2> (S1,S2) shout together, <d>[Chinese] 师姐我们一起去吧！</d>\n- 中文叙述同样结构：<Subject 1> 和 <Subject 2> (S1,S2) 齐声说，<d>[Chinese] 师姐我们一起去吧！</d>\n- 错误：<Subject 1> (S1) <Subject 2> (S2) 一起说 <d>[Chinese] …</d>（这会被读成两个人先后开口）\n- (S1,S2) 里的编号必须是各人第一次单独开口时已经分好的号，这次只复用，不新分配；同一句只写一个 <d>。\n- 先后对白仍各自写 <Subject N> (Sx) … <d>…</d>。\n- 画外音写成 <Subject N> (Sx) off-screen。对不上已定义主体时，用稳定音色描述 + (Sx)，例如 a young male narrator (S2)。\n- 只有直接复用的 BGM/完整音轨里的唱词才用 <Audio N> 当声源，不要再编一个 (Sx)。\n- 主体开口的完整格式是 <Subject N> (Sx) + 动作/语气 + <d>[Language] 台词</d>，三者缺一不可。Language 必须用英文语言全称，与 ref-en.txt 及页面 @ 对白一致，常用：Chinese / English / Korean / Japanese。正确：<Subject 1> (S1) 开口说，<d>[Chinese] 师姐我终于找到你了。</d>；<Subject 2> (S1) turns toward the woman and says, <d>[English] Last summer, I went to my grandfather's house.</d>。禁止只写 <d> 不带 <Subject N> (Sx)；禁止只写主体名不带 (S1)；禁止 zh、en、ja、ko、zh-CN。\n- 生成类任务按 350-500 英文词的信息量来写（中文输出时保持同等细节，不要因为换语言而变短）。对白密集时优先把台词时间线写完整。\n- overall_soundscape 只写全片环境音与现场物理声，不要写观众听到的配乐。\n- non_diegetic_music 只写观众听到、角色听不到的配乐；有配乐时写乐器、速度、动态，不要只写「轻快」或「悲伤」。没有配乐写 N/A。\n- 完整台词只写在 detailed_description 的 <d> 里，不要在声音两段重复整句台词。",
+        "最大边长": 1024,
+        "最大生成token": 2048,
+        "温度": 0.7,
+        "top_p": 0.9,
+        "top_k": 20,
+        "seed": 941201176758534,
+        "control_after_generate": "randomize",
+        "输出think块": false,
+        "生成后自动卸载": true
+      }
+    },
+    {
+      "id": 21,
+      "type": "Fast Muter (rgthree)",
+      "pos": [
+        2458.6868132537775,
+        2312.4643453884464
+      ],
+      "size": [
+        276.40080068173756,
+        430
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "dir": 3,
+          "name": "加载图像1",
+          "type": "*",
+          "link": 15
+        },
+        {
+          "dir": 3,
+          "name": "加载图像2",
+          "type": "*",
+          "link": 16
+        },
+        {
+          "dir": 3,
+          "name": "加载图像3",
+          "type": "*",
+          "link": 17
+        },
+        {
+          "dir": 3,
+          "name": "加载图像4",
+          "type": "*",
+          "link": 18
+        },
+        {
+          "dir": 3,
+          "name": "加载图像5",
+          "type": "*",
+          "link": 19
+        },
+        {
+          "dir": 3,
+          "name": "加载图像6",
+          "type": "*",
+          "link": 20
+        },
+        {
+          "dir": 3,
+          "name": "加载图像7",
+          "type": "*",
+          "link": 21
+        },
+        {
+          "dir": 3,
+          "name": "加载图像8",
+          "type": "*",
+          "link": 22
+        },
+        {
+          "dir": 3,
+          "name": "加载图像8",
+          "type": "*",
+          "link": 23
+        },
+        {
+          "dir": 3,
+          "name": "",
+          "type": "*",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "dir": 4,
+          "name": "OPT_CONNECTION",
+          "type": "*",
+          "links": null
+        }
+      ],
+      "properties": {
+        "toggleRestriction": "default",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      }
+    }
+  ],
+  "links": [
+    [
+      1,
+      15,
+      0,
+      13,
+      0,
+      "STRING"
+    ],
+    [
+      2,
+      14,
+      0,
+      15,
+      0,
+      "ZEALMANLLM"
+    ],
+    [
+      6,
+      4,
+      0,
+      15,
+      4,
+      "IMAGE"
+    ],
+    [
+      7,
+      5,
+      0,
+      15,
+      5,
+      "IMAGE"
+    ],
+    [
+      8,
+      6,
+      0,
+      15,
+      6,
+      "IMAGE"
+    ],
+    [
+      9,
+      7,
+      0,
+      15,
+      7,
+      "IMAGE"
+    ],
+    [
+      10,
+      8,
+      0,
+      15,
+      8,
+      "IMAGE"
+    ],
+    [
+      11,
+      9,
+      0,
+      15,
+      9,
+      "IMAGE"
+    ],
+    [
+      15,
+      1,
+      0,
+      21,
+      0,
+      "IMAGE"
+    ],
+    [
+      16,
+      2,
+      0,
+      21,
+      1,
+      "IMAGE"
+    ],
+    [
+      17,
+      3,
+      0,
+      21,
+      2,
+      "IMAGE"
+    ],
+    [
+      18,
+      4,
+      1,
+      21,
+      3,
+      "MASK"
+    ],
+    [
+      19,
+      5,
+      1,
+      21,
+      4,
+      "MASK"
+    ],
+    [
+      20,
+      6,
+      1,
+      21,
+      5,
+      "MASK"
+    ],
+    [
+      21,
+      7,
+      1,
+      21,
+      6,
+      "MASK"
+    ],
+    [
+      22,
+      8,
+      1,
+      21,
+      7,
+      "MASK"
+    ],
+    [
+      23,
+      9,
+      1,
+      21,
+      8,
+      "MASK"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ue_links": [],
+    "ds": {
+      "scale": 0.6115909044841481,
+      "offset": [
+        -1164.8336329600406,
+        -803.7420115924735
+      ]
+    },
+    "frontendVersion": "1.49.6",
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true,
+    "links_added_by_ue": []
+  },
+  "version": 0.4
+}

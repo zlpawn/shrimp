@@ -37,6 +37,12 @@ description: "MiniMax-H3 dedicated cloud image & audio-synced video generation s
 * **已上机实测跑通的 API 工作流模板 (`references/workflows/`)**：
   * [workflows/minimax_h3_image_u33_api.json](references/workflows/minimax_h3_image_u33_api.json) —— 已在 RTX 5090 实测跑通的 9 节点生图工作流
   * [workflows/minimax_h3_video_1pass_api.json](references/workflows/minimax_h3_video_1pass_api.json) —— 已在 RTX 5090 实测跑通的 15 节点音画同步生视频工作流
+* **可选参考资料与工作流/提示词备份库（供 Agent 按需查阅或跨镜像复用，非强制规范）**：
+  * [workflows/u_series_api/](references/workflows/u_series_api/) —— 19 套 `API-U*.json` 工作流备份（标准 ComfyUI API 格式，内含 `_api_config` 参数说明，可直接通过 `--run-workflow` 运行）
+  * [workflows/u_series_canvas/](references/workflows/u_series_canvas/) —— 61 套 `U00~U43` ComfyUI 网页画布原始工作流备份（供参考节点连线或导入其他镜像画布）
+  * [prompts_and_guides/U视频-MINIMAX-H3_工作流说明.md](references/prompts_and_guides/U视频-MINIMAX-H3_工作流说明.md) —— `U00~U37` 各工作流的用途、输入与模型技术栈参考说明
+  * [prompts_and_guides/minimax_h3_prompt_guide.json](references/prompts_and_guides/minimax_h3_prompt_guide.json) —— MiniMax-H3 分镜、运镜与角色对白提示词写法参考模板
+  * [prompts_and_guides/minimax_h3_models_and_loras.json](references/prompts_and_guides/minimax_h3_models_and_loras.json) —— MiniMax-H3 常用底模、CLIP 与加速/风格 LoRA 列表参考
 
 ---
 

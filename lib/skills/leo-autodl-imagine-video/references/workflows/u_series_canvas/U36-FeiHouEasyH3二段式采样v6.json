@@ -1,0 +1,6339 @@
+{
+  "id": "95dd3f58-ae16-4efe-b1db-004d8ba6d085",
+  "revision": 0,
+  "last_node_id": 474,
+  "last_link_id": 752,
+  "nodes": [
+    {
+      "id": 9,
+      "type": "VAEDecode",
+      "pos": [
+        2931.012601152904,
+        -186.4631580976245
+      ],
+      "size": [
+        210,
+        55.50965686645509
+      ],
+      "flags": {
+        "collapsed": false
+      },
+      "order": 63,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 509
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 530
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            485
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.0",
+        "Node name for S&R": "VAEDecode",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "color": "#b0c2e1",
+      "bgcolor": "#2f4b7c"
+    },
+    {
+      "id": 87,
+      "type": "SetNode",
+      "pos": [
+        5570.5039075698105,
+        -396.8795086810175
+      ],
+      "size": [
+        210,
+        58
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 74,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "输入",
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "link": 479
+        }
+      ],
+      "outputs": [
+        {
+          "label": "输出",
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": null
+        }
+      ],
+      "title": "Set_output_audio",
+      "properties": {
+        "Node name for S&R": "SetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "previousName": "output_audio",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "output_audio"
+      ],
+      "widgets_values_named": {
+        "Constant": "output_audio"
+      },
+      "color": "#8dc5d9",
+      "bgcolor": "#204F60"
+    },
+    {
+      "id": 93,
+      "type": "Label (rgthree)",
+      "pos": [
+        880.8937067982258,
+        -1037.5449723145232
+      ],
+      "size": [
+        4100.68359375,
+        150
+      ],
+      "flags": {
+        "allow_interaction": true
+      },
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "【MiniMax-H3 Remix】FeiHou Easy H3 二采高动态工作流 v6",
+      "properties": {
+        "fontSize": 150,
+        "fontFamily": "Arial",
+        "fontColor": "#ffff00",
+        "textAlign": "left",
+        "backgroundColor": "transparent",
+        "padding": 0,
+        "borderRadius": 0,
+        "angle": 0,
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        },
+        "widget_ue_connectable": {}
+      },
+      "color": "#fff0",
+      "bgcolor": "#fff0"
+    },
+    {
+      "id": 94,
+      "type": "Label (rgthree)",
+      "pos": [
+        1232.5761459003668,
+        -834.5882885418453
+      ],
+      "size": [
+        3000,
+        60
+      ],
+      "flags": {
+        "allow_interaction": true
+      },
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "【多图参考】【多音频参考】【多视频参考】【图生视频】【文生视频】【首尾帧】【数字人】【人物替换】【视频编辑】",
+      "properties": {
+        "fontSize": 60,
+        "fontFamily": "Arial",
+        "fontColor": "#00ff00",
+        "textAlign": "left",
+        "backgroundColor": "transparent",
+        "padding": 0,
+        "borderRadius": 0,
+        "angle": 0,
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        },
+        "widget_ue_connectable": {}
+      },
+      "color": "#fff0",
+      "bgcolor": "#fff0"
+    },
+    {
+      "id": 95,
+      "type": "Label (rgthree)",
+      "pos": [
+        1647.9809557794663,
+        -730.1507433024473
+      ],
+      "size": [
+        903.2958984375,
+        50
+      ],
+      "flags": {
+        "allow_interaction": true
+      },
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "B站 :https://space.bilibili.com/389291683",
+      "properties": {
+        "fontSize": 50,
+        "fontFamily": "Arial",
+        "fontColor": "#ffffff",
+        "textAlign": "left",
+        "backgroundColor": "transparent",
+        "padding": 0,
+        "borderRadius": 0,
+        "angle": 0,
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        },
+        "widget_ue_connectable": {}
+      },
+      "color": "#fff0",
+      "bgcolor": "#fff0"
+    },
+    {
+      "id": 96,
+      "type": "Label (rgthree)",
+      "pos": [
+        1197.9809557794676,
+        -730.1507433024473
+      ],
+      "size": [
+        422.2412109375,
+        50
+      ],
+      "flags": {
+        "allow_interaction": true
+      },
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "By:三层楼的小肥猴",
+      "properties": {
+        "fontSize": 50,
+        "fontFamily": "Arial",
+        "fontColor": "#ffffff",
+        "textAlign": "left",
+        "backgroundColor": "transparent",
+        "padding": 0,
+        "borderRadius": 0,
+        "angle": 0,
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        },
+        "widget_ue_connectable": {}
+      },
+      "color": "#fff0",
+      "bgcolor": "#fff0"
+    },
+    {
+      "id": 97,
+      "type": "Label (rgthree)",
+      "pos": [
+        2727.9809557794697,
+        -730.1507433024473
+      ],
+      "size": [
+        1786.5234375,
+        50
+      ],
+      "flags": {
+        "allow_interaction": true
+      },
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "交流分享入群加微信：fx-feihou  Q群：1091593367（请备注来意：加群、商务）",
+      "properties": {
+        "fontSize": 50,
+        "fontFamily": "Arial",
+        "fontColor": "#ffffff",
+        "textAlign": "left",
+        "backgroundColor": "transparent",
+        "padding": 0,
+        "borderRadius": 0,
+        "angle": 0,
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        },
+        "widget_ue_connectable": {}
+      },
+      "color": "#fff0",
+      "bgcolor": "#fff0"
+    },
+    {
+      "id": 227,
+      "type": "FeiHouEasyH3RemixLoader",
+      "pos": [
+        -84.86233506037048,
+        -496.89867822110216
+      ],
+      "size": [
+        466.81983139024896,
+        174
+      ],
+      "flags": {},
+      "order": 43,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "一采 LoRA",
+          "name": "first_pass_lora_stack",
+          "shape": 7,
+          "type": "FEIHOU_MERGE_LORA_STACK",
+          "link": 651
+        },
+        {
+          "label": "二采 LoRA",
+          "name": "second_pass_lora_stack",
+          "shape": 7,
+          "type": "FEIHOU_MERGE_LORA_STACK",
+          "link": 652
+        },
+        {
+          "label": "Remix 主模型",
+          "name": "remix_model",
+          "type": "COMBO",
+          "widget": {
+            "name": "remix_model"
+          },
+          "link": null
+        },
+        {
+          "label": "文本编码器",
+          "name": "text_encoder",
+          "type": "COMBO",
+          "widget": {
+            "name": "text_encoder"
+          },
+          "link": null
+        },
+        {
+          "label": "视频 VAE",
+          "name": "video_vae",
+          "type": "COMBO",
+          "widget": {
+            "name": "video_vae"
+          },
+          "link": null
+        },
+        {
+          "label": "音频 VAE",
+          "name": "audio_vae",
+          "type": "COMBO",
+          "widget": {
+            "name": "audio_vae"
+          },
+          "link": null
+        },
+        {
+          "label": "二采模型",
+          "name": "second_sampling_model",
+          "type": "COMBO",
+          "widget": {
+            "name": "second_sampling_model"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "h3_bundle",
+          "type": "MINIMAX_H3_BUNDLE",
+          "links": [
+            554
+          ]
+        }
+      ],
+      "title": "FeiHou Easy H3 Remix加载器",
+      "properties": {
+        "cnr_id": "comfyui-feihou-easy-h3",
+        "ver": "af2c9837cc5dfb86384263e4b08622e41bd32085",
+        "Node name for S&R": "FeiHouEasyH3RemixLoader",
+        "aux_id": "FX-FeiHou/ComfyUI-FeiHou-Easy-H3",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "minimax/FeiHou_MiniMax-H3_Remix_HSA_turbo_v0.8_int8_convrotHQ_pruned.safetensors",
+        "qwen3vl_32b_minimax_h3_int8_convrot_uncensored_FeiHou.safetensors",
+        "minimax_h3_video_vae_fp16.safetensors",
+        "minimax_h3_audio_vae_fp32.safetensors",
+        "无"
+      ],
+      "widgets_values_named": {
+        "remix_model": "minimax/FeiHou_MiniMax-H3_Remix_HSA_turbo_v0.8_int8_convrotHQ_pruned.safetensors",
+        "text_encoder": "qwen3vl_32b_minimax_h3_int8_convrot_uncensored_FeiHou.safetensors",
+        "video_vae": "minimax_h3_video_vae_fp16.safetensors",
+        "audio_vae": "minimax_h3_audio_vae_fp32.safetensors",
+        "second_sampling_model": "无"
+      },
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 269,
+      "type": "VideoCombineV2",
+      "pos": [
+        3176.2790810840443,
+        -186.36550093844494
+      ],
+      "size": [
+        403.69242220791864,
+        334
+      ],
+      "flags": {},
+      "order": 65,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE,LATENT",
+          "link": 485
+        },
+        {
+          "name": "audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "label": "meta_batch",
+          "name": "meta_batch",
+          "shape": 7,
+          "type": "VHS_BatchManager",
+          "link": null
+        },
+        {
+          "name": "vae",
+          "shape": 7,
+          "type": "VAE",
+          "link": null
+        },
+        {
+          "name": "frame_rate",
+          "shape": 7,
+          "type": "FLOAT",
+          "widget": {
+            "name": "frame_rate"
+          },
+          "link": 531
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Filenames",
+          "type": "VHS_FILENAMES",
+          "links": [
+            534
+          ]
+        }
+      ],
+      "title": "一采结果（1st latent）",
+      "properties": {
+        "cnr_id": "feihou-toolbox",
+        "ver": "293d439c9f16ab31afcf7f2139cc84dcd8b65aff",
+        "Node name for S&R": "VideoCombineV2",
+        "aux_id": "FX-FeiHou/ComfyUI-FeiHou-Toolbox",
+        "ue_properties": {
+          "widget_ue_connectable": {
+            "frame_rate": true
+          },
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        8,
+        0,
+        "AnimateDiff",
+        "image/gif",
+        false,
+        true
+      ],
+      "widgets_values_named": {
+        "frame_rate": 8,
+        "loop_count": 0,
+        "filename_prefix": "AnimateDiff",
+        "format": "image/gif",
+        "pingpong": false,
+        "save_output": true
+      },
+      "color": "#b0c2e1",
+      "bgcolor": "#2f4b7c"
+    },
+    {
+      "id": 274,
+      "type": "FeiHouEasyH3ProductionPackLoader",
+      "pos": [
+        409.7271079635224,
+        304.10108788566504
+      ],
+      "size": [
+        549,
+        424.79425188441246
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 4,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "制作包分镜",
+          "name": "production_shot",
+          "type": "FEIHOU_H3_PRODUCTION_SHOT",
+          "links": [
+            736,
+            737
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-feihou-easy-h3",
+        "ver": "d56748fb3872165d29893b560c7b17e83682815f",
+        "Node name for S&R": "FeiHouEasyH3ProductionPackLoader",
+        "aux_id": "FX-FeiHou/ComfyUI-FeiHou-Easy-H3",
+        "feihou_pack_total": 11,
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "F:\\Codex\\H3数字人\\雷电-神子",
+        "",
+        "",
+        11,
+        "increment",
+        "zh",
+        "85c47a721b0e401fbed6f48dad2b36b7"
+      ],
+      "widgets_values_named": {
+        "source": "F:\\Codex\\H3数字人\\雷电-神子",
+        "upload_zip": "",
+        "shotlist_file": "",
+        "audio_file": "",
+        "shot_index": 11,
+        "control_after_generate": "increment",
+        "prompt_language": "zh",
+        "package_id": "85c47a721b0e401fbed6f48dad2b36b7",
+        "generation_order": "正序",
+        "preview_shot": null,
+        "load_pack": null,
+        "pack_report": "先点击制作包状态检测，再预览当前分镜。倒序从所选分镜开始；随机可能重复；固定重复当前分镜。"
+      },
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 281,
+      "type": "VideoCombineV2",
+      "pos": [
+        4931.331469254871,
+        -482.6487534513468
+      ],
+      "size": [
+        586.7598657436779,
+        334
+      ],
+      "flags": {},
+      "order": 73,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE,LATENT",
+          "link": 413
+        },
+        {
+          "name": "audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": 414
+        },
+        {
+          "label": "meta_batch",
+          "name": "meta_batch",
+          "shape": 7,
+          "type": "VHS_BatchManager",
+          "link": null
+        },
+        {
+          "name": "vae",
+          "shape": 7,
+          "type": "VAE",
+          "link": null
+        },
+        {
+          "name": "frame_rate",
+          "shape": 7,
+          "type": "FLOAT",
+          "widget": {
+            "name": "frame_rate"
+          },
+          "link": 481
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Filenames",
+          "type": "VHS_FILENAMES",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "feihou-toolbox",
+        "ver": "f9edc9a0e03250478d92149248bddfd0115784fb",
+        "Node name for S&R": "VideoCombineV2",
+        "aux_id": "FX-FeiHou/ComfyUI-FeiHou-Toolbox",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        8,
+        0,
+        "AnimateDiff",
+        "image/gif",
+        false,
+        true
+      ],
+      "widgets_values_named": {
+        "frame_rate": 8,
+        "loop_count": 0,
+        "filename_prefix": "AnimateDiff",
+        "format": "image/gif",
+        "pingpong": false,
+        "save_output": true
+      },
+      "color": "#8dc5d9",
+      "bgcolor": "#204F60"
+    },
+    {
+      "id": 284,
+      "type": "FeiHouEasyH3DurationCrop",
+      "pos": [
+        4608.158685502429,
+        -88.64875345134699
+      ],
+      "size": [
+        283.1727837524429,
+        98
+      ],
+      "flags": {},
+      "order": 71,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 417
+        },
+        {
+          "name": "duration_control",
+          "type": "FEIHOU_H3_DURATION_CONTROL",
+          "link": 542
+        },
+        {
+          "name": "audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": 478
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "widget": {
+            "name": "fps"
+          },
+          "link": 541
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            413,
+            449
+          ]
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "links": [
+            481
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            414,
+            479
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-feihou-easy-h3",
+        "ver": "af2c9837cc5dfb86384263e4b08622e41bd32085",
+        "Node name for S&R": "FeiHouEasyH3DurationCrop",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "aux_id": "FX-FeiHou/ComfyUI-FeiHou-Easy-H3"
+      },
+      "widgets_values": [
+        24
+      ],
+      "widgets_values_named": {
+        "fps": 24
+      },
+      "color": "#8dc5d9",
+      "bgcolor": "#204F60"
+    },
+    {
+      "id": 293,
+      "type": "VAEDecode",
+      "pos": [
+        4608.158685502429,
+        -352.6487534513468
+      ],
+      "size": [
+        283.1727837524429,
+        46
+      ],
+      "flags": {
+        "collapsed": false
+      },
+      "order": 68,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "samples",
+          "name": "samples",
+          "type": "LATENT",
+          "link": 521
+        },
+        {
+          "label": "vae",
+          "name": "vae",
+          "type": "VAE",
+          "link": 539
+        }
+      ],
+      "outputs": [
+        {
+          "label": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            417
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.0",
+        "Node name for S&R": "VAEDecode",
+        "ue_properties": {
+          "version": "7.5.2",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        }
+      },
+      "color": "#8dc5d9",
+      "bgcolor": "#204F60",
+      "textcolor": "#FFFFFF",
+      "extensions": {
+        "textcolor": "#FFFFFF"
+      }
+    },
+    {
+      "id": 303,
+      "type": "VideoCombineV2",
+      "pos": [
+        1305.9903440714431,
+        917.2280515622407
+      ],
+      "size": [
+        489.13103266916255,
+        334
+      ],
+      "flags": {},
+      "order": 62,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE,LATENT",
+          "link": 441
+        },
+        {
+          "name": "audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": 442
+        },
+        {
+          "label": "meta_batch",
+          "name": "meta_batch",
+          "shape": 7,
+          "type": "VHS_BatchManager",
+          "link": null
+        },
+        {
+          "name": "vae",
+          "shape": 7,
+          "type": "VAE",
+          "link": null
+        },
+        {
+          "name": "frame_rate",
+          "shape": 7,
+          "type": "FLOAT",
+          "widget": {
+            "name": "frame_rate"
+          },
+          "link": 653
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Filenames",
+          "type": "VHS_FILENAMES",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "feihou-toolbox",
+        "ver": "f9edc9a0e03250478d92149248bddfd0115784fb",
+        "Node name for S&R": "VideoCombineV2",
+        "aux_id": "FX-FeiHou/ComfyUI-FeiHou-Toolbox",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        8,
+        0,
+        "AnimateDiff",
+        "image/gif",
+        false,
+        true
+      ],
+      "widgets_values_named": {
+        "frame_rate": 8,
+        "loop_count": 0,
+        "filename_prefix": "AnimateDiff",
+        "format": "image/gif",
+        "pingpong": false,
+        "save_output": true
+      },
+      "color": "#97c9cd",
+      "bgcolor": "#295256"
+    },
+    {
+      "id": 304,
+      "type": "FeiHouEasyH3FaceRefine",
+      "pos": [
+        971.467669200888,
+        914.9576098671367
+      ],
+      "size": [
+        310.2774978794341,
+        566
+      ],
+      "flags": {},
+      "order": 56,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 444
+        },
+        {
+          "label": "模型",
+          "name": "model",
+          "type": "MODEL",
+          "link": 717
+        },
+        {
+          "name": "h3_context",
+          "type": "MINIMAX_H3_CONTEXT",
+          "link": 690
+        },
+        {
+          "name": "reference_face",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 447
+        },
+        {
+          "name": "reference_faces",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 743
+        },
+        {
+          "name": "audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": 448
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            441
+          ]
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            442
+          ]
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "links": [
+            653
+          ]
+        },
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-feihou-easy-h3",
+        "ver": "a62b854489ee0388725ff6500f1a25b2908ea25a",
+        "Node name for S&R": "FeiHouEasyH3FaceRefine",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        true,
+        "bbox/face_yolov8m.pt",
+        "largest_face",
+        0.3,
+        8,
+        666,
+        "fixed",
+        true,
+        "768",
+        0.35,
+        2.5,
+        "不分段",
+        "euler",
+        "simple",
+        "Refine the face in this video crop. Preserve identity, expression, gaze, mouth movement, lighting and motion. Natural facial detail; no new motion or camera changes.",
+        true,
+        true,
+        true,
+        "单人",
+        3
+      ],
+      "widgets_values_named": {
+        "enabled": true,
+        "detector": "bbox/face_yolov8m.pt",
+        "target": "largest_face",
+        "denoise": 0.3,
+        "steps": 8,
+        "seed": 666,
+        "control_after_generate": "fixed",
+        "advanced": true,
+        "canvas_size": "768",
+        "confidence": 0.35,
+        "crop_factor": 2.5,
+        "chunk_frames": "不分段",
+        "sampler_name": "euler",
+        "scheduler": "simple",
+        "prompt": "Refine the face in this video crop. Preserve identity, expression, gaze, mouth movement, lighting and motion. Natural facial detail; no new motion or camera changes.",
+        "audio_lock": true,
+        "clean_second_model": true,
+        "face_mode": "单人",
+        "max_faces": 3,
+        "force_offload": true
+      },
+      "color": "#97c9cd",
+      "bgcolor": "#295256",
+      "face_widgets_named": {
+        "enabled": true,
+        "detector": "bbox/face_yolov8m.pt",
+        "target": "largest_face",
+        "denoise": 0.3,
+        "steps": 8,
+        "seed": 666,
+        "control_after_generate": "fixed",
+        "advanced": true,
+        "canvas_size": "768",
+        "confidence": 0.35,
+        "crop_factor": 2.5,
+        "chunk_frames": "不分段",
+        "sampler_name": "euler",
+        "scheduler": "simple",
+        "prompt": "Refine the face in this video crop. Preserve identity, expression, gaze, mouth movement, lighting and motion. Natural facial detail; no new motion or camera changes.",
+        "force_offload": true,
+        "audio_lock": true,
+        "clean_second_model": true,
+        "face_mode": "单人",
+        "max_faces": 3
+      },
+      "extensions": {
+        "face_widgets_named": {
+          "enabled": true,
+          "detector": "bbox/face_yolov8m.pt",
+          "target": "largest_face",
+          "denoise": 0.3,
+          "steps": 8,
+          "seed": 666,
+          "control_after_generate": "fixed",
+          "advanced": true,
+          "canvas_size": "768",
+          "confidence": 0.35,
+          "crop_factor": 2.5,
+          "chunk_frames": "不分段",
+          "sampler_name": "euler",
+          "scheduler": "simple",
+          "prompt": "Refine the face in this video crop. Preserve identity, expression, gaze, mouth movement, lighting and motion. Natural facial detail; no new motion or camera changes.",
+          "force_offload": true,
+          "audio_lock": true,
+          "clean_second_model": true,
+          "face_mode": "单人",
+          "max_faces": 3
+        }
+      }
+    },
+    {
+      "id": 305,
+      "type": "MarkdownNote",
+      "pos": [
+        392.5259502380959,
+        1022.8309751106025
+      ],
+      "size": [
+        256.28459258590533,
+        157.38221029675526
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 4,
+      "inputs": [],
+      "outputs": [],
+      "title": "Markdown注释",
+      "properties": {
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "## 此图片上传节点优先级高于前面的Media节点图片加载\n## 关闭此节点上传会读取主节点第一张图"
+      ],
+      "widgets_values_named": {
+        "text": "## 此图片上传节点优先级高于前面的Media节点图片加载\n## 关闭此节点上传会读取主节点第一张图"
+      },
+      "color": "#1f090d",
+      "bgcolor": "#c03a53",
+      "textcolor": "#FFFFFF",
+      "extensions": {
+        "textcolor": "#FFFFFF"
+      }
+    },
+    {
+      "id": 306,
+      "type": "LoadImage",
+      "pos": [
+        153.83329549229063,
+        941.3081609467002
+      ],
+      "size": [
+        210,
+        326
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 4,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            447
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.35.1",
+        "Node name for S&R": "LoadImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "guhaiImageValue": "20260816_020418_Z-Image_Batch_SeedVR2_00003_.jpg"
+      },
+      "widgets_values": [
+        "20260816_020418_Z-Image_Batch_SeedVR2_00003_.jpg",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "20260816_020418_Z-Image_Batch_SeedVR2_00003_.jpg",
+        "upload": "image"
+      },
+      "color": "#97c9cd",
+      "bgcolor": "#295256"
+    },
+    {
+      "id": 307,
+      "type": "Fast Groups Bypasser (rgthree)",
+      "pos": [
+        691.663778332763,
+        958.4336122982206
+      ],
+      "size": [
+        247.2955078125,
+        82
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "可选连接",
+          "name": "OPT_CONNECTION",
+          "type": "*",
+          "links": null
+        }
+      ],
+      "properties": {
+        "matchColors": "",
+        "matchTitle": "上传人物图|多人面部修复",
+        "showNav": true,
+        "showAllGraphs": true,
+        "sort": "position",
+        "customSortAlphabet": "",
+        "toggleRestriction": "default",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "color": "#97c9cd",
+      "bgcolor": "#295256",
+      "textcolor": "#FFFFFF",
+      "extensions": {
+        "textcolor": "#FFFFFF"
+      }
+    },
+    {
+      "id": 310,
+      "type": "GetNode",
+      "pos": [
+        -88.52480292116823,
+        1171.8413727299182
+      ],
+      "size": [
+        210,
+        50
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 11,
+      "mode": 4,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "输出",
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            448
+          ]
+        }
+      ],
+      "title": "Get_output_audio",
+      "properties": {
+        "Node name for S&R": "GetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "output_audio"
+      ],
+      "widgets_values_named": {
+        "Constant": "output_audio"
+      },
+      "color": "#97c9cd",
+      "bgcolor": "#295256",
+      "textcolor": "#FFFFFF",
+      "extensions": {
+        "textcolor": "#FFFFFF"
+      }
+    },
+    {
+      "id": 311,
+      "type": "GetNode",
+      "pos": [
+        -88.52480292116823,
+        961.8413727299182
+      ],
+      "size": [
+        210,
+        50
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 10,
+      "mode": 4,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "输出",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            444
+          ]
+        }
+      ],
+      "title": "Get_output_video",
+      "properties": {
+        "Node name for S&R": "GetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "output_video"
+      ],
+      "widgets_values_named": {
+        "Constant": "output_video"
+      },
+      "color": "#97c9cd",
+      "bgcolor": "#295256",
+      "textcolor": "#FFFFFF",
+      "extensions": {
+        "textcolor": "#FFFFFF"
+      }
+    },
+    {
+      "id": 313,
+      "type": "SetNode",
+      "pos": [
+        5570.5039075698105,
+        -466.8795086810175
+      ],
+      "size": [
+        210,
+        60
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 72,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "输入",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "link": 449
+        }
+      ],
+      "outputs": [
+        {
+          "label": "输出",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "title": "Set_output_video",
+      "properties": {
+        "Node name for S&R": "SetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "previousName": "output_video",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "output_video"
+      ],
+      "widgets_values_named": {
+        "Constant": "output_video"
+      },
+      "color": "#8dc5d9",
+      "bgcolor": "#204F60",
+      "textcolor": "#FFFFFF",
+      "extensions": {
+        "textcolor": "#FFFFFF"
+      }
+    },
+    {
+      "id": 315,
+      "type": "Fast Groups Bypasser (rgthree)",
+      "pos": [
+        -456.8727692176959,
+        -590.7459210648723
+      ],
+      "size": [
+        247.2955078125,
+        58
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "可选连接",
+          "name": "OPT_CONNECTION",
+          "type": "*",
+          "links": null
+        }
+      ],
+      "properties": {
+        "matchColors": "",
+        "matchTitle": "人脸精修",
+        "showNav": true,
+        "showAllGraphs": true,
+        "sort": "position",
+        "customSortAlphabet": "",
+        "toggleRestriction": "default",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "color": "#5d0221",
+      "bgcolor": "#fb4a85",
+      "textcolor": "#FFFFFF",
+      "extensions": {
+        "textcolor": "#FFFFFF"
+      }
+    },
+    {
+      "id": 324,
+      "type": "VAEDecodeAudio",
+      "pos": [
+        4608.158685502429,
+        -482.6487534513468
+      ],
+      "size": [
+        283.1727837524429,
+        60
+      ],
+      "flags": {
+        "collapsed": false
+      },
+      "order": 69,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 522
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 540
+        }
+      ],
+      "outputs": [
+        {
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            476
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.38.0",
+        "Node name for S&R": "VAEDecodeAudio",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "color": "#8dc5d9",
+      "bgcolor": "#204F60"
+    },
+    {
+      "id": 325,
+      "type": "ComfySwitchNodeV2",
+      "pos": [
+        4608.158685502429,
+        -236.64875345134678
+      ],
+      "size": [
+        283.1727837524429,
+        78
+      ],
+      "flags": {},
+      "order": 70,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "false",
+          "name": "on_false",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": 476
+        },
+        {
+          "label": "true",
+          "name": "on_true",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": 543
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "AUDIO",
+          "links": [
+            478
+          ]
+        }
+      ],
+      "title": "true=原声音频 | false=生成音频",
+      "properties": {
+        "cnr_id": "feihou-toolbox",
+        "ver": "f9edc9a0e03250478d92149248bddfd0115784fb",
+        "Node name for S&R": "ComfySwitchNodeV2",
+        "aux_id": "FX-FeiHou/ComfyUI-FeiHou-Toolbox",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        false
+      ],
+      "widgets_values_named": {
+        "switch": false
+      },
+      "color": "#8dc5d9",
+      "bgcolor": "#204F60"
+    },
+    {
+      "id": 337,
+      "type": "SamplerCustomAdvanced",
+      "pos": [
+        2492.089276956885,
+        -187.2784230518705
+      ],
+      "size": [
+        399.69977572580683,
+        338.94431984767044
+      ],
+      "flags": {},
+      "order": 60,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 694
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 526
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 527
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 528
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 529
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": []
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": [
+            509,
+            718
+          ]
+        }
+      ],
+      "title": "一采 自定义采样器（高级）",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.38.0",
+        "Node name for S&R": "SamplerCustomAdvanced",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "color": "#b0c2e1",
+      "bgcolor": "#2f4b7c"
+    },
+    {
+      "id": 341,
+      "type": "SamplerCustomAdvanced",
+      "pos": [
+        4268.158685502427,
+        -482.6487534513468
+      ],
+      "size": [
+        300,
+        285.07317073170736
+      ],
+      "flags": {},
+      "order": 67,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 695
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 535
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 536
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 537
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 538
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            521,
+            522
+          ]
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": []
+        }
+      ],
+      "title": "二采 自定义采样器（高级）",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.38.0",
+        "Node name for S&R": "SamplerCustomAdvanced",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "color": "#8dc5d9",
+      "bgcolor": "#204F60"
+    },
+    {
+      "id": 342,
+      "type": "FeiHouEasyH3SampleEnhancer1st",
+      "pos": [
+        2095.518678538065,
+        76.14807299517297
+      ],
+      "size": [
+        358.7117199169111,
+        444
+      ],
+      "flags": {},
+      "order": 53,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 644
+        },
+        {
+          "name": "h3_context",
+          "type": "MINIMAX_H3_CONTEXT",
+          "link": 691
+        },
+        {
+          "name": "total_steps",
+          "type": "INT",
+          "widget": {
+            "name": "total_steps"
+          },
+          "link": 739
+        },
+        {
+          "name": "first_steps",
+          "type": "INT",
+          "widget": {
+            "name": "first_steps"
+          },
+          "link": 738
+        }
+      ],
+      "outputs": [
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "links": [
+            526
+          ]
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "links": [
+            527
+          ]
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": [
+            528
+          ]
+        },
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "links": [
+            529
+          ]
+        },
+        {
+          "name": "h3_context",
+          "type": "MINIMAX_H3_CONTEXT",
+          "links": [
+            734
+          ]
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "links": [
+            530
+          ]
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "links": []
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "links": [
+            531
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-feihou-easy-h3",
+        "ver": "a62b854489ee0388725ff6500f1a25b2908ea25a",
+        "Node name for S&R": "FeiHouEasyH3SampleEnhancer1st",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "dual_clock_euler",
+        "simple",
+        9,
+        4,
+        1,
+        "",
+        true,
+        "BUNNY_H3_ActionLogic_Bridge_V2.safetensors",
+        0.1,
+        true
+      ],
+      "widgets_values_named": {
+        "sampler_name": "dual_clock_euler",
+        "scheduler": "simple",
+        "total_steps": 9,
+        "first_steps": 4,
+        "cfg": 1,
+        "negative_prompt": "",
+        "semantic_bridge_on": true,
+        "semantic_bridge": "BUNNY_H3_ActionLogic_Bridge_V2.safetensors",
+        "bridge_strength": 0.1,
+        "default_trigger_words": true
+      },
+      "color": "#b0c2e1",
+      "bgcolor": "#2f4b7c"
+    },
+    {
+      "id": 343,
+      "type": "FeiHouEasyH3SampleEnhancer2nd",
+      "pos": [
+        3888.961443311235,
+        -217.91482995005876
+      ],
+      "size": [
+        355.5799999999999,
+        310
+      ],
+      "flags": {},
+      "order": 66,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "h3_context",
+          "type": "MINIMAX_H3_CONTEXT",
+          "link": 735
+        },
+        {
+          "name": "1st_latent",
+          "type": "LATENT",
+          "link": 719
+        },
+        {
+          "name": "model",
+          "shape": 7,
+          "type": "MODEL",
+          "link": 616
+        },
+        {
+          "name": "wait_1st_video",
+          "shape": 7,
+          "type": "*",
+          "link": 534
+        },
+        {
+          "name": "second_steps",
+          "type": "INT",
+          "widget": {
+            "name": "second_steps"
+          },
+          "link": 713
+        }
+      ],
+      "outputs": [
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "links": [
+            535
+          ]
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "links": [
+            536
+          ]
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": [
+            537
+          ]
+        },
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "links": [
+            538
+          ]
+        },
+        {
+          "name": "h3_context",
+          "type": "MINIMAX_H3_CONTEXT",
+          "links": []
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "links": [
+            539
+          ]
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "links": [
+            540
+          ]
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "links": [
+            541
+          ]
+        },
+        {
+          "name": "audio_1",
+          "type": "AUDIO",
+          "links": [
+            543
+          ]
+        },
+        {
+          "name": "duration_control",
+          "type": "FEIHOU_H3_DURATION_CONTROL",
+          "links": [
+            542
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-feihou-easy-h3",
+        "ver": "a62b854489ee0388725ff6500f1a25b2908ea25a",
+        "Node name for S&R": "FeiHouEasyH3SampleEnhancer2nd",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "minimax_h3_latent_upscaler_3d_bf16.safetensors",
+        1.5,
+        5,
+        true
+      ],
+      "widgets_values_named": {
+        "latent_upscaler": "minimax_h3_latent_upscaler_3d_bf16.safetensors",
+        "upscale_by": 1.5,
+        "second_steps": 5,
+        "default_trigger_words": true
+      },
+      "color": "#8dc5d9",
+      "bgcolor": "#204F60"
+    },
+    {
+      "id": 351,
+      "type": "FeiHouEasyH3Setup",
+      "pos": [
+        991.8811045772028,
+        -499.1250652675193
+      ],
+      "size": [
+        585.0889639051752,
+        1224.750276783946
+      ],
+      "flags": {},
+      "order": 52,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "h3_media",
+          "type": "FEIHOU_H3_MEDIA",
+          "link": 553
+        },
+        {
+          "label": "H3 模型组合",
+          "name": "h3_bundle",
+          "type": "MINIMAX_H3_BUNDLE",
+          "link": 554
+        },
+        {
+          "label": "制作包分镜",
+          "name": "production_shot",
+          "shape": 7,
+          "type": "FEIHOU_H3_PRODUCTION_SHOT",
+          "link": 736
+        }
+      ],
+      "outputs": [
+        {
+          "label": "Model",
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            685
+          ]
+        },
+        {
+          "label": "二次采样模型",
+          "name": "second_sampling_model",
+          "type": "MODEL",
+          "links": [
+            687
+          ]
+        },
+        {
+          "label": "H3 Context",
+          "name": "h3_context",
+          "type": "MINIMAX_H3_CONTEXT",
+          "links": [
+            689
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-feihou-easy-h3",
+        "ver": "a62b854489ee0388725ff6500f1a25b2908ea25a",
+        "Node name for S&R": "FeiHouEasyH3Setup",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "minimax_h3_prompt_reference_doc": {
+          "version": 1,
+          "text": "【第四段｜36-47秒｜技能⑬—⑮】\n\n承接上一段结尾：战将从虚空裂隙边缘挣扎起身，主角沿追月雷环高速突进。\n\n【技能⑬】雷弓→雷戟·雷霆突刺\n\n主角极速突进，雷弓崩解并重组为雷戟。雷戟缠绕银蓝雷霆与紫霄星屑，化作一道极光直刺战将胸口。\n\n战将挥刀格挡，主角高速变向，瞬移至战将侧后方，一记重刺刺入战将背部晶甲缝隙。银蓝雷霆流体通过戟身灌入战将体内，与暗紫虚空能量剧烈绞杀。战将跪地，暗紫能量从背部裂口如瀑布般倾泻。\n\n运镜：MS·TRACK追主角突进→MCU·PUSH急推雷霆突刺→WHIP甩镜追主角瞬移侧后→MCU·PUSH急推刺入晶甲并震屏。\n声音：雷霆突刺、晶甲碎裂、虚空能量溢出。\n碰撞等级：L2破防重击＋L4绝杀预兆。\n环境反馈：地面留下贯穿坑，焦黑和紫晶交织，暗紫能量在地面流淌。\n\n【技能⑭】神弓汇聚·单脚拉弓\n\n主角沿绝杀雷渊瞬移到混沌岛最高处。雷弓与雷戟同时化作银蓝雷霆流体，沿主角双臂缠绕，在双手之间极速压缩、共振、重组，形成巨大的万雷归一神弓。\n\n神弓由银蓝雷光、紫霄星屑、紫色晶体、金色纹路和紫色藤蔓能量构成。弓身成型时，高频雷鸣炸响，虚空气流被雷霆撕裂。\n\n主角悬浮于虚空雷渊与巨大残月之上，保持图1人物的短棕色波波头、金色蝴蝶结、白蓝紫金幻想战斗服和白金色高跟战斗鞋。\n\n她摆出高张力单脚拉弓姿势：一条腿向侧前方抬起，白金色高跟战斗鞋抵住神弓下弓臂的紫晶节点；另一条腿向后弯曲悬空；身体极度后仰，腰部形成弓形张力；一只手拉住雷霆弓弦，另一只手稳定握住弓柄。\n\n短棕色发丝、金色蝴蝶结、蓝紫色披帛、白色长袖和金色饰品在虚空乱流中狂舞。背景为残月、翻滚雷渊、暗紫星云、碎星和魔潮。\n\n特写锁定手部和弓弦，画面在黑色虚空、紫色雷光和银蓝爆光之间极速闪帧三次。弓身周围出现空间裂纹，星屑向箭尖塌缩，虚空气流被拉成丝状。\n\n运镜：大范围环绕主角→低机位仰拍神弓成型→PUSH急推弓弦→CU锁定手部和箭尖→快速后拉展示残月、雷渊和主角。\n\n【技能⑮】终焉·万雷归一\n\n主角释放巨型银蓝雷光箭矢。箭矢离弦瞬间化作巨大雷龙，雷龙缠绕紫霄雷霆与银蓝星屑，张开巨口吞噬沿途所有魔潮。\n\n雷龙在混沌岛和虚空雷渊之间高速盘旋，经过之处犁出焦黑深谷，虚空晶簇被震成齑粉，暗紫魔潮被成片卷碎，化为黑色能量和银蓝粒子。\n\n雷龙贯穿战将核心时，画面在红色核心爆光、黑色深渊和银蓝雷光之间极速闪帧三次。战将胸口暗紫核心率先炸裂，随后躯干、肩甲、头盔、巨兽颚骨和双手长刀全部崩解。\n\n大量暗紫晶甲碎块如陨石雨般飞射，断裂长刀旋转着插入岛面，碎块落地后产生二次弹跳、滚动、火星和暗紫粉尘。\n\n银蓝雷霆流体如海啸般席卷整座混沌岛，暗紫虚空流体如墨汁般在雷霆中翻滚。银蓝雷弧、暗紫星屑、晶甲碎片、尘埃和虚空水汽形成遮天蔽日的环形冲击波。\n\n运镜：MS·TRACK低机位追入雷环中心→FS·PUSH沿雷龙和爆炸冲击波急推并强震屏→PULL快速后拉展示满场残骸→MS低机位仰拍主角继续上升。\n\n46-47秒尾帧视觉收束：所有魔物清空，战将碎块和能量残骸铺满战场。雷光裂谷、游龙星斑、天崩雷坑、百裂残影、巨兽法阵、双绝雷斑、追月雷环、雷霆贯穿痕、绝杀雷渊和终结雷环全部保留。\n\n主角悬浮在清场余波上方，雷弓未收起。衣摆、短棕色发丝、金色蝴蝶结、银蓝雷光、落雷、粒子和坠落石屑继续运动，最后0.4秒自然收束，不定格、不庆祝、不离场。\n\n声音：万雷齐鸣、终焉箭矢穿透虚空、战将碎块爆裂、碎块砸落地面、余波雷声逐渐减弱。\n碰撞等级：L4绝杀＋尾帧视觉收束。\n环境反馈：满场碎块与能量刻痕永久留存，混沌岛变成焦土、紫晶和银蓝雷光交织的战场。",
+          "parts": [
+            {
+              "type": "text",
+              "text": "【第四段｜36-47秒｜技能⑬—⑮】\n\n承接上一段结尾：战将从虚空裂隙边缘挣扎起身，主角沿追月雷环高速突进。\n\n【技能⑬】雷弓→雷戟·雷霆突刺\n\n主角极速突进，雷弓崩解并重组为雷戟。雷戟缠绕银蓝雷霆与紫霄星屑，化作一道极光直刺战将胸口。\n\n战将挥刀格挡，主角高速变向，瞬移至战将侧后方，一记重刺刺入战将背部晶甲缝隙。银蓝雷霆流体通过戟身灌入战将体内，与暗紫虚空能量剧烈绞杀。战将跪地，暗紫能量从背部裂口如瀑布般倾泻。\n\n运镜：MS·TRACK追主角突进→MCU·PUSH急推雷霆突刺→WHIP甩镜追主角瞬移侧后→MCU·PUSH急推刺入晶甲并震屏。\n声音：雷霆突刺、晶甲碎裂、虚空能量溢出。\n碰撞等级：L2破防重击＋L4绝杀预兆。\n环境反馈：地面留下贯穿坑，焦黑和紫晶交织，暗紫能量在地面流淌。\n\n【技能⑭】神弓汇聚·单脚拉弓\n\n主角沿绝杀雷渊瞬移到混沌岛最高处。雷弓与雷戟同时化作银蓝雷霆流体，沿主角双臂缠绕，在双手之间极速压缩、共振、重组，形成巨大的万雷归一神弓。\n\n神弓由银蓝雷光、紫霄星屑、紫色晶体、金色纹路和紫色藤蔓能量构成。弓身成型时，高频雷鸣炸响，虚空气流被雷霆撕裂。\n\n主角悬浮于虚空雷渊与巨大残月之上，保持图1人物的短棕色波波头、金色蝴蝶结、白蓝紫金幻想战斗服和白金色高跟战斗鞋。\n\n她摆出高张力单脚拉弓姿势：一条腿向侧前方抬起，白金色高跟战斗鞋抵住神弓下弓臂的紫晶节点；另一条腿向后弯曲悬空；身体极度后仰，腰部形成弓形张力；一只手拉住雷霆弓弦，另一只手稳定握住弓柄。\n\n短棕色发丝、金色蝴蝶结、蓝紫色披帛、白色长袖和金色饰品在虚空乱流中狂舞。背景为残月、翻滚雷渊、暗紫星云、碎星和魔潮。\n\n特写锁定手部和弓弦，画面在黑色虚空、紫色雷光和银蓝爆光之间极速闪帧三次。弓身周围出现空间裂纹，星屑向箭尖塌缩，虚空气流被拉成丝状。\n\n运镜：大范围环绕主角→低机位仰拍神弓成型→PUSH急推弓弦→CU锁定手部和箭尖→快速后拉展示残月、雷渊和主角。\n\n【技能⑮】终焉·万雷归一\n\n主角释放巨型银蓝雷光箭矢。箭矢离弦瞬间化作巨大雷龙，雷龙缠绕紫霄雷霆与银蓝星屑，张开巨口吞噬沿途所有魔潮。\n\n雷龙在混沌岛和虚空雷渊之间高速盘旋，经过之处犁出焦黑深谷，虚空晶簇被震成齑粉，暗紫魔潮被成片卷碎，化为黑色能量和银蓝粒子。\n\n雷龙贯穿战将核心时，画面在红色核心爆光、黑色深渊和银蓝雷光之间极速闪帧三次。战将胸口暗紫核心率先炸裂，随后躯干、肩甲、头盔、巨兽颚骨和双手长刀全部崩解。\n\n大量暗紫晶甲碎块如陨石雨般飞射，断裂长刀旋转着插入岛面，碎块落地后产生二次弹跳、滚动、火星和暗紫粉尘。\n\n银蓝雷霆流体如海啸般席卷整座混沌岛，暗紫虚空流体如墨汁般在雷霆中翻滚。银蓝雷弧、暗紫星屑、晶甲碎片、尘埃和虚空水汽形成遮天蔽日的环形冲击波。\n\n运镜：MS·TRACK低机位追入雷环中心→FS·PUSH沿雷龙和爆炸冲击波急推并强震屏→PULL快速后拉展示满场残骸→MS低机位仰拍主角继续上升。\n\n46-47秒尾帧视觉收束：所有魔物清空，战将碎块和能量残骸铺满战场。雷光裂谷、游龙星斑、天崩雷坑、百裂残影、巨兽法阵、双绝雷斑、追月雷环、雷霆贯穿痕、绝杀雷渊和终结雷环全部保留。\n\n主角悬浮在清场余波上方，雷弓未收起。衣摆、短棕色发丝、金色蝴蝶结、银蓝雷光、落雷、粒子和坠落石屑继续运动，最后0.4秒自然收束，不定格、不庆祝、不离场。\n\n声音：万雷齐鸣、终焉箭矢穿透虚空、战将碎块爆裂、碎块砸落地面、余波雷声逐渐减弱。\n碰撞等级：L4绝杀＋尾帧视觉收束。\n环境反馈：满场碎块与能量刻痕永久留存，混沌岛变成焦土、紫晶和银蓝雷光交织的战场。"
+            }
+          ]
+        },
+        "feihou_h3_production_preview": {
+          "fallback": {
+            "fps": 24,
+            "aspect_ratio": "16:9"
+          },
+          "shown": {
+            "fps": 24,
+            "resolution": "480P",
+            "aspect_ratio": "16:9"
+          }
+        },
+        "minimax_h3_virtual_media_links": []
+      },
+      "widgets_values": [
+        "参考生视频",
+        "【第四段｜36-47秒｜技能⑬—⑮】\n\n承接上一段结尾：战将从虚空裂隙边缘挣扎起身，主角沿追月雷环高速突进。\n\n【技能⑬】雷弓→雷戟·雷霆突刺\n\n主角极速突进，雷弓崩解并重组为雷戟。雷戟缠绕银蓝雷霆与紫霄星屑，化作一道极光直刺战将胸口。\n\n战将挥刀格挡，主角高速变向，瞬移至战将侧后方，一记重刺刺入战将背部晶甲缝隙。银蓝雷霆流体通过戟身灌入战将体内，与暗紫虚空能量剧烈绞杀。战将跪地，暗紫能量从背部裂口如瀑布般倾泻。\n\n运镜：MS·TRACK追主角突进→MCU·PUSH急推雷霆突刺→WHIP甩镜追主角瞬移侧后→MCU·PUSH急推刺入晶甲并震屏。\n声音：雷霆突刺、晶甲碎裂、虚空能量溢出。\n碰撞等级：L2破防重击＋L4绝杀预兆。\n环境反馈：地面留下贯穿坑，焦黑和紫晶交织，暗紫能量在地面流淌。\n\n【技能⑭】神弓汇聚·单脚拉弓\n\n主角沿绝杀雷渊瞬移到混沌岛最高处。雷弓与雷戟同时化作银蓝雷霆流体，沿主角双臂缠绕，在双手之间极速压缩、共振、重组，形成巨大的万雷归一神弓。\n\n神弓由银蓝雷光、紫霄星屑、紫色晶体、金色纹路和紫色藤蔓能量构成。弓身成型时，高频雷鸣炸响，虚空气流被雷霆撕裂。\n\n主角悬浮于虚空雷渊与巨大残月之上，保持图1人物的短棕色波波头、金色蝴蝶结、白蓝紫金幻想战斗服和白金色高跟战斗鞋。\n\n她摆出高张力单脚拉弓姿势：一条腿向侧前方抬起，白金色高跟战斗鞋抵住神弓下弓臂的紫晶节点；另一条腿向后弯曲悬空；身体极度后仰，腰部形成弓形张力；一只手拉住雷霆弓弦，另一只手稳定握住弓柄。\n\n短棕色发丝、金色蝴蝶结、蓝紫色披帛、白色长袖和金色饰品在虚空乱流中狂舞。背景为残月、翻滚雷渊、暗紫星云、碎星和魔潮。\n\n特写锁定手部和弓弦，画面在黑色虚空、紫色雷光和银蓝爆光之间极速闪帧三次。弓身周围出现空间裂纹，星屑向箭尖塌缩，虚空气流被拉成丝状。\n\n运镜：大范围环绕主角→低机位仰拍神弓成型→PUSH急推弓弦→CU锁定手部和箭尖→快速后拉展示残月、雷渊和主角。\n\n【技能⑮】终焉·万雷归一\n\n主角释放巨型银蓝雷光箭矢。箭矢离弦瞬间化作巨大雷龙，雷龙缠绕紫霄雷霆与银蓝星屑，张开巨口吞噬沿途所有魔潮。\n\n雷龙在混沌岛和虚空雷渊之间高速盘旋，经过之处犁出焦黑深谷，虚空晶簇被震成齑粉，暗紫魔潮被成片卷碎，化为黑色能量和银蓝粒子。\n\n雷龙贯穿战将核心时，画面在红色核心爆光、黑色深渊和银蓝雷光之间极速闪帧三次。战将胸口暗紫核心率先炸裂，随后躯干、肩甲、头盔、巨兽颚骨和双手长刀全部崩解。\n\n大量暗紫晶甲碎块如陨石雨般飞射，断裂长刀旋转着插入岛面，碎块落地后产生二次弹跳、滚动、火星和暗紫粉尘。\n\n银蓝雷霆流体如海啸般席卷整座混沌岛，暗紫虚空流体如墨汁般在雷霆中翻滚。银蓝雷弧、暗紫星屑、晶甲碎片、尘埃和虚空水汽形成遮天蔽日的环形冲击波。\n\n运镜：MS·TRACK低机位追入雷环中心→FS·PUSH沿雷龙和爆炸冲击波急推并强震屏→PULL快速后拉展示满场残骸→MS低机位仰拍主角继续上升。\n\n46-47秒尾帧视觉收束：所有魔物清空，战将碎块和能量残骸铺满战场。雷光裂谷、游龙星斑、天崩雷坑、百裂残影、巨兽法阵、双绝雷斑、追月雷环、雷霆贯穿痕、绝杀雷渊和终结雷环全部保留。\n\n主角悬浮在清场余波上方，雷弓未收起。衣摆、短棕色发丝、金色蝴蝶结、银蓝雷光、落雷、粒子和坠落石屑继续运动，最后0.4秒自然收束，不定格、不庆祝、不离场。\n\n声音：万雷齐鸣、终焉箭矢穿透虚空、战将碎块爆裂、碎块砸落地面、余波雷声逐渐减弱。\n碰撞等级：L4绝杀＋尾帧视觉收束。\n环境反馈：满场碎块与能量刻痕永久留存，混沌岛变成焦土、紫晶和银蓝雷光交织的战场。",
+        "480P",
+        "16:9",
+        1344,
+        768,
+        "关闭",
+        10,
+        true,
+        24,
+        "首帧优先",
+        "736",
+        "按序号",
+        false,
+        "xFlow-API聚合/gpt-5.5",
+        "仅通用方案",
+        true,
+        false,
+        false
+      ],
+      "widgets_values_named": {
+        "mode": "参考生视频",
+        "prompt": "【第四段｜36-47秒｜技能⑬—⑮】\n\n承接上一段结尾：战将从虚空裂隙边缘挣扎起身，主角沿追月雷环高速突进。\n\n【技能⑬】雷弓→雷戟·雷霆突刺\n\n主角极速突进，雷弓崩解并重组为雷戟。雷戟缠绕银蓝雷霆与紫霄星屑，化作一道极光直刺战将胸口。\n\n战将挥刀格挡，主角高速变向，瞬移至战将侧后方，一记重刺刺入战将背部晶甲缝隙。银蓝雷霆流体通过戟身灌入战将体内，与暗紫虚空能量剧烈绞杀。战将跪地，暗紫能量从背部裂口如瀑布般倾泻。\n\n运镜：MS·TRACK追主角突进→MCU·PUSH急推雷霆突刺→WHIP甩镜追主角瞬移侧后→MCU·PUSH急推刺入晶甲并震屏。\n声音：雷霆突刺、晶甲碎裂、虚空能量溢出。\n碰撞等级：L2破防重击＋L4绝杀预兆。\n环境反馈：地面留下贯穿坑，焦黑和紫晶交织，暗紫能量在地面流淌。\n\n【技能⑭】神弓汇聚·单脚拉弓\n\n主角沿绝杀雷渊瞬移到混沌岛最高处。雷弓与雷戟同时化作银蓝雷霆流体，沿主角双臂缠绕，在双手之间极速压缩、共振、重组，形成巨大的万雷归一神弓。\n\n神弓由银蓝雷光、紫霄星屑、紫色晶体、金色纹路和紫色藤蔓能量构成。弓身成型时，高频雷鸣炸响，虚空气流被雷霆撕裂。\n\n主角悬浮于虚空雷渊与巨大残月之上，保持图1人物的短棕色波波头、金色蝴蝶结、白蓝紫金幻想战斗服和白金色高跟战斗鞋。\n\n她摆出高张力单脚拉弓姿势：一条腿向侧前方抬起，白金色高跟战斗鞋抵住神弓下弓臂的紫晶节点；另一条腿向后弯曲悬空；身体极度后仰，腰部形成弓形张力；一只手拉住雷霆弓弦，另一只手稳定握住弓柄。\n\n短棕色发丝、金色蝴蝶结、蓝紫色披帛、白色长袖和金色饰品在虚空乱流中狂舞。背景为残月、翻滚雷渊、暗紫星云、碎星和魔潮。\n\n特写锁定手部和弓弦，画面在黑色虚空、紫色雷光和银蓝爆光之间极速闪帧三次。弓身周围出现空间裂纹，星屑向箭尖塌缩，虚空气流被拉成丝状。\n\n运镜：大范围环绕主角→低机位仰拍神弓成型→PUSH急推弓弦→CU锁定手部和箭尖→快速后拉展示残月、雷渊和主角。\n\n【技能⑮】终焉·万雷归一\n\n主角释放巨型银蓝雷光箭矢。箭矢离弦瞬间化作巨大雷龙，雷龙缠绕紫霄雷霆与银蓝星屑，张开巨口吞噬沿途所有魔潮。\n\n雷龙在混沌岛和虚空雷渊之间高速盘旋，经过之处犁出焦黑深谷，虚空晶簇被震成齑粉，暗紫魔潮被成片卷碎，化为黑色能量和银蓝粒子。\n\n雷龙贯穿战将核心时，画面在红色核心爆光、黑色深渊和银蓝雷光之间极速闪帧三次。战将胸口暗紫核心率先炸裂，随后躯干、肩甲、头盔、巨兽颚骨和双手长刀全部崩解。\n\n大量暗紫晶甲碎块如陨石雨般飞射，断裂长刀旋转着插入岛面，碎块落地后产生二次弹跳、滚动、火星和暗紫粉尘。\n\n银蓝雷霆流体如海啸般席卷整座混沌岛，暗紫虚空流体如墨汁般在雷霆中翻滚。银蓝雷弧、暗紫星屑、晶甲碎片、尘埃和虚空水汽形成遮天蔽日的环形冲击波。\n\n运镜：MS·TRACK低机位追入雷环中心→FS·PUSH沿雷龙和爆炸冲击波急推并强震屏→PULL快速后拉展示满场残骸→MS低机位仰拍主角继续上升。\n\n46-47秒尾帧视觉收束：所有魔物清空，战将碎块和能量残骸铺满战场。雷光裂谷、游龙星斑、天崩雷坑、百裂残影、巨兽法阵、双绝雷斑、追月雷环、雷霆贯穿痕、绝杀雷渊和终结雷环全部保留。\n\n主角悬浮在清场余波上方，雷弓未收起。衣摆、短棕色发丝、金色蝴蝶结、银蓝雷光、落雷、粒子和坠落石屑继续运动，最后0.4秒自然收束，不定格、不庆祝、不离场。\n\n声音：万雷齐鸣、终焉箭矢穿透虚空、战将碎块爆裂、碎块砸落地面、余波雷声逐渐减弱。\n碰撞等级：L4绝杀＋尾帧视觉收束。\n环境反馈：满场碎块与能量刻痕永久留存，混沌岛变成焦土、紫晶和银蓝雷光交织的战场。",
+        "resolution": "480P",
+        "aspect_ratio": "16:9",
+        "width": 1344,
+        "height": 768,
+        "audio_duration_auto": "关闭",
+        "seconds": 10,
+        "advanced": true,
+        "fps": 24,
+        "keyframe_role": "首帧优先",
+        "ref_image_size": "736",
+        "reference_mention_mode": "按序号",
+        "prompt_optimizer_enabled": false,
+        "prompt_optimizer_provider": "xFlow-API聚合/gpt-5.5",
+        "prompt_optimizer_scene_guide": "仅通用方案",
+        "force_offload": true,
+        "low_vram_streamed_attention": false,
+        "reference_text_only": false
+      },
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 352,
+      "type": "FeiHouEasyH3Media",
+      "pos": [
+        411.86217022661964,
+        -495.32091119282984
+      ],
+      "size": [
+        546.6599687011718,
+        749.2992999999999
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "h3_media",
+          "type": "FEIHOU_H3_MEDIA",
+          "links": [
+            553
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-feihou-easy-h3",
+        "ver": "a62b854489ee0388725ff6500f1a25b2908ea25a",
+        "Node name for S&R": "FeiHouEasyH3Media",
+        "feihou_h3_embedded_media": [
+          {
+            "media_type": "image",
+            "ordinal": 1,
+            "filename": "20260929_211459_QwenEdit_00001_.png",
+            "subfolder": "",
+            "storage": "input",
+            "audio_trim": ""
+          },
+          {
+            "media_type": "image",
+            "ordinal": 2,
+            "filename": "微信图片_20261003151420_374_2251.png",
+            "subfolder": "",
+            "storage": "input",
+            "audio_trim": ""
+          }
+        ],
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [],
+      "widgets_values_named": {},
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 370,
+      "type": "dc602dca-2389-4deb-9ca5-edf54daafb06",
+      "pos": [
+        2095.518678538065,
+        -195.85192700482665
+      ],
+      "size": [
+        360,
+        202
+      ],
+      "flags": {},
+      "order": 44,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "模型",
+          "name": "model",
+          "type": "MODEL",
+          "link": 686
+        }
+      ],
+      "outputs": [
+        {
+          "label": "模型",
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            644,
+            702
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.38.0",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "previewExposures": []
+      },
+      "widgets_values": [
+        2,
+        2,
+        4096,
+        "comfy kitchen attention",
+        "sol-attn",
+        0.2,
+        0.9
+      ],
+      "widgets_values_named": {
+        "head_chunks": 2,
+        "chunks": 2,
+        "seq_threshold": 4096,
+        "attention": "comfy kitchen attention",
+        "selection": "sol-attn",
+        "start_percent": 0.2,
+        "end_percent": 0.9
+      },
+      "color": "#b0c2e1",
+      "bgcolor": "#2f4b7c"
+    },
+    {
+      "id": 372,
+      "type": "Fast Groups Bypasser (rgthree)",
+      "pos": [
+        -455.4158912176965,
+        824.4166349351265
+      ],
+      "size": [
+        247.2955078125,
+        58
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "可选连接",
+          "name": "OPT_CONNECTION",
+          "type": "*",
+          "links": []
+        }
+      ],
+      "properties": {
+        "matchColors": "",
+        "matchTitle": "人脸精修",
+        "showNav": true,
+        "showAllGraphs": true,
+        "sort": "position",
+        "customSortAlphabet": "",
+        "toggleRestriction": "default",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "color": "#5d0221",
+      "bgcolor": "#fb4a85",
+      "textcolor": "#FFFFFF",
+      "extensions": {
+        "textcolor": "#FFFFFF"
+      }
+    },
+    {
+      "id": 381,
+      "type": "efd373a1-06d5-4e4e-adb5-003dc1159ef7",
+      "pos": [
+        3884.8001187478926,
+        -484.35752672940356
+      ],
+      "size": [
+        360,
+        202
+      ],
+      "flags": {},
+      "order": 45,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "模型",
+          "name": "model",
+          "type": "MODEL",
+          "link": 688
+        }
+      ],
+      "outputs": [
+        {
+          "label": "模型",
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            616,
+            704
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.38.0",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "previewExposures": []
+      },
+      "widgets_values": [
+        2,
+        2,
+        4096,
+        "comfy kitchen attention",
+        "sol-attn",
+        0.2,
+        0.9
+      ],
+      "widgets_values_named": {
+        "head_chunks": 2,
+        "chunks": 2,
+        "seq_threshold": 4096,
+        "attention": "comfy kitchen attention",
+        "selection": "sol-attn",
+        "start_percent": 0.2,
+        "end_percent": 0.9
+      },
+      "color": "#8dc5d9",
+      "bgcolor": "#204F60"
+    },
+    {
+      "id": 396,
+      "type": "FeiHouEasyH3LoraStack",
+      "pos": [
+        -75.57902697588693,
+        -226.01649196052648
+      ],
+      "size": [
+        440,
+        160
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "可选 LoRA 堆栈",
+          "name": "optional_lora_stack",
+          "type": "FEIHOU_MERGE_LORA_STACK",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "label": "LoRA 堆栈",
+          "name": "lora_stack",
+          "shape": 3,
+          "type": "FEIHOU_MERGE_LORA_STACK",
+          "links": [
+            651
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-feihou-easy-h3",
+        "ver": "a62b854489ee0388725ff6500f1a25b2908ea25a",
+        "feihou_mode": 0,
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        {},
+        {
+          "type": "FeiHouEasyH3LoraHeaderWidget"
+        },
+        {
+          "on": false,
+          "lora": "minimax/minimax_h3_fl2v_turbo_4step_v1.2_768p_comfyui_bf16.safetensors",
+          "strength": 0.8,
+          "bypass": true
+        },
+        {
+          "on": true,
+          "lora": "minimax/FeiHou_H3_Remix_Enhancer_v1.safetensors",
+          "strength": 1,
+          "bypass": false
+        },
+        {},
+        ""
+      ],
+      "widgets_values_named": {
+        "divider": {},
+        "FeiHouEasyH3LoraHeaderWidget": {
+          "type": "FeiHouEasyH3LoraHeaderWidget"
+        },
+        "lora_1": {
+          "on": false,
+          "lora": "minimax/minimax_h3_fl2v_turbo_4step_v1.2_768p_comfyui_bf16.safetensors",
+          "strength": 0.8,
+          "bypass": true
+        },
+        "lora_2": {
+          "on": true,
+          "lora": "minimax/FeiHou_H3_Remix_Enhancer_v1.safetensors",
+          "strength": 1,
+          "bypass": false
+        },
+        "divider#1": {},
+        "+ 添加 LoRA": ""
+      },
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 397,
+      "type": "FeiHouEasyH3LoraStack",
+      "pos": [
+        -71.85666011614018,
+        48.98997834636138
+      ],
+      "size": [
+        440,
+        136
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "可选 LoRA 堆栈",
+          "name": "optional_lora_stack",
+          "type": "FEIHOU_MERGE_LORA_STACK",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "label": "LoRA 堆栈",
+          "name": "lora_stack",
+          "shape": 3,
+          "type": "FEIHOU_MERGE_LORA_STACK",
+          "links": [
+            652
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-feihou-easy-h3",
+        "ver": "a62b854489ee0388725ff6500f1a25b2908ea25a",
+        "feihou_mode": 0,
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        {},
+        {
+          "type": "FeiHouEasyH3LoraHeaderWidget"
+        },
+        {
+          "on": true,
+          "lora": "minimax/minimax_h3_fl2v_turbo_4step_v1.2_768p_comfyui_bf16.safetensors",
+          "strength": 1,
+          "bypass": true
+        },
+        {},
+        ""
+      ],
+      "widgets_values_named": {
+        "divider": {},
+        "FeiHouEasyH3LoraHeaderWidget": {
+          "type": "FeiHouEasyH3LoraHeaderWidget"
+        },
+        "lora_1": {
+          "on": true,
+          "lora": "minimax/minimax_h3_fl2v_turbo_4step_v1.2_768p_comfyui_bf16.safetensors",
+          "strength": 1,
+          "bypass": true
+        },
+        "divider#1": {},
+        "+ 添加 LoRA": ""
+      },
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 410,
+      "type": "SetNode",
+      "pos": [
+        1645.7008857390294,
+        -472.98261598803373
+      ],
+      "size": [
+        210,
+        60
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 57,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "输入",
+          "name": "MODEL",
+          "type": "MODEL",
+          "link": 685
+        }
+      ],
+      "outputs": [
+        {
+          "label": "输出",
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": null
+        }
+      ],
+      "title": "Set_1st_model",
+      "properties": {
+        "Node name for S&R": "SetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "previousName": "1st_model",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "1st_model"
+      ],
+      "widgets_values_named": {
+        "Constant": "1st_model"
+      },
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 411,
+      "type": "GetNode",
+      "pos": [
+        1874.1274969998688,
+        -166.2715754034061
+      ],
+      "size": [
+        210,
+        60
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 16,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "输出",
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            686
+          ]
+        }
+      ],
+      "title": "Get_1st_model",
+      "properties": {
+        "Node name for S&R": "GetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "1st_model"
+      ],
+      "widgets_values_named": {
+        "Constant": "1st_model"
+      },
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 412,
+      "type": "SetNode",
+      "pos": [
+        1645.7008857390294,
+        -402.98261598803373
+      ],
+      "size": [
+        230.51666870117188,
+        60
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 58,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "输入",
+          "name": "MODEL",
+          "type": "MODEL",
+          "link": 687
+        }
+      ],
+      "outputs": [
+        {
+          "label": "输出",
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": null
+        }
+      ],
+      "title": "Set_2nd_model",
+      "properties": {
+        "Node name for S&R": "SetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "previousName": "2nd_model",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "2nd_model"
+      ],
+      "widgets_values_named": {
+        "Constant": "2nd_model"
+      },
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 413,
+      "type": "GetNode",
+      "pos": [
+        3677.22485578688,
+        -454.5733766081558
+      ],
+      "size": [
+        231.98332824707032,
+        60
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 17,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "输出",
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            688
+          ]
+        }
+      ],
+      "title": "Get_2nd_model",
+      "properties": {
+        "Node name for S&R": "GetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "2nd_model"
+      ],
+      "widgets_values_named": {
+        "Constant": "2nd_model"
+      },
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 414,
+      "type": "SetNode",
+      "pos": [
+        1645.7008857390294,
+        -332.98261598803373
+      ],
+      "size": [
+        321.4666748046875,
+        60
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 59,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "输入",
+          "name": "MINIMAX_H3_CONTEXT",
+          "type": "MINIMAX_H3_CONTEXT",
+          "link": 689
+        }
+      ],
+      "outputs": [
+        {
+          "label": "输出",
+          "name": "MINIMAX_H3_CONTEXT",
+          "type": "MINIMAX_H3_CONTEXT",
+          "links": null
+        }
+      ],
+      "title": "Set_h3_context",
+      "properties": {
+        "Node name for S&R": "SetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "previousName": "h3_context",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "h3_context"
+      ],
+      "widgets_values_named": {
+        "Constant": "h3_context"
+      }
+    },
+    {
+      "id": 415,
+      "type": "GetNode",
+      "pos": [
+        -88.52480292116823,
+        1101.8413727299182
+      ],
+      "size": [
+        210,
+        60
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 18,
+      "mode": 4,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "输出",
+          "name": "MINIMAX_H3_CONTEXT",
+          "type": "MINIMAX_H3_CONTEXT",
+          "links": [
+            690
+          ]
+        }
+      ],
+      "title": "Get_h3_context",
+      "properties": {
+        "Node name for S&R": "GetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "h3_context"
+      ],
+      "widgets_values_named": {
+        "Constant": "h3_context"
+      }
+    },
+    {
+      "id": 416,
+      "type": "GetNode",
+      "pos": [
+        1878.3501977161784,
+        118.59661596900467
+      ],
+      "size": [
+        210,
+        60
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 19,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "输出",
+          "name": "MINIMAX_H3_CONTEXT",
+          "type": "MINIMAX_H3_CONTEXT",
+          "links": [
+            691
+          ]
+        }
+      ],
+      "title": "Get_h3_context",
+      "properties": {
+        "Node name for S&R": "GetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "h3_context"
+      ],
+      "widgets_values_named": {
+        "Constant": "h3_context"
+      }
+    },
+    {
+      "id": 419,
+      "type": "GetNode",
+      "pos": [
+        1879.9955747910851,
+        -87.81359709497377
+      ],
+      "size": [
+        210,
+        60
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 20,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "输出",
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            694
+          ]
+        }
+      ],
+      "title": "Get_seed",
+      "properties": {
+        "Node name for S&R": "GetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "seed"
+      ],
+      "widgets_values_named": {
+        "Constant": "seed"
+      },
+      "color": "#2e2e2e",
+      "bgcolor": "#242121"
+    },
+    {
+      "id": 420,
+      "type": "GetNode",
+      "pos": [
+        4028.158685502428,
+        -482.6487534513468
+      ],
+      "size": [
+        210,
+        60
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 21,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "输出",
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            695
+          ]
+        }
+      ],
+      "title": "Get_seed",
+      "properties": {
+        "Node name for S&R": "GetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "seed"
+      ],
+      "widgets_values_named": {
+        "Constant": "seed"
+      },
+      "color": "#2e2e2e",
+      "bgcolor": "#242121"
+    },
+    {
+      "id": 426,
+      "type": "SetNode",
+      "pos": [
+        2936.6597957492436,
+        -19.77651281613648
+      ],
+      "size": [
+        210,
+        60
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 54,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "输入",
+          "name": "MODEL",
+          "type": "MODEL",
+          "link": 702
+        }
+      ],
+      "outputs": [
+        {
+          "label": "输出",
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": null
+        }
+      ],
+      "title": "Set_1st_model_attentions",
+      "properties": {
+        "Node name for S&R": "SetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "previousName": "1st_model_attentions",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "1st_model_attentions"
+      ],
+      "widgets_values_named": {
+        "Constant": "1st_model_attentions"
+      },
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 428,
+      "type": "SetNode",
+      "pos": [
+        5570.5039075698105,
+        -326.8795086810175
+      ],
+      "size": [
+        212.7603515625,
+        58
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 55,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "输入",
+          "name": "MODEL",
+          "type": "MODEL",
+          "link": 704
+        }
+      ],
+      "outputs": [
+        {
+          "label": "输出",
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": []
+        }
+      ],
+      "title": "Set_2nd_model_attentions",
+      "properties": {
+        "Node name for S&R": "SetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "previousName": "2nd_model_attentions",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "2nd_model_attentions"
+      ],
+      "widgets_values_named": {
+        "Constant": "2nd_model_attentions"
+      },
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 437,
+      "type": "GetNode",
+      "pos": [
+        3677.22485578688,
+        -244.5733766081558
+      ],
+      "size": [
+        210,
+        60
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 22,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "输出",
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            713
+          ]
+        }
+      ],
+      "title": "Get_二采步数",
+      "properties": {
+        "Node name for S&R": "GetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "二采步数"
+      ],
+      "widgets_values_named": {
+        "Constant": "二采步数"
+      },
+      "color": "#1b4669",
+      "bgcolor": "#29699c"
+    },
+    {
+      "id": 439,
+      "type": "GetNode",
+      "pos": [
+        -88.52480292116823,
+        1031.8413727299182
+      ],
+      "size": [
+        214.2232421875,
+        58
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 23,
+      "mode": 4,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "输出",
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            717
+          ]
+        }
+      ],
+      "title": "Get_2nd_model_attentions",
+      "properties": {
+        "Node name for S&R": "GetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "2nd_model_attentions"
+      ],
+      "widgets_values_named": {
+        "Constant": "2nd_model_attentions"
+      },
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 440,
+      "type": "SetNode",
+      "pos": [
+        2997.7598018527583,
+        -73.0288717359808
+      ],
+      "size": [
+        210,
+        60
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 64,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "输入",
+          "name": "LATENT",
+          "type": "LATENT",
+          "link": 718
+        }
+      ],
+      "outputs": [
+        {
+          "label": "输出",
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": null
+        }
+      ],
+      "title": "Set_1st_Latent",
+      "properties": {
+        "Node name for S&R": "SetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "previousName": "1st_Latent",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "1st_Latent"
+      ],
+      "widgets_values_named": {
+        "Constant": "1st_Latent"
+      },
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 441,
+      "type": "GetNode",
+      "pos": [
+        3677.22485578688,
+        -314.5733766081558
+      ],
+      "size": [
+        210,
+        60
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 24,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "输出",
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            719
+          ]
+        }
+      ],
+      "title": "Get_1st_Latent",
+      "properties": {
+        "Node name for S&R": "GetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "1st_Latent"
+      ],
+      "widgets_values_named": {
+        "Constant": "1st_Latent"
+      },
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 445,
+      "type": "SetNode",
+      "pos": [
+        1646.9273296942984,
+        -257.2793411912384
+      ],
+      "size": [
+        321.4666748046875,
+        60
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 42,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "输入",
+          "name": "FEIHOU_H3_PRODUCTION_SHOT",
+          "type": "FEIHOU_H3_PRODUCTION_SHOT",
+          "link": 737
+        }
+      ],
+      "outputs": [
+        {
+          "label": "输出",
+          "name": "FEIHOU_H3_PRODUCTION_SHOT",
+          "type": "FEIHOU_H3_PRODUCTION_SHOT",
+          "links": null
+        }
+      ],
+      "title": "Set_接续分镜",
+      "properties": {
+        "Node name for S&R": "SetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "previousName": "接续分镜",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "接续分镜"
+      ],
+      "widgets_values_named": {
+        "Constant": "接续分镜"
+      }
+    },
+    {
+      "id": 446,
+      "type": "GetNode",
+      "pos": [
+        3679.120470672118,
+        -173.55818937363762
+      ],
+      "size": [
+        210,
+        60
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 25,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "输出",
+          "name": "FEIHOU_H3_PRODUCTION_SHOT",
+          "type": "FEIHOU_H3_PRODUCTION_SHOT",
+          "links": []
+        }
+      ],
+      "title": "Get_接续分镜",
+      "properties": {
+        "Node name for S&R": "GetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "接续分镜"
+      ],
+      "widgets_values_named": {
+        "Constant": "接续分镜"
+      }
+    },
+    {
+      "id": 449,
+      "type": "SetNode",
+      "pos": [
+        2989.497009184446,
+        49.30005704000508
+      ],
+      "size": [
+        321.4666748046875,
+        60
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 61,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "输入",
+          "name": "MINIMAX_H3_CONTEXT",
+          "type": "MINIMAX_H3_CONTEXT",
+          "link": 734
+        }
+      ],
+      "outputs": [
+        {
+          "label": "输出",
+          "name": "MINIMAX_H3_CONTEXT",
+          "type": "MINIMAX_H3_CONTEXT",
+          "links": null
+        }
+      ],
+      "title": "Set_1st_context",
+      "properties": {
+        "Node name for S&R": "SetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "previousName": "1st_context",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "1st_context"
+      ],
+      "widgets_values_named": {
+        "Constant": "1st_context"
+      }
+    },
+    {
+      "id": 450,
+      "type": "GetNode",
+      "pos": [
+        3678.8459400238107,
+        -379.59871576040933
+      ],
+      "size": [
+        210,
+        60
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 26,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "输出",
+          "name": "MINIMAX_H3_CONTEXT",
+          "type": "MINIMAX_H3_CONTEXT",
+          "links": [
+            735
+          ]
+        }
+      ],
+      "title": "Get_1st_context",
+      "properties": {
+        "Node name for S&R": "GetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "1st_context"
+      ],
+      "widgets_values_named": {
+        "Constant": "1st_context"
+      }
+    },
+    {
+      "id": 451,
+      "type": "GetNode",
+      "pos": [
+        1884.8415118372625,
+        292.4201428045665
+      ],
+      "size": [
+        210,
+        60
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 27,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "输出",
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            739
+          ]
+        }
+      ],
+      "title": "Get_总步数",
+      "properties": {
+        "Node name for S&R": "GetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "总步数"
+      ],
+      "widgets_values_named": {
+        "Constant": "总步数"
+      },
+      "color": "#1b4669",
+      "bgcolor": "#29699c"
+    },
+    {
+      "id": 452,
+      "type": "GetNode",
+      "pos": [
+        1884.43603258506,
+        355.9787423891218
+      ],
+      "size": [
+        210,
+        60
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 28,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "输出",
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            738
+          ]
+        }
+      ],
+      "title": "Get_一采步数",
+      "properties": {
+        "Node name for S&R": "GetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "一采步数"
+      ],
+      "widgets_values_named": {
+        "Constant": "一采步数"
+      },
+      "color": "#1b4669",
+      "bgcolor": "#29699c"
+    },
+    {
+      "id": 453,
+      "type": "BatchImagesNode",
+      "pos": [
+        700.7065778033007,
+        1120.2723484427574
+      ],
+      "size": [
+        239.4301273062215,
+        126
+      ],
+      "flags": {},
+      "order": 46,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "images.image0",
+          "type": "IMAGE",
+          "link": 744
+        },
+        {
+          "name": "images.image1",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 745
+        },
+        {
+          "name": "images.image2",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 746
+        },
+        {
+          "name": "images.image3",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 747
+        },
+        {
+          "name": "images.image4",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            743
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.38.2",
+        "Node name for S&R": "BatchImagesNode",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      }
+    },
+    {
+      "id": 454,
+      "type": "LoadImage",
+      "pos": [
+        28.32429100454825,
+        1426.2489742450919
+      ],
+      "size": [
+        210,
+        326
+      ],
+      "flags": {},
+      "order": 29,
+      "mode": 4,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            744
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.35.1",
+        "Node name for S&R": "LoadImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "guhaiImageValue": "20260816_020418_Z-Image_Batch_SeedVR2_00003_.jpg"
+      },
+      "widgets_values": [
+        "20260816_020418_Z-Image_Batch_SeedVR2_00003_.jpg",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "20260816_020418_Z-Image_Batch_SeedVR2_00003_.jpg",
+        "upload": "image"
+      },
+      "color": "#97c9cd",
+      "bgcolor": "#295256",
+      "textcolor": "#000000",
+      "extensions": {
+        "textcolor": "#000000"
+      }
+    },
+    {
+      "id": 455,
+      "type": "LoadImage",
+      "pos": [
+        258.32429100454783,
+        1426.2489742450919
+      ],
+      "size": [
+        210,
+        326
+      ],
+      "flags": {},
+      "order": 30,
+      "mode": 4,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            745
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.35.1",
+        "Node name for S&R": "LoadImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "guhaiImageValue": "20260816_020418_Z-Image_Batch_SeedVR2_00003_.jpg"
+      },
+      "widgets_values": [
+        "20260816_020418_Z-Image_Batch_SeedVR2_00003_.jpg",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "20260816_020418_Z-Image_Batch_SeedVR2_00003_.jpg",
+        "upload": "image"
+      },
+      "color": "#97c9cd",
+      "bgcolor": "#295256",
+      "textcolor": "#000000",
+      "extensions": {
+        "textcolor": "#000000"
+      }
+    },
+    {
+      "id": 456,
+      "type": "LoadImage",
+      "pos": [
+        488.3242910045475,
+        1426.2489742450919
+      ],
+      "size": [
+        210,
+        326
+      ],
+      "flags": {},
+      "order": 31,
+      "mode": 4,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            746
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.35.1",
+        "Node name for S&R": "LoadImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "guhaiImageValue": "20260816_020418_Z-Image_Batch_SeedVR2_00003_.jpg"
+      },
+      "widgets_values": [
+        "20260816_020418_Z-Image_Batch_SeedVR2_00003_.jpg",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "20260816_020418_Z-Image_Batch_SeedVR2_00003_.jpg",
+        "upload": "image"
+      },
+      "color": "#97c9cd",
+      "bgcolor": "#295256",
+      "textcolor": "#000000",
+      "extensions": {
+        "textcolor": "#000000"
+      }
+    },
+    {
+      "id": 457,
+      "type": "LoadImage",
+      "pos": [
+        718.3242910045501,
+        1426.2489742450919
+      ],
+      "size": [
+        210,
+        326
+      ],
+      "flags": {},
+      "order": 32,
+      "mode": 4,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            747
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.35.1",
+        "Node name for S&R": "LoadImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "guhaiImageValue": "20260816_020418_Z-Image_Batch_SeedVR2_00003_.jpg"
+      },
+      "widgets_values": [
+        "20260816_020418_Z-Image_Batch_SeedVR2_00003_.jpg",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "20260816_020418_Z-Image_Batch_SeedVR2_00003_.jpg",
+        "upload": "image"
+      },
+      "color": "#97c9cd",
+      "bgcolor": "#295256",
+      "textcolor": "#000000",
+      "extensions": {
+        "textcolor": "#000000"
+      }
+    },
+    {
+      "id": 461,
+      "type": "MarkdownNote",
+      "pos": [
+        -73.4627162883336,
+        293.8635245721812
+      ],
+      "size": [
+        445.5672593772697,
+        117.49349131140275
+      ],
+      "flags": {},
+      "order": 33,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Markdown注释",
+      "properties": {
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "## 希望画质更好：一采打开加速lora，并设置1采4步，2采5步。\n\n## 希望动态更强：一采关闭加速lora，打开Remix Enhancer Lora，并设置一采8步，2采5-6步。"
+      ],
+      "widgets_values_named": {
+        "text": "## 希望画质更好：一采打开加速lora，并设置1采4步，2采5步。\n\n## 希望动态更强：一采关闭加速lora，打开Remix Enhancer Lora，并设置一采8步，2采5-6步。"
+      },
+      "color": "#150821",
+      "bgcolor": "#7b2cbf"
+    },
+    {
+      "id": 462,
+      "type": "PrimitiveInt",
+      "pos": [
+        1929.1468436311889,
+        -488.8723293603385
+      ],
+      "size": [
+        274.6598517435523,
+        82
+      ],
+      "flags": {},
+      "order": 34,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            748
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.38.0",
+        "Node name for S&R": "PrimitiveInt",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        9,
+        "fixed"
+      ],
+      "widgets_values_named": {
+        "value": 9,
+        "fixed": "fixed"
+      },
+      "color": "#091120",
+      "bgcolor": "#3968C6",
+      "textcolor": "#FFFFFF",
+      "extensions": {
+        "textcolor": "#FFFFFF"
+      }
+    },
+    {
+      "id": 463,
+      "type": "PrimitiveInt",
+      "pos": [
+        2279.123516906296,
+        -485.39455202312496
+      ],
+      "size": [
+        269.4999560839383,
+        82
+      ],
+      "flags": {},
+      "order": 35,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            749
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.38.0",
+        "Node name for S&R": "PrimitiveInt",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        4,
+        "fixed"
+      ],
+      "widgets_values_named": {
+        "value": 4,
+        "fixed": "fixed"
+      },
+      "color": "#091120",
+      "bgcolor": "#3968C6",
+      "textcolor": "#FFFFFF",
+      "extensions": {
+        "textcolor": "#FFFFFF"
+      }
+    },
+    {
+      "id": 464,
+      "type": "SetNode",
+      "pos": [
+        2009.950241650129,
+        -338.0228814022795
+      ],
+      "size": [
+        210,
+        34
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 47,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "输入",
+          "name": "INT",
+          "type": "INT",
+          "link": 748
+        }
+      ],
+      "outputs": [
+        {
+          "label": "输出",
+          "name": "INT",
+          "type": "INT",
+          "links": []
+        }
+      ],
+      "title": "Set_总步数",
+      "properties": {
+        "Node name for S&R": "SetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "previousName": "总步数",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "总步数"
+      ],
+      "widgets_values_named": {
+        "Constant": "总步数"
+      },
+      "color": "#1b4669",
+      "bgcolor": "#29699c",
+      "textcolor": "#FFFFFF",
+      "extensions": {
+        "textcolor": "#FFFFFF"
+      }
+    },
+    {
+      "id": 465,
+      "type": "SetNode",
+      "pos": [
+        2339.6183079912757,
+        -336.902028055913
+      ],
+      "size": [
+        210,
+        34
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 48,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "输入",
+          "name": "INT",
+          "type": "INT",
+          "link": 749
+        }
+      ],
+      "outputs": [
+        {
+          "label": "输出",
+          "name": "INT",
+          "type": "INT",
+          "links": []
+        }
+      ],
+      "title": "Set_一采步数",
+      "properties": {
+        "Node name for S&R": "SetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "previousName": "一采步数",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "一采步数"
+      ],
+      "widgets_values_named": {
+        "Constant": "一采步数"
+      },
+      "color": "#1b4669",
+      "bgcolor": "#29699c",
+      "textcolor": "#FFFFFF",
+      "extensions": {
+        "textcolor": "#FFFFFF"
+      }
+    },
+    {
+      "id": 466,
+      "type": "PrimitiveInt",
+      "pos": [
+        2622.7287150148786,
+        -488.58605278034923
+      ],
+      "size": [
+        258.8530132484934,
+        82
+      ],
+      "flags": {},
+      "order": 36,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            750
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.38.0",
+        "Node name for S&R": "PrimitiveInt",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        5,
+        "fixed"
+      ],
+      "widgets_values_named": {
+        "value": 5,
+        "fixed": "fixed"
+      },
+      "color": "#091120",
+      "bgcolor": "#3968C6",
+      "textcolor": "#FFFFFF",
+      "extensions": {
+        "textcolor": "#FFFFFF"
+      }
+    },
+    {
+      "id": 467,
+      "type": "SetNode",
+      "pos": [
+        2687.969611229885,
+        -340.261058841396
+      ],
+      "size": [
+        210,
+        34
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 49,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "输入",
+          "name": "INT",
+          "type": "INT",
+          "link": 750
+        }
+      ],
+      "outputs": [
+        {
+          "label": "输出",
+          "name": "INT",
+          "type": "INT",
+          "links": []
+        }
+      ],
+      "title": "Set_二采步数",
+      "properties": {
+        "Node name for S&R": "SetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "previousName": "二采步数",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "二采步数"
+      ],
+      "widgets_values_named": {
+        "Constant": "二采步数"
+      },
+      "color": "#1b4669",
+      "bgcolor": "#29699c",
+      "textcolor": "#FFFFFF",
+      "extensions": {
+        "textcolor": "#FFFFFF"
+      }
+    },
+    {
+      "id": 468,
+      "type": "RandomSeedNoise",
+      "pos": [
+        2947.878597091052,
+        -521.7686239367623
+      ],
+      "size": [
+        246.07685047172572,
+        130
+      ],
+      "flags": {},
+      "order": 37,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "links": [
+            751
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "feihou-toolbox",
+        "ver": "f9edc9a0e03250478d92149248bddfd0115784fb",
+        "Node name for S&R": "RandomSeedNoise",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        -1,
+        null,
+        null,
+        null
+      ],
+      "widgets_values_named": {
+        "seed": -1,
+        "🎲 每次排队随机": null,
+        "🎲 新建固定随机种子": null,
+        "♻️ 使用上次排队种子": null
+      },
+      "color": "#091120",
+      "bgcolor": "#3968C6",
+      "textcolor": "#FFFFFF",
+      "extensions": {
+        "textcolor": "#FFFFFF"
+      }
+    },
+    {
+      "id": 469,
+      "type": "SetNode",
+      "pos": [
+        3027.9489222988636,
+        -340.9177370750225
+      ],
+      "size": [
+        210,
+        34
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 50,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "输入",
+          "name": "NOISE",
+          "type": "NOISE",
+          "link": 751
+        }
+      ],
+      "outputs": [
+        {
+          "label": "输出",
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": []
+        }
+      ],
+      "title": "Set_seed",
+      "properties": {
+        "Node name for S&R": "SetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "previousName": "seed",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "seed"
+      ],
+      "widgets_values_named": {
+        "Constant": "seed"
+      },
+      "color": "#2e2e2e",
+      "bgcolor": "#242121",
+      "textcolor": "#FFFFFF",
+      "extensions": {
+        "textcolor": "#FFFFFF"
+      }
+    },
+    {
+      "id": 470,
+      "type": "PrimitiveBoolean",
+      "pos": [
+        3266.58608654369,
+        -477.1809028964555
+      ],
+      "size": [
+        263.2246727410811,
+        58
+      ],
+      "flags": {},
+      "order": 38,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "BOOLEAN",
+          "type": "BOOLEAN",
+          "links": [
+            752
+          ]
+        }
+      ],
+      "title": "true=原声音频 | false=生成音频",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.38.2",
+        "Node name for S&R": "PrimitiveBoolean",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        false
+      ],
+      "widgets_values_named": {
+        "value": false
+      },
+      "color": "#d38dd9",
+      "bgcolor": "#5B2060",
+      "textcolor": "#000000",
+      "extensions": {
+        "textcolor": "#000000"
+      }
+    },
+    {
+      "id": 471,
+      "type": "SetNode",
+      "pos": [
+        3330.5113049690935,
+        -339.34331314996007
+      ],
+      "size": [
+        210,
+        34
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 51,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "输入",
+          "name": "BOOLEAN",
+          "type": "BOOLEAN",
+          "link": 752
+        }
+      ],
+      "outputs": [
+        {
+          "label": "输出",
+          "name": "BOOLEAN",
+          "type": "BOOLEAN",
+          "links": []
+        }
+      ],
+      "title": "Set_音频生成",
+      "properties": {
+        "Node name for S&R": "SetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "previousName": "音频生成",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "音频生成"
+      ],
+      "widgets_values_named": {
+        "Constant": "音频生成"
+      },
+      "textcolor": "#FFFFFF",
+      "extensions": {
+        "textcolor": "#FFFFFF"
+      }
+    },
+    {
+      "id": 472,
+      "type": "Label (rgthree)",
+      "pos": [
+        978.4257463889949,
+        -1460.0656626227455
+      ],
+      "size": [
+        2242.3095703125,
+        150
+      ],
+      "flags": {
+        "allow_interaction": true
+      },
+      "order": 39,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "U36-FeiHouEasyH3二段式采样v6",
+      "properties": {
+        "fontSize": 150,
+        "fontFamily": "Arial",
+        "fontColor": "#ffff00",
+        "textAlign": "left",
+        "backgroundColor": "transparent",
+        "padding": 0,
+        "borderRadius": 0,
+        "angle": 0,
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        },
+        "widget_ue_connectable": {}
+      },
+      "color": "#fff0",
+      "bgcolor": "#fff0"
+    },
+    {
+      "id": 473,
+      "type": "Label (rgthree)",
+      "pos": [
+        995.9044114982373,
+        -1296.3699936901787
+      ],
+      "size": [
+        1736.484375,
+        80
+      ],
+      "flags": {
+        "allow_interaction": true
+      },
+      "order": 40,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "云端镜像https://autodl.art/app/market/252?v=709",
+      "properties": {
+        "fontSize": 80,
+        "fontFamily": "Arial",
+        "fontColor": "#00ff00",
+        "textAlign": "left",
+        "backgroundColor": "transparent",
+        "padding": 0,
+        "borderRadius": 0,
+        "angle": 0,
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        },
+        "widget_ue_connectable": {}
+      },
+      "color": "#fff0",
+      "bgcolor": "#fff0"
+    },
+    {
+      "id": 474,
+      "type": "Label (rgthree)",
+      "pos": [
+        993.1161075707314,
+        -1176.5820563747686
+      ],
+      "size": [
+        2324.619140625,
+        60
+      ],
+      "flags": {
+        "allow_interaction": true
+      },
+      "order": 41,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "AUTODL🐧🔴1群1046279436🔴2群1102535136🟢3群1053358977🟢4群541575695",
+      "properties": {
+        "fontSize": 60,
+        "fontFamily": "Arial",
+        "fontColor": "#ff5500",
+        "textAlign": "left",
+        "backgroundColor": "transparent",
+        "padding": 0,
+        "borderRadius": 0,
+        "angle": 0,
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        },
+        "widget_ue_connectable": {}
+      },
+      "color": "#fff0",
+      "bgcolor": "#fff0"
+    }
+  ],
+  "links": [
+    [
+      417,
+      293,
+      0,
+      284,
+      0,
+      "IMAGE"
+    ],
+    [
+      444,
+      311,
+      0,
+      304,
+      0,
+      "IMAGE"
+    ],
+    [
+      447,
+      306,
+      0,
+      304,
+      3,
+      "IMAGE"
+    ],
+    [
+      449,
+      284,
+      0,
+      313,
+      0,
+      "IMAGE"
+    ],
+    [
+      476,
+      324,
+      0,
+      325,
+      0,
+      "AUDIO"
+    ],
+    [
+      478,
+      325,
+      0,
+      284,
+      2,
+      "AUDIO"
+    ],
+    [
+      479,
+      284,
+      2,
+      87,
+      0,
+      "AUDIO"
+    ],
+    [
+      509,
+      337,
+      1,
+      9,
+      0,
+      "LATENT"
+    ],
+    [
+      521,
+      341,
+      0,
+      293,
+      0,
+      "LATENT"
+    ],
+    [
+      522,
+      341,
+      0,
+      324,
+      0,
+      "LATENT"
+    ],
+    [
+      526,
+      342,
+      0,
+      337,
+      1,
+      "GUIDER"
+    ],
+    [
+      527,
+      342,
+      1,
+      337,
+      2,
+      "SAMPLER"
+    ],
+    [
+      528,
+      342,
+      2,
+      337,
+      3,
+      "SIGMAS"
+    ],
+    [
+      529,
+      342,
+      3,
+      337,
+      4,
+      "LATENT"
+    ],
+    [
+      530,
+      342,
+      5,
+      9,
+      1,
+      "VAE"
+    ],
+    [
+      534,
+      269,
+      0,
+      343,
+      3,
+      "*"
+    ],
+    [
+      535,
+      343,
+      0,
+      341,
+      1,
+      "GUIDER"
+    ],
+    [
+      536,
+      343,
+      1,
+      341,
+      2,
+      "SAMPLER"
+    ],
+    [
+      537,
+      343,
+      2,
+      341,
+      3,
+      "SIGMAS"
+    ],
+    [
+      538,
+      343,
+      3,
+      341,
+      4,
+      "LATENT"
+    ],
+    [
+      539,
+      343,
+      5,
+      293,
+      1,
+      "VAE"
+    ],
+    [
+      540,
+      343,
+      6,
+      324,
+      1,
+      "VAE"
+    ],
+    [
+      541,
+      343,
+      7,
+      284,
+      3,
+      "FLOAT"
+    ],
+    [
+      542,
+      343,
+      9,
+      284,
+      1,
+      "FEIHOU_H3_DURATION_CONTROL"
+    ],
+    [
+      543,
+      343,
+      8,
+      325,
+      1,
+      "AUDIO"
+    ],
+    [
+      616,
+      381,
+      0,
+      343,
+      2,
+      "MODEL"
+    ],
+    [
+      644,
+      370,
+      0,
+      342,
+      0,
+      "MODEL"
+    ],
+    [
+      448,
+      310,
+      0,
+      304,
+      5,
+      "AUDIO"
+    ],
+    [
+      651,
+      396,
+      0,
+      227,
+      0,
+      "FEIHOU_MERGE_LORA_STACK"
+    ],
+    [
+      652,
+      397,
+      0,
+      227,
+      1,
+      "FEIHOU_MERGE_LORA_STACK"
+    ],
+    [
+      553,
+      352,
+      0,
+      351,
+      0,
+      "FEIHOU_H3_MEDIA"
+    ],
+    [
+      554,
+      227,
+      0,
+      351,
+      1,
+      "MINIMAX_H3_BUNDLE"
+    ],
+    [
+      685,
+      351,
+      0,
+      410,
+      0,
+      "MODEL"
+    ],
+    [
+      686,
+      411,
+      0,
+      370,
+      0,
+      "MODEL"
+    ],
+    [
+      687,
+      351,
+      1,
+      412,
+      0,
+      "MODEL"
+    ],
+    [
+      688,
+      413,
+      0,
+      381,
+      0,
+      "MODEL"
+    ],
+    [
+      689,
+      351,
+      2,
+      414,
+      0,
+      "MINIMAX_H3_CONTEXT"
+    ],
+    [
+      690,
+      415,
+      0,
+      304,
+      2,
+      "MINIMAX_H3_CONTEXT"
+    ],
+    [
+      691,
+      416,
+      0,
+      342,
+      1,
+      "MINIMAX_H3_CONTEXT"
+    ],
+    [
+      694,
+      419,
+      0,
+      337,
+      0,
+      "NOISE"
+    ],
+    [
+      695,
+      420,
+      0,
+      341,
+      0,
+      "NOISE"
+    ],
+    [
+      702,
+      370,
+      0,
+      426,
+      0,
+      "MODEL"
+    ],
+    [
+      704,
+      381,
+      0,
+      428,
+      0,
+      "MODEL"
+    ],
+    [
+      713,
+      437,
+      0,
+      343,
+      4,
+      "INT"
+    ],
+    [
+      717,
+      439,
+      0,
+      304,
+      1,
+      "MODEL"
+    ],
+    [
+      718,
+      337,
+      1,
+      440,
+      0,
+      "LATENT"
+    ],
+    [
+      719,
+      441,
+      0,
+      343,
+      1,
+      "LATENT"
+    ],
+    [
+      734,
+      342,
+      4,
+      449,
+      0,
+      "MINIMAX_H3_CONTEXT"
+    ],
+    [
+      735,
+      450,
+      0,
+      343,
+      0,
+      "MINIMAX_H3_CONTEXT"
+    ],
+    [
+      736,
+      274,
+      0,
+      351,
+      2,
+      "FEIHOU_H3_PRODUCTION_SHOT"
+    ],
+    [
+      737,
+      274,
+      0,
+      445,
+      0,
+      "FEIHOU_H3_PRODUCTION_SHOT"
+    ],
+    [
+      738,
+      452,
+      0,
+      342,
+      3,
+      "INT"
+    ],
+    [
+      739,
+      451,
+      0,
+      342,
+      2,
+      "INT"
+    ],
+    [
+      743,
+      453,
+      0,
+      304,
+      4,
+      "IMAGE"
+    ],
+    [
+      748,
+      462,
+      0,
+      464,
+      0,
+      "INT"
+    ],
+    [
+      749,
+      463,
+      0,
+      465,
+      0,
+      "INT"
+    ],
+    [
+      750,
+      466,
+      0,
+      467,
+      0,
+      "INT"
+    ],
+    [
+      751,
+      468,
+      0,
+      469,
+      0,
+      "NOISE"
+    ],
+    [
+      752,
+      470,
+      0,
+      471,
+      0,
+      "BOOLEAN"
+    ],
+    [
+      744,
+      454,
+      0,
+      453,
+      0,
+      "IMAGE"
+    ],
+    [
+      745,
+      455,
+      0,
+      453,
+      1,
+      "IMAGE"
+    ],
+    [
+      746,
+      456,
+      0,
+      453,
+      2,
+      "IMAGE"
+    ],
+    [
+      747,
+      457,
+      0,
+      453,
+      3,
+      "IMAGE"
+    ],
+    [
+      413,
+      284,
+      0,
+      281,
+      0,
+      "IMAGE"
+    ],
+    [
+      414,
+      284,
+      2,
+      281,
+      1,
+      "AUDIO"
+    ],
+    [
+      481,
+      284,
+      1,
+      281,
+      4,
+      "FLOAT"
+    ],
+    [
+      441,
+      304,
+      0,
+      303,
+      0,
+      "IMAGE"
+    ],
+    [
+      442,
+      304,
+      1,
+      303,
+      1,
+      "AUDIO"
+    ],
+    [
+      653,
+      304,
+      2,
+      303,
+      4,
+      "FLOAT"
+    ],
+    [
+      485,
+      9,
+      0,
+      269,
+      0,
+      "IMAGE"
+    ],
+    [
+      531,
+      342,
+      7,
+      269,
+      4,
+      "FLOAT"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "FeiHou Easy H3 - 模型加载&预处理",
+      "bounding": [
+        -108.99591601637759,
+        -613.4695742285354,
+        1928.6928425408798,
+        1366.2471527449798
+      ],
+      "color": "#3f789e",
+      "flags": {}
+    },
+    {
+      "id": 3,
+      "title": "一采LoRA",
+      "bounding": [
+        -87.18676276656804,
+        -298.50305748613096,
+        471.2171299774607,
+        251
+      ],
+      "color": "#88A",
+      "flags": {}
+    },
+    {
+      "id": 4,
+      "title": "二采LoRA",
+      "bounding": [
+        -85.30945482690913,
+        -22.530781151230684,
+        467.71975957926384,
+        245.47633358377163
+      ],
+      "color": "#88A",
+      "flags": {}
+    },
+    {
+      "id": 5,
+      "title": "二采",
+      "bounding": [
+        3644.6075712986362,
+        -602.9468444808863,
+        2159.0168137776477,
+        1352.160302349362
+      ],
+      "color": "#3f789e",
+      "flags": {}
+    },
+    {
+      "id": 7,
+      "title": "人脸精修",
+      "bounding": [
+        -104.43796769920951,
+        790.0301236573904,
+        1924.947696870199,
+        1067.5135086529967
+      ],
+      "color": "#3f789e",
+      "flags": {}
+    },
+    {
+      "id": 6,
+      "title": "上传人物图",
+      "bounding": [
+        119.05723870875167,
+        866.3690808896106,
+        551.3031006874751,
+        418.3877354868206
+      ],
+      "color": "#42848a",
+      "flags": {}
+    },
+    {
+      "id": 8,
+      "title": "一采",
+      "bounding": [
+        1856.5547192605657,
+        -297.82148905494887,
+        1743.4763728494277,
+        1046.515050031131
+      ],
+      "color": "#3f789e",
+      "flags": {}
+    },
+    {
+      "id": 15,
+      "title": "多人面部修复",
+      "bounding": [
+        18.32429100454825,
+        1358.2489742450919,
+        920.0000000000019,
+        404
+      ],
+      "color": "#3f789e",
+      "flags": {}
+    },
+    {
+      "id": 20,
+      "title": "Group",
+      "bounding": [
+        1858.5135715255476,
+        -605.6320446142967,
+        1742.117034847192,
+        281.05945301697517
+      ],
+      "color": "#3f789e",
+      "flags": {}
+    },
+    {
+      "id": 16,
+      "title": "总步数",
+      "bounding": [
+        1912.7054432157443,
+        -556.8723293603384,
+        312.0617958561411,
+        162.2561839772203
+      ],
+      "color": "#dcefe8",
+      "flags": {}
+    },
+    {
+      "id": 17,
+      "title": "一采步数",
+      "bounding": [
+        2263.9703965739404,
+        -555.2807228927749,
+        304.96609240826365,
+        163.22408787135146
+      ],
+      "color": "#dcefe8",
+      "flags": {}
+    },
+    {
+      "id": 18,
+      "title": "二采步数",
+      "bounding": [
+        2604.999034516345,
+        -556.5860527803492,
+        298.83829285451793,
+        164.83274414339792
+      ],
+      "color": "#dcefe8",
+      "flags": {}
+    },
+    {
+      "id": 19,
+      "title": "音频生成开关",
+      "bounding": [
+        3235.7215425514028,
+        -557.8989831976497,
+        313.3568512664888,
+        163.86484024926654
+      ],
+      "color": "#dab2e2",
+      "flags": {}
+    }
+  ],
+  "definitions": {
+    "subgraphs": [
+      {
+        "id": "dc602dca-2389-4deb-9ca5-edf54daafb06",
+        "version": 1,
+        "state": {
+          "lastGroupId": 20,
+          "lastNodeId": 474,
+          "lastLinkId": 752,
+          "lastRerouteId": 0
+        },
+        "revision": 0,
+        "config": {},
+        "name": "MiniMax H3 Attentions",
+        "inputNode": {
+          "id": -10,
+          "bounding": [
+            848.2538784333042,
+            -166.02376293204645,
+            128,
+            208
+          ]
+        },
+        "outputNode": {
+          "id": -20,
+          "bounding": [
+            1425.387203628618,
+            -166.02376293204645,
+            128,
+            68
+          ]
+        },
+        "inputs": [
+          {
+            "id": "defc8b1a-660f-4999-ae63-9dcc46c7cce9",
+            "name": "model",
+            "type": "MODEL",
+            "linkIds": [
+              564
+            ],
+            "localized_name": "model",
+            "label": "模型",
+            "pos": [
+              952.2538784333042,
+              -142.02376293204645
+            ]
+          },
+          {
+            "id": "726a0969-ad0d-4398-9871-7a493fb39c9f",
+            "name": "head_chunks",
+            "type": "INT",
+            "linkIds": [
+              591
+            ],
+            "pos": [
+              952.2538784333042,
+              -122.02376293204645
+            ]
+          },
+          {
+            "id": "3d2c03d9-c0a0-4997-8071-906066a4043a",
+            "name": "chunks",
+            "type": "INT",
+            "linkIds": [
+              592
+            ],
+            "pos": [
+              952.2538784333042,
+              -102.02376293204645
+            ]
+          },
+          {
+            "id": "d9b219ee-5e65-487e-abeb-524388b216e4",
+            "name": "seq_threshold",
+            "type": "INT",
+            "linkIds": [
+              593
+            ],
+            "pos": [
+              952.2538784333042,
+              -82.02376293204645
+            ]
+          },
+          {
+            "id": "c006cc91-dc5f-41d6-b429-a27ffa018c58",
+            "name": "attention",
+            "type": "COMBO",
+            "linkIds": [
+              594
+            ],
+            "pos": [
+              952.2538784333042,
+              -62.02376293204645
+            ]
+          },
+          {
+            "id": "964be55a-3701-46fc-9fd2-be508f292fd8",
+            "name": "selection",
+            "type": "COMFY_DYNAMICCOMBO_V3",
+            "linkIds": [
+              595
+            ],
+            "pos": [
+              952.2538784333042,
+              -42.02376293204645
+            ]
+          },
+          {
+            "id": "c6b2768f-589f-4c33-993e-017eff3c37fa",
+            "name": "start_percent",
+            "type": "FLOAT",
+            "linkIds": [
+              596
+            ],
+            "pos": [
+              952.2538784333042,
+              -22.023762932046452
+            ]
+          },
+          {
+            "id": "7d8432c5-9021-463e-929a-104114e5cead",
+            "name": "end_percent",
+            "type": "FLOAT",
+            "linkIds": [
+              597
+            ],
+            "pos": [
+              952.2538784333042,
+              -2.023762932046452
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "id": "01140248-8125-4e75-9edf-8d7d3227f251",
+            "name": "model",
+            "type": "MODEL",
+            "linkIds": [
+              584
+            ],
+            "localized_name": "模型",
+            "label": "模型",
+            "pos": [
+              1449.387203628618,
+              -142.02376293204645
+            ]
+          }
+        ],
+        "widgets": [],
+        "nodes": [
+          {
+            "id": 321,
+            "type": "ModelAttentionBackend",
+            "pos": [
+              1066.7054561302423,
+              -166.11700035894663
+            ],
+            "size": [
+              270,
+              58
+            ],
+            "flags": {},
+            "order": 3,
+            "mode": 0,
+            "inputs": [
+              {
+                "label": "模型",
+                "localized_name": "model",
+                "name": "model",
+                "type": "MODEL",
+                "link": 459
+              },
+              {
+                "localized_name": "attention",
+                "name": "attention",
+                "type": "COMBO",
+                "widget": {
+                  "name": "attention"
+                },
+                "link": 594
+              }
+            ],
+            "outputs": [
+              {
+                "label": "模型",
+                "localized_name": "模型",
+                "name": "model",
+                "type": "MODEL",
+                "links": [
+                  460
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.38.0",
+              "Node name for S&R": "ModelAttentionBackend",
+              "ue_properties": {
+                "widget_ue_connectable": {},
+                "input_ue_unconnectable": {},
+                "version": "7.8"
+              }
+            },
+            "widgets_values": [
+              "comfy kitchen attention"
+            ],
+            "widgets_values_named": {
+              "attention": "comfy kitchen attention"
+            }
+          },
+          {
+            "id": 322,
+            "type": "BlockSparseAttention",
+            "pos": [
+              1050.7216136351196,
+              -10.891810365444607
+            ],
+            "size": [
+              298.8991322555812,
+              250
+            ],
+            "flags": {},
+            "order": 4,
+            "mode": 0,
+            "inputs": [
+              {
+                "label": "模型",
+                "localized_name": "模型",
+                "name": "model",
+                "type": "MODEL",
+                "link": 460
+              },
+              {
+                "localized_name": "选择",
+                "name": "selection",
+                "type": "COMFY_DYNAMICCOMBO_V3",
+                "widget": {
+                  "name": "selection"
+                },
+                "link": 595
+              },
+              {
+                "localized_name": "start_percent",
+                "name": "start_percent",
+                "type": "FLOAT",
+                "widget": {
+                  "name": "start_percent"
+                },
+                "link": 596
+              },
+              {
+                "localized_name": "end_percent",
+                "name": "end_percent",
+                "type": "FLOAT",
+                "widget": {
+                  "name": "end_percent"
+                },
+                "link": 597
+              }
+            ],
+            "outputs": [
+              {
+                "label": "模型",
+                "localized_name": "模型",
+                "name": "model",
+                "type": "MODEL",
+                "links": [
+                  584
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.38.0",
+              "Node name for S&R": "BlockSparseAttention",
+              "ue_properties": {
+                "widget_ue_connectable": {},
+                "input_ue_unconnectable": {},
+                "version": "7.8"
+              }
+            },
+            "widgets_values": [
+              "sol-attn",
+              1.3,
+              0.2,
+              1,
+              "",
+              12288,
+              256,
+              "exact_kv_and_rows",
+              true
+            ],
+            "widgets_values_named": {
+              "selection": "sol-attn",
+              "selection.tau": 1.3,
+              "start_percent": 0.2,
+              "end_percent": 1,
+              "dense_blocks": "",
+              "min_tokens": 12288,
+              "extra_tokens": 256,
+              "sink_conditioning": "exact_kv_and_rows",
+              "verbose": true
+            }
+          },
+          {
+            "id": 320,
+            "type": "MiniMaxH3MemoryEfficientSageAttentionPatch",
+            "pos": [
+              1045.053884536821,
+              -276.64736293204635
+            ],
+            "size": [
+              320.33331909179685,
+              26
+            ],
+            "flags": {},
+            "order": 2,
+            "mode": 0,
+            "inputs": [
+              {
+                "label": "模型",
+                "localized_name": "model",
+                "name": "model",
+                "type": "MODEL",
+                "link": 458
+              }
+            ],
+            "outputs": [
+              {
+                "label": "模型",
+                "localized_name": "model",
+                "name": "model",
+                "type": "MODEL",
+                "links": [
+                  459
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfyui-kjnodes",
+              "ver": "d3cfe21625e5170126ce06fbfcfe1d88108688c3",
+              "Node name for S&R": "MiniMaxH3MemoryEfficientSageAttentionPatch",
+              "ue_properties": {
+                "widget_ue_connectable": {},
+                "input_ue_unconnectable": {},
+                "version": "7.8"
+              }
+            }
+          },
+          {
+            "id": 319,
+            "type": "MiniMaxChunkFeedForward",
+            "pos": [
+              1048.8265471344762,
+              -413.00336293204674
+            ],
+            "size": [
+              316.3833374023437,
+              82
+            ],
+            "flags": {},
+            "order": 1,
+            "mode": 0,
+            "inputs": [
+              {
+                "label": "模型",
+                "localized_name": "model",
+                "name": "model",
+                "type": "MODEL",
+                "link": 457
+              },
+              {
+                "localized_name": "chunks",
+                "name": "chunks",
+                "type": "INT",
+                "widget": {
+                  "name": "chunks"
+                },
+                "link": 592
+              },
+              {
+                "localized_name": "seq_threshold",
+                "name": "seq_threshold",
+                "type": "INT",
+                "widget": {
+                  "name": "seq_threshold"
+                },
+                "link": 593
+              }
+            ],
+            "outputs": [
+              {
+                "label": "模型",
+                "localized_name": "model",
+                "name": "model",
+                "type": "MODEL",
+                "links": [
+                  458
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfyui-kjnodes",
+              "ver": "d3cfe21625e5170126ce06fbfcfe1d88108688c3",
+              "Node name for S&R": "MiniMaxChunkFeedForward",
+              "ue_properties": {
+                "widget_ue_connectable": {},
+                "input_ue_unconnectable": {},
+                "version": "7.8"
+              }
+            },
+            "widgets_values": [
+              2,
+              4096
+            ],
+            "widgets_values_named": {
+              "chunks": 2,
+              "seq_threshold": 4096
+            }
+          },
+          {
+            "id": 318,
+            "type": "MiniMaxLowVRAMAttention",
+            "pos": [
+              1036.2538784333042,
+              -518.6143629320467
+            ],
+            "size": [
+              318.51666870117185,
+              58
+            ],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "inputs": [
+              {
+                "label": "模型",
+                "localized_name": "model",
+                "name": "model",
+                "type": "MODEL",
+                "link": 564
+              },
+              {
+                "localized_name": "head_chunks",
+                "name": "head_chunks",
+                "type": "INT",
+                "widget": {
+                  "name": "head_chunks"
+                },
+                "link": 591
+              }
+            ],
+            "outputs": [
+              {
+                "label": "模型",
+                "localized_name": "model",
+                "name": "model",
+                "type": "MODEL",
+                "links": [
+                  457
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfyui-kjnodes",
+              "ver": "d3cfe21625e5170126ce06fbfcfe1d88108688c3",
+              "Node name for S&R": "MiniMaxLowVRAMAttention",
+              "ue_properties": {
+                "widget_ue_connectable": {},
+                "input_ue_unconnectable": {},
+                "version": "7.8"
+              }
+            },
+            "widgets_values": [
+              2
+            ],
+            "widgets_values_named": {
+              "head_chunks": 2
+            }
+          }
+        ],
+        "groups": [],
+        "links": [
+          {
+            "id": 459,
+            "origin_id": 320,
+            "origin_slot": 0,
+            "target_id": 321,
+            "target_slot": 0,
+            "type": "MODEL"
+          },
+          {
+            "id": 458,
+            "origin_id": 319,
+            "origin_slot": 0,
+            "target_id": 320,
+            "target_slot": 0,
+            "type": "MODEL"
+          },
+          {
+            "id": 457,
+            "origin_id": 318,
+            "origin_slot": 0,
+            "target_id": 319,
+            "target_slot": 0,
+            "type": "MODEL"
+          },
+          {
+            "id": 564,
+            "origin_id": -10,
+            "origin_slot": 0,
+            "target_id": 318,
+            "target_slot": 0,
+            "type": "MODEL"
+          },
+          {
+            "id": 584,
+            "origin_id": 322,
+            "origin_slot": 0,
+            "target_id": -20,
+            "target_slot": 0,
+            "type": "MODEL"
+          },
+          {
+            "id": 591,
+            "origin_id": -10,
+            "origin_slot": 1,
+            "target_id": 318,
+            "target_slot": 1,
+            "type": "INT"
+          },
+          {
+            "id": 592,
+            "origin_id": -10,
+            "origin_slot": 2,
+            "target_id": 319,
+            "target_slot": 1,
+            "type": "INT"
+          },
+          {
+            "id": 593,
+            "origin_id": -10,
+            "origin_slot": 3,
+            "target_id": 319,
+            "target_slot": 2,
+            "type": "INT"
+          },
+          {
+            "id": 594,
+            "origin_id": -10,
+            "origin_slot": 4,
+            "target_id": 321,
+            "target_slot": 1,
+            "type": "COMBO"
+          },
+          {
+            "id": 460,
+            "origin_id": 321,
+            "origin_slot": 0,
+            "target_id": 322,
+            "target_slot": 0,
+            "type": "MODEL"
+          },
+          {
+            "id": 596,
+            "origin_id": -10,
+            "origin_slot": 6,
+            "target_id": 322,
+            "target_slot": 2,
+            "type": "FLOAT"
+          },
+          {
+            "id": 597,
+            "origin_id": -10,
+            "origin_slot": 7,
+            "target_id": 322,
+            "target_slot": 3,
+            "type": "FLOAT"
+          },
+          {
+            "id": 595,
+            "origin_id": -10,
+            "origin_slot": 5,
+            "target_id": 322,
+            "target_slot": 1,
+            "type": "COMFY_DYNAMICCOMBO_V3"
+          }
+        ],
+        "extra": {
+          "ue_links": [],
+          "links_added_by_ue": []
+        }
+      },
+      {
+        "id": "efd373a1-06d5-4e4e-adb5-003dc1159ef7",
+        "version": 1,
+        "state": {
+          "lastGroupId": 20,
+          "lastNodeId": 474,
+          "lastLinkId": 752,
+          "lastRerouteId": 0
+        },
+        "revision": 0,
+        "config": {},
+        "name": "MiniMax H3 Attentions",
+        "inputNode": {
+          "id": -10,
+          "bounding": [
+            848.2538784333042,
+            -166.02376293204645,
+            128,
+            208
+          ]
+        },
+        "outputNode": {
+          "id": -20,
+          "bounding": [
+            1425.387203628618,
+            -166.02376293204645,
+            128,
+            68
+          ]
+        },
+        "inputs": [
+          {
+            "id": "defc8b1a-660f-4999-ae63-9dcc46c7cce9",
+            "name": "model",
+            "type": "MODEL",
+            "linkIds": [
+              605
+            ],
+            "localized_name": "model",
+            "label": "模型",
+            "pos": [
+              952.2538784333042,
+              -142.02376293204645
+            ]
+          },
+          {
+            "id": "726a0969-ad0d-4398-9871-7a493fb39c9f",
+            "name": "head_chunks",
+            "type": "INT",
+            "linkIds": [
+              607
+            ],
+            "pos": [
+              952.2538784333042,
+              -122.02376293204645
+            ]
+          },
+          {
+            "id": "3d2c03d9-c0a0-4997-8071-906066a4043a",
+            "name": "chunks",
+            "type": "INT",
+            "linkIds": [
+              608
+            ],
+            "pos": [
+              952.2538784333042,
+              -102.02376293204645
+            ]
+          },
+          {
+            "id": "d9b219ee-5e65-487e-abeb-524388b216e4",
+            "name": "seq_threshold",
+            "type": "INT",
+            "linkIds": [
+              609
+            ],
+            "pos": [
+              952.2538784333042,
+              -82.02376293204645
+            ]
+          },
+          {
+            "id": "c006cc91-dc5f-41d6-b429-a27ffa018c58",
+            "name": "attention",
+            "type": "COMBO",
+            "linkIds": [
+              610
+            ],
+            "pos": [
+              952.2538784333042,
+              -62.02376293204645
+            ]
+          },
+          {
+            "id": "964be55a-3701-46fc-9fd2-be508f292fd8",
+            "name": "selection",
+            "type": "COMFY_DYNAMICCOMBO_V3",
+            "linkIds": [
+              614
+            ],
+            "pos": [
+              952.2538784333042,
+              -42.02376293204645
+            ]
+          },
+          {
+            "id": "c6b2768f-589f-4c33-993e-017eff3c37fa",
+            "name": "start_percent",
+            "type": "FLOAT",
+            "linkIds": [
+              612
+            ],
+            "pos": [
+              952.2538784333042,
+              -22.023762932046452
+            ]
+          },
+          {
+            "id": "7d8432c5-9021-463e-929a-104114e5cead",
+            "name": "end_percent",
+            "type": "FLOAT",
+            "linkIds": [
+              613
+            ],
+            "pos": [
+              952.2538784333042,
+              -2.023762932046452
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "id": "01140248-8125-4e75-9edf-8d7d3227f251",
+            "name": "model",
+            "type": "MODEL",
+            "linkIds": [
+              606
+            ],
+            "localized_name": "模型",
+            "label": "模型",
+            "pos": [
+              1449.387203628618,
+              -142.02376293204645
+            ]
+          }
+        ],
+        "widgets": [],
+        "nodes": [
+          {
+            "id": 376,
+            "type": "ModelAttentionBackend",
+            "pos": [
+              1067.8142036286179,
+              -116.22336293204611
+            ],
+            "size": [
+              270,
+              58
+            ],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "inputs": [
+              {
+                "label": "模型",
+                "localized_name": "model",
+                "name": "model",
+                "type": "MODEL",
+                "link": 602
+              },
+              {
+                "localized_name": "attention",
+                "name": "attention",
+                "type": "COMBO",
+                "widget": {
+                  "name": "attention"
+                },
+                "link": 610
+              }
+            ],
+            "outputs": [
+              {
+                "label": "模型",
+                "localized_name": "模型",
+                "name": "model",
+                "type": "MODEL",
+                "links": [
+                  611
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.38.0",
+              "Node name for S&R": "ModelAttentionBackend",
+              "ue_properties": {
+                "widget_ue_connectable": {},
+                "input_ue_unconnectable": {},
+                "version": "7.8"
+              }
+            },
+            "widgets_values": [
+              "comfy kitchen attention"
+            ],
+            "widgets_values_named": {
+              "attention": "comfy kitchen attention"
+            }
+          },
+          {
+            "id": 377,
+            "type": "BlockSparseAttention",
+            "pos": [
+              1055.156603628622,
+              34.56683706795373
+            ],
+            "size": [
+              298.8991322555812,
+              250
+            ],
+            "flags": {},
+            "order": 1,
+            "mode": 0,
+            "inputs": [
+              {
+                "label": "模型",
+                "localized_name": "模型",
+                "name": "model",
+                "type": "MODEL",
+                "link": 611
+              },
+              {
+                "localized_name": "选择",
+                "name": "selection",
+                "type": "COMFY_DYNAMICCOMBO_V3",
+                "widget": {
+                  "name": "selection"
+                },
+                "link": 614
+              },
+              {
+                "localized_name": "start_percent",
+                "name": "start_percent",
+                "type": "FLOAT",
+                "widget": {
+                  "name": "start_percent"
+                },
+                "link": 612
+              },
+              {
+                "localized_name": "end_percent",
+                "name": "end_percent",
+                "type": "FLOAT",
+                "widget": {
+                  "name": "end_percent"
+                },
+                "link": 613
+              }
+            ],
+            "outputs": [
+              {
+                "label": "模型",
+                "localized_name": "模型",
+                "name": "model",
+                "type": "MODEL",
+                "links": [
+                  606
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.38.0",
+              "Node name for S&R": "BlockSparseAttention",
+              "ue_properties": {
+                "widget_ue_connectable": {},
+                "input_ue_unconnectable": {},
+                "version": "7.8"
+              }
+            },
+            "widgets_values": [
+              "sol-attn",
+              1.3,
+              0.2,
+              1,
+              "",
+              12288,
+              256,
+              "exact_kv_and_rows",
+              true
+            ],
+            "widgets_values_named": {
+              "selection": "sol-attn",
+              "selection.tau": 1.3,
+              "start_percent": 0.2,
+              "end_percent": 1,
+              "dense_blocks": "",
+              "min_tokens": 12288,
+              "extra_tokens": 256,
+              "sink_conditioning": "exact_kv_and_rows",
+              "verbose": true
+            }
+          },
+          {
+            "id": 378,
+            "type": "MiniMaxH3MemoryEfficientSageAttentionPatch",
+            "pos": [
+              1045.053884536821,
+              -276.64736293204635
+            ],
+            "size": [
+              320.33331909179685,
+              26
+            ],
+            "flags": {},
+            "order": 2,
+            "mode": 0,
+            "inputs": [
+              {
+                "label": "模型",
+                "localized_name": "model",
+                "name": "model",
+                "type": "MODEL",
+                "link": 603
+              }
+            ],
+            "outputs": [
+              {
+                "label": "模型",
+                "localized_name": "model",
+                "name": "model",
+                "type": "MODEL",
+                "links": [
+                  602
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfyui-kjnodes",
+              "ver": "d3cfe21625e5170126ce06fbfcfe1d88108688c3",
+              "Node name for S&R": "MiniMaxH3MemoryEfficientSageAttentionPatch",
+              "ue_properties": {
+                "widget_ue_connectable": {},
+                "input_ue_unconnectable": {},
+                "version": "7.8"
+              }
+            }
+          },
+          {
+            "id": 379,
+            "type": "MiniMaxChunkFeedForward",
+            "pos": [
+              1048.8265471344762,
+              -413.00336293204674
+            ],
+            "size": [
+              316.3833374023437,
+              82
+            ],
+            "flags": {},
+            "order": 3,
+            "mode": 0,
+            "inputs": [
+              {
+                "label": "模型",
+                "localized_name": "model",
+                "name": "model",
+                "type": "MODEL",
+                "link": 604
+              },
+              {
+                "localized_name": "chunks",
+                "name": "chunks",
+                "type": "INT",
+                "widget": {
+                  "name": "chunks"
+                },
+                "link": 608
+              },
+              {
+                "localized_name": "seq_threshold",
+                "name": "seq_threshold",
+                "type": "INT",
+                "widget": {
+                  "name": "seq_threshold"
+                },
+                "link": 609
+              }
+            ],
+            "outputs": [
+              {
+                "label": "模型",
+                "localized_name": "model",
+                "name": "model",
+                "type": "MODEL",
+                "links": [
+                  603
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfyui-kjnodes",
+              "ver": "d3cfe21625e5170126ce06fbfcfe1d88108688c3",
+              "Node name for S&R": "MiniMaxChunkFeedForward",
+              "ue_properties": {
+                "widget_ue_connectable": {},
+                "input_ue_unconnectable": {},
+                "version": "7.8"
+              }
+            },
+            "widgets_values": [
+              2,
+              4096
+            ],
+            "widgets_values_named": {
+              "chunks": 2,
+              "seq_threshold": 4096
+            }
+          },
+          {
+            "id": 380,
+            "type": "MiniMaxLowVRAMAttention",
+            "pos": [
+              1036.2538784333042,
+              -518.6143629320467
+            ],
+            "size": [
+              318.51666870117185,
+              58
+            ],
+            "flags": {},
+            "order": 4,
+            "mode": 0,
+            "inputs": [
+              {
+                "label": "模型",
+                "localized_name": "model",
+                "name": "model",
+                "type": "MODEL",
+                "link": 605
+              },
+              {
+                "localized_name": "head_chunks",
+                "name": "head_chunks",
+                "type": "INT",
+                "widget": {
+                  "name": "head_chunks"
+                },
+                "link": 607
+              }
+            ],
+            "outputs": [
+              {
+                "label": "模型",
+                "localized_name": "model",
+                "name": "model",
+                "type": "MODEL",
+                "links": [
+                  604
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfyui-kjnodes",
+              "ver": "d3cfe21625e5170126ce06fbfcfe1d88108688c3",
+              "Node name for S&R": "MiniMaxLowVRAMAttention",
+              "ue_properties": {
+                "widget_ue_connectable": {},
+                "input_ue_unconnectable": {},
+                "version": "7.8"
+              }
+            },
+            "widgets_values": [
+              2
+            ],
+            "widgets_values_named": {
+              "head_chunks": 2
+            }
+          }
+        ],
+        "groups": [],
+        "links": [
+          {
+            "id": 602,
+            "origin_id": 378,
+            "origin_slot": 0,
+            "target_id": 376,
+            "target_slot": 0,
+            "type": "MODEL"
+          },
+          {
+            "id": 603,
+            "origin_id": 379,
+            "origin_slot": 0,
+            "target_id": 378,
+            "target_slot": 0,
+            "type": "MODEL"
+          },
+          {
+            "id": 604,
+            "origin_id": 380,
+            "origin_slot": 0,
+            "target_id": 379,
+            "target_slot": 0,
+            "type": "MODEL"
+          },
+          {
+            "id": 605,
+            "origin_id": -10,
+            "origin_slot": 0,
+            "target_id": 380,
+            "target_slot": 0,
+            "type": "MODEL"
+          },
+          {
+            "id": 606,
+            "origin_id": 377,
+            "origin_slot": 0,
+            "target_id": -20,
+            "target_slot": 0,
+            "type": "MODEL"
+          },
+          {
+            "id": 607,
+            "origin_id": -10,
+            "origin_slot": 1,
+            "target_id": 380,
+            "target_slot": 1,
+            "type": "INT"
+          },
+          {
+            "id": 608,
+            "origin_id": -10,
+            "origin_slot": 2,
+            "target_id": 379,
+            "target_slot": 1,
+            "type": "INT"
+          },
+          {
+            "id": 609,
+            "origin_id": -10,
+            "origin_slot": 3,
+            "target_id": 379,
+            "target_slot": 2,
+            "type": "INT"
+          },
+          {
+            "id": 610,
+            "origin_id": -10,
+            "origin_slot": 4,
+            "target_id": 376,
+            "target_slot": 1,
+            "type": "COMBO"
+          },
+          {
+            "id": 611,
+            "origin_id": 376,
+            "origin_slot": 0,
+            "target_id": 377,
+            "target_slot": 0,
+            "type": "MODEL"
+          },
+          {
+            "id": 612,
+            "origin_id": -10,
+            "origin_slot": 6,
+            "target_id": 377,
+            "target_slot": 2,
+            "type": "FLOAT"
+          },
+          {
+            "id": 613,
+            "origin_id": -10,
+            "origin_slot": 7,
+            "target_id": 377,
+            "target_slot": 3,
+            "type": "FLOAT"
+          },
+          {
+            "id": 614,
+            "origin_id": -10,
+            "origin_slot": 5,
+            "target_id": 377,
+            "target_slot": 1,
+            "type": "COMFY_DYNAMICCOMBO_V3"
+          }
+        ],
+        "extra": {
+          "ue_links": [],
+          "links_added_by_ue": []
+        }
+      }
+    ]
+  },
+  "config": {},
+  "extra": {
+    "frontendVersion": "1.53.6",
+    "VHS_latentpreview": false,
+    "ds": {
+      "scale": 0.27206343099012487,
+      "offset": [
+        2161.540782670099,
+        3023.904758276919
+      ]
+    },
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true,
+    "ue_links": [],
+    "links_added_by_ue": []
+  },
+  "version": 0.4,
+  "seed_widgets": {
+    "304": 5,
+    "468": 0
+  }
+}

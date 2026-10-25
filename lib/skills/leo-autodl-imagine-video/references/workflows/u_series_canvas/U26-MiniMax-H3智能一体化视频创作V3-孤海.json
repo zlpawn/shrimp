@@ -1,0 +1,3618 @@
+{
+  "id": "d42d6f0e-7e73-4e86-bc76-044ec9024404",
+  "revision": 0,
+  "last_node_id": 268,
+  "last_link_id": 368,
+  "nodes": [
+    {
+      "id": 8,
+      "type": "BasicGuider",
+      "pos": [
+        -289.24278981333345,
+        1681.5070861241923
+      ],
+      "size": [
+        230,
+        80
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 27,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "model",
+          "name": "model",
+          "type": "MODEL",
+          "link": 157
+        },
+        {
+          "label": "conditioning",
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 145
+        }
+      ],
+      "outputs": [
+        {
+          "label": "GUIDER",
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            10,
+            267
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.0",
+        "Node name for S&R": "BasicGuider",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      }
+    },
+    {
+      "id": 9,
+      "type": "RandomNoise",
+      "pos": [
+        280.7572101866668,
+        1836.5070861241918
+      ],
+      "size": [
+        255,
+        90
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "noise_seed",
+          "name": "noise_seed",
+          "type": "INT",
+          "widget": {
+            "name": "noise_seed"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "NOISE",
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            9,
+            266
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.0",
+        "Node name for S&R": "RandomNoise",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        123456789,
+        "fixed"
+      ],
+      "widgets_values_named": {
+        "noise_seed": 123456789,
+        "control_after_generate": "fixed"
+      }
+    },
+    {
+      "id": 10,
+      "type": "SamplerCustomAdvanced",
+      "pos": [
+        0.7572101866665122,
+        1651.5070861241927
+      ],
+      "size": [
+        235,
+        510
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 29,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "noise",
+          "name": "noise",
+          "type": "NOISE",
+          "link": 9
+        },
+        {
+          "label": "guider",
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 10
+        },
+        {
+          "label": "sampler",
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 158
+        },
+        {
+          "label": "sigmas",
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 277
+        },
+        {
+          "label": "latent_image",
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 147
+        }
+      ],
+      "outputs": [
+        {
+          "label": "output",
+          "name": "output",
+          "type": "LATENT",
+          "links": []
+        },
+        {
+          "label": "denoised_output",
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": [
+            230,
+            311
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.0",
+        "Node name for S&R": "SamplerCustomAdvanced",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      }
+    },
+    {
+      "id": 12,
+      "type": "VHS_VideoCombine",
+      "pos": [
+        -810.9467163085938,
+        191.01834106445312
+      ],
+      "size": [
+        425,
+        1062.7058823529412
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "images",
+          "name": "images",
+          "type": "IMAGE",
+          "link": 140
+        },
+        {
+          "label": "audio",
+          "name": "audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": 142
+        },
+        {
+          "label": "meta_batch",
+          "name": "meta_batch",
+          "shape": 7,
+          "type": "VHS_BatchManager"
+        },
+        {
+          "label": "vae",
+          "name": "vae",
+          "shape": 7,
+          "type": "VAE"
+        },
+        {
+          "label": "frame_rate",
+          "name": "frame_rate",
+          "type": "FLOAT",
+          "widget": {
+            "name": "frame_rate"
+          }
+        },
+        {
+          "label": "loop_count",
+          "name": "loop_count",
+          "type": "INT",
+          "widget": {
+            "name": "loop_count"
+          }
+        },
+        {
+          "label": "filename_prefix",
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": {
+            "name": "filename_prefix"
+          }
+        },
+        {
+          "label": "format",
+          "name": "format",
+          "type": "COMBO",
+          "widget": {
+            "name": "format"
+          }
+        },
+        {
+          "label": "pingpong",
+          "name": "pingpong",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "pingpong"
+          }
+        },
+        {
+          "label": "save_output",
+          "name": "save_output",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "save_output"
+          }
+        },
+        {
+          "label": "save_metadata",
+          "name": "save_metadata",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "save_metadata"
+          }
+        },
+        {
+          "label": "trim_to_audio",
+          "name": "trim_to_audio",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "trim_to_audio"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "Filenames",
+          "name": "Filenames",
+          "type": "VHS_FILENAMES"
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-videohelpersuite",
+        "ver": "4ee72c065db22c9d96c2427954dc69e7b908444b",
+        "Node name for S&R": "VHS_VideoCombine",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {
+          "save_output": true,
+          "filename_prefix": true,
+          "loop_count": true,
+          "save_metadata": true,
+          "trim_to_audio": true,
+          "format": true,
+          "frame_rate": true,
+          "pingpong": true
+        }
+      },
+      "widgets_values": {
+        "frame_rate": 24,
+        "loop_count": 0,
+        "filename_prefix": "MiniMaxH3/一采",
+        "format": "video/h264-mp4",
+        "pix_fmt": "yuv420p",
+        "crf": 16,
+        "save_metadata": false,
+        "trim_to_audio": false,
+        "pingpong": false,
+        "save_output": true,
+        "videopreview": {
+          "paused": false,
+          "hidden": false,
+          "params": {
+            "storageProvider": "cos",
+            "cos_url": "https://rh-images.xiaoyaoyou.com//83b6ab85b9aeb2ee7d7af0a376e2aeaa/output/MiniMaxH3/一采_00001_p85-audio_ynytx_1788772839.mp4",
+            "workflow": "一采_00002.png",
+            "format": "video/h264-mp4",
+            "subfolder": "MiniMaxH3",
+            "label": "Normal",
+            "type": "output",
+            "frame_rate": 24,
+            "bucket": "rh-images-1252422369",
+            "score": 2,
+            "filename": "一采_00002-audio.mp4",
+            "fullpath": "/root/ComfyUI/output/MiniMaxH3/一采_00002-audio.mp4",
+            "objectKey": "83b6ab85b9aeb2ee7d7af0a376e2aeaa/output/MiniMaxH3/一采_00001_p85-audio_ynytx_1788772839.mp4"
+          }
+        }
+      },
+      "widgets_values_named": {
+        "frame_rate": 24,
+        "loop_count": 0,
+        "filename_prefix": "MiniMaxH3/一采",
+        "format": "video/h264-mp4",
+        "pix_fmt": "yuv420p",
+        "crf": 16,
+        "save_metadata": false,
+        "trim_to_audio": false,
+        "pingpong": false,
+        "save_output": true,
+        "videopreview": {
+          "paused": false,
+          "hidden": false,
+          "params": {
+            "storageProvider": "cos",
+            "cos_url": "https://rh-images.xiaoyaoyou.com//83b6ab85b9aeb2ee7d7af0a376e2aeaa/output/MiniMaxH3/一采_00001_p85-audio_ynytx_1788772839.mp4",
+            "workflow": "一采_00002.png",
+            "format": "video/h264-mp4",
+            "subfolder": "MiniMaxH3",
+            "label": "Normal",
+            "type": "output",
+            "frame_rate": 24,
+            "bucket": "rh-images-1252422369",
+            "score": 2,
+            "filename": "一采_00002-audio.mp4",
+            "fullpath": "/root/ComfyUI/output/MiniMaxH3/一采_00002-audio.mp4",
+            "objectKey": "83b6ab85b9aeb2ee7d7af0a376e2aeaa/output/MiniMaxH3/一采_00001_p85-audio_ynytx_1788772839.mp4"
+          }
+        }
+      }
+    },
+    {
+      "id": 17,
+      "type": "MiniMaxH3MemoryEfficientSageAttentionPatch",
+      "pos": [
+        -1717.1243816102094,
+        1880.1266539952853
+      ],
+      "size": [
+        424.19073486328125,
+        69.58151245117188
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 25,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "model",
+          "name": "model",
+          "type": "MODEL",
+          "link": 362
+        }
+      ],
+      "outputs": [
+        {
+          "label": "model",
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            166
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-kjnodes",
+        "ver": "b8b887cee3bb697c35002a29cc66bd35514b3ebe",
+        "Node name for S&R": "MiniMaxH3MemoryEfficientSageAttentionPatch",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {},
+        "aux_id": "kijai/ComfyUI-KJNodes"
+      }
+    },
+    {
+      "id": 78,
+      "type": "UNETLoader",
+      "pos": [
+        -2578.780875750833,
+        1683.1961730382548
+      ],
+      "size": [
+        495,
+        105
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "unet_name",
+          "name": "unet_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "unet_name"
+          }
+        },
+        {
+          "label": "weight_dtype",
+          "name": "weight_dtype",
+          "type": "COMBO",
+          "widget": {
+            "name": "weight_dtype"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "MODEL",
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            363
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.0",
+        "Node name for S&R": "UNETLoader",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "minimax/minimax_h3_fl2va_int8_convrot.safetensors",
+        "default"
+      ],
+      "widgets_values_named": {
+        "unet_name": "minimax/minimax_h3_fl2va_int8_convrot.safetensors",
+        "weight_dtype": "default"
+      },
+      "color": "#447387",
+      "bgcolor": "#305f73"
+    },
+    {
+      "id": 102,
+      "type": "easy ifElse",
+      "pos": [
+        -644.2427898133332,
+        1936.5070861241916
+      ],
+      "size": [
+        310,
+        85
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 33,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "on_true",
+          "name": "on_true",
+          "type": "*",
+          "link": 151
+        },
+        {
+          "label": "on_false",
+          "name": "on_false",
+          "type": "*",
+          "link": 238
+        },
+        {
+          "label": "boolean",
+          "name": "boolean",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "boolean"
+          },
+          "link": 152
+        }
+      ],
+      "outputs": [
+        {
+          "label": "*",
+          "name": "*",
+          "type": "*",
+          "links": [
+            141
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-easy-use",
+        "ver": "130c1b5796d9876a5f853fa0bea88e808cfda4ad",
+        "Node name for S&R": "easy ifElse",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {
+          "boolean": true
+        }
+      },
+      "widgets_values": [
+        false
+      ],
+      "widgets_values_named": {
+        "boolean": false
+      }
+    },
+    {
+      "id": 117,
+      "type": "SetNode",
+      "pos": [
+        136.23979489665385,
+        237.9384868751435
+      ],
+      "size": [
+        225,
+        35
+      ],
+      "flags": {
+        "collapsed": true,
+        "disabled": false
+      },
+      "order": 21,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "MiniMax",
+          "name": "MiniMax",
+          "type": "MiniMax",
+          "link": 180
+        }
+      ],
+      "outputs": [
+        {
+          "label": "MiniMax",
+          "name": "MiniMax",
+          "type": "MiniMax"
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "previousName": "minimax",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "minimax"
+      ],
+      "widgets_values_named": {
+        "Constant": "minimax"
+      }
+    },
+    {
+      "id": 118,
+      "type": "GetNode",
+      "pos": [
+        -1054.2427898133335,
+        1956.5070861241916
+      ],
+      "size": [
+        245,
+        65
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "MiniMax",
+          "name": "MiniMax",
+          "type": "MiniMax",
+          "links": [
+            144
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "GetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "minimax"
+      ],
+      "widgets_values_named": {
+        "Constant": "minimax"
+      }
+    },
+    {
+      "id": 119,
+      "type": "SetNode",
+      "pos": [
+        305.75721018666684,
+        1996.507086124191
+      ],
+      "size": [
+        225,
+        70
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 32,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "link": 163
+        }
+      ],
+      "outputs": [
+        {
+          "label": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE"
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "previousName": "V-image_1",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "V-image_1"
+      ],
+      "widgets_values_named": {
+        "Constant": "V-image_1"
+      },
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 120,
+      "type": "GetNode",
+      "pos": [
+        -795.9467163085938,
+        231.01834106445312
+      ],
+      "size": [
+        225,
+        35
+      ],
+      "flags": {
+        "collapsed": true,
+        "disabled": false
+      },
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            140
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "GetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "V-image_1"
+      ],
+      "widgets_values_named": {
+        "Constant": "V-image_1"
+      },
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 121,
+      "type": "SetNode",
+      "pos": [
+        -294.24278981333345,
+        1961.5070861241913
+      ],
+      "size": [
+        235,
+        70
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 35,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "*",
+          "name": "*",
+          "type": "*",
+          "link": 141
+        }
+      ],
+      "outputs": [
+        {
+          "label": "*",
+          "name": "*",
+          "type": "*"
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "previousName": "audio1",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "audio1"
+      ],
+      "widgets_values_named": {
+        "Constant": "audio1"
+      }
+    },
+    {
+      "id": 122,
+      "type": "GetNode",
+      "pos": [
+        -790.9467163085938,
+        271.01824951171875
+      ],
+      "size": [
+        225,
+        35
+      ],
+      "flags": {
+        "collapsed": true,
+        "disabled": false
+      },
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "*",
+          "name": "*",
+          "type": "*",
+          "links": [
+            142
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "GetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "audio1"
+      ],
+      "widgets_values_named": {
+        "Constant": "audio1"
+      }
+    },
+    {
+      "id": 124,
+      "type": "MiniMaxH3IntegrationAdapterGH",
+      "pos": [
+        -1069.2427898133335,
+        1676.5070861241918
+      ],
+      "size": [
+        275,
+        215
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "integration",
+          "name": "integration",
+          "type": "MiniMax",
+          "link": 144
+        }
+      ],
+      "outputs": [
+        {
+          "label": "positive",
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            145
+          ]
+        },
+        {
+          "label": "av_latent",
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            147,
+            156
+          ]
+        },
+        {
+          "label": "video_vae",
+          "name": "video_vae",
+          "type": "VAE",
+          "links": [
+            161,
+            263
+          ]
+        },
+        {
+          "label": "audio_vae",
+          "name": "audio_vae",
+          "type": "VAE",
+          "links": [
+            162,
+            264
+          ]
+        },
+        {
+          "label": "models number",
+          "name": "models number",
+          "type": "INT",
+          "links": [
+            366
+          ]
+        },
+        {
+          "label": "mux_audio",
+          "name": "mux_audio",
+          "type": "AUDIO",
+          "links": [
+            151
+          ]
+        },
+        {
+          "label": "is_original_audio",
+          "name": "is_original_audio",
+          "type": "BOOLEAN",
+          "links": [
+            152
+          ]
+        },
+        {
+          "label": "conditioned_prompt",
+          "name": "conditioned_prompt",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "label": "media_map_json",
+          "name": "media_map_json",
+          "type": "STRING"
+        },
+        {
+          "label": "report",
+          "name": "report",
+          "type": "STRING"
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3IntegrationAdapterGH",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      }
+    },
+    {
+      "id": 126,
+      "type": "MiniMaxH3DualClockT8GH",
+      "pos": [
+        -639.2427898133332,
+        1671.5070861241918
+      ],
+      "size": [
+        305,
+        195
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 26,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "model",
+          "name": "model",
+          "type": "MODEL",
+          "link": 166
+        },
+        {
+          "label": "av_latent",
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 156
+        },
+        {
+          "label": "steps",
+          "name": "steps",
+          "type": "INT",
+          "widget": {
+            "name": "steps"
+          }
+        },
+        {
+          "label": "shift_video",
+          "name": "shift_video",
+          "type": "FLOAT",
+          "widget": {
+            "name": "shift_video"
+          }
+        },
+        {
+          "label": "shift_audio",
+          "name": "shift_audio",
+          "type": "FLOAT",
+          "widget": {
+            "name": "shift_audio"
+          }
+        },
+        {
+          "label": "sampler_name",
+          "name": "sampler_name",
+          "shape": 7,
+          "type": "COMBO",
+          "widget": {
+            "name": "sampler_name"
+          }
+        },
+        {
+          "label": "scheduler",
+          "name": "scheduler",
+          "shape": 7,
+          "type": "COMBO",
+          "widget": {
+            "name": "scheduler"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "model",
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            157
+          ]
+        },
+        {
+          "label": "sampler",
+          "name": "sampler",
+          "type": "SAMPLER",
+          "links": [
+            158,
+            268
+          ]
+        },
+        {
+          "label": "sigmas",
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": [
+            186,
+            277
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3DualClockT8GH",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        8,
+        12,
+        3,
+        "dual_clock_euler",
+        "native_flow"
+      ],
+      "widgets_values_named": {
+        "steps": 8,
+        "shift_video": 12,
+        "shift_audio": 3,
+        "sampler_name": "dual_clock_euler",
+        "scheduler": "native_flow"
+      }
+    },
+    {
+      "id": 127,
+      "type": "MiniMaxH3AVDecodeT8GH",
+      "pos": [
+        280.7572101866668,
+        1671.5070861241918
+      ],
+      "size": [
+        255,
+        100
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 30,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "av_latent",
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 230
+        },
+        {
+          "label": "video_vae",
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 161
+        },
+        {
+          "label": "audio_vae",
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 162
+        }
+      ],
+      "outputs": [
+        {
+          "label": "frames",
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            163
+          ]
+        },
+        {
+          "label": "generated_audio",
+          "name": "generated_audio",
+          "type": "AUDIO",
+          "links": [
+            238
+          ]
+        },
+        {
+          "label": "video_latent",
+          "name": "video_latent",
+          "type": "LATENT"
+        },
+        {
+          "label": "audio_latent",
+          "name": "audio_latent",
+          "type": "LATENT",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AVDecodeT8GH",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      }
+    },
+    {
+      "id": 185,
+      "type": "MiniMaxH3IntegrationGH",
+      "pos": [
+        -228.7602508797133,
+        202.9384868751435
+      ],
+      "size": [
+        500,
+        1076
+      ],
+      "flags": {
+        "collapsed": false,
+        "disabled": false
+      },
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "prompt_override",
+          "name": "prompt_override",
+          "shape": 7,
+          "type": "STRING"
+        },
+        {
+          "label": "main_mode",
+          "name": "main_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "main_mode"
+          }
+        },
+        {
+          "label": "clip_name",
+          "name": "clip_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "clip_name"
+          }
+        },
+        {
+          "label": "video_vae_name",
+          "name": "video_vae_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "video_vae_name"
+          }
+        },
+        {
+          "label": "audio_vae_name",
+          "name": "audio_vae_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "audio_vae_name"
+          }
+        },
+        {
+          "label": "aspect",
+          "name": "aspect",
+          "type": "COMBO",
+          "widget": {
+            "name": "aspect"
+          }
+        },
+        {
+          "label": "megapixels",
+          "name": "megapixels",
+          "type": "FLOAT",
+          "widget": {
+            "name": "megapixels"
+          }
+        },
+        {
+          "label": "duration_seconds",
+          "name": "duration_seconds",
+          "type": "INT",
+          "widget": {
+            "name": "duration_seconds"
+          }
+        },
+        {
+          "label": "prompt",
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          }
+        },
+        {
+          "label": "task_type",
+          "name": "task_type",
+          "type": "COMBO",
+          "widget": {
+            "name": "task_type"
+          }
+        },
+        {
+          "label": "audio_mode",
+          "name": "audio_mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "audio_mode"
+          }
+        },
+        {
+          "label": "audio_denoise_strength",
+          "name": "audio_denoise_strength",
+          "type": "FLOAT",
+          "widget": {
+            "name": "audio_denoise_strength"
+          }
+        },
+        {
+          "label": "drive_audio_ordinal",
+          "name": "drive_audio_ordinal",
+          "type": "INT",
+          "widget": {
+            "name": "drive_audio_ordinal"
+          }
+        },
+        {
+          "label": "strict_prompt_tags",
+          "name": "strict_prompt_tags",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "strict_prompt_tags"
+          }
+        },
+        {
+          "label": "ref_image_size",
+          "name": "ref_image_size",
+          "type": "COMBO",
+          "widget": {
+            "name": "ref_image_size"
+          }
+        },
+        {
+          "label": "first_frame",
+          "name": "first_frame",
+          "shape": 7,
+          "type": "STRING",
+          "widget": {
+            "name": "first_frame"
+          }
+        },
+        {
+          "label": "last_frame",
+          "name": "last_frame",
+          "shape": 7,
+          "type": "STRING",
+          "widget": {
+            "name": "last_frame"
+          }
+        },
+        {
+          "label": "hybrid_audio",
+          "name": "hybrid_audio",
+          "shape": 7,
+          "type": "STRING",
+          "widget": {
+            "name": "hybrid_audio"
+          }
+        },
+        {
+          "label": "ref_image_1",
+          "name": "ref_image_1",
+          "shape": 7,
+          "type": "STRING",
+          "widget": {
+            "name": "ref_image_1"
+          }
+        },
+        {
+          "label": "ref_image_2",
+          "name": "ref_image_2",
+          "shape": 7,
+          "type": "STRING",
+          "widget": {
+            "name": "ref_image_2"
+          }
+        },
+        {
+          "label": "ref_image_3",
+          "name": "ref_image_3",
+          "shape": 7,
+          "type": "STRING",
+          "widget": {
+            "name": "ref_image_3"
+          }
+        },
+        {
+          "label": "ref_image_4",
+          "name": "ref_image_4",
+          "shape": 7,
+          "type": "STRING",
+          "widget": {
+            "name": "ref_image_4"
+          }
+        },
+        {
+          "label": "ref_image_5",
+          "name": "ref_image_5",
+          "shape": 7,
+          "type": "STRING",
+          "widget": {
+            "name": "ref_image_5"
+          }
+        },
+        {
+          "label": "ref_image_6",
+          "name": "ref_image_6",
+          "shape": 7,
+          "type": "STRING",
+          "widget": {
+            "name": "ref_image_6"
+          }
+        },
+        {
+          "label": "ref_image_7",
+          "name": "ref_image_7",
+          "shape": 7,
+          "type": "STRING",
+          "widget": {
+            "name": "ref_image_7"
+          }
+        },
+        {
+          "label": "ref_image_8",
+          "name": "ref_image_8",
+          "shape": 7,
+          "type": "STRING",
+          "widget": {
+            "name": "ref_image_8"
+          }
+        },
+        {
+          "label": "ref_image_9",
+          "name": "ref_image_9",
+          "shape": 7,
+          "type": "STRING",
+          "widget": {
+            "name": "ref_image_9"
+          }
+        },
+        {
+          "label": "ref_video_1",
+          "name": "ref_video_1",
+          "shape": 7,
+          "type": "STRING",
+          "widget": {
+            "name": "ref_video_1"
+          }
+        },
+        {
+          "label": "ref_video_2",
+          "name": "ref_video_2",
+          "shape": 7,
+          "type": "STRING",
+          "widget": {
+            "name": "ref_video_2"
+          }
+        },
+        {
+          "label": "ref_video_3",
+          "name": "ref_video_3",
+          "shape": 7,
+          "type": "STRING",
+          "widget": {
+            "name": "ref_video_3"
+          }
+        },
+        {
+          "label": "ref_audio_1",
+          "name": "ref_audio_1",
+          "shape": 7,
+          "type": "STRING",
+          "widget": {
+            "name": "ref_audio_1"
+          }
+        },
+        {
+          "label": "ref_audio_2",
+          "name": "ref_audio_2",
+          "shape": 7,
+          "type": "STRING",
+          "widget": {
+            "name": "ref_audio_2"
+          }
+        },
+        {
+          "label": "ref_audio_3",
+          "name": "ref_audio_3",
+          "shape": 7,
+          "type": "STRING",
+          "widget": {
+            "name": "ref_audio_3"
+          }
+        },
+        {
+          "label": "gh_state_json",
+          "name": "gh_state_json",
+          "shape": 7,
+          "type": "STRING",
+          "widget": {
+            "name": "gh_state_json"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": ">",
+          "name": ">",
+          "type": "MiniMax",
+          "links": [
+            180
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3IntegrationGH",
+        "gh_h3_state": "{\"mode\":\"text_keyframes\",\"media\":[[\"first_frame\",{\"name\":\"d4b54ce243945f24e83944dd8818bd94d23271a704637c824dc111281fd6ee6b.png\",\"kind\":\"image\"}]],\"vacantMediaSlots\":[],\"prompt\":\"integrated_multimodal_description:\\n[Shot 1]\\n画面从 <Picture 1>开始，身穿蓝白相间古装汉服、头戴精致发饰的年轻女子 (S1) 在古风庭院的水池边缓缓踱步。她一边走，一边面带微笑地摇头晃脑，开始高声有节奏、有情感的朗读搞笑诗句：<d>[Chinese]从前每月光，也是姐妹双，举头望明月，低头撕裤裆</d>。画面中同步出现4句诗词字幕。\\n在第2秒时，一本暗蓝色封皮的古书突然从画面上方砸下来，(S1) 反应敏捷地伸出右手，稳稳地接住了这本古书。此时镜头开始逆时针环绕 (S1) 进行360度拍摄，平滑地扫过她的侧面和背面，展示她飞扬的衣袖和庭院背景。当诗句读到最后一句“低头撕裤裆”时，(S1) 脸上露出极力憋笑的神情，嘴角剧烈颤抖，双眼弯成了月牙，几乎要笑出声来。\\n随着环绕镜头的完成，摄像机最终停在 (S1) 正面的上半身近景特写，同时画面焦点微调，清晰地展现出她手中那本暗蓝色古书的封面，上面赫然写着五个黑色毛笔字：“唐僧三百首”。\\n\\noverall_soundscape:\\n清脆的脚步声在石板路上回响，伴随着衣物摩擦的沙沙声。女子清脆悦耳的声音带着夸张的朗诵腔调。\\nnon_diegetic_music:\\n无背景乐\",\"prompts\":{\"text_keyframes\":\"integrated_multimodal_description:\\n[Shot 1]\\n画面从 <Picture 1>开始，身穿蓝白相间古装汉服、头戴精致发饰的年轻女子 (S1) 在古风庭院的水池边缓缓踱步。她一边走，一边面带微笑地摇头晃脑，开始高声有节奏、有情感的朗读搞笑诗句：<d>[Chinese]从前每月光，也是姐妹双，举头望明月，低头撕裤裆</d>。画面中同步出现4句诗词字幕。\\n在第2秒时，一本暗蓝色封皮的古书突然从画面上方砸下来，(S1) 反应敏捷地伸出右手，稳稳地接住了这本古书。此时镜头开始逆时针环绕 (S1) 进行360度拍摄，平滑地扫过她的侧面和背面，展示她飞扬的衣袖和庭院背景。当诗句读到最后一句“低头撕裤裆”时，(S1) 脸上露出极力憋笑的神情，嘴角剧烈颤抖，双眼弯成了月牙，几乎要笑出声来。\\n随着环绕镜头的完成，摄像机最终停在 (S1) 正面的上半身近景特写，同时画面焦点微调，清晰地展现出她手中那本暗蓝色古书的封面，上面赫然写着五个黑色毛笔字：“唐僧三百首”。\\n\\noverall_soundscape:\\n清脆的脚步声在石板路上回响，伴随着衣物摩擦的沙沙声。女子清脆悦耳的声音带着夸张的朗诵腔调。\\nnon_diegetic_music:\\n无背景乐\",\"all_reference\":\"\"},\"height\":1076,\"advanced\":false,\"optimizer\":{\"mode\":\"api\",\"provider\":\"runninghub\",\"api_url\":\"https://www.runninghub.cn/openapi/v2\",\"api_key\":\"\",\"model\":\"google/gemini-3.6-flash\",\"protocol\":\"runninghub\",\"read_media\":true,\"output_language\":\"中文\",\"local_model\":\"Huihui-Qwen3.8-27B-abliterated-Q4_K.gguf\",\"local_mmproj\":\"Qwen3.8-27B-mmproj-BF16.gguf\",\"local_device\":\"cuda\",\"max_tokens\":4096,\"auto_optimize\":false,\"api_keys\":{\"runninghub\":\"\",\"runninghub_overseas\":\"\"},\"has_api_key\":false,\"runninghub_models\":[\"openai/gpt-5.6-sol\",\"openai/gpt-5.6-sol-saver\",\"openai/gpt-5.6-terra\",\"openai/gpt-5.6-terra-saver\",\"openai/gpt-5.5\",\"openai/gpt-5.5-saver\",\"openai/gpt-5.6-luna\",\"google/gemini-3.1-flash-lite-preview\",\"google/gemini-3.5-flash\",\"openai/gpt-5.5-pro\",\"anthropic/claude-fable-5\",\"openai/gpt-5.4-pro\",\"anthropic/claude-opus-5\",\"anthropic/claude-opus-4.8\",\"anthropic/claude-opus-4.7\",\"glm-5.2\",\"anthropic/claude-opus-4.6\",\"openai/gpt-5.4\",\"openai/gpt-5.3-codex\",\"glm-5.1\",\"glm-5-turbo\",\"qwen/qwen3.8-max\",\"anthropic/claude-sonnet-4.6\",\"glm-5\",\"anthropic/claude-sonnet-5\",\"qwen/qwen3.7-max\",\"glm-5v-turbo\",\"qwen/qwen3.7-plus\",\"deepseek/deepseek-v4-pro\",\"xai/grok-4.6\",\"xai/grok-4.5\",\"xai/grok-4.3\",\"qwen/qwen3.6-plus\",\"google/gemini-3.1-pro-preview\",\"bytedance/doubao-seed-evolving\",\"bytedance/doubao-seed-2.1-pro\",\"anthropic/claude-sonnet-4.5\",\"bytedance/doubao-seed-2.1-turbo\",\"anthropic/claude-opus-4.5\",\"bytedance/doubao-seed-2.0-pro\",\"bytedance/doubao-seed-2.0-code\",\"deepseek/deepseek-v4-flash\",\"qwen/qwen3.6-flash\",\"openai/gpt-5.4-mini\",\"openai/gpt-5.4-nano\",\"google/gemini-3-flash-preview\",\"google/gemini-2.5-flash\",\"bytedance/doubao-seed-2.0-lite\",\"bytedance/doubao-seed-2.0-mini\",\"minimax/minimax-m2.7\",\"anthropic/claude-haiku-4.5\",\"qwen/qwen3.6-max-preview\",\"anthropic/claude-haiku-4.5-saver\",\"anthropic/claude-opus-4.6-saver\",\"anthropic/claude-opus-4.7-saver\",\"anthropic/claude-opus-4.8-saver\",\"anthropic/claude-sonnet-4.6-saver\",\"google/gemini-2.5-pro\",\"google/gemini-3.5-flash-lite\",\"google/gemini-3.6-flash\",\"google/gemini-3.7-flash\"],\"runninghub_overseas_models\":[\"openai/gpt-5.6-sol\",\"openai/gpt-5.6-sol-saver\",\"openai/gpt-5.6-terra\",\"openai/gpt-5.6-terra-saver\",\"openai/gpt-5.5\",\"openai/gpt-5.5-saver\",\"openai/gpt-5.6-luna\",\"google/gemini-3.1-flash-lite-preview\",\"google/gemini-3.5-flash\",\"openai/gpt-5.5-pro\",\"anthropic/claude-fable-5\",\"openai/gpt-5.4-pro\",\"anthropic/claude-opus-5\",\"anthropic/claude-opus-4.8\",\"anthropic/claude-opus-4.7\",\"glm-5.2\",\"anthropic/claude-opus-4.6\",\"openai/gpt-5.4\",\"openai/gpt-5.3-codex\",\"glm-5.1\",\"glm-5-turbo\",\"qwen/qwen3.8-max\",\"anthropic/claude-sonnet-4.6\",\"glm-5\",\"anthropic/claude-sonnet-5\",\"qwen/qwen3.7-max\",\"glm-5v-turbo\",\"qwen/qwen3.7-plus\",\"deepseek/deepseek-v4-pro\",\"xai/grok-4.6\",\"xai/grok-4.5\",\"xai/grok-4.3\",\"qwen/qwen3.6-plus\",\"google/gemini-3.1-pro-preview\",\"bytedance/doubao-seed-evolving\",\"bytedance/doubao-seed-2.1-pro\",\"anthropic/claude-sonnet-4.5\",\"bytedance/doubao-seed-2.1-turbo\",\"anthropic/claude-opus-4.5\",\"bytedance/doubao-seed-2.0-pro\",\"bytedance/doubao-seed-2.0-code\",\"deepseek/deepseek-v4-flash\",\"qwen/qwen3.6-flash\",\"openai/gpt-5.4-mini\",\"openai/gpt-5.4-nano\",\"google/gemini-3-flash-preview\",\"google/gemini-2.5-flash\",\"bytedance/doubao-seed-2.0-lite\",\"bytedance/doubao-seed-2.0-mini\",\"minimax/minimax-m2.7\",\"anthropic/claude-haiku-4.5\",\"qwen/qwen3.6-max-preview\",\"anthropic/claude-haiku-4.5-saver\",\"anthropic/claude-opus-4.6-saver\",\"anthropic/claude-opus-4.7-saver\",\"anthropic/claude-opus-4.8-saver\",\"anthropic/claude-sonnet-4.6-saver\",\"google/gemini-2.5-pro\",\"google/gemini-3.5-flash-lite\",\"google/gemini-3.6-flash\",\"google/gemini-3.7-flash\"],\"models\":[{\"name\":\"base\",\"path\":\"/workspace/ComfyUI/models/LLM/base\",\"relative_path\":\"base\",\"format\":\"transformers\"},{\"name\":\"base-ft\",\"path\":\"/workspace/ComfyUI/models/LLM/base-ft\",\"relative_path\":\"base-ft\",\"format\":\"transformers\"},{\"name\":\"base-PromptGen\",\"path\":\"/workspace/ComfyUI/models/LLM/base-PromptGen\",\"relative_path\":\"base-PromptGen\",\"format\":\"transformers\"},{\"name\":\"CogFlorence-2-Large-Freeze\",\"path\":\"/workspace/ComfyUI/models/LLM/CogFlorence-2-Large-Freeze\",\"relative_path\":\"CogFlorence-2-Large-Freeze\",\"format\":\"transformers\"},{\"name\":\"CogFlorence-2.1-Large\",\"path\":\"/workspace/ComfyUI/models/LLM/CogFlorence-2.1-Large\",\"relative_path\":\"CogFlorence-2.1-Large\",\"format\":\"transformers\"},{\"name\":\"CogFlorence-2.2-Large\",\"path\":\"/workspace/ComfyUI/models/LLM/CogFlorence-2.2-Large\",\"relative_path\":\"CogFlorence-2.2-Large\",\"format\":\"transformers\"},{\"name\":\"DeepSeek-OCR\",\"path\":\"/workspace/ComfyUI/models/LLM/DeepSeek-OCR\",\"relative_path\":\"DeepSeek-OCR\",\"format\":\"transformers\"},{\"name\":\"DocVQA\",\"path\":\"/workspace/ComfyUI/models/LLM/DocVQA\",\"relative_path\":\"DocVQA\",\"format\":\"transformers\"},{\"name\":\"Florence-2-base\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-base\",\"relative_path\":\"Florence-2-base\",\"format\":\"transformers\"},{\"name\":\"Florence-2-base-ft\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-base-ft\",\"relative_path\":\"Florence-2-base-ft\",\"format\":\"transformers\"},{\"name\":\"Florence-2-base-PromptGen\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-base-PromptGen\",\"relative_path\":\"Florence-2-base-PromptGen\",\"format\":\"transformers\"},{\"name\":\"Florence-2-base-PromptGen-v1.5\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-base-PromptGen-v1.5\",\"relative_path\":\"Florence-2-base-PromptGen-v1.5\",\"format\":\"transformers\"},{\"name\":\"Florence-2-base-PromptGen-v2.0\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-base-PromptGen-v2.0\",\"relative_path\":\"Florence-2-base-PromptGen-v2.0\",\"format\":\"transformers\"},{\"name\":\"Florence-2-DocVQA\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-DocVQA\",\"relative_path\":\"Florence-2-DocVQA\",\"format\":\"transformers\"},{\"name\":\"Florence-2-Flux-Large\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-Flux-Large\",\"relative_path\":\"Florence-2-Flux-Large\",\"format\":\"transformers\"},{\"name\":\"Florence-2-large\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-large\",\"relative_path\":\"Florence-2-large\",\"format\":\"transformers\"},{\"name\":\"Florence-2-large-ft\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-large-ft\",\"relative_path\":\"Florence-2-large-ft\",\"format\":\"transformers\"},{\"name\":\"Florence-2-large-PromptGen-v1.5\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-large-PromptGen-v1.5\",\"relative_path\":\"Florence-2-large-PromptGen-v1.5\",\"format\":\"transformers\"},{\"name\":\"Florence-2-large-PromptGen-v2.0\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-large-PromptGen-v2.0\",\"relative_path\":\"Florence-2-large-PromptGen-v2.0\",\"format\":\"transformers\"},{\"name\":\"Florence-2-SD3-Captioner\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-SD3-Captioner\",\"relative_path\":\"Florence-2-SD3-Captioner\",\"format\":\"transformers\"},{\"name\":\"Huihui-Qwen3-VL-4B-Instruct-abliterated.Q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Huihui-Qwen3-VL-4B-Instruct-abliterated.Q8_0.gguf\",\"relative_path\":\"Huihui-Qwen3-VL-4B-Instruct-abliterated.Q8_0.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"Huihui-Qwen3-VL-4B-Instruct-abliterated.mmproj-Q8_0.gguf\"]},{\"name\":\"Huihui-Qwen3-VL-8B-Instruct-abliterated.Q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Huihui-Qwen3-VL-8B-Instruct-abliterated.Q8_0.gguf\",\"relative_path\":\"Huihui-Qwen3-VL-8B-Instruct-abliterated.Q8_0.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"Huihui-Qwen3-VL-8B-Instruct-abliterated.mmproj-Q8_0.gguf\"]},{\"name\":\"Huihui-Qwen3.8-27B-abliterated-Q4_K.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Huihui-Qwen3.8-27B-abliterated-Q4_K.gguf\",\"relative_path\":\"Huihui-Qwen3.8-27B-abliterated-Q4_K.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"Qwen3.8-27B-mmproj-BF16.gguf\"]},{\"name\":\"large\",\"path\":\"/workspace/ComfyUI/models/LLM/large\",\"relative_path\":\"large\",\"format\":\"transformers\"},{\"name\":\"large-ft\",\"path\":\"/workspace/ComfyUI/models/LLM/large-ft\",\"relative_path\":\"large-ft\",\"format\":\"transformers\"},{\"name\":\"llama-joycaption-alpha-two-hf-llava\",\"path\":\"/workspace/ComfyUI/models/LLM/llama-joycaption-alpha-two-hf-llava\",\"relative_path\":\"llama-joycaption-alpha-two-hf-llava\",\"format\":\"transformers\"},{\"name\":\"llama-joycaption-beta-one-hf-llava\",\"path\":\"/workspace/ComfyUI/models/LLM/llama-joycaption-beta-one-hf-llava\",\"relative_path\":\"llama-joycaption-beta-one-hf-llava\",\"format\":\"transformers\"},{\"name\":\"llava-llama-3-8b-v1_1-transformers\",\"path\":\"/workspace/ComfyUI/models/LLM/llava-llama-3-8b-v1_1-transformers\",\"relative_path\":\"llava-llama-3-8b-v1_1-transformers\",\"format\":\"transformers\"},{\"name\":\"MiniCPM-V-4\",\"path\":\"/workspace/ComfyUI/models/LLM/MiniCPM-V-4\",\"relative_path\":\"MiniCPM-V-4\",\"format\":\"transformers\"},{\"name\":\"MiniCPM-V-4-int4\",\"path\":\"/workspace/ComfyUI/models/LLM/MiniCPM-V-4-int4\",\"relative_path\":\"MiniCPM-V-4-int4\",\"format\":\"transformers\"},{\"name\":\"MiniCPM-V-4_5\",\"path\":\"/workspace/ComfyUI/models/LLM/MiniCPM-V-4_5\",\"relative_path\":\"MiniCPM-V-4_5\",\"format\":\"transformers\"},{\"name\":\"MiniCPM-V-4_5-int4\",\"path\":\"/workspace/ComfyUI/models/LLM/MiniCPM-V-4_5-int4\",\"relative_path\":\"MiniCPM-V-4_5-int4\",\"format\":\"transformers\"},{\"name\":\"OmniGen-v1\",\"path\":\"/workspace/ComfyUI/models/LLM/OmniGen-v1\",\"relative_path\":\"OmniGen-v1\",\"format\":\"transformers\"},{\"name\":\"Phi-3.5-vision-instruct\",\"path\":\"/workspace/ComfyUI/models/LLM/Phi-3.5-vision-instruct\",\"relative_path\":\"Phi-3.5-vision-instruct\",\"format\":\"transformers\"},{\"name\":\"Qwen2.5-Omni-3B\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen2.5-Omni-3B\",\"relative_path\":\"Qwen2.5-Omni-3B\",\"format\":\"transformers\"},{\"name\":\"Qwen2.5-Omni-7B\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen2.5-Omni-7B\",\"relative_path\":\"Qwen2.5-Omni-7B\",\"format\":\"transformers\"},{\"name\":\"Qwen2.5-VL-3B-Instruct\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen2.5-VL-3B-Instruct\",\"relative_path\":\"Qwen2.5-VL-3B-Instruct\",\"format\":\"transformers\"},{\"name\":\"Qwen2.5-VL-3B-Instruct-AWQ\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen2.5-VL-3B-Instruct-AWQ\",\"relative_path\":\"Qwen2.5-VL-3B-Instruct-AWQ\",\"format\":\"transformers\"},{\"name\":\"Qwen2.5-VL-7B-Instruct\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen2.5-VL-7B-Instruct\",\"relative_path\":\"Qwen2.5-VL-7B-Instruct\",\"format\":\"transformers\"},{\"name\":\"Qwen2.5-VL-7B-Instruct-AWQ\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen2.5-VL-7B-Instruct-AWQ\",\"relative_path\":\"Qwen2.5-VL-7B-Instruct-AWQ\",\"format\":\"transformers\"},{\"name\":\"Qwen2.5-VL-7B-SPC\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen2.5-VL-7B-SPC\",\"relative_path\":\"Qwen2.5-VL-7B-SPC\",\"format\":\"transformers\"},{\"name\":\"Qwen3.5-27B-heretic.Q4_K_M.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-27B-heretic.Q4_K_M.gguf\",\"relative_path\":\"Qwen3.5-27B-heretic.Q4_K_M.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"Qwen3.5-27B-heretic.mmproj-f16.gguf\",\"Qwen3.5-27B-heretic.mmproj-Q8_0.gguf\"]},{\"name\":\"Qwen3.5-27B-heretic.Q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-27B-heretic.Q8_0.gguf\",\"relative_path\":\"Qwen3.5-27B-heretic.Q8_0.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"Qwen3.5-27B-heretic.mmproj-f16.gguf\",\"Qwen3.5-27B-heretic.mmproj-Q8_0.gguf\"]},{\"name\":\"Qwen3.5-9B-Claude-4.6-Opus-Deckard-V4.2-Uncensored-Heretic-Thinking.i1-Q4_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-9B-Claude-4.6-Opus-Deckard-V4.2-Uncensored-Heretic-Thinking.i1-Q4_0.gguf\",\"relative_path\":\"Qwen3.5-9B-Claude-4.6-Opus-Deckard-V4.2-Uncensored-Heretic-Thinking.i1-Q4_0.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-BF16.gguf\"]},{\"name\":\"Qwen3.5-9b-heretic-v2-q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-9b-heretic-v2-q8_0.gguf\",\"relative_path\":\"Qwen3.5-9b-heretic-v2-q8_0.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"Qwen3.5-9B-mmproj-BF16.gguf\",\"Qwen3.5-9B-mmproj-F16.gguf\"]},{\"name\":\"Qwen3.5-9B-heretic.Q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-9B-heretic.Q8_0.gguf\",\"relative_path\":\"Qwen3.5-9B-heretic.Q8_0.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"Qwen3.5-9B-mmproj-BF16.gguf\",\"Qwen3.5-9B-mmproj-F16.gguf\"]},{\"name\":\"Qwen3.5-9B-Q4_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-9B-Q4_0.gguf\",\"relative_path\":\"Qwen3.5-9B-Q4_0.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"Qwen3.5-9B-mmproj-BF16.gguf\",\"Qwen3.5-9B-mmproj-F16.gguf\"]},{\"name\":\"Qwen3.5-9B-Q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-9B-Q8_0.gguf\",\"relative_path\":\"Qwen3.5-9B-Q8_0.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"Qwen3.5-9B-mmproj-BF16.gguf\",\"Qwen3.5-9B-mmproj-F16.gguf\"]},{\"name\":\"Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-Q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-Q8_0.gguf\",\"relative_path\":\"Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-Q8_0.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-BF16.gguf\"]},{\"name\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ2_M.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ2_M.gguf\",\"relative_path\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ2_M.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ3_M.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ3_M.gguf\",\"relative_path\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ3_M.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ3_XS.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ3_XS.gguf\",\"relative_path\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ3_XS.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ4_XS.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ4_XS.gguf\",\"relative_path\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ4_XS.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q2_K_P.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q2_K_P.gguf\",\"relative_path\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q2_K_P.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q3_K_P.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q3_K_P.gguf\",\"relative_path\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q3_K_P.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q4_K_P.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q4_K_P.gguf\",\"relative_path\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q4_K_P.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q5_K_P.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q5_K_P.gguf\",\"relative_path\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q5_K_P.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q6_K_P.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q6_K_P.gguf\",\"relative_path\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q6_K_P.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q8_K_P.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q8_K_P.gguf\",\"relative_path\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q8_K_P.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf\",\"relative_path\":\"Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q8_K_P.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q8_K_P.gguf\",\"relative_path\":\"Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q8_K_P.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.8-27B-IQ4_XS.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.8-27B-IQ4_XS.gguf\",\"relative_path\":\"Qwen3.8-27B-IQ4_XS.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"Qwen3.8-27B-mmproj-BF16.gguf\"]},{\"name\":\"SD3-Captioner\",\"path\":\"/workspace/ComfyUI/models/LLM/SD3-Captioner\",\"relative_path\":\"SD3-Captioner\",\"format\":\"transformers\"},{\"name\":\"SkyCaptioner-V1\",\"path\":\"/workspace/ComfyUI/models/LLM/SkyCaptioner-V1\",\"relative_path\":\"SkyCaptioner-V1\",\"format\":\"transformers\"},{\"name\":\"ToriiGate-0.5\",\"path\":\"/workspace/ComfyUI/models/LLM/ToriiGate-0.5\",\"relative_path\":\"ToriiGate-0.5\",\"format\":\"transformers\"}],\"mmproj_models\":[{\"name\":\"gemma-4-26B-A4B-it-heretic-mmproj.bf16.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/gemma-4-26B-A4B-it-heretic-mmproj.bf16.gguf\",\"relative_path\":\"gemma-4-26B-A4B-it-heretic-mmproj.bf16.gguf\"},{\"name\":\"gemma-4-26B-A4B-it-heretic-mmproj.q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/gemma-4-26B-A4B-it-heretic-mmproj.q8_0.gguf\",\"relative_path\":\"gemma-4-26B-A4B-it-heretic-mmproj.q8_0.gguf\"},{\"name\":\"gemma-4-31B-it-abliterated-mmproj-F16.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/gemma-4-31B-it-abliterated-mmproj-F16.gguf\",\"relative_path\":\"gemma-4-31B-it-abliterated-mmproj-F16.gguf\"},{\"name\":\"Huihui-Qwen3-VL-4B-Instruct-abliterated.mmproj-Q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Huihui-Qwen3-VL-4B-Instruct-abliterated.mmproj-Q8_0.gguf\",\"relative_path\":\"Huihui-Qwen3-VL-4B-Instruct-abliterated.mmproj-Q8_0.gguf\"},{\"name\":\"Huihui-Qwen3-VL-8B-Instruct-abliterated.mmproj-Q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Huihui-Qwen3-VL-8B-Instruct-abliterated.mmproj-Q8_0.gguf\",\"relative_path\":\"Huihui-Qwen3-VL-8B-Instruct-abliterated.mmproj-Q8_0.gguf\"},{\"name\":\"mmproj-Qwen2.5-Omni-7B-F16.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/mmproj-Qwen2.5-Omni-7B-F16.gguf\",\"relative_path\":\"mmproj-Qwen2.5-Omni-7B-F16.gguf\"},{\"name\":\"mmproj-Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-BF16.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/mmproj-Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-BF16.gguf\",\"relative_path\":\"mmproj-Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-BF16.gguf\"},{\"name\":\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\",\"relative_path\":\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"},{\"name\":\"mmproj-Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-f16.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/mmproj-Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-f16.gguf\",\"relative_path\":\"mmproj-Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-f16.gguf\"},{\"name\":\"Qwen3.5-27B-heretic.mmproj-f16.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-27B-heretic.mmproj-f16.gguf\",\"relative_path\":\"Qwen3.5-27B-heretic.mmproj-f16.gguf\"},{\"name\":\"Qwen3.5-27B-heretic.mmproj-Q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-27B-heretic.mmproj-Q8_0.gguf\",\"relative_path\":\"Qwen3.5-27B-heretic.mmproj-Q8_0.gguf\"},{\"name\":\"Qwen3.5-9B-mmproj-BF16.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-9B-mmproj-BF16.gguf\",\"relative_path\":\"Qwen3.5-9B-mmproj-BF16.gguf\"},{\"name\":\"Qwen3.5-9B-mmproj-F16.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-9B-mmproj-F16.gguf\",\"relative_path\":\"Qwen3.5-9B-mmproj-F16.gguf\"},{\"name\":\"Qwen3.8-27B-mmproj-BF16.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.8-27B-mmproj-BF16.gguf\",\"relative_path\":\"Qwen3.8-27B-mmproj-BF16.gguf\"},{\"name\":\"ToriiGate-0.5-bf16.mmproj.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/ToriiGate-0.5-bf16.mmproj.gguf\",\"relative_path\":\"ToriiGate-0.5-bf16.mmproj.gguf\"},{\"name\":\"ToriiGate-0.5-Q8_0.mmproj.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/ToriiGate-0.5-Q8_0.mmproj.gguf\",\"relative_path\":\"ToriiGate-0.5-Q8_0.mmproj.gguf\"}],\"missing_dependencies\":[],\"gguf_dependency\":{\"available\":true,\"reason\":\"\",\"system\":\"Linux\",\"machine\":\"x86_64\",\"python_tag\":\"cp310\",\"cuda_tag\":\"cu130\",\"release_url\":\"https://github.com/JamePeng/llama-cpp-python/releases\",\"wheel_url\":\"\",\"wheel_name\":\"\",\"version\":\"0.3.46\"},\"provider_models\":{\"runninghub\":\"google/gemini-3.6-flash\",\"runninghub_overseas\":\"openai/gpt-5.6-sol\"}},\"optimizerCache\":{\"contextSignature\":\"{\\\"task\\\":\\\"Hybrid\\\",\\\"duration\\\":7,\\\"mode\\\":\\\"text_keyframes\\\",\\\"context\\\":{\\\"main_mode\\\":\\\"text_keyframes\\\",\\\"keyframes\\\":[{\\\"label\\\":\\\"<picture 1>\\\",\\\"role\\\":\\\"exact_first_frame\\\"}],\\\"audio_mode\\\":\\\"lock_source\\\"},\\\"media\\\":[[\\\"first_frame\\\",\\\"image\\\",\\\"<picture 1>\\\",\\\"d4b54ce243945f24e83944dd8818bd94d23271a704637c824dc111281fd6ee6b.png\\\",false],[\\\"hybrid_audio\\\",\\\"audio\\\",\\\"<audio 1>\\\",\\\"ee6db63656c66860a3eaaf9aa774ad334f1bffb212b68f8c01ceabf34d4a67f0.mp3\\\",false]],\\\"settings\\\":[\\\"api\\\",\\\"runninghub\\\",\\\"https://www.runninghub.cn/openapi/v2\\\",\\\"google/gemini-3.6-flash\\\",\\\"runninghub\\\",\\\"Huihui-Qwen3.8-27B-abliterated-Q4_K.gguf\\\",\\\"Qwen3.8-27B-mmproj-BF16.gguf\\\",\\\"cuda\\\",true,\\\"中文\\\"]}\",\"originalPrompt\":\"图1中的女子一边走路一边深情的唱着音频1中的歌曲，表情很伤心，情绪很丰富，搭配合适的闭眼动作\",\"result\":\"subject_definitions:\\n<Subject 1>: <picture 1>中的古装女子，身穿蓝白色华丽汉服，发型精致，容貌秀丽。\\n\\nsummary:\\n[keyframe completion, video continuation, audio reuse] 本视频承接<picture 1>的视觉画面，展示女子一边缓步前行一边深情演唱<audio 1>，表情伤感且伴随自然闭眼。\\n\\nretention_analysis:\\n<picture 1>: fully_preserved - 完整保留女子(S1)的外貌、服装发型样式及古风庭院背景。\\n<audio 1>: fully_copy - 原样保留音频信号作为视频的完整音频轨。\\n\\ndetailed_description:\\n[Shot 1] 镜头从<picture 1>开始，以中特写跟随女子(S1)。(S1)在古风庭院中沿着水畔缓步向前行走，一边深情演唱，唇形与嘴部动作与演唱完美同步，精准吻合音素变化与吐字。她的表情充满悲伤与深情，眼眶泛红，眉宇间流露出浓烈的情感。(S1)随着演唱节奏轻微摇晃身姿，手势配合歌词情感缓缓抬起，在演唱到高潮时自然地闭上双眼，感受歌曲中的伤感，随后微微睁开眼睛，眼神中流露出无尽的思念与落寞。镜头保持平稳跟拍，突出其丰富的面部表情与动人的表演，直到视频结束。\\n\\noverall_soundscape:\\n保留原视频音轨不变。\\n\\nnon_diegetic_music:\\n无非剧情音乐。\"},\"optimizerBefore\":\"图1中的女子一边走路一边深情的唱着音频1中的歌曲，表情很伤心，情绪很丰富，搭配合适的闭眼动作\",\"optimizerBeforeByMode\":{\"text_keyframes\":\"图1中的女子一边走路一边深情的唱着音频1中的歌曲，表情很伤心，情绪很丰富，搭配合适的闭眼动作\",\"all_reference\":null}}",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "text_keyframes",
+        "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "minimax_h3_video_vae_fp16.safetensors",
+        "minimax_h3_audio_vae_fp32.safetensors",
+        "adaptive",
+        0.5,
+        10,
+        "integrated_multimodal_description:\n[Shot 1]\n画面从 <Picture 1>开始，身穿蓝白相间古装汉服、头戴精致发饰的年轻女子 (S1) 在古风庭院的水池边缓缓踱步。她一边走，一边面带微笑地摇头晃脑，开始高声有节奏、有情感的朗读搞笑诗句：<d>[Chinese]从前每月光，也是姐妹双，举头望明月，低头撕裤裆</d>。画面中同步出现4句诗词字幕。\n在第2秒时，一本暗蓝色封皮的古书突然从画面上方砸下来，(S1) 反应敏捷地伸出右手，稳稳地接住了这本古书。此时镜头开始逆时针环绕 (S1) 进行360度拍摄，平滑地扫过她的侧面和背面，展示她飞扬的衣袖和庭院背景。当诗句读到最后一句“低头撕裤裆”时，(S1) 脸上露出极力憋笑的神情，嘴角剧烈颤抖，双眼弯成了月牙，几乎要笑出声来。\n随着环绕镜头的完成，摄像机最终停在 (S1) 正面的上半身近景特写，同时画面焦点微调，清晰地展现出她手中那本暗蓝色古书的封面，上面赫然写着五个黑色毛笔字：“唐僧三百首”。\n\noverall_soundscape:\n清脆的脚步声在石板路上回响，伴随着衣物摩擦的沙沙声。女子清脆悦耳的声音带着夸张的朗诵腔调。\nnon_diegetic_music:\n无背景乐",
+        "auto",
+        "native",
+        1,
+        0,
+        true,
+        "match",
+        "d4b54ce243945f24e83944dd8818bd94d23271a704637c824dc111281fd6ee6b.png",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "{\"mode\":\"text_keyframes\",\"media\":[[\"first_frame\",{\"name\":\"d4b54ce243945f24e83944dd8818bd94d23271a704637c824dc111281fd6ee6b.png\",\"kind\":\"image\"}]],\"vacantMediaSlots\":[],\"prompt\":\"integrated_multimodal_description:\\n[Shot 1]\\n画面从 <Picture 1>开始，身穿蓝白相间古装汉服、头戴精致发饰的年轻女子 (S1) 在古风庭院的水池边缓缓踱步。她一边走，一边面带微笑地摇头晃脑，开始高声有节奏、有情感的朗读搞笑诗句：<d>[Chinese]从前每月光，也是姐妹双，举头望明月，低头撕裤裆</d>。画面中同步出现4句诗词字幕。\\n在第2秒时，一本暗蓝色封皮的古书突然从画面上方砸下来，(S1) 反应敏捷地伸出右手，稳稳地接住了这本古书。此时镜头开始逆时针环绕 (S1) 进行360度拍摄，平滑地扫过她的侧面和背面，展示她飞扬的衣袖和庭院背景。当诗句读到最后一句“低头撕裤裆”时，(S1) 脸上露出极力憋笑的神情，嘴角剧烈颤抖，双眼弯成了月牙，几乎要笑出声来。\\n随着环绕镜头的完成，摄像机最终停在 (S1) 正面的上半身近景特写，同时画面焦点微调，清晰地展现出她手中那本暗蓝色古书的封面，上面赫然写着五个黑色毛笔字：“唐僧三百首”。\\n\\noverall_soundscape:\\n清脆的脚步声在石板路上回响，伴随着衣物摩擦的沙沙声。女子清脆悦耳的声音带着夸张的朗诵腔调。\\nnon_diegetic_music:\\n无背景乐\",\"prompts\":{\"text_keyframes\":\"integrated_multimodal_description:\\n[Shot 1]\\n画面从 <Picture 1>开始，身穿蓝白相间古装汉服、头戴精致发饰的年轻女子 (S1) 在古风庭院的水池边缓缓踱步。她一边走，一边面带微笑地摇头晃脑，开始高声有节奏、有情感的朗读搞笑诗句：<d>[Chinese]从前每月光，也是姐妹双，举头望明月，低头撕裤裆</d>。画面中同步出现4句诗词字幕。\\n在第2秒时，一本暗蓝色封皮的古书突然从画面上方砸下来，(S1) 反应敏捷地伸出右手，稳稳地接住了这本古书。此时镜头开始逆时针环绕 (S1) 进行360度拍摄，平滑地扫过她的侧面和背面，展示她飞扬的衣袖和庭院背景。当诗句读到最后一句“低头撕裤裆”时，(S1) 脸上露出极力憋笑的神情，嘴角剧烈颤抖，双眼弯成了月牙，几乎要笑出声来。\\n随着环绕镜头的完成，摄像机最终停在 (S1) 正面的上半身近景特写，同时画面焦点微调，清晰地展现出她手中那本暗蓝色古书的封面，上面赫然写着五个黑色毛笔字：“唐僧三百首”。\\n\\noverall_soundscape:\\n清脆的脚步声在石板路上回响，伴随着衣物摩擦的沙沙声。女子清脆悦耳的声音带着夸张的朗诵腔调。\\nnon_diegetic_music:\\n无背景乐\",\"all_reference\":\"\"},\"height\":1076,\"advanced\":false,\"optimizer\":{\"mode\":\"api\",\"provider\":\"runninghub\",\"api_url\":\"https://www.runninghub.cn/openapi/v2\",\"api_key\":\"\",\"model\":\"google/gemini-3.6-flash\",\"protocol\":\"runninghub\",\"read_media\":true,\"output_language\":\"中文\",\"local_model\":\"Huihui-Qwen3.8-27B-abliterated-Q4_K.gguf\",\"local_mmproj\":\"Qwen3.8-27B-mmproj-BF16.gguf\",\"local_device\":\"cuda\",\"max_tokens\":4096,\"auto_optimize\":false,\"api_keys\":{\"runninghub\":\"\",\"runninghub_overseas\":\"\"},\"has_api_key\":false,\"runninghub_models\":[\"openai/gpt-5.6-sol\",\"openai/gpt-5.6-sol-saver\",\"openai/gpt-5.6-terra\",\"openai/gpt-5.6-terra-saver\",\"openai/gpt-5.5\",\"openai/gpt-5.5-saver\",\"openai/gpt-5.6-luna\",\"google/gemini-3.1-flash-lite-preview\",\"google/gemini-3.5-flash\",\"openai/gpt-5.5-pro\",\"anthropic/claude-fable-5\",\"openai/gpt-5.4-pro\",\"anthropic/claude-opus-5\",\"anthropic/claude-opus-4.8\",\"anthropic/claude-opus-4.7\",\"glm-5.2\",\"anthropic/claude-opus-4.6\",\"openai/gpt-5.4\",\"openai/gpt-5.3-codex\",\"glm-5.1\",\"glm-5-turbo\",\"qwen/qwen3.8-max\",\"anthropic/claude-sonnet-4.6\",\"glm-5\",\"anthropic/claude-sonnet-5\",\"qwen/qwen3.7-max\",\"glm-5v-turbo\",\"qwen/qwen3.7-plus\",\"deepseek/deepseek-v4-pro\",\"xai/grok-4.6\",\"xai/grok-4.5\",\"xai/grok-4.3\",\"qwen/qwen3.6-plus\",\"google/gemini-3.1-pro-preview\",\"bytedance/doubao-seed-evolving\",\"bytedance/doubao-seed-2.1-pro\",\"anthropic/claude-sonnet-4.5\",\"bytedance/doubao-seed-2.1-turbo\",\"anthropic/claude-opus-4.5\",\"bytedance/doubao-seed-2.0-pro\",\"bytedance/doubao-seed-2.0-code\",\"deepseek/deepseek-v4-flash\",\"qwen/qwen3.6-flash\",\"openai/gpt-5.4-mini\",\"openai/gpt-5.4-nano\",\"google/gemini-3-flash-preview\",\"google/gemini-2.5-flash\",\"bytedance/doubao-seed-2.0-lite\",\"bytedance/doubao-seed-2.0-mini\",\"minimax/minimax-m2.7\",\"anthropic/claude-haiku-4.5\",\"qwen/qwen3.6-max-preview\",\"anthropic/claude-haiku-4.5-saver\",\"anthropic/claude-opus-4.6-saver\",\"anthropic/claude-opus-4.7-saver\",\"anthropic/claude-opus-4.8-saver\",\"anthropic/claude-sonnet-4.6-saver\",\"google/gemini-2.5-pro\",\"google/gemini-3.5-flash-lite\",\"google/gemini-3.6-flash\",\"google/gemini-3.7-flash\"],\"runninghub_overseas_models\":[\"openai/gpt-5.6-sol\",\"openai/gpt-5.6-sol-saver\",\"openai/gpt-5.6-terra\",\"openai/gpt-5.6-terra-saver\",\"openai/gpt-5.5\",\"openai/gpt-5.5-saver\",\"openai/gpt-5.6-luna\",\"google/gemini-3.1-flash-lite-preview\",\"google/gemini-3.5-flash\",\"openai/gpt-5.5-pro\",\"anthropic/claude-fable-5\",\"openai/gpt-5.4-pro\",\"anthropic/claude-opus-5\",\"anthropic/claude-opus-4.8\",\"anthropic/claude-opus-4.7\",\"glm-5.2\",\"anthropic/claude-opus-4.6\",\"openai/gpt-5.4\",\"openai/gpt-5.3-codex\",\"glm-5.1\",\"glm-5-turbo\",\"qwen/qwen3.8-max\",\"anthropic/claude-sonnet-4.6\",\"glm-5\",\"anthropic/claude-sonnet-5\",\"qwen/qwen3.7-max\",\"glm-5v-turbo\",\"qwen/qwen3.7-plus\",\"deepseek/deepseek-v4-pro\",\"xai/grok-4.6\",\"xai/grok-4.5\",\"xai/grok-4.3\",\"qwen/qwen3.6-plus\",\"google/gemini-3.1-pro-preview\",\"bytedance/doubao-seed-evolving\",\"bytedance/doubao-seed-2.1-pro\",\"anthropic/claude-sonnet-4.5\",\"bytedance/doubao-seed-2.1-turbo\",\"anthropic/claude-opus-4.5\",\"bytedance/doubao-seed-2.0-pro\",\"bytedance/doubao-seed-2.0-code\",\"deepseek/deepseek-v4-flash\",\"qwen/qwen3.6-flash\",\"openai/gpt-5.4-mini\",\"openai/gpt-5.4-nano\",\"google/gemini-3-flash-preview\",\"google/gemini-2.5-flash\",\"bytedance/doubao-seed-2.0-lite\",\"bytedance/doubao-seed-2.0-mini\",\"minimax/minimax-m2.7\",\"anthropic/claude-haiku-4.5\",\"qwen/qwen3.6-max-preview\",\"anthropic/claude-haiku-4.5-saver\",\"anthropic/claude-opus-4.6-saver\",\"anthropic/claude-opus-4.7-saver\",\"anthropic/claude-opus-4.8-saver\",\"anthropic/claude-sonnet-4.6-saver\",\"google/gemini-2.5-pro\",\"google/gemini-3.5-flash-lite\",\"google/gemini-3.6-flash\",\"google/gemini-3.7-flash\"],\"models\":[{\"name\":\"base\",\"path\":\"/workspace/ComfyUI/models/LLM/base\",\"relative_path\":\"base\",\"format\":\"transformers\"},{\"name\":\"base-ft\",\"path\":\"/workspace/ComfyUI/models/LLM/base-ft\",\"relative_path\":\"base-ft\",\"format\":\"transformers\"},{\"name\":\"base-PromptGen\",\"path\":\"/workspace/ComfyUI/models/LLM/base-PromptGen\",\"relative_path\":\"base-PromptGen\",\"format\":\"transformers\"},{\"name\":\"CogFlorence-2-Large-Freeze\",\"path\":\"/workspace/ComfyUI/models/LLM/CogFlorence-2-Large-Freeze\",\"relative_path\":\"CogFlorence-2-Large-Freeze\",\"format\":\"transformers\"},{\"name\":\"CogFlorence-2.1-Large\",\"path\":\"/workspace/ComfyUI/models/LLM/CogFlorence-2.1-Large\",\"relative_path\":\"CogFlorence-2.1-Large\",\"format\":\"transformers\"},{\"name\":\"CogFlorence-2.2-Large\",\"path\":\"/workspace/ComfyUI/models/LLM/CogFlorence-2.2-Large\",\"relative_path\":\"CogFlorence-2.2-Large\",\"format\":\"transformers\"},{\"name\":\"DeepSeek-OCR\",\"path\":\"/workspace/ComfyUI/models/LLM/DeepSeek-OCR\",\"relative_path\":\"DeepSeek-OCR\",\"format\":\"transformers\"},{\"name\":\"DocVQA\",\"path\":\"/workspace/ComfyUI/models/LLM/DocVQA\",\"relative_path\":\"DocVQA\",\"format\":\"transformers\"},{\"name\":\"Florence-2-base\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-base\",\"relative_path\":\"Florence-2-base\",\"format\":\"transformers\"},{\"name\":\"Florence-2-base-ft\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-base-ft\",\"relative_path\":\"Florence-2-base-ft\",\"format\":\"transformers\"},{\"name\":\"Florence-2-base-PromptGen\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-base-PromptGen\",\"relative_path\":\"Florence-2-base-PromptGen\",\"format\":\"transformers\"},{\"name\":\"Florence-2-base-PromptGen-v1.5\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-base-PromptGen-v1.5\",\"relative_path\":\"Florence-2-base-PromptGen-v1.5\",\"format\":\"transformers\"},{\"name\":\"Florence-2-base-PromptGen-v2.0\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-base-PromptGen-v2.0\",\"relative_path\":\"Florence-2-base-PromptGen-v2.0\",\"format\":\"transformers\"},{\"name\":\"Florence-2-DocVQA\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-DocVQA\",\"relative_path\":\"Florence-2-DocVQA\",\"format\":\"transformers\"},{\"name\":\"Florence-2-Flux-Large\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-Flux-Large\",\"relative_path\":\"Florence-2-Flux-Large\",\"format\":\"transformers\"},{\"name\":\"Florence-2-large\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-large\",\"relative_path\":\"Florence-2-large\",\"format\":\"transformers\"},{\"name\":\"Florence-2-large-ft\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-large-ft\",\"relative_path\":\"Florence-2-large-ft\",\"format\":\"transformers\"},{\"name\":\"Florence-2-large-PromptGen-v1.5\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-large-PromptGen-v1.5\",\"relative_path\":\"Florence-2-large-PromptGen-v1.5\",\"format\":\"transformers\"},{\"name\":\"Florence-2-large-PromptGen-v2.0\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-large-PromptGen-v2.0\",\"relative_path\":\"Florence-2-large-PromptGen-v2.0\",\"format\":\"transformers\"},{\"name\":\"Florence-2-SD3-Captioner\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-SD3-Captioner\",\"relative_path\":\"Florence-2-SD3-Captioner\",\"format\":\"transformers\"},{\"name\":\"Huihui-Qwen3-VL-4B-Instruct-abliterated.Q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Huihui-Qwen3-VL-4B-Instruct-abliterated.Q8_0.gguf\",\"relative_path\":\"Huihui-Qwen3-VL-4B-Instruct-abliterated.Q8_0.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"Huihui-Qwen3-VL-4B-Instruct-abliterated.mmproj-Q8_0.gguf\"]},{\"name\":\"Huihui-Qwen3-VL-8B-Instruct-abliterated.Q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Huihui-Qwen3-VL-8B-Instruct-abliterated.Q8_0.gguf\",\"relative_path\":\"Huihui-Qwen3-VL-8B-Instruct-abliterated.Q8_0.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"Huihui-Qwen3-VL-8B-Instruct-abliterated.mmproj-Q8_0.gguf\"]},{\"name\":\"Huihui-Qwen3.8-27B-abliterated-Q4_K.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Huihui-Qwen3.8-27B-abliterated-Q4_K.gguf\",\"relative_path\":\"Huihui-Qwen3.8-27B-abliterated-Q4_K.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"Qwen3.8-27B-mmproj-BF16.gguf\"]},{\"name\":\"large\",\"path\":\"/workspace/ComfyUI/models/LLM/large\",\"relative_path\":\"large\",\"format\":\"transformers\"},{\"name\":\"large-ft\",\"path\":\"/workspace/ComfyUI/models/LLM/large-ft\",\"relative_path\":\"large-ft\",\"format\":\"transformers\"},{\"name\":\"llama-joycaption-alpha-two-hf-llava\",\"path\":\"/workspace/ComfyUI/models/LLM/llama-joycaption-alpha-two-hf-llava\",\"relative_path\":\"llama-joycaption-alpha-two-hf-llava\",\"format\":\"transformers\"},{\"name\":\"llama-joycaption-beta-one-hf-llava\",\"path\":\"/workspace/ComfyUI/models/LLM/llama-joycaption-beta-one-hf-llava\",\"relative_path\":\"llama-joycaption-beta-one-hf-llava\",\"format\":\"transformers\"},{\"name\":\"llava-llama-3-8b-v1_1-transformers\",\"path\":\"/workspace/ComfyUI/models/LLM/llava-llama-3-8b-v1_1-transformers\",\"relative_path\":\"llava-llama-3-8b-v1_1-transformers\",\"format\":\"transformers\"},{\"name\":\"MiniCPM-V-4\",\"path\":\"/workspace/ComfyUI/models/LLM/MiniCPM-V-4\",\"relative_path\":\"MiniCPM-V-4\",\"format\":\"transformers\"},{\"name\":\"MiniCPM-V-4-int4\",\"path\":\"/workspace/ComfyUI/models/LLM/MiniCPM-V-4-int4\",\"relative_path\":\"MiniCPM-V-4-int4\",\"format\":\"transformers\"},{\"name\":\"MiniCPM-V-4_5\",\"path\":\"/workspace/ComfyUI/models/LLM/MiniCPM-V-4_5\",\"relative_path\":\"MiniCPM-V-4_5\",\"format\":\"transformers\"},{\"name\":\"MiniCPM-V-4_5-int4\",\"path\":\"/workspace/ComfyUI/models/LLM/MiniCPM-V-4_5-int4\",\"relative_path\":\"MiniCPM-V-4_5-int4\",\"format\":\"transformers\"},{\"name\":\"OmniGen-v1\",\"path\":\"/workspace/ComfyUI/models/LLM/OmniGen-v1\",\"relative_path\":\"OmniGen-v1\",\"format\":\"transformers\"},{\"name\":\"Phi-3.5-vision-instruct\",\"path\":\"/workspace/ComfyUI/models/LLM/Phi-3.5-vision-instruct\",\"relative_path\":\"Phi-3.5-vision-instruct\",\"format\":\"transformers\"},{\"name\":\"Qwen2.5-Omni-3B\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen2.5-Omni-3B\",\"relative_path\":\"Qwen2.5-Omni-3B\",\"format\":\"transformers\"},{\"name\":\"Qwen2.5-Omni-7B\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen2.5-Omni-7B\",\"relative_path\":\"Qwen2.5-Omni-7B\",\"format\":\"transformers\"},{\"name\":\"Qwen2.5-VL-3B-Instruct\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen2.5-VL-3B-Instruct\",\"relative_path\":\"Qwen2.5-VL-3B-Instruct\",\"format\":\"transformers\"},{\"name\":\"Qwen2.5-VL-3B-Instruct-AWQ\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen2.5-VL-3B-Instruct-AWQ\",\"relative_path\":\"Qwen2.5-VL-3B-Instruct-AWQ\",\"format\":\"transformers\"},{\"name\":\"Qwen2.5-VL-7B-Instruct\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen2.5-VL-7B-Instruct\",\"relative_path\":\"Qwen2.5-VL-7B-Instruct\",\"format\":\"transformers\"},{\"name\":\"Qwen2.5-VL-7B-Instruct-AWQ\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen2.5-VL-7B-Instruct-AWQ\",\"relative_path\":\"Qwen2.5-VL-7B-Instruct-AWQ\",\"format\":\"transformers\"},{\"name\":\"Qwen2.5-VL-7B-SPC\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen2.5-VL-7B-SPC\",\"relative_path\":\"Qwen2.5-VL-7B-SPC\",\"format\":\"transformers\"},{\"name\":\"Qwen3.5-27B-heretic.Q4_K_M.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-27B-heretic.Q4_K_M.gguf\",\"relative_path\":\"Qwen3.5-27B-heretic.Q4_K_M.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"Qwen3.5-27B-heretic.mmproj-f16.gguf\",\"Qwen3.5-27B-heretic.mmproj-Q8_0.gguf\"]},{\"name\":\"Qwen3.5-27B-heretic.Q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-27B-heretic.Q8_0.gguf\",\"relative_path\":\"Qwen3.5-27B-heretic.Q8_0.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"Qwen3.5-27B-heretic.mmproj-f16.gguf\",\"Qwen3.5-27B-heretic.mmproj-Q8_0.gguf\"]},{\"name\":\"Qwen3.5-9B-Claude-4.6-Opus-Deckard-V4.2-Uncensored-Heretic-Thinking.i1-Q4_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-9B-Claude-4.6-Opus-Deckard-V4.2-Uncensored-Heretic-Thinking.i1-Q4_0.gguf\",\"relative_path\":\"Qwen3.5-9B-Claude-4.6-Opus-Deckard-V4.2-Uncensored-Heretic-Thinking.i1-Q4_0.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-BF16.gguf\"]},{\"name\":\"Qwen3.5-9b-heretic-v2-q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-9b-heretic-v2-q8_0.gguf\",\"relative_path\":\"Qwen3.5-9b-heretic-v2-q8_0.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"Qwen3.5-9B-mmproj-BF16.gguf\",\"Qwen3.5-9B-mmproj-F16.gguf\"]},{\"name\":\"Qwen3.5-9B-heretic.Q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-9B-heretic.Q8_0.gguf\",\"relative_path\":\"Qwen3.5-9B-heretic.Q8_0.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"Qwen3.5-9B-mmproj-BF16.gguf\",\"Qwen3.5-9B-mmproj-F16.gguf\"]},{\"name\":\"Qwen3.5-9B-Q4_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-9B-Q4_0.gguf\",\"relative_path\":\"Qwen3.5-9B-Q4_0.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"Qwen3.5-9B-mmproj-BF16.gguf\",\"Qwen3.5-9B-mmproj-F16.gguf\"]},{\"name\":\"Qwen3.5-9B-Q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-9B-Q8_0.gguf\",\"relative_path\":\"Qwen3.5-9B-Q8_0.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"Qwen3.5-9B-mmproj-BF16.gguf\",\"Qwen3.5-9B-mmproj-F16.gguf\"]},{\"name\":\"Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-Q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-Q8_0.gguf\",\"relative_path\":\"Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-Q8_0.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-BF16.gguf\"]},{\"name\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ2_M.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ2_M.gguf\",\"relative_path\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ2_M.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ3_M.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ3_M.gguf\",\"relative_path\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ3_M.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ3_XS.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ3_XS.gguf\",\"relative_path\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ3_XS.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ4_XS.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ4_XS.gguf\",\"relative_path\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ4_XS.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q2_K_P.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q2_K_P.gguf\",\"relative_path\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q2_K_P.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q3_K_P.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q3_K_P.gguf\",\"relative_path\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q3_K_P.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q4_K_P.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q4_K_P.gguf\",\"relative_path\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q4_K_P.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q5_K_P.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q5_K_P.gguf\",\"relative_path\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q5_K_P.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q6_K_P.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q6_K_P.gguf\",\"relative_path\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q6_K_P.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q8_K_P.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q8_K_P.gguf\",\"relative_path\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q8_K_P.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf\",\"relative_path\":\"Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q8_K_P.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q8_K_P.gguf\",\"relative_path\":\"Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q8_K_P.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.8-27B-IQ4_XS.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.8-27B-IQ4_XS.gguf\",\"relative_path\":\"Qwen3.8-27B-IQ4_XS.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"Qwen3.8-27B-mmproj-BF16.gguf\"]},{\"name\":\"SD3-Captioner\",\"path\":\"/workspace/ComfyUI/models/LLM/SD3-Captioner\",\"relative_path\":\"SD3-Captioner\",\"format\":\"transformers\"},{\"name\":\"SkyCaptioner-V1\",\"path\":\"/workspace/ComfyUI/models/LLM/SkyCaptioner-V1\",\"relative_path\":\"SkyCaptioner-V1\",\"format\":\"transformers\"},{\"name\":\"ToriiGate-0.5\",\"path\":\"/workspace/ComfyUI/models/LLM/ToriiGate-0.5\",\"relative_path\":\"ToriiGate-0.5\",\"format\":\"transformers\"}],\"mmproj_models\":[{\"name\":\"gemma-4-26B-A4B-it-heretic-mmproj.bf16.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/gemma-4-26B-A4B-it-heretic-mmproj.bf16.gguf\",\"relative_path\":\"gemma-4-26B-A4B-it-heretic-mmproj.bf16.gguf\"},{\"name\":\"gemma-4-26B-A4B-it-heretic-mmproj.q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/gemma-4-26B-A4B-it-heretic-mmproj.q8_0.gguf\",\"relative_path\":\"gemma-4-26B-A4B-it-heretic-mmproj.q8_0.gguf\"},{\"name\":\"gemma-4-31B-it-abliterated-mmproj-F16.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/gemma-4-31B-it-abliterated-mmproj-F16.gguf\",\"relative_path\":\"gemma-4-31B-it-abliterated-mmproj-F16.gguf\"},{\"name\":\"Huihui-Qwen3-VL-4B-Instruct-abliterated.mmproj-Q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Huihui-Qwen3-VL-4B-Instruct-abliterated.mmproj-Q8_0.gguf\",\"relative_path\":\"Huihui-Qwen3-VL-4B-Instruct-abliterated.mmproj-Q8_0.gguf\"},{\"name\":\"Huihui-Qwen3-VL-8B-Instruct-abliterated.mmproj-Q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Huihui-Qwen3-VL-8B-Instruct-abliterated.mmproj-Q8_0.gguf\",\"relative_path\":\"Huihui-Qwen3-VL-8B-Instruct-abliterated.mmproj-Q8_0.gguf\"},{\"name\":\"mmproj-Qwen2.5-Omni-7B-F16.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/mmproj-Qwen2.5-Omni-7B-F16.gguf\",\"relative_path\":\"mmproj-Qwen2.5-Omni-7B-F16.gguf\"},{\"name\":\"mmproj-Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-BF16.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/mmproj-Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-BF16.gguf\",\"relative_path\":\"mmproj-Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-BF16.gguf\"},{\"name\":\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\",\"relative_path\":\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"},{\"name\":\"mmproj-Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-f16.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/mmproj-Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-f16.gguf\",\"relative_path\":\"mmproj-Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-f16.gguf\"},{\"name\":\"Qwen3.5-27B-heretic.mmproj-f16.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-27B-heretic.mmproj-f16.gguf\",\"relative_path\":\"Qwen3.5-27B-heretic.mmproj-f16.gguf\"},{\"name\":\"Qwen3.5-27B-heretic.mmproj-Q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-27B-heretic.mmproj-Q8_0.gguf\",\"relative_path\":\"Qwen3.5-27B-heretic.mmproj-Q8_0.gguf\"},{\"name\":\"Qwen3.5-9B-mmproj-BF16.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-9B-mmproj-BF16.gguf\",\"relative_path\":\"Qwen3.5-9B-mmproj-BF16.gguf\"},{\"name\":\"Qwen3.5-9B-mmproj-F16.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-9B-mmproj-F16.gguf\",\"relative_path\":\"Qwen3.5-9B-mmproj-F16.gguf\"},{\"name\":\"Qwen3.8-27B-mmproj-BF16.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.8-27B-mmproj-BF16.gguf\",\"relative_path\":\"Qwen3.8-27B-mmproj-BF16.gguf\"},{\"name\":\"ToriiGate-0.5-bf16.mmproj.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/ToriiGate-0.5-bf16.mmproj.gguf\",\"relative_path\":\"ToriiGate-0.5-bf16.mmproj.gguf\"},{\"name\":\"ToriiGate-0.5-Q8_0.mmproj.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/ToriiGate-0.5-Q8_0.mmproj.gguf\",\"relative_path\":\"ToriiGate-0.5-Q8_0.mmproj.gguf\"}],\"missing_dependencies\":[],\"gguf_dependency\":{\"available\":true,\"reason\":\"\",\"system\":\"Linux\",\"machine\":\"x86_64\",\"python_tag\":\"cp310\",\"cuda_tag\":\"cu130\",\"release_url\":\"https://github.com/JamePeng/llama-cpp-python/releases\",\"wheel_url\":\"\",\"wheel_name\":\"\",\"version\":\"0.3.46\"},\"provider_models\":{\"runninghub\":\"google/gemini-3.6-flash\",\"runninghub_overseas\":\"openai/gpt-5.6-sol\"}},\"optimizerCache\":{\"contextSignature\":\"{\\\"task\\\":\\\"Hybrid\\\",\\\"duration\\\":7,\\\"mode\\\":\\\"text_keyframes\\\",\\\"context\\\":{\\\"main_mode\\\":\\\"text_keyframes\\\",\\\"keyframes\\\":[{\\\"label\\\":\\\"<picture 1>\\\",\\\"role\\\":\\\"exact_first_frame\\\"}],\\\"audio_mode\\\":\\\"lock_source\\\"},\\\"media\\\":[[\\\"first_frame\\\",\\\"image\\\",\\\"<picture 1>\\\",\\\"d4b54ce243945f24e83944dd8818bd94d23271a704637c824dc111281fd6ee6b.png\\\",false],[\\\"hybrid_audio\\\",\\\"audio\\\",\\\"<audio 1>\\\",\\\"ee6db63656c66860a3eaaf9aa774ad334f1bffb212b68f8c01ceabf34d4a67f0.mp3\\\",false]],\\\"settings\\\":[\\\"api\\\",\\\"runninghub\\\",\\\"https://www.runninghub.cn/openapi/v2\\\",\\\"google/gemini-3.6-flash\\\",\\\"runninghub\\\",\\\"Huihui-Qwen3.8-27B-abliterated-Q4_K.gguf\\\",\\\"Qwen3.8-27B-mmproj-BF16.gguf\\\",\\\"cuda\\\",true,\\\"中文\\\"]}\",\"originalPrompt\":\"图1中的女子一边走路一边深情的唱着音频1中的歌曲，表情很伤心，情绪很丰富，搭配合适的闭眼动作\",\"result\":\"subject_definitions:\\n<Subject 1>: <picture 1>中的古装女子，身穿蓝白色华丽汉服，发型精致，容貌秀丽。\\n\\nsummary:\\n[keyframe completion, video continuation, audio reuse] 本视频承接<picture 1>的视觉画面，展示女子一边缓步前行一边深情演唱<audio 1>，表情伤感且伴随自然闭眼。\\n\\nretention_analysis:\\n<picture 1>: fully_preserved - 完整保留女子(S1)的外貌、服装发型样式及古风庭院背景。\\n<audio 1>: fully_copy - 原样保留音频信号作为视频的完整音频轨。\\n\\ndetailed_description:\\n[Shot 1] 镜头从<picture 1>开始，以中特写跟随女子(S1)。(S1)在古风庭院中沿着水畔缓步向前行走，一边深情演唱，唇形与嘴部动作与演唱完美同步，精准吻合音素变化与吐字。她的表情充满悲伤与深情，眼眶泛红，眉宇间流露出浓烈的情感。(S1)随着演唱节奏轻微摇晃身姿，手势配合歌词情感缓缓抬起，在演唱到高潮时自然地闭上双眼，感受歌曲中的伤感，随后微微睁开眼睛，眼神中流露出无尽的思念与落寞。镜头保持平稳跟拍，突出其丰富的面部表情与动人的表演，直到视频结束。\\n\\noverall_soundscape:\\n保留原视频音轨不变。\\n\\nnon_diegetic_music:\\n无非剧情音乐。\"},\"optimizerBefore\":\"图1中的女子一边走路一边深情的唱着音频1中的歌曲，表情很伤心，情绪很丰富，搭配合适的闭眼动作\",\"optimizerBeforeByMode\":{\"text_keyframes\":\"图1中的女子一边走路一边深情的唱着音频1中的歌曲，表情很伤心，情绪很丰富，搭配合适的闭眼动作\",\"all_reference\":null}}",
+        ""
+      ],
+      "widgets_values_named": {
+        "main_mode": "text_keyframes",
+        "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+        "video_vae_name": "minimax_h3_video_vae_fp16.safetensors",
+        "audio_vae_name": "minimax_h3_audio_vae_fp32.safetensors",
+        "aspect": "adaptive",
+        "megapixels": 0.5,
+        "duration_seconds": 10,
+        "prompt": "integrated_multimodal_description:\n[Shot 1]\n画面从 <Picture 1>开始，身穿蓝白相间古装汉服、头戴精致发饰的年轻女子 (S1) 在古风庭院的水池边缓缓踱步。她一边走，一边面带微笑地摇头晃脑，开始高声有节奏、有情感的朗读搞笑诗句：<d>[Chinese]从前每月光，也是姐妹双，举头望明月，低头撕裤裆</d>。画面中同步出现4句诗词字幕。\n在第2秒时，一本暗蓝色封皮的古书突然从画面上方砸下来，(S1) 反应敏捷地伸出右手，稳稳地接住了这本古书。此时镜头开始逆时针环绕 (S1) 进行360度拍摄，平滑地扫过她的侧面和背面，展示她飞扬的衣袖和庭院背景。当诗句读到最后一句“低头撕裤裆”时，(S1) 脸上露出极力憋笑的神情，嘴角剧烈颤抖，双眼弯成了月牙，几乎要笑出声来。\n随着环绕镜头的完成，摄像机最终停在 (S1) 正面的上半身近景特写，同时画面焦点微调，清晰地展现出她手中那本暗蓝色古书的封面，上面赫然写着五个黑色毛笔字：“唐僧三百首”。\n\noverall_soundscape:\n清脆的脚步声在石板路上回响，伴随着衣物摩擦的沙沙声。女子清脆悦耳的声音带着夸张的朗诵腔调。\nnon_diegetic_music:\n无背景乐",
+        "task_type": "auto",
+        "audio_mode": "native",
+        "audio_denoise_strength": 1,
+        "drive_audio_ordinal": 0,
+        "strict_prompt_tags": true,
+        "ref_image_size": "match",
+        "first_frame": "d4b54ce243945f24e83944dd8818bd94d23271a704637c824dc111281fd6ee6b.png",
+        "last_frame": "",
+        "hybrid_audio": "",
+        "ref_image_1": "",
+        "ref_image_2": "",
+        "ref_image_3": "",
+        "ref_image_4": "",
+        "ref_image_5": "",
+        "ref_image_6": "",
+        "ref_image_7": "",
+        "ref_image_8": "",
+        "ref_image_9": "",
+        "ref_video_1": "",
+        "ref_video_2": "",
+        "ref_video_3": "",
+        "ref_audio_1": "",
+        "ref_audio_2": "",
+        "ref_audio_3": "",
+        "gh_state_json": "{\"mode\":\"text_keyframes\",\"media\":[[\"first_frame\",{\"name\":\"d4b54ce243945f24e83944dd8818bd94d23271a704637c824dc111281fd6ee6b.png\",\"kind\":\"image\"}]],\"vacantMediaSlots\":[],\"prompt\":\"integrated_multimodal_description:\\n[Shot 1]\\n画面从 <Picture 1>开始，身穿蓝白相间古装汉服、头戴精致发饰的年轻女子 (S1) 在古风庭院的水池边缓缓踱步。她一边走，一边面带微笑地摇头晃脑，开始高声有节奏、有情感的朗读搞笑诗句：<d>[Chinese]从前每月光，也是姐妹双，举头望明月，低头撕裤裆</d>。画面中同步出现4句诗词字幕。\\n在第2秒时，一本暗蓝色封皮的古书突然从画面上方砸下来，(S1) 反应敏捷地伸出右手，稳稳地接住了这本古书。此时镜头开始逆时针环绕 (S1) 进行360度拍摄，平滑地扫过她的侧面和背面，展示她飞扬的衣袖和庭院背景。当诗句读到最后一句“低头撕裤裆”时，(S1) 脸上露出极力憋笑的神情，嘴角剧烈颤抖，双眼弯成了月牙，几乎要笑出声来。\\n随着环绕镜头的完成，摄像机最终停在 (S1) 正面的上半身近景特写，同时画面焦点微调，清晰地展现出她手中那本暗蓝色古书的封面，上面赫然写着五个黑色毛笔字：“唐僧三百首”。\\n\\noverall_soundscape:\\n清脆的脚步声在石板路上回响，伴随着衣物摩擦的沙沙声。女子清脆悦耳的声音带着夸张的朗诵腔调。\\nnon_diegetic_music:\\n无背景乐\",\"prompts\":{\"text_keyframes\":\"integrated_multimodal_description:\\n[Shot 1]\\n画面从 <Picture 1>开始，身穿蓝白相间古装汉服、头戴精致发饰的年轻女子 (S1) 在古风庭院的水池边缓缓踱步。她一边走，一边面带微笑地摇头晃脑，开始高声有节奏、有情感的朗读搞笑诗句：<d>[Chinese]从前每月光，也是姐妹双，举头望明月，低头撕裤裆</d>。画面中同步出现4句诗词字幕。\\n在第2秒时，一本暗蓝色封皮的古书突然从画面上方砸下来，(S1) 反应敏捷地伸出右手，稳稳地接住了这本古书。此时镜头开始逆时针环绕 (S1) 进行360度拍摄，平滑地扫过她的侧面和背面，展示她飞扬的衣袖和庭院背景。当诗句读到最后一句“低头撕裤裆”时，(S1) 脸上露出极力憋笑的神情，嘴角剧烈颤抖，双眼弯成了月牙，几乎要笑出声来。\\n随着环绕镜头的完成，摄像机最终停在 (S1) 正面的上半身近景特写，同时画面焦点微调，清晰地展现出她手中那本暗蓝色古书的封面，上面赫然写着五个黑色毛笔字：“唐僧三百首”。\\n\\noverall_soundscape:\\n清脆的脚步声在石板路上回响，伴随着衣物摩擦的沙沙声。女子清脆悦耳的声音带着夸张的朗诵腔调。\\nnon_diegetic_music:\\n无背景乐\",\"all_reference\":\"\"},\"height\":1076,\"advanced\":false,\"optimizer\":{\"mode\":\"api\",\"provider\":\"runninghub\",\"api_url\":\"https://www.runninghub.cn/openapi/v2\",\"api_key\":\"\",\"model\":\"google/gemini-3.6-flash\",\"protocol\":\"runninghub\",\"read_media\":true,\"output_language\":\"中文\",\"local_model\":\"Huihui-Qwen3.8-27B-abliterated-Q4_K.gguf\",\"local_mmproj\":\"Qwen3.8-27B-mmproj-BF16.gguf\",\"local_device\":\"cuda\",\"max_tokens\":4096,\"auto_optimize\":false,\"api_keys\":{\"runninghub\":\"\",\"runninghub_overseas\":\"\"},\"has_api_key\":false,\"runninghub_models\":[\"openai/gpt-5.6-sol\",\"openai/gpt-5.6-sol-saver\",\"openai/gpt-5.6-terra\",\"openai/gpt-5.6-terra-saver\",\"openai/gpt-5.5\",\"openai/gpt-5.5-saver\",\"openai/gpt-5.6-luna\",\"google/gemini-3.1-flash-lite-preview\",\"google/gemini-3.5-flash\",\"openai/gpt-5.5-pro\",\"anthropic/claude-fable-5\",\"openai/gpt-5.4-pro\",\"anthropic/claude-opus-5\",\"anthropic/claude-opus-4.8\",\"anthropic/claude-opus-4.7\",\"glm-5.2\",\"anthropic/claude-opus-4.6\",\"openai/gpt-5.4\",\"openai/gpt-5.3-codex\",\"glm-5.1\",\"glm-5-turbo\",\"qwen/qwen3.8-max\",\"anthropic/claude-sonnet-4.6\",\"glm-5\",\"anthropic/claude-sonnet-5\",\"qwen/qwen3.7-max\",\"glm-5v-turbo\",\"qwen/qwen3.7-plus\",\"deepseek/deepseek-v4-pro\",\"xai/grok-4.6\",\"xai/grok-4.5\",\"xai/grok-4.3\",\"qwen/qwen3.6-plus\",\"google/gemini-3.1-pro-preview\",\"bytedance/doubao-seed-evolving\",\"bytedance/doubao-seed-2.1-pro\",\"anthropic/claude-sonnet-4.5\",\"bytedance/doubao-seed-2.1-turbo\",\"anthropic/claude-opus-4.5\",\"bytedance/doubao-seed-2.0-pro\",\"bytedance/doubao-seed-2.0-code\",\"deepseek/deepseek-v4-flash\",\"qwen/qwen3.6-flash\",\"openai/gpt-5.4-mini\",\"openai/gpt-5.4-nano\",\"google/gemini-3-flash-preview\",\"google/gemini-2.5-flash\",\"bytedance/doubao-seed-2.0-lite\",\"bytedance/doubao-seed-2.0-mini\",\"minimax/minimax-m2.7\",\"anthropic/claude-haiku-4.5\",\"qwen/qwen3.6-max-preview\",\"anthropic/claude-haiku-4.5-saver\",\"anthropic/claude-opus-4.6-saver\",\"anthropic/claude-opus-4.7-saver\",\"anthropic/claude-opus-4.8-saver\",\"anthropic/claude-sonnet-4.6-saver\",\"google/gemini-2.5-pro\",\"google/gemini-3.5-flash-lite\",\"google/gemini-3.6-flash\",\"google/gemini-3.7-flash\"],\"runninghub_overseas_models\":[\"openai/gpt-5.6-sol\",\"openai/gpt-5.6-sol-saver\",\"openai/gpt-5.6-terra\",\"openai/gpt-5.6-terra-saver\",\"openai/gpt-5.5\",\"openai/gpt-5.5-saver\",\"openai/gpt-5.6-luna\",\"google/gemini-3.1-flash-lite-preview\",\"google/gemini-3.5-flash\",\"openai/gpt-5.5-pro\",\"anthropic/claude-fable-5\",\"openai/gpt-5.4-pro\",\"anthropic/claude-opus-5\",\"anthropic/claude-opus-4.8\",\"anthropic/claude-opus-4.7\",\"glm-5.2\",\"anthropic/claude-opus-4.6\",\"openai/gpt-5.4\",\"openai/gpt-5.3-codex\",\"glm-5.1\",\"glm-5-turbo\",\"qwen/qwen3.8-max\",\"anthropic/claude-sonnet-4.6\",\"glm-5\",\"anthropic/claude-sonnet-5\",\"qwen/qwen3.7-max\",\"glm-5v-turbo\",\"qwen/qwen3.7-plus\",\"deepseek/deepseek-v4-pro\",\"xai/grok-4.6\",\"xai/grok-4.5\",\"xai/grok-4.3\",\"qwen/qwen3.6-plus\",\"google/gemini-3.1-pro-preview\",\"bytedance/doubao-seed-evolving\",\"bytedance/doubao-seed-2.1-pro\",\"anthropic/claude-sonnet-4.5\",\"bytedance/doubao-seed-2.1-turbo\",\"anthropic/claude-opus-4.5\",\"bytedance/doubao-seed-2.0-pro\",\"bytedance/doubao-seed-2.0-code\",\"deepseek/deepseek-v4-flash\",\"qwen/qwen3.6-flash\",\"openai/gpt-5.4-mini\",\"openai/gpt-5.4-nano\",\"google/gemini-3-flash-preview\",\"google/gemini-2.5-flash\",\"bytedance/doubao-seed-2.0-lite\",\"bytedance/doubao-seed-2.0-mini\",\"minimax/minimax-m2.7\",\"anthropic/claude-haiku-4.5\",\"qwen/qwen3.6-max-preview\",\"anthropic/claude-haiku-4.5-saver\",\"anthropic/claude-opus-4.6-saver\",\"anthropic/claude-opus-4.7-saver\",\"anthropic/claude-opus-4.8-saver\",\"anthropic/claude-sonnet-4.6-saver\",\"google/gemini-2.5-pro\",\"google/gemini-3.5-flash-lite\",\"google/gemini-3.6-flash\",\"google/gemini-3.7-flash\"],\"models\":[{\"name\":\"base\",\"path\":\"/workspace/ComfyUI/models/LLM/base\",\"relative_path\":\"base\",\"format\":\"transformers\"},{\"name\":\"base-ft\",\"path\":\"/workspace/ComfyUI/models/LLM/base-ft\",\"relative_path\":\"base-ft\",\"format\":\"transformers\"},{\"name\":\"base-PromptGen\",\"path\":\"/workspace/ComfyUI/models/LLM/base-PromptGen\",\"relative_path\":\"base-PromptGen\",\"format\":\"transformers\"},{\"name\":\"CogFlorence-2-Large-Freeze\",\"path\":\"/workspace/ComfyUI/models/LLM/CogFlorence-2-Large-Freeze\",\"relative_path\":\"CogFlorence-2-Large-Freeze\",\"format\":\"transformers\"},{\"name\":\"CogFlorence-2.1-Large\",\"path\":\"/workspace/ComfyUI/models/LLM/CogFlorence-2.1-Large\",\"relative_path\":\"CogFlorence-2.1-Large\",\"format\":\"transformers\"},{\"name\":\"CogFlorence-2.2-Large\",\"path\":\"/workspace/ComfyUI/models/LLM/CogFlorence-2.2-Large\",\"relative_path\":\"CogFlorence-2.2-Large\",\"format\":\"transformers\"},{\"name\":\"DeepSeek-OCR\",\"path\":\"/workspace/ComfyUI/models/LLM/DeepSeek-OCR\",\"relative_path\":\"DeepSeek-OCR\",\"format\":\"transformers\"},{\"name\":\"DocVQA\",\"path\":\"/workspace/ComfyUI/models/LLM/DocVQA\",\"relative_path\":\"DocVQA\",\"format\":\"transformers\"},{\"name\":\"Florence-2-base\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-base\",\"relative_path\":\"Florence-2-base\",\"format\":\"transformers\"},{\"name\":\"Florence-2-base-ft\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-base-ft\",\"relative_path\":\"Florence-2-base-ft\",\"format\":\"transformers\"},{\"name\":\"Florence-2-base-PromptGen\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-base-PromptGen\",\"relative_path\":\"Florence-2-base-PromptGen\",\"format\":\"transformers\"},{\"name\":\"Florence-2-base-PromptGen-v1.5\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-base-PromptGen-v1.5\",\"relative_path\":\"Florence-2-base-PromptGen-v1.5\",\"format\":\"transformers\"},{\"name\":\"Florence-2-base-PromptGen-v2.0\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-base-PromptGen-v2.0\",\"relative_path\":\"Florence-2-base-PromptGen-v2.0\",\"format\":\"transformers\"},{\"name\":\"Florence-2-DocVQA\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-DocVQA\",\"relative_path\":\"Florence-2-DocVQA\",\"format\":\"transformers\"},{\"name\":\"Florence-2-Flux-Large\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-Flux-Large\",\"relative_path\":\"Florence-2-Flux-Large\",\"format\":\"transformers\"},{\"name\":\"Florence-2-large\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-large\",\"relative_path\":\"Florence-2-large\",\"format\":\"transformers\"},{\"name\":\"Florence-2-large-ft\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-large-ft\",\"relative_path\":\"Florence-2-large-ft\",\"format\":\"transformers\"},{\"name\":\"Florence-2-large-PromptGen-v1.5\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-large-PromptGen-v1.5\",\"relative_path\":\"Florence-2-large-PromptGen-v1.5\",\"format\":\"transformers\"},{\"name\":\"Florence-2-large-PromptGen-v2.0\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-large-PromptGen-v2.0\",\"relative_path\":\"Florence-2-large-PromptGen-v2.0\",\"format\":\"transformers\"},{\"name\":\"Florence-2-SD3-Captioner\",\"path\":\"/workspace/ComfyUI/models/LLM/Florence-2-SD3-Captioner\",\"relative_path\":\"Florence-2-SD3-Captioner\",\"format\":\"transformers\"},{\"name\":\"Huihui-Qwen3-VL-4B-Instruct-abliterated.Q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Huihui-Qwen3-VL-4B-Instruct-abliterated.Q8_0.gguf\",\"relative_path\":\"Huihui-Qwen3-VL-4B-Instruct-abliterated.Q8_0.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"Huihui-Qwen3-VL-4B-Instruct-abliterated.mmproj-Q8_0.gguf\"]},{\"name\":\"Huihui-Qwen3-VL-8B-Instruct-abliterated.Q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Huihui-Qwen3-VL-8B-Instruct-abliterated.Q8_0.gguf\",\"relative_path\":\"Huihui-Qwen3-VL-8B-Instruct-abliterated.Q8_0.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"Huihui-Qwen3-VL-8B-Instruct-abliterated.mmproj-Q8_0.gguf\"]},{\"name\":\"Huihui-Qwen3.8-27B-abliterated-Q4_K.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Huihui-Qwen3.8-27B-abliterated-Q4_K.gguf\",\"relative_path\":\"Huihui-Qwen3.8-27B-abliterated-Q4_K.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"Qwen3.8-27B-mmproj-BF16.gguf\"]},{\"name\":\"large\",\"path\":\"/workspace/ComfyUI/models/LLM/large\",\"relative_path\":\"large\",\"format\":\"transformers\"},{\"name\":\"large-ft\",\"path\":\"/workspace/ComfyUI/models/LLM/large-ft\",\"relative_path\":\"large-ft\",\"format\":\"transformers\"},{\"name\":\"llama-joycaption-alpha-two-hf-llava\",\"path\":\"/workspace/ComfyUI/models/LLM/llama-joycaption-alpha-two-hf-llava\",\"relative_path\":\"llama-joycaption-alpha-two-hf-llava\",\"format\":\"transformers\"},{\"name\":\"llama-joycaption-beta-one-hf-llava\",\"path\":\"/workspace/ComfyUI/models/LLM/llama-joycaption-beta-one-hf-llava\",\"relative_path\":\"llama-joycaption-beta-one-hf-llava\",\"format\":\"transformers\"},{\"name\":\"llava-llama-3-8b-v1_1-transformers\",\"path\":\"/workspace/ComfyUI/models/LLM/llava-llama-3-8b-v1_1-transformers\",\"relative_path\":\"llava-llama-3-8b-v1_1-transformers\",\"format\":\"transformers\"},{\"name\":\"MiniCPM-V-4\",\"path\":\"/workspace/ComfyUI/models/LLM/MiniCPM-V-4\",\"relative_path\":\"MiniCPM-V-4\",\"format\":\"transformers\"},{\"name\":\"MiniCPM-V-4-int4\",\"path\":\"/workspace/ComfyUI/models/LLM/MiniCPM-V-4-int4\",\"relative_path\":\"MiniCPM-V-4-int4\",\"format\":\"transformers\"},{\"name\":\"MiniCPM-V-4_5\",\"path\":\"/workspace/ComfyUI/models/LLM/MiniCPM-V-4_5\",\"relative_path\":\"MiniCPM-V-4_5\",\"format\":\"transformers\"},{\"name\":\"MiniCPM-V-4_5-int4\",\"path\":\"/workspace/ComfyUI/models/LLM/MiniCPM-V-4_5-int4\",\"relative_path\":\"MiniCPM-V-4_5-int4\",\"format\":\"transformers\"},{\"name\":\"OmniGen-v1\",\"path\":\"/workspace/ComfyUI/models/LLM/OmniGen-v1\",\"relative_path\":\"OmniGen-v1\",\"format\":\"transformers\"},{\"name\":\"Phi-3.5-vision-instruct\",\"path\":\"/workspace/ComfyUI/models/LLM/Phi-3.5-vision-instruct\",\"relative_path\":\"Phi-3.5-vision-instruct\",\"format\":\"transformers\"},{\"name\":\"Qwen2.5-Omni-3B\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen2.5-Omni-3B\",\"relative_path\":\"Qwen2.5-Omni-3B\",\"format\":\"transformers\"},{\"name\":\"Qwen2.5-Omni-7B\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen2.5-Omni-7B\",\"relative_path\":\"Qwen2.5-Omni-7B\",\"format\":\"transformers\"},{\"name\":\"Qwen2.5-VL-3B-Instruct\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen2.5-VL-3B-Instruct\",\"relative_path\":\"Qwen2.5-VL-3B-Instruct\",\"format\":\"transformers\"},{\"name\":\"Qwen2.5-VL-3B-Instruct-AWQ\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen2.5-VL-3B-Instruct-AWQ\",\"relative_path\":\"Qwen2.5-VL-3B-Instruct-AWQ\",\"format\":\"transformers\"},{\"name\":\"Qwen2.5-VL-7B-Instruct\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen2.5-VL-7B-Instruct\",\"relative_path\":\"Qwen2.5-VL-7B-Instruct\",\"format\":\"transformers\"},{\"name\":\"Qwen2.5-VL-7B-Instruct-AWQ\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen2.5-VL-7B-Instruct-AWQ\",\"relative_path\":\"Qwen2.5-VL-7B-Instruct-AWQ\",\"format\":\"transformers\"},{\"name\":\"Qwen2.5-VL-7B-SPC\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen2.5-VL-7B-SPC\",\"relative_path\":\"Qwen2.5-VL-7B-SPC\",\"format\":\"transformers\"},{\"name\":\"Qwen3.5-27B-heretic.Q4_K_M.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-27B-heretic.Q4_K_M.gguf\",\"relative_path\":\"Qwen3.5-27B-heretic.Q4_K_M.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"Qwen3.5-27B-heretic.mmproj-f16.gguf\",\"Qwen3.5-27B-heretic.mmproj-Q8_0.gguf\"]},{\"name\":\"Qwen3.5-27B-heretic.Q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-27B-heretic.Q8_0.gguf\",\"relative_path\":\"Qwen3.5-27B-heretic.Q8_0.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"Qwen3.5-27B-heretic.mmproj-f16.gguf\",\"Qwen3.5-27B-heretic.mmproj-Q8_0.gguf\"]},{\"name\":\"Qwen3.5-9B-Claude-4.6-Opus-Deckard-V4.2-Uncensored-Heretic-Thinking.i1-Q4_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-9B-Claude-4.6-Opus-Deckard-V4.2-Uncensored-Heretic-Thinking.i1-Q4_0.gguf\",\"relative_path\":\"Qwen3.5-9B-Claude-4.6-Opus-Deckard-V4.2-Uncensored-Heretic-Thinking.i1-Q4_0.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-BF16.gguf\"]},{\"name\":\"Qwen3.5-9b-heretic-v2-q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-9b-heretic-v2-q8_0.gguf\",\"relative_path\":\"Qwen3.5-9b-heretic-v2-q8_0.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"Qwen3.5-9B-mmproj-BF16.gguf\",\"Qwen3.5-9B-mmproj-F16.gguf\"]},{\"name\":\"Qwen3.5-9B-heretic.Q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-9B-heretic.Q8_0.gguf\",\"relative_path\":\"Qwen3.5-9B-heretic.Q8_0.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"Qwen3.5-9B-mmproj-BF16.gguf\",\"Qwen3.5-9B-mmproj-F16.gguf\"]},{\"name\":\"Qwen3.5-9B-Q4_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-9B-Q4_0.gguf\",\"relative_path\":\"Qwen3.5-9B-Q4_0.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"Qwen3.5-9B-mmproj-BF16.gguf\",\"Qwen3.5-9B-mmproj-F16.gguf\"]},{\"name\":\"Qwen3.5-9B-Q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-9B-Q8_0.gguf\",\"relative_path\":\"Qwen3.5-9B-Q8_0.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"Qwen3.5-9B-mmproj-BF16.gguf\",\"Qwen3.5-9B-mmproj-F16.gguf\"]},{\"name\":\"Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-Q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-Q8_0.gguf\",\"relative_path\":\"Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-Q8_0.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-BF16.gguf\"]},{\"name\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ2_M.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ2_M.gguf\",\"relative_path\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ2_M.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ3_M.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ3_M.gguf\",\"relative_path\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ3_M.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ3_XS.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ3_XS.gguf\",\"relative_path\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ3_XS.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ4_XS.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ4_XS.gguf\",\"relative_path\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-IQ4_XS.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q2_K_P.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q2_K_P.gguf\",\"relative_path\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q2_K_P.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q3_K_P.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q3_K_P.gguf\",\"relative_path\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q3_K_P.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q4_K_P.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q4_K_P.gguf\",\"relative_path\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q4_K_P.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q5_K_P.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q5_K_P.gguf\",\"relative_path\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q5_K_P.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q6_K_P.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q6_K_P.gguf\",\"relative_path\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q6_K_P.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q8_K_P.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q8_K_P.gguf\",\"relative_path\":\"Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-Q8_K_P.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf\",\"relative_path\":\"Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q8_K_P.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q8_K_P.gguf\",\"relative_path\":\"Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q8_K_P.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"mmproj-Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-f16.gguf\"]},{\"name\":\"Qwen3.8-27B-IQ4_XS.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.8-27B-IQ4_XS.gguf\",\"relative_path\":\"Qwen3.8-27B-IQ4_XS.gguf\",\"format\":\"gguf\",\"mmproj_candidates\":[\"Qwen3.8-27B-mmproj-BF16.gguf\"]},{\"name\":\"SD3-Captioner\",\"path\":\"/workspace/ComfyUI/models/LLM/SD3-Captioner\",\"relative_path\":\"SD3-Captioner\",\"format\":\"transformers\"},{\"name\":\"SkyCaptioner-V1\",\"path\":\"/workspace/ComfyUI/models/LLM/SkyCaptioner-V1\",\"relative_path\":\"SkyCaptioner-V1\",\"format\":\"transformers\"},{\"name\":\"ToriiGate-0.5\",\"path\":\"/workspace/ComfyUI/models/LLM/ToriiGate-0.5\",\"relative_path\":\"ToriiGate-0.5\",\"format\":\"transformers\"}],\"mmproj_models\":[{\"name\":\"gemma-4-26B-A4B-it-heretic-mmproj.bf16.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/gemma-4-26B-A4B-it-heretic-mmproj.bf16.gguf\",\"relative_path\":\"gemma-4-26B-A4B-it-heretic-mmproj.bf16.gguf\"},{\"name\":\"gemma-4-26B-A4B-it-heretic-mmproj.q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/gemma-4-26B-A4B-it-heretic-mmproj.q8_0.gguf\",\"relative_path\":\"gemma-4-26B-A4B-it-heretic-mmproj.q8_0.gguf\"},{\"name\":\"gemma-4-31B-it-abliterated-mmproj-F16.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/gemma-4-31B-it-abliterated-mmproj-F16.gguf\",\"relative_path\":\"gemma-4-31B-it-abliterated-mmproj-F16.gguf\"},{\"name\":\"Huihui-Qwen3-VL-4B-Instruct-abliterated.mmproj-Q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Huihui-Qwen3-VL-4B-Instruct-abliterated.mmproj-Q8_0.gguf\",\"relative_path\":\"Huihui-Qwen3-VL-4B-Instruct-abliterated.mmproj-Q8_0.gguf\"},{\"name\":\"Huihui-Qwen3-VL-8B-Instruct-abliterated.mmproj-Q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Huihui-Qwen3-VL-8B-Instruct-abliterated.mmproj-Q8_0.gguf\",\"relative_path\":\"Huihui-Qwen3-VL-8B-Instruct-abliterated.mmproj-Q8_0.gguf\"},{\"name\":\"mmproj-Qwen2.5-Omni-7B-F16.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/mmproj-Qwen2.5-Omni-7B-F16.gguf\",\"relative_path\":\"mmproj-Qwen2.5-Omni-7B-F16.gguf\"},{\"name\":\"mmproj-Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-BF16.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/mmproj-Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-BF16.gguf\",\"relative_path\":\"mmproj-Qwen3.5-9B-Uncensored-HauhauCS-Aggressive-BF16.gguf\"},{\"name\":\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\",\"relative_path\":\"mmproj-Qwen3.6-27B-Uncensored-HauhauCS-Aggressive-f16.gguf\"},{\"name\":\"mmproj-Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-f16.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/mmproj-Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-f16.gguf\",\"relative_path\":\"mmproj-Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-f16.gguf\"},{\"name\":\"Qwen3.5-27B-heretic.mmproj-f16.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-27B-heretic.mmproj-f16.gguf\",\"relative_path\":\"Qwen3.5-27B-heretic.mmproj-f16.gguf\"},{\"name\":\"Qwen3.5-27B-heretic.mmproj-Q8_0.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-27B-heretic.mmproj-Q8_0.gguf\",\"relative_path\":\"Qwen3.5-27B-heretic.mmproj-Q8_0.gguf\"},{\"name\":\"Qwen3.5-9B-mmproj-BF16.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-9B-mmproj-BF16.gguf\",\"relative_path\":\"Qwen3.5-9B-mmproj-BF16.gguf\"},{\"name\":\"Qwen3.5-9B-mmproj-F16.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.5-9B-mmproj-F16.gguf\",\"relative_path\":\"Qwen3.5-9B-mmproj-F16.gguf\"},{\"name\":\"Qwen3.8-27B-mmproj-BF16.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/Qwen3.8-27B-mmproj-BF16.gguf\",\"relative_path\":\"Qwen3.8-27B-mmproj-BF16.gguf\"},{\"name\":\"ToriiGate-0.5-bf16.mmproj.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/ToriiGate-0.5-bf16.mmproj.gguf\",\"relative_path\":\"ToriiGate-0.5-bf16.mmproj.gguf\"},{\"name\":\"ToriiGate-0.5-Q8_0.mmproj.gguf\",\"path\":\"/workspace/ComfyUI/models/LLM/ToriiGate-0.5-Q8_0.mmproj.gguf\",\"relative_path\":\"ToriiGate-0.5-Q8_0.mmproj.gguf\"}],\"missing_dependencies\":[],\"gguf_dependency\":{\"available\":true,\"reason\":\"\",\"system\":\"Linux\",\"machine\":\"x86_64\",\"python_tag\":\"cp310\",\"cuda_tag\":\"cu130\",\"release_url\":\"https://github.com/JamePeng/llama-cpp-python/releases\",\"wheel_url\":\"\",\"wheel_name\":\"\",\"version\":\"0.3.46\"},\"provider_models\":{\"runninghub\":\"google/gemini-3.6-flash\",\"runninghub_overseas\":\"openai/gpt-5.6-sol\"}},\"optimizerCache\":{\"contextSignature\":\"{\\\"task\\\":\\\"Hybrid\\\",\\\"duration\\\":7,\\\"mode\\\":\\\"text_keyframes\\\",\\\"context\\\":{\\\"main_mode\\\":\\\"text_keyframes\\\",\\\"keyframes\\\":[{\\\"label\\\":\\\"<picture 1>\\\",\\\"role\\\":\\\"exact_first_frame\\\"}],\\\"audio_mode\\\":\\\"lock_source\\\"},\\\"media\\\":[[\\\"first_frame\\\",\\\"image\\\",\\\"<picture 1>\\\",\\\"d4b54ce243945f24e83944dd8818bd94d23271a704637c824dc111281fd6ee6b.png\\\",false],[\\\"hybrid_audio\\\",\\\"audio\\\",\\\"<audio 1>\\\",\\\"ee6db63656c66860a3eaaf9aa774ad334f1bffb212b68f8c01ceabf34d4a67f0.mp3\\\",false]],\\\"settings\\\":[\\\"api\\\",\\\"runninghub\\\",\\\"https://www.runninghub.cn/openapi/v2\\\",\\\"google/gemini-3.6-flash\\\",\\\"runninghub\\\",\\\"Huihui-Qwen3.8-27B-abliterated-Q4_K.gguf\\\",\\\"Qwen3.8-27B-mmproj-BF16.gguf\\\",\\\"cuda\\\",true,\\\"中文\\\"]}\",\"originalPrompt\":\"图1中的女子一边走路一边深情的唱着音频1中的歌曲，表情很伤心，情绪很丰富，搭配合适的闭眼动作\",\"result\":\"subject_definitions:\\n<Subject 1>: <picture 1>中的古装女子，身穿蓝白色华丽汉服，发型精致，容貌秀丽。\\n\\nsummary:\\n[keyframe completion, video continuation, audio reuse] 本视频承接<picture 1>的视觉画面，展示女子一边缓步前行一边深情演唱<audio 1>，表情伤感且伴随自然闭眼。\\n\\nretention_analysis:\\n<picture 1>: fully_preserved - 完整保留女子(S1)的外貌、服装发型样式及古风庭院背景。\\n<audio 1>: fully_copy - 原样保留音频信号作为视频的完整音频轨。\\n\\ndetailed_description:\\n[Shot 1] 镜头从<picture 1>开始，以中特写跟随女子(S1)。(S1)在古风庭院中沿着水畔缓步向前行走，一边深情演唱，唇形与嘴部动作与演唱完美同步，精准吻合音素变化与吐字。她的表情充满悲伤与深情，眼眶泛红，眉宇间流露出浓烈的情感。(S1)随着演唱节奏轻微摇晃身姿，手势配合歌词情感缓缓抬起，在演唱到高潮时自然地闭上双眼，感受歌曲中的伤感，随后微微睁开眼睛，眼神中流露出无尽的思念与落寞。镜头保持平稳跟拍，突出其丰富的面部表情与动人的表演，直到视频结束。\\n\\noverall_soundscape:\\n保留原视频音轨不变。\\n\\nnon_diegetic_music:\\n无非剧情音乐。\"},\"optimizerBefore\":\"图1中的女子一边走路一边深情的唱着音频1中的歌曲，表情很伤心，情绪很丰富，搭配合适的闭眼动作\",\"optimizerBeforeByMode\":{\"text_keyframes\":\"图1中的女子一边走路一边深情的唱着音频1中的歌曲，表情很伤心，情绪很丰富，搭配合适的闭眼动作\",\"all_reference\":null}}",
+        "gh_h3_panel": ""
+      }
+    },
+    {
+      "id": 187,
+      "type": "SplitSigmas",
+      "pos": [
+        -289.24278981333345,
+        1816.507086124192
+      ],
+      "size": [
+        225,
+        80
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 28,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "sigmas",
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 186
+        },
+        {
+          "label": "step",
+          "name": "step",
+          "type": "INT",
+          "widget": {
+            "name": "step"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "high_sigmas",
+          "name": "high_sigmas",
+          "type": "SIGMAS",
+          "links": []
+        },
+        {
+          "label": "low_sigmas",
+          "name": "low_sigmas",
+          "type": "SIGMAS",
+          "links": [
+            269
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.31.1",
+        "Node name for S&R": "SplitSigmas",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {
+          "step": true
+        }
+      },
+      "widgets_values": [
+        4
+      ],
+      "widgets_values_named": {
+        "step": 4
+      },
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 207,
+      "type": "VHS_VideoCombine",
+      "pos": [
+        -1274.8563232421875,
+        190
+      ],
+      "size": [
+        425,
+        1062.7058823529412
+      ],
+      "flags": {
+        "collapsed": false,
+        "disabled": false
+      },
+      "order": 23,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "images",
+          "name": "images",
+          "type": "IMAGE",
+          "link": 300
+        },
+        {
+          "label": "audio",
+          "name": "audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": 291
+        },
+        {
+          "label": "meta_batch",
+          "name": "meta_batch",
+          "shape": 7,
+          "type": "VHS_BatchManager"
+        },
+        {
+          "label": "vae",
+          "name": "vae",
+          "shape": 7,
+          "type": "VAE"
+        },
+        {
+          "label": "frame_rate",
+          "name": "frame_rate",
+          "type": "FLOAT",
+          "widget": {
+            "name": "frame_rate"
+          }
+        },
+        {
+          "label": "loop_count",
+          "name": "loop_count",
+          "type": "INT",
+          "widget": {
+            "name": "loop_count"
+          }
+        },
+        {
+          "label": "filename_prefix",
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": {
+            "name": "filename_prefix"
+          }
+        },
+        {
+          "label": "format",
+          "name": "format",
+          "type": "COMBO",
+          "widget": {
+            "name": "format"
+          }
+        },
+        {
+          "label": "pingpong",
+          "name": "pingpong",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "pingpong"
+          }
+        },
+        {
+          "label": "save_output",
+          "name": "save_output",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "save_output"
+          },
+          "link": 301
+        },
+        {
+          "label": "save_metadata",
+          "name": "save_metadata",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "save_metadata"
+          }
+        },
+        {
+          "label": "trim_to_audio",
+          "name": "trim_to_audio",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "trim_to_audio"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "Filenames",
+          "name": "Filenames",
+          "type": "VHS_FILENAMES"
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-videohelpersuite",
+        "ver": "02dfc5ee26ceaaabd4c4dbff53e2075e258a626f",
+        "Node name for S&R": "VHS_VideoCombine",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {
+          "save_output": true,
+          "filename_prefix": true,
+          "loop_count": true,
+          "save_metadata": true,
+          "trim_to_audio": true,
+          "format": true,
+          "frame_rate": true,
+          "pingpong": true
+        }
+      },
+      "widgets_values": {
+        "frame_rate": 24,
+        "loop_count": 0,
+        "filename_prefix": "MiniMaxH3/二采",
+        "format": "video/h264-mp4",
+        "pix_fmt": "yuv420p",
+        "crf": 16,
+        "save_metadata": false,
+        "trim_to_audio": false,
+        "pingpong": false,
+        "save_output": false,
+        "videopreview": {
+          "paused": false,
+          "hidden": false,
+          "params": {
+            "storageProvider": "cos",
+            "cos_url": "https://rh-images.xiaoyaoyou.com//83b6ab85b9aeb2ee7d7af0a376e2aeaa/output/MiniMaxH3/二采_00001_p85-audio_vrcpr_1788773549.mp4",
+            "workflow": "二采_00001.png",
+            "format": "video/h264-mp4",
+            "subfolder": "MiniMaxH3",
+            "label": "Normal",
+            "type": "output",
+            "frame_rate": 24,
+            "bucket": "rh-images-1252422369",
+            "score": 2,
+            "filename": "二采_00001-audio.mp4",
+            "fullpath": "/root/ComfyUI/output/MiniMaxH3/二采_00001-audio.mp4",
+            "objectKey": "83b6ab85b9aeb2ee7d7af0a376e2aeaa/output/MiniMaxH3/二采_00001_p85-audio_vrcpr_1788773549.mp4"
+          }
+        }
+      },
+      "widgets_values_named": {
+        "frame_rate": 24,
+        "loop_count": 0,
+        "filename_prefix": "MiniMaxH3/二采",
+        "format": "video/h264-mp4",
+        "pix_fmt": "yuv420p",
+        "crf": 16,
+        "save_metadata": false,
+        "trim_to_audio": false,
+        "pingpong": false,
+        "save_output": false,
+        "videopreview": {
+          "paused": false,
+          "hidden": false,
+          "params": {
+            "storageProvider": "cos",
+            "cos_url": "https://rh-images.xiaoyaoyou.com//83b6ab85b9aeb2ee7d7af0a376e2aeaa/output/MiniMaxH3/二采_00001_p85-audio_vrcpr_1788773549.mp4",
+            "workflow": "二采_00001.png",
+            "format": "video/h264-mp4",
+            "subfolder": "MiniMaxH3",
+            "label": "Normal",
+            "type": "output",
+            "frame_rate": 24,
+            "bucket": "rh-images-1252422369",
+            "score": 2,
+            "filename": "二采_00001-audio.mp4",
+            "fullpath": "/root/ComfyUI/output/MiniMaxH3/二采_00001-audio.mp4",
+            "objectKey": "83b6ab85b9aeb2ee7d7af0a376e2aeaa/output/MiniMaxH3/二采_00001_p85-audio_vrcpr_1788773549.mp4"
+          }
+        }
+      }
+    },
+    {
+      "id": 208,
+      "type": "MiniMaxH3AVDecodeT8GH",
+      "pos": [
+        1663.0100178038522,
+        1661.8822081945048
+      ],
+      "size": [
+        280.8158874511719,
+        100.65449523925781
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 36,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "av_latent",
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 282
+        },
+        {
+          "label": "video_vae",
+          "name": "video_vae",
+          "type": "VAE",
+          "link": 263
+        },
+        {
+          "label": "audio_vae",
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 264
+        }
+      ],
+      "outputs": [
+        {
+          "label": "frames",
+          "name": "frames",
+          "type": "IMAGE",
+          "links": [
+            331
+          ]
+        },
+        {
+          "label": "generated_audio",
+          "name": "generated_audio",
+          "type": "AUDIO",
+          "links": []
+        },
+        {
+          "label": "video_latent",
+          "name": "video_latent",
+          "type": "LATENT"
+        },
+        {
+          "label": "audio_latent",
+          "name": "audio_latent",
+          "type": "LATENT"
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MiniMaxH3AVDecodeT8GH",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      }
+    },
+    {
+      "id": 210,
+      "type": "GoohaiMinimaxH3TiledSampler",
+      "pos": [
+        1329.0274738585406,
+        1662.4194396398173
+      ],
+      "size": [
+        311.53955078125,
+        475.1699523925781
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 34,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "noise",
+          "name": "noise",
+          "type": "NOISE",
+          "link": 266
+        },
+        {
+          "label": "guider",
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 267
+        },
+        {
+          "label": "sampler",
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 268
+        },
+        {
+          "label": "sigmas",
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 269
+        },
+        {
+          "label": "latent_image",
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 312
+        },
+        {
+          "label": "enable_tiling",
+          "name": "enable_tiling",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "enable_tiling"
+          }
+        },
+        {
+          "label": "n_tiles",
+          "name": "n_tiles",
+          "type": "INT",
+          "widget": {
+            "name": "n_tiles"
+          }
+        },
+        {
+          "label": "tile_overlap",
+          "name": "tile_overlap",
+          "type": "INT",
+          "widget": {
+            "name": "tile_overlap"
+          }
+        },
+        {
+          "label": "refine_seams",
+          "name": "refine_seams",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "refine_seams"
+          }
+        },
+        {
+          "label": "refine_steps",
+          "name": "refine_steps",
+          "type": "INT",
+          "widget": {
+            "name": "refine_steps"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "输出",
+          "name": "输出",
+          "type": "LATENT",
+          "links": [
+            282
+          ]
+        },
+        {
+          "label": "降噪输出",
+          "name": "降噪输出",
+          "type": "LATENT",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "GoohaiMinimaxH3TiledSampler",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        true,
+        2,
+        128,
+        false,
+        4
+      ],
+      "widgets_values_named": {
+        "enable_tiling": true,
+        "n_tiles": 2,
+        "tile_overlap": 128,
+        "refine_seams": false,
+        "refine_steps": 4
+      }
+    },
+    {
+      "id": 222,
+      "type": "SetNode",
+      "pos": [
+        1669.9716877257272,
+        2069.5317443273166
+      ],
+      "size": [
+        210,
+        60
+      ],
+      "flags": {
+        "collapsed": false,
+        "disabled": false
+      },
+      "order": 38,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "link": 344
+        }
+      ],
+      "outputs": [
+        {
+          "label": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE"
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "previousName": "V-image_2",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "V-image_2"
+      ],
+      "widgets_values_named": {
+        "Constant": "V-image_2"
+      },
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 223,
+      "type": "GetNode",
+      "pos": [
+        -1244.8563232421875,
+        245
+      ],
+      "size": [
+        210,
+        55
+      ],
+      "flags": {
+        "collapsed": true,
+        "disabled": false
+      },
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            296
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "GetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "V-image_2"
+      ],
+      "widgets_values_named": {
+        "Constant": "V-image_2"
+      },
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 224,
+      "type": "GetNode",
+      "pos": [
+        -1249.8563232421875,
+        350
+      ],
+      "size": [
+        210,
+        50
+      ],
+      "flags": {
+        "collapsed": true,
+        "disabled": false
+      },
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "*",
+          "name": "*",
+          "type": "*",
+          "links": [
+            291
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "GetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "audio1"
+      ],
+      "widgets_values_named": {
+        "Constant": "audio1"
+      }
+    },
+    {
+      "id": 227,
+      "type": "忽略多组孤海",
+      "pos": [
+        412.79683492641243,
+        142.51312886387848
+      ],
+      "size": [
+        441.41827392578125,
+        92.88468170166016
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "aux_id": "goohai/Goohaitools-comfyui",
+        "ver": "83abca47fa10d47a1ffd0c7cb62b7fa2a9dc0ddc",
+        "Node name for S&R": "忽略多组孤海",
+        "guhai_ig_filter": "二采高清",
+        "guhai_ig_mode": "default",
+        "guhai_ig_active": null,
+        "guhai_ig_active_set": [
+          "MODELS",
+          "一采",
+          "INPUT",
+          "OUTPUT 二采",
+          "二采高清",
+          "去油腻备选",
+          "OUTPUT 一采"
+        ],
+        "guhai_ig_name_color": "#62b5d0",
+        "guhai_ig_disable": false,
+        "guhai_ig_sort_order": "position",
+        "guhai_ig_color_filter": "none",
+        "guhai_ig_ui_scale": 1.3,
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        ""
+      ],
+      "widgets_values_named": {
+        "guhai_ig": ""
+      },
+      "color": "#4E464A",
+      "bgcolor": "#4E464A"
+    },
+    {
+      "id": 228,
+      "type": "GoohaiUniversalSlider",
+      "pos": [
+        417.2045932626156,
+        283.15128732055985
+      ],
+      "size": [
+        445,
+        120
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "值",
+          "name": "值",
+          "type": "FLOAT",
+          "widget": {
+            "name": "值"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "*",
+          "name": "*",
+          "type": "*",
+          "links": [
+            302
+          ]
+        }
+      ],
+      "title": "二采放大倍数",
+      "properties": {
+        "aux_id": "goohai/Goohaitools-comfyui",
+        "ver": "83abca47fa10d47a1ffd0c7cb62b7fa2a9dc0ddc",
+        "Node name for S&R": "GoohaiUniversalSlider",
+        "sliderType": "float",
+        "sliderMin": 1,
+        "sliderMax": 4,
+        "sliderStep": 0.5,
+        "sliderLabel": "放大倍数",
+        "sliderColor": "#68bfd4",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        2,
+        "float",
+        null
+      ],
+      "widgets_values_named": {
+        "值": 2,
+        "output_type": "float",
+        "ghs_ui": null
+      },
+      "color": "#3a4f64",
+      "bgcolor": "#263b50"
+    },
+    {
+      "id": 232,
+      "type": "GoohaiAnyExists",
+      "pos": [
+        -1244.8563232421875,
+        295
+      ],
+      "size": [
+        210,
+        80
+      ],
+      "flags": {
+        "collapsed": true,
+        "disabled": false
+      },
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "图像",
+          "name": "Any",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 296
+        }
+      ],
+      "outputs": [
+        {
+          "label": "图像",
+          "name": "Any",
+          "type": "IMAGE",
+          "links": [
+            300
+          ]
+        },
+        {
+          "label": "布尔",
+          "name": "布尔",
+          "type": "BOOLEAN",
+          "links": [
+            301
+          ]
+        }
+      ],
+      "properties": {
+        "aux_id": "goohai/Goohaitools-comfyui",
+        "ver": "83abca47fa10d47a1ffd0c7cb62b7fa2a9dc0ddc",
+        "Node name for S&R": "GoohaiAnyExists",
+        "gh_input_type": "IMAGE",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "IMAGE"
+      ],
+      "widgets_values_named": {
+        "gh_input_type": "IMAGE"
+      }
+    },
+    {
+      "id": 235,
+      "type": "SetNode",
+      "pos": [
+        552.9343966229234,
+        321.0899423366297
+      ],
+      "size": [
+        210,
+        60
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "*",
+          "name": "*",
+          "type": "*",
+          "link": 302
+        }
+      ],
+      "outputs": [
+        {
+          "label": "*",
+          "name": "*",
+          "type": "*"
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "previousName": "放大倍数",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "放大倍数"
+      ],
+      "widgets_values_named": {
+        "Constant": "放大倍数"
+      }
+    },
+    {
+      "id": 236,
+      "type": "GetNode",
+      "pos": [
+        745.7572101866666,
+        1686.5070861241923
+      ],
+      "size": [
+        210,
+        60
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "*",
+          "name": "*",
+          "type": "*",
+          "links": [
+            333,
+            368
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "GetNode",
+        "aux_id": "kijai/ComfyUI-KJNodes",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "放大倍数"
+      ],
+      "widgets_values_named": {
+        "Constant": "放大倍数"
+      }
+    },
+    {
+      "id": 242,
+      "type": "UNETLoader",
+      "pos": [
+        -2573.780875750833,
+        1868.1962340734103
+      ],
+      "size": [
+        495,
+        105
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "unet_name",
+          "name": "unet_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "unet_name"
+          }
+        },
+        {
+          "label": "weight_dtype",
+          "name": "weight_dtype",
+          "type": "COMBO",
+          "widget": {
+            "name": "weight_dtype"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "MODEL",
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            364
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.0",
+        "Node name for S&R": "UNETLoader",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "minimax/minimax_h3_ref2va_int8_convrot.safetensors",
+        "default"
+      ],
+      "widgets_values_named": {
+        "unet_name": "minimax/minimax_h3_ref2va_int8_convrot.safetensors",
+        "weight_dtype": "default"
+      },
+      "color": "#447387",
+      "bgcolor": "#305f73"
+    },
+    {
+      "id": 243,
+      "type": "LoraLoaderBypassModelOnly",
+      "pos": [
+        -1721.409659930522,
+        1679.9244445226298
+      ],
+      "size": [
+        430.3076477050781,
+        104.04656219482422
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 24,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "model",
+          "name": "model",
+          "type": "MODEL",
+          "link": 365
+        },
+        {
+          "label": "lora_name",
+          "name": "lora_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "lora_name"
+          }
+        },
+        {
+          "label": "strength_model",
+          "name": "strength_model",
+          "type": "FLOAT",
+          "widget": {
+            "name": "strength_model"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "MODEL",
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            362
+          ]
+        }
+      ],
+      "title": "lora only",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.0",
+        "Node name for S&R": "LoraLoaderBypassModelOnly",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "minimax/minimax_h3_turbo_4步加速_comfyui.safetensors",
+        1
+      ],
+      "widgets_values_named": {
+        "lora_name": "minimax/minimax_h3_turbo_4步加速_comfyui.safetensors",
+        "strength_model": 1
+      }
+    },
+    {
+      "id": 244,
+      "type": "GoohaiMinimaxH3LatentUpscalerGH",
+      "pos": [
+        990.7572101866659,
+        1666.5070861241923
+      ],
+      "size": [
+        258.4654296875,
+        202
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 31,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "av_latent",
+          "name": "av_latent",
+          "type": "LATENT",
+          "link": 311
+        },
+        {
+          "label": "model_name",
+          "name": "model_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "model_name"
+          }
+        },
+        {
+          "label": "mode",
+          "name": "mode",
+          "type": "COMFY_DYNAMICCOMBO_V3",
+          "widget": {
+            "name": "mode"
+          }
+        },
+        {
+          "name": "mode.scale",
+          "type": "FLOAT",
+          "widget": {
+            "name": "mode.scale"
+          },
+          "link": 368
+        },
+        {
+          "label": "align",
+          "name": "align",
+          "type": "INT",
+          "widget": {
+            "name": "align"
+          }
+        },
+        {
+          "label": "force_unload",
+          "name": "force_unload",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "force_unload"
+          }
+        },
+        {
+          "label": "device",
+          "name": "device",
+          "type": "COMBO",
+          "widget": {
+            "name": "device"
+          }
+        },
+        {
+          "label": "precision",
+          "name": "precision",
+          "type": "COMBO",
+          "widget": {
+            "name": "precision"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "av_latent",
+          "name": "av_latent",
+          "type": "LATENT",
+          "links": [
+            312
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "GoohaiMinimaxH3LatentUpscalerGH",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {
+          "mode.scale": true
+        }
+      },
+      "widgets_values": [
+        "minimax_h3_latent_upscaler_3d_fp16.safetensors",
+        "scale by multiplier",
+        2,
+        32,
+        false,
+        "cuda",
+        "fp16"
+      ],
+      "widgets_values_named": {
+        "model_name": "minimax_h3_latent_upscaler_3d_fp16.safetensors",
+        "mode": "scale by multiplier",
+        "mode.scale": 2,
+        "align": 32,
+        "force_unload": false,
+        "device": "cuda",
+        "precision": "fp16"
+      }
+    },
+    {
+      "id": 252,
+      "type": "ColorCorrect",
+      "pos": [
+        1664.2589191710397,
+        1831.265936221848
+      ],
+      "size": [
+        277.2396240234375,
+        178
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 37,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "image",
+          "name": "image",
+          "type": "IMAGE",
+          "link": 331
+        },
+        {
+          "label": "temperature",
+          "name": "temperature",
+          "type": "FLOAT",
+          "widget": {
+            "name": "temperature"
+          }
+        },
+        {
+          "label": "hue",
+          "name": "hue",
+          "type": "FLOAT",
+          "widget": {
+            "name": "hue"
+          }
+        },
+        {
+          "label": "brightness",
+          "name": "brightness",
+          "type": "FLOAT",
+          "widget": {
+            "name": "brightness"
+          }
+        },
+        {
+          "label": "contrast",
+          "name": "contrast",
+          "type": "FLOAT",
+          "widget": {
+            "name": "contrast"
+          }
+        },
+        {
+          "label": "saturation",
+          "name": "saturation",
+          "type": "FLOAT",
+          "widget": {
+            "name": "saturation"
+          }
+        },
+        {
+          "label": "gamma",
+          "name": "gamma",
+          "type": "FLOAT",
+          "widget": {
+            "name": "gamma"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            344
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-art-venture",
+        "ver": "1.1.4",
+        "Node name for S&R": "ColorCorrect",
+        "aux_id": "sipherxyz/comfyui-art-venture",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {
+          "saturation": true,
+          "brightness": true,
+          "contrast": true,
+          "temperature": true,
+          "hue": true,
+          "gamma": true
+        }
+      },
+      "widgets_values": [
+        0,
+        1,
+        0,
+        -10,
+        -10,
+        1
+      ],
+      "widgets_values_named": {
+        "temperature": 0,
+        "hue": 1,
+        "brightness": 0,
+        "contrast": -10,
+        "saturation": -10,
+        "gamma": 1
+      }
+    },
+    {
+      "id": 253,
+      "type": "UNETLoader",
+      "pos": [
+        -2594.358756610208,
+        1450.5828917882552
+      ],
+      "size": [
+        492.0339660644531,
+        82
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "unet_name",
+          "name": "unet_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "unet_name"
+          }
+        },
+        {
+          "label": "weight_dtype",
+          "name": "weight_dtype",
+          "type": "COMBO",
+          "widget": {
+            "name": "weight_dtype"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "MODEL",
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.3",
+        "Node name for S&R": "UNETLoader",
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "minimax/FeiHou_MiniMax-H3_Remix_v0.6_int8_convrot.safetensors",
+        "default"
+      ],
+      "widgets_values_named": {
+        "unet_name": "minimax/FeiHou_MiniMax-H3_Remix_v0.6_int8_convrot.safetensors",
+        "weight_dtype": "default"
+      },
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 264,
+      "type": "easy anythingIndexSwitch",
+      "pos": [
+        -2031.0926433289594,
+        1680.9677794835673
+      ],
+      "size": [
+        210,
+        138
+      ],
+      "flags": {},
+      "order": 22,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "value0",
+          "name": "value0",
+          "shape": 7,
+          "type": "*",
+          "link": 363
+        },
+        {
+          "label": "value1",
+          "name": "value1",
+          "shape": 7,
+          "type": "*",
+          "link": 364
+        },
+        {
+          "label": "index",
+          "name": "index",
+          "type": "INT",
+          "widget": {
+            "name": "index"
+          },
+          "link": 366
+        },
+        {
+          "label": "value2",
+          "name": "value2",
+          "type": "*"
+        },
+        {
+          "label": "value3",
+          "name": "value3",
+          "type": "*"
+        },
+        {
+          "label": "value4",
+          "name": "value4",
+          "type": "*",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "label": "value",
+          "name": "value",
+          "type": "*",
+          "links": [
+            365
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-easy-use",
+        "ver": "unknown",
+        "Node name for S&R": "easy anythingIndexSwitch",
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        0
+      ],
+      "widgets_values_named": {
+        "index": 0
+      }
+    },
+    {
+      "id": 265,
+      "type": "Label (rgthree)",
+      "pos": [
+        -1303.0080544158125,
+        -493.1881548414253
+      ],
+      "size": [
+        3008.642578125,
+        150
+      ],
+      "flags": {
+        "allow_interaction": true
+      },
+      "order": 16,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "U26-MiniMax-H3智能一体化视频创作V3-孤海",
+      "properties": {
+        "fontSize": 150,
+        "fontFamily": "Arial",
+        "fontColor": "#ffff00",
+        "textAlign": "left",
+        "backgroundColor": "transparent",
+        "padding": 0,
+        "borderRadius": 0,
+        "angle": 0,
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        },
+        "widget_ue_connectable": {}
+      },
+      "color": "#fff0",
+      "bgcolor": "#fff0"
+    },
+    {
+      "id": 266,
+      "type": "Label (rgthree)",
+      "pos": [
+        -1303.0080544158125,
+        -302.3368415333738
+      ],
+      "size": [
+        1736.484375,
+        80
+      ],
+      "flags": {
+        "allow_interaction": true
+      },
+      "order": 12,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "云端镜像https://autodl.art/app/market/252?v=709",
+      "properties": {
+        "fontSize": 80,
+        "fontFamily": "Arial",
+        "fontColor": "#00ff00",
+        "textAlign": "left",
+        "backgroundColor": "transparent",
+        "padding": 0,
+        "borderRadius": 0,
+        "angle": 0,
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "color": "#fff0",
+      "bgcolor": "#fff0"
+    },
+    {
+      "id": 267,
+      "type": "Label (rgthree)",
+      "pos": [
+        -1303.0080544158125,
+        -164.33684153337597
+      ],
+      "size": [
+        2324.619140625,
+        60
+      ],
+      "flags": {
+        "allow_interaction": true
+      },
+      "order": 14,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "AUTODL🐧🔴1群1046279436🔴2群1102535136🟢3群1053358977🟢4群541575695",
+      "properties": {
+        "fontSize": 60,
+        "fontFamily": "Arial",
+        "fontColor": "#ff5500",
+        "textAlign": "left",
+        "backgroundColor": "transparent",
+        "padding": 0,
+        "borderRadius": 0,
+        "angle": 0,
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "color": "#fff0",
+      "bgcolor": "#fff0"
+    },
+    {
+      "id": 268,
+      "type": "Label (rgthree)",
+      "pos": [
+        -1299.1037594265954,
+        -57.982723599733745
+      ],
+      "size": [
+        1615.166015625,
+        90
+      ],
+      "flags": {
+        "allow_interaction": true
+      },
+      "order": 15,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "需要镜像版本9.34以上才能使用该工作流",
+      "properties": {
+        "fontSize": 90,
+        "fontFamily": "Arial",
+        "fontColor": "#ff5500",
+        "textAlign": "left",
+        "backgroundColor": "transparent",
+        "padding": 0,
+        "borderRadius": 0,
+        "angle": 0,
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "color": "#fff0",
+      "bgcolor": "#fff0"
+    }
+  ],
+  "links": [
+    [
+      9,
+      9,
+      0,
+      10,
+      0,
+      "NOISE"
+    ],
+    [
+      10,
+      8,
+      0,
+      10,
+      1,
+      "GUIDER"
+    ],
+    [
+      140,
+      120,
+      0,
+      12,
+      0,
+      "IMAGE"
+    ],
+    [
+      141,
+      102,
+      0,
+      121,
+      0,
+      "*"
+    ],
+    [
+      142,
+      122,
+      0,
+      12,
+      1,
+      "AUDIO"
+    ],
+    [
+      144,
+      118,
+      0,
+      124,
+      0,
+      "MiniMax"
+    ],
+    [
+      145,
+      124,
+      0,
+      8,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      147,
+      124,
+      1,
+      10,
+      4,
+      "LATENT"
+    ],
+    [
+      151,
+      124,
+      5,
+      102,
+      0,
+      "AUDIO"
+    ],
+    [
+      152,
+      124,
+      6,
+      102,
+      2,
+      "BOOLEAN"
+    ],
+    [
+      156,
+      124,
+      1,
+      126,
+      1,
+      "LATENT"
+    ],
+    [
+      157,
+      126,
+      0,
+      8,
+      0,
+      "MODEL"
+    ],
+    [
+      158,
+      126,
+      1,
+      10,
+      2,
+      "SAMPLER"
+    ],
+    [
+      161,
+      124,
+      2,
+      127,
+      1,
+      "VAE"
+    ],
+    [
+      162,
+      124,
+      3,
+      127,
+      2,
+      "VAE"
+    ],
+    [
+      163,
+      127,
+      0,
+      119,
+      0,
+      "IMAGE"
+    ],
+    [
+      166,
+      17,
+      0,
+      126,
+      0,
+      "MODEL"
+    ],
+    [
+      180,
+      185,
+      0,
+      117,
+      0,
+      "MiniMax"
+    ],
+    [
+      186,
+      126,
+      2,
+      187,
+      0,
+      "SIGMAS"
+    ],
+    [
+      230,
+      10,
+      1,
+      127,
+      0,
+      "LATENT"
+    ],
+    [
+      238,
+      127,
+      1,
+      102,
+      1,
+      "AUDIO"
+    ],
+    [
+      263,
+      124,
+      2,
+      208,
+      1,
+      "VAE"
+    ],
+    [
+      264,
+      124,
+      3,
+      208,
+      2,
+      "VAE"
+    ],
+    [
+      266,
+      9,
+      0,
+      210,
+      0,
+      "NOISE"
+    ],
+    [
+      267,
+      8,
+      0,
+      210,
+      1,
+      "GUIDER"
+    ],
+    [
+      268,
+      126,
+      1,
+      210,
+      2,
+      "SAMPLER"
+    ],
+    [
+      269,
+      187,
+      1,
+      210,
+      3,
+      "SIGMAS"
+    ],
+    [
+      277,
+      126,
+      2,
+      10,
+      3,
+      "SIGMAS"
+    ],
+    [
+      282,
+      210,
+      0,
+      208,
+      0,
+      "LATENT"
+    ],
+    [
+      291,
+      224,
+      0,
+      207,
+      1,
+      "AUDIO"
+    ],
+    [
+      296,
+      223,
+      0,
+      232,
+      0,
+      "IMAGE"
+    ],
+    [
+      300,
+      232,
+      0,
+      207,
+      0,
+      "IMAGE"
+    ],
+    [
+      301,
+      232,
+      1,
+      207,
+      9,
+      "BOOLEAN"
+    ],
+    [
+      302,
+      228,
+      0,
+      235,
+      0,
+      "*"
+    ],
+    [
+      311,
+      10,
+      1,
+      244,
+      0,
+      "LATENT"
+    ],
+    [
+      312,
+      244,
+      0,
+      210,
+      4,
+      "LATENT"
+    ],
+    [
+      331,
+      208,
+      0,
+      252,
+      0,
+      "IMAGE"
+    ],
+    [
+      344,
+      252,
+      0,
+      222,
+      0,
+      "*"
+    ],
+    [
+      362,
+      243,
+      0,
+      17,
+      0,
+      "MODEL"
+    ],
+    [
+      363,
+      78,
+      0,
+      264,
+      0,
+      "*"
+    ],
+    [
+      364,
+      242,
+      0,
+      264,
+      1,
+      "*"
+    ],
+    [
+      365,
+      264,
+      0,
+      243,
+      0,
+      "MODEL"
+    ],
+    [
+      366,
+      124,
+      4,
+      264,
+      2,
+      "INT"
+    ],
+    [
+      368,
+      236,
+      0,
+      244,
+      3,
+      "FLOAT"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "MODELS",
+      "bounding": [
+        -2603.780875750833,
+        1573.1961730382552,
+        1445.0216064453125,
+        461.5389404296875
+      ],
+      "color": "#3f789e",
+      "flags": {}
+    },
+    {
+      "id": 2,
+      "title": "一采",
+      "bounding": [
+        -679.2427898133333,
+        1571.5070861241927,
+        1300,
+        640
+      ],
+      "color": "#3f9e64",
+      "flags": {}
+    },
+    {
+      "id": 3,
+      "title": "INPUT",
+      "bounding": [
+        -343.7602203621355,
+        97.93848687514347,
+        718.2664794921875,
+        1206.404541015625
+      ],
+      "color": "#3f789e",
+      "flags": {}
+    },
+    {
+      "id": 5,
+      "title": "OUTPUT 二采",
+      "bounding": [
+        -1285.457275390625,
+        95,
+        448.5476989746094,
+        1204.188232421875
+      ],
+      "color": "#3f789e",
+      "flags": {}
+    },
+    {
+      "id": 6,
+      "title": "二采高清",
+      "bounding": [
+        720.7572101866667,
+        1571.5070861241927,
+        1275,
+        645
+      ],
+      "color": "#3f789e",
+      "flags": {}
+    },
+    {
+      "id": 7,
+      "title": "去油腻备选",
+      "bounding": [
+        -2604.358756610208,
+        1376.9829162023177,
+        537.4226680034762,
+        179.95022147913164
+      ],
+      "color": "#3f789e",
+      "flags": {}
+    },
+    {
+      "id": 8,
+      "title": "OUTPUT 一采",
+      "bounding": [
+        -820.9467163085938,
+        95.21157836914062,
+        445.6512756347656,
+        1205.46630859375
+      ],
+      "color": "#3f789e",
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "links_added_by_ue": [],
+    "KKvideo_latentpreview": false,
+    "0246.VERSION": [
+      0,
+      0,
+      4
+    ],
+    "VHS_latentpreview": false,
+    "ds": {
+      "scale": 0.30735605491428364,
+      "offset": [
+        3911.708870537691,
+        1212.9949458219492
+      ]
+    },
+    "VHS_KeepIntermediate": true,
+    "gradientNodeSettings": {
+      "45": {
+        "titleTextAlign": "left",
+        "collapseButtonColor": "#05d9e8",
+        "gradientColors": [
+          "#1c3045",
+          "to right"
+        ],
+        "bgGradientColors": [
+          "#1c3045"
+        ],
+        "enableTitleGradient": false,
+        "titleGradientDirection": "to bottom",
+        "borderRadius": 8,
+        "fontSize": 14,
+        "titleGradientColors": [],
+        "bgGradientDirection": "to right",
+        "fontColor": "#ffffff",
+        "titleTextY": 0
+      }
+    },
+    "xzgGroups": {},
+    "ue_links": [],
+    "VHS_MetadataImage": true,
+    "KKvideo_latentpreviewrate": 0,
+    "pixaromaGroups": [],
+    "VHS_latentpreviewrate": 0,
+    "frontendVersion": "1.49.6"
+  },
+  "version": 0.4,
+  "seed_widgets": {
+    "9": 0
+  }
+}

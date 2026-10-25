@@ -26,14 +26,19 @@ ASPECT_RATIO_MAP = {
 def apply_workflow_patches(wf: dict, patches: dict) -> dict:
     """
     对 ComfyUI API 工作流 JSON 进行动态节点属性覆盖或新增节点。
-    支持两种格式：
+    支持三种格式：
     1. 点号路径: {"141.inputs.model_name": "minimax/FeiHou_...", "174.inputs.reuse_threshold": 0.1}
-    2. 完整节点注入: {"160": {"class_type": "LoraLoaderModelOnly", "inputs": {...}}}
+    2. 冒号简写 (兼容 _api_config): {"139:prompt": "...", "141:value": 5}
+    3. 完整节点注入: {"160": {"class_type": "LoraLoaderModelOnly", "inputs": {...}}}
     """
     if not patches:
         return wf
     for key, val in patches.items():
-        if "." in key:
+        if ":" in key and "." not in key:
+            nid, field = key.split(":", 1)
+            if nid in wf and isinstance(wf[nid], dict):
+                wf[nid].setdefault("inputs", {})[field] = val
+        elif "." in key:
             parts = key.split(".")
             curr = wf
             for p in parts[:-1]:
@@ -448,14 +453,15 @@ class AutoDLRemoteEngine:
     def load_workflow_template(self, workflow_name_or_path: str) -> dict:
         """
         加载工作流 JSON：
-        1. 优先匹配本地 references/workflows/<name>.json
+        1. 优先匹配本地 references/workflows/<name>.json 或 references/workflows/u_series_api/<name>.json
         2. 其次匹配传入的本地文件绝对/相对路径
         """
-        candidate = self.workflows_dir / workflow_name_or_path
-        if not candidate.suffix:
-            candidate = self.workflows_dir / f"{workflow_name_or_path}.json"
-        if candidate.exists():
-            return json.loads(candidate.read_text(encoding="utf-8"))
+        for base in (self.workflows_dir, self.workflows_dir / "u_series_api"):
+            candidate = base / workflow_name_or_path
+            if not candidate.suffix:
+                candidate = base / f"{workflow_name_or_path}.json"
+            if candidate.exists():
+                return json.loads(candidate.read_text(encoding="utf-8"))
 
         direct = Path(workflow_name_or_path)
         if direct.exists():
@@ -512,6 +518,9 @@ class AutoDLRemoteEngine:
             # 2. 应用动态节点补丁 (Patches)
             if patches:
                 wf = apply_workflow_patches(wf, patches)
+
+            # 剥离非 ComfyUI 节点的元数据字段 (如 u_series_api 中的 _api_config)
+            wf.pop("_api_config", None)
 
             # 3. 提交工作流至 ComfyUI POST /prompt
             payload_json = json.dumps({"prompt": wf})

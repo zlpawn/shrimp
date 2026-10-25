@@ -1,0 +1,4842 @@
+{
+  "id": "3e340b9b-ba16-4771-aea7-66ee3204327e",
+  "revision": 0,
+  "last_node_id": 210,
+  "last_link_id": 292,
+  "nodes": [
+    {
+      "id": 38,
+      "type": "VAELoader",
+      "pos": [
+        4930.58834345088,
+        3562.653607906036
+      ],
+      "size": [
+        640,
+        70
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "vae_name",
+          "name": "vae_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "vae_name"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "VAE",
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            39,
+            70
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.36.0",
+        "Node name for S&R": "VAELoader",
+        "models": [
+          {
+            "directory_invalid": true,
+            "name": "minimax_h3_video_vae_fp16.safetensors",
+            "directory": "vae",
+            "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_fp16.safetensors"
+          }
+        ],
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ],
+      "widgets_values_named": {
+        "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+      },
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 45,
+      "type": "KSampler",
+      "pos": [
+        9847.53538981427,
+        3264.962295427926
+      ],
+      "size": [
+        270,
+        262
+      ],
+      "flags": {},
+      "order": 45,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "model",
+          "name": "model",
+          "type": "MODEL",
+          "link": 260
+        },
+        {
+          "label": "positive",
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 76
+        },
+        {
+          "label": "negative",
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 34
+        },
+        {
+          "label": "latent_image",
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 77
+        },
+        {
+          "label": "seed",
+          "name": "seed",
+          "type": "INT",
+          "widget": {
+            "name": "seed"
+          }
+        },
+        {
+          "label": "steps",
+          "name": "steps",
+          "type": "INT",
+          "widget": {
+            "name": "steps"
+          }
+        },
+        {
+          "label": "cfg",
+          "name": "cfg",
+          "type": "FLOAT",
+          "widget": {
+            "name": "cfg"
+          }
+        },
+        {
+          "label": "sampler_name",
+          "name": "sampler_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "sampler_name"
+          }
+        },
+        {
+          "label": "scheduler",
+          "name": "scheduler",
+          "type": "COMBO",
+          "widget": {
+            "name": "scheduler"
+          }
+        },
+        {
+          "label": "denoise",
+          "name": "denoise",
+          "type": "FLOAT",
+          "widget": {
+            "name": "denoise"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "LATENT",
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            38
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.36.0",
+        "Node name for S&R": "KSampler",
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        250305812968485,
+        "randomize",
+        12,
+        1,
+        "euler",
+        "beta",
+        1
+      ],
+      "widgets_values_named": {
+        "seed": 250305812968485,
+        "control_after_generate": "randomize",
+        "steps": 12,
+        "cfg": 1,
+        "sampler_name": "euler",
+        "scheduler": "beta",
+        "denoise": 1
+      }
+    },
+    {
+      "id": 49,
+      "type": "CLIPLoader",
+      "pos": [
+        4933.787642377875,
+        3389.5002551796424
+      ],
+      "size": [
+        640,
+        120
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "clip_name",
+          "name": "clip_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "clip_name"
+          }
+        },
+        {
+          "label": "type",
+          "name": "type",
+          "type": "COMBO",
+          "widget": {
+            "name": "type"
+          }
+        },
+        {
+          "label": "device",
+          "name": "device",
+          "shape": 7,
+          "type": "COMBO",
+          "widget": {
+            "name": "device"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "CLIP",
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            69
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.36.0",
+        "Node name for S&R": "CLIPLoader",
+        "models": [
+          {
+            "name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+            "directory": "text_encoders",
+            "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors"
+          }
+        ],
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+        "minimax",
+        "default"
+      ],
+      "widgets_values_named": {
+        "clip_name": "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+        "type": "minimax",
+        "device": "default"
+      },
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 54,
+      "type": "VAEDecode",
+      "pos": [
+        10215.933247125906,
+        3265.627758410184
+      ],
+      "size": [
+        230,
+        60
+      ],
+      "flags": {
+        "collapsed": false
+      },
+      "order": 47,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "samples",
+          "name": "samples",
+          "type": "LATENT",
+          "link": 38
+        },
+        {
+          "label": "vae",
+          "name": "vae",
+          "type": "VAE",
+          "link": 39
+        }
+      ],
+      "outputs": [
+        {
+          "label": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            61
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.36.0",
+        "Node name for S&R": "VAEDecode",
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        }
+      }
+    },
+    {
+      "id": 63,
+      "type": "ConditioningZeroOut",
+      "pos": [
+        9865.431266275888,
+        3169.321573215041
+      ],
+      "size": [
+        204.134765625,
+        26
+      ],
+      "flags": {},
+      "order": 43,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "conditioning",
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 75
+        }
+      ],
+      "outputs": [
+        {
+          "label": "CONDITIONING",
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            34
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.36.0",
+        "Node name for S&R": "ConditioningZeroOut",
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        }
+      }
+    },
+    {
+      "id": 76,
+      "type": "SaveImage",
+      "pos": [
+        10493.051199923573,
+        3109.1462371341345
+      ],
+      "size": [
+        445.4353942871094,
+        851.6871948242188
+      ],
+      "flags": {},
+      "order": 49,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "images",
+          "name": "images",
+          "type": "IMAGE",
+          "link": 61
+        },
+        {
+          "label": "filename_prefix",
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": {
+            "name": "filename_prefix"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "image_urls",
+          "name": "images",
+          "type": "IMAGE"
+        },
+        {
+          "label": "images",
+          "name": "images",
+          "type": "IMAGE"
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.36.0",
+        "Node name for S&R": "SaveImage",
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "ComfyUI"
+      ],
+      "widgets_values_named": {
+        "filename_prefix": "ComfyUI"
+      }
+    },
+    {
+      "id": 77,
+      "type": "MiniMaxH3ReferenceToVideo",
+      "pos": [
+        9070.111469782156,
+        3167.371899035184
+      ],
+      "size": [
+        719.173828125,
+        484
+      ],
+      "flags": {},
+      "order": 41,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "clip",
+          "name": "clip",
+          "type": "CLIP",
+          "link": 69
+        },
+        {
+          "label": "vae",
+          "name": "vae",
+          "shape": 7,
+          "type": "VAE",
+          "link": 70
+        },
+        {
+          "label": "audio_vae",
+          "name": "audio_vae",
+          "shape": 7,
+          "type": "VAE",
+          "link": null
+        },
+        {
+          "label": "ref_images.ref_image_0",
+          "name": "ref_images.ref_image_0",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 226
+        },
+        {
+          "name": "ref_images.ref_image_1",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 229
+        },
+        {
+          "name": "ref_images.ref_image_2",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 235
+        },
+        {
+          "name": "ref_images.ref_image_3",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 239
+        },
+        {
+          "name": "ref_images.ref_image_4",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 242
+        },
+        {
+          "name": "ref_images.ref_image_5",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 246
+        },
+        {
+          "name": "ref_images.ref_image_6",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 250
+        },
+        {
+          "name": "ref_images.ref_image_7",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 254
+        },
+        {
+          "name": "ref_images.ref_image_8",
+          "shape": 7,
+          "type": "IMAGE"
+        },
+        {
+          "label": "ref_videos.ref_video_0",
+          "name": "ref_videos.ref_video_0",
+          "shape": 7,
+          "type": "IMAGE"
+        },
+        {
+          "label": "ref_video_audios.ref_video_audio_0",
+          "name": "ref_video_audios.ref_video_audio_0",
+          "shape": 7,
+          "type": "AUDIO"
+        },
+        {
+          "label": "ref_audios.ref_audio_0",
+          "name": "ref_audios.ref_audio_0",
+          "shape": 7,
+          "type": "AUDIO"
+        },
+        {
+          "label": "prompt",
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": 290
+        },
+        {
+          "label": "width",
+          "name": "width",
+          "type": "INT",
+          "widget": {
+            "name": "width"
+          }
+        },
+        {
+          "label": "height",
+          "name": "height",
+          "type": "INT",
+          "widget": {
+            "name": "height"
+          }
+        },
+        {
+          "label": "length",
+          "name": "length",
+          "type": "INT",
+          "widget": {
+            "name": "length"
+          }
+        },
+        {
+          "label": "ref_image_size",
+          "name": "ref_image_size",
+          "type": "COMBO",
+          "widget": {
+            "name": "ref_image_size"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "positive",
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            75,
+            76
+          ]
+        },
+        {
+          "label": "LATENT",
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            77
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.36.0",
+        "Node name for S&R": "MiniMaxH3ReferenceToVideo",
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "",
+        2048,
+        2048,
+        5,
+        "max"
+      ],
+      "widgets_values_named": {
+        "prompt": "",
+        "width": 2048,
+        "height": 2048,
+        "length": 5,
+        "ref_image_size": "max"
+      }
+    },
+    {
+      "id": 81,
+      "type": "PreviewImage",
+      "pos": [
+        6921.607421875,
+        3584.293701171875
+      ],
+      "size": [
+        274.0486755371094,
+        278
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 34,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "images",
+          "name": "images",
+          "type": "IMAGE",
+          "link": 225
+        }
+      ],
+      "outputs": [
+        {
+          "label": "image_urls",
+          "name": "images",
+          "type": "IMAGE"
+        },
+        {
+          "label": "images",
+          "name": "images",
+          "type": "IMAGE"
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.1",
+        "Node name for S&R": "PreviewImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [],
+      "widgets_values_named": {},
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 84,
+      "type": "PreviewImage",
+      "pos": [
+        8702.4482421875,
+        3581.412841796875
+      ],
+      "size": [
+        274.0486755371094,
+        278
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 33,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "images",
+          "name": "images",
+          "type": "IMAGE",
+          "link": 234
+        }
+      ],
+      "outputs": [
+        {
+          "label": "image_urls",
+          "name": "images",
+          "type": "IMAGE"
+        },
+        {
+          "label": "images",
+          "name": "images",
+          "type": "IMAGE"
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.1",
+        "Node name for S&R": "PreviewImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [],
+      "widgets_values_named": {},
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 86,
+      "type": "PreviewImage",
+      "pos": [
+        6925.43408203125,
+        4349.22119140625
+      ],
+      "size": [
+        274.0486755371094,
+        278
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 36,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "images",
+          "name": "images",
+          "type": "IMAGE",
+          "link": 238
+        }
+      ],
+      "outputs": [
+        {
+          "label": "image_urls",
+          "name": "images",
+          "type": "IMAGE"
+        },
+        {
+          "label": "images",
+          "name": "images",
+          "type": "IMAGE"
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.1",
+        "Node name for S&R": "PreviewImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [],
+      "widgets_values_named": {},
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 87,
+      "type": "PreviewImage",
+      "pos": [
+        8706.2744140625,
+        4346.33935546875
+      ],
+      "size": [
+        274.0486755371094,
+        278
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 38,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "images",
+          "name": "images",
+          "type": "IMAGE",
+          "link": 245
+        }
+      ],
+      "outputs": [
+        {
+          "label": "image_urls",
+          "name": "images",
+          "type": "IMAGE"
+        },
+        {
+          "label": "images",
+          "name": "images",
+          "type": "IMAGE"
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.1",
+        "Node name for S&R": "PreviewImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [],
+      "widgets_values_named": {},
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 89,
+      "type": "PreviewImage",
+      "pos": [
+        7812.248046875,
+        4348.23974609375
+      ],
+      "size": [
+        274.0486755371094,
+        278
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 37,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "images",
+          "name": "images",
+          "type": "IMAGE",
+          "link": 241
+        }
+      ],
+      "outputs": [
+        {
+          "label": "image_urls",
+          "name": "images",
+          "type": "IMAGE"
+        },
+        {
+          "label": "images",
+          "name": "images",
+          "type": "IMAGE"
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.1",
+        "Node name for S&R": "PreviewImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [],
+      "widgets_values_named": {},
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 90,
+      "type": "PreviewImage",
+      "pos": [
+        7807.519049288291,
+        3577.628471747465
+      ],
+      "size": [
+        274.0486755371094,
+        278
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 35,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "images",
+          "name": "images",
+          "type": "IMAGE",
+          "link": 232
+        }
+      ],
+      "outputs": [
+        {
+          "label": "image_urls",
+          "name": "images",
+          "type": "IMAGE"
+        },
+        {
+          "label": "images",
+          "name": "images",
+          "type": "IMAGE"
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.1",
+        "Node name for S&R": "PreviewImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [],
+      "widgets_values_named": {},
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 91,
+      "type": "LoadImage",
+      "pos": [
+        8115.240234375,
+        3199.49658203125
+      ],
+      "size": [
+        580.4112548828125,
+        659.1973266601562
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 7,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "image",
+          "name": "image",
+          "type": "COMBO",
+          "widget": {
+            "name": "image"
+          }
+        },
+        {
+          "label": "upload",
+          "name": "upload",
+          "type": "IMAGEUPLOAD",
+          "widget": {
+            "name": "upload"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            233
+          ]
+        },
+        {
+          "label": "MASK",
+          "name": "MASK",
+          "type": "MASK"
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.36.0",
+        "Node name for S&R": "LoadImage",
+        "guhaiImageValue": "Untitled(4).jpg",
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {
+            "image": true
+          },
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "Untitled(4).jpg",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "Untitled(4).jpg",
+        "upload": "image"
+      },
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 93,
+      "type": "LoadImage",
+      "pos": [
+        7223.689453125,
+        3969.702880859375
+      ],
+      "size": [
+        580.4112548828125,
+        659.1973266601562
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 11,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "image",
+          "name": "image",
+          "type": "COMBO",
+          "widget": {
+            "name": "image"
+          }
+        },
+        {
+          "label": "upload",
+          "name": "upload",
+          "type": "IMAGEUPLOAD",
+          "widget": {
+            "name": "upload"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            240
+          ]
+        },
+        {
+          "label": "MASK",
+          "name": "MASK",
+          "type": "MASK"
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.36.0",
+        "Node name for S&R": "LoadImage",
+        "guhaiImageValue": "Untitled(8).jpg",
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {
+            "image": true
+          },
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "Untitled(8).jpg",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "Untitled(8).jpg",
+        "upload": "image"
+      },
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 94,
+      "type": "LoadImage",
+      "pos": [
+        8119.06640625,
+        3964.422607421875
+      ],
+      "size": [
+        580.4112548828125,
+        659.1973266601562
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 12,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "image",
+          "name": "image",
+          "type": "COMBO",
+          "widget": {
+            "name": "image"
+          }
+        },
+        {
+          "label": "upload",
+          "name": "upload",
+          "type": "IMAGEUPLOAD",
+          "widget": {
+            "name": "upload"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            244
+          ]
+        },
+        {
+          "label": "MASK",
+          "name": "MASK",
+          "type": "MASK"
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.36.0",
+        "Node name for S&R": "LoadImage",
+        "guhaiImageValue": "Untitled(9).jpg",
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {
+            "image": true
+          },
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "Untitled(9).jpg",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "Untitled(9).jpg",
+        "upload": "image"
+      },
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 101,
+      "type": "LoadImage",
+      "pos": [
+        6338.2275390625,
+        3967.303466796875
+      ],
+      "size": [
+        580.4112548828125,
+        659.1973266601562
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 10,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "image",
+          "name": "image",
+          "type": "COMBO",
+          "widget": {
+            "name": "image"
+          }
+        },
+        {
+          "label": "upload",
+          "name": "upload",
+          "type": "IMAGEUPLOAD",
+          "widget": {
+            "name": "upload"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            237
+          ]
+        },
+        {
+          "label": "MASK",
+          "name": "MASK",
+          "type": "MASK"
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.36.0",
+        "Node name for S&R": "LoadImage",
+        "guhaiImageValue": "Untitled(2).jpg",
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {
+            "image": true
+          },
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "Untitled(2).jpg",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "Untitled(2).jpg",
+        "upload": "image"
+      },
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 102,
+      "type": "LoadImage",
+      "pos": [
+        6325.538754354476,
+        3199.2618972926257
+      ],
+      "size": [
+        580.4112548828125,
+        659.1973266601562
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 8,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "image",
+          "name": "image",
+          "type": "COMBO",
+          "widget": {
+            "name": "image"
+          }
+        },
+        {
+          "label": "upload",
+          "name": "upload",
+          "type": "IMAGEUPLOAD",
+          "widget": {
+            "name": "upload"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            224
+          ]
+        },
+        {
+          "label": "MASK",
+          "name": "MASK",
+          "type": "MASK"
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.36.0",
+        "Node name for S&R": "LoadImage",
+        "guhaiImageValue": "Untitled(3).jpg",
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {
+            "image": true
+          },
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "Untitled(3).jpg",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "Untitled(3).jpg",
+        "upload": "image"
+      },
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 104,
+      "type": "LoadImage",
+      "pos": [
+        7221.21435546875,
+        3201.39599609375
+      ],
+      "size": [
+        580.4112548828125,
+        659.1973266601562
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 9,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "image",
+          "name": "image",
+          "type": "COMBO",
+          "widget": {
+            "name": "image"
+          }
+        },
+        {
+          "label": "upload",
+          "name": "upload",
+          "type": "IMAGEUPLOAD",
+          "widget": {
+            "name": "upload"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            228
+          ]
+        },
+        {
+          "label": "MASK",
+          "name": "MASK",
+          "type": "MASK"
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.36.0",
+        "Node name for S&R": "LoadImage",
+        "guhaiImageValue": "Untitled(1).jpg",
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {
+            "image": true
+          },
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "Untitled(1).jpg",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "Untitled(1).jpg",
+        "upload": "image"
+      },
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 110,
+      "type": "PreviewImage",
+      "pos": [
+        6904.7148302882215,
+        5095.240039732123
+      ],
+      "size": [
+        274.0486755371094,
+        278
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 39,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "images",
+          "name": "images",
+          "type": "IMAGE",
+          "link": 249
+        }
+      ],
+      "outputs": [
+        {
+          "label": "image_urls",
+          "name": "images",
+          "type": "IMAGE"
+        },
+        {
+          "label": "images",
+          "name": "images",
+          "type": "IMAGE"
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.1",
+        "Node name for S&R": "PreviewImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [],
+      "widgets_values_named": {},
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 111,
+      "type": "PreviewImage",
+      "pos": [
+        7815.931145689119,
+        5032.497016704199
+      ],
+      "size": [
+        274.0486755371094,
+        278
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 40,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "images",
+          "name": "images",
+          "type": "IMAGE",
+          "link": 253
+        }
+      ],
+      "outputs": [
+        {
+          "label": "image_urls",
+          "name": "images",
+          "type": "IMAGE"
+        },
+        {
+          "label": "images",
+          "name": "images",
+          "type": "IMAGE"
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.1",
+        "Node name for S&R": "PreviewImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [],
+      "widgets_values_named": {},
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 116,
+      "type": "LoadImage",
+      "pos": [
+        6322.025918678902,
+        4738.867466382737
+      ],
+      "size": [
+        580.4112548828125,
+        659.1973266601562
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 13,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "image",
+          "name": "image",
+          "type": "COMBO",
+          "widget": {
+            "name": "image"
+          }
+        },
+        {
+          "label": "upload",
+          "name": "upload",
+          "type": "IMAGEUPLOAD",
+          "widget": {
+            "name": "upload"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            248
+          ]
+        },
+        {
+          "label": "MASK",
+          "name": "MASK",
+          "type": "MASK"
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.36.0",
+        "Node name for S&R": "LoadImage",
+        "guhaiImageValue": "Untitled(5).jpg",
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {
+            "image": true
+          },
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "Untitled(5).jpg",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "Untitled(5).jpg",
+        "upload": "image"
+      },
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 117,
+      "type": "LoadImage",
+      "pos": [
+        7225.690359567315,
+        4781.111199046887
+      ],
+      "size": [
+        580.4112548828125,
+        659.1973266601562
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 14,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "image",
+          "name": "image",
+          "type": "COMBO",
+          "widget": {
+            "name": "image"
+          }
+        },
+        {
+          "label": "upload",
+          "name": "upload",
+          "type": "IMAGEUPLOAD",
+          "widget": {
+            "name": "upload"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            252
+          ]
+        },
+        {
+          "label": "MASK",
+          "name": "MASK",
+          "type": "MASK"
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.36.0",
+        "Node name for S&R": "LoadImage",
+        "guhaiImageValue": "ComfyUI_00001_fb05af885e94.png",
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {
+            "image": true
+          },
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "ComfyUI_00001_fb05af885e94.png",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "ComfyUI_00001_fb05af885e94.png",
+        "upload": "image"
+      },
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 159,
+      "type": "UNETLoader",
+      "pos": [
+        4937.198614340516,
+        3239.6880484463104
+      ],
+      "size": [
+        633.4702754059117,
+        82.58517877929489
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 1,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "unet_name",
+          "name": "unet_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "unet_name"
+          }
+        },
+        {
+          "label": "weight_dtype",
+          "name": "weight_dtype",
+          "type": "COMBO",
+          "widget": {
+            "name": "weight_dtype"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "label": "MODEL",
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            260
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.1",
+        "Node name for S&R": "UNETLoader",
+        "models": [
+          {
+            "name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+            "directory": "diffusion_models",
+            "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors"
+          }
+        ],
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "minimax/minimax_h3_hybrid_fl2va_ref2va_b25-49-int8.safetensors",
+        "default"
+      ],
+      "widgets_values_named": {
+        "unet_name": "minimax/minimax_h3_hybrid_fl2va_ref2va_b25-49-int8.safetensors",
+        "weight_dtype": "default"
+      },
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 161,
+      "type": "LayerUtility: ImageScaleByAspectRatio V2",
+      "pos": [
+        6908.024723745009,
+        3188.052174194913
+      ],
+      "size": [
+        302.8999938964844,
+        330
+      ],
+      "flags": {},
+      "order": 25,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "image",
+          "name": "image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 224
+        },
+        {
+          "label": "mask",
+          "name": "mask",
+          "shape": 7,
+          "type": "MASK",
+          "link": null
+        },
+        {
+          "label": "aspect_ratio",
+          "name": "aspect_ratio",
+          "type": "COMBO",
+          "widget": {
+            "name": "aspect_ratio"
+          },
+          "link": null
+        },
+        {
+          "label": "proportional_width",
+          "name": "proportional_width",
+          "type": "INT",
+          "widget": {
+            "name": "proportional_width"
+          },
+          "link": null
+        },
+        {
+          "label": "proportional_height",
+          "name": "proportional_height",
+          "type": "INT",
+          "widget": {
+            "name": "proportional_height"
+          },
+          "link": null
+        },
+        {
+          "label": "fit",
+          "name": "fit",
+          "type": "COMBO",
+          "widget": {
+            "name": "fit"
+          },
+          "link": null
+        },
+        {
+          "label": "method",
+          "name": "method",
+          "type": "COMBO",
+          "widget": {
+            "name": "method"
+          },
+          "link": null
+        },
+        {
+          "label": "round_to_multiple",
+          "name": "round_to_multiple",
+          "type": "COMBO",
+          "widget": {
+            "name": "round_to_multiple"
+          },
+          "link": null
+        },
+        {
+          "label": "scale_to_side",
+          "name": "scale_to_side",
+          "type": "COMBO",
+          "widget": {
+            "name": "scale_to_side"
+          },
+          "link": null
+        },
+        {
+          "label": "scale_to_length",
+          "name": "scale_to_length",
+          "type": "INT",
+          "widget": {
+            "name": "scale_to_length"
+          },
+          "link": null
+        },
+        {
+          "label": "background_color",
+          "name": "background_color",
+          "type": "STRING",
+          "widget": {
+            "name": "background_color"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "label": "image",
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            225,
+            226
+          ]
+        },
+        {
+          "label": "mask",
+          "name": "mask",
+          "type": "MASK"
+        },
+        {
+          "label": "original_size",
+          "name": "original_size",
+          "type": "BOX"
+        },
+        {
+          "label": "width",
+          "name": "width",
+          "type": "INT"
+        },
+        {
+          "label": "height",
+          "name": "height",
+          "type": "INT"
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui_layerstyle",
+        "ver": "d94bef1ee5ed3656f5ff1bb2830a4ffd94f40935",
+        "Node name for S&R": "LayerUtility: ImageScaleByAspectRatio V2",
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "original",
+        1,
+        1,
+        "crop",
+        "lanczos",
+        "32",
+        "total_pixel(kilo pixel)",
+        1280,
+        "#000000"
+      ],
+      "widgets_values_named": {
+        "aspect_ratio": "original",
+        "proportional_width": 1,
+        "proportional_height": 1,
+        "fit": "crop",
+        "method": "lanczos",
+        "round_to_multiple": "32",
+        "scale_to_side": "total_pixel(kilo pixel)",
+        "scale_to_length": 1280,
+        "background_color": "#000000"
+      },
+      "color": "rgba(38, 73, 116, 0.7)"
+    },
+    {
+      "id": 162,
+      "type": "LayerUtility: ImageScaleByAspectRatio V2",
+      "pos": [
+        7799.819488982473,
+        3205.6384815356278
+      ],
+      "size": [
+        302.8999938964844,
+        330
+      ],
+      "flags": {},
+      "order": 26,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "image",
+          "name": "image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 228
+        },
+        {
+          "label": "mask",
+          "name": "mask",
+          "shape": 7,
+          "type": "MASK",
+          "link": null
+        },
+        {
+          "label": "aspect_ratio",
+          "name": "aspect_ratio",
+          "type": "COMBO",
+          "widget": {
+            "name": "aspect_ratio"
+          },
+          "link": null
+        },
+        {
+          "label": "proportional_width",
+          "name": "proportional_width",
+          "type": "INT",
+          "widget": {
+            "name": "proportional_width"
+          },
+          "link": null
+        },
+        {
+          "label": "proportional_height",
+          "name": "proportional_height",
+          "type": "INT",
+          "widget": {
+            "name": "proportional_height"
+          },
+          "link": null
+        },
+        {
+          "label": "fit",
+          "name": "fit",
+          "type": "COMBO",
+          "widget": {
+            "name": "fit"
+          },
+          "link": null
+        },
+        {
+          "label": "method",
+          "name": "method",
+          "type": "COMBO",
+          "widget": {
+            "name": "method"
+          },
+          "link": null
+        },
+        {
+          "label": "round_to_multiple",
+          "name": "round_to_multiple",
+          "type": "COMBO",
+          "widget": {
+            "name": "round_to_multiple"
+          },
+          "link": null
+        },
+        {
+          "label": "scale_to_side",
+          "name": "scale_to_side",
+          "type": "COMBO",
+          "widget": {
+            "name": "scale_to_side"
+          },
+          "link": null
+        },
+        {
+          "label": "scale_to_length",
+          "name": "scale_to_length",
+          "type": "INT",
+          "widget": {
+            "name": "scale_to_length"
+          },
+          "link": null
+        },
+        {
+          "label": "background_color",
+          "name": "background_color",
+          "type": "STRING",
+          "widget": {
+            "name": "background_color"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "label": "image",
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            229,
+            232
+          ]
+        },
+        {
+          "label": "mask",
+          "name": "mask",
+          "type": "MASK"
+        },
+        {
+          "label": "original_size",
+          "name": "original_size",
+          "type": "BOX"
+        },
+        {
+          "label": "width",
+          "name": "width",
+          "type": "INT"
+        },
+        {
+          "label": "height",
+          "name": "height",
+          "type": "INT"
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui_layerstyle",
+        "ver": "d94bef1ee5ed3656f5ff1bb2830a4ffd94f40935",
+        "Node name for S&R": "LayerUtility: ImageScaleByAspectRatio V2",
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "original",
+        1,
+        1,
+        "crop",
+        "lanczos",
+        "32",
+        "total_pixel(kilo pixel)",
+        1280,
+        "#000000"
+      ],
+      "widgets_values_named": {
+        "aspect_ratio": "original",
+        "proportional_width": 1,
+        "proportional_height": 1,
+        "fit": "crop",
+        "method": "lanczos",
+        "round_to_multiple": "32",
+        "scale_to_side": "total_pixel(kilo pixel)",
+        "scale_to_length": 1280,
+        "background_color": "#000000"
+      },
+      "color": "rgba(38, 73, 116, 0.7)"
+    },
+    {
+      "id": 163,
+      "type": "LayerUtility: ImageScaleByAspectRatio V2",
+      "pos": [
+        8688.597756339619,
+        3184.7742775309507
+      ],
+      "size": [
+        302.8999938964844,
+        330
+      ],
+      "flags": {},
+      "order": 24,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "image",
+          "name": "image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 233
+        },
+        {
+          "label": "mask",
+          "name": "mask",
+          "shape": 7,
+          "type": "MASK",
+          "link": null
+        },
+        {
+          "label": "aspect_ratio",
+          "name": "aspect_ratio",
+          "type": "COMBO",
+          "widget": {
+            "name": "aspect_ratio"
+          },
+          "link": null
+        },
+        {
+          "label": "proportional_width",
+          "name": "proportional_width",
+          "type": "INT",
+          "widget": {
+            "name": "proportional_width"
+          },
+          "link": null
+        },
+        {
+          "label": "proportional_height",
+          "name": "proportional_height",
+          "type": "INT",
+          "widget": {
+            "name": "proportional_height"
+          },
+          "link": null
+        },
+        {
+          "label": "fit",
+          "name": "fit",
+          "type": "COMBO",
+          "widget": {
+            "name": "fit"
+          },
+          "link": null
+        },
+        {
+          "label": "method",
+          "name": "method",
+          "type": "COMBO",
+          "widget": {
+            "name": "method"
+          },
+          "link": null
+        },
+        {
+          "label": "round_to_multiple",
+          "name": "round_to_multiple",
+          "type": "COMBO",
+          "widget": {
+            "name": "round_to_multiple"
+          },
+          "link": null
+        },
+        {
+          "label": "scale_to_side",
+          "name": "scale_to_side",
+          "type": "COMBO",
+          "widget": {
+            "name": "scale_to_side"
+          },
+          "link": null
+        },
+        {
+          "label": "scale_to_length",
+          "name": "scale_to_length",
+          "type": "INT",
+          "widget": {
+            "name": "scale_to_length"
+          },
+          "link": null
+        },
+        {
+          "label": "background_color",
+          "name": "background_color",
+          "type": "STRING",
+          "widget": {
+            "name": "background_color"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "label": "image",
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            234,
+            235
+          ]
+        },
+        {
+          "label": "mask",
+          "name": "mask",
+          "type": "MASK"
+        },
+        {
+          "label": "original_size",
+          "name": "original_size",
+          "type": "BOX"
+        },
+        {
+          "label": "width",
+          "name": "width",
+          "type": "INT"
+        },
+        {
+          "label": "height",
+          "name": "height",
+          "type": "INT"
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui_layerstyle",
+        "ver": "d94bef1ee5ed3656f5ff1bb2830a4ffd94f40935",
+        "Node name for S&R": "LayerUtility: ImageScaleByAspectRatio V2",
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "original",
+        1,
+        1,
+        "crop",
+        "lanczos",
+        "32",
+        "total_pixel(kilo pixel)",
+        1280,
+        "#000000"
+      ],
+      "widgets_values_named": {
+        "aspect_ratio": "original",
+        "proportional_width": 1,
+        "proportional_height": 1,
+        "fit": "crop",
+        "method": "lanczos",
+        "round_to_multiple": "32",
+        "scale_to_side": "total_pixel(kilo pixel)",
+        "scale_to_length": 1280,
+        "background_color": "#000000"
+      },
+      "color": "rgba(38, 73, 116, 0.7)"
+    },
+    {
+      "id": 164,
+      "type": "LayerUtility: ImageScaleByAspectRatio V2",
+      "pos": [
+        6903.698598923438,
+        3965.5197814776025
+      ],
+      "size": [
+        302.8999938964844,
+        330
+      ],
+      "flags": {},
+      "order": 27,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "image",
+          "name": "image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 237
+        },
+        {
+          "label": "mask",
+          "name": "mask",
+          "shape": 7,
+          "type": "MASK",
+          "link": null
+        },
+        {
+          "label": "aspect_ratio",
+          "name": "aspect_ratio",
+          "type": "COMBO",
+          "widget": {
+            "name": "aspect_ratio"
+          },
+          "link": null
+        },
+        {
+          "label": "proportional_width",
+          "name": "proportional_width",
+          "type": "INT",
+          "widget": {
+            "name": "proportional_width"
+          },
+          "link": null
+        },
+        {
+          "label": "proportional_height",
+          "name": "proportional_height",
+          "type": "INT",
+          "widget": {
+            "name": "proportional_height"
+          },
+          "link": null
+        },
+        {
+          "label": "fit",
+          "name": "fit",
+          "type": "COMBO",
+          "widget": {
+            "name": "fit"
+          },
+          "link": null
+        },
+        {
+          "label": "method",
+          "name": "method",
+          "type": "COMBO",
+          "widget": {
+            "name": "method"
+          },
+          "link": null
+        },
+        {
+          "label": "round_to_multiple",
+          "name": "round_to_multiple",
+          "type": "COMBO",
+          "widget": {
+            "name": "round_to_multiple"
+          },
+          "link": null
+        },
+        {
+          "label": "scale_to_side",
+          "name": "scale_to_side",
+          "type": "COMBO",
+          "widget": {
+            "name": "scale_to_side"
+          },
+          "link": null
+        },
+        {
+          "label": "scale_to_length",
+          "name": "scale_to_length",
+          "type": "INT",
+          "widget": {
+            "name": "scale_to_length"
+          },
+          "link": null
+        },
+        {
+          "label": "background_color",
+          "name": "background_color",
+          "type": "STRING",
+          "widget": {
+            "name": "background_color"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "label": "image",
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            238,
+            239
+          ]
+        },
+        {
+          "label": "mask",
+          "name": "mask",
+          "type": "MASK"
+        },
+        {
+          "label": "original_size",
+          "name": "original_size",
+          "type": "BOX"
+        },
+        {
+          "label": "width",
+          "name": "width",
+          "type": "INT"
+        },
+        {
+          "label": "height",
+          "name": "height",
+          "type": "INT"
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui_layerstyle",
+        "ver": "d94bef1ee5ed3656f5ff1bb2830a4ffd94f40935",
+        "Node name for S&R": "LayerUtility: ImageScaleByAspectRatio V2",
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "original",
+        1,
+        1,
+        "crop",
+        "lanczos",
+        "32",
+        "total_pixel(kilo pixel)",
+        1280,
+        "#000000"
+      ],
+      "widgets_values_named": {
+        "aspect_ratio": "original",
+        "proportional_width": 1,
+        "proportional_height": 1,
+        "fit": "crop",
+        "method": "lanczos",
+        "round_to_multiple": "32",
+        "scale_to_side": "total_pixel(kilo pixel)",
+        "scale_to_length": 1280,
+        "background_color": "#000000"
+      },
+      "color": "rgba(38, 73, 116, 0.7)"
+    },
+    {
+      "id": 165,
+      "type": "LayerUtility: ImageScaleByAspectRatio V2",
+      "pos": [
+        7794.202692038039,
+        3974.669212567422
+      ],
+      "size": [
+        302.8999938964844,
+        330
+      ],
+      "flags": {},
+      "order": 28,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "image",
+          "name": "image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 240
+        },
+        {
+          "label": "mask",
+          "name": "mask",
+          "shape": 7,
+          "type": "MASK",
+          "link": null
+        },
+        {
+          "label": "aspect_ratio",
+          "name": "aspect_ratio",
+          "type": "COMBO",
+          "widget": {
+            "name": "aspect_ratio"
+          },
+          "link": null
+        },
+        {
+          "label": "proportional_width",
+          "name": "proportional_width",
+          "type": "INT",
+          "widget": {
+            "name": "proportional_width"
+          },
+          "link": null
+        },
+        {
+          "label": "proportional_height",
+          "name": "proportional_height",
+          "type": "INT",
+          "widget": {
+            "name": "proportional_height"
+          },
+          "link": null
+        },
+        {
+          "label": "fit",
+          "name": "fit",
+          "type": "COMBO",
+          "widget": {
+            "name": "fit"
+          },
+          "link": null
+        },
+        {
+          "label": "method",
+          "name": "method",
+          "type": "COMBO",
+          "widget": {
+            "name": "method"
+          },
+          "link": null
+        },
+        {
+          "label": "round_to_multiple",
+          "name": "round_to_multiple",
+          "type": "COMBO",
+          "widget": {
+            "name": "round_to_multiple"
+          },
+          "link": null
+        },
+        {
+          "label": "scale_to_side",
+          "name": "scale_to_side",
+          "type": "COMBO",
+          "widget": {
+            "name": "scale_to_side"
+          },
+          "link": null
+        },
+        {
+          "label": "scale_to_length",
+          "name": "scale_to_length",
+          "type": "INT",
+          "widget": {
+            "name": "scale_to_length"
+          },
+          "link": null
+        },
+        {
+          "label": "background_color",
+          "name": "background_color",
+          "type": "STRING",
+          "widget": {
+            "name": "background_color"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "label": "image",
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            241,
+            242
+          ]
+        },
+        {
+          "label": "mask",
+          "name": "mask",
+          "type": "MASK"
+        },
+        {
+          "label": "original_size",
+          "name": "original_size",
+          "type": "BOX"
+        },
+        {
+          "label": "width",
+          "name": "width",
+          "type": "INT"
+        },
+        {
+          "label": "height",
+          "name": "height",
+          "type": "INT"
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui_layerstyle",
+        "ver": "d94bef1ee5ed3656f5ff1bb2830a4ffd94f40935",
+        "Node name for S&R": "LayerUtility: ImageScaleByAspectRatio V2",
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "original",
+        1,
+        1,
+        "crop",
+        "lanczos",
+        "32",
+        "total_pixel(kilo pixel)",
+        1280,
+        "#000000"
+      ],
+      "widgets_values_named": {
+        "aspect_ratio": "original",
+        "proportional_width": 1,
+        "proportional_height": 1,
+        "fit": "crop",
+        "method": "lanczos",
+        "round_to_multiple": "32",
+        "scale_to_side": "total_pixel(kilo pixel)",
+        "scale_to_length": 1280,
+        "background_color": "#000000"
+      },
+      "color": "rgba(38, 73, 116, 0.7)"
+    },
+    {
+      "id": 166,
+      "type": "LayerUtility: ImageScaleByAspectRatio V2",
+      "pos": [
+        8684.999635274466,
+        3956.775854695716
+      ],
+      "size": [
+        302.8999938964844,
+        330
+      ],
+      "flags": {},
+      "order": 29,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "image",
+          "name": "image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 244
+        },
+        {
+          "label": "mask",
+          "name": "mask",
+          "shape": 7,
+          "type": "MASK",
+          "link": null
+        },
+        {
+          "label": "aspect_ratio",
+          "name": "aspect_ratio",
+          "type": "COMBO",
+          "widget": {
+            "name": "aspect_ratio"
+          },
+          "link": null
+        },
+        {
+          "label": "proportional_width",
+          "name": "proportional_width",
+          "type": "INT",
+          "widget": {
+            "name": "proportional_width"
+          },
+          "link": null
+        },
+        {
+          "label": "proportional_height",
+          "name": "proportional_height",
+          "type": "INT",
+          "widget": {
+            "name": "proportional_height"
+          },
+          "link": null
+        },
+        {
+          "label": "fit",
+          "name": "fit",
+          "type": "COMBO",
+          "widget": {
+            "name": "fit"
+          },
+          "link": null
+        },
+        {
+          "label": "method",
+          "name": "method",
+          "type": "COMBO",
+          "widget": {
+            "name": "method"
+          },
+          "link": null
+        },
+        {
+          "label": "round_to_multiple",
+          "name": "round_to_multiple",
+          "type": "COMBO",
+          "widget": {
+            "name": "round_to_multiple"
+          },
+          "link": null
+        },
+        {
+          "label": "scale_to_side",
+          "name": "scale_to_side",
+          "type": "COMBO",
+          "widget": {
+            "name": "scale_to_side"
+          },
+          "link": null
+        },
+        {
+          "label": "scale_to_length",
+          "name": "scale_to_length",
+          "type": "INT",
+          "widget": {
+            "name": "scale_to_length"
+          },
+          "link": null
+        },
+        {
+          "label": "background_color",
+          "name": "background_color",
+          "type": "STRING",
+          "widget": {
+            "name": "background_color"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "label": "image",
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            245,
+            246
+          ]
+        },
+        {
+          "label": "mask",
+          "name": "mask",
+          "type": "MASK"
+        },
+        {
+          "label": "original_size",
+          "name": "original_size",
+          "type": "BOX"
+        },
+        {
+          "label": "width",
+          "name": "width",
+          "type": "INT"
+        },
+        {
+          "label": "height",
+          "name": "height",
+          "type": "INT"
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui_layerstyle",
+        "ver": "d94bef1ee5ed3656f5ff1bb2830a4ffd94f40935",
+        "Node name for S&R": "LayerUtility: ImageScaleByAspectRatio V2",
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "original",
+        1,
+        1,
+        "crop",
+        "lanczos",
+        "32",
+        "total_pixel(kilo pixel)",
+        1280,
+        "#000000"
+      ],
+      "widgets_values_named": {
+        "aspect_ratio": "original",
+        "proportional_width": 1,
+        "proportional_height": 1,
+        "fit": "crop",
+        "method": "lanczos",
+        "round_to_multiple": "32",
+        "scale_to_side": "total_pixel(kilo pixel)",
+        "scale_to_length": 1280,
+        "background_color": "#000000"
+      },
+      "color": "rgba(38, 73, 116, 0.7)"
+    },
+    {
+      "id": 167,
+      "type": "LayerUtility: ImageScaleByAspectRatio V2",
+      "pos": [
+        6899.629925004511,
+        4727.895392939185
+      ],
+      "size": [
+        302.8999938964844,
+        330
+      ],
+      "flags": {},
+      "order": 30,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "image",
+          "name": "image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 248
+        },
+        {
+          "label": "mask",
+          "name": "mask",
+          "shape": 7,
+          "type": "MASK",
+          "link": null
+        },
+        {
+          "label": "aspect_ratio",
+          "name": "aspect_ratio",
+          "type": "COMBO",
+          "widget": {
+            "name": "aspect_ratio"
+          },
+          "link": null
+        },
+        {
+          "label": "proportional_width",
+          "name": "proportional_width",
+          "type": "INT",
+          "widget": {
+            "name": "proportional_width"
+          },
+          "link": null
+        },
+        {
+          "label": "proportional_height",
+          "name": "proportional_height",
+          "type": "INT",
+          "widget": {
+            "name": "proportional_height"
+          },
+          "link": null
+        },
+        {
+          "label": "fit",
+          "name": "fit",
+          "type": "COMBO",
+          "widget": {
+            "name": "fit"
+          },
+          "link": null
+        },
+        {
+          "label": "method",
+          "name": "method",
+          "type": "COMBO",
+          "widget": {
+            "name": "method"
+          },
+          "link": null
+        },
+        {
+          "label": "round_to_multiple",
+          "name": "round_to_multiple",
+          "type": "COMBO",
+          "widget": {
+            "name": "round_to_multiple"
+          },
+          "link": null
+        },
+        {
+          "label": "scale_to_side",
+          "name": "scale_to_side",
+          "type": "COMBO",
+          "widget": {
+            "name": "scale_to_side"
+          },
+          "link": null
+        },
+        {
+          "label": "scale_to_length",
+          "name": "scale_to_length",
+          "type": "INT",
+          "widget": {
+            "name": "scale_to_length"
+          },
+          "link": null
+        },
+        {
+          "label": "background_color",
+          "name": "background_color",
+          "type": "STRING",
+          "widget": {
+            "name": "background_color"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "label": "image",
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            249,
+            250
+          ]
+        },
+        {
+          "label": "mask",
+          "name": "mask",
+          "type": "MASK"
+        },
+        {
+          "label": "original_size",
+          "name": "original_size",
+          "type": "BOX"
+        },
+        {
+          "label": "width",
+          "name": "width",
+          "type": "INT"
+        },
+        {
+          "label": "height",
+          "name": "height",
+          "type": "INT"
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui_layerstyle",
+        "ver": "d94bef1ee5ed3656f5ff1bb2830a4ffd94f40935",
+        "Node name for S&R": "LayerUtility: ImageScaleByAspectRatio V2",
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "original",
+        1,
+        1,
+        "crop",
+        "lanczos",
+        "32",
+        "total_pixel(kilo pixel)",
+        1280,
+        "#000000"
+      ],
+      "widgets_values_named": {
+        "aspect_ratio": "original",
+        "proportional_width": 1,
+        "proportional_height": 1,
+        "fit": "crop",
+        "method": "lanczos",
+        "round_to_multiple": "32",
+        "scale_to_side": "total_pixel(kilo pixel)",
+        "scale_to_length": 1280,
+        "background_color": "#000000"
+      },
+      "color": "rgba(38, 73, 116, 0.7)"
+    },
+    {
+      "id": 168,
+      "type": "LayerUtility: ImageScaleByAspectRatio V2",
+      "pos": [
+        7814.865014734103,
+        4750.915950741086
+      ],
+      "size": [
+        302.8999938964844,
+        330
+      ],
+      "flags": {},
+      "order": 31,
+      "mode": 4,
+      "inputs": [
+        {
+          "label": "image",
+          "name": "image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 252
+        },
+        {
+          "label": "mask",
+          "name": "mask",
+          "shape": 7,
+          "type": "MASK",
+          "link": null
+        },
+        {
+          "label": "aspect_ratio",
+          "name": "aspect_ratio",
+          "type": "COMBO",
+          "widget": {
+            "name": "aspect_ratio"
+          },
+          "link": null
+        },
+        {
+          "label": "proportional_width",
+          "name": "proportional_width",
+          "type": "INT",
+          "widget": {
+            "name": "proportional_width"
+          },
+          "link": null
+        },
+        {
+          "label": "proportional_height",
+          "name": "proportional_height",
+          "type": "INT",
+          "widget": {
+            "name": "proportional_height"
+          },
+          "link": null
+        },
+        {
+          "label": "fit",
+          "name": "fit",
+          "type": "COMBO",
+          "widget": {
+            "name": "fit"
+          },
+          "link": null
+        },
+        {
+          "label": "method",
+          "name": "method",
+          "type": "COMBO",
+          "widget": {
+            "name": "method"
+          },
+          "link": null
+        },
+        {
+          "label": "round_to_multiple",
+          "name": "round_to_multiple",
+          "type": "COMBO",
+          "widget": {
+            "name": "round_to_multiple"
+          },
+          "link": null
+        },
+        {
+          "label": "scale_to_side",
+          "name": "scale_to_side",
+          "type": "COMBO",
+          "widget": {
+            "name": "scale_to_side"
+          },
+          "link": null
+        },
+        {
+          "label": "scale_to_length",
+          "name": "scale_to_length",
+          "type": "INT",
+          "widget": {
+            "name": "scale_to_length"
+          },
+          "link": null
+        },
+        {
+          "label": "background_color",
+          "name": "background_color",
+          "type": "STRING",
+          "widget": {
+            "name": "background_color"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "label": "image",
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            253,
+            254
+          ]
+        },
+        {
+          "label": "mask",
+          "name": "mask",
+          "type": "MASK"
+        },
+        {
+          "label": "original_size",
+          "name": "original_size",
+          "type": "BOX"
+        },
+        {
+          "label": "width",
+          "name": "width",
+          "type": "INT"
+        },
+        {
+          "label": "height",
+          "name": "height",
+          "type": "INT"
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui_layerstyle",
+        "ver": "d94bef1ee5ed3656f5ff1bb2830a4ffd94f40935",
+        "Node name for S&R": "LayerUtility: ImageScaleByAspectRatio V2",
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "original",
+        1,
+        1,
+        "crop",
+        "lanczos",
+        "32",
+        "total_pixel(kilo pixel)",
+        1280,
+        "#000000"
+      ],
+      "widgets_values_named": {
+        "aspect_ratio": "original",
+        "proportional_width": 1,
+        "proportional_height": 1,
+        "fit": "crop",
+        "method": "lanczos",
+        "round_to_multiple": "32",
+        "scale_to_side": "total_pixel(kilo pixel)",
+        "scale_to_length": 1280,
+        "background_color": "#000000"
+      },
+      "color": "rgba(38, 73, 116, 0.7)"
+    },
+    {
+      "id": 185,
+      "type": "SaveImage",
+      "pos": [
+        8277.1063535384,
+        5619.966242665498
+      ],
+      "size": [
+        937.6300458811038,
+        820.4658012004857
+      ],
+      "flags": {},
+      "order": 48,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "images",
+          "name": "images",
+          "type": "IMAGE",
+          "link": 274
+        },
+        {
+          "label": "filename_prefix",
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": {
+            "name": "filename_prefix"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "label": "image_urls",
+          "name": "images",
+          "type": "IMAGE"
+        },
+        {
+          "label": "images",
+          "name": "images",
+          "type": "IMAGE"
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.36.0",
+        "Node name for S&R": "SaveImage",
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "ComfyUI"
+      ],
+      "widgets_values_named": {
+        "filename_prefix": "ComfyUI"
+      }
+    },
+    {
+      "id": 187,
+      "type": "MiniMaxH3ReferenceToVideo",
+      "pos": [
+        7453.941952722922,
+        5642.2949314362295
+      ],
+      "size": [
+        420.3339797781782,
+        464
+      ],
+      "flags": {},
+      "order": 32,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "clip",
+          "name": "clip",
+          "type": "CLIP",
+          "link": 275
+        },
+        {
+          "label": "vae",
+          "name": "vae",
+          "shape": 7,
+          "type": "VAE",
+          "link": 276
+        },
+        {
+          "label": "audio_vae",
+          "name": "audio_vae",
+          "shape": 7,
+          "type": "VAE",
+          "link": null
+        },
+        {
+          "label": "ref_images.ref_image_0",
+          "name": "ref_images.ref_image_0",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "label": "ref_videos.ref_video_0",
+          "name": "ref_videos.ref_video_0",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "label": "ref_video_audios.ref_video_audio_0",
+          "name": "ref_video_audios.ref_video_audio_0",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "label": "ref_audios.ref_audio_0",
+          "name": "ref_audios.ref_audio_0",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "label": "prompt",
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": 292
+        },
+        {
+          "label": "width",
+          "name": "width",
+          "type": "INT",
+          "widget": {
+            "name": "width"
+          },
+          "link": null
+        },
+        {
+          "label": "height",
+          "name": "height",
+          "type": "INT",
+          "widget": {
+            "name": "height"
+          },
+          "link": null
+        },
+        {
+          "label": "length",
+          "name": "length",
+          "type": "INT",
+          "widget": {
+            "name": "length"
+          },
+          "link": null
+        },
+        {
+          "label": "ref_image_size",
+          "name": "ref_image_size",
+          "type": "COMBO",
+          "widget": {
+            "name": "ref_image_size"
+          },
+          "link": null
+        },
+        {
+          "name": "ref_images.ref_image_1",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 286
+        },
+        {
+          "name": "ref_images.ref_image_2",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "ref_images.ref_image_3",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "ref_images.ref_image_4",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "ref_images.ref_image_5",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "ref_images.ref_image_6",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "ref_images.ref_image_7",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "ref_images.ref_image_8",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "label": "positive",
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            280,
+            285
+          ]
+        },
+        {
+          "label": "LATENT",
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            282
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.36.0",
+        "Node name for S&R": "MiniMaxH3ReferenceToVideo",
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "",
+        2048,
+        2048,
+        5,
+        "max"
+      ],
+      "widgets_values_named": {
+        "prompt": "",
+        "width": 2048,
+        "height": 2048,
+        "length": 5,
+        "ref_image_size": "max"
+      }
+    },
+    {
+      "id": 189,
+      "type": "KSampler",
+      "pos": [
+        7946.27105229416,
+        5642.25278826584
+      ],
+      "size": [
+        270,
+        262
+      ],
+      "flags": {},
+      "order": 44,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "model",
+          "name": "model",
+          "type": "MODEL",
+          "link": 279
+        },
+        {
+          "label": "positive",
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 280
+        },
+        {
+          "label": "negative",
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 281
+        },
+        {
+          "label": "latent_image",
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 282
+        },
+        {
+          "label": "seed",
+          "name": "seed",
+          "type": "INT",
+          "widget": {
+            "name": "seed"
+          },
+          "link": null
+        },
+        {
+          "label": "steps",
+          "name": "steps",
+          "type": "INT",
+          "widget": {
+            "name": "steps"
+          },
+          "link": null
+        },
+        {
+          "label": "cfg",
+          "name": "cfg",
+          "type": "FLOAT",
+          "widget": {
+            "name": "cfg"
+          },
+          "link": null
+        },
+        {
+          "label": "sampler_name",
+          "name": "sampler_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "sampler_name"
+          },
+          "link": null
+        },
+        {
+          "label": "scheduler",
+          "name": "scheduler",
+          "type": "COMBO",
+          "widget": {
+            "name": "scheduler"
+          },
+          "link": null
+        },
+        {
+          "label": "denoise",
+          "name": "denoise",
+          "type": "FLOAT",
+          "widget": {
+            "name": "denoise"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "label": "LATENT",
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            283
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.36.0",
+        "Node name for S&R": "KSampler",
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        729612622927839,
+        "randomize",
+        12,
+        1,
+        "euler",
+        "beta",
+        1
+      ],
+      "widgets_values_named": {
+        "seed": 729612622927839,
+        "control_after_generate": "randomize",
+        "steps": 12,
+        "cfg": 1,
+        "sampler_name": "euler",
+        "scheduler": "beta",
+        "denoise": 1
+      }
+    },
+    {
+      "id": 190,
+      "type": "VAEDecode",
+      "pos": [
+        7961.902066134891,
+        6125.286910562093
+      ],
+      "size": [
+        230,
+        60
+      ],
+      "flags": {
+        "collapsed": false
+      },
+      "order": 46,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "samples",
+          "name": "samples",
+          "type": "LATENT",
+          "link": 283
+        },
+        {
+          "label": "vae",
+          "name": "vae",
+          "type": "VAE",
+          "link": 284
+        }
+      ],
+      "outputs": [
+        {
+          "label": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            274
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.36.0",
+        "Node name for S&R": "VAEDecode",
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        }
+      }
+    },
+    {
+      "id": 191,
+      "type": "ConditioningZeroOut",
+      "pos": [
+        7929.918802572921,
+        6000.982884046178
+      ],
+      "size": [
+        204.134765625,
+        26
+      ],
+      "flags": {},
+      "order": 42,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "conditioning",
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 285
+        }
+      ],
+      "outputs": [
+        {
+          "label": "CONDITIONING",
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            281
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.36.0",
+        "Node name for S&R": "ConditioningZeroOut",
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        }
+      }
+    },
+    {
+      "id": 192,
+      "type": "CLIPLoader",
+      "pos": [
+        4839.732758407568,
+        5813.138892695198
+      ],
+      "size": [
+        640,
+        120
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "clip_name",
+          "name": "clip_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "clip_name"
+          },
+          "link": null
+        },
+        {
+          "label": "type",
+          "name": "type",
+          "type": "COMBO",
+          "widget": {
+            "name": "type"
+          },
+          "link": null
+        },
+        {
+          "label": "device",
+          "name": "device",
+          "shape": 7,
+          "type": "COMBO",
+          "widget": {
+            "name": "device"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "label": "CLIP",
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            275
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.36.0",
+        "Node name for S&R": "CLIPLoader",
+        "models": [
+          {
+            "name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+            "directory": "text_encoders",
+            "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors"
+          }
+        ],
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+        "minimax",
+        "default"
+      ],
+      "widgets_values_named": {
+        "clip_name": "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+        "type": "minimax",
+        "device": "default"
+      },
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 194,
+      "type": "VAELoader",
+      "pos": [
+        4840.279737281666,
+        5985.3556681114815
+      ],
+      "size": [
+        640,
+        70
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "vae_name",
+          "name": "vae_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "vae_name"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "label": "VAE",
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            276,
+            284
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.36.0",
+        "Node name for S&R": "VAELoader",
+        "models": [
+          {
+            "directory_invalid": true,
+            "name": "minimax_h3_video_vae_fp16.safetensors",
+            "directory": "vae",
+            "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_fp16.safetensors"
+          }
+        ],
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ],
+      "widgets_values_named": {
+        "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+      },
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 195,
+      "type": "UNETLoader",
+      "pos": [
+        4836.6506200954955,
+        5670.333237045046
+      ],
+      "size": [
+        633.4702754059117,
+        82.58517877929489
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "unet_name",
+          "name": "unet_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "unet_name"
+          },
+          "link": null
+        },
+        {
+          "label": "weight_dtype",
+          "name": "weight_dtype",
+          "type": "COMBO",
+          "widget": {
+            "name": "weight_dtype"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "label": "MODEL",
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            279
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.1",
+        "Node name for S&R": "UNETLoader",
+        "models": [
+          {
+            "name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+            "directory": "diffusion_models",
+            "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors"
+          }
+        ],
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "minimax/minimax_h3_hybrid_fl2va_ref2va_b25-49-int8.safetensors",
+        "default"
+      ],
+      "widgets_values_named": {
+        "unet_name": "minimax/minimax_h3_hybrid_fl2va_ref2va_b25-49-int8.safetensors",
+        "weight_dtype": "default"
+      },
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 196,
+      "type": "LoadImage",
+      "pos": [
+        5507.798166432644,
+        5643.437556833496
+      ],
+      "size": [
+        580.4112548828125,
+        659.1973266601562
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "image",
+          "name": "image",
+          "type": "COMBO",
+          "widget": {
+            "name": "image"
+          },
+          "link": null
+        },
+        {
+          "label": "upload",
+          "name": "upload",
+          "type": "IMAGEUPLOAD",
+          "widget": {
+            "name": "upload"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "label": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            286
+          ]
+        },
+        {
+          "label": "MASK",
+          "name": "MASK",
+          "type": "MASK"
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.36.0",
+        "Node name for S&R": "LoadImage",
+        "guhaiImageValue": "123.png",
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {
+            "image": true
+          },
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "123.png",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "123.png",
+        "upload": "image"
+      },
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 201,
+      "type": "Fast Groups Bypasser (rgthree)",
+      "pos": [
+        4499.540159499638,
+        3080.104665347267
+      ],
+      "size": [
+        247.2955078125,
+        394
+      ],
+      "flags": {},
+      "order": 22,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "可选连接",
+          "name": "OPT_CONNECTION",
+          "type": "*",
+          "links": null
+        }
+      ],
+      "properties": {
+        "matchColors": "",
+        "matchTitle": "",
+        "showNav": true,
+        "showAllGraphs": true,
+        "sort": "position",
+        "customSortAlphabet": "",
+        "toggleRestriction": "default",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      }
+    },
+    {
+      "id": 202,
+      "type": "CR Prompt Text",
+      "pos": [
+        5748.990000680434,
+        3160.5882567918397
+      ],
+      "size": [
+        525.16462424978,
+        741.2528756132901
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 4,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": [
+            290
+          ]
+        },
+        {
+          "name": "show_help",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "ComfyUI_Comfyroll_CustomNodes",
+        "ver": "unknown",
+        "Node name for S&R": "CR Prompt Text",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "这是一份为您定制的完整提示词，严格遵循您要求的“5宫格电影剧照分镜板”格式，并完美对应图1至图8的内容、空间基准、色彩与特效设定：\n\n【参考图标注】\nImage 1(角色参考·青羽):仅锚定青羽身份(精致古典盘发配蓝色发饰、蓝色挂脖露肩古风长裙加披帛、精致锁骨链、清冷典雅少女气质)，严格保留面部特征、发型与服装，只提供样貌，不提供姿势。\nImage 2(角色参考·墨渊):仅锚定墨渊身份(高马尾束发配银冠、黑色古风长袍加暗纹交领、冷峻沉稳少年气质)，严格保留不变，只提供样貌，不提供姿势。\nImage 3(角色参考·红芍):仅锚定红芍身份(古典盘发配红珠发饰、正红色交领古风长裙伴精致刺绣、明艳灵动少女气质)，严格保留不变，只提供样貌，不提供姿势。\nImage 4(场景参考·雪落梅林):仅锚定古风雪景梅林空间结构与环境基准——左侧为挂满积雪与鲜红红梅的老梅树、林间弥漫冷蓝晨雾与金色微光、地面与枝头厚重积雪、空中纷纷扬扬的雪花。此场景为全片空间基准。\nImage 5(角色参考·橙霓):仅锚定橙霓身份(齐刘海短发、亮橙色蓬松羽绒服内搭黑色网纱镂空上衣、灰色百褶短裙、黑色机车靴、朋克酷飒少女气质)，严格保留不变，只提供样貌，不提供姿势。\nImage 6(角色参考·银锋):仅锚定银锋身份(银灰色寸头、烟熏妆、银色亮面夹克内搭黑胶外衣、黑色工装裤，冷酷中性风气质)，严格保留不变，只提供样貌，不提供姿势。\nImage 7(动物参考·雪狼):仅锚定雪狼形态——通体纯白厚密皮毛、锐利琥珀色双眸、身形矫健。只提供动物参考，不提供人物。\nImage 8(角色参考·黑白哥特少女·夜姬):仅锚定夜姬身份(黑色高盘发配白色蝴蝶结、黑白拼接哥特蕾丝露肩短裙、黑色蕾丝手套、精致项圈、暗黑哥特少女气质)，严格保留不变，只提供样貌，不提供姿势。\nImage C(色卡·寒山雪韵冷蓝):仅锚定整体电影感色调——寒冬清晨冷蓝色调(#1A2530/#3B4C5E)、雪地纯白与微青影(#D8E2EC)、古木苍黑(#2A2A2A)、红梅艳红(#C92A2A)、微弱晨金(#D4AF37)。不提供人物与构图。\n\n【主体】\n写实电影剧照式分镜板，5宫格布局（上排2格，中排1格，下排2格）。16:9横版。每格如同成片单帧。\n整体视觉：写实电影剧照质感，35mm变形镜头，浅景深，低饱和冷调复古胶片质感。林间寒风卷着细雪，晨光透过雾气洒下极淡微金，红梅如滴血般醒目。空气中浮动着细腻的冷色雪晶颗粒。\n空间基准：严格依照Image 4雪落梅林环境基准。跨格空间统一，冰雪寒林氛围贯穿全片。\n节奏基准：本段为静谧与危机交织的节奏，前两格用极慢推镜和慢摇展现雪林与对峙，第三格人物动作打破寂静，第四格镜头横移捕捉追逐与张力，第五格慢摇到雪狼与人物剪影定格。\n\n第1格（左上）：极端大特写。镜头极缓推近，从挂满积雪的梅枝上一朵红梅的边缘开始——花瓣娇艳欲滴，沾着晶莹冰晶，脉络清晰。镜头刚掠过花瓣边缘的瞬间定格。冷蓝色调背景中，红梅色彩饱和度极高，刺破冰雪。极浅景深，梅花中心锐利，背景雪雾朦胧。空气中细雪悬浮。\n\n第2格（右上）：镜头从红梅特写极缓上摇。先过青羽停在半空的手——纤细指尖微颤；继续摇到她的脸。青羽（Image 1）神情清冷，双眸微凝，吐出一团淡淡白雾。长发盘髻配蓝色发饰，蓝色挂脖露肩长裙。极浅景深只对准双眼，背景虚化可见墨渊（Image 2）黑袍冷峻的身影立于雪中。\n\n第3格（中间）：近景固定镜头。红芍（Image 3）上半身居中，神情急切，嘴唇微动正在出声提醒，双手交叠在红裙前。画面左侧背景虚化可见橙霓（Image 5）的亮橙羽绒服轮廓；右侧虚化可见银锋（Image 6）银色夹克反光。雪花在镜头前静静飘落。\n\n第4格（左下）：镜头从红芍极缓横移到夜姬（Image 8）与雪狼（Image 7）。夜姬身着黑白哥特蕾丝裙，视线紧紧盯着前方雪地。一头纯白的雪狼（Image 7）半蹲在她身侧，琥珀色眼睛锐利地望向画面右侧。画面左侧前景虚化可见树干与残雪。\n\n第5格（右下）：镜头顺着视线极缓摇到前方开阔雪地。落在一株傲立雪中的老红梅树旁，雪狼与众人的身影化为远景剪影，与漫天飞雪和远处晨光交织定格。极浅景深，远景梅枝锐利，雪幕微虚。\n\n【特效层】\n[特效层] 选择性冷蓝/暗青仅限：远山雾气、雪地阴影、天空。鲜红仅限：红梅、红芍裙装边缘。纯白仅限：积雪、雪狼皮毛。暗金仅限：微弱晨光。极黑仅限：枯木剪影。\n\n【锁定·不改变】\n· 保留 PRESERVE — 青羽蓝色发饰/蓝裙(Image1);墨渊高马尾黑袍(Image2);红芍红珠饰红裙(Image3);雪落梅林环境(Image4);橙霓橙羽绒服黑网纱(Image5);银锋寸头银夹克(Image6);雪狼纯白皮毛琥珀眼(Image7);夜姬黑白哥特裙(Image8);寒山雪韵色调(ImageC)。\n· 硬约束 CONSTRAINTS — 5宫格(上2中1下2);写实电影分镜板;16:9;冷调复古胶片质感;严格维持各角色外观及场景。\n\nsize 16:9, quality 4K"
+      ],
+      "widgets_values_named": {
+        "prompt": "这是一份为您定制的完整提示词，严格遵循您要求的“5宫格电影剧照分镜板”格式，并完美对应图1至图8的内容、空间基准、色彩与特效设定：\n\n【参考图标注】\nImage 1(角色参考·青羽):仅锚定青羽身份(精致古典盘发配蓝色发饰、蓝色挂脖露肩古风长裙加披帛、精致锁骨链、清冷典雅少女气质)，严格保留面部特征、发型与服装，只提供样貌，不提供姿势。\nImage 2(角色参考·墨渊):仅锚定墨渊身份(高马尾束发配银冠、黑色古风长袍加暗纹交领、冷峻沉稳少年气质)，严格保留不变，只提供样貌，不提供姿势。\nImage 3(角色参考·红芍):仅锚定红芍身份(古典盘发配红珠发饰、正红色交领古风长裙伴精致刺绣、明艳灵动少女气质)，严格保留不变，只提供样貌，不提供姿势。\nImage 4(场景参考·雪落梅林):仅锚定古风雪景梅林空间结构与环境基准——左侧为挂满积雪与鲜红红梅的老梅树、林间弥漫冷蓝晨雾与金色微光、地面与枝头厚重积雪、空中纷纷扬扬的雪花。此场景为全片空间基准。\nImage 5(角色参考·橙霓):仅锚定橙霓身份(齐刘海短发、亮橙色蓬松羽绒服内搭黑色网纱镂空上衣、灰色百褶短裙、黑色机车靴、朋克酷飒少女气质)，严格保留不变，只提供样貌，不提供姿势。\nImage 6(角色参考·银锋):仅锚定银锋身份(银灰色寸头、烟熏妆、银色亮面夹克内搭黑胶外衣、黑色工装裤，冷酷中性风气质)，严格保留不变，只提供样貌，不提供姿势。\nImage 7(动物参考·雪狼):仅锚定雪狼形态——通体纯白厚密皮毛、锐利琥珀色双眸、身形矫健。只提供动物参考，不提供人物。\nImage 8(角色参考·黑白哥特少女·夜姬):仅锚定夜姬身份(黑色高盘发配白色蝴蝶结、黑白拼接哥特蕾丝露肩短裙、黑色蕾丝手套、精致项圈、暗黑哥特少女气质)，严格保留不变，只提供样貌，不提供姿势。\nImage C(色卡·寒山雪韵冷蓝):仅锚定整体电影感色调——寒冬清晨冷蓝色调(#1A2530/#3B4C5E)、雪地纯白与微青影(#D8E2EC)、古木苍黑(#2A2A2A)、红梅艳红(#C92A2A)、微弱晨金(#D4AF37)。不提供人物与构图。\n\n【主体】\n写实电影剧照式分镜板，5宫格布局（上排2格，中排1格，下排2格）。16:9横版。每格如同成片单帧。\n整体视觉：写实电影剧照质感，35mm变形镜头，浅景深，低饱和冷调复古胶片质感。林间寒风卷着细雪，晨光透过雾气洒下极淡微金，红梅如滴血般醒目。空气中浮动着细腻的冷色雪晶颗粒。\n空间基准：严格依照Image 4雪落梅林环境基准。跨格空间统一，冰雪寒林氛围贯穿全片。\n节奏基准：本段为静谧与危机交织的节奏，前两格用极慢推镜和慢摇展现雪林与对峙，第三格人物动作打破寂静，第四格镜头横移捕捉追逐与张力，第五格慢摇到雪狼与人物剪影定格。\n\n第1格（左上）：极端大特写。镜头极缓推近，从挂满积雪的梅枝上一朵红梅的边缘开始——花瓣娇艳欲滴，沾着晶莹冰晶，脉络清晰。镜头刚掠过花瓣边缘的瞬间定格。冷蓝色调背景中，红梅色彩饱和度极高，刺破冰雪。极浅景深，梅花中心锐利，背景雪雾朦胧。空气中细雪悬浮。\n\n第2格（右上）：镜头从红梅特写极缓上摇。先过青羽停在半空的手——纤细指尖微颤；继续摇到她的脸。青羽（Image 1）神情清冷，双眸微凝，吐出一团淡淡白雾。长发盘髻配蓝色发饰，蓝色挂脖露肩长裙。极浅景深只对准双眼，背景虚化可见墨渊（Image 2）黑袍冷峻的身影立于雪中。\n\n第3格（中间）：近景固定镜头。红芍（Image 3）上半身居中，神情急切，嘴唇微动正在出声提醒，双手交叠在红裙前。画面左侧背景虚化可见橙霓（Image 5）的亮橙羽绒服轮廓；右侧虚化可见银锋（Image 6）银色夹克反光。雪花在镜头前静静飘落。\n\n第4格（左下）：镜头从红芍极缓横移到夜姬（Image 8）与雪狼（Image 7）。夜姬身着黑白哥特蕾丝裙，视线紧紧盯着前方雪地。一头纯白的雪狼（Image 7）半蹲在她身侧，琥珀色眼睛锐利地望向画面右侧。画面左侧前景虚化可见树干与残雪。\n\n第5格（右下）：镜头顺着视线极缓摇到前方开阔雪地。落在一株傲立雪中的老红梅树旁，雪狼与众人的身影化为远景剪影，与漫天飞雪和远处晨光交织定格。极浅景深，远景梅枝锐利，雪幕微虚。\n\n【特效层】\n[特效层] 选择性冷蓝/暗青仅限：远山雾气、雪地阴影、天空。鲜红仅限：红梅、红芍裙装边缘。纯白仅限：积雪、雪狼皮毛。暗金仅限：微弱晨光。极黑仅限：枯木剪影。\n\n【锁定·不改变】\n· 保留 PRESERVE — 青羽蓝色发饰/蓝裙(Image1);墨渊高马尾黑袍(Image2);红芍红珠饰红裙(Image3);雪落梅林环境(Image4);橙霓橙羽绒服黑网纱(Image5);银锋寸头银夹克(Image6);雪狼纯白皮毛琥珀眼(Image7);夜姬黑白哥特裙(Image8);寒山雪韵色调(ImageC)。\n· 硬约束 CONSTRAINTS — 5宫格(上2中1下2);写实电影分镜板;16:9;冷调复古胶片质感;严格维持各角色外观及场景。\n\nsize 16:9, quality 4K"
+      }
+    },
+    {
+      "id": 203,
+      "type": "CR Prompt Text",
+      "pos": [
+        6135.6783381524865,
+        5641.1897879586695
+      ],
+      "size": [
+        1189.677434505792,
+        395.62978221465664
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": []
+        },
+        {
+          "name": "show_help",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "ComfyUI_Comfyroll_CustomNodes",
+        "ver": "unknown",
+        "Node name for S&R": "CR Prompt Text",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "生成人物四宫格人物角色四视图定装照\n- **画幅**：9:16 竖版\n- **类型**：电影写实角色设定表 / Character Design Reference Sheet\n- **背景**：纯中性浅暖灰影棚无缝背景纸\n- **光线**：相机右后方 45° 单侧暖色轮廓逆光，弱环境补光，阴影过渡柔和，全画面统一光照体系\n- **质感**：4K 电影写实摄影，35mm Kodak Vision3 胶片色彩，轻微有机胶片颗粒，暖橙阴影层次，背景浅景深虚化\n- **排版**：2×2 grid，上排两格约 1/3 高度（头肩特写），下排两格约 2/3 高度（全身视图），细灰色分隔线\n- **画面文字**：仅保留角色名与视图标签，无水印、Logo、UI 或装饰元素\n## 四视图布局\n\n### Panel 1｜Top Left — Front Face Close-up\n\n**视图范围**：头肩正面特写，锁骨以上，人物正对镜头\n**光线效果**：暖色轮廓光从画面右侧勾出发丝边缘与脸侧轮廓，面中柔和补光\n\n---\n\n### Panel 2｜Top Right — Side Face Profile\n\n**视图范围**：纯侧面特写，人物面朝画面右侧\n**光线效果**：侧逆光突出鼻梁、下颌线、唇峰与发丝层次，阴影侧过渡柔和\n\n---\n\n### Panel 3｜Bottom Left — Body Front (No Face)\n\n**视图范围**：全身正面，颈部到脚跟，**脸部必须从格顶部裁出，绝对不出现面部**\n**站姿**：默认站立定妆姿势，双脚自然分开，重心均匀，肩膀放松，右手自然握着手机垂在身\n**光线效果**：同一暖色侧逆光勾勒服装外轮廓，衣物质感真实\n\n---\n\n### Panel 4｜Bottom Right — Back View\n\n**视图范围**：全身背面，颈部到脚跟，头顶可轻微裁切，保留披肩长发的背部形态\n**站姿**：默认站立姿势，背对镜头，双臂自然垂放\n**光线效果**：侧逆光勾勒马尾外轮廓、肩线、裤腰与鞋底边缘"
+      ],
+      "widgets_values_named": {
+        "prompt": "生成人物四宫格人物角色四视图定装照\n- **画幅**：9:16 竖版\n- **类型**：电影写实角色设定表 / Character Design Reference Sheet\n- **背景**：纯中性浅暖灰影棚无缝背景纸\n- **光线**：相机右后方 45° 单侧暖色轮廓逆光，弱环境补光，阴影过渡柔和，全画面统一光照体系\n- **质感**：4K 电影写实摄影，35mm Kodak Vision3 胶片色彩，轻微有机胶片颗粒，暖橙阴影层次，背景浅景深虚化\n- **排版**：2×2 grid，上排两格约 1/3 高度（头肩特写），下排两格约 2/3 高度（全身视图），细灰色分隔线\n- **画面文字**：仅保留角色名与视图标签，无水印、Logo、UI 或装饰元素\n## 四视图布局\n\n### Panel 1｜Top Left — Front Face Close-up\n\n**视图范围**：头肩正面特写，锁骨以上，人物正对镜头\n**光线效果**：暖色轮廓光从画面右侧勾出发丝边缘与脸侧轮廓，面中柔和补光\n\n---\n\n### Panel 2｜Top Right — Side Face Profile\n\n**视图范围**：纯侧面特写，人物面朝画面右侧\n**光线效果**：侧逆光突出鼻梁、下颌线、唇峰与发丝层次，阴影侧过渡柔和\n\n---\n\n### Panel 3｜Bottom Left — Body Front (No Face)\n\n**视图范围**：全身正面，颈部到脚跟，**脸部必须从格顶部裁出，绝对不出现面部**\n**站姿**：默认站立定妆姿势，双脚自然分开，重心均匀，肩膀放松，右手自然握着手机垂在身\n**光线效果**：同一暖色侧逆光勾勒服装外轮廓，衣物质感真实\n\n---\n\n### Panel 4｜Bottom Right — Back View\n\n**视图范围**：全身背面，颈部到脚跟，头顶可轻微裁切，保留披肩长发的背部形态\n**站姿**：默认站立姿势，背对镜头，双臂自然垂放\n**光线效果**：侧逆光勾勒马尾外轮廓、肩线、裤腰与鞋底边缘"
+      }
+    },
+    {
+      "id": 204,
+      "type": "Note",
+      "pos": [
+        9804.188926319452,
+        3796.61294613314
+      ],
+      "size": [
+        385.75510990706425,
+        103.05965121545614
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 4,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "1.step跑8-15步效果都很好。\n2.五宫格尺寸最好1：1。\n3.ref_image_size最好max,本地显存压力大可以选用match。"
+      ],
+      "widgets_values_named": {
+        "text": "1.step跑8-15步效果都很好。\n2.五宫格尺寸最好1：1。\n3.ref_image_size最好max,本地显存压力大可以选用match。"
+      },
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 205,
+      "type": "Label (rgthree)",
+      "pos": [
+        4804.8436533691065,
+        2534.2740485093027
+      ],
+      "size": [
+        2475.2197265625,
+        150
+      ],
+      "flags": {
+        "allow_interaction": true
+      },
+      "order": 23,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "U33-Minimax-H3图像编辑全能工作流",
+      "properties": {
+        "fontSize": 150,
+        "fontFamily": "Arial",
+        "fontColor": "#ffff00",
+        "textAlign": "left",
+        "backgroundColor": "transparent",
+        "padding": 0,
+        "borderRadius": 0,
+        "angle": 0,
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        },
+        "widget_ue_connectable": {}
+      },
+      "color": "#fff0",
+      "bgcolor": "#fff0"
+    },
+    {
+      "id": 206,
+      "type": "Label (rgthree)",
+      "pos": [
+        4804.8436533691065,
+        2725.1253618173546
+      ],
+      "size": [
+        1736.484375,
+        80
+      ],
+      "flags": {
+        "allow_interaction": true
+      },
+      "order": 17,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "云端镜像https://autodl.art/app/market/252?v=709",
+      "properties": {
+        "fontSize": 80,
+        "fontFamily": "Arial",
+        "fontColor": "#00ff00",
+        "textAlign": "left",
+        "backgroundColor": "transparent",
+        "padding": 0,
+        "borderRadius": 0,
+        "angle": 0,
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        },
+        "widget_ue_connectable": {}
+      },
+      "color": "#fff0",
+      "bgcolor": "#fff0"
+    },
+    {
+      "id": 207,
+      "type": "Label (rgthree)",
+      "pos": [
+        4804.8436533691065,
+        2863.125361817352
+      ],
+      "size": [
+        2324.619140625,
+        60
+      ],
+      "flags": {
+        "allow_interaction": true
+      },
+      "order": 18,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "AUTODL🐧🔴1群1046279436🔴2群1102535136🟢3群1053358977🟢4群541575695",
+      "properties": {
+        "fontSize": 60,
+        "fontFamily": "Arial",
+        "fontColor": "#ff5500",
+        "textAlign": "left",
+        "backgroundColor": "transparent",
+        "padding": 0,
+        "borderRadius": 0,
+        "angle": 0,
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        },
+        "widget_ue_connectable": {}
+      },
+      "color": "#fff0",
+      "bgcolor": "#fff0"
+    },
+    {
+      "id": 208,
+      "type": "CR Prompt Text",
+      "pos": [
+        6134.889483010247,
+        6120.481493382522
+      ],
+      "size": [
+        1176.8879927774597,
+        342.25918192460813
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": [
+            292
+          ]
+        },
+        {
+          "name": "show_help",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        },
+        "cnr_id": "ComfyUI_Comfyroll_CustomNodes",
+        "ver": "unknown",
+        "Node name for S&R": "CR Prompt Text"
+      },
+      "widgets_values": [
+        "生成人物四宫格人物角色四视图定装照画幅：9:16 竖版类型：电影写实角色设定表 / Character Design Reference Sheet背景：纯中性浅暖灰影棚无缝背景纸光线：相机右后方 45° 单侧暖色轮廓逆光，弱环境补光，阴影过渡柔和，全画面统一光照体系质感：4K 电影写实摄影，35mm Kodak Vision3 胶片色彩，轻微有机胶片颗粒，暖橙阴影层次，背景浅景深虚化排版：2×2 grid，上排两格约 1/3 高度（头肩特写），下排两格约 2/3 高度（全身视图），细灰色分隔线画面文字：仅保留角色名与视图标签，无水印、Logo、UI 或装饰元素四视图布局\n\nPanel 1｜Top Left — Front Face Close-up視圖範圍： 頭肩正面特寫，鎖骨以上。人物正對鏡頭，畫面必須完整呈現頭髮的全部形態，包括頭頂、兩側及髮尾（若髮長較短），確保髮型完全不被裁切。光線效果： 暖色輪廓光從畫面右側勾出血絲邊緣與臉側輪廓，面中柔和補光。Panel 2｜Top Right — Side Face Profile視圖範圍： 純側面特寫，人物面朝畫面右側。畫面必須完整呈現頭髮的全部形態，包括頭頂、後腦勺、髮際線、側邊髮束及髮尾（若髮長較短），確保髮型完全不被裁切。光線效果： 側逆光突出鼻梁、下頜線、唇峰與髮絲層次，陰影側過渡柔和。Panel 3｜Bottom Left — Body Front (No Face)\n\n视图范围：全身正面，颈部到脚跟，脸部必须从格顶部裁出，绝对不出现面部\n\n站姿：默认站立定妆姿势，双脚自然分开，重心均匀，肩膀放松，双臂自然垂放于身侧\n\n光线效果：同一暖色侧逆光勾勒服装外轮廓，衣物质感真实Panel 4｜Bottom Right — Back View\n\n视图范围：全身背面，颈部到脚跟，头顶可轻微裁切，保留背部发型形态\n\n站姿：默认站立姿势，背对镜头，双臂自然垂放\n\n光线效果：侧逆光勾勒背部发型外轮廓、肩线、裤腰与鞋底边缘"
+      ],
+      "widgets_values_named": {
+        "prompt": "生成人物四宫格人物角色四视图定装照画幅：9:16 竖版类型：电影写实角色设定表 / Character Design Reference Sheet背景：纯中性浅暖灰影棚无缝背景纸光线：相机右后方 45° 单侧暖色轮廓逆光，弱环境补光，阴影过渡柔和，全画面统一光照体系质感：4K 电影写实摄影，35mm Kodak Vision3 胶片色彩，轻微有机胶片颗粒，暖橙阴影层次，背景浅景深虚化排版：2×2 grid，上排两格约 1/3 高度（头肩特写），下排两格约 2/3 高度（全身视图），细灰色分隔线画面文字：仅保留角色名与视图标签，无水印、Logo、UI 或装饰元素四视图布局\n\nPanel 1｜Top Left — Front Face Close-up視圖範圍： 頭肩正面特寫，鎖骨以上。人物正對鏡頭，畫面必須完整呈現頭髮的全部形態，包括頭頂、兩側及髮尾（若髮長較短），確保髮型完全不被裁切。光線效果： 暖色輪廓光從畫面右側勾出血絲邊緣與臉側輪廓，面中柔和補光。Panel 2｜Top Right — Side Face Profile視圖範圍： 純側面特寫，人物面朝畫面右側。畫面必須完整呈現頭髮的全部形態，包括頭頂、後腦勺、髮際線、側邊髮束及髮尾（若髮長較短），確保髮型完全不被裁切。光線效果： 側逆光突出鼻梁、下頜線、唇峰與髮絲層次，陰影側過渡柔和。Panel 3｜Bottom Left — Body Front (No Face)\n\n视图范围：全身正面，颈部到脚跟，脸部必须从格顶部裁出，绝对不出现面部\n\n站姿：默认站立定妆姿势，双脚自然分开，重心均匀，肩膀放松，双臂自然垂放于身侧\n\n光线效果：同一暖色侧逆光勾勒服装外轮廓，衣物质感真实Panel 4｜Bottom Right — Back View\n\n视图范围：全身背面，颈部到脚跟，头顶可轻微裁切，保留背部发型形态\n\n站姿：默认站立姿势，背对镜头，双臂自然垂放\n\n光线效果：侧逆光勾勒背部发型外轮廓、肩线、裤腰与鞋底边缘"
+      }
+    },
+    {
+      "id": 209,
+      "type": "CR Prompt Text",
+      "pos": [
+        4907.681244128483,
+        4055.2125519282117
+      ],
+      "size": [
+        625.8006940675177,
+        1255.486965292348
+      ],
+      "flags": {},
+      "order": 21,
+      "mode": 4,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "show_help",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        },
+        "cnr_id": "ComfyUI_Comfyroll_CustomNodes",
+        "ver": "unknown",
+        "Node name for S&R": "CR Prompt Text"
+      },
+      "widgets_values": [
+        "---\nname: multi-grid-storyboard\ndescription: 写实电影5宫格分镜板提示词生成模板。根据用户提供的剧情、角色、场景、道具和色调，自动填充多宫格故事板提示词模板，生成可直接用于AI绘图的完整分镜提示词。当用户要求生成分镜板、故事板、多宫格剧照、5宫格分镜、电影分镜提示词，或提供角色/场景参考图希望生成连续镜头画面时使用。\n---\n\n# 写实电影5宫格分镜板提示词模板\n\n## 功能概述\n\n本 Skill 提供一套标准化的写实电影5宫格分镜板提示词模板，将用户的剧情创意转化为结构化、可直接用于 AI 绘图工具（Seedream / Midjourney / 即梦等）的完整提示词。\n\n**默认布局**：上排2格 + 中排1格 + 下排2格 = 5宫格，16:9横版，每格如同成片单帧。\n\n## 使用流程\n\n### 第一步：收集必要信息\n\n向用户确认以下要素（缺失项主动追问，不凭空编造）：\n\n1. **剧情核心**：这5格要讲什么故事/情绪？一句话概括。\n2. **角色**：有几个人物？各自外貌特征（发型、服装、关键配饰）。\n3. **场景**：发生在哪里？关键空间结构。\n4. **道具**：有什么核心道具？形状/材质/颜色/发光状态。\n5. **色调**：整体电影感色调倾向（如暖金夕照、冷蓝雨夜、复古胶片等）。\n\n如果用户已上传参考图，识别并标注：\n- Image 1 = 角色A参考\n- Image 2 = 角色B参考（如有）\n- Image 3 = 场景参考\n- Image 4 = 道具参考\n- Image C = 色卡参考\n\n### 第二步：填充模板\n\n读取 `assets/storyboard_5grid_template.txt`，将所有 `<占位符>` 替换为具体内容。\n\n**占位符说明**：\n\n| 占位符 | 含义 | 示例 |\n|--------|------|------|\n| `<角色A>` `<角色B>` | 角色名称/身份 | 林晚、青年男子 |\n| `<场景名>` | 场景名称 | 夜行列车车厢 |\n| `<道具名>` | 道具名称 | 黄铜怀表 |\n| `<景别>` | 该格镜头景别 | 中近景、特写、全景 |\n| `<谁在哪做什么>` | 该格核心动作 | 她靠窗坐着，手指摩挲杯沿 |\n| `<1-3个表演信号>` | 微表情/肢体细节 | 眼神低垂、嘴唇微抿、手指停在杯柄 |\n| `<主色>` `<辅色>` `<高光色>` | 色彩体系 | 暖金色、冷蓝色、白金轮廓光 |\n| `<硬性要求1-5>` | 每格必须遵守的约束 | P1必须见窗外夕照、P2必须手部入镜 |\n\n### 第三步：按格子叙事分配\n\n5格按情绪弧线分配内容：\n\n- **第1格（左上）**：开场建立——交代人物位置与环境氛围。\n- **第2格（右上）**：动作延续——推进动作或道具状态变化，聚焦反应。\n- **第3格（中间）**：信息转折——新信息/关系变化/第三方介入，中景或全景。\n- **第4格（左下）**：情绪高潮——核心道具特写或关键情绪爆发，微距细节。\n- **第5格（右下）**：收尾落点——关系落点/视线转移/微妙停顿。\n\n### 第四步：输出完整提示词\n\n将填充好的完整文本输出给用户，格式为代码块，方便直接复制使用。同时提醒用户：\n- 需要搭配对应参考图上传\n- 每格手写标注+时间码由AI绘图自动生成\n- 尺寸 16:9，质量 4K\n\n## 参考模板\n\n【参考图标注】\nImage 1(角色参考·<角色A>):仅锚定<角色A>身份(<发型>/<服装>/<关键配饰>)，严格保留面部特征、发型、服装与关键配饰，只提供样貌，不提供姿势。\nImage 2(角色参考·<角色B>):仅锚定<角色B>身份(<发型>/<服装>/<辨识锚点>)，严格保留不变，只提供样貌，不提供姿势。\nImage 3(场景参考·<场景名>):仅锚定<场景>空间结构(<关键结构1>/<关键结构2>/门窗/车厢/座椅/小桌板/窗户关系/铺位层级)，只提供背景结构，提供人物大概站位，不提供色调。\nImage 4(道具参考·<道具名>):仅锚定<道具>形态(<形状>/<材质>/<颜色>/表面纹理/发光状态/图案细节)，只提供道具，不提供人物。\nImage C(色卡·暖金夕列车):仅锚定整体电影感色调，不提供人物与构图。\n\n【主体】\n写实电影剧照式分镜板，5宫格布局（上排2格，中排1格，下排2格）。16:9横版。每格如同成片单帧。\n整体视觉：写实电影剧照质感，35mm变形镜头，浅景深，低饱和复古胶片质感，空气尘埃漂浮，窗外散景光斑柔和，真实皮肤与布料纹理，全画面覆盖细微均匀胶片颗粒。\n\n第1格（左上）：<景别>。<谁在哪做什么>，<1-3个表演信号>。<环境/光线/道具状态>。暖金侧逆光从窗外射入，人物发丝与肩膀形成白金轮廓光，车厢另一侧沉入冷蓝阴影，前景轻微虚化。\n\n第2格（右上）：<景别>。<动作继续/道具状态改变/感官结果>，<人物具体反应>。面部或手部近景，暖金高光落在眼睛、指节或道具边缘，背景冷蓝虚化，浅焦点突出表情与细节。\n\n第3格（中间）：<景别>。<新信息/关系变化/第三方介入>，<各方反应>。中景或全景，人物关系清晰，窗外夕阳散景形成背景光斑，暖金受光区与冷蓝阴影分区明确，车厢结构完整可辨。\n\n第4格（左下）：<景别>。<核心道具特写/关键情绪爆发>，<细节描写>。微距细节，道具表面反射暖金光线；发光类道具呈现紫金辉光，周围空气有细微尘埃与光晕，桌面或手掌形成暖色反光。\n\n第5格（右下）：<景别>。<收尾动作/关系落点/视线转移>，<末帧状态>。反应近景或人物背影，暖金轮廓光勾出发丝与肩线，冷蓝车厢暗部包围人物，窗外散景光斑柔和，情绪停在微妙停顿或对视。\n\n【特效层】\n[特效层] 选择性<主色>仅限：<列出所有主色元素>。<辅色>仅限：<列出所有辅色元素>。<高光色>仅限：<列出所有高光色元素>\n\n【锁定·不改变】\n· 保留 PRESERVE — <角色A>五官/发型/服装(<具体>)保留Image1;<角色B>…保留Image2;场景布局保留Image3;道具形态保留Image4;色调保留ImageC。\n· 硬约束 CONSTRAINTS — 5宫格(上2中1下2);<主色>+<辅色>;P1必须<硬性要求1>;P2必须<硬性要求2>;P3必须<硬性要求3>;P4必须<硬性要求4>;P5必须<硬性要求5>;每格手写标注+时间码;16:9;除<允许色>外无彩色/无写实/无3D/无数字绘画;无第6格。\n\n【摄影质感】\n写实电影分镜板。35mm变形电影剧照，低饱和复古胶片质感，浅景深，空气尘埃，窗外散景光斑，真实皮肤与布料纹理，细微胶片颗粒，情绪克制，光影层次丰富。每格如同成片单帧。无HDR塑料感，无过饱和CG，无干净数字美术感。\n\n【禁用】\n手绘/炭笔/卡通/插画/概念艺术/干净矢量/3D塑料感/过饱和/HDR/无边框/边框细弱/无时间码/无标注/多于5格/少于5格/错误布局/<角色A>错误服装/<禁止元素1>/<禁止元素2>/文字水印/Logo/UI。\n\nsize 16:9, quality 4K\n\n## 注意事项\n\n- 模板默认是\"暖金夕列车\"配色示例，使用时必须替换为用户实际色调，不要保留示例配色。\n- 角色参考图只锚定样貌，不锚定姿势；姿势由模板内每格的动作描述决定。\n- 场景参考图只锚定空间结构，不锚定色调；色调由色卡参考或用户指定决定。\n- 如果用户要求不同宫格数量（如6宫格、4宫格），在模板基础上调整格数布局，但保持每格叙事结构一致。\n- **全景/中景必须全员在场**：凡是景别为全景、中景、中全景的格子，必须把所有在场人物逐一写出位置和状态，禁止只写主角而让配角凭空消失。近景/特写格可以只聚焦主体，但背景中必须交代其他人物\"虚化在场\"，不能出现\"上一格还在、这一格突然没了\"的穿帮。\n- **严格锁站位**：跨格人物空间位置必须与场景参考图（站位图）一致。写每一格之前，先对照站位图确认谁在左、谁在右、谁在上铺、谁在下铺，镜头推拉或角度变化时，人物的左右相对关系不能翻转、不能换位。在硬约束里显式写出\"严格依照Image X站位\"，在禁用项里加入\"站位错乱/人物左右互换/人物缺失\"。"
+      ],
+      "widgets_values_named": {
+        "prompt": "---\nname: multi-grid-storyboard\ndescription: 写实电影5宫格分镜板提示词生成模板。根据用户提供的剧情、角色、场景、道具和色调，自动填充多宫格故事板提示词模板，生成可直接用于AI绘图的完整分镜提示词。当用户要求生成分镜板、故事板、多宫格剧照、5宫格分镜、电影分镜提示词，或提供角色/场景参考图希望生成连续镜头画面时使用。\n---\n\n# 写实电影5宫格分镜板提示词模板\n\n## 功能概述\n\n本 Skill 提供一套标准化的写实电影5宫格分镜板提示词模板，将用户的剧情创意转化为结构化、可直接用于 AI 绘图工具（Seedream / Midjourney / 即梦等）的完整提示词。\n\n**默认布局**：上排2格 + 中排1格 + 下排2格 = 5宫格，16:9横版，每格如同成片单帧。\n\n## 使用流程\n\n### 第一步：收集必要信息\n\n向用户确认以下要素（缺失项主动追问，不凭空编造）：\n\n1. **剧情核心**：这5格要讲什么故事/情绪？一句话概括。\n2. **角色**：有几个人物？各自外貌特征（发型、服装、关键配饰）。\n3. **场景**：发生在哪里？关键空间结构。\n4. **道具**：有什么核心道具？形状/材质/颜色/发光状态。\n5. **色调**：整体电影感色调倾向（如暖金夕照、冷蓝雨夜、复古胶片等）。\n\n如果用户已上传参考图，识别并标注：\n- Image 1 = 角色A参考\n- Image 2 = 角色B参考（如有）\n- Image 3 = 场景参考\n- Image 4 = 道具参考\n- Image C = 色卡参考\n\n### 第二步：填充模板\n\n读取 `assets/storyboard_5grid_template.txt`，将所有 `<占位符>` 替换为具体内容。\n\n**占位符说明**：\n\n| 占位符 | 含义 | 示例 |\n|--------|------|------|\n| `<角色A>` `<角色B>` | 角色名称/身份 | 林晚、青年男子 |\n| `<场景名>` | 场景名称 | 夜行列车车厢 |\n| `<道具名>` | 道具名称 | 黄铜怀表 |\n| `<景别>` | 该格镜头景别 | 中近景、特写、全景 |\n| `<谁在哪做什么>` | 该格核心动作 | 她靠窗坐着，手指摩挲杯沿 |\n| `<1-3个表演信号>` | 微表情/肢体细节 | 眼神低垂、嘴唇微抿、手指停在杯柄 |\n| `<主色>` `<辅色>` `<高光色>` | 色彩体系 | 暖金色、冷蓝色、白金轮廓光 |\n| `<硬性要求1-5>` | 每格必须遵守的约束 | P1必须见窗外夕照、P2必须手部入镜 |\n\n### 第三步：按格子叙事分配\n\n5格按情绪弧线分配内容：\n\n- **第1格（左上）**：开场建立——交代人物位置与环境氛围。\n- **第2格（右上）**：动作延续——推进动作或道具状态变化，聚焦反应。\n- **第3格（中间）**：信息转折——新信息/关系变化/第三方介入，中景或全景。\n- **第4格（左下）**：情绪高潮——核心道具特写或关键情绪爆发，微距细节。\n- **第5格（右下）**：收尾落点——关系落点/视线转移/微妙停顿。\n\n### 第四步：输出完整提示词\n\n将填充好的完整文本输出给用户，格式为代码块，方便直接复制使用。同时提醒用户：\n- 需要搭配对应参考图上传\n- 每格手写标注+时间码由AI绘图自动生成\n- 尺寸 16:9，质量 4K\n\n## 参考模板\n\n【参考图标注】\nImage 1(角色参考·<角色A>):仅锚定<角色A>身份(<发型>/<服装>/<关键配饰>)，严格保留面部特征、发型、服装与关键配饰，只提供样貌，不提供姿势。\nImage 2(角色参考·<角色B>):仅锚定<角色B>身份(<发型>/<服装>/<辨识锚点>)，严格保留不变，只提供样貌，不提供姿势。\nImage 3(场景参考·<场景名>):仅锚定<场景>空间结构(<关键结构1>/<关键结构2>/门窗/车厢/座椅/小桌板/窗户关系/铺位层级)，只提供背景结构，提供人物大概站位，不提供色调。\nImage 4(道具参考·<道具名>):仅锚定<道具>形态(<形状>/<材质>/<颜色>/表面纹理/发光状态/图案细节)，只提供道具，不提供人物。\nImage C(色卡·暖金夕列车):仅锚定整体电影感色调，不提供人物与构图。\n\n【主体】\n写实电影剧照式分镜板，5宫格布局（上排2格，中排1格，下排2格）。16:9横版。每格如同成片单帧。\n整体视觉：写实电影剧照质感，35mm变形镜头，浅景深，低饱和复古胶片质感，空气尘埃漂浮，窗外散景光斑柔和，真实皮肤与布料纹理，全画面覆盖细微均匀胶片颗粒。\n\n第1格（左上）：<景别>。<谁在哪做什么>，<1-3个表演信号>。<环境/光线/道具状态>。暖金侧逆光从窗外射入，人物发丝与肩膀形成白金轮廓光，车厢另一侧沉入冷蓝阴影，前景轻微虚化。\n\n第2格（右上）：<景别>。<动作继续/道具状态改变/感官结果>，<人物具体反应>。面部或手部近景，暖金高光落在眼睛、指节或道具边缘，背景冷蓝虚化，浅焦点突出表情与细节。\n\n第3格（中间）：<景别>。<新信息/关系变化/第三方介入>，<各方反应>。中景或全景，人物关系清晰，窗外夕阳散景形成背景光斑，暖金受光区与冷蓝阴影分区明确，车厢结构完整可辨。\n\n第4格（左下）：<景别>。<核心道具特写/关键情绪爆发>，<细节描写>。微距细节，道具表面反射暖金光线；发光类道具呈现紫金辉光，周围空气有细微尘埃与光晕，桌面或手掌形成暖色反光。\n\n第5格（右下）：<景别>。<收尾动作/关系落点/视线转移>，<末帧状态>。反应近景或人物背影，暖金轮廓光勾出发丝与肩线，冷蓝车厢暗部包围人物，窗外散景光斑柔和，情绪停在微妙停顿或对视。\n\n【特效层】\n[特效层] 选择性<主色>仅限：<列出所有主色元素>。<辅色>仅限：<列出所有辅色元素>。<高光色>仅限：<列出所有高光色元素>\n\n【锁定·不改变】\n· 保留 PRESERVE — <角色A>五官/发型/服装(<具体>)保留Image1;<角色B>…保留Image2;场景布局保留Image3;道具形态保留Image4;色调保留ImageC。\n· 硬约束 CONSTRAINTS — 5宫格(上2中1下2);<主色>+<辅色>;P1必须<硬性要求1>;P2必须<硬性要求2>;P3必须<硬性要求3>;P4必须<硬性要求4>;P5必须<硬性要求5>;每格手写标注+时间码;16:9;除<允许色>外无彩色/无写实/无3D/无数字绘画;无第6格。\n\n【摄影质感】\n写实电影分镜板。35mm变形电影剧照，低饱和复古胶片质感，浅景深，空气尘埃，窗外散景光斑，真实皮肤与布料纹理，细微胶片颗粒，情绪克制，光影层次丰富。每格如同成片单帧。无HDR塑料感，无过饱和CG，无干净数字美术感。\n\n【禁用】\n手绘/炭笔/卡通/插画/概念艺术/干净矢量/3D塑料感/过饱和/HDR/无边框/边框细弱/无时间码/无标注/多于5格/少于5格/错误布局/<角色A>错误服装/<禁止元素1>/<禁止元素2>/文字水印/Logo/UI。\n\nsize 16:9, quality 4K\n\n## 注意事项\n\n- 模板默认是\"暖金夕列车\"配色示例，使用时必须替换为用户实际色调，不要保留示例配色。\n- 角色参考图只锚定样貌，不锚定姿势；姿势由模板内每格的动作描述决定。\n- 场景参考图只锚定空间结构，不锚定色调；色调由色卡参考或用户指定决定。\n- 如果用户要求不同宫格数量（如6宫格、4宫格），在模板基础上调整格数布局，但保持每格叙事结构一致。\n- **全景/中景必须全员在场**：凡是景别为全景、中景、中全景的格子，必须把所有在场人物逐一写出位置和状态，禁止只写主角而让配角凭空消失。近景/特写格可以只聚焦主体，但背景中必须交代其他人物\"虚化在场\"，不能出现\"上一格还在、这一格突然没了\"的穿帮。\n- **严格锁站位**：跨格人物空间位置必须与场景参考图（站位图）一致。写每一格之前，先对照站位图确认谁在左、谁在右、谁在上铺、谁在下铺，镜头推拉或角度变化时，人物的左右相对关系不能翻转、不能换位。在硬约束里显式写出\"严格依照Image X站位\"，在禁用项里加入\"站位错乱/人物左右互换/人物缺失\"。"
+      }
+    }
+  ],
+  "links": [
+    [
+      34,
+      63,
+      0,
+      45,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      38,
+      45,
+      0,
+      54,
+      0,
+      "LATENT"
+    ],
+    [
+      39,
+      38,
+      0,
+      54,
+      1,
+      "VAE"
+    ],
+    [
+      61,
+      54,
+      0,
+      76,
+      0,
+      "IMAGE"
+    ],
+    [
+      69,
+      49,
+      0,
+      77,
+      0,
+      "CLIP"
+    ],
+    [
+      70,
+      38,
+      0,
+      77,
+      1,
+      "VAE"
+    ],
+    [
+      75,
+      77,
+      0,
+      63,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      76,
+      77,
+      0,
+      45,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      77,
+      77,
+      1,
+      45,
+      3,
+      "LATENT"
+    ],
+    [
+      224,
+      102,
+      0,
+      161,
+      0,
+      "IMAGE"
+    ],
+    [
+      225,
+      161,
+      0,
+      81,
+      0,
+      "IMAGE"
+    ],
+    [
+      226,
+      161,
+      0,
+      77,
+      3,
+      "IMAGE"
+    ],
+    [
+      228,
+      104,
+      0,
+      162,
+      0,
+      "IMAGE"
+    ],
+    [
+      229,
+      162,
+      0,
+      77,
+      4,
+      "IMAGE"
+    ],
+    [
+      232,
+      162,
+      0,
+      90,
+      0,
+      "IMAGE"
+    ],
+    [
+      233,
+      91,
+      0,
+      163,
+      0,
+      "IMAGE"
+    ],
+    [
+      234,
+      163,
+      0,
+      84,
+      0,
+      "IMAGE"
+    ],
+    [
+      235,
+      163,
+      0,
+      77,
+      5,
+      "IMAGE"
+    ],
+    [
+      237,
+      101,
+      0,
+      164,
+      0,
+      "IMAGE"
+    ],
+    [
+      238,
+      164,
+      0,
+      86,
+      0,
+      "IMAGE"
+    ],
+    [
+      239,
+      164,
+      0,
+      77,
+      6,
+      "IMAGE"
+    ],
+    [
+      240,
+      93,
+      0,
+      165,
+      0,
+      "IMAGE"
+    ],
+    [
+      241,
+      165,
+      0,
+      89,
+      0,
+      "IMAGE"
+    ],
+    [
+      242,
+      165,
+      0,
+      77,
+      7,
+      "IMAGE"
+    ],
+    [
+      244,
+      94,
+      0,
+      166,
+      0,
+      "IMAGE"
+    ],
+    [
+      245,
+      166,
+      0,
+      87,
+      0,
+      "IMAGE"
+    ],
+    [
+      246,
+      166,
+      0,
+      77,
+      8,
+      "IMAGE"
+    ],
+    [
+      248,
+      116,
+      0,
+      167,
+      0,
+      "IMAGE"
+    ],
+    [
+      249,
+      167,
+      0,
+      110,
+      0,
+      "IMAGE"
+    ],
+    [
+      250,
+      167,
+      0,
+      77,
+      9,
+      "IMAGE"
+    ],
+    [
+      252,
+      117,
+      0,
+      168,
+      0,
+      "IMAGE"
+    ],
+    [
+      253,
+      168,
+      0,
+      111,
+      0,
+      "IMAGE"
+    ],
+    [
+      254,
+      168,
+      0,
+      77,
+      10,
+      "IMAGE"
+    ],
+    [
+      260,
+      159,
+      0,
+      45,
+      0,
+      "MODEL"
+    ],
+    [
+      274,
+      190,
+      0,
+      185,
+      0,
+      "IMAGE"
+    ],
+    [
+      275,
+      192,
+      0,
+      187,
+      0,
+      "CLIP"
+    ],
+    [
+      276,
+      194,
+      0,
+      187,
+      1,
+      "VAE"
+    ],
+    [
+      279,
+      195,
+      0,
+      189,
+      0,
+      "MODEL"
+    ],
+    [
+      280,
+      187,
+      0,
+      189,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      281,
+      191,
+      0,
+      189,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      282,
+      187,
+      1,
+      189,
+      3,
+      "LATENT"
+    ],
+    [
+      283,
+      189,
+      0,
+      190,
+      0,
+      "LATENT"
+    ],
+    [
+      284,
+      194,
+      0,
+      190,
+      1,
+      "VAE"
+    ],
+    [
+      285,
+      187,
+      0,
+      191,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      286,
+      196,
+      0,
+      187,
+      12,
+      "IMAGE"
+    ],
+    [
+      290,
+      202,
+      0,
+      77,
+      15,
+      "STRING"
+    ],
+    [
+      292,
+      208,
+      0,
+      187,
+      7,
+      "STRING"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 26,
+      "title": "多图编辑/多宫格故事板",
+      "bounding": [
+        4782.161928226298,
+        3033.290774036061,
+        6244.412562783649,
+        2430.5170833160514
+      ],
+      "color": "#A88",
+      "flags": {}
+    },
+    {
+      "id": 20,
+      "title": "加载图像",
+      "bounding": [
+        6314.40234375,
+        3082.29638671875,
+        2687.681396484375,
+        1564.9180908203125
+      ],
+      "color": "#A88",
+      "flags": {}
+    },
+    {
+      "id": 14,
+      "title": "参考图1",
+      "bounding": [
+        6324.40234375,
+        3128.77783203125,
+        883.017578125,
+        743.5154418945312
+      ],
+      "color": "#A88",
+      "flags": {}
+    },
+    {
+      "id": 15,
+      "title": "参考图2",
+      "bounding": [
+        7211.21435546875,
+        3127.79638671875,
+        883.017578125,
+        743.5154418945312
+      ],
+      "color": "#A88",
+      "flags": {}
+    },
+    {
+      "id": 16,
+      "title": "参考图3",
+      "bounding": [
+        8105.2412109375,
+        3125.89697265625,
+        883.017578125,
+        743.5154418945312
+      ],
+      "color": "#A88",
+      "flags": {}
+    },
+    {
+      "id": 17,
+      "title": "参考图4",
+      "bounding": [
+        6328.2275390625,
+        3893.703125,
+        883.017578125,
+        743.5154418945312
+      ],
+      "color": "#A88",
+      "flags": {}
+    },
+    {
+      "id": 18,
+      "title": "参考图5",
+      "bounding": [
+        7215.041015625,
+        3892.7216796875,
+        883.017578125,
+        743.5154418945312
+      ],
+      "color": "#A88",
+      "flags": {}
+    },
+    {
+      "id": 19,
+      "title": "参考图6",
+      "bounding": [
+        8109.0673828125,
+        3890.822265625,
+        883.017578125,
+        743.5154418945312
+      ],
+      "color": "#A88",
+      "flags": {}
+    },
+    {
+      "id": 21,
+      "title": "模型/models",
+      "bounding": [
+        4825.1271412228925,
+        3084.1010731888214,
+        883.017578125,
+        743.5154418945312
+      ],
+      "color": "#A88",
+      "flags": {}
+    },
+    {
+      "id": 22,
+      "title": "文本/TXT",
+      "bounding": [
+        5730.7316040962505,
+        3083.267478198041,
+        559.7245611134813,
+        837.6195364949708
+      ],
+      "color": "#A88",
+      "flags": {}
+    },
+    {
+      "id": 23,
+      "title": "尺寸/采样器",
+      "bounding": [
+        9046.147356308402,
+        3083.57242838782,
+        1420.7952067056922,
+        659.0709567599888
+      ],
+      "color": "#A88",
+      "flags": {}
+    },
+    {
+      "id": 24,
+      "title": "模型/models",
+      "bounding": [
+        6306.554997158451,
+        4674.09315777739,
+        883.017578125,
+        743.5154418945312
+      ],
+      "color": "#A88",
+      "flags": {}
+    },
+    {
+      "id": 25,
+      "title": "模型/models",
+      "bounding": [
+        7216.890581175206,
+        4675.0446881696025,
+        883.017578125,
+        743.5154418945312
+      ],
+      "color": "#A88",
+      "flags": {}
+    },
+    {
+      "id": 27,
+      "title": "单图编辑/人物四视图",
+      "bounding": [
+        4781.45093133913,
+        5501.051338830296,
+        4486.2633870763,
+        1000.3313250352276
+      ],
+      "color": "#A88",
+      "flags": {}
+    },
+    {
+      "id": 28,
+      "title": "5宫格故事板skill-可以自己修改其他宫格",
+      "bounding": [
+        4897.681244128483,
+        3985.2125519282113,
+        645.8006940675173,
+        1335.486965292348
+      ],
+      "color": "#3f789e",
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "links_added_by_ue": [],
+    "ue_links": [],
+    "0246.VERSION": [
+      0,
+      0,
+      4
+    ],
+    "pixaromaGroups": [],
+    "ds": {
+      "scale": 0.2669830177438408,
+      "offset": [
+        -1912.5107443912266,
+        -1985.7599017960488
+      ]
+    },
+    "frontendVersion": "1.52.7",
+    "KKvideo_latentpreview": false,
+    "KKvideo_latentpreviewrate": 0,
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true,
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0
+  },
+  "version": 0.4,
+  "seed_widgets": {
+    "45": 0,
+    "189": 0
+  }
+}

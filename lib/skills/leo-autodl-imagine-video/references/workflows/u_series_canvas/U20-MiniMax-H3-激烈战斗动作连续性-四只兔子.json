@@ -1,0 +1,2739 @@
+{
+  "id": "279ef820-ce0a-4522-9864-29919a88db1c",
+  "revision": 0,
+  "last_node_id": 188,
+  "last_link_id": 340,
+  "nodes": [
+    {
+      "id": 92,
+      "type": "SaveVideo",
+      "pos": [
+        -81.92848147153497,
+        5614.951917743949
+      ],
+      "size": [
+        2317.44707878594,
+        154
+      ],
+      "flags": {},
+      "order": 41,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 338
+        }
+      ],
+      "outputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "SaveVideo",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "video/MiniMax_H3",
+        "mp4",
+        "h264",
+        "re-encode",
+        16,
+        "auto"
+      ],
+      "widgets_values_named": {
+        "filename_prefix": "video/MiniMax_H3",
+        "format": "mp4",
+        "format.codec": "h264",
+        "format.codec.encoding": "re-encode",
+        "format.codec.encoding.crf": 16,
+        "codec": "auto"
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 119,
+      "type": "VAELoader",
+      "pos": [
+        -3679.3361412082368,
+        5925.464966399298
+      ],
+      "size": [
+        494.79595210655043,
+        58
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            251,
+            273
+          ]
+        }
+      ],
+      "title": "VAE",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "VAELoader",
+        "models": [
+          {
+            "name": "minimax_h3_video_vae_fp16.safetensors",
+            "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_fp16.safetensors",
+            "directory": "vae"
+          }
+        ],
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "minimax_h3_video_vae_fp16.safetensors"
+      ],
+      "widgets_values_named": {
+        "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 120,
+      "type": "VAELoader",
+      "pos": [
+        -3677.7259223729625,
+        6026.451973589543
+      ],
+      "size": [
+        493.46019041942327,
+        58
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            250,
+            274
+          ]
+        }
+      ],
+      "title": "VAE",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "VAELoader",
+        "models": [
+          {
+            "name": "minimax_h3_audio_vae_fp32.safetensors",
+            "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors",
+            "directory": "vae"
+          }
+        ],
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "minimax_h3_audio_vae_fp32.safetensors"
+      ],
+      "widgets_values_named": {
+        "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 121,
+      "type": "VAEDecodeAudio",
+      "pos": [
+        -325.1650277373679,
+        5998.1761634402155
+      ],
+      "size": [
+        230.59637734639773,
+        59.403622653601815
+      ],
+      "flags": {
+        "collapsed": false
+      },
+      "order": 38,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 314
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 250
+        }
+      ],
+      "outputs": [
+        {
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            259
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "VAEDecodeAudio",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      }
+    },
+    {
+      "id": 122,
+      "type": "VAEDecode",
+      "pos": [
+        -343.406917443602,
+        5644.673242734461
+      ],
+      "size": [
+        235.34354102372504,
+        55.008321610650455
+      ],
+      "flags": {
+        "collapsed": false
+      },
+      "order": 37,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 313
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 251
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            258
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "VAEDecode",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 123,
+      "type": "KSamplerSelect",
+      "pos": [
+        -1864.472374052883,
+        5936.809588711921
+      ],
+      "size": [
+        316.02307913222216,
+        58.88710452722262
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "SAMPLER",
+          "type": "SAMPLER",
+          "links": [
+            324,
+            325
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "KSamplerSelect",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "res_multistep"
+      ],
+      "widgets_values_named": {
+        "sampler_name": "res_multistep"
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 124,
+      "type": "BasicScheduler",
+      "pos": [
+        -2553.926772373656,
+        6007.02002831799
+      ],
+      "size": [
+        314.43552263611105,
+        106
+      ],
+      "flags": {},
+      "order": 31,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 298
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SIGMAS",
+          "type": "SIGMAS",
+          "links": [
+            300
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "BasicScheduler",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "simple",
+        8,
+        1
+      ],
+      "widgets_values_named": {
+        "scheduler": "simple",
+        "steps": 8,
+        "denoise": 1
+      },
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 125,
+      "type": "SamplerCustomAdvanced",
+      "pos": [
+        -1459.2408429468703,
+        5785.134495267166
+      ],
+      "size": [
+        220.01328125,
+        168.6932518145586
+      ],
+      "flags": {},
+      "order": 35,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 253
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 254
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 324
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 303
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 271
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            312
+          ]
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": []
+        }
+      ],
+      "title": "BUNNY 一采：武打动作结构",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "SamplerCustomAdvanced",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 126,
+      "type": "BasicGuider",
+      "pos": [
+        -1836.7921625495003,
+        5832.857310663938
+      ],
+      "size": [
+        304.4355226361108,
+        55.23733051166619
+      ],
+      "flags": {},
+      "order": 30,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 297
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 270
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            254
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "BasicGuider",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 127,
+      "type": "UNETLoader",
+      "pos": [
+        -3679.6524016656085,
+        5653.412567639392
+      ],
+      "size": [
+        494.8081778421516,
+        82
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            315
+          ]
+        }
+      ],
+      "title": "Hybrid H3 UNet",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "UNETLoader",
+        "models": [
+          {
+            "name": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+            "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+            "directory": "diffusion_models"
+          }
+        ],
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "minimax/minimax_h3_hybrid_fl2va_ref2va_b25-49-int8.safetensors",
+        "default"
+      ],
+      "widgets_values_named": {
+        "unet_name": "minimax/minimax_h3_hybrid_fl2va_ref2va_b25-49-int8.safetensors",
+        "weight_dtype": "default"
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 128,
+      "type": "CLIPLoader",
+      "pos": [
+        -3677.161243257816,
+        5778.6270348912
+      ],
+      "size": [
+        493.62001525492303,
+        106
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            272
+          ]
+        }
+      ],
+      "title": "CLIP",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "CLIPLoader",
+        "models": [
+          {
+            "name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+            "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+            "directory": "text_encoders"
+          }
+        ],
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+        "minimax",
+        "default"
+      ],
+      "widgets_values_named": {
+        "clip_name": "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+        "type": "minimax",
+        "device": "default"
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 129,
+      "type": "RandomNoise",
+      "pos": [
+        -1848.159067061655,
+        5674.399801546879
+      ],
+      "size": [
+        311.57952686861086,
+        86.82488700777776
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            253
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "RandomNoise",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        1083992254498870,
+        "fixed"
+      ],
+      "widgets_values_named": {
+        "noise_seed": 1083992254498870,
+        "control_after_generate": "fixed"
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 130,
+      "type": "CreateVideo",
+      "pos": [
+        -335.17321418439707,
+        5801.649308783726
+      ],
+      "size": [
+        239.69210325606036,
+        126
+      ],
+      "flags": {},
+      "order": 39,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 258
+        },
+        {
+          "name": "audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": 259
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            337
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "CreateVideo",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        24,
+        8,
+        "sRGB"
+      ],
+      "widgets_values_named": {
+        "fps": 24,
+        "bit_depth": 8,
+        "color_space": "sRGB"
+      },
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 131,
+      "type": "ComfyMathExpression",
+      "pos": [
+        -2172.557415481179,
+        6114.275348917317
+      ],
+      "size": [
+        225,
+        74
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 21,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "a",
+          "name": "values.a",
+          "type": "FLOAT,INT,BOOLEAN",
+          "link": 261
+        },
+        {
+          "label": "b",
+          "name": "values.b",
+          "shape": 7,
+          "type": "FLOAT,INT,BOOLEAN",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "FLOAT",
+          "type": "FLOAT",
+          "links": []
+        },
+        {
+          "name": "INT",
+          "type": "INT",
+          "links": [
+            275
+          ]
+        },
+        {
+          "name": "BOOL",
+          "type": "BOOLEAN",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "ComfyMathExpression",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17"
+      ],
+      "widgets_values_named": {
+        "expression": "max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17"
+      }
+    },
+    {
+      "id": 132,
+      "type": "PrimitiveFloat",
+      "pos": [
+        -2551.639290750241,
+        5893.351696614548
+      ],
+      "size": [
+        310.02163249323394,
+        58
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "FLOAT",
+          "type": "FLOAT",
+          "links": [
+            261
+          ]
+        }
+      ],
+      "title": "视频时长（秒）",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "PrimitiveFloat",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        10
+      ],
+      "widgets_values_named": {
+        "value": 10
+      },
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 136,
+      "type": "MiniMaxH3ReferenceToVideo",
+      "pos": [
+        -2232.574187202984,
+        5657.6736513537135
+      ],
+      "size": [
+        333.8153034352513,
+        384
+      ],
+      "flags": {},
+      "order": 23,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 272
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 273
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "link": 274
+        },
+        {
+          "label": "ref_image_0",
+          "name": "ref_images.ref_image_0",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 278
+        },
+        {
+          "label": "ref_image_1",
+          "name": "ref_images.ref_image_1",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 299
+        },
+        {
+          "label": "ref_image_2",
+          "name": "ref_images.ref_image_2",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 329
+        },
+        {
+          "label": "ref_image_3",
+          "name": "ref_images.ref_image_3",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "label": "ref_video_0",
+          "name": "ref_videos.ref_video_0",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "label": "ref_video_audio_0",
+          "name": "ref_video_audios.ref_video_audio_0",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "label": "ref_audio_0",
+          "name": "ref_audios.ref_audio_0",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": 279
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "widget": {
+            "name": "width"
+          },
+          "link": 291
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "widget": {
+            "name": "height"
+          },
+          "link": 292
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "widget": {
+            "name": "length"
+          },
+          "link": 275
+        }
+      ],
+      "outputs": [
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            270,
+            307
+          ]
+        },
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            271
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "MiniMaxH3ReferenceToVideo",
+        "ue_properties": {
+          "widget_ue_connectable": {
+            "prompt": true,
+            "width": true,
+            "height": true,
+            "length": true
+          },
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "",
+        576,
+        1024,
+        124,
+        "match"
+      ],
+      "widgets_values_named": {
+        "prompt": "",
+        "width": 576,
+        "height": 1024,
+        "length": 124,
+        "ref_image_size": "match"
+      },
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 137,
+      "type": "LoadImage",
+      "pos": [
+        -3095.0762787220197,
+        4874.444744380076
+      ],
+      "size": [
+        374.0667981622446,
+        599.7125953816849
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            278
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "LoadImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "ai006.png",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "ai006.png",
+        "upload": "image"
+      },
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 138,
+      "type": "PrimitiveStringMultiline",
+      "pos": [
+        -1880.0637089586153,
+        4834.372596573537
+      ],
+      "size": [
+        630.3445804646342,
+        699.0989961049809
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            279
+          ]
+        }
+      ],
+      "title": "Input Text (Prompt)",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "PrimitiveStringMultiline",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "subject_definitions:\nHeroine is an elegant young Chinese woman in a traditional white hanfu with delicate silver floral embroidery, wide flowing sleeves, a decorated waist belt, and long black hair held in a silver ornate hairpiece, fighting bare-handed without weapons or gloves, using fluid wushu evasions and internal palm strike redirects.\nAssassin 1 is an agile male assassin in full dark black martial arts attire and face mask with bare hands, wielding a curved steel dao with an aggressive, direct slashing combat style.\nAssassin 2 is a heavily built male assassin in black hooded garb with leather bracers and bare hands, wielding a straight double-edged sword, utilizing heavy charging chops and low cleaves.\n\nsummary:\nA 10-second continuous, high-tension Wuxia action sequence inside a sunlit cherry blossom forest clearing dominated by a massive gnarled tree trunk. Heroine, Assassin 1, and Assassin 2 engage in a continuous spatial management fight where the heroine uses the tree trunk to break sightlines and redirect kinetic momentum, featuring heavy wood impacts and flowing sleeve deflections in fluid 1.0x real-time speed without slow motion.\n\nretention_analysis:\nN/A - Pure text-to-video generation.\n\ndetailed_description:\nThe target video is a single continuous 10-second shot rendered in raw 1.0x real-time speed with a dynamic tracking camera, high shutter-speed clarity, realistic physical impacts, and zero slow-motion.\n[Shot 1] The camera orbits fluidly at medium distance, keeping the heroine centered as the primary anchor point while the two attackers overlap their attack vectors around the tree trunk.\n- From 00:00.000 to 00:03.000: Assassin 1 rushes forward with a downward diagonal sword slash. Heroine executes a tight lateral step behind the massive cherry tree trunk, causing the blade to slice deep into the bark and scatter pink petals. Without resetting, Heroine catches Assassin 1's overextended forearm with a wrist-trap, steps onto an exposed root for leverage, and drives his shoulder straight into the trunk.\n- From 00:03.000 to 00:06.500: As Assassin 1 rebounds off the wood, Assassin 2 cuts into the space immediately from the right background with a low horizontal cleave. Absorbing the recoil of her previous movement, Heroine duck-rotates beneath the swing, her white flowing sleeves sweeping through the air to obscure Assassin 2's vision. She presses her upper back against the tree, channels the structural support, and delivers a explosive open-palm strike directly to Assassin 2's sternum, driving him backward into the mossy grass.\n- From 00:06.500 to 00:10.000: Assassin 1 lunges back into frame with a straight thrust. Heroine uses a forearm check to deflect the cold steel, spins inward to collapse his chest distance, and sweeps his lead leg. As Assassin 1 collapses, Assassin 2 stumbles back forward; Heroine sidesteps directly behind Assassin 1’s falling body, forcing Assassin 2 to trip over his partner. She finishes with a downward double palm strike to suppress both attackers onto the ground, settling into a low defensive stance as the camera tracks in smoothly to lock onto her motionless posture amid falling blossoms.\n\noverall_soundscape:\nSharp metallic blade swooshes, heavy thud of steel carving into thick bark, rustling silk cloth friction, crisp footsteps over wet moss, dull body-on-wood impacts, short breath grunts on palm strikes, and soft wind rustling cherry tree canopy.\n\nnon_diegetic_music:\nN/A"
+      ],
+      "widgets_values_named": {
+        "value": "subject_definitions:\nHeroine is an elegant young Chinese woman in a traditional white hanfu with delicate silver floral embroidery, wide flowing sleeves, a decorated waist belt, and long black hair held in a silver ornate hairpiece, fighting bare-handed without weapons or gloves, using fluid wushu evasions and internal palm strike redirects.\nAssassin 1 is an agile male assassin in full dark black martial arts attire and face mask with bare hands, wielding a curved steel dao with an aggressive, direct slashing combat style.\nAssassin 2 is a heavily built male assassin in black hooded garb with leather bracers and bare hands, wielding a straight double-edged sword, utilizing heavy charging chops and low cleaves.\n\nsummary:\nA 10-second continuous, high-tension Wuxia action sequence inside a sunlit cherry blossom forest clearing dominated by a massive gnarled tree trunk. Heroine, Assassin 1, and Assassin 2 engage in a continuous spatial management fight where the heroine uses the tree trunk to break sightlines and redirect kinetic momentum, featuring heavy wood impacts and flowing sleeve deflections in fluid 1.0x real-time speed without slow motion.\n\nretention_analysis:\nN/A - Pure text-to-video generation.\n\ndetailed_description:\nThe target video is a single continuous 10-second shot rendered in raw 1.0x real-time speed with a dynamic tracking camera, high shutter-speed clarity, realistic physical impacts, and zero slow-motion.\n[Shot 1] The camera orbits fluidly at medium distance, keeping the heroine centered as the primary anchor point while the two attackers overlap their attack vectors around the tree trunk.\n- From 00:00.000 to 00:03.000: Assassin 1 rushes forward with a downward diagonal sword slash. Heroine executes a tight lateral step behind the massive cherry tree trunk, causing the blade to slice deep into the bark and scatter pink petals. Without resetting, Heroine catches Assassin 1's overextended forearm with a wrist-trap, steps onto an exposed root for leverage, and drives his shoulder straight into the trunk.\n- From 00:03.000 to 00:06.500: As Assassin 1 rebounds off the wood, Assassin 2 cuts into the space immediately from the right background with a low horizontal cleave. Absorbing the recoil of her previous movement, Heroine duck-rotates beneath the swing, her white flowing sleeves sweeping through the air to obscure Assassin 2's vision. She presses her upper back against the tree, channels the structural support, and delivers a explosive open-palm strike directly to Assassin 2's sternum, driving him backward into the mossy grass.\n- From 00:06.500 to 00:10.000: Assassin 1 lunges back into frame with a straight thrust. Heroine uses a forearm check to deflect the cold steel, spins inward to collapse his chest distance, and sweeps his lead leg. As Assassin 1 collapses, Assassin 2 stumbles back forward; Heroine sidesteps directly behind Assassin 1’s falling body, forcing Assassin 2 to trip over his partner. She finishes with a downward double palm strike to suppress both attackers onto the ground, settling into a low defensive stance as the camera tracks in smoothly to lock onto her motionless posture amid falling blossoms.\n\noverall_soundscape:\nSharp metallic blade swooshes, heavy thud of steel carving into thick bark, rustling silk cloth friction, crisp footsteps over wet moss, dull body-on-wood impacts, short breath grunts on palm strikes, and soft wind rustling cherry tree canopy.\n\nnon_diegetic_music:\nN/A"
+      },
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 147,
+      "type": "LoraLoaderModelOnly",
+      "pos": [
+        -3108.87334775679,
+        5752.85752544732
+      ],
+      "size": [
+        523.281459015165,
+        82
+      ],
+      "flags": {},
+      "order": 24,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 295
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            334
+          ]
+        }
+      ],
+      "title": "加速LORA",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "LoraLoaderModelOnly",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "minimax/minimax_h3_fl2v_lightx2v_turbo_4step_v0.1_comfy.safetensors",
+        0.7
+      ],
+      "widgets_values_named": {
+        "lora_name": "minimax/minimax_h3_fl2v_lightx2v_turbo_4step_v0.1_comfy.safetensors",
+        "strength_model": 0.7
+      },
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 148,
+      "type": "ResolutionSelector",
+      "pos": [
+        -2547.679247107688,
+        5660.719674802511
+      ],
+      "size": [
+        270,
+        170
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "showAdvanced": true,
+      "inputs": [
+        {
+          "label": "aspect_ratio",
+          "name": "aspect_ratio",
+          "type": "COMBO",
+          "widget": {
+            "name": "aspect_ratio"
+          },
+          "link": null
+        },
+        {
+          "label": "megapixels",
+          "name": "megapixels",
+          "type": "FLOAT",
+          "widget": {
+            "name": "megapixels"
+          },
+          "link": null
+        },
+        {
+          "label": "multiple",
+          "name": "multiple",
+          "type": "INT",
+          "widget": {
+            "name": "multiple"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "label": "width",
+          "name": "width",
+          "type": "INT",
+          "links": [
+            291
+          ]
+        },
+        {
+          "label": "height",
+          "name": "height",
+          "type": "INT",
+          "links": [
+            292
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.30.0",
+        "Node name for S&R": "ResolutionSelector",
+        "ue_properties": {
+          "version": "7.8",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "1:1 (Square)",
+        0.5,
+        32
+      ],
+      "widgets_values_named": {
+        "aspect_ratio": "1:1 (Square)",
+        "megapixels": 0.5,
+        "multiple": 32
+      },
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 150,
+      "type": "MiniMaxH3MemoryEfficientSageAttentionPatch",
+      "pos": [
+        -3016.998842688697,
+        5649.584634417139
+      ],
+      "size": [
+        348.07472457283154,
+        50.97580680304873
+      ],
+      "flags": {},
+      "order": 22,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 315
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            295,
+            332
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-kjnodes",
+        "ver": "35e5956193769d18a13136cdedb73a36a05c73e6",
+        "Node name for S&R": "MiniMaxH3MemoryEfficientSageAttentionPatch",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 151,
+      "type": "LoraLoaderModelOnly",
+      "pos": [
+        -3108.3151669262784,
+        6077.431021710694
+      ],
+      "size": [
+        524.3643558960161,
+        82
+      ],
+      "flags": {},
+      "order": 28,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 335
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            297,
+            298
+          ]
+        }
+      ],
+      "title": "LoRA",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "LoraLoaderModelOnly",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "minimax/H3_Combat_V2.safetensors",
+        0.85
+      ],
+      "widgets_values_named": {
+        "lora_name": "minimax/H3_Combat_V2.safetensors",
+        "strength_model": 0.85
+      },
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 152,
+      "type": "LoadImage",
+      "pos": [
+        -2698.4066296626893,
+        4875.967586933064
+      ],
+      "size": [
+        374.0667981622446,
+        599.7125953816849
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            299
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "LoadImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "ai008.png",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "ai008.png",
+        "upload": "image"
+      },
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 154,
+      "type": "ExtendIntermediateSigmas",
+      "pos": [
+        -1141.7856464654517,
+        5649.430196892945
+      ],
+      "size": [
+        270,
+        130
+      ],
+      "flags": {},
+      "order": 33,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 300
+        }
+      ],
+      "outputs": [
+        {
+          "name": "SIGMAS",
+          "type": "SIGMAS",
+          "links": [
+            302
+          ]
+        }
+      ],
+      "title": "BUNNY 动作 Sigma 扩展",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "ExtendIntermediateSigmas",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        3,
+        0.65,
+        0.28,
+        "sine"
+      ],
+      "widgets_values_named": {
+        "steps": 3,
+        "start_at_sigma": 0.65,
+        "end_at_sigma": 0.28,
+        "spacing": "sine"
+      },
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 155,
+      "type": "LoraLoaderModelOnly",
+      "pos": [
+        -1142.844279334713,
+        5818.453868811846
+      ],
+      "size": [
+        390,
+        82
+      ],
+      "flags": {},
+      "order": 25,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 332
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            339
+          ]
+        }
+      ],
+      "title": "BUNNY 二采模型：Turbo 0.20",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "LoraLoaderModelOnly",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "minimax/minimax_h3_fl2v_lightx2v_turbo_4step_v0.1_comfy.safetensors",
+        0.2
+      ],
+      "widgets_values_named": {
+        "lora_name": "minimax/minimax_h3_fl2v_lightx2v_turbo_4step_v0.1_comfy.safetensors",
+        "strength_model": 0.2
+      },
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 156,
+      "type": "LoraLoaderModelOnly",
+      "pos": [
+        -1137.8220314089597,
+        6083.264318390416
+      ],
+      "size": [
+        390,
+        82
+      ],
+      "flags": {},
+      "order": 29,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 340
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            306
+          ]
+        }
+      ],
+      "title": "BUNNY 二采模型：动作连续修复LORA放这里 0.25",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "LoraLoaderModelOnly",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "minimax/动作i连续性修复LORA.safetensors",
+        0.25
+      ],
+      "widgets_values_named": {
+        "lora_name": "minimax/动作i连续性修复LORA.safetensors",
+        "strength_model": 0.25
+      },
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 157,
+      "type": "BasicGuider",
+      "pos": [
+        -1049.3324410951845,
+        6215.98027243365
+      ],
+      "size": [
+        250,
+        70
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 32,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 306
+        },
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 307
+        }
+      ],
+      "outputs": [
+        {
+          "name": "GUIDER",
+          "type": "GUIDER",
+          "links": [
+            309
+          ]
+        }
+      ],
+      "title": "BUNNY 二采低强度引导",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "BasicGuider",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 158,
+      "type": "SplitSigmasDenoise",
+      "pos": [
+        -863.8093787448512,
+        5652.063392896413
+      ],
+      "size": [
+        270,
+        82
+      ],
+      "flags": {},
+      "order": 34,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 302
+        }
+      ],
+      "outputs": [
+        {
+          "name": "high_sigmas",
+          "type": "SIGMAS",
+          "links": [
+            303
+          ]
+        },
+        {
+          "name": "low_sigmas",
+          "type": "SIGMAS",
+          "links": [
+            311
+          ]
+        }
+      ],
+      "title": "BUNNY 二采切分：末段 25%",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "SplitSigmasDenoise",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        0.25
+      ],
+      "widgets_values_named": {
+        "denoise": 0.25
+      },
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 159,
+      "type": "SamplerCustomAdvanced",
+      "pos": [
+        -731.2688131807789,
+        5824.580701248619
+      ],
+      "size": [
+        300.1753286975379,
+        467.5295718839352
+      ],
+      "flags": {},
+      "order": 36,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "noise",
+          "type": "NOISE",
+          "link": 308
+        },
+        {
+          "name": "guider",
+          "type": "GUIDER",
+          "link": 309
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 325
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 311
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 312
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "LATENT",
+          "links": [
+            313,
+            314
+          ]
+        },
+        {
+          "name": "denoised_output",
+          "type": "LATENT",
+          "links": []
+        }
+      ],
+      "title": "BUNNY 二采：清噪与细节收敛",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "SamplerCustomAdvanced",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 160,
+      "type": "DisableNoise",
+      "pos": [
+        -860.5455303511297,
+        5777.143716025779
+      ],
+      "size": [
+        240,
+        55
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "NOISE",
+          "type": "NOISE",
+          "links": [
+            308
+          ]
+        }
+      ],
+      "title": "BUNNY 二采：禁止重复加噪",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "DisableNoise",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 162,
+      "type": "LoadImage",
+      "pos": [
+        -2290.65976284099,
+        4868.241750415356
+      ],
+      "size": [
+        374.0667981622446,
+        599.7125953816849
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 4,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            329
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "LoadImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "b8c4f5c9d965e4b8c0c80d7526c4f126_1643360766705.jpg",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "b8c4f5c9d965e4b8c0c80d7526c4f126_1643360766705.jpg",
+        "upload": "image"
+      },
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 167,
+      "type": "CLIPTextEncode",
+      "pos": [
+        -1202.0457317087512,
+        4780.054790416583
+      ],
+      "size": [
+        210,
+        175.06026936235412
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": null
+        }
+      ],
+      "title": "触发词",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "CLIPTextEncode",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "战斗LORA触发词（可选）：\nprfight2\n终结加强：prfight2,prfin1\n\n动作连续性修复触发词（可选）：\nbunny_crisp_motion\n"
+      ],
+      "widgets_values_named": {
+        "text": "战斗LORA触发词（可选）：\nprfight2\n终结加强：prfight2,prfin1\n\n动作连续性修复触发词（可选）：\nbunny_crisp_motion\n"
+      }
+    },
+    {
+      "id": 176,
+      "type": "LoraLoaderModelOnly",
+      "pos": [
+        -3103.3933919301553,
+        5952.833773613192
+      ],
+      "size": [
+        524.3643558960161,
+        82
+      ],
+      "flags": {},
+      "order": 26,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 334
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            335
+          ]
+        }
+      ],
+      "title": "动作连续性LORA放这里",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "LoraLoaderModelOnly",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "minimax/动作i连续性修复LORA.safetensors",
+        0.5
+      ],
+      "widgets_values_named": {
+        "lora_name": "minimax/动作i连续性修复LORA.safetensors",
+        "strength_model": 0.5
+      },
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 178,
+      "type": "easy cleanGpuUsed",
+      "pos": [
+        29.715939293283757,
+        5825.122806145429
+      ],
+      "size": [
+        140,
+        26
+      ],
+      "flags": {},
+      "order": 40,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "anything",
+          "type": "*",
+          "link": 337
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "*",
+          "links": [
+            338
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-easy-use",
+        "ver": "4de1ab3b66e48da916b6f263bacd001df53a2720",
+        "Node name for S&R": "easy cleanGpuUsed",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      }
+    },
+    {
+      "id": 179,
+      "type": "LoraLoaderModelOnly",
+      "pos": [
+        -1143.9654518415323,
+        5948.408883206948
+      ],
+      "size": [
+        390,
+        82
+      ],
+      "flags": {},
+      "order": 27,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 339
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            340
+          ]
+        }
+      ],
+      "title": "BUNNY 二采模型：Combat 0.65",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "LoraLoaderModelOnly",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "minimax/H3_Combat_V2.safetensors",
+        0.65
+      ],
+      "widgets_values_named": {
+        "lora_name": "minimax/H3_Combat_V2.safetensors",
+        "strength_model": 0.65
+      },
+      "color": "#323",
+      "bgcolor": "#535"
+    },
+    {
+      "id": 180,
+      "type": "CLIPTextEncode",
+      "pos": [
+        -1207.5986064391839,
+        5045.354823328091
+      ],
+      "size": [
+        236.4210557856453,
+        515.6621406860004
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": null
+        }
+      ],
+      "title": "文戏导演模板",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "CLIPTextEncode",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "# MiniMax H3 文戏对白导演 Pro\n\n## 细腻表演 · 潜台词 · 声音一致性 · 多分镜 · 光影质感｜通用版\n\n你是一名专门为 **MiniMax H3** 工作的电影文戏导演、演员表演指导、对白导演、分镜导演和 Prompt 编译器。\n\n用户会给你人物、剧情、关系、对白、场景、参考图、时长或简单创意。你的任务是把这些内容转换成一条可以直接交给 H3 使用的视频提示词。\n\n你的目标不是写文学剧本，而是让 H3 生成：\n\n**自然、细腻、生活化、接近真人影视表演的对白场景。**\n\n---\n\n# 一、最高优先级规则\n\n以下规则优先于其他所有要求。\n\n### 1. H3 看不到、听不到的内容，不得出现在最终 Prompt 中\n\n最终 Prompt 只写：\n\n**摄像机能够看到的：**\n\n* 人物动作\n* 手部动作\n* 身体姿态\n* 视线方向\n* 眨眼\n* 嘴唇和下颌的细小变化\n* 呼吸造成的身体变化\n* 人物距离\n* 道具\n* 环境\n* 灯光\n* 镜头\n* 机位\n* 切镜\n\n**麦克风能够听到的：**\n\n* 台词\n* 音量\n* 音高\n* 语速\n* 重音\n* 停顿\n* 句尾变化\n* 呼吸\n* 脚步\n* 衣料\n* 道具声\n* 环境声\n* 房间混响\n\n不要直接写：\n\n* 紧张\n* 愤怒\n* 悲伤\n* 怀疑\n* 心虚\n* 担心\n* 暧昧\n* 敌意\n* 克制\n* 潜台词\n* 内心活动\n* 意识到\n* 心理变化\n* 电影级表演\n* 内敛情绪\n\n这些可以用于你内部理解，但最终必须转化成具体动作和声音。\n\n---\n\n### 2. 每次 H3 生成都是完全独立的\n\n绝不能假设 H3 记得其他视频。\n\n如果一个故事被拆成多个片段，每一段都必须重新写清：\n\n* 时间\n* 地点\n* 人物\n* 外观与服装\n* 人物位置\n* 当前姿态\n* 关键道具\n* 道具位置\n* 当前场景状态\n* 固定音线\n* 第一个镜头\n\n禁止使用：\n\n* 延续上一段\n* 接上一镜\n* 继续刚才\n* 和之前一样\n* 保持上一段状态\n\n跨段连续性只能通过：\n\n**上一段尾状态 → 下一段重新完整描述成首状态**\n\n来实现。\n\n---\n\n### 3. 文戏不默认一镜到底\n\n根据剧情主动设计分镜。\n\n通常：\n\n* 5秒：1–3个镜头\n* 8秒：2–4个镜头\n* 10秒：2–5个镜头\n* 15秒：3–6个镜头\n\n切镜必须有理由，例如：\n\n* 新信息出现\n* 新道具出现\n* 听者的反应更重要\n* 人物位置改变\n* 环境声音介入\n* 某个手部动作值得观察\n* 人物开始离开或靠近\n\n不要：\n\n* 谁说话就切谁\n* 每句对白切一次\n* 固定正反打循环\n* 无意义推拉\n* 无意义环绕\n* 为了“电影感”乱切\n\n---\n\n### 4. 每个主要角色必须拥有固定音线\n\n人物声音属于角色身份的一部分。\n\n每个说话角色建立一条固定 **Voice Identity**，并在所有独立视频中尽量逐字重复。\n\n推荐只锁定这些核心属性：\n\n**基础音高 + 声音厚度 + 明暗 + 共鸣 + 质感 + 气声 + 默认语速**\n\n例如：\n\n> 人物A固定声音：中低音，厚度中等偏厚，音色略暗，胸腔共鸣较明显，带极轻微粗糙感，气声很少，默认语速中等。\n\n具体某一句话可以：\n\n* 更轻\n* 更慢\n* 更快\n* 某个词稍重\n* 句尾变轻\n* 说话前停顿\n\n但不能因为情绪变化突然改变人物的基础音色。\n\n---\n\n### 5. 文戏必须主动设计可见的光影结构与画面质感\n\n如果用户没有明确指定灯光和画面质感，不要只写“电影感”“高级质感”“高画质”这类抽象词，也不要省略这一部分。\n\n必须根据场景中真实可见或合理存在的光源，主动决定：\n\n* 主光从哪个方向照来\n* 主光是自然光、窗光、台灯、顶灯、壁灯、招牌光还是其他实际光源\n* 对侧补光比主光弱多少，或者是否保持自然暗面\n* 人物脸部哪一侧更亮、哪一侧保持阴影\n* 实景灯只影响哪些区域\n* 背景相对人物更亮还是更暗\n* 高光主要落在什么位置\n* 皮肤、头发、服装、木材、金属、玻璃等材质如何反光\n* 正反打或切镜后曝光、肤色、白平衡和主光方向如何保持一致\n\n默认目标不是“磨皮式漂亮”，而是：\n\n**自然皮肤反射 + 克制高光 + 清楚明暗结构 + 可读材质 + 稳定曝光 + 跨镜一致性。**\n\n避免默认加入：\n\n* 全脸均匀补亮\n* 大面积油亮皮肤\n* 湿润发光的脸\n* 过度柔光美颜\n* 奶油状虚化\n* 大面积暖黄色泛光\n* 重度 bloom\n* 整个房间被同一种颜色洗平\n* 为了“电影感”加入没有来源的轮廓光\n\n灯光、曝光和材质都必须转换成摄像机能够看到的具体结果。\n\n---\n\n# 二、如何设计细腻表演\n\n## 抽象情绪必须翻译成身体和声音\n\n内部可以判断：\n\n> 人物A在隐藏不安。\n\n最终应该写成：\n\n> 人物A原本正在整理手中的物件。听到问题后，手部动作停约0.4秒，没有立即抬眼。回答前停顿约0.5秒，声音比上一句话轻一点，语速略慢。说完后继续完成刚才的动作。\n\n内部判断：\n\n> 人物A开始怀疑人物B。\n\n最终写成：\n\n> 人物A没有马上回答。视线先停在人物B手里的物件上约0.6秒，再抬到人物B脸上。说话音量略低，语速比上一句慢。\n\n内部判断：\n\n> 人物A想阻止人物B离开。\n\n最终写成：\n\n> 人物B开始收拾随身物品时，人物A一直看着人物B的手。等人物B准备转身后，人物A停顿约0.7秒才开口，声音比前面的对白稍轻，说完后仍看着人物B约半秒。\n\n---\n\n## 默认降低表演幅度\n\n除非用户明确要求强烈情绪爆发，否则减少：\n\n* 大幅挑眉\n* 瞪眼\n* 明显皱眉\n* 频繁点头\n* 频繁摇头\n* 歪头\n* 大幅挥手\n* 夸张叹气\n* 突然提高音量\n* 句句重读\n* 说完台词后做标准化表情\n\n优先使用：\n\n* 0.3–1秒的反应延迟\n* 手部动作短暂停顿\n* 明确的视线变化\n* 一次自然眨眼\n* 轻微吸气或呼气\n* 下颌轻微收紧\n* 嘴角很小的变化\n* 继续做手里的事情\n* 短暂对视后移开视线\n\n人物不是在“向观众表演情绪”。\n\n---\n\n# 三、对白和潜台词规则\n\n## 对白优先口语化\n\n优先：\n\n* 短句\n* 半句话\n* 简短回答\n* 自然反问\n* 省略主语\n* 不直接回答问题\n* 用另一句话回应\n* 没说完整的句尾\n* 短暂沉默\n\n减少：\n\n* 长篇解释\n* 文学式对白\n* 完整书面句堆叠\n* 双方互相解释已经知道的信息\n* 每句话都像金句\n* 两个人轮流发表演讲\n\n---\n\n## 潜台词只供导演内部判断\n\n你可以在内部判断：\n\n* 谁在撒谎\n* 谁在试探\n* 谁已经知道答案\n* 谁不愿意承认\n* 谁想让对方留下\n* 谁表面拒绝但实际上提供帮助\n\n但最终不要解释这些。\n\n让观众从：\n\n* 停顿\n* 眼神\n* 道具\n* 回避\n* 音量变化\n* 没有回答的问题\n* 与台词相反的身体行为\n\n中自己读出来。\n\n---\n\n## 每句重要对白必须附带具体表演\n\n不要只写：\n\n> 人物A说：“……”\n\n根据剧情选择2–5项：\n\n* 说话前正在做什么\n* 回答前停多久\n* 看哪里\n* 是否看对方\n* 音量\n* 语速\n* 音高变化\n* 某个词是否略重\n* 句尾怎么落\n* 说完后做什么\n\n例如：\n\n> 人物A看着手中的物件，没有抬头。停顿约0.4秒后说：“……”声音比正常说话稍轻，语速略慢，最后一个词自然变轻。说完后继续刚才的动作。\n\n---\n\n# 四、人物行为与镜头\n\n## 人物说话时不要自动停止生活行为\n\n说话时可以：\n\n* 走路\n* 坐下\n* 起身\n* 倒水\n* 喝东西\n* 吃东西\n* 整理衣服\n* 收拾桌面\n* 查看手机\n* 看文件\n* 开门\n* 关窗\n* 点烟\n* 收起道具\n* 看窗外\n* 整理包\n* 继续工作\n\n对白应该附着在行为中发生。\n\n---\n\n## 眼神必须写明确方向\n\n不要写：\n\n> 人物A移开视线。\n\n写：\n\n> 人物A把视线从人物B脸上移到桌面的文件。\n\n不要默认双方一直四目相对。\n\n可以：\n\n* 看物件\n* 看门口\n* 看窗外\n* 看地面\n* 说完以后才抬眼\n* 对视不到一秒又移开\n* 人物A说话时，镜头留在人物B身上\n\n---\n\n## 镜头观察最有信息的人\n\n说话的人不一定是当前镜头主体。\n\n例如：\n\n> 人物A的声音从画外传来。镜头保持在人物B的中近景。人物B原本正在完成某个动作，听到其中一个词后动作停约0.4秒，然后继续。\n\n优先拍“反应值得看的那个人”。\n\n---\n\n## 道具可以承担表演\n\n可以通过：\n\n* 手碰到物件却没有拿起\n* 杯子已经满了仍继续倒\n* 文件拿起来又放下\n* 门把已经握住却没有开门\n* 手机亮起但没有马上查看\n\n来表现人物状态。\n\n不要急着靠大表情说明一切。\n\n---\n\n# 五、光影与画质设计\n\n## 光影必须有明确来源和方向\n\n不要只写：\n\n> cinematic lighting\n\n> dramatic lighting\n\n> beautiful soft light\n\n这些词不能告诉 H3 具体应该怎么照。\n\n优先写成可见结构，例如：\n\n> 左侧桌灯作为主要暖光，只照亮人物左侧脸颊、鼻梁一侧和肩部；右侧脸保持明显但仍有细节的暗面。窗外较弱的冷色环境光轻微进入房间，只抬起暗部，不把整张脸照平。背景壁灯保持局部发光，不把整个房间染成橙黄色。\n\n每个场景至少明确：\n\n* 主光来源\n* 主光方向\n* 暗面保留程度\n* 是否存在弱补光\n* 背景实际灯具的位置与影响范围\n* 人物与背景的亮度分离\n\n如果人物移动到不同位置，灯光变化必须由人物进入或离开某个实际光源区域造成。\n\n不要让曝光为了“好看”自动追着人物变亮。\n\n---\n\n## 文戏默认保留脸部明暗结构\n\n中近景和特写中，默认不要把整张脸均匀照亮。\n\n优先：\n\n* 一侧脸明确受光\n* 另一侧脸保留自然暗面\n* 鼻梁、颧骨、额头只出现小范围受控高光\n* 下颌线、眼窝、鼻翼和面部转折由光影自然塑形\n* 眼睛保持可见，但不要靠无来源的正面补光把暗面全部抬平\n\n人物转头时，高光和阴影应随着脸朝向与固定光源的关系自然移动。\n\n不要让高光固定贴在脸上。\n\n---\n\n## 去油腻与自然肤质\n\n默认使用：\n\n* natural skin reflectance\n* restrained specular highlights\n* subtle visible skin texture\n* natural tonal variation\n\n最终 Prompt 中要写成摄像机可见的结果，例如：\n\n> 皮肤保持自然反射，颧骨和鼻梁只有小面积高光；脸颊、额头和下巴没有连续的大面积亮斑。近景仍能看到轻微真实肤质和自然色调变化，没有湿亮、蜡感或磨皮般平滑的表面。\n\n避免默认描述：\n\n* glossy skin\n* glowing skin\n* wet-looking skin\n* ultra smooth skin\n* flawless polished skin\n* creamy skin\n\n除非剧情本身存在汗水、雨水、油污、舞台妆或其他明确原因。\n\n---\n\n## 头发、服装、道具和环境必须保持材质可读性\n\n文戏不能只有脸清楚。\n\n根据场景保留：\n\n* 发丝之间的分离\n* 衣料纹理、褶皱、缝线和边缘\n* 皮革、金属、玻璃、木材、纸张等不同反射特征\n* 桌面、墙面、窗帘、家具等环境表面细节\n\n不要让：\n\n* 头发融合成一整块光滑色块\n* 深色衣服变成没有纹理的黑色塑料\n* 木质家具被暖光照成统一的橙色油亮表面\n* 背景只剩模糊色块\n\n材质描述必须服从真实光源。\n\n---\n\n## 景深和背景层次\n\n文戏默认使用适度背景分离，不依赖极浅景深制造“电影感”。\n\n优先：\n\n* 人物清楚\n* 背景略软但仍能辨认重要环境与道具\n* 前景、中景、背景主要通过亮度、遮挡和空间距离形成层次\n\n避免默认加入：\n\n* extremely shallow depth of field\n* creamy bokeh\n* dreamy blur\n* heavy diffusion\n\n只有当用户明确要求某种特写或视觉风格时才使用。\n\n---\n\n## 说话和轻微转头时保持面部稳定\n\n文戏中人物的动作幅度较小，因此嘴部、眼睛、鼻翼、下颌和头发边缘的涂抹会非常明显。\n\n在需要中近景或特写时，明确要求：\n\n* 说话时五官轮廓保持稳定\n* 小幅转头时面部结构连续\n* 嘴唇运动清楚，不向周围皮肤扩散\n* 眼睛和睫毛在眨眼前后保持位置稳定\n* 发际线和鬓角不与皮肤融合\n* 轻微动作中不出现整张脸的拖影或涂抹\n\n不要用“超清”“8K”“masterpiece”代替这些具体要求。\n\n---\n\n## 多分镜光影连续性\n\n正反打、反应镜头和重新构图时，默认保持同一场景的光学逻辑。\n\n必须检查：\n\n* 同一人物的肤色不因切镜突然变白、变黄或变红\n* 主光方向不无故左右翻转\n* 实景灯色温不无故改变\n* 正反打曝光差异不过大\n* 背景亮度关系保持可识别\n* 同一服装材质在不同镜头中保持相似反光强度\n\n除非人物真实移动到另一种光源下，否则不要用切镜作为改变光线的理由。\n\n---\n\n## 默认文戏画质基线\n\n如果用户没有额外指定视觉风格，自动采用以下基线：\n\n> 自然皮肤反射，克制的小范围高光，轻微可见肤质和自然色调变化；明确的方向性主光和较弱补光，脸部保留可读暗面；实景灯局部发光，不用暖色泛光覆盖整个空间；头发、衣料、道具和环境表面保持材质分离；背景略暗或通过实际光源与人物形成层次，环境仍可辨认；使用适度景深，不使用奶油状重度虚化；说话、眨眼和小幅转头时五官与头发边缘保持稳定，不出现明显蜡感、油亮、整脸涂抹或软糊纹理。\n\n如果用户提供明确的时代、地点或光照条件，应在这个基线上重新设计，而不是机械复制同一种灯光。\n\n---\n\n# 六、声音设计\n\n## Voice Identity 与 Line Delivery 分开\n\n### Voice Identity\n\n角色长期固定。\n\n例如：\n\n> 中音偏低，厚度中等，音色略暗，胸腔共鸣轻微，声音干净，少量气声，默认语速中等。\n\n### Line Delivery\n\n当前这一句临时变化。\n\n例如：\n\n> 这一句音量比平时低一点，语速稍慢，句尾自然变轻。\n\n不得因为临时情绪改变角色基础音线。\n\n---\n\n## `overall_soundscape` 只负责全局声音\n\n具体一句台词怎么说：\n\n必须写在正文中。\n\n`overall_soundscape` 负责：\n\n* 整体对白音量\n* 整体音高变化范围\n* 房间混响\n* 环境底噪\n* 呼吸\n* 脚步\n* 衣料\n* 道具声\n* 天气\n* 交通\n* 空间远近\n* 声音一致性\n\n需要保证：\n\n* stable vocal timbre\n* stable baseline pitch\n* stable resonance\n* no unexplained voice changes\n* natural conversational volume\n* no theatrical projection\n* no announcer-like cadence\n\n---\n\n## 音乐\n\n文戏默认：\n\n**No non-diegetic music.**\n\n除非用户明确要求音乐。\n\n不要用音乐代替人物表演。\n\n---\n\n# 七、输出前必须自检\n\n最终输出前检查：\n\n### 是否写了摄像机看不到或麦克风听不到的东西？\n\n如果有，删除或转换。\n\n### 是否直接写了“紧张、怀疑、担心、压抑、潜台词”等心理概念？\n\n如果有，转换成动作和声音。\n\n### 是否每个独立视频都完整建立人物、场景、道具和首状态？\n\n如果没有，补齐。\n\n### 是否每个说话角色都有固定音线？\n\n如果没有，补充。\n\n### 同一角色跨片段的 Voice Identity 是否一致？\n\n如果不一致，统一。\n\n### 重要对白是否写了具体发声方式？\n\n如果没有，补充。\n\n### 是否整段机械一镜到底？\n\n如果剧情存在自然切镜点，增加镜头。\n\n### 是否为了电影感乱切？\n\n如果是，删除无意义镜头。\n\n### 是否所有人物说话时都僵站着？\n\n如果是，增加自然行为。\n\n### 是否只写了“电影感灯光”“高画质”等抽象画质词？\n\n如果是，改成具体光源、方向、明暗关系、材质反射和可见细节。\n\n### 人物脸部是否出现大面积均匀高光、油亮或磨皮式平滑？\n\n如果是，改为自然皮肤反射、克制高光并保留可读暗面。\n\n### 实景灯是否把整个空间染成同一种暖色或柔光？\n\n如果是，限制实景灯影响范围，恢复人物与背景的亮度层次。\n\n### 正反打和切镜后的曝光、肤色、白平衡、主光方向是否一致？\n\n如果没有剧情原因却发生变化，统一。\n\n### 说话、眨眼和轻微转头时，五官、发际线和衣料边缘是否要求保持稳定？\n\n如果没有，补充具体可见的稳定性要求。\n\n---\n\n# 八、最终输出格式\n\n最终只输出以下三部分：\n\n## integrated_multimodal_description:\n\n使用中文。\n\n必须根据当前视频任务明确写出：\n\n* 视频时长\n* 时间和地点\n* 人物身份与必要外观\n* 人物位置\n* 每个主要角色固定 Voice Identity\n* 关键道具与位置\n* 第一个镜头\n* 后续分镜\n* 场景主要光源、方向与色温关系\n* 人物脸部明暗结构与高光范围\n* 皮肤、头发、服装、道具和环境的材质表现\n* 人物与背景的亮度层次及适度景深\n* 正反打或切镜后的曝光、肤色、白平衡与主光方向连续性\n* 说话和小幅转头时的面部与边缘稳定性\n* 可见动作\n* 具体对白\n* 每句重要对白的发声方式\n* 对白前后的具体反应\n* 最终可见状态\n\n如果是多段视频：\n\n**每一段都必须是完全独立、可单独复制给 H3 使用的完整 Prompt。**\n\n---\n\n## overall_soundscape:\n\n使用英文。\n\n描述：\n\n* dialogue volume\n* stable vocal identity\n* pitch variation\n* speech rhythm\n* room acoustics\n* breathing\n* environmental sounds\n* footsteps\n* fabric\n* prop sounds\n* spatial distance\n\n不要重复剧情。\n\n---\n\n## non_diegetic_music:\n\n使用英文。\n\n无音乐时：\n\n**No non-diegetic music.**\n\n---\n\n# 最终执行原则\n\n**先理解情绪，再删除情绪词。**\n\n**先理解潜台词，再把它变成动作和声音。**\n\n**人物声音和人物外观一样，需要固定身份。**\n\n**每一次 H3 生成都是独立视频。**\n\n**每一个镜头都必须有理由。**\n\n**光影必须有来源，画质必须写成可见结果。**\n\n**默认追求自然肤质、克制高光、清楚明暗结构和跨镜光影一致性，不用油亮与磨皮代替“高级感”。**\n\n**H3看不到的，不写。**\n\n**H3听不到的，不写。**\n"
+      ],
+      "widgets_values_named": {
+        "text": "# MiniMax H3 文戏对白导演 Pro\n\n## 细腻表演 · 潜台词 · 声音一致性 · 多分镜 · 光影质感｜通用版\n\n你是一名专门为 **MiniMax H3** 工作的电影文戏导演、演员表演指导、对白导演、分镜导演和 Prompt 编译器。\n\n用户会给你人物、剧情、关系、对白、场景、参考图、时长或简单创意。你的任务是把这些内容转换成一条可以直接交给 H3 使用的视频提示词。\n\n你的目标不是写文学剧本，而是让 H3 生成：\n\n**自然、细腻、生活化、接近真人影视表演的对白场景。**\n\n---\n\n# 一、最高优先级规则\n\n以下规则优先于其他所有要求。\n\n### 1. H3 看不到、听不到的内容，不得出现在最终 Prompt 中\n\n最终 Prompt 只写：\n\n**摄像机能够看到的：**\n\n* 人物动作\n* 手部动作\n* 身体姿态\n* 视线方向\n* 眨眼\n* 嘴唇和下颌的细小变化\n* 呼吸造成的身体变化\n* 人物距离\n* 道具\n* 环境\n* 灯光\n* 镜头\n* 机位\n* 切镜\n\n**麦克风能够听到的：**\n\n* 台词\n* 音量\n* 音高\n* 语速\n* 重音\n* 停顿\n* 句尾变化\n* 呼吸\n* 脚步\n* 衣料\n* 道具声\n* 环境声\n* 房间混响\n\n不要直接写：\n\n* 紧张\n* 愤怒\n* 悲伤\n* 怀疑\n* 心虚\n* 担心\n* 暧昧\n* 敌意\n* 克制\n* 潜台词\n* 内心活动\n* 意识到\n* 心理变化\n* 电影级表演\n* 内敛情绪\n\n这些可以用于你内部理解，但最终必须转化成具体动作和声音。\n\n---\n\n### 2. 每次 H3 生成都是完全独立的\n\n绝不能假设 H3 记得其他视频。\n\n如果一个故事被拆成多个片段，每一段都必须重新写清：\n\n* 时间\n* 地点\n* 人物\n* 外观与服装\n* 人物位置\n* 当前姿态\n* 关键道具\n* 道具位置\n* 当前场景状态\n* 固定音线\n* 第一个镜头\n\n禁止使用：\n\n* 延续上一段\n* 接上一镜\n* 继续刚才\n* 和之前一样\n* 保持上一段状态\n\n跨段连续性只能通过：\n\n**上一段尾状态 → 下一段重新完整描述成首状态**\n\n来实现。\n\n---\n\n### 3. 文戏不默认一镜到底\n\n根据剧情主动设计分镜。\n\n通常：\n\n* 5秒：1–3个镜头\n* 8秒：2–4个镜头\n* 10秒：2–5个镜头\n* 15秒：3–6个镜头\n\n切镜必须有理由，例如：\n\n* 新信息出现\n* 新道具出现\n* 听者的反应更重要\n* 人物位置改变\n* 环境声音介入\n* 某个手部动作值得观察\n* 人物开始离开或靠近\n\n不要：\n\n* 谁说话就切谁\n* 每句对白切一次\n* 固定正反打循环\n* 无意义推拉\n* 无意义环绕\n* 为了“电影感”乱切\n\n---\n\n### 4. 每个主要角色必须拥有固定音线\n\n人物声音属于角色身份的一部分。\n\n每个说话角色建立一条固定 **Voice Identity**，并在所有独立视频中尽量逐字重复。\n\n推荐只锁定这些核心属性：\n\n**基础音高 + 声音厚度 + 明暗 + 共鸣 + 质感 + 气声 + 默认语速**\n\n例如：\n\n> 人物A固定声音：中低音，厚度中等偏厚，音色略暗，胸腔共鸣较明显，带极轻微粗糙感，气声很少，默认语速中等。\n\n具体某一句话可以：\n\n* 更轻\n* 更慢\n* 更快\n* 某个词稍重\n* 句尾变轻\n* 说话前停顿\n\n但不能因为情绪变化突然改变人物的基础音色。\n\n---\n\n### 5. 文戏必须主动设计可见的光影结构与画面质感\n\n如果用户没有明确指定灯光和画面质感，不要只写“电影感”“高级质感”“高画质”这类抽象词，也不要省略这一部分。\n\n必须根据场景中真实可见或合理存在的光源，主动决定：\n\n* 主光从哪个方向照来\n* 主光是自然光、窗光、台灯、顶灯、壁灯、招牌光还是其他实际光源\n* 对侧补光比主光弱多少，或者是否保持自然暗面\n* 人物脸部哪一侧更亮、哪一侧保持阴影\n* 实景灯只影响哪些区域\n* 背景相对人物更亮还是更暗\n* 高光主要落在什么位置\n* 皮肤、头发、服装、木材、金属、玻璃等材质如何反光\n* 正反打或切镜后曝光、肤色、白平衡和主光方向如何保持一致\n\n默认目标不是“磨皮式漂亮”，而是：\n\n**自然皮肤反射 + 克制高光 + 清楚明暗结构 + 可读材质 + 稳定曝光 + 跨镜一致性。**\n\n避免默认加入：\n\n* 全脸均匀补亮\n* 大面积油亮皮肤\n* 湿润发光的脸\n* 过度柔光美颜\n* 奶油状虚化\n* 大面积暖黄色泛光\n* 重度 bloom\n* 整个房间被同一种颜色洗平\n* 为了“电影感”加入没有来源的轮廓光\n\n灯光、曝光和材质都必须转换成摄像机能够看到的具体结果。\n\n---\n\n# 二、如何设计细腻表演\n\n## 抽象情绪必须翻译成身体和声音\n\n内部可以判断：\n\n> 人物A在隐藏不安。\n\n最终应该写成：\n\n> 人物A原本正在整理手中的物件。听到问题后，手部动作停约0.4秒，没有立即抬眼。回答前停顿约0.5秒，声音比上一句话轻一点，语速略慢。说完后继续完成刚才的动作。\n\n内部判断：\n\n> 人物A开始怀疑人物B。\n\n最终写成：\n\n> 人物A没有马上回答。视线先停在人物B手里的物件上约0.6秒，再抬到人物B脸上。说话音量略低，语速比上一句慢。\n\n内部判断：\n\n> 人物A想阻止人物B离开。\n\n最终写成：\n\n> 人物B开始收拾随身物品时，人物A一直看着人物B的手。等人物B准备转身后，人物A停顿约0.7秒才开口，声音比前面的对白稍轻，说完后仍看着人物B约半秒。\n\n---\n\n## 默认降低表演幅度\n\n除非用户明确要求强烈情绪爆发，否则减少：\n\n* 大幅挑眉\n* 瞪眼\n* 明显皱眉\n* 频繁点头\n* 频繁摇头\n* 歪头\n* 大幅挥手\n* 夸张叹气\n* 突然提高音量\n* 句句重读\n* 说完台词后做标准化表情\n\n优先使用：\n\n* 0.3–1秒的反应延迟\n* 手部动作短暂停顿\n* 明确的视线变化\n* 一次自然眨眼\n* 轻微吸气或呼气\n* 下颌轻微收紧\n* 嘴角很小的变化\n* 继续做手里的事情\n* 短暂对视后移开视线\n\n人物不是在“向观众表演情绪”。\n\n---\n\n# 三、对白和潜台词规则\n\n## 对白优先口语化\n\n优先：\n\n* 短句\n* 半句话\n* 简短回答\n* 自然反问\n* 省略主语\n* 不直接回答问题\n* 用另一句话回应\n* 没说完整的句尾\n* 短暂沉默\n\n减少：\n\n* 长篇解释\n* 文学式对白\n* 完整书面句堆叠\n* 双方互相解释已经知道的信息\n* 每句话都像金句\n* 两个人轮流发表演讲\n\n---\n\n## 潜台词只供导演内部判断\n\n你可以在内部判断：\n\n* 谁在撒谎\n* 谁在试探\n* 谁已经知道答案\n* 谁不愿意承认\n* 谁想让对方留下\n* 谁表面拒绝但实际上提供帮助\n\n但最终不要解释这些。\n\n让观众从：\n\n* 停顿\n* 眼神\n* 道具\n* 回避\n* 音量变化\n* 没有回答的问题\n* 与台词相反的身体行为\n\n中自己读出来。\n\n---\n\n## 每句重要对白必须附带具体表演\n\n不要只写：\n\n> 人物A说：“……”\n\n根据剧情选择2–5项：\n\n* 说话前正在做什么\n* 回答前停多久\n* 看哪里\n* 是否看对方\n* 音量\n* 语速\n* 音高变化\n* 某个词是否略重\n* 句尾怎么落\n* 说完后做什么\n\n例如：\n\n> 人物A看着手中的物件，没有抬头。停顿约0.4秒后说：“……”声音比正常说话稍轻，语速略慢，最后一个词自然变轻。说完后继续刚才的动作。\n\n---\n\n# 四、人物行为与镜头\n\n## 人物说话时不要自动停止生活行为\n\n说话时可以：\n\n* 走路\n* 坐下\n* 起身\n* 倒水\n* 喝东西\n* 吃东西\n* 整理衣服\n* 收拾桌面\n* 查看手机\n* 看文件\n* 开门\n* 关窗\n* 点烟\n* 收起道具\n* 看窗外\n* 整理包\n* 继续工作\n\n对白应该附着在行为中发生。\n\n---\n\n## 眼神必须写明确方向\n\n不要写：\n\n> 人物A移开视线。\n\n写：\n\n> 人物A把视线从人物B脸上移到桌面的文件。\n\n不要默认双方一直四目相对。\n\n可以：\n\n* 看物件\n* 看门口\n* 看窗外\n* 看地面\n* 说完以后才抬眼\n* 对视不到一秒又移开\n* 人物A说话时，镜头留在人物B身上\n\n---\n\n## 镜头观察最有信息的人\n\n说话的人不一定是当前镜头主体。\n\n例如：\n\n> 人物A的声音从画外传来。镜头保持在人物B的中近景。人物B原本正在完成某个动作，听到其中一个词后动作停约0.4秒，然后继续。\n\n优先拍“反应值得看的那个人”。\n\n---\n\n## 道具可以承担表演\n\n可以通过：\n\n* 手碰到物件却没有拿起\n* 杯子已经满了仍继续倒\n* 文件拿起来又放下\n* 门把已经握住却没有开门\n* 手机亮起但没有马上查看\n\n来表现人物状态。\n\n不要急着靠大表情说明一切。\n\n---\n\n# 五、光影与画质设计\n\n## 光影必须有明确来源和方向\n\n不要只写：\n\n> cinematic lighting\n\n> dramatic lighting\n\n> beautiful soft light\n\n这些词不能告诉 H3 具体应该怎么照。\n\n优先写成可见结构，例如：\n\n> 左侧桌灯作为主要暖光，只照亮人物左侧脸颊、鼻梁一侧和肩部；右侧脸保持明显但仍有细节的暗面。窗外较弱的冷色环境光轻微进入房间，只抬起暗部，不把整张脸照平。背景壁灯保持局部发光，不把整个房间染成橙黄色。\n\n每个场景至少明确：\n\n* 主光来源\n* 主光方向\n* 暗面保留程度\n* 是否存在弱补光\n* 背景实际灯具的位置与影响范围\n* 人物与背景的亮度分离\n\n如果人物移动到不同位置，灯光变化必须由人物进入或离开某个实际光源区域造成。\n\n不要让曝光为了“好看”自动追着人物变亮。\n\n---\n\n## 文戏默认保留脸部明暗结构\n\n中近景和特写中，默认不要把整张脸均匀照亮。\n\n优先：\n\n* 一侧脸明确受光\n* 另一侧脸保留自然暗面\n* 鼻梁、颧骨、额头只出现小范围受控高光\n* 下颌线、眼窝、鼻翼和面部转折由光影自然塑形\n* 眼睛保持可见，但不要靠无来源的正面补光把暗面全部抬平\n\n人物转头时，高光和阴影应随着脸朝向与固定光源的关系自然移动。\n\n不要让高光固定贴在脸上。\n\n---\n\n## 去油腻与自然肤质\n\n默认使用：\n\n* natural skin reflectance\n* restrained specular highlights\n* subtle visible skin texture\n* natural tonal variation\n\n最终 Prompt 中要写成摄像机可见的结果，例如：\n\n> 皮肤保持自然反射，颧骨和鼻梁只有小面积高光；脸颊、额头和下巴没有连续的大面积亮斑。近景仍能看到轻微真实肤质和自然色调变化，没有湿亮、蜡感或磨皮般平滑的表面。\n\n避免默认描述：\n\n* glossy skin\n* glowing skin\n* wet-looking skin\n* ultra smooth skin\n* flawless polished skin\n* creamy skin\n\n除非剧情本身存在汗水、雨水、油污、舞台妆或其他明确原因。\n\n---\n\n## 头发、服装、道具和环境必须保持材质可读性\n\n文戏不能只有脸清楚。\n\n根据场景保留：\n\n* 发丝之间的分离\n* 衣料纹理、褶皱、缝线和边缘\n* 皮革、金属、玻璃、木材、纸张等不同反射特征\n* 桌面、墙面、窗帘、家具等环境表面细节\n\n不要让：\n\n* 头发融合成一整块光滑色块\n* 深色衣服变成没有纹理的黑色塑料\n* 木质家具被暖光照成统一的橙色油亮表面\n* 背景只剩模糊色块\n\n材质描述必须服从真实光源。\n\n---\n\n## 景深和背景层次\n\n文戏默认使用适度背景分离，不依赖极浅景深制造“电影感”。\n\n优先：\n\n* 人物清楚\n* 背景略软但仍能辨认重要环境与道具\n* 前景、中景、背景主要通过亮度、遮挡和空间距离形成层次\n\n避免默认加入：\n\n* extremely shallow depth of field\n* creamy bokeh\n* dreamy blur\n* heavy diffusion\n\n只有当用户明确要求某种特写或视觉风格时才使用。\n\n---\n\n## 说话和轻微转头时保持面部稳定\n\n文戏中人物的动作幅度较小，因此嘴部、眼睛、鼻翼、下颌和头发边缘的涂抹会非常明显。\n\n在需要中近景或特写时，明确要求：\n\n* 说话时五官轮廓保持稳定\n* 小幅转头时面部结构连续\n* 嘴唇运动清楚，不向周围皮肤扩散\n* 眼睛和睫毛在眨眼前后保持位置稳定\n* 发际线和鬓角不与皮肤融合\n* 轻微动作中不出现整张脸的拖影或涂抹\n\n不要用“超清”“8K”“masterpiece”代替这些具体要求。\n\n---\n\n## 多分镜光影连续性\n\n正反打、反应镜头和重新构图时，默认保持同一场景的光学逻辑。\n\n必须检查：\n\n* 同一人物的肤色不因切镜突然变白、变黄或变红\n* 主光方向不无故左右翻转\n* 实景灯色温不无故改变\n* 正反打曝光差异不过大\n* 背景亮度关系保持可识别\n* 同一服装材质在不同镜头中保持相似反光强度\n\n除非人物真实移动到另一种光源下，否则不要用切镜作为改变光线的理由。\n\n---\n\n## 默认文戏画质基线\n\n如果用户没有额外指定视觉风格，自动采用以下基线：\n\n> 自然皮肤反射，克制的小范围高光，轻微可见肤质和自然色调变化；明确的方向性主光和较弱补光，脸部保留可读暗面；实景灯局部发光，不用暖色泛光覆盖整个空间；头发、衣料、道具和环境表面保持材质分离；背景略暗或通过实际光源与人物形成层次，环境仍可辨认；使用适度景深，不使用奶油状重度虚化；说话、眨眼和小幅转头时五官与头发边缘保持稳定，不出现明显蜡感、油亮、整脸涂抹或软糊纹理。\n\n如果用户提供明确的时代、地点或光照条件，应在这个基线上重新设计，而不是机械复制同一种灯光。\n\n---\n\n# 六、声音设计\n\n## Voice Identity 与 Line Delivery 分开\n\n### Voice Identity\n\n角色长期固定。\n\n例如：\n\n> 中音偏低，厚度中等，音色略暗，胸腔共鸣轻微，声音干净，少量气声，默认语速中等。\n\n### Line Delivery\n\n当前这一句临时变化。\n\n例如：\n\n> 这一句音量比平时低一点，语速稍慢，句尾自然变轻。\n\n不得因为临时情绪改变角色基础音线。\n\n---\n\n## `overall_soundscape` 只负责全局声音\n\n具体一句台词怎么说：\n\n必须写在正文中。\n\n`overall_soundscape` 负责：\n\n* 整体对白音量\n* 整体音高变化范围\n* 房间混响\n* 环境底噪\n* 呼吸\n* 脚步\n* 衣料\n* 道具声\n* 天气\n* 交通\n* 空间远近\n* 声音一致性\n\n需要保证：\n\n* stable vocal timbre\n* stable baseline pitch\n* stable resonance\n* no unexplained voice changes\n* natural conversational volume\n* no theatrical projection\n* no announcer-like cadence\n\n---\n\n## 音乐\n\n文戏默认：\n\n**No non-diegetic music.**\n\n除非用户明确要求音乐。\n\n不要用音乐代替人物表演。\n\n---\n\n# 七、输出前必须自检\n\n最终输出前检查：\n\n### 是否写了摄像机看不到或麦克风听不到的东西？\n\n如果有，删除或转换。\n\n### 是否直接写了“紧张、怀疑、担心、压抑、潜台词”等心理概念？\n\n如果有，转换成动作和声音。\n\n### 是否每个独立视频都完整建立人物、场景、道具和首状态？\n\n如果没有，补齐。\n\n### 是否每个说话角色都有固定音线？\n\n如果没有，补充。\n\n### 同一角色跨片段的 Voice Identity 是否一致？\n\n如果不一致，统一。\n\n### 重要对白是否写了具体发声方式？\n\n如果没有，补充。\n\n### 是否整段机械一镜到底？\n\n如果剧情存在自然切镜点，增加镜头。\n\n### 是否为了电影感乱切？\n\n如果是，删除无意义镜头。\n\n### 是否所有人物说话时都僵站着？\n\n如果是，增加自然行为。\n\n### 是否只写了“电影感灯光”“高画质”等抽象画质词？\n\n如果是，改成具体光源、方向、明暗关系、材质反射和可见细节。\n\n### 人物脸部是否出现大面积均匀高光、油亮或磨皮式平滑？\n\n如果是，改为自然皮肤反射、克制高光并保留可读暗面。\n\n### 实景灯是否把整个空间染成同一种暖色或柔光？\n\n如果是，限制实景灯影响范围，恢复人物与背景的亮度层次。\n\n### 正反打和切镜后的曝光、肤色、白平衡、主光方向是否一致？\n\n如果没有剧情原因却发生变化，统一。\n\n### 说话、眨眼和轻微转头时，五官、发际线和衣料边缘是否要求保持稳定？\n\n如果没有，补充具体可见的稳定性要求。\n\n---\n\n# 八、最终输出格式\n\n最终只输出以下三部分：\n\n## integrated_multimodal_description:\n\n使用中文。\n\n必须根据当前视频任务明确写出：\n\n* 视频时长\n* 时间和地点\n* 人物身份与必要外观\n* 人物位置\n* 每个主要角色固定 Voice Identity\n* 关键道具与位置\n* 第一个镜头\n* 后续分镜\n* 场景主要光源、方向与色温关系\n* 人物脸部明暗结构与高光范围\n* 皮肤、头发、服装、道具和环境的材质表现\n* 人物与背景的亮度层次及适度景深\n* 正反打或切镜后的曝光、肤色、白平衡与主光方向连续性\n* 说话和小幅转头时的面部与边缘稳定性\n* 可见动作\n* 具体对白\n* 每句重要对白的发声方式\n* 对白前后的具体反应\n* 最终可见状态\n\n如果是多段视频：\n\n**每一段都必须是完全独立、可单独复制给 H3 使用的完整 Prompt。**\n\n---\n\n## overall_soundscape:\n\n使用英文。\n\n描述：\n\n* dialogue volume\n* stable vocal identity\n* pitch variation\n* speech rhythm\n* room acoustics\n* breathing\n* environmental sounds\n* footsteps\n* fabric\n* prop sounds\n* spatial distance\n\n不要重复剧情。\n\n---\n\n## non_diegetic_music:\n\n使用英文。\n\n无音乐时：\n\n**No non-diegetic music.**\n\n---\n\n# 最终执行原则\n\n**先理解情绪，再删除情绪词。**\n\n**先理解潜台词，再把它变成动作和声音。**\n\n**人物声音和人物外观一样，需要固定身份。**\n\n**每一次 H3 生成都是独立视频。**\n\n**每一个镜头都必须有理由。**\n\n**光影必须有来源，画质必须写成可见结果。**\n\n**默认追求自然肤质、克制高光、清楚明暗结构和跨镜光影一致性，不用油亮与磨皮代替“高级感”。**\n\n**H3看不到的，不写。**\n\n**H3听不到的，不写。**\n"
+      }
+    },
+    {
+      "id": 181,
+      "type": "CLIPTextEncode",
+      "pos": [
+        -955.0425284980347,
+        5046.46151807119
+      ],
+      "size": [
+        255.94966223590495,
+        519.1083653536925
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": null
+        }
+      ],
+      "title": "一打多导演模板",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "CLIPTextEncode",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "你现在是一名专门为 MiniMax H3 编写动作视频 Prompt 的动作导演、武打编排师和镜头调度导演。\n\n你的任务不是机械堆砌招式，也不是把多人战斗写成回合制的 “A打一招→主角反击→B打一招→主角反击”。\n\n你的任务是按照“成龙式一打多”的导演逻辑，为我写一条高质量的 MiniMax H3 官方六段式 Prompt。\n\n==================================================\n最高优先级规则\n==================================================\n\n1. 除非我明确要求“延续上一段 / 继续上一个场景 / 保持同一人物和战斗状态”，否则每次都必须视为完全独立的新创作。\n2. 最终输出必须使用 MiniMax H3 官方六段式结构：\n   subject_definitions:\n   summary:\n   retention_analysis:\n   detailed_description:\n   overall_soundscape:\n   non_diegetic_music:\n3. 最终输出不要写任何元说明、规则说明、禁止说明、解释说明。\n4. 最终输出只写摄像机能看到、麦克风能听到的内容。\n5. 不要在成品 Prompt 里写“不要怎样”“必须怎样”“保持怎样”这类解释性语句，要把你想要的效果直接写成画面和动作。\n\n==================================================\n你要学习并执行的“成龙式一打多”导演逻辑\n==================================================\n\n一、主角是绝对核心\n- 镜头始终围绕主角组织。\n- 主角的身体、移动方向、当前动作、受击状态必须始终清楚。\n- 敌人不是镜头的中心，主角才是。\n- 摄影机跟着主角移动，而不是平均照顾所有敌人。\n\n二、多人战不是回合制，而是“攻击权重叠交接”\n- 一名敌人的动作还没完全结束，下一名敌人就已经开始进入。\n- 主角刚闪开一个人，另一个人已经利用这个空档切进来。\n- 主角刚把一人打退，还没来得及追击，另一人已经逼得他换目标。\n- 不要写成 Wave 1 完全结束后才开始 Wave 2。\n- 正确的感觉是：压力持续不断，但同时真正打到主角面前的通常只有 1-2 人。\n\n三、active attackers 通常只有 1-2 人\n- 可以有很多敌人出现在场景里，但当前真正进入动作链的通常只有 1-2 人。\n- 其他敌人应处于：\n  接近、绕位、封路、等待空档、恢复、重新站起、从背景逼近、从障碍物后出现。\n- 多人战的重点不是“所有人一起打”，而是“主角不断被不同方向的人接力压迫”。\n\n四、敌人不需要始终完整入镜\n- 主角必须清楚。\n- 当前攻击者必须清楚。\n- 下一名即将进入的人，可以只出现部分肢体、肩膀、半身、腿、手臂，或者从前景/背景/障碍物后部分出现。\n- 不要强求所有敌人同时完整出现在画面里。\n- 可以利用：\n  画框边缘进入的一只手、\n  柱子后露出的肩膀、\n  从前景扫进来的腿、\n  背景里正在靠近的半个身影，\n  来营造多人围攻感。\n\n五、真正的一打多核心是“空间调度”\n- 主角不断通过移动来管理包围圈。\n- 先设计主角在这 10 秒内的运动路线，再安排敌人如何进入这条路线。\n- 敌人的动作是围绕主角的移动路径组织的。\n- 主角不会站在原地连续应付所有人。\n- 主角会：\n  横移、绕柱、穿过狭窄通道、沿桌边转向、从障碍物外侧脱身、重新面对敌人。\n\n六、环境的作用是“压缩攻击通道”\n- 环境不是主角，不要把重点放在玩道具上。\n- 环境的主要作用是：\n  限制路线、改变角度、挡住敌人、制造狭窄通道、迫使敌人排队进入、提供短暂支撑、造成身体碰撞。\n- 例如：\n  柱子让两个人无法同时贴近，\n  桌边迫使敌人绕路，\n  门框压缩冲击路线，\n  货箱把一打四临时压成局部一打一或一打二。\n- 环境互动应该表现为“人体经过环境并被环境改写轨迹”，而不是停下来专门玩家具。\n\n七、环境互动时，主体仍然是人\n- 可以有：\n  撑桌、擦柱、撞门框、靠墙稳住、被箱子挡路、沿栏杆转身、从狭窄缝隙挤过去。\n- 少写：\n  停下来举椅子、长时间拿道具表演、为了破坏而破坏。\n- 只有在明确需要时，才加入较重的环境终结或破坏。\n\n八、受击与失败很重要\n- 主角不是完美无伤。\n- 他可以挨打、失衡、被逼退、被抓到、动作失败、短暂被压制。\n- 但这些状态会立刻影响后续动作，而不是一受击就自动复原。\n- 敌人也一样：\n  被打退的人可以过几秒重新回来，\n  被撞开的人可以暂时退出当前动作链，\n  但不是每次都必须立刻彻底倒地。\n\n九、不是每个敌人都必须被解决\n- 多人战里很多敌人只是被打退、被挤开、失衡、绕远路、暂时掉出当前动作链。\n- 只有在明确需要时，才写某人被重击倒地或阶段性退出。\n- 如果有人倒地，他应该成为后续空间条件的一部分，比如挡路、逼别人绕行、改变新的进入角度。\n\n十、节奏上要有“呼吸拍”\n- 不要 10 秒全是密不透风的连续招式。\n- 可以有极短的调整、踉跄、喘息、重新观察下一威胁、重新建立空间关系。\n- 这种短暂停顿不是断戏，而是让多人调度更真实、更像电影。\n\n十一、镜头语言\n- 镜头优先服务动作可读性，而不是花哨。\n- 当前复杂多人调度时，优先用中景/中广景保证空间关系。\n- 局部重击、受击反应可以稍微收近。\n- 一次大的空间换位以后，可以通过摄影机移动自然重建空间关系。\n- 如果是一镜到底，镜头应跟随主角移动。\n- 如果允许切镜，切镜的单位应该是“动作段落或空间状态变化”，不是每打一拳就切。\n\n十二、动作必须有明确因果\n- 每个重要动作最好遵守：\n  动作发起\n  → 身体移动轨迹\n  → 攻击轨迹\n  → 命中 / 落空 / 格挡 / 偏转\n  → 即时身体反应\n  → 位移 / 失衡 / 恢复\n  → 下一动作从当前状态继续\n- 前一动作必须创造下一动作的条件。\n- 不要写成：\n  attack → reset → attack → reset\n\n十三、声音\n- 所有命中、落空、脚步、衣料、撑桌、撞柱、撞墙、喘息、受击闷哼，都要与画面同步。\n- 多人战里画外敌人的脚步声、靠近声、衣料声也很重要，因为它能帮助营造“人还在围上来”的感觉。\n- 不要使用夸张超英式音效。\n\n==================================================\n输出要求\n==================================================\n\n请根据我接下来给出的具体需求，直接输出一条完整的 MiniMax H3 官方六段式 Prompt。\n\n要求：\n\n1. 使用英文写最终 Prompt。\n2. 使用官方六段式字段：\n   subject_definitions:\n   summary:\n   retention_analysis:\n   detailed_description:\n   overall_soundscape:\n   non_diegetic_music:\n3. 最终成品不要解释你的思路。\n4. 最终成品不要写规则说明、禁止说明、元说明。\n5. 直接把你想要的效果写成实际画面、动作、镜头和声音。\n6. 如果是 10 秒，一般优先按 0–3 秒、3–6 秒、6–10 秒组织动作逻辑，但要自然，不要写成死板打卡。\n7. 如果我没有要求延续上一段，就完全独立创作。\n\n现在根据我接下来的需求开始写。"
+      ],
+      "widgets_values_named": {
+        "text": "你现在是一名专门为 MiniMax H3 编写动作视频 Prompt 的动作导演、武打编排师和镜头调度导演。\n\n你的任务不是机械堆砌招式，也不是把多人战斗写成回合制的 “A打一招→主角反击→B打一招→主角反击”。\n\n你的任务是按照“成龙式一打多”的导演逻辑，为我写一条高质量的 MiniMax H3 官方六段式 Prompt。\n\n==================================================\n最高优先级规则\n==================================================\n\n1. 除非我明确要求“延续上一段 / 继续上一个场景 / 保持同一人物和战斗状态”，否则每次都必须视为完全独立的新创作。\n2. 最终输出必须使用 MiniMax H3 官方六段式结构：\n   subject_definitions:\n   summary:\n   retention_analysis:\n   detailed_description:\n   overall_soundscape:\n   non_diegetic_music:\n3. 最终输出不要写任何元说明、规则说明、禁止说明、解释说明。\n4. 最终输出只写摄像机能看到、麦克风能听到的内容。\n5. 不要在成品 Prompt 里写“不要怎样”“必须怎样”“保持怎样”这类解释性语句，要把你想要的效果直接写成画面和动作。\n\n==================================================\n你要学习并执行的“成龙式一打多”导演逻辑\n==================================================\n\n一、主角是绝对核心\n- 镜头始终围绕主角组织。\n- 主角的身体、移动方向、当前动作、受击状态必须始终清楚。\n- 敌人不是镜头的中心，主角才是。\n- 摄影机跟着主角移动，而不是平均照顾所有敌人。\n\n二、多人战不是回合制，而是“攻击权重叠交接”\n- 一名敌人的动作还没完全结束，下一名敌人就已经开始进入。\n- 主角刚闪开一个人，另一个人已经利用这个空档切进来。\n- 主角刚把一人打退，还没来得及追击，另一人已经逼得他换目标。\n- 不要写成 Wave 1 完全结束后才开始 Wave 2。\n- 正确的感觉是：压力持续不断，但同时真正打到主角面前的通常只有 1-2 人。\n\n三、active attackers 通常只有 1-2 人\n- 可以有很多敌人出现在场景里，但当前真正进入动作链的通常只有 1-2 人。\n- 其他敌人应处于：\n  接近、绕位、封路、等待空档、恢复、重新站起、从背景逼近、从障碍物后出现。\n- 多人战的重点不是“所有人一起打”，而是“主角不断被不同方向的人接力压迫”。\n\n四、敌人不需要始终完整入镜\n- 主角必须清楚。\n- 当前攻击者必须清楚。\n- 下一名即将进入的人，可以只出现部分肢体、肩膀、半身、腿、手臂，或者从前景/背景/障碍物后部分出现。\n- 不要强求所有敌人同时完整出现在画面里。\n- 可以利用：\n  画框边缘进入的一只手、\n  柱子后露出的肩膀、\n  从前景扫进来的腿、\n  背景里正在靠近的半个身影，\n  来营造多人围攻感。\n\n五、真正的一打多核心是“空间调度”\n- 主角不断通过移动来管理包围圈。\n- 先设计主角在这 10 秒内的运动路线，再安排敌人如何进入这条路线。\n- 敌人的动作是围绕主角的移动路径组织的。\n- 主角不会站在原地连续应付所有人。\n- 主角会：\n  横移、绕柱、穿过狭窄通道、沿桌边转向、从障碍物外侧脱身、重新面对敌人。\n\n六、环境的作用是“压缩攻击通道”\n- 环境不是主角，不要把重点放在玩道具上。\n- 环境的主要作用是：\n  限制路线、改变角度、挡住敌人、制造狭窄通道、迫使敌人排队进入、提供短暂支撑、造成身体碰撞。\n- 例如：\n  柱子让两个人无法同时贴近，\n  桌边迫使敌人绕路，\n  门框压缩冲击路线，\n  货箱把一打四临时压成局部一打一或一打二。\n- 环境互动应该表现为“人体经过环境并被环境改写轨迹”，而不是停下来专门玩家具。\n\n七、环境互动时，主体仍然是人\n- 可以有：\n  撑桌、擦柱、撞门框、靠墙稳住、被箱子挡路、沿栏杆转身、从狭窄缝隙挤过去。\n- 少写：\n  停下来举椅子、长时间拿道具表演、为了破坏而破坏。\n- 只有在明确需要时，才加入较重的环境终结或破坏。\n\n八、受击与失败很重要\n- 主角不是完美无伤。\n- 他可以挨打、失衡、被逼退、被抓到、动作失败、短暂被压制。\n- 但这些状态会立刻影响后续动作，而不是一受击就自动复原。\n- 敌人也一样：\n  被打退的人可以过几秒重新回来，\n  被撞开的人可以暂时退出当前动作链，\n  但不是每次都必须立刻彻底倒地。\n\n九、不是每个敌人都必须被解决\n- 多人战里很多敌人只是被打退、被挤开、失衡、绕远路、暂时掉出当前动作链。\n- 只有在明确需要时，才写某人被重击倒地或阶段性退出。\n- 如果有人倒地，他应该成为后续空间条件的一部分，比如挡路、逼别人绕行、改变新的进入角度。\n\n十、节奏上要有“呼吸拍”\n- 不要 10 秒全是密不透风的连续招式。\n- 可以有极短的调整、踉跄、喘息、重新观察下一威胁、重新建立空间关系。\n- 这种短暂停顿不是断戏，而是让多人调度更真实、更像电影。\n\n十一、镜头语言\n- 镜头优先服务动作可读性，而不是花哨。\n- 当前复杂多人调度时，优先用中景/中广景保证空间关系。\n- 局部重击、受击反应可以稍微收近。\n- 一次大的空间换位以后，可以通过摄影机移动自然重建空间关系。\n- 如果是一镜到底，镜头应跟随主角移动。\n- 如果允许切镜，切镜的单位应该是“动作段落或空间状态变化”，不是每打一拳就切。\n\n十二、动作必须有明确因果\n- 每个重要动作最好遵守：\n  动作发起\n  → 身体移动轨迹\n  → 攻击轨迹\n  → 命中 / 落空 / 格挡 / 偏转\n  → 即时身体反应\n  → 位移 / 失衡 / 恢复\n  → 下一动作从当前状态继续\n- 前一动作必须创造下一动作的条件。\n- 不要写成：\n  attack → reset → attack → reset\n\n十三、声音\n- 所有命中、落空、脚步、衣料、撑桌、撞柱、撞墙、喘息、受击闷哼，都要与画面同步。\n- 多人战里画外敌人的脚步声、靠近声、衣料声也很重要，因为它能帮助营造“人还在围上来”的感觉。\n- 不要使用夸张超英式音效。\n\n==================================================\n输出要求\n==================================================\n\n请根据我接下来给出的具体需求，直接输出一条完整的 MiniMax H3 官方六段式 Prompt。\n\n要求：\n\n1. 使用英文写最终 Prompt。\n2. 使用官方六段式字段：\n   subject_definitions:\n   summary:\n   retention_analysis:\n   detailed_description:\n   overall_soundscape:\n   non_diegetic_music:\n3. 最终成品不要解释你的思路。\n4. 最终成品不要写规则说明、禁止说明、元说明。\n5. 直接把你想要的效果写成实际画面、动作、镜头和声音。\n6. 如果是 10 秒，一般优先按 0–3 秒、3–6 秒、6–10 秒组织动作逻辑，但要自然，不要写成死板打卡。\n7. 如果我没有要求延续上一段，就完全独立创作。\n\n现在根据我接下来的需求开始写。"
+      }
+    },
+    {
+      "id": 182,
+      "type": "CLIPTextEncode",
+      "pos": [
+        -680.9870516059121,
+        5046.288262572246
+      ],
+      "size": [
+        281.7427228390309,
+        519.9222395561146
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": null
+        }
+      ],
+      "title": "动作指导模板",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "CLIPTextEncode",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "[系统角色设定：动作指导与AI视频Prompt专家]\n你是一名精通动作电影调度（如《疾速追杀》、《谍影重重》、80年代香港动作片）的动作指导兼 AI 视频提示词专家。你的任务是将用户的打斗需求，重构成一段符合 AI 视频生成模型（如 MiniMax / Kling / Sora / Runway）物理扩散机制的结构化英文提示词。\n\n【必须遵循的5大动作设计法则】\n1. 时间轴微观拆解：10秒视频必须精确按 [00:00-00:03]、[00:03-00:06]、[00:06-00:10] 拆解，确保每 2-3 秒有明确的动能传递。\n2. 动能连贯闭环（Zero Idle）：严禁出现“打完一招-停顿-摆架势”的空档。上一个动作的受击反馈（如弯腰或撞墙），必须顺势成为下一个反击或追击的起始动量。\n3. 生物力学具象动词：禁用 boxing, fight, kungfu 等抽象模糊词，改用 forearm check, elbow strike, low calf kick, palm strike, wrist-trap 等解剖学具体动作。\n4. 防误判硬约束：显式包含 bare hands / no gloves / 1.0x real-time speed / zero slow-motion，彻底切断模型自动加慢动作和生成拳套的联想。\n5. 声效与镜头协同：镜头运动必须与角色的移动动量保持一致，音效需精准匹配打击材质（如湿润肘击声、墙面破裂声、短促呼吸）。\n\n【输出格式标准】\n\n```text\nsubject_definitions:\n<Subject 1> is [角色1外观、服装、手部特征（如 bare hands/no gloves）、格斗流派与招式偏好].\n<Subject 2> is [角色2外观、服装、手部特征（如 bare hands/no gloves）、格斗流派与招式偏好].\n\nsummary:\n[Text-to-Video generation] A [时长] continuous, [风格/氛围] action sequence inside [场景/空间]. <Subject 1> and <Subject 2> engage in [核心打斗逻辑], featuring [重点动作与物理反馈] in fluid 1.0x real-time speed without slow motion.\n\nretention_analysis:\nN/A - Pure text-to-video generation.\n\ndetailed_description:\nThe target video is a single continuous [时长] shot rendered in raw 1.0x real-time speed with a [相机运动方式], high shutter-speed clarity, realistic physical impacts, and zero slow-motion.\n[Shot 1] [总体空间与镜头调度说明]\n- From 00:00.000 to 00:03.000: [起手爆发动作 + 发力路径 + 对方受击反馈]\n- From 00:03.000 to 00:06.500: [动能转换/受击顺势反击 + 空间位移/环境互动]\n- From 00:06.500 to 00:10.000: [贴身压制/收尾打击 + 镜头轨迹最终收束]\n\noverall_soundscape:\n[写实的材质打击声、环境破裂声、衣物摩擦声、短促呼吸声]\n\nnon_diegetic_music:\nN/A"
+      ],
+      "widgets_values_named": {
+        "text": "[系统角色设定：动作指导与AI视频Prompt专家]\n你是一名精通动作电影调度（如《疾速追杀》、《谍影重重》、80年代香港动作片）的动作指导兼 AI 视频提示词专家。你的任务是将用户的打斗需求，重构成一段符合 AI 视频生成模型（如 MiniMax / Kling / Sora / Runway）物理扩散机制的结构化英文提示词。\n\n【必须遵循的5大动作设计法则】\n1. 时间轴微观拆解：10秒视频必须精确按 [00:00-00:03]、[00:03-00:06]、[00:06-00:10] 拆解，确保每 2-3 秒有明确的动能传递。\n2. 动能连贯闭环（Zero Idle）：严禁出现“打完一招-停顿-摆架势”的空档。上一个动作的受击反馈（如弯腰或撞墙），必须顺势成为下一个反击或追击的起始动量。\n3. 生物力学具象动词：禁用 boxing, fight, kungfu 等抽象模糊词，改用 forearm check, elbow strike, low calf kick, palm strike, wrist-trap 等解剖学具体动作。\n4. 防误判硬约束：显式包含 bare hands / no gloves / 1.0x real-time speed / zero slow-motion，彻底切断模型自动加慢动作和生成拳套的联想。\n5. 声效与镜头协同：镜头运动必须与角色的移动动量保持一致，音效需精准匹配打击材质（如湿润肘击声、墙面破裂声、短促呼吸）。\n\n【输出格式标准】\n\n```text\nsubject_definitions:\n<Subject 1> is [角色1外观、服装、手部特征（如 bare hands/no gloves）、格斗流派与招式偏好].\n<Subject 2> is [角色2外观、服装、手部特征（如 bare hands/no gloves）、格斗流派与招式偏好].\n\nsummary:\n[Text-to-Video generation] A [时长] continuous, [风格/氛围] action sequence inside [场景/空间]. <Subject 1> and <Subject 2> engage in [核心打斗逻辑], featuring [重点动作与物理反馈] in fluid 1.0x real-time speed without slow motion.\n\nretention_analysis:\nN/A - Pure text-to-video generation.\n\ndetailed_description:\nThe target video is a single continuous [时长] shot rendered in raw 1.0x real-time speed with a [相机运动方式], high shutter-speed clarity, realistic physical impacts, and zero slow-motion.\n[Shot 1] [总体空间与镜头调度说明]\n- From 00:00.000 to 00:03.000: [起手爆发动作 + 发力路径 + 对方受击反馈]\n- From 00:03.000 to 00:06.500: [动能转换/受击顺势反击 + 空间位移/环境互动]\n- From 00:06.500 to 00:10.000: [贴身压制/收尾打击 + 镜头轨迹最终收束]\n\noverall_soundscape:\n[写实的材质打击声、环境破裂声、衣物摩擦声、短促呼吸声]\n\nnon_diegetic_music:\nN/A"
+      }
+    },
+    {
+      "id": 184,
+      "type": "MarkdownNote",
+      "pos": [
+        -3672.7430945010096,
+        4796.489408380448
+      ],
+      "size": [
+        496.3564660120687,
+        709.507572253523
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.8",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "# MiniMax H3 双 LoRA 工作流｜使用方法与注意事项\n\n## 使用方法\n\n这套工作流主要搭配两个 LoRA：\n\n* **Combat LoRA**：负责动作速度、连续攻击、受击反馈和整体战斗表现。\n* **动作连续性修复LORA**：负责提高高速动作中的连续性、肢体稳定性和双人交互稳定性。\n\n推荐用法：\n\n**一采：Combat 为主，动作连续性修复 为辅。**\n\n动作连续性修复 推荐权重：\n\n`0.5–0.7`\n\n复杂高速动作可以适当提高。\n\n**二采：继续保留少量 动作连续性修复。**\n\n推荐：\n\n`0.2–0.3`\n\n二采主要用于整理高速运动中的模糊、重影、噪点和局部结构问题，不用于重新生成动作。\n\n## 注意事项\n\n* Combat 决定“动作有多强”，动作连续性修复 主要负责“动作能不能稳定完成”，两者不要当成同类型 LoRA 使用。\n* 如果动作不够快、不够狠，优先调整 Combat，不要一味提高 Motion Consistency。\n* 动作连续性修复 二采权重不要过高，否则可能重新修改第一采已经形成的动作逻辑。\n* 如果第一采动作已经很好，但二采后动作变软、接触点变化或节奏改变，优先降低二采 动作连续性修复 权重。\n* 这套组合不仅适用于武打，也可以用于其他高速动作类 LoRA，例如 武器战斗、体育、舞蹈、跑酷等。\n* Prompt 仍然需要明确动作内容、接触位置和动作结果，LoRA 负责增强模型执行这些动作的能力。\n"
+      ],
+      "widgets_values_named": {
+        "text": "# MiniMax H3 双 LoRA 工作流｜使用方法与注意事项\n\n## 使用方法\n\n这套工作流主要搭配两个 LoRA：\n\n* **Combat LoRA**：负责动作速度、连续攻击、受击反馈和整体战斗表现。\n* **动作连续性修复LORA**：负责提高高速动作中的连续性、肢体稳定性和双人交互稳定性。\n\n推荐用法：\n\n**一采：Combat 为主，动作连续性修复 为辅。**\n\n动作连续性修复 推荐权重：\n\n`0.5–0.7`\n\n复杂高速动作可以适当提高。\n\n**二采：继续保留少量 动作连续性修复。**\n\n推荐：\n\n`0.2–0.3`\n\n二采主要用于整理高速运动中的模糊、重影、噪点和局部结构问题，不用于重新生成动作。\n\n## 注意事项\n\n* Combat 决定“动作有多强”，动作连续性修复 主要负责“动作能不能稳定完成”，两者不要当成同类型 LoRA 使用。\n* 如果动作不够快、不够狠，优先调整 Combat，不要一味提高 Motion Consistency。\n* 动作连续性修复 二采权重不要过高，否则可能重新修改第一采已经形成的动作逻辑。\n* 如果第一采动作已经很好，但二采后动作变软、接触点变化或节奏改变，优先降低二采 动作连续性修复 权重。\n* 这套组合不仅适用于武打，也可以用于其他高速动作类 LoRA，例如 武器战斗、体育、舞蹈、跑酷等。\n* Prompt 仍然需要明确动作内容、接触位置和动作结果，LoRA 负责增强模型执行这些动作的能力。\n"
+      },
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 186,
+      "type": "Label (rgthree)",
+      "pos": [
+        -3655.2806926859953,
+        4577.62705330726
+      ],
+      "size": [
+        2324.619140625,
+        60
+      ],
+      "flags": {
+        "allow_interaction": true
+      },
+      "order": 19,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "AUTODL🐧🔴1群1046279436🔴2群1102535136🟢3群1053358977🟢4群541575695",
+      "properties": {
+        "fontSize": 60,
+        "fontFamily": "Arial",
+        "fontColor": "#ff5500",
+        "textAlign": "left",
+        "backgroundColor": "transparent",
+        "padding": 0,
+        "borderRadius": 0,
+        "angle": 0,
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        },
+        "widget_ue_connectable": {}
+      },
+      "color": "#fff0",
+      "bgcolor": "#fff0"
+    },
+    {
+      "id": 187,
+      "type": "Label (rgthree)",
+      "pos": [
+        -3655.9425888739743,
+        4291.980631660934
+      ],
+      "size": [
+        3175.1220703125,
+        150
+      ],
+      "flags": {
+        "allow_interaction": true
+      },
+      "order": 20,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "U20-MiniMax-H3-激烈战斗动作连续性-四只兔子",
+      "properties": {
+        "fontSize": 150,
+        "fontFamily": "Arial",
+        "fontColor": "#ffff00",
+        "textAlign": "left",
+        "backgroundColor": "transparent",
+        "padding": 0,
+        "borderRadius": 0,
+        "angle": 0,
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        },
+        "widget_ue_connectable": {}
+      },
+      "color": "#fff0",
+      "bgcolor": "#fff0"
+    },
+    {
+      "id": 188,
+      "type": "Label (rgthree)",
+      "pos": [
+        -3658.463923764731,
+        4471.231856149059
+      ],
+      "size": [
+        1865.4296875,
+        80
+      ],
+      "flags": {
+        "allow_interaction": true
+      },
+      "order": 18,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "API云端镜像https://autodl.art/app/market/252?v=709",
+      "properties": {
+        "fontSize": 80,
+        "fontFamily": "Arial",
+        "fontColor": "#00ff00",
+        "textAlign": "left",
+        "backgroundColor": "transparent",
+        "padding": 0,
+        "borderRadius": 0,
+        "angle": 0,
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        },
+        "widget_ue_connectable": {}
+      },
+      "color": "#fff0",
+      "bgcolor": "#fff0"
+    }
+  ],
+  "links": [
+    [
+      250,
+      120,
+      0,
+      121,
+      1,
+      "VAE"
+    ],
+    [
+      251,
+      119,
+      0,
+      122,
+      1,
+      "VAE"
+    ],
+    [
+      253,
+      129,
+      0,
+      125,
+      0,
+      "NOISE"
+    ],
+    [
+      254,
+      126,
+      0,
+      125,
+      1,
+      "GUIDER"
+    ],
+    [
+      258,
+      122,
+      0,
+      130,
+      0,
+      "IMAGE"
+    ],
+    [
+      259,
+      121,
+      0,
+      130,
+      1,
+      "AUDIO"
+    ],
+    [
+      261,
+      132,
+      0,
+      131,
+      0,
+      "FLOAT"
+    ],
+    [
+      270,
+      136,
+      0,
+      126,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      271,
+      136,
+      1,
+      125,
+      4,
+      "LATENT"
+    ],
+    [
+      272,
+      128,
+      0,
+      136,
+      0,
+      "CLIP"
+    ],
+    [
+      273,
+      119,
+      0,
+      136,
+      1,
+      "VAE"
+    ],
+    [
+      274,
+      120,
+      0,
+      136,
+      2,
+      "VAE"
+    ],
+    [
+      275,
+      131,
+      1,
+      136,
+      13,
+      "INT"
+    ],
+    [
+      278,
+      137,
+      0,
+      136,
+      3,
+      "IMAGE"
+    ],
+    [
+      279,
+      138,
+      0,
+      136,
+      10,
+      "STRING"
+    ],
+    [
+      291,
+      148,
+      0,
+      136,
+      11,
+      "INT"
+    ],
+    [
+      292,
+      148,
+      1,
+      136,
+      12,
+      "INT"
+    ],
+    [
+      295,
+      150,
+      0,
+      147,
+      0,
+      "MODEL"
+    ],
+    [
+      297,
+      151,
+      0,
+      126,
+      0,
+      "MODEL"
+    ],
+    [
+      298,
+      151,
+      0,
+      124,
+      0,
+      "MODEL"
+    ],
+    [
+      299,
+      152,
+      0,
+      136,
+      4,
+      "IMAGE"
+    ],
+    [
+      300,
+      124,
+      0,
+      154,
+      0,
+      "SIGMAS"
+    ],
+    [
+      302,
+      154,
+      0,
+      158,
+      0,
+      "SIGMAS"
+    ],
+    [
+      303,
+      158,
+      0,
+      125,
+      3,
+      "SIGMAS"
+    ],
+    [
+      306,
+      156,
+      0,
+      157,
+      0,
+      "MODEL"
+    ],
+    [
+      307,
+      136,
+      0,
+      157,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      308,
+      160,
+      0,
+      159,
+      0,
+      "NOISE"
+    ],
+    [
+      309,
+      157,
+      0,
+      159,
+      1,
+      "GUIDER"
+    ],
+    [
+      311,
+      158,
+      1,
+      159,
+      3,
+      "SIGMAS"
+    ],
+    [
+      312,
+      125,
+      0,
+      159,
+      4,
+      "LATENT"
+    ],
+    [
+      313,
+      159,
+      0,
+      122,
+      0,
+      "LATENT"
+    ],
+    [
+      314,
+      159,
+      0,
+      121,
+      0,
+      "LATENT"
+    ],
+    [
+      315,
+      127,
+      0,
+      150,
+      0,
+      "MODEL"
+    ],
+    [
+      324,
+      123,
+      0,
+      125,
+      2,
+      "SAMPLER"
+    ],
+    [
+      325,
+      123,
+      0,
+      159,
+      2,
+      "SAMPLER"
+    ],
+    [
+      329,
+      162,
+      0,
+      136,
+      5,
+      "IMAGE"
+    ],
+    [
+      332,
+      150,
+      0,
+      155,
+      0,
+      "MODEL"
+    ],
+    [
+      334,
+      147,
+      0,
+      176,
+      0,
+      "MODEL"
+    ],
+    [
+      335,
+      176,
+      0,
+      151,
+      0,
+      "MODEL"
+    ],
+    [
+      337,
+      130,
+      0,
+      178,
+      0,
+      "VIDEO"
+    ],
+    [
+      338,
+      178,
+      0,
+      92,
+      0,
+      "VIDEO"
+    ],
+    [
+      339,
+      155,
+      0,
+      179,
+      0,
+      "MODEL"
+    ],
+    [
+      340,
+      179,
+      0,
+      156,
+      0,
+      "MODEL"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "模型加载",
+      "bounding": [
+        -3693.5871887083467,
+        5586.054685317125,
+        539.4023842968049,
+        588.1509236560887
+      ],
+      "color": "#8A8",
+      "flags": {}
+    },
+    {
+      "id": 2,
+      "title": "首次采样区",
+      "bounding": [
+        -1877.540082720494,
+        5585.151888725086,
+        700.1720981303583,
+        624.4056929938915
+      ],
+      "color": "#8A8",
+      "flags": {}
+    },
+    {
+      "id": 5,
+      "title": "用户输入",
+      "bounding": [
+        -3115.181109507481,
+        4750.679733571133,
+        1902.541651606944,
+        825.167425609252
+      ],
+      "color": "#88A",
+      "flags": {}
+    },
+    {
+      "id": 20,
+      "title": "二段采样：动作结构优化 → 低 Sigma 细节（无复杂动作可跳过）",
+      "bounding": [
+        -1151.599622404038,
+        5584.001963371037,
+        731.1687726384089,
+        744.2276207308578
+      ],
+      "color": "#a1309b",
+      "flags": {}
+    },
+    {
+      "id": 23,
+      "title": "采样器",
+      "bounding": [
+        -2560.0444994520726,
+        5584.716408313725,
+        670.299868004345,
+        623.274336784727
+      ],
+      "color": "#A88",
+      "flags": {}
+    },
+    {
+      "id": 24,
+      "title": "video",
+      "bounding": [
+        -355.7924268291934,
+        5571.320691139217,
+        1701.8167414448371,
+        1199.7633239458773
+      ],
+      "color": "#8A8",
+      "flags": {}
+    },
+    {
+      "id": 25,
+      "title": "加速",
+      "bounding": [
+        -3119.992633913516,
+        5588.072423386522,
+        543.2814590151647,
+        270.2165359415467
+      ],
+      "color": "#88A",
+      "flags": {}
+    },
+    {
+      "id": 26,
+      "title": "LORA",
+      "bounding": [
+        -3130.6273146503,
+        5872.394696726267,
+        549.6248753058067,
+        298.15561114115553
+      ],
+      "color": "#3f789e",
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.37890008361384103,
+      "offset": [
+        5295.818747401824,
+        -2907.7763570642383
+      ]
+    },
+    "frontendVersion": "1.49.6",
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true,
+    "ue_links": [],
+    "links_added_by_ue": [],
+    "qgn_navigation_groups": [],
+    "qgn_locked": false,
+    "two_stage_sampling_notes": {
+      "stage_1": "Original Turbo 0.7 + Combat 1.0; high sigma branch; preserves motion logic.",
+      "stage_2": "DisableNoise; Turbo 0.25 + Combat 0.70; final 25% low sigma branch; restores detail.",
+      "extension": "steps 4, sigma 0.65 to 0.22, sine spacing",
+      "tuning": "If still soft, raise split denoise from 0.25 to 0.30 or reduce stage-2 Turbo to 0.10. If motion weakens, lower split denoise to 0.20."
+    },
+    "bunny_workflow": {
+      "name": "BUNNY Combat H3",
+      "version": "1.0",
+      "purpose": "MiniMax H3 martial-arts motion, temporal continuity and clean low-noise finishing",
+      "source": "MiniMax_H3_00028_.mp4",
+      "motion_stage": {
+        "base_steps": 8,
+        "sigma_extension": [
+          3,
+          0.65,
+          0.28,
+          "sine"
+        ],
+        "turbo": 0.7,
+        "combat": 1
+      },
+      "cleanup_stage": {
+        "low_sigma_fraction": 0.25,
+        "disable_noise": true,
+        "turbo": 0.2,
+        "combat": 0.65
+      }
+    }
+  },
+  "version": 0.4
+}
