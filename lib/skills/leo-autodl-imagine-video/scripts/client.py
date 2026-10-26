@@ -81,9 +81,6 @@ class AutoDLMediaClient:
             return {"ok": False, "message": "未配置云端连接。"}
         return self.engine.power_off(confirm=confirm)
 
-    def shutdown(self, confirm: bool = False) -> dict:
-        """远程关闭云端实例（必须传入 confirm=True）"""
-        return self.power_off(confirm=confirm)
 
     def refresh(self) -> dict:
         """从 AutoDL 官方 OpenAPI 刷新最新动态 SSH 端口与密码"""
@@ -302,7 +299,6 @@ def main():
     parser.add_argument("--probe", action="store_true", help="探测云端实例状态 (GPU + ComfyUI)")
     parser.add_argument("--power-on", action="store_true", help="通过 AutoDL 官方 API 远程开机并同步动态端口")
     parser.add_argument("--power-off", action="store_true", help="通过 AutoDL 官方 API 远程关机 (必须配合 --confirm)")
-    parser.add_argument("--shutdown", action="store_true", help="远程关闭云端实例 (必须配合 --confirm)")
     parser.add_argument("--confirm", action="store_true", help="确认已获用户明确同意执行关机")
     parser.add_argument("--refresh", action="store_true", help="从 AutoDL 官方 API 刷新最新动态 SSH 端口凭证")
     parser.add_argument("--update-config", action="store_true", help="更新 SSH 主机、密码或 API Token")
@@ -383,7 +379,7 @@ def main():
         result = client.clean_outputs()
     elif args.power_on:
         result = client.power_on()
-    elif args.power_off or args.shutdown:
+    elif args.power_off:
         result = client.power_off(confirm=args.confirm)
     elif args.refresh:
         result = client.refresh()
@@ -408,7 +404,7 @@ def main():
             result = {"ok": False, "message": "生成视频必须提供 --prompt 参数"}
         else:
             wf_tpl = args.workflow or "minimax_h3_video_1pass_api.json"
-            steps = args.steps or (16 if "cinematic" in wf_tpl else 10)
+            steps = args.steps or 10
             result = client.generate_video(
                 prompt=args.prompt,
                 duration=args.duration,
