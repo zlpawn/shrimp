@@ -75,7 +75,7 @@ class AutoDLMediaClient:
     def power_off(self, confirm: bool = False) -> dict:
         """
         通过 AutoDL 官方 OpenAPI 远程关机实例（释放 GPU 停止计费）
-        【铁律约束】：必须先获用户明确确认，传入 confirm=True 才能执行！
+        【关机规则】：中途/生图阶段须先获用户确认；完整视频全部生成完毕后可直接传入 confirm=True 自动关机。
         """
         if not self.engine:
             return {"ok": False, "message": "未配置云端连接。"}

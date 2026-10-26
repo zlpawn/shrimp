@@ -158,14 +158,16 @@ class AutoDLRemoteEngine:
     def power_off(self, confirm: bool = False) -> dict:
         """
         通过官方 OpenAPI 远程关机实例（释放 GPU 并停止计费）
-        【铁律约束】：必须由用户明确确认后，传入 confirm=True 才允许执行关机！
+        【关机规则】：
+        - 中途阶段（仅生图、多镜头中间分镜、交互调试）严禁私自关机，须先获用户确认；
+        - 当整个完整视频（最终成片）已全部生成并下载回本地后，可直接传入 confirm=True 自动关机停费。
         POST https://www.autodl.art/api/v1/adl_dev/dev/instance/pro/power_off
         """
         if not confirm:
             return {
                 "ok": False,
                 "error_type": "CONFIRMATION_REQUIRED",
-                "message": "拒绝执行：关机操作必须经过用户明确确认！请先询问用户是否确认关机，获得同意后再传入 confirm=True 或 --confirm 执行。"
+                "message": "拒绝执行：若处于中途阶段（生图/分镜未全部完成）请先向用户确认；若完整视频已全部生成完毕，请传入 confirm=True 或 --confirm 执行关机。"
             }
         if not self.token or not self.instance_uuid:
             return self.shutdown_via_ssh()

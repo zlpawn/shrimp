@@ -16,9 +16,9 @@ description: "MiniMax-H3 dedicated cloud image & audio-synced video generation s
 > 1. **实事求是与可持续验证原则**：
 >    * 优先使用 `references/workflows/` 下**已经真机实测跑通**的两个基准工作流（生图 `minimax_h3_image_u33_api.json`、生视频 `minimax_h3_video_1pass_api.json`）。
 >    * 若用户对效果不满意需要调优，或需使用二采超分、武戏、文戏等进阶工作流，Agent 可通过 `--patch` 修改已知节点参数，或用 `--fetch-remote-workflow` 从 AutoDL 远端 `/root/ComfyUI/` 拉取内置的 `U00~U43` / `VRGDG` 原版工作流进行研究。**任何新工作流必须经真机运行验证通过后，才可沉淀进 `references/workflows/` 与 `references/scenarios/`，严禁凭空捏造未经验证的节点连线。**
-> 2. **严禁私自关机（Mandatory User Confirmation for Power-Off）**：
->    * **Agent 绝不能在任务完成后私自调用 `--power-off` / `client.power_off()` 关机！**
->    * 必须先询问用户是否还有后续需求，**仅在用户明确回复确认关机后**，才允许传入 `--confirm`（或 `confirm=True`）执行关机。
+> 2. **按阶段区分的关机规则（中途严禁私自关机 vs 完整视频完成后自动关机）**：
+>    * **中途阶段严禁私自关机**：在**仅生成图片**（后续通常还要选图、改图或拿图去生视频）、**多镜头/长视频的中间分镜阶段**（尚未生成完整个完整视频）、或**交互式调试阶段**，**严禁自动关机**（否则下一步又要重新开机并重新加载几十 GB 模型进显存）；若在中途阶段想关机，必须先询问用户并获明确确认。
+>    * **完整视频交付后自动关机**：当用户要求的**整个完整视频（最终成片）**已经全部生成完毕并成功下载回本地后，任务已彻底闭环，此时**可直接调用 `--power-off --confirm`（或 `client.power_off(confirm=True)`）自动关机停止计费**，避免云端显卡空转扣费。
 > 3. **默认暂存输出与按需导出清理（Staging & Cleanup）**：
 >    * 所有生成的图片和视频默认统一保存在 **`~/.shrimp/skills/leo-autodl-imagine-video/outputs/`** 暂存目录，不污染当前项目目录。
 >    * 当用户选定最终满意的产物后，使用 `--export <文件名> --to <用户目标路径> --clean-others` 将其移至指定位置并清理无用的中间草稿。
@@ -82,6 +82,6 @@ CLI_PATH="$HOME/.agents/skills/leo-autodl-imagine-video/scripts/client.py"
 # 7. 将用户选定的最终产物移至指定目录，并清理暂存目录中其余无用草稿
 & $PYTHON_BIN $CLI_PATH --export "MiniMaxH3_Image_00001_.png" --to "D:/my-project/assets/" --clean-others --json
 
-# 8. 【仅在用户明确确认同意关机后执行】远程关机停止计费
+# 8. 远程关机停止计费（完整视频全部生成完毕后可直接自动执行；若处于生图/多镜中途阶段则须先获用户确认）
 & $PYTHON_BIN $CLI_PATH --power-off --confirm --json
 ```

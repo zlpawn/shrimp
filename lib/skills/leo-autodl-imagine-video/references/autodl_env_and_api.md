@@ -7,9 +7,9 @@
 ## 1. 核心行为铁律（Agent 必读）
 
 > [!IMPORTANT]
-> 1. **关机确认铁律（禁止私自关机）**：
->    * **任何 Agent 严禁在任务完成后私自调用 `--power-off` / `client.power_off()` 关机！**
->    * 必须先询问用户是否还有后续生成或调优需求，**仅在用户明确回复确认关机后**，才允许传入 `--confirm`（或 `confirm=True`）执行关机。
+> 1. **按阶段区分的关机规则（中途严禁私自关机 vs 完整视频完成后自动关机）**：
+>    * **中途阶段严禁私自关机**：在**仅生成图片**（后续还要选图、改图或拿图去生视频）、**多镜头/长视频的中间分镜过程**（尚未跑完整个完整视频）、或**交互调试阶段**，**严禁私自关机**；中途阶段如需关机，必须先向用户确认。
+>    * **完整视频交付后自动关机**：当用户要求的**整个完整视频（最终成片）**已全部生成完毕并下载回本地后，可直接传入 `--confirm`（或 `confirm=True`）自动关机停止计费，防止云端 GPU 空转扣费。
 > 2. **暂存目录与按需导出清理规范**：
 >    * 所有生成的图片和视频默认统一回传至 **`~/.shrimp/skills/leo-autodl-imagine-video/outputs/`** 暂存目录，不直接污染用户的项目工作区。
 >    * 当用户选定最终满意的图片或视频后，使用 `--export <文件名> --to <目标路径> --clean-others` 将其移至用户指定目录，并清理无用的草稿文件。
@@ -92,4 +92,4 @@
 | **查询实例状态** | `GET /api/v1/adl_dev/dev/instance/pro/status?instance_uuid={uuid}` | Query: `instance_uuid` | `data`: `"running"` / `"shutdown"` / `"starting"` |
 | **刷新动态 SSH 凭证** | `GET /api/v1/adl_dev/dev/instance/pro/snapshot?instance_uuid={uuid}` | Query: `instance_uuid` | `data.proxy_host`, `data.ssh_port`, `data.root_password` |
 | **远程有卡开机** | `POST /api/v1/adl_dev/dev/instance/pro/power_on` | `{"instance_uuid": "<uuid>", "payload": "gpu"}` | `code: "Success"`（开机后自动调用 `snapshot` 更新端口） |
-| **远程关机停止计费** | `POST /api/v1/adl_dev/dev/instance/pro/power_off` | `{"instance_uuid": "<uuid>"}` | `code: "Success"`（**必须先获用户确认**） |
+| **远程关机停止计费** | `POST /api/v1/adl_dev/dev/instance/pro/power_off` | `{"instance_uuid": "<uuid>"}` | `code: "Success"`（完整视频完成后可自动关机；中途/生图阶段须先获用户确认） |
