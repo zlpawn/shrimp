@@ -1,6 +1,6 @@
 ---
 name: leo-autodl-imagine-video
-description: "MiniMax-H3 dedicated cloud image & audio-synced video generation skill on AutoDL ComfyUI. Uses verified MiniMax-H3 workflows for image and audio-video generation, and provides tools to inspect nodes, fetch remote U00~U43 workflows, patch/execute custom ComfyUI workflows, and evolve verified scenario recipes."
+description: "MiniMax-H3 dedicated cloud image & audio-synced video generation skill on AutoDL ComfyUI. Uses verified MiniMax-H3 workflows for image and audio-video generation, and provides tools to inspect nodes, fetch remote U00~U43 workflows, patch/execute custom ComfyUI workflows, and reference archived U-series workflows and prompt guides."
 ---
 
 # leo-autodl-imagine-video
@@ -15,7 +15,7 @@ description: "MiniMax-H3 dedicated cloud image & audio-synced video generation s
 > [!IMPORTANT]
 > 1. **实事求是与可持续验证原则**：
 >    * 优先使用 `references/workflows/` 下**已经真机实测跑通**的两个基准工作流（生图 `minimax_h3_image_u33_api.json`、生视频 `minimax_h3_video_1pass_api.json`）。
->    * 若用户对效果不满意需要调优，或需使用二采超分、武戏、文戏等进阶工作流，Agent 可通过 `--patch` 修改已知节点参数，或用 `--fetch-remote-workflow` 从 AutoDL 远端 `/root/ComfyUI/` 拉取内置的 `U00~U43` / `VRGDG` 原版工作流进行研究。**任何新工作流必须经真机运行验证通过后，才可沉淀进 `references/workflows/` 与 `references/scenarios/`，严禁凭空捏造未经验证的节点连线。**
+>    * 若用户对效果不满意需要调优，或需使用二采超分、武戏、文戏等进阶工作流，Agent 可通过 `--patch` 修改已知节点参数，或选用 `references/workflows/u_series_api/` 下的备用工作流。**任何新改造的工作流必须经真机运行验证通过后，才可沉淀进 `references/workflows/`，严禁凭空捏造未经验证的节点连线。**
 > 2. **按阶段区分的关机规则（中途严禁私自关机 vs 完整视频完成后自动关机）**：
 >    * **中途阶段严禁私自关机**：在**仅生成图片**（后续通常还要选图、改图或拿图去生视频）、**多镜头/长视频的中间分镜阶段**（尚未生成完整个完整视频）、或**交互式调试阶段**，**严禁自动关机**（否则下一步又要重新开机并重新加载几十 GB 模型进显存）；若在中途阶段想关机，必须先询问用户并获明确确认。
 >    * **完整视频交付后自动关机**：当用户要求的**整个完整视频（最终成片）**已经全部生成完毕并成功下载回本地后，任务已彻底闭环，此时**可直接调用 `--power-off --confirm`（或 `client.power_off(confirm=True)`）自动关机停止计费**，避免云端显卡空转扣费。
@@ -27,22 +27,17 @@ description: "MiniMax-H3 dedicated cloud image & audio-synced video generation s
 
 ## 2. 真实沉淀的知识库与工作流导航 (`references/`)
 
-* **环境、OpenAPI 与远端工作流真实文件清单**：[references/autodl_env_and_api.md](references/autodl_env_and_api.md)
-  * AutoDL 官方 OpenAPI 4 个已验证接口（`status`, `snapshot`, `power_on`, `power_off`）+ 远端 `ls` 实测抓回的 `VRGDG` 与 `U00~U43` 工作流完整文件名清单。
-* **节点 Schema、云端模型真实清单与工作流探索方法**：[references/workflow_tuning_guide.md](references/workflow_tuning_guide.md)
-  * 远端 `/object_info` 实测抓回的 `MiniMaxH3ReferenceToVideo` 完整参数定义、云端存在的 `minimax/*` 模型文件名清单，以及动态探索调优工作流的标准流程。
-* **已实测验证的场景指南 (`references/scenarios/`)**：
-  * [scenarios/image_gen_and_edit.md](references/scenarios/image_gen_and_edit.md) —— **场景 1：MiniMax-H3 生图实测记录与 `U33` 节点解析**
-  * [scenarios/video_t2v_and_ref2v.md](references/scenarios/video_t2v_and_ref2v.md) —— **场景 2：MiniMax-H3 音画同步生视频实测记录（15 节点详解）**
-* **已上机实测跑通的 API 工作流模板 (`references/workflows/`)**：
+* **环境路径与 AutoDL 官方 OpenAPI 规范**：[references/autodl_env_and_api.md](references/autodl_env_and_api.md)
+* **已验证工作流拓扑、核心节点 Schema 与调优指南**：[references/workflow_tuning_guide.md](references/workflow_tuning_guide.md)
+* **已上机实测跑通的默认 API 工作流模板 (`references/workflows/`)**：
   * [workflows/minimax_h3_image_u33_api.json](references/workflows/minimax_h3_image_u33_api.json) —— 已在 RTX 5090 实测跑通的 9 节点生图工作流
   * [workflows/minimax_h3_video_1pass_api.json](references/workflows/minimax_h3_video_1pass_api.json) —— 已在 RTX 5090 实测跑通的 15 节点音画同步生视频工作流
 * **可选参考资料与工作流/提示词备份库（供 Agent 按需查阅或跨镜像复用，非强制规范）**：
   * [workflows/u_series_api/](references/workflows/u_series_api/) —— 19 套 `API-U*.json` 工作流备份（标准 ComfyUI API 格式，内含 `_api_config` 参数说明，可直接通过 `--run-workflow` 运行）
   * [workflows/u_series_canvas/](references/workflows/u_series_canvas/) —— 61 套 `U00~U43` ComfyUI 网页画布原始工作流备份（供参考节点连线或导入其他镜像画布）
   * [prompts_and_guides/U视频-MINIMAX-H3_工作流说明.md](references/prompts_and_guides/U视频-MINIMAX-H3_工作流说明.md) —— `U00~U37` 各工作流的用途、输入与模型技术栈参考说明
-  * [prompts_and_guides/minimax_h3_prompt_guide.json](references/prompts_and_guides/minimax_h3_prompt_guide.json) —— MiniMax-H3 分镜、运镜与角色对白提示词写法参考模板
-  * [prompts_and_guides/minimax_h3_models_and_loras.json](references/prompts_and_guides/minimax_h3_models_and_loras.json) —— MiniMax-H3 常用底模、CLIP 与加速/风格 LoRA 列表参考
+  * [prompts_and_guides/minimax_h3_prompt_guide.md](references/prompts_and_guides/minimax_h3_prompt_guide.md) —— MiniMax-H3 六段式分镜、运镜与角色对白提示词编写指南（去重精简版）
+  * [prompts_and_guides/minimax_h3_models_and_loras.json](references/prompts_and_guides/minimax_h3_models_and_loras.json) —— MiniMax-H3 底模、CLIP 与 LoRA 清单及 `adaln` 兼容性字典
 
 ---
 

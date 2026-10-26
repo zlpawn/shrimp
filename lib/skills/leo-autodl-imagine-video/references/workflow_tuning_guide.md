@@ -1,80 +1,66 @@
-# MiniMax-H3 节点Schema、云端模型真实清单与工作流探索方法
+# MiniMax-H3 已验证工作流拓扑、核心节点 Schema 与调优指南
 
-本文档严格基于远端 ComfyUI `GET /object_info` 的真实返回数据整理，列出已验证的核心节点 Schema、云端客观存在的 MiniMax-H3 模型权重清单，以及 Agent 动态探索与调整工作流的标准方法。
-
----
-
-## 1. 已验证的 MiniMax-H3 核心节点 Schema (`GET /object_info`)
-
-### 1.1 `MiniMaxH3ReferenceToVideo`（生图与生视频核心条件节点）
-从远端 `GET /object_info/MiniMaxH3ReferenceToVideo` 抓取的真实输入定义：
-* **必填输入 (`required`)**：
-  * `clip` (`CLIP`)：连接 `CLIPLoader` 输出（`type` 必须为 `"minimax"`）。
-  * `prompt` (`STRING`, multiline)：提示词文本。
-  * `width` (`INT`)：默认 `1344`，范围 `32 ~ 16384`，步长 `32`。
-  * `height` (`INT`)：默认 `768`，范围 `32 ~ 16384`，步长 `32`。
-  * `length` (`INT`)：默认 `124`（24fps 下约 5s），**最小值 `5`，步长 `17`（即合法帧数必须满足 $17n + 5$）**。
-    * **生图模式**：设为最小值 `5`（解码后取第 1 帧即为单张静帧图像）。
-    * **生视频模式**：由公式 `max(5, round(seconds * 24)) + (5 - (max(5, round(seconds * 24)) % 17)) % 17` 计算。
-  * `ref_image_size` (`COMBO`)：枚举值 `["match", "max"]`，默认 `"match"`。
-    * 官方 Tooltip 说明：`"match"` 将参考图按比例缩小至生成画面的像素面积；`"max"` 使用参考管线的 2048px 短边以获得最佳身份保真度（但每个采样步都会携带参考 Token，速度会变慢）。
-* **可选输入 (`optional`)**：
-  * `vae` (`VAE`)：视频 VAE。
-  * `audio_vae` (`VAE`)：音频 VAE（仅生视频需要，生图可不接）。
-  * `ref_images.ref_image_0` ~ `ref_images.ref_image_8` (`IMAGE`)：最多 9 张参考图。
-  * `ref_videos.ref_video_0` ~ `ref_videos.ref_video_2` (`IMAGE`)：最多 3 段参考视频。
-* **输出 (`output`)**：
-  * 槽位 `0`：`positive` (`CONDITIONING`)
-  * 槽位 `1`：`LATENT` (`LATENT`)
+本文档整合了已在云端 **RTX 5090 (32GB)** 上真机实测跑通的生图与生视频工作流节点拓扑、核心节点 `/object_info` 定义，以及工作流动态调优流程。
 
 ---
 
-## 2. 云端 `/object_info` 实测存在的 MiniMax-H3 模型文件清单
+## 1. 已验证的 9 节点生图工作流 (`minimax_h3_image_u33_api.json`)
 
-以下文件名全部直接提取自远端 ComfyUI `/object_info` 返回的枚举数组（零臆造）：
+提炼自 `U33-Minimax-H3图像编辑全能工作流.json`，通过将 `MiniMaxH3ReferenceToVideo` 的 `length` 设为最小值 `5` 并截取首帧实现静态图像生成：
 
-### 2.1 已上机实测跑通的默认权重组合
-* **扩散主模型 (`DiffusionModelLoaderKJ`)**：`minimax/minimax_h3_ref2va_pruned_int8_convrot.safetensors`（已在生图与生视频中实测跑通）
-* **原版 `U33` 生图流中使用的主模型 (`UNETLoader`)**：`minimax/minimax_h3_hybrid_fl2va_ref2va_b25-49-int8.safetensors`
-* **文本编码器 (`CLIPLoader`, `type="minimax"`)**：
-  * `qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors`（已在生图与生视频中实测跑通）
-  * `qwen3vl_32b_minimax_h3_int8_convrot.safetensors`（原版 `U33` 中配置的编码器）
-* **VAE (`VAELoader`)**：
-  * 视频/图像 VAE：`minimax_h3_video_vae_fp16.safetensors`（已实测跑通）
-  * 音频 VAE：`minimax_h3_audio_vae_fp32.safetensors`（已实测跑通）
-
-### 2.2 云端存在、可供后续测试探索的其他 `minimax/*` 模型（尚未逐一上机跑图验证）
-* **`DiffusionModelLoaderKJ` 中的其他 `minimax/` 模型**：
-  * `minimax/minimax_h3_ref2va_bf16.safetensors`
-  * `minimax/minimax_h3_ref2va_int8_convrot.safetensors`
-  * `minimax/minimax_h3_ref2va_pruned_bf16.safetensors`
-  * `minimax/minimax_h3_ref2va_pruned_fp8_scaled.safetensors`
-  * `minimax/minimax_h3_ref2va_pruned_nvfp4.safetensors`
-  * `minimax/minimax_h3_fl2va_pruned_int8_convrot.safetensors`
-  * `minimax/fastvideo_fasth3_8step_v2_pruned_int8_convrot.safetensors`
-  * `minimax/FeiHou_MiniMax-H3_Remix_HSA_turbo_v0.8_int8_convrotHQ.safetensors`
-  * `minimax/FeiHou_MiniMax-H3_Remix_HSA_turbo_v0.8_int8_convrotHQ_pruned.safetensors`
-  * `minimax/DasiwaMinimaxH3_dasiwaHybrid8turboV1.safetensors`
-  * `minimax/Minimax-h3_Singularity_ref2va_Pruned_v1.3_int8.safetensors`
-* **`LoraLoader` 中的 `minimax/` 相关 LoRA**：
-  * `minimax/电影感H3-loraV1.0正式版.safetensors`
-  * `minimax/电影感H3-loraV1.0正式版_剪枝与非剪枝通用.safetensors`
+| 节点 ID | 节点类型 (`class_type`) | 实测参数配置 | 说明 |
+| :--- | :--- | :--- | :--- |
+| **`"1"`** | `DiffusionModelLoaderKJ` | `model_name`: `"minimax/minimax_h3_ref2va_pruned_int8_convrot.safetensors"`<br/>`sage_attention`: `"auto"`, `enable_fp16_accumulation`: `true` | 加载 MiniMax-H3 扩散模型 |
+| **`"2"`** | `CLIPLoader` | `clip_name`: `"qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors"`, `type`: `"minimax"` | 加载 Qwen3-VL 32B 编码器 |
+| **`"3"`** | `VAELoader` | `vae_name`: `"minimax_h3_video_vae_fp16.safetensors"` | 加载 MiniMax-H3 视频 VAE |
+| **`"4"`** | `MiniMaxH3ReferenceToVideo` | `clip`: `["2", 0]`, `vae`: `["3", 0]`, `prompt`: `<提示词>`<br/>`width`: `1280`, `height`: `736`, **`length`: `5`**, `ref_image_size`: `"match"` | 帧长 `length=5` 用于生成静态图（5宫格分镜板可设 `2048x2048`, `ref_image_size="max"`） |
+| **`"5"`** | `ConditioningZeroOut` | `conditioning`: `["4", 0]` | 正向条件置零作为 `negative` 输入 |
+| **`"6"`** | `KSampler` | `steps`: `10~12`, `cfg`: `1.0`, `sampler_name`: `"euler"`, `scheduler`: `"beta"`, `denoise`: `1.0` | 执行去噪采样 |
+| **`"7"`** | `VAEDecode` | `samples`: `["6", 0]`, `vae`: `["3", 0]` | 解码潜变量为图像帧批次 |
+| **`"8"`** | `ImageFromBatch` | `image`: `["7", 0]`, `batch_index`: `0`, `length`: `1` | 提取第 1 张单帧图像 |
+| **`"9"`** | `SaveImage` | `images`: `["8", 0]`, `filename_prefix`: `"MiniMaxH3_Image"` | 保存 PNG 到 `/root/ComfyUI/output/` |
 
 ---
 
-## 3. Agent 探索与调优工作流的标准流程（严禁盲目拼凑）
+## 2. 已验证的 15 节点音画同步生视频工作流 (`minimax_h3_video_1pass_api.json`)
 
-当现有的两个已验证工作流（`minimax_h3_image_u33_api.json` 与 `minimax_h3_video_1pass_api.json`）不能满足用户需求，需要调优或引入新工作流时，Agent **必须遵循以下实证步骤**：
+源自 `minimax_built_in_audio_builder_api.json`（修正了节点 `141` 的 `minimax/` 模型子目录前缀），在 RTX 5090 上 3 秒视频（`steps=10`）采样耗时约 19 秒：
 
-1. **第一优先级：在已验证工作流上微调已知参数 (`--patch`)**
-   * 修改采样步数 `--steps`（如从 `10` 调至 `15~20`）；
-   * 修改 `EasyCache`（节点 `174`）的 `reuse_threshold`（默认 `0.3`，调小可减少跳步缓存带来的模糊）；
-   * 修改 `MiniMaxH3ReferenceToVideo` 的 `ref_image_size`（`"match"` 或 `"max"`）。
-2. **第二优先级：从远端拉取现成的成熟工作流原文件研究 (`--fetch-remote-workflow`)**
-   * 若需二采放大、武戏、文戏或复杂多图编辑，先从 `/root/ComfyUI/custom_nodes/comfyui-vrgamedevgirl/Workflows/UsedForUIDoNotTouch/` 或 `/root/ComfyUI/user/default/workflows/U视频-MINIMAX-H3/` 下载原文件：
-     ```bash
-     & $PYTHON_BIN $CLI_PATH --fetch-remote-workflow "/root/ComfyUI/custom_nodes/comfyui-vrgamedevgirl/Workflows/UsedForUIDoNotTouch/minimax_audio_driven_builder_latent_upscale_2pass_api.json"
-     ```
-   * 阅读下载下来的真实 JSON 节点连线与参数，必要时用 `--inspect-node <NodeClass>` 检查节点定义。
-3. **第三优先级：真机实测通过后再沉淀**
-   * 用 `--run-workflow` 在云端实例上实际跑通、确认不报错且画质符合预期后，再将验证过的 JSON 存入 `references/workflows/` 并更新 `references/scenarios/`。
+| 节点 ID | 节点类型 (`class_type`) | 实测参数配置 | 说明 |
+| :--- | :--- | :--- | :--- |
+| **`"115"`** | `ResolutionSelector` | `aspect_ratio`: `"16:9 (Widescreen)"`, `megapixels`: `0.9`, `multiple`: `32` | 自动计算 32 倍数对齐宽高（`0.9 MP` 在 `16:9` 下为 `1280x736`） |
+| **`"141"`** | `DiffusionModelLoaderKJ` | `model_name`: `"minimax/minimax_h3_ref2va_pruned_int8_convrot.safetensors"` | 加载 MiniMax-H3 扩散主模型 |
+| **`"174"`** | `EasyCache` | `reuse_threshold`: `0.3`, `start_percent`: `0.2`, `end_percent`: `0.9`, `model`: `["141", 0]` | 采样特征缓存加速（调小 `reuse_threshold` 可提升清晰度） |
+| **`"128"`** | `CLIPLoader` | `clip_name`: `"qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors"`, `type`: `"minimax"` | 加载 Qwen3-VL 32B 编码器 |
+| **`"119"` / `"120"`** | `VAELoader` | `minimax_h3_video_vae_fp16.safetensors` / `minimax_h3_audio_vae_fp32.safetensors` | 分别加载视频 VAE 与音频 VAE |
+| **`"132"` / `"131"`** | `PrimitiveFloat` / `ComfyMathExpression` | `expression`: `"max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17"` | 将目标秒数按 24fps 换算为满足 $17n+5$ 约束的合法帧数 `length` |
+| **`"138"`** | `PrimitiveStringMultiline` | `value`: `<提示词>` | 输入包含画面、运镜、台词与声音指示的提示词 |
+| **`"180"`** | `VRGDG_MiniMaxH3ReferenceMediaFromPaths` | `image_paths`: `"[]"`, `video_references`: `"[]"` | 自动绑定最多 9 张参考图与 3 段参考视频 |
+| **`"136"`** | `MiniMaxH3ReferenceToVideo` | 连接 `138`, `115`, `131`, `128`, `119`, `120`, `180`, `ref_image_size`: `"match"` | 构建音视频联合 Conditioning 与初始 Latent |
+| **`"129"`** | `RandomNoise` | `noise_seed`: `<随机种子>` | 随机噪声种子 |
+| **`"123"~"126"`** | `KSamplerSelect` / `BasicScheduler` / `BasicGuider` / `SamplerCustomAdvanced` | `sampler_name`: `"res_multistep"`, `scheduler`: `"simple"`, `steps`: `10` | 音视频联合去噪采样 |
+| **`"121"` / `"122"`** | `LTXVAudioVAEDecode` / `VAEDecode` | 分别解码出音频波形与视频画面序列 | 音画分离解码 |
+| **`"142"`** | `VHS_VideoCombine` | `frame_rate`: `24`, `format`: `"video/h264-mp4"`, `pix_fmt`: `"yuv420p"`, `crf`: `19` | 封装合并为带音轨的 `.mp4` 文件 |
+
+---
+
+## 3. `MiniMaxH3ReferenceToVideo` 节点核心参数规范 (`GET /object_info`)
+
+* **`width` / `height`**：范围 `32 ~ 16384`，步长必须为 `32` 的倍数。
+* **`length`**：最小值 `5`，步长 `17`（合法帧数必须满足 $17n + 5$；生图取 `5`，生视频按 24fps 向上取整至最近的 $17n+5$）。
+* **`ref_image_size`**：
+  * `"match"`（默认）：将参考图缩放至匹配输出画幅面积，显存占用低、速度快；
+  * `"max"`：使用 2048px 短边保留最高人物/细节保真度，适合高清分镜板或多图精修。
+* **完整可用底模、CLIP 与 LoRA 清单（含 `adaln` 剪枝/完整兼容标记）**：请查阅 [minimax_h3_models_and_loras.json](prompts_and_guides/minimax_h3_models_and_loras.json)。
+
+---
+
+## 4. 动态微调与使用进阶工作流的方法
+
+1. **在基准工作流上微调参数 (`--patch`)**：
+   * 调整步数 `--steps`（如 `10 -> 16`）；
+   * 调整 `EasyCache` 阈值：`--patch "174.inputs.reuse_threshold=0.15"`；
+   * 切换底模或 LoRA（需对照 [minimax_h3_models_and_loras.json](prompts_and_guides/minimax_h3_models_and_loras.json) 中的 `adaln` 兼容性）。
+2. **按场景选用 `references/workflows/u_series_api/` 下的备用工作流**：
+   * 可先查阅 [U视频-MINIMAX-H3_工作流说明.md](prompts_and_guides/U视频-MINIMAX-H3_工作流说明.md) 了解 `U00~U37` 各工作流定位；
+   * 查看对应 `API-U*.json` 底部的 `_api_config` 了解可调参数槽位（如 `"139:prompt"`），并通过 `--run-workflow "API-U03-..." --patch "139:prompt=..."` 提交远端运行。
