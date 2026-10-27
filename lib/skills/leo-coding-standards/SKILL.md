@@ -27,12 +27,13 @@ description: Use when writing, modifying, refactoring, testing, or reviewing Jav
 
 - 编写、修改、重构或补充 Java 测试：必须读取 [Java API 规则](references/java-api-rules.md) 和 [工程原则](references/engineering-principles.md)。
 - 涉及库表设计（DDL）、MyBatis/JPA 实体与持久层持久化：必须严格遵循 [工程原则](references/engineering-principles.md) 中的库表与持久层设计规范。
+- 涉及 Apollo 等配置注入与读取：必须严格遵循 [工程原则](references/engineering-principles.md) 中的 Apollo 配置注入规范（必须有默认兜底值、复杂 JSON 优先 `@ApolloJsonValue`）。
 - 审查 Java 代码或执行规范整改：除上述文件外，必须读取 [审查清单](references/review-checklist.md)。
 - 只讨论 Java 设计：优先读取 [工程原则](references/engineering-principles.md)；涉及 API 选择时再读取 [Java API 规则](references/java-api-rules.md)。
 
 ### 3. 应用规则等级
 
-- `MUST`：正确性、安全性、兼容性、依赖、资源管理、库表约束（字段非空+默认值、禁止唯一索引）或契约要求。违反即为缺陷。
+- `MUST`：正确性、安全性、兼容性、依赖、资源管理、库表约束（字段非空+默认值、禁止唯一索引）、配置注入（必须提供默认兜底值、复杂 JSON 优先 `@ApolloJsonValue`）或契约要求。违反即为缺陷。
 - `SHOULD`：默认 API、结构和可读性偏好。有更清晰、更安全或更符合项目约定的方案时允许例外。
 - `CONSIDER`：需要证明实际收益后才采用的模式或优化。
 

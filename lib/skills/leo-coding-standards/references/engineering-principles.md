@@ -20,6 +20,8 @@
 - 让核心业务逻辑能够脱离不稳定的外部依赖独立测试。
 - 库表设计时所有字段必须为 `NOT NULL` 并显式声明 `DEFAULT` 默认值（`TEXT` / `BLOB` 等大文本类型除外）。
 - 库表设计不得建立唯一索引（Unique Index）；数据唯一性与并发防重必须在应用层通过分布式锁结合业务校验来保证。
+- 使用 `@Value` 注入配置时必须提供默认兜底值（如 `@Value("${biz.timeout:3000}")`），禁止无默认值的裸注入。
+- 复杂对象或集合等 JSON 配置优先使用 `@ApolloJsonValue` 自动映射，且必须提供合法默认值（如 `@ApolloJsonValue("${biz.rules:{}}")`、`@ApolloJsonValue("${biz.whitelist:[]}")`）。
 
 ## SOLID
 
@@ -121,6 +123,11 @@
 
 - **字段非空与默认值**：库表设计中所有字段均不允许为 `NULL`，必须显式定义为 `NOT NULL` 并提供业务含义明确或安全的默认值（如数值 `DEFAULT 0`、字符 `DEFAULT ''`、时间 `DEFAULT CURRENT_TIMESTAMP` 等）。仅 `TEXT`、`BLOB` 等大文本/二进制大对象类型除外。严禁使用 NULL 避免 SQL 三值逻辑陷阱、索引空间浪费和 Java ORM 映射时的 NPE。
 - **唯一性与防重机制**：库表中严禁创建唯一索引（`UNIQUE KEY` / `UNIQUE INDEX`）。数据的唯一性与并发防重诉求统一上移至业务应用层，通过分布式锁（如基于 Redis / Redisson 的业务分布式锁、防重 Token 等）结合前置查询严格保证。彻底规避软删除（`is_deleted`）冲突、高并发插入时 InnoDB Gap Lock/Next-Key Lock 死锁，并自然适配分库分表与数据归档清洗场景。
+
+### Apollo 配置注入与管理
+
+- **基础配置必须提供默认值**：使用 `@Value` 注入配置时，必须提供默认兜底值（例如 `@Value("${biz.timeout:3000}")`、`@Value("${feature.enabled:false}")`），禁止无默认值的裸注入，防止因配置缺失、命名空间未发布或网络异常导致 Spring 容器启动失败（`BeanCreationException: Could not resolve placeholder`）或运行时异常。
+- **复杂 JSON 配置优先使用 `@ApolloJsonValue`**：对于 List、Map 或自定义复杂配置对象，优先使用 `@ApolloJsonValue` 直接反序列化，避免使用 `@Value` 注入字符串后再手动解析产生重复代码与反序列化隐患。使用 `@ApolloJsonValue` 时同样必须提供合法的默认兜底 JSON 串（例如 `@ApolloJsonValue("${biz.rules:{}}")`、`@ApolloJsonValue("${biz.whitelist:[]}")`）。
 
 ## 设计模式
 
