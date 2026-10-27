@@ -559,3 +559,45 @@ test("SkillInstaller.consolidateAndDispatch dispatches and unlinks custom client
   }
 });
 
+
+test("SkillInstaller Antigravity uses ~/.gemini/config/skills and copy mode on Windows", () => {
+  const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), "skill-ag-copy-"));
+  try {
+    const agRoot = SkillInstaller.getAntigravitySkillsRoot(tmpHome);
+    assert.equal(agRoot, path.join(tmpHome, ".gemini", "config", "skills"));
+
+    const toolPathMeta = SkillInstaller.getToolPathMeta("sample-skill", [], tmpHome);
+    assert.ok(toolPathMeta.antigravity.path.includes(".gemini/config/skills/sample-skill") || toolPathMeta.antigravity.path.includes(".gemini\\config\\skills\\sample-skill"));
+    if (process.platform === "win32") {
+      assert.equal(toolPathMeta.antigravity.mode, "copy");
+      assert.equal(SkillInstaller.getClientMode("antigravity"), "copy");
+    }
+
+    // Central skill
+    const centralRoot = SkillInstaller.getCentralSkillsRoot(tmpHome);
+    const skillDir = path.join(centralRoot, "sample-skill");
+    fs.mkdirSync(skillDir, { recursive: true });
+    fs.writeFileSync(path.join(skillDir, "SKILL.md"), "---\nname: sample-skill\n---\n# Sample", "utf-8");
+
+    const targetSkillDir = path.join(agRoot, "sample-skill");
+
+    // Link skill to antigravity
+    const linkResult = SkillInstaller.linkSkillToClient("sample-skill", "antigravity", true, tmpHome);
+    assert.equal(linkResult.linked, true);
+    assert.equal(fs.existsSync(path.join(targetSkillDir, "SKILL.md")), true);
+
+    if (process.platform === "win32") {
+      assert.equal(linkResult.mode, "copy");
+      const stat = fs.lstatSync(targetSkillDir);
+      assert.equal(stat.isSymbolicLink(), false, "Target should be a real copied directory, not a symlink/junction");
+      assert.equal(stat.isDirectory(), true);
+    }
+
+    // Unlink skill from antigravity
+    const unlinkResult = SkillInstaller.linkSkillToClient("sample-skill", "antigravity", false, tmpHome);
+    assert.equal(unlinkResult.linked, false);
+    assert.equal(fs.existsSync(targetSkillDir), false);
+  } finally {
+    fs.rmSync(tmpHome, { recursive: true, force: true });
+  }
+});
