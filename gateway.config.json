@@ -361,7 +361,19 @@
             "reasoning": true,
             "tools": true
           },
-          "is_default": false
+          "is_default": false,
+          "api_keys": [
+            {
+              "id": "cred_ef144829-f9dc-4b97-bec8-d084bd9da551"
+            },
+            {
+              "id": "cred_51433e6c-566a-4b99-b2d1-4b90f559fdfd"
+            },
+            {
+              "id": "cred_f9f078e0-026a-4912-b3e5-d1686ea3b76d"
+            }
+          ],
+          "key_strategy": "failover"
         },
         {
           "id": "ep_bb7bce83-60f5-402f-abc4-0546081f65cf",
@@ -913,7 +925,13 @@
             "claude-opus-4-6-max": "deepseek-v4-flash-ait",
             "claude-haiku-4-0": "gpt-5.6-sol-ait"
           },
-          "is_default": false
+          "is_default": false,
+          "api_keys": [
+            {
+              "id": "cred_0e25c7b2-60ae-4ddc-b4b9-94881784949d"
+            }
+          ],
+          "key_strategy": "round-robin"
         },
         {
           "id": "ep_bd601662-5ff3-4e97-9319-6a4baf2df9dc",
@@ -923,7 +941,7 @@
           "auth": "none",
           "models": [],
           "model_mapping": {
-            "DeepSeek-V4.1-Flash-wb": "global:deepseek-v4.1-flash"
+            "DeepSeek-V4.1-Flash-wb": "cn:deepseek-v4.1-flash"
           },
           "capabilities": {
             "reasoning": false,
