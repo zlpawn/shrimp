@@ -1,65 +1,84 @@
 ---
 name: leo-codex-imagine
-description: 独立调用 ChatGPT Codex 内置图片生成能力（gpt-image-2），进行文生图和参考图局部编辑。完全脱离网关依赖，零配置自动读取本机 Codex 凭据并自动续期，可分发给任何用户独立运行。
+description: 独立调用 ChatGPT Codex 内置图片生成引擎（gpt-image-2）或任意兼容 OpenAI 协议的第三方生图接口（DALL-E-3、Flux、Midjourney 中转等），支持文生图、参考图局部编辑、URL/Base64 自动落盘与持久化配置。
 ---
 
-# Codex Imagine Skill (ChatGPT Codex 独立图片生成)
+# Codex & OpenAI 协议通用生图 Skill (`leo-codex-imagine`)
 
-本技能是一个**完全独立运行、零外部服务依赖**的 AI 图片生成工具，可直接调用 ChatGPT Codex 订阅的图像生成引擎（`gpt-image-2`）。
+本技能是一个**完全独立运行、零外部网关强依赖**的通用 AI 图像生成工具。它具备双核心驱动引擎：
+1. **ChatGPT Codex 订阅引擎**：自动读取本机 `~/.codex/auth.json`，零配置自动保活，免 API Key 消耗订阅额度；
+2. **OpenAI 协议通用引擎**：支持自定义 API URL 与 API Key（支持 OneAPI、NewAPI、各类聚合中转站、自建 SD/Flux 代理网关），支持自由指定 `--model`。
 
-无需运行本地网关，脚本自带凭据解析、自动令牌刷新、高可用网络请求与媒体落盘管理，可直接分发给任何未安装网关的用户使用。
+配置可由 Agent 在对话中持久化保存在 `~/.shrimp/skills/leo-codex-imagine/config.json`，日常使用零摩擦。
+
+---
 
 ## 核心特性
-- ✅ **100% 独立运行**：完全脱离本地网关（Gateway）与第三方服务，直连官方端点。
-- ✅ **零配置自动鉴权**：自动读取本机 `~/.codex/auth.json` 中的 ChatGPT 订阅凭据。
-- ✅ **智能令牌保活**：内置 JWT 校验，当 Access Token 过期时自动向 OpenAI 认证服务器请求换新并持久化保存。
-- ✅ **双通道高可用**：采用 Node.js 原生 fetch + 系统 curl 自动回退，完美兼容代理与各类复杂网络环境。
-- ✅ **丰富生图能力**：支持基础文生图、单/多张参考图局部修改（Image Edit）、画面比例与尺寸画质控制。
-- ✅ **多模式兼容**：未登录 Codex 时亦可无缝退守至标准 `OPENAI_API_KEY`（DALL-E-3）。
+- ✅ **双模式无缝切换**：优先使用自定义 API 配置（中转站/第三方），未配置时自动无感退守至本机 Codex 订阅（免 Key 运行）。
+- ✅ **Agent-Native 配置持久化**：配置集中在 `~/.shrimp/skills/leo-codex-imagine/config.json`，支持 Agent 在对话中自动读写。
+- ✅ **自定义 URL 与模型**：支持 `--api-url`（自动规范化补齐 `/v1/images/generations`）与 `--model`（如 `dall-e-3`, `flux-pro`, `gpt-image-2`）。
+- ✅ **双格式文件自动落盘**：无论是 `b64_json` 还是远程图片 `url`，均自动完成本地下载与磁盘落盘，确保返回有效本地图片路径。
+- ✅ **双通道高可用**：采用 Node.js 原生 fetch + 系统 curl 自动回退，抵抗受限网络环境。
+- ✅ **中文结构化提示词约束**：配套 `references/prompting.md` 通用 6 槽位规范（用途/主体/场景/风格/构图/约束），避免过度加料。
 
-## 使用场景
-当用户表达以下意图时触发：
-- "用 Codex 画一张图" / "用 ChatGPT 生成图片" / "用 Codex 生成一张..."
-- "基于这张图修改" / "参考这张图生成"
-- "/codex_imagine"
+---
 
-## 依赖与前提条件
-1. **运行环境**：Node.js 18+（无需执行 `npm install`，纯原生标准库）。
-2. **账号凭证（二选一）**：
-   - **Codex 订阅（首选）**：只要本机运行过 `codex` 登录账号（存在 `~/.codex/auth.json`），脚本即可全自动读取并维护鉴权。
-   - **API Key（备选）**：如果未登录 Codex，可通过环境变量 `OPENAI_API_KEY` 或命令行 `--api-key` 传入标准密钥。
-3. **网络**：需可正常连接 OpenAI / ChatGPT 官方服务（若在受限网络环境，系统环境变量 `https_proxy` / `http_proxy` 会被自动继承）。
+## 鉴权与端点解析阶梯（三级优先级，不检查环境变量）
+1. **命令行参数**（最高优先级，单次覆盖）：`--api-key`、`--api-url`、`--model`
+2. **Shrimp 持久化配置**（Agent 在对话中读写）：`~/.shrimp/skills/leo-codex-imagine/config.json`
+3. **Codex 本机订阅凭证**（官方免 Key 兜底）：`~/.codex/auth.json`（自动保活 JWT）
 
-## 脚本调度路径
-- Antigravity: `node ~/.gemini/config/skills/leo-codex-imagine/scripts/leo_codex_imagine.mjs`
-- Claude: `node ~/.claude/skills/leo-codex-imagine/scripts/leo_codex_imagine.mjs`
-- Codex: `node ~/.codex/skills/leo-codex-imagine/scripts/leo_codex_imagine.mjs`
-- 中央库: `node ~/.agents/skills/leo-codex-imagine/scripts/leo_codex_imagine.mjs`
-- 项目相对路径: `node ./scripts/leo_codex_imagine.mjs`
+---
+
+## Agent 对话中的配置管理指南 (Agent Operations)
+
+当用户在对话中提供 API Key、中转地址或要求设置默认模型时，Agent 应通过 CLI 命令或直接操作 JSON 文件写入配置：
+
+### 1. 写入/更新配置
+```bash
+node <script_path> config set --api-url "https://api.example.com" --api-key "sk-..." --model "flux-pro"
+```
+或直接写入 `~/.shrimp/skills/leo-codex-imagine/config.json`：
+```json
+{
+  "api_url": "https://api.example.com",
+  "api_key": "sk-...",
+  "model": "flux-pro"
+}
+```
+
+### 2. 读取/查询当前配置
+```bash
+node <script_path> config get
+```
+返回中 API Key 自动脱敏，如 `sk-12***7890`。
+
+---
 
 ## 命令行参数与用法示例
 
-### 1. 文生图 (Text to Image)
+### 1. 基础文生图 (Text to Image)
 ```bash
-node ~/.agents/skills/leo-codex-imagine/scripts/leo_codex_imagine.mjs --prompt "赛博朋克风的未来城市夜景，霓虹灯光" --aspect-ratio "16:9"
+node ~/.agents/skills/leo-codex-imagine/scripts/leo_codex_imagine.mjs --prompt "赛博朋克风未来城市夜景，霓虹灯光" --aspect-ratio "16:9"
 ```
 
-### 2. 参考图编辑 / 图生图 (Image Edit)
-传入单张或多张本地图片路径（逗号分隔）：
+### 2. 使用特定模型与自定义 API
+```bash
+node ~/.agents/skills/leo-codex-imagine/scripts/leo_codex_imagine.mjs --prompt "极简现代产品海报" --api-url "https://my-oneapi.com" --api-key "sk-xxx" --model "flux-pro"
+```
+
+### 3. 参考图局部编辑 (Image Edit)
 ```bash
 node ~/.agents/skills/leo-codex-imagine/scripts/leo_codex_imagine.mjs --prompt "给图中的猫咪戴上一顶海盗帽" --images "/path/to/cat.jpg"
 ```
 
-### 3. 指定尺寸与质量
-```bash
-node ~/.agents/skills/leo-codex-imagine/scripts/leo_codex_imagine.mjs --prompt "高清产品概念图" --size "1024x1024" --quality high
-```
-
 ### 4. 预检模式 (--dry-run)
-校验本机凭证状态与参数拼装，不实际发起 API 扣费调用：
+校验解析出的模式、目标端点与模型，不实际发起网络扣费：
 ```bash
 node ~/.agents/skills/leo-codex-imagine/scripts/leo_codex_imagine.mjs --prompt "测试" --dry-run
 ```
+
+---
 
 ## 参数完整说明
 | 参数 | 说明 | 默认值 |
@@ -71,12 +90,16 @@ node ~/.agents/skills/leo-codex-imagine/scripts/leo_codex_imagine.mjs --prompt "
 | `--quality` | 画质 (`low` / `medium` / `high`) | `medium` |
 | `--output-dir` | 图片保存目录 | `./images` |
 | `--filename` | 自定义保存文件名 | 自动按语义时间戳命名 |
-| `--api-key` | 备用 OpenAI API 密钥（留空则默认读 Codex 订阅） | `env:OPENAI_API_KEY` |
-| `--gateway-url` | 可选：若需转发到特定网关代理时使用 | - |
-| `--dry-run` | 预检模式，仅打印 Payload 不实际生成 | `false` |
+| `--api-url` | 自定义 OpenAI 兼容端点 URL（自动补齐 `/v1/images/generations`） | 读 `config.json` 或官方端点 |
+| `--api-key` | 自定义 API 密钥（优先级高于 `config.json` 与 Codex 订阅） | 读 `config.json` 或 Codex 凭证 |
+| `--model` | 指定模型名称（如 `dall-e-3`, `flux-pro`, `gpt-image-2`） | 读 `config.json` 或模式默认 |
+| `--gateway-url` | 可选：网关代理 URL | - |
+| `--dry-run` | 预检模式，仅打印解析结果不实际发起请求 | `false` |
 | `--help`, `-h` | 查看命令行帮助信息 | - |
 
-## 输出目录与文件命名
-- 默认存储在当前执行目录下的 `./images/` 文件夹中。
-- 文件名格式：`codex_<提示词缩写>_<YYYYMMDDHHmmss>.png`
-- 成功后自动输出标准 Markdown 预览格式：`![Generated Image](filePath)`
+---
+
+## 提示词组织规范 (Prompting Reference)
+Agent 在调用本技能组织 `--prompt` 参数时，请务必参考：
+- [`references/prompting.md`](references/prompting.md)：通用 6 槽位结构规范（用途、主体、场景、风格、构图、约束）、文字加引号、防过度加料；
+- [`references/sample-prompts.md`](references/sample-prompts.md)：技术架构图、封面图、局部修图等典型模板。
