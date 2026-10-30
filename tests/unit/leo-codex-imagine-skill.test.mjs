@@ -18,16 +18,22 @@ import {
 
 const ROOT = path.resolve(import.meta.dirname, "../..");
 
-test("leo-codex-imagine SKILL.md and references exist", () => {
+test("leo-codex-imagine SKILL.md exists and is valid", () => {
   const skillPath = path.join(ROOT, "lib", "skills", "leo-codex-imagine", "SKILL.md");
   const content = fs.readFileSync(skillPath, "utf8");
   assert.match(content, /name: leo-codex-imagine/);
-  assert.match(content, /references\/prompting\.md/);
+  assert.match(content, /gpt-image-2/);
+});
 
-  const promptingPath = path.join(ROOT, "lib", "skills", "leo-codex-imagine", "references", "prompting.md");
+test("leo-imagine-router SKILL.md and references exist", () => {
+  const skillPath = path.join(ROOT, "lib", "skills", "leo-imagine-router", "SKILL.md");
+  const content = fs.readFileSync(skillPath, "utf8");
+  assert.match(content, /name: leo-imagine-router/);
+
+  const promptingPath = path.join(ROOT, "lib", "skills", "leo-imagine-router", "references", "prompting.md");
   assert.ok(fs.existsSync(promptingPath));
 
-  const samplePath = path.join(ROOT, "lib", "skills", "leo-codex-imagine", "references", "sample-prompts.md");
+  const samplePath = path.join(ROOT, "lib", "skills", "leo-imagine-router", "references", "sample-prompts.md");
   assert.ok(fs.existsSync(samplePath));
 });
 

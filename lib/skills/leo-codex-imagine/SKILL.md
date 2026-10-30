@@ -19,7 +19,6 @@ description: 独立调用 ChatGPT Codex 内置图片生成引擎（gpt-image-2�
 - ✅ **自定义 URL 与模型**：支持 `--api-url`（自动规范化补齐 `/v1/images/generations`）与 `--model`（如 `dall-e-3`, `flux-pro`, `gpt-image-2`）。
 - ✅ **双格式文件自动落盘**：无论是 `b64_json` 还是远程图片 `url`，均自动完成本地下载与磁盘落盘，确保返回有效本地图片路径。
 - ✅ **双通道高可用**：采用 Node.js 原生 fetch + 系统 curl 自动回退，抵抗受限网络环境。
-- ✅ **中文结构化提示词约束**：配套 `references/prompting.md` 通用 6 槽位规范（用途/主体/场景/风格/构图/约束），避免过度加料。
 
 ---
 
@@ -96,10 +95,3 @@ node ~/.agents/skills/leo-codex-imagine/scripts/leo_codex_imagine.mjs --prompt "
 | `--gateway-url` | 可选：网关代理 URL | - |
 | `--dry-run` | 预检模式，仅打印解析结果不实际发起请求 | `false` |
 | `--help`, `-h` | 查看命令行帮助信息 | - |
-
----
-
-## 提示词组织规范 (Prompting Reference)
-Agent 在调用本技能组织 `--prompt` 参数时，请务必参考：
-- [`references/prompting.md`](references/prompting.md)：通用 6 槽位结构规范（用途、主体、场景、风格、构图、约束）、文字加引号、防过度加料；
-- [`references/sample-prompts.md`](references/sample-prompts.md)：技术架构图、封面图、局部修图等典型模板。

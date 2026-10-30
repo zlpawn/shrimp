@@ -12,7 +12,7 @@ description: Use when the user requests image generation, poster design, visual 
 1. **场景与风格智能匹配**：避免所有画风杂揉在一个大 Prompt 中造成规则污染。根据用户意图精准路由至最专业的垂直技能。
 2. **解耦生态，避免硬编码**：不强行复制代码或硬编码本地路径，按 Skill 标识符进行动态探测；下游技能更新，Router 自动享受最新特性。
 3. **缺失技能引导与交互式安装**：当识别到最佳专属 Skill 但本地未安装时，向用户提供 GitHub 来源与安装命令；在获得用户授权后，直接代劳全局安装并无缝接力生成。
-4. **服务永不中断（优雅降级）**：内置通用高质量电影级/写实级生图规则，确保即使未安装任何扩展技能，也能产出及格水准的提示词与画面。
+4. **服务永不中断（优雅降级）**：内置通用高质量提示词工程基准规范与案例库，确保即使未安装任何垂直扩展技能，也能产出极高水准的提示词与画面。
 
 ---
 
@@ -22,7 +22,7 @@ description: Use when the user requests image generation, poster design, visual 
 flowchart TD
     A["用户提出生图意图 / 概念"] --> B["Step 1: 意图分析与场景分类"]
     B --> C{"Step 2: 是否命中垂直专属技能？"}
-    C -- "否 (通用意图)" --> D["调用 Router 内置通用生图引擎"]
+    C -- "否 (通用意图)" --> D["调用 Router 内置通用生图规范"]
     C -- "是 (命中专属场景)" --> E{"Step 3: 探测当前环境是否已安装该 Skill"}
     E -- "已安装" --> F["执行该 Skill 规约，生成专属提示词与画面"]
     E -- "未安装" --> G["Step 4: 输出推荐安装卡片 + 询问用户"]
@@ -41,14 +41,14 @@ flowchart TD
 | **新国风写意水墨** | 水墨、泼墨、工笔、仙侠、古风、国潮东方韵味 | `leo-chinese-ink-generator` (预留) | 对应仓库源 / 提示开发中 |
 | **3D 盲盒/黏土微缩** | 黏土、盲盒、潮玩、微缩景观、Isometric、3D 渲染 | `leo-isometric-clay-generator` (预留) | 对应仓库源 / 提示开发中 |
 | **赛博朋克科幻机甲** | 赛博朋克、未来城市、机甲、废土科幻、霓虹光影 | `leo-cyberpunk-concept-generator` (预留) | 对应仓库源 / 提示开发中 |
-| **通用高质量出图** | 未匹配到上述特定风格的常规文生图需求 | `built-in-fallback` | 内置引擎，无需安装 |
+| **通用高质量出图** | 未匹配到上述特定风格的常规文生图、信息图、封面、修图 | `built-in-fallback` | 遵循内置 `references/prompting.md`，无需外部安装 |
 
 ---
 
 ## 🔍 Step 1: 意图分析与场景分类
 
 当用户输入一个概念（如“《三体》红岸基地”、“问薪无愧的打工人”、“太空孤航”、“一只可爱的粘土小猫”）时：
-1. **提取核心诉求**：判断用户想要的是“故事隐喻海报”、“特定艺术流派”还是“写实记录”。
+1. **提取核心诉求**：判断用户想要的是“故事隐喻海报”、“特定艺术流派”还是“通用/写实/功能图”。
 2. **场景映射**：比对【场景路由矩阵】，找出匹配度最高的专属 Skill。
 
 ---
@@ -99,20 +99,22 @@ flowchart TD
 
 ## 🛡️ Step 5: 内置通用生图规则（优雅降级兜底 Fallback）
 
-当用户未命中特定场景、或在引导提示后选择“直接出图”时，使用 Router 内置的高保真工业级生图模板生成提示词：
+当用户未命中特定专属场景（如常规文生图、技术架构图、封面图、局部重绘编辑），或在引导提示后选择“直接出图”时，严格遵循本 Skill 内置的通用规范构造 Prompt：
+* **核心规范**：参考 [`references/prompting.md`](references/prompting.md)（防过度加料、中英文双引号防乱码、局部修改保留范围声明，以及通用的“用途/主体/场景/风格/构图/约束”6 槽位结构）。
+* **场景案例模板**：参考 [`references/sample-prompts.md`](references/sample-prompts.md)（架构与技术信息图、概念插画与商业海报、参考图局部编辑）。
 
-### 内置通用 Prompt 生成模板 (Universal Baseline)
+### 内置通用 Prompt 生成基线 (Universal Baseline)
 ```text
-cinematic shot, {主体与核心动作描述}, highly detailed, {环境氛围与光影}, 8k resolution, photorealistic, master lighting, sharp focus, octane render style, professional color grading, clean composition, no blurry details, no visual artifacts, --ar 16:9 (或根据需求选择 3:4 / 1:1)
+cinematic shot, {主体与核心动作描述}, highly detailed, {环境氛围与光影}, master lighting, sharp focus, professional color grading, clean composition, no blurry details, no visual artifacts, --ar 16:9 (或根据需求选择 3:4 / 1:1)
 ```
 
 ---
 
 ## 🎨 Step 6: 生图执行与回传规范
 
-在生成提示词后，若当前环境具备生图工具或子代理（如 `image-generator` 或 `leo-antigravity-imagine`）：
-1. 自动调用生图工具执行渲染；
-2. 无论成功与否，必须将生成的提示词（中英双语）清晰展示给用户；
+在生成提示词后，若当前环境具备生图工具或引擎（如 `leo-codex-imagine`、`leo-antigravity-imagine` 或 `image-generator`）：
+1. 自动调用底层生图引擎执行渲染；
+2. 无论成功与否，必须将生成的提示词（结构化中文与英文 Prompt）清晰展示给用户；
 3. 图片渲染成功后，以标准的 Markdown 格式输出可点击的文件链接与图片预览：
    ```markdown
    ![渲染图效果](file:///path/to/image.png)
