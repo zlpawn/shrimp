@@ -146,12 +146,98 @@ const cdpSession = createCdpSessionManager({
   persist: (session) => saveNetworkSession(session),
 });
 
+// Persistent CDP debugger session manager (keeps attachment warm across commands)
+const attachedDebuggers = new Set();
+const debuggerIdleTimers = new Map();
+const DEBUGGER_IDLE_TIMEOUT_MS = 60_000;
+
+function touchDebuggerIdle(tabId) {
+  const numericTabId = Number(tabId);
+  if (debuggerIdleTimers.has(numericTabId)) {
+    clearTimeout(debuggerIdleTimers.get(numericTabId));
+  }
+  const timer = setTimeout(() => {
+    debuggerIdleTimers.delete(numericTabId);
+    detachDebuggerSafe(numericTabId).catch(() => {});
+  }, DEBUGGER_IDLE_TIMEOUT_MS);
+  if (typeof timer?.unref === "function") timer.unref();
+  debuggerIdleTimers.set(numericTabId, timer);
+}
+
+async function ensureDebuggerAttached(tabId) {
+  const numericTabId = Number(tabId);
+  touchDebuggerIdle(numericTabId);
+  if (attachedDebuggers.has(numericTabId)) {
+    return true;
+  }
+  try {
+    await withTimeout(chrome.debugger.attach({ tabId: numericTabId }, "1.3"), 2000, "CDP attach timeout");
+    attachedDebuggers.add(numericTabId);
+    return true;
+  } catch (err) {
+    const msg = String(err?.message || "");
+    if (msg.includes("already attached") || msg.includes("Another debugger")) {
+      attachedDebuggers.add(numericTabId);
+      return true;
+    }
+    throw err;
+  }
+}
+
+async function detachDebuggerSafe(tabId) {
+  const numericTabId = Number(tabId);
+  if (debuggerIdleTimers.has(numericTabId)) {
+    clearTimeout(debuggerIdleTimers.get(numericTabId));
+    debuggerIdleTimers.delete(numericTabId);
+  }
+  attachedDebuggers.delete(numericTabId);
+  const networkSession = getNetworkSession();
+  if (networkSession?.tabId === numericTabId && networkSession?.stoppedAt == null) {
+    return;
+  }
+  try {
+    await withTimeout(chrome.debugger.detach({ tabId: numericTabId }), 2000);
+  } catch {}
+}
+
+async function detachAllDebuggers() {
+  for (const timer of debuggerIdleTimers.values()) {
+    clearTimeout(timer);
+  }
+  debuggerIdleTimers.clear();
+  const tabs = Array.from(attachedDebuggers);
+  attachedDebuggers.clear();
+  const networkSession = getNetworkSession();
+  await Promise.allSettled(
+    tabs
+      .filter((tabId) => !(networkSession?.tabId === tabId && networkSession?.stoppedAt == null))
+      .map((tabId) => withTimeout(chrome.debugger.detach({ tabId }), 2000).catch(() => {}))
+  );
+}
+
 chrome.debugger.onEvent.addListener((source, method, params) => {
   cdpSession.handleNetworkEvent(source, method, params);
 });
 
 chrome.debugger.onDetach.addListener((source) => {
+  if (source?.tabId != null) {
+    const tid = Number(source.tabId);
+    attachedDebuggers.delete(tid);
+    if (debuggerIdleTimers.has(tid)) {
+      clearTimeout(debuggerIdleTimers.get(tid));
+      debuggerIdleTimers.delete(tid);
+    }
+  }
   cdpSession.handleDetach(source).catch(() => undefined);
+});
+
+chrome.tabs.onRemoved.addListener((tabId) => {
+  const tid = Number(tabId);
+  attachedDebuggers.delete(tid);
+  if (debuggerIdleTimers.has(tid)) {
+    clearTimeout(debuggerIdleTimers.get(tid));
+    debuggerIdleTimers.delete(tid);
+  }
 });
 
 async function getTargetUrls() {
@@ -189,7 +275,7 @@ async function registerTo(url) {
 
 async function sendHeartbeats() {
   const urls = await getTargetUrls();
-  const version = chrome.runtime.getManifest?.()?.version || "1.3.7";
+  const version = chrome.runtime.getManifest?.()?.version || "1.3.8";
   for (const url of urls) {
     await heartbeatTarget(url, {
       id: chrome.runtime.id,
@@ -373,23 +459,10 @@ async function executeDocumentTargetTask(type, params = {}) {
   // 1. Primary path: Native CDP Input Mouse Event (trusted browser events)
   let cdpSucceeded = false;
   if (type === "dom.click" && pt && pt.x != null && pt.y != null) {
-    let attachedHere = false;
     try {
-      try {
-        await withTimeout(chrome.debugger.attach({ tabId }, "1.3"), 2000, "CDP attach timeout");
-        attachedHere = true;
-      } catch (e) {
-        // Debugger may already be attached
-      }
-      await withTimeout(
-        chrome.debugger.sendCommand({ tabId }, "Input.dispatchMouseEvent", {
-          type: "mouseMoved",
-          x: pt.x,
-          y: pt.y,
-        }),
-        2000,
-        "CDP mouseMoved timeout"
-      );
+      await ensureDebuggerAttached(tabId);
+      // Directly dispatch mousePressed and mouseReleased at point (x, y)
+      // Omit mouseMoved: mousePressed automatically updates the coordinates in Chromium
       await withTimeout(
         chrome.debugger.sendCommand({ tabId }, "Input.dispatchMouseEvent", {
           type: "mousePressed",
@@ -418,29 +491,22 @@ async function executeDocumentTargetTask(type, params = {}) {
       cdpSucceeded = true;
     } catch (cdpErr) {
       console.warn("[leo-lantern] CDP click dispatch failed, falling back to script dispatch:", cdpErr?.message || cdpErr);
+      attachedDebuggers.delete(Number(tabId));
       cdpSucceeded = false;
-    } finally {
-      if (attachedHere && (!taskState?.activeTask?.extensions?.network || taskState.activeTask.extensions.network.tabId !== tabId)) {
-        try {
-          await withTimeout(chrome.debugger.detach({ tabId }), 2000);
-        } catch {}
-      }
     }
   }
 
-  // Clean up temporary click token attribute if CDP succeeded
+  // Clean up temporary click token attribute asynchronously (fire-and-forget, non-blocking)
   if (cdpSucceeded && clickToken) {
-    try {
-      await chrome.scripting.executeScript({
-        target: { tabId },
-        world: "ISOLATED",
-        func: (token) => {
-          const el = document.querySelector(`[data-lantern-click-token="${token}"]`);
-          el?.removeAttribute("data-lantern-click-token");
-        },
-        args: [clickToken],
-      });
-    } catch {}
+    chrome.scripting.executeScript({
+      target: { tabId },
+      world: "ISOLATED",
+      func: (token) => {
+        const el = document.querySelector(`[data-lantern-click-token="${token}"]`);
+        el?.removeAttribute("data-lantern-click-token");
+      },
+      args: [clickToken],
+    }).catch(() => {});
   }
 
   // 2. Fallback path: Dispatch in world: "MAIN" ONLY if CDP was not executed or failed
@@ -585,6 +651,7 @@ async function executeTask(task) {
       if (shouldStopNetworkCapture(networkSession)) {
         await cdpSession.stop({ tabId: networkSession.tabId });
       }
+      await detachAllDebuggers();
       const groupId = taskState.activeTask?.groupId;
       if (closeGroup && groupId != null) {
         try {
@@ -694,6 +761,9 @@ async function executeTask(task) {
         task: assertActiveTask(taskState),
         explicitTabId: params.tabId ?? null,
       });
+      if (closed.tabId != null) {
+        await detachDebuggerSafe(closed.tabId);
+      }
       await saveTaskState({ ...taskState, activeTask: closed.task });
       result = await withTaskSummary({ closed: true, tabId: closed.tabId });
     } else if (type === "tabs.reload") {
@@ -716,12 +786,8 @@ async function executeTask(task) {
       let evaluated = false;
 
       // 1. Try CDP Runtime.evaluate first (handles expressions, async promises, and bypasses page CSP)
-      let attachedHere = false;
       try {
-        try {
-          await withTimeout(chrome.debugger.attach({ tabId }, "1.3"), 2000, "CDP attach timeout");
-          attachedHere = true;
-        } catch {}
+        await ensureDebuggerAttached(tabId);
         const cdpRes = await withTimeout(
           chrome.debugger.sendCommand({ tabId }, "Runtime.evaluate", {
             expression: script,
@@ -740,13 +806,8 @@ async function executeTask(task) {
           evaluated = true;
         }
       } catch (cdpErr) {
+        attachedDebuggers.delete(Number(tabId));
         // Fallback to executeScript below
-      } finally {
-        if (attachedHere && (!taskState?.activeTask?.extensions?.network || taskState.activeTask.extensions.network.tabId !== tabId)) {
-          try {
-            await withTimeout(chrome.debugger.detach({ tabId }), 2000);
-          } catch {}
-        }
       }
 
       // 2. Fallback to chrome.scripting.executeScript if CDP was unavailable
@@ -852,11 +913,7 @@ async function executeTask(task) {
     } else if (type === "cdp.screenshot") {
       const tabId = await requireTaskTabId(params);
       const fullPage = Boolean(params.fullPage);
-      const networkSession = getNetworkSession();
-      const alreadyAttached = networkSession?.tabId === tabId && networkSession?.stoppedAt == null;
-      if (!alreadyAttached) {
-        await chrome.debugger.attach({ tabId }, "1.3");
-      }
+      await ensureDebuggerAttached(tabId);
       try {
         await chrome.debugger.sendCommand({ tabId }, "Page.enable");
         if (fullPage) {
@@ -882,11 +939,6 @@ async function executeTask(task) {
         if (fullPage) {
           try {
             await chrome.debugger.sendCommand({ tabId }, "Emulation.clearDeviceMetricsOverride");
-          } catch {}
-        }
-        if (!alreadyAttached) {
-          try {
-            await chrome.debugger.detach({ tabId });
           } catch {}
         }
       }
