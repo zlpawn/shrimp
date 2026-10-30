@@ -41,20 +41,33 @@ function caseAware(value, caseSensitive) {
 function matchesText(expected, actual, target) {
   const expectedText = caseAware(expected, target.caseSensitive);
   const actualText = caseAware(actual, target.caseSensitive);
-  return target.match === "contains" ? actualText.includes(expectedText) : actualText === expectedText;
+  if (target.match === "contains") {
+    if (actualText.includes(expectedText)) return true;
+    const strippedActual = actualText.replace(/\s+/gu, "");
+    const strippedExpected = expectedText.replace(/\s+/gu, "");
+    if (strippedActual && strippedExpected && strippedActual.includes(strippedExpected)) {
+      return true;
+    }
+    return false;
+  }
+  if (actualText === expectedText) return true;
+  const strippedActual = actualText.replace(/\s+/gu, "");
+  const strippedExpected = expectedText.replace(/\s+/gu, "");
+  return Boolean(strippedActual && strippedExpected && strippedActual === strippedExpected);
 }
 
 export function isVisible(element) {
   if (!element || (element.nodeType !== undefined && element.nodeType !== 1)) return false;
+
+  const targetRect = typeof element.getBoundingClientRect === "function" ? element.getBoundingClientRect() : null;
+  if (!targetRect || targetRect.width <= 0 || targetRect.height <= 0) return false;
+
   for (let current = element; current; ) {
     if (current.nodeType !== undefined && current.nodeType !== 1) break;
-    if (typeof current.getBoundingClientRect !== "function") break;
     if (current.hidden || current.getAttribute?.("hidden") != null) return false;
     if (current.getAttribute?.("aria-hidden") === "true") return false;
     const style = current.style || {};
     if (style.display === "none" || style.visibility === "hidden") return false;
-    const rect = current.getBoundingClientRect?.();
-    if (!rect || rect.width <= 0 || rect.height <= 0) return false;
     current = current.parentElement || (current.parentNode?.nodeType === 1 ? current.parentNode : null);
   }
   return true;
@@ -294,6 +307,46 @@ export function resolveRef(document, registry, target) {
   return { element: replacement, ref: target.ref, generation: registry.generation, matchLevel: "reidentified" };
 }
 
+function formatElementRecord(element, document, registry) {
+  const ref = refFor(registry, element, () => fingerprintElement(element, document));
+  const values = semanticValues(element, document);
+  const rect = typeof element.getBoundingClientRect === "function" ? element.getBoundingClientRect() : null;
+  let selector = element.tagName.toLowerCase();
+  const id = element.id || undefined;
+  const testId = element.getAttribute?.("data-testid") || undefined;
+  if (id) {
+    selector = typeof CSS !== "undefined" && CSS.escape ? `#${CSS.escape(id)}` : `#${id}`;
+  } else if (testId) {
+    selector = typeof CSS !== "undefined" && CSS.escape ? `[data-testid="${CSS.escape(testId)}"]` : `[data-testid="${testId}"]`;
+  } else if (element.name) {
+    selector = typeof CSS !== "undefined" && CSS.escape ? `${element.tagName.toLowerCase()}[name="${CSS.escape(element.name)}"]` : `${element.tagName.toLowerCase()}[name="${element.name}"]`;
+  } else if (element.className && typeof element.className === "string") {
+    const classes = element.className.trim().split(/\s+/).filter((c) => !c.includes(":") && !c.includes("[")).slice(0, 2);
+    if (classes.length) {
+      selector = `${element.tagName.toLowerCase()}.${classes.join(".")}`;
+    }
+  }
+  return {
+    ref,
+    tag: element.tagName.toLowerCase(),
+    role: values.role || undefined,
+    name: values.name || undefined,
+    text: values.text || undefined,
+    selector,
+    id,
+    type: element.getAttribute?.("type") || element.type || undefined,
+    testId,
+    rect: rect ? {
+      x: Math.round(rect.x ?? rect.left ?? 0),
+      y: Math.round(rect.y ?? rect.top ?? 0),
+      width: Math.round(rect.width ?? 0),
+      height: Math.round(rect.height ?? 0),
+    } : undefined,
+    visible: true,
+    disabled: isDisabled(element),
+  };
+}
+
 export function findTargetSnapshot(document, registry, target) {
   if (target.kind === "ref") {
     throw lanternError("unsupported_target", "Find accepts CSS or semantic targets, not refs");
@@ -303,38 +356,14 @@ export function findTargetSnapshot(document, registry, target) {
   return {
     generation: registry.generation,
     matches_n: allMatches.length,
-    elements: matches.map((element) => {
-      const ref = refFor(registry, element, () => fingerprintElement(element, document));
-      const values = semanticValues(element, document);
-      return {
-        ref,
-        tag: element.tagName.toLowerCase(),
-        role: values.role || undefined,
-        name: values.name || undefined,
-        text: values.text || undefined,
-        visible: true,
-        disabled: isDisabled(element),
-      };
-    }),
+    elements: matches.map((element) => formatElementRecord(element, document, registry)),
   };
 }
 
 
 export function collectState(document, registry) {
   const candidates = semanticCandidates(document).filter(isVisible).slice(0, STATE_LIMIT);
-  const elements = candidates.map((element) => {
-    const ref = refFor(registry, element, () => fingerprintElement(element, document));
-    const values = semanticValues(element, document);
-    return {
-      ref,
-      tag: element.tagName.toLowerCase(),
-      role: values.role || undefined,
-      name: values.name || undefined,
-      text: values.text || undefined,
-      visible: true,
-      disabled: isDisabled(element),
-    };
-  });
+  const elements = candidates.map((element) => formatElementRecord(element, document, registry));
   return {
     url: document.URL,
     title: document.title,

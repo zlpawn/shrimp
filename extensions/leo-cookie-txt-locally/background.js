@@ -650,78 +650,8 @@ async function executeTask(task) {
       result = await executeDocumentTargetTask(type, params);
     } else if (type === "dom.fill") {
       result = await executeDocumentTargetTask(type, params);
-    } else if (type === "dom.state" || type === "dom.find") {
-      result = await executeDocumentTargetTask(type, params);
-    } else if (type === "dom.snapshot") {
-      const tabId = await requireTaskTabId(params);
-      const res = await chrome.scripting.executeScript({
-        target: { tabId },
-        world: "ISOLATED",
-        func: async () => {
-          try {
-            const api = await import(chrome.runtime.getURL("/element-target.mjs"));
-            const registry = api.ensureDocumentRegistry(globalThis);
-            const state = api.collectState(document, registry);
-            const enriched = state.elements.map((el) => {
-              const rawEl = registry.refs.get(el.ref)?.weak?.deref?.() || null;
-              let rect = undefined;
-              let selector = el.tag;
-              let id = undefined;
-              let type = undefined;
-              let testId = undefined;
-              if (rawEl) {
-                const r = rawEl.getBoundingClientRect();
-                rect = {
-                  x: Math.round(r.left),
-                  y: Math.round(r.top),
-                  width: Math.round(r.width),
-                  height: Math.round(r.height),
-                };
-                if (rawEl.id) {
-                  id = rawEl.id;
-                  selector = `#${CSS.escape(rawEl.id)}`;
-                } else if (rawEl.getAttribute("data-testid")) {
-                  testId = rawEl.getAttribute("data-testid");
-                  selector = `[data-testid="${CSS.escape(testId)}"]`;
-                } else if (rawEl.name) {
-                  selector = `${rawEl.tagName.toLowerCase()}[name="${CSS.escape(rawEl.name)}"]`;
-                } else if (rawEl.className && typeof rawEl.className === "string") {
-                  const classes = rawEl.className.trim().split(/\s+/).filter((c) => !c.includes(":") && !c.includes("[")).slice(0, 2);
-                  if (classes.length) {
-                    selector = `${rawEl.tagName.toLowerCase()}.${classes.map((c) => CSS.escape(c)).join(".")}`;
-                  }
-                }
-                if (rawEl.type) type = rawEl.type;
-              }
-              return {
-                ...el,
-                selector,
-                id,
-                type,
-                testId,
-                rect,
-              };
-            });
-            return {
-              title: state.title,
-              url: state.url,
-              generation: state.generation,
-              elements: enriched,
-            };
-          } catch (snapshotErr) {
-            return {
-              error: snapshotErr.message || String(snapshotErr),
-              title: document.title,
-              url: location.href,
-              elements: [],
-            };
-          }
-        },
-      });
-      result = res?.[0]?.result || {};
-      if (result.error) {
-        throw lanternError("snapshot_error", result.error);
-      }
+    } else if (type === "dom.state" || type === "dom.find" || type === "dom.snapshot") {
+      result = await executeDocumentTargetTask(type === "dom.snapshot" ? "dom.state" : type, params);
     } else if (type === "page.eval") {
       const tabId = await requireTaskTabId(params);
       const script = params.script;
