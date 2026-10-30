@@ -189,13 +189,14 @@ async function registerTo(url) {
 
 async function sendHeartbeats() {
   const urls = await getTargetUrls();
-  const version = chrome.runtime.getManifest?.()?.version || "1.3.3";
+  const version = chrome.runtime.getManifest?.()?.version || "1.3.5";
   for (const url of urls) {
     await heartbeatTarget(url, {
       id: chrome.runtime.id,
       name: "Leo cookie.txt Locally",
       version,
       task: currentTaskSummary(),
+      lastCommandSuccessAt: commandQueue.getLastCommandSuccessAt?.() || null,
     });
   }
 }
@@ -263,6 +264,7 @@ async function reportResult(url, taskId, envelope) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(5000),
     });
     if (resp.ok) return;
   } catch {}
@@ -274,67 +276,81 @@ async function reportResult(url, taskId, envelope) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(5000),
     });
   } catch {}
+}
+
+function withTimeout(promise, ms, message = "Operation timed out") {
+  let timer;
+  const timeoutPromise = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(lanternError("command_timeout", message)), ms);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
 }
 
 const commandQueue = createCommandQueue({
   execute: (task) => executeTask(task),
   report: (url, taskId, envelope) => reportResult(url, taskId, envelope),
+  defaultTimeoutMs: 15_000,
 });
 
 async function executeDocumentTargetTask(type, params = {}) {
   const tabId = await requireTaskTabId(params);
   const target = type === "dom.state" ? null : normalizeTarget(params);
   const fillValue = type === "dom.fill" ? String(params.value ?? "") : null;
-  const res = await chrome.scripting.executeScript({
-    target: { tabId },
-    world: "ISOLATED",
-    func: async (mode, normalizedTarget, value, rawParams) => {
-      try {
-        const api = await import(chrome.runtime.getURL("/element-target.mjs"));
-        const interaction = await import(chrome.runtime.getURL("/interaction.mjs"));
-        const registry = api.ensureDocumentRegistry(globalThis);
-        if (mode === "state") return api.collectState(document, registry);
-        if (mode === "find") return api.findTargetSnapshot(document, registry, normalizedTarget);
-        if (mode === "click") {
-          const clickRes = interaction.clickTarget(document, registry, normalizedTarget);
-          let point = null;
-          let clickToken = null;
-          try {
-            const el = registry.refs.get(clickRes.ref)?.weak?.deref?.() || null;
-            if (el) {
-              el.scrollIntoView?.({ block: "center", inline: "center", behavior: "instant" });
-              const rect = el.getBoundingClientRect();
-              point = {
-                x: Math.round(rect.left + Math.max(1, rect.width / 2)),
-                y: Math.round(rect.top + Math.max(1, rect.height / 2)),
-              };
-              clickToken = "lantern_clk_" + Math.random().toString(36).slice(2, 10);
-              el.setAttribute("data-lantern-click-token", clickToken);
-            }
-          } catch {}
-          return { ...clickRes, _point: point, _clickToken: clickToken };
+  const res = await withTimeout(
+    chrome.scripting.executeScript({
+      target: { tabId },
+      world: "ISOLATED",
+      func: async (mode, normalizedTarget, value, rawParams) => {
+        try {
+          const api = await import(chrome.runtime.getURL("/element-target.mjs"));
+          const interaction = await import(chrome.runtime.getURL("/interaction.mjs"));
+          const registry = api.ensureDocumentRegistry(globalThis);
+          if (mode === "state") return api.collectState(document, registry);
+          if (mode === "find") return api.findTargetSnapshot(document, registry, normalizedTarget);
+          if (mode === "click") {
+            const clickRes = interaction.clickTarget(document, registry, normalizedTarget);
+            let point = null;
+            let clickToken = null;
+            try {
+              const el = registry.refs.get(clickRes.ref)?.weak?.deref?.() || registry.refs.get(clickRes.ref)?.node || null;
+              if (el) {
+                el.scrollIntoView?.({ block: "center", inline: "center", behavior: "instant" });
+                const rect = el.getBoundingClientRect();
+                point = {
+                  x: Math.round(rect.left + Math.max(1, rect.width / 2)),
+                  y: Math.round(rect.top + Math.max(1, rect.height / 2)),
+                };
+                clickToken = "lantern_clk_" + Math.random().toString(36).slice(2, 10);
+                el.setAttribute("data-lantern-click-token", clickToken);
+              }
+            } catch {}
+            return { ...clickRes, _point: point, _clickToken: clickToken };
+          }
+          return interaction.fillTarget(document, registry, normalizedTarget, value);
+        } catch (err) {
+          return {
+            ok: false,
+            clicked: false,
+            code: err?.code || (err?.reason === "ambiguous_match" ? "ambiguous_match" : "target_error"),
+            reason: err?.reason || (err?.code === "selector_ambiguous" || err?.code === "semantic_ambiguous" ? "ambiguous_match" : undefined),
+            matches_n: err?.matches_n,
+            error: err?.message || String(err),
+          };
         }
-        return interaction.fillTarget(document, registry, normalizedTarget, value);
-      } catch (err) {
-        return {
-          ok: false,
-          clicked: false,
-          code: err?.code || (err?.reason === "ambiguous_match" ? "ambiguous_match" : "target_error"),
-          reason: err?.reason || (err?.code === "selector_ambiguous" || err?.code === "semantic_ambiguous" ? "ambiguous_match" : undefined),
-          matches_n: err?.matches_n,
-          error: err?.message || String(err),
-        };
-      }
-    },
-    args: [
-      type === "dom.state" ? "state" : type === "dom.find" ? "find" : type === "dom.click" ? "click" : "fill",
-      target,
-      fillValue,
-      params,
-    ],
-  });
+      },
+      args: [
+        type === "dom.state" ? "state" : type === "dom.find" ? "find" : type === "dom.click" ? "click" : "fill",
+        target,
+        fillValue,
+        params,
+      ],
+    }),
+    8000,
+    `Target script execution timed out on tab ${tabId}`
+  );
 
   const result = res?.[0]?.result;
   if (!result) {
@@ -357,46 +373,50 @@ async function executeDocumentTargetTask(type, params = {}) {
   // 1. Dispatch in world: "MAIN" to trigger React SyntheticEvents and page's native click()
   if (type === "dom.click" && clickToken) {
     try {
-      await chrome.scripting.executeScript({
-        target: { tabId },
-        world: "MAIN",
-        func: (token, point) => {
-          const el = document.querySelector(`[data-lantern-click-token="${token}"]`);
-          if (!el) return;
-          el.removeAttribute("data-lantern-click-token");
-          try { el.focus?.(); } catch {}
-          const x = point?.x ?? 0;
-          const y = point?.y ?? 0;
-          const common = {
-            bubbles: true,
-            cancelable: true,
-            view: window,
-            clientX: x,
-            clientY: y,
-            screenX: x,
-            screenY: y,
-          };
-          try {
-            el.dispatchEvent(new PointerEvent("pointerdown", { ...common, button: 0, buttons: 1, pointerId: 1, pointerType: "mouse", isPrimary: true }));
-          } catch {}
-          try {
-            el.dispatchEvent(new MouseEvent("mousedown", { ...common, button: 0, buttons: 1 }));
-          } catch {}
-          try {
-            el.dispatchEvent(new PointerEvent("pointerup", { ...common, button: 0, buttons: 0, pointerId: 1, pointerType: "mouse", isPrimary: true }));
-          } catch {}
-          try {
-            el.dispatchEvent(new MouseEvent("mouseup", { ...common, button: 0, buttons: 0 }));
-          } catch {}
-          try {
-            el.dispatchEvent(new MouseEvent("click", { ...common, button: 0, buttons: 0 }));
-          } catch {}
-          try {
-            el.click();
-          } catch {}
-        },
-        args: [clickToken, pt],
-      });
+      await withTimeout(
+        chrome.scripting.executeScript({
+          target: { tabId },
+          world: "MAIN",
+          func: (token, point) => {
+            const el = document.querySelector(`[data-lantern-click-token="${token}"]`);
+            if (!el) return;
+            el.removeAttribute("data-lantern-click-token");
+            try { el.focus?.(); } catch {}
+            const x = point?.x ?? 0;
+            const y = point?.y ?? 0;
+            const common = {
+              bubbles: true,
+              cancelable: true,
+              view: window,
+              clientX: x,
+              clientY: y,
+              screenX: x,
+              screenY: y,
+            };
+            try {
+              el.dispatchEvent(new PointerEvent("pointerdown", { ...common, button: 0, buttons: 1, pointerId: 1, pointerType: "mouse", isPrimary: true }));
+            } catch {}
+            try {
+              el.dispatchEvent(new MouseEvent("mousedown", { ...common, button: 0, buttons: 1 }));
+            } catch {}
+            try {
+              el.dispatchEvent(new PointerEvent("pointerup", { ...common, button: 0, buttons: 0, pointerId: 1, pointerType: "mouse", isPrimary: true }));
+            } catch {}
+            try {
+              el.dispatchEvent(new MouseEvent("mouseup", { ...common, button: 0, buttons: 0 }));
+            } catch {}
+            try {
+              el.dispatchEvent(new MouseEvent("click", { ...common, button: 0, buttons: 0 }));
+            } catch {}
+            try {
+              el.click();
+            } catch {}
+          },
+          args: [clickToken, pt],
+        }),
+        3000,
+        "Click event dispatch in page timed out"
+      );
     } catch (mainErr) {}
   }
 
@@ -405,38 +425,38 @@ async function executeDocumentTargetTask(type, params = {}) {
     let attachedHere = false;
     try {
       try {
-        await chrome.debugger.attach({ tabId }, "1.3");
+        await withTimeout(chrome.debugger.attach({ tabId }, "1.3"), 2000, "CDP attach timeout");
         attachedHere = true;
       } catch (e) {
         // Debugger may already be attached
       }
-      await chrome.debugger.sendCommand({ tabId }, "Input.dispatchMouseEvent", {
+      await withTimeout(chrome.debugger.sendCommand({ tabId }, "Input.dispatchMouseEvent", {
         type: "mouseMoved",
         x: pt.x,
         y: pt.y,
-      });
-      await chrome.debugger.sendCommand({ tabId }, "Input.dispatchMouseEvent", {
+      }), 2000, "CDP mouseMoved timeout");
+      await withTimeout(chrome.debugger.sendCommand({ tabId }, "Input.dispatchMouseEvent", {
         type: "mousePressed",
         x: pt.x,
         y: pt.y,
         button: "left",
         buttons: 1,
         clickCount: 1,
-      });
-      await sleep(60);
-      await chrome.debugger.sendCommand({ tabId }, "Input.dispatchMouseEvent", {
+      }), 2000, "CDP mousePressed timeout");
+      await sleep(30);
+      await withTimeout(chrome.debugger.sendCommand({ tabId }, "Input.dispatchMouseEvent", {
         type: "mouseReleased",
         x: pt.x,
         y: pt.y,
         button: "left",
         buttons: 0,
         clickCount: 1,
-      });
+      }), 2000, "CDP mouseReleased timeout");
     } catch (cdpErr) {
       // CDP fallback already ran
     } finally {
       if (attachedHere && (!taskState?.activeTask?.extensions?.network || taskState.activeTask.extensions.network.tabId !== tabId)) {
-        try { await chrome.debugger.detach({ tabId }); } catch {}
+        try { await withTimeout(chrome.debugger.detach({ tabId }), 2000); } catch {}
       }
     }
   }
