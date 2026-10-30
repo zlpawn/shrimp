@@ -36,6 +36,7 @@ import {
 } from "./page-drive.mjs";
 import { createCdpSessionManager } from "./cdp-session.mjs";
 import { normalizeTarget } from "./element-target.mjs";
+import { lanternError } from "./errors.mjs";
 const DEFAULT_BRIDGE_URL = "http://127.0.0.1:19527";
 const DEFAULT_GATEWAY_URL = "http://127.0.0.1:8788";
 const HEARTBEAT_INTERVAL_MS = 25_000;
@@ -77,19 +78,25 @@ async function withTaskSummary(result = {}) {
 
 async function requireTaskTabId(params = {}) {
   if (taskState?.activeTask) {
-    const task = assertActiveTask(taskState);
-    const resolved = await resolveChromeTaskTab({
-      task,
-      explicitTabId: params.tabId ?? null,
-    });
-    if (
-      resolved.task.windowId !== task.windowId ||
-      resolved.task.groupId !== task.groupId ||
-      resolved.task.claimedTabId !== task.claimedTabId
-    ) {
-      await saveTaskState({ ...taskState, activeTask: resolved.task });
+    try {
+      const task = assertActiveTask(taskState);
+      const resolved = await resolveChromeTaskTab({
+        task,
+        explicitTabId: params.tabId ?? null,
+      });
+      if (
+        resolved.task.windowId !== task.windowId ||
+        resolved.task.groupId !== task.groupId ||
+        resolved.task.claimedTabId !== task.claimedTabId
+      ) {
+        await saveTaskState({ ...taskState, activeTask: resolved.task });
+      }
+      return resolved.tabId;
+    } catch (taskErr) {
+      if (params.tabId != null) throw taskErr;
+      taskState = createEmptyTaskState();
+      await saveTaskState(taskState);
     }
-    return resolved.tabId;
   }
 
   if (params.tabId != null) {
@@ -287,31 +294,50 @@ async function executeDocumentTargetTask(type, params = {}) {
         if (mode === "click") {
           const clickRes = interaction.clickTarget(document, registry, normalizedTarget);
           let point = null;
+          let clickToken = null;
           try {
             const el = registry.refs.get(clickRes.ref)?.weak?.deref?.() || null;
             if (el) {
+              el.scrollIntoView?.({ block: "center", inline: "center", behavior: "instant" });
               const rect = el.getBoundingClientRect();
               point = {
-                x: Math.round(rect.left + rect.width / 2),
-                y: Math.round(rect.top + rect.height / 2),
+                x: Math.round(rect.left + Math.max(1, rect.width / 2)),
+                y: Math.round(rect.top + Math.max(1, rect.height / 2)),
               };
+              clickToken = "lantern_clk_" + Math.random().toString(36).slice(2, 10);
+              el.setAttribute("data-lantern-click-token", clickToken);
             }
           } catch {}
-          return { ...clickRes, _point: point };
+          return { ...clickRes, _point: point, _clickToken: clickToken };
         }
         return interaction.fillTarget(document, registry, normalizedTarget, value);
       } catch (err) {
+        if (err?.code === "selector_ambiguous" || err?.code === "semantic_ambiguous" || err?.reason === "ambiguous_match") {
+          return {
+            ok: false,
+            clicked: false,
+            code: err.code || "ambiguous_match",
+            reason: "ambiguous_match",
+            matches_n: err.matches_n,
+            error: err.message,
+          };
+        }
         if (mode === "click") {
           let el = null;
+          let matchCount = 0;
           if (normalizedTarget?.kind === "css" && normalizedTarget.selector) {
-            el = document.querySelector(normalizedTarget.selector);
+            const list = Array.from(document.querySelectorAll(normalizedTarget.selector));
+            matchCount = list.length;
+            if (matchCount === 1) el = list[0];
           } else if (rawParams?.selector || rawParams?.sel) {
-            el = document.querySelector(rawParams.selector || rawParams.sel);
+            const list = Array.from(document.querySelectorAll(rawParams.selector || rawParams.sel));
+            matchCount = list.length;
+            if (matchCount === 1) el = list[0];
           } else {
             const txt = (normalizedTarget?.text || rawParams?.text || "").trim().toLowerCase();
             if (txt) {
               const candidates = Array.from(document.querySelectorAll("a, button, input[type='button'], input[type='submit'], [role='button'], [role='tab'], [role='menuitem'], [onclick], div, span, p"));
-              el = candidates.find(c => {
+              const matched = candidates.filter(c => {
                 const visible = c.offsetWidth > 0 || c.offsetHeight > 0 || c.getClientRects().length > 0;
                 if (!visible) return false;
                 const directText = (c.innerText || c.textContent || "").trim().toLowerCase();
@@ -319,39 +345,38 @@ async function executeDocumentTargetTask(type, params = {}) {
                 const aria = (c.getAttribute("aria-label") || "").toLowerCase();
                 return directText.includes(txt) || title.includes(txt) || aria.includes(txt);
               });
+              matchCount = matched.length;
+              if (matchCount === 1) el = matched[0];
             }
           }
+
+          if (matchCount > 1) {
+            return {
+              ok: false,
+              clicked: false,
+              code: "ambiguous_match",
+              reason: "ambiguous_match",
+              matches_n: matchCount,
+              error: `${matchCount} matches found for click target. Please specify a more specific selector or ref.`,
+            };
+          }
+
           if (el) {
-            el.scrollIntoView({ block: "center", inline: "center" });
+            el.scrollIntoView({ block: "center", inline: "center", behavior: "instant" });
             const rect = el.getBoundingClientRect();
             const point = {
-              x: Math.round(rect.left + rect.width / 2),
-              y: Math.round(rect.top + rect.height / 2),
+              x: Math.round(rect.left + Math.max(1, rect.width / 2)),
+              y: Math.round(rect.top + Math.max(1, rect.height / 2)),
             };
-            try {
-              if (typeof PointerEvent === "function") {
-                el.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true, clientX: point.x, clientY: point.y, button: 0 }));
-              }
-            } catch {}
-            try {
-              el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true, clientX: point.x, clientY: point.y, button: 0 }));
-            } catch {}
-            try { el.focus?.(); } catch {}
-            try {
-              if (typeof PointerEvent === "function") {
-                el.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true, clientX: point.x, clientY: point.y, button: 0 }));
-              }
-            } catch {}
-            try {
-              el.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, cancelable: true, clientX: point.x, clientY: point.y, button: 0 }));
-            } catch {}
-            try { el.click(); } catch {}
+            const clickToken = "lantern_clk_" + Math.random().toString(36).slice(2, 10);
+            el.setAttribute("data-lantern-click-token", clickToken);
             return {
               clicked: true,
               target: normalizedTarget || { kind: "css", selector: rawParams?.selector || rawParams?.sel },
               matches_n: 1,
               match_level: "located",
               _point: point,
+              _clickToken: clickToken,
             };
           }
           const targetStr = normalizedTarget?.selector || normalizedTarget?.text || rawParams?.text || rawParams?.selector || JSON.stringify(normalizedTarget || rawParams);
@@ -420,14 +445,67 @@ async function executeDocumentTargetTask(type, params = {}) {
     throw lanternError("target_error", "No execution result from tab");
   }
   if (result.ok === false || result.error) {
-    throw lanternError(result.code || "target_error", result.error || "Action failed");
+    throw lanternError(result.code || "target_error", result.error || "Action failed", {
+      reason: result.reason,
+      matches_n: result.matches_n,
+      clicked: false,
+    });
   }
   if (result instanceof Error) throw result;
 
-  // Dispatch trusted CDP Input events when point is available
-  if (type === "dom.click" && result._point && result._point.x != null && result._point.y != null) {
-    const pt = result._point;
-    delete result._point;
+  const clickToken = result._clickToken;
+  delete result._clickToken;
+  const pt = result._point;
+  delete result._point;
+
+  // 1. Dispatch in world: "MAIN" to trigger React SyntheticEvents and page's native click()
+  if (type === "dom.click" && clickToken) {
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        world: "MAIN",
+        func: (token, point) => {
+          const el = document.querySelector(`[data-lantern-click-token="${token}"]`);
+          if (!el) return;
+          el.removeAttribute("data-lantern-click-token");
+          try { el.focus?.(); } catch {}
+          const x = point?.x ?? 0;
+          const y = point?.y ?? 0;
+          const common = {
+            bubbles: true,
+            cancelable: true,
+            view: window,
+            clientX: x,
+            clientY: y,
+            screenX: x,
+            screenY: y,
+          };
+          try {
+            el.dispatchEvent(new PointerEvent("pointerdown", { ...common, button: 0, buttons: 1, pointerId: 1, pointerType: "mouse", isPrimary: true }));
+          } catch {}
+          try {
+            el.dispatchEvent(new MouseEvent("mousedown", { ...common, button: 0, buttons: 1 }));
+          } catch {}
+          try {
+            el.dispatchEvent(new PointerEvent("pointerup", { ...common, button: 0, buttons: 0, pointerId: 1, pointerType: "mouse", isPrimary: true }));
+          } catch {}
+          try {
+            el.dispatchEvent(new MouseEvent("mouseup", { ...common, button: 0, buttons: 0 }));
+          } catch {}
+          try {
+            el.dispatchEvent(new MouseEvent("click", { ...common, button: 0, buttons: 0 }));
+          } catch {}
+          try {
+            el.click();
+          } catch {}
+        },
+        args: [clickToken, pt],
+      });
+    } catch (mainErr) {}
+  }
+
+  // 2. Dispatch trusted CDP Input events when point is available
+  if (type === "dom.click" && pt && pt.x != null && pt.y != null) {
     let attachedHere = false;
     try {
       try {
@@ -446,13 +524,16 @@ async function executeDocumentTargetTask(type, params = {}) {
         x: pt.x,
         y: pt.y,
         button: "left",
+        buttons: 1,
         clickCount: 1,
       });
+      await sleep(60);
       await chrome.debugger.sendCommand({ tabId }, "Input.dispatchMouseEvent", {
         type: "mouseReleased",
         x: pt.x,
         y: pt.y,
         button: "left",
+        buttons: 0,
         clickCount: 1,
       });
     } catch (cdpErr) {
@@ -462,8 +543,6 @@ async function executeDocumentTargetTask(type, params = {}) {
         try { await chrome.debugger.detach({ tabId }); } catch {}
       }
     }
-  } else if (result._point) {
-    delete result._point;
   }
 
   return result;
@@ -492,7 +571,18 @@ async function executeTask(task) {
       const focus = Boolean(params.focus);
       const color = pickTaskColor(params.color);
       const title = params.title || (taskState.activeTask?.title) || "Agent Task";
-      const wasReused = shouldReuseActiveTask(taskState);
+
+      let isTaskValid = false;
+      if (taskState?.activeTask?.windowId) {
+        try {
+          await chrome.windows.get(taskState.activeTask.windowId);
+          isTaskValid = true;
+        } catch {
+          isTaskValid = false;
+        }
+      }
+
+      const wasReused = shouldReuseActiveTask(taskState) && isTaskValid && !params.forceNew && !params.reset;
       if (wasReused) {
         const patch = {};
         if (params.title) patch.title = params.title;
@@ -505,6 +595,7 @@ async function executeTask(task) {
         );
         await saveTaskState({ ...patched, activeTask: recovered });
       } else {
+        await saveTaskState(createEmptyTaskState());
         const windowId = await ensureTaskWindow({ sameWindow, focus });
         let claimedTabId = params.tabId ? Number(params.tabId) : null;
         if (!claimedTabId) {
@@ -539,7 +630,6 @@ async function executeTask(task) {
       }
       result = await withTaskSummary({ started: true, reused: wasReused });
     } else if (type === "task.end") {
-      assertActiveTask(taskState);
       const closeGroup = Boolean(params.closeGroup);
       const networkSession = getNetworkSession();
       if (shouldStopNetworkCapture(networkSession)) {
@@ -670,61 +760,60 @@ async function executeTask(task) {
       const tabId = await requireTaskTabId(params);
       const res = await chrome.scripting.executeScript({
         target: { tabId },
-        func: () => {
-          const items = [];
-          const query = "a, button, input, textarea, select, [role='button'], [role='tab'], [role='menuitem'], [role='link'], h1, h2, h3, [data-testid]";
-          const els = Array.from(document.querySelectorAll(query)).slice(0, 150);
-          let ref = 1;
-          for (const el of els) {
-            const rect = el.getBoundingClientRect();
-            const style = window.getComputedStyle(el);
-            const visible = rect.width > 0 && rect.height > 0 && style.visibility !== "hidden" && style.display !== "none";
-            if (!visible) continue;
-
-            const text = (el.innerText || el.value || el.placeholder || el.getAttribute("aria-label") || el.getAttribute("title") || "").trim().slice(0, 80);
-
-            let selector = "";
-            if (el.id) {
-              selector = `#${CSS.escape(el.id)}`;
-            } else if (el.getAttribute("data-testid")) {
-              selector = `[data-testid="${CSS.escape(el.getAttribute("data-testid"))}"]`;
-            } else if (el.name) {
-              selector = `${el.tagName.toLowerCase()}[name="${CSS.escape(el.name)}"]`;
-            } else if (el.className && typeof el.className === "string") {
-              const classes = el.className.trim().split(/\s+/).filter(c => !c.includes(":") && !c.includes("[")).slice(0, 2);
-              if (classes.length) {
-                selector = `${el.tagName.toLowerCase()}.${classes.map(c => CSS.escape(c)).join(".")}`;
+        world: "ISOLATED",
+        func: async () => {
+          const api = await import(chrome.runtime.getURL("/element-target.mjs"));
+          const registry = api.ensureDocumentRegistry(globalThis);
+          const state = api.collectState(document, registry);
+          const enriched = state.elements.map((el) => {
+            const rawEl = registry.refs.get(el.ref)?.weak?.deref?.() || null;
+            let rect = undefined;
+            let selector = el.tag;
+            let id = undefined;
+            let type = undefined;
+            let testId = undefined;
+            if (rawEl) {
+              const r = rawEl.getBoundingClientRect();
+              rect = {
+                x: Math.round(r.left),
+                y: Math.round(r.top),
+                width: Math.round(r.width),
+                height: Math.round(r.height),
+              };
+              if (rawEl.id) {
+                id = rawEl.id;
+                selector = `#${CSS.escape(rawEl.id)}`;
+              } else if (rawEl.getAttribute("data-testid")) {
+                testId = rawEl.getAttribute("data-testid");
+                selector = `[data-testid="${CSS.escape(testId)}"]`;
+              } else if (rawEl.name) {
+                selector = `${rawEl.tagName.toLowerCase()}[name="${CSS.escape(rawEl.name)}"]`;
+              } else if (rawEl.className && typeof rawEl.className === "string") {
+                const classes = rawEl.className.trim().split(/\s+/).filter((c) => !c.includes(":") && !c.includes("[")).slice(0, 2);
+                if (classes.length) {
+                  selector = `${rawEl.tagName.toLowerCase()}.${classes.map((c) => CSS.escape(c)).join(".")}`;
+                }
               }
+              if (rawEl.type) type = rawEl.type;
             }
-            if (!selector) {
-              selector = el.tagName.toLowerCase();
-            }
-
-            const item = {
-              ref: ref++,
-              tag: el.tagName.toLowerCase(),
-              role: el.getAttribute("role") || (el.tagName === "BUTTON" ? "button" : el.tagName === "A" ? "link" : undefined),
-              text: text || undefined,
+            return {
+              ...el,
               selector,
-              visible: true,
-              disabled: Boolean(el.disabled || el.getAttribute("aria-disabled") === "true"),
-              rect: {
-                x: Math.round(rect.left),
-                y: Math.round(rect.top),
-                width: Math.round(rect.width),
-                height: Math.round(rect.height),
-              },
+              id,
+              type,
+              testId,
+              rect,
             };
-            if (el.id) item.id = el.id;
-            if (el.type) item.type = el.type;
-            if (el.name) item.name = el.name;
-            if (el.getAttribute("data-testid")) item.testId = el.getAttribute("data-testid");
-            items.push(item);
-          }
-          return { title: document.title, url: location.href, elements: items };
+          });
+          return {
+            title: state.title,
+            url: state.url,
+            generation: state.generation,
+            elements: enriched,
+          };
         },
       });
-      result = res[0]?.result || {};
+      result = res?.[0]?.result || {};
     } else if (type === "page.eval") {
       const tabId = await requireTaskTabId(params);
       const script = params.script;

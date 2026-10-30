@@ -22,7 +22,11 @@ function uniqueElement(document, registry, target) {
     }
     if (matches.length > 1) {
       const code = target.kind === "css" ? "selector_ambiguous" : "semantic_ambiguous";
-      throw lanternError(code, `${matches.length} matches for ${target.kind} target`);
+      throw lanternError(code, `${matches.length} matches for ${target.kind} target`, {
+        reason: "ambiguous_match",
+        matches_n: matches.length,
+        clicked: false,
+      });
     }
     element = matches[0];
     matchLevel = "located";
@@ -64,7 +68,7 @@ function envelope(document, registry, element, target, action, matchLevel) {
 
 export function clickTarget(document, registry, target) {
   const { element, matchLevel } = uniqueElement(document, registry, target);
-  element.scrollIntoView?.({ block: "center", inline: "center" });
+  element.scrollIntoView?.({ block: "center", inline: "center", behavior: "instant" });
   element.click();
   return envelope(document, registry, element, target, "clicked", matchLevel);
 }
