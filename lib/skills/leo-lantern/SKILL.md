@@ -64,6 +64,18 @@ leo-lantern screenshot --out page.png
 leo-lantern end-task
 ```
 
+## 常见排查与边界说明 (Troubleshooting)
+
+1. **模态弹窗/遮罩层拦截物理点击 (Modal Wrap Interception)**：
+   - **现象**：`click` 返回成功且 `clickEvents: 1`，但弹窗未响应或未关闭。
+   - **根因**：`leo-lantern click` 优先采用 CDP 原生可信物理事件（`isTrusted: true`），遵循 Chromium 的真实 Hit-Testing 机制。部分组件库（如 Ant Design 的 `Modal.confirm`）在反复快速开关或销毁时，可能会残留 `ant-modal-wrap` 遮罩层且层级覆盖了按钮，导致物理事件落在遮罩上（可通过 `eval "document.elementFromPoint(x, y)"` 验证顶层命中元素）。
+   - **应对建议**：
+     - 若属组件库残存遮罩异常，刷新页面或重新打开页面即可恢复；
+     - 若需在遮罩覆盖下强行触发按钮处理器，可通过 `leo-lantern eval "document.querySelector('...').click()"` 绕过物理 Hit-Testing 直接派发。
+
+2. **多匹配歧义与精准定位**：
+   - 现代前端框架（React / Vue）中按钮常被多层 `div` 包裹，若使用文本点击遇到 `ambiguous_match`，建议优先使用 `leo-lantern state` 获取分配的 `ref`（如 `--target '{"kind":"ref","ref":123,"generation":"..."}'`）或指定唯一 CSS 选择器。
+
 > **提示（脱离网关自包含运行）**：
 > - **独立 CLI 模式**：可在技能目录直接通过 Node.js 执行命令行交互：
 >   `node ./scripts/cli/index.mjs <command>`
