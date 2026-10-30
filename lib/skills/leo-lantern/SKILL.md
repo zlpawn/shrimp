@@ -11,7 +11,7 @@ description: 通过 leo-lantern CLI/服务实现 Chrome 浏览器远程调试 (C
 
 - **桥接服务（Bridge Server）**：监听本地端口（默认 `19527`），负责分发命令队列并接收 Chrome 扩展回传的结果。
 - **Chrome 扩展（Extension）**：常驻浏览器后台，通过长轮询消费命令。在目标页面上结合 **CDP（Chrome DevTools Protocol 原生可信输入事件）** 与 DOM 树完成精准操作。
-- **任务组隔离与同窗执行**：默认同窗（`sameWindow: true`）并自动接管当前已登录标签页，避免重复登录或反复弹窗。
+- **任务组与窗口隔离**：默认**新开独立窗口**（`sameWindow: false`）执行自动化，与用户当前正在浏览操作的窗口互不干扰。独立窗口与用户窗口共享同一 Chrome profile，所有 Cookie、LocalStorage 及登录态直接可用。
 
 ## 工作流
 
@@ -19,9 +19,9 @@ description: 通过 leo-lantern CLI/服务实现 Chrome 浏览器远程调试 (C
    - 检查桥接状态：`leo-lantern health`
    - 若提示 `bridge_unavailable`，请先启动服务：`leo-lantern server --port 19527`
 2. **任务生命周期（可选，支持直接操作当前标签页）**：
-   - 开启/复用任务组：`leo-lantern start-task --title="browser-task"`（默认接管当前激活 tab，无需重复登录）
+   - 开启/复用任务组：`leo-lantern start-task --title="browser-task"`（默认新开独立窗口，不干扰用户浏览；若需在同窗口执行可指定 `--same-window=true`）
    - 查看所有标签页：`leo-lantern tabs`
-   - 接管指定标签页：`leo-lantern claim --tabId=<tabId>`
+   - 接管指定标签页：`leo-lantern claim --tabId=<tabId>`（显式接管用户已有的指定标签页，此操作会控制该页面，慎用）
    - 导航或新标签：`leo-lantern goto "https://example.com"` 或 `leo-lantern new-tab "https://example.com"`
 3. **页面感知与交互**：
    - 获取高信息量交互 DOM 树（含 tag, text, selector, id, rect, visible 等）：`leo-lantern snapshot`
