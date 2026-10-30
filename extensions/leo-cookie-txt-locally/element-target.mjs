@@ -314,16 +314,17 @@ function formatElementRecord(element, document, registry) {
   let selector = element.tagName.toLowerCase();
   const id = element.id || undefined;
   const testId = element.getAttribute?.("data-testid") || undefined;
+  const safeEscape = (str) => (typeof CSS !== "undefined" && typeof CSS.escape === "function" ? CSS.escape(str) : str);
   if (id) {
-    selector = typeof CSS !== "undefined" && CSS.escape ? `#${CSS.escape(id)}` : `#${id}`;
+    selector = `#${safeEscape(id)}`;
   } else if (testId) {
-    selector = typeof CSS !== "undefined" && CSS.escape ? `[data-testid="${CSS.escape(testId)}"]` : `[data-testid="${testId}"]`;
+    selector = `[data-testid="${safeEscape(testId)}"]`;
   } else if (element.name) {
-    selector = typeof CSS !== "undefined" && CSS.escape ? `${element.tagName.toLowerCase()}[name="${CSS.escape(element.name)}"]` : `${element.tagName.toLowerCase()}[name="${element.name}"]`;
+    selector = `${element.tagName.toLowerCase()}[name="${safeEscape(element.name)}"]`;
   } else if (element.className && typeof element.className === "string") {
     const classes = element.className.trim().split(/\s+/).filter((c) => !c.includes(":") && !c.includes("[")).slice(0, 2);
     if (classes.length) {
-      selector = `${element.tagName.toLowerCase()}.${classes.join(".")}`;
+      selector = `${element.tagName.toLowerCase()}.${classes.map(safeEscape).join(".")}`;
     }
   }
   return {
@@ -365,8 +366,8 @@ export function collectState(document, registry) {
   const candidates = semanticCandidates(document).filter(isVisible).slice(0, STATE_LIMIT);
   const elements = candidates.map((element) => formatElementRecord(element, document, registry));
   return {
-    url: document.URL,
-    title: document.title,
+    url: document.URL || document.location?.href || "",
+    title: document.title || "",
     generation: registry.generation,
     elements,
   };

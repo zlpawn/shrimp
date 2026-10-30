@@ -189,7 +189,7 @@ async function registerTo(url) {
 
 async function sendHeartbeats() {
   const urls = await getTargetUrls();
-  const version = chrome.runtime.getManifest?.()?.version || "1.3.5";
+  const version = chrome.runtime.getManifest?.()?.version || "1.3.7";
   for (const url of urls) {
     await heartbeatTarget(url, {
       id: chrome.runtime.id,
@@ -311,7 +311,7 @@ async function executeDocumentTargetTask(type, params = {}) {
           if (mode === "state") return api.collectState(document, registry);
           if (mode === "find") return api.findTargetSnapshot(document, registry, normalizedTarget);
           if (mode === "click") {
-            const clickRes = interaction.clickTarget(document, registry, normalizedTarget);
+            const clickRes = interaction.clickTarget(document, registry, normalizedTarget, { deferClick: true });
             let point = null;
             let clickToken = null;
             try {
@@ -370,8 +370,81 @@ async function executeDocumentTargetTask(type, params = {}) {
   const pt = result._point;
   delete result._point;
 
-  // 1. Dispatch in world: "MAIN" to trigger React SyntheticEvents and page's native click()
-  if (type === "dom.click" && clickToken) {
+  // 1. Primary path: Native CDP Input Mouse Event (trusted browser events)
+  let cdpSucceeded = false;
+  if (type === "dom.click" && pt && pt.x != null && pt.y != null) {
+    let attachedHere = false;
+    try {
+      try {
+        await withTimeout(chrome.debugger.attach({ tabId }, "1.3"), 2000, "CDP attach timeout");
+        attachedHere = true;
+      } catch (e) {
+        // Debugger may already be attached
+      }
+      await withTimeout(
+        chrome.debugger.sendCommand({ tabId }, "Input.dispatchMouseEvent", {
+          type: "mouseMoved",
+          x: pt.x,
+          y: pt.y,
+        }),
+        2000,
+        "CDP mouseMoved timeout"
+      );
+      await withTimeout(
+        chrome.debugger.sendCommand({ tabId }, "Input.dispatchMouseEvent", {
+          type: "mousePressed",
+          x: pt.x,
+          y: pt.y,
+          button: "left",
+          buttons: 1,
+          clickCount: 1,
+        }),
+        2000,
+        "CDP mousePressed timeout"
+      );
+      await sleep(30);
+      await withTimeout(
+        chrome.debugger.sendCommand({ tabId }, "Input.dispatchMouseEvent", {
+          type: "mouseReleased",
+          x: pt.x,
+          y: pt.y,
+          button: "left",
+          buttons: 0,
+          clickCount: 1,
+        }),
+        2000,
+        "CDP mouseReleased timeout"
+      );
+      cdpSucceeded = true;
+    } catch (cdpErr) {
+      console.warn("[leo-lantern] CDP click dispatch failed, falling back to script dispatch:", cdpErr?.message || cdpErr);
+      cdpSucceeded = false;
+    } finally {
+      if (attachedHere && (!taskState?.activeTask?.extensions?.network || taskState.activeTask.extensions.network.tabId !== tabId)) {
+        try {
+          await withTimeout(chrome.debugger.detach({ tabId }), 2000);
+        } catch {}
+      }
+    }
+  }
+
+  // Clean up temporary click token attribute if CDP succeeded
+  if (cdpSucceeded && clickToken) {
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        world: "ISOLATED",
+        func: (token) => {
+          const el = document.querySelector(`[data-lantern-click-token="${token}"]`);
+          el?.removeAttribute("data-lantern-click-token");
+        },
+        args: [clickToken],
+      });
+    } catch {}
+  }
+
+  // 2. Fallback path: Dispatch in world: "MAIN" ONLY if CDP was not executed or failed
+  if (type === "dom.click" && clickToken && !cdpSucceeded) {
     try {
       await withTimeout(
         chrome.scripting.executeScript({
@@ -405,12 +478,14 @@ async function executeDocumentTargetTask(type, params = {}) {
             try {
               el.dispatchEvent(new MouseEvent("mouseup", { ...common, button: 0, buttons: 0 }));
             } catch {}
-            try {
-              el.dispatchEvent(new MouseEvent("click", { ...common, button: 0, buttons: 0 }));
-            } catch {}
-            try {
-              el.click();
-            } catch {}
+            // Exactly ONE click action: use el.click() if available, otherwise new MouseEvent("click")
+            if (typeof el.click === "function") {
+              try { el.click(); } catch {}
+            } else {
+              try {
+                el.dispatchEvent(new MouseEvent("click", { ...common, button: 0, buttons: 0 }));
+              } catch {}
+            }
           },
           args: [clickToken, pt],
         }),
@@ -418,47 +493,6 @@ async function executeDocumentTargetTask(type, params = {}) {
         "Click event dispatch in page timed out"
       );
     } catch (mainErr) {}
-  }
-
-  // 2. Dispatch trusted CDP Input events when point is available
-  if (type === "dom.click" && pt && pt.x != null && pt.y != null) {
-    let attachedHere = false;
-    try {
-      try {
-        await withTimeout(chrome.debugger.attach({ tabId }, "1.3"), 2000, "CDP attach timeout");
-        attachedHere = true;
-      } catch (e) {
-        // Debugger may already be attached
-      }
-      await withTimeout(chrome.debugger.sendCommand({ tabId }, "Input.dispatchMouseEvent", {
-        type: "mouseMoved",
-        x: pt.x,
-        y: pt.y,
-      }), 2000, "CDP mouseMoved timeout");
-      await withTimeout(chrome.debugger.sendCommand({ tabId }, "Input.dispatchMouseEvent", {
-        type: "mousePressed",
-        x: pt.x,
-        y: pt.y,
-        button: "left",
-        buttons: 1,
-        clickCount: 1,
-      }), 2000, "CDP mousePressed timeout");
-      await sleep(30);
-      await withTimeout(chrome.debugger.sendCommand({ tabId }, "Input.dispatchMouseEvent", {
-        type: "mouseReleased",
-        x: pt.x,
-        y: pt.y,
-        button: "left",
-        buttons: 0,
-        clickCount: 1,
-      }), 2000, "CDP mouseReleased timeout");
-    } catch (cdpErr) {
-      // CDP fallback already ran
-    } finally {
-      if (attachedHere && (!taskState?.activeTask?.extensions?.network || taskState.activeTask.extensions.network.tabId !== tabId)) {
-        try { await withTimeout(chrome.debugger.detach({ tabId }), 2000); } catch {}
-      }
-    }
   }
 
   return result;
@@ -685,15 +719,19 @@ async function executeTask(task) {
       let attachedHere = false;
       try {
         try {
-          await chrome.debugger.attach({ tabId }, "1.3");
+          await withTimeout(chrome.debugger.attach({ tabId }, "1.3"), 2000, "CDP attach timeout");
           attachedHere = true;
         } catch {}
-        const cdpRes = await chrome.debugger.sendCommand({ tabId }, "Runtime.evaluate", {
-          expression: script,
-          returnByValue: true,
-          awaitPromise: true,
-          userGesture: true,
-        });
+        const cdpRes = await withTimeout(
+          chrome.debugger.sendCommand({ tabId }, "Runtime.evaluate", {
+            expression: script,
+            returnByValue: true,
+            awaitPromise: true,
+            userGesture: true,
+          }),
+          8000,
+          "CDP evaluate timeout"
+        );
         if (cdpRes?.exceptionDetails) {
           evalError = cdpRes.exceptionDetails.exception?.description || cdpRes.exceptionDetails.text;
           evaluated = true;
@@ -705,7 +743,9 @@ async function executeTask(task) {
         // Fallback to executeScript below
       } finally {
         if (attachedHere && (!taskState?.activeTask?.extensions?.network || taskState.activeTask.extensions.network.tabId !== tabId)) {
-          try { await chrome.debugger.detach({ tabId }); } catch {}
+          try {
+            await withTimeout(chrome.debugger.detach({ tabId }), 2000);
+          } catch {}
         }
       }
 
