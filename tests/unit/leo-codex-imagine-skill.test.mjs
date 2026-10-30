@@ -29,6 +29,13 @@ test("leo-imagine-router SKILL.md and references exist", () => {
   const skillPath = path.join(ROOT, "lib", "skills", "leo-imagine-router", "SKILL.md");
   const content = fs.readFileSync(skillPath, "utf8");
   assert.match(content, /name: leo-imagine-router/);
+  assert.match(content, /scenes-gathered-zine-v1-3/);
+  assert.match(content, /scene-distillation-zine-v1-3/);
+  assert.match(content, /morandi-cinematic-poster-zeejay/);
+  assert.match(content, /scenes-gathered-zine-live-flow-v1-0/);
+  assert.match(content, /mono-color/);
+  assert.match(content, /photo-abstract-editorial/);
+  assert.match(content, /Scenario Discovery & Navigation/);
 
   const promptingPath = path.join(ROOT, "lib", "skills", "leo-imagine-router", "references", "prompting.md");
   assert.ok(fs.existsSync(promptingPath));
