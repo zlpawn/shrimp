@@ -86,7 +86,7 @@
     "test:leo-fooocus-imagine": "node --test tests/unit/leo-fooocus-imagine-skill.test.mjs tests/unit/leo-fooocus-model-*.test.mjs tests/integration/leo-fooocus-model-download.test.mjs && python tests/unit/test_fooocus_gradio_client.py -v",
     "test:leo-typesafe-ai": "node --test lib/skills/leo-typesafe-ai/tests/*.test.mjs",
     "test:live-inspector-mysql": "node --test tests/unit/leo-live-inspector-sql-analysis.test.mjs tests/unit/leo-live-inspector-test-mysql-cli.test.mjs",
-    "sync:extension": "node -e \"import('node:fs').then(fs => fs.cpSync('extensions/leo-cookie-txt-locally', 'lib/skills/leo-live-inspector/resources/chrome_extension', { recursive: true, force: true }))\"",
+    "sync:extension": "node -e \"import('node:fs').then(fs => { const src = 'extensions/leo-cookie-txt-locally'; const dsts = ['lib/skills/leo-live-inspector/resources/chrome_extension', '/Users/pa/project/LEO/leo-live-runner/skills/leo-live-inspector/resources/chrome_extension']; for (const dst of dsts) { if (fs.existsSync(dst)) { fs.cpSync(src, dst, { recursive: true, force: true }); console.log('Synced to', dst); } } })\"",
     "test": "npm run test:trend-intel"
   },
   "engines": {

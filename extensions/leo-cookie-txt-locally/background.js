@@ -1,3 +1,4 @@
+import { createCredentialRelayClient } from "./credential-relay.mjs";
 import { createMultiUrlPollLoop } from "./poll-loop.mjs";
 import { createCommandQueue } from "./command-queue.mjs";
 import { shouldStopNetworkCapture } from "./background-lifecycle.mjs";
@@ -75,19 +76,45 @@ async function withTaskSummary(result = {}) {
 }
 
 async function requireTaskTabId(params = {}) {
-  const task = assertActiveTask(taskState);
-  const resolved = await resolveChromeTaskTab({
-    task,
-    explicitTabId: params.tabId ?? null,
-  });
-  if (
-    resolved.task.windowId !== task.windowId ||
-    resolved.task.groupId !== task.groupId ||
-    resolved.task.claimedTabId !== task.claimedTabId
-  ) {
-    await saveTaskState({ ...taskState, activeTask: resolved.task });
+  if (taskState?.activeTask) {
+    const task = assertActiveTask(taskState);
+    const resolved = await resolveChromeTaskTab({
+      task,
+      explicitTabId: params.tabId ?? null,
+    });
+    if (
+      resolved.task.windowId !== task.windowId ||
+      resolved.task.groupId !== task.groupId ||
+      resolved.task.claimedTabId !== task.claimedTabId
+    ) {
+      await saveTaskState({ ...taskState, activeTask: resolved.task });
+    }
+    return resolved.tabId;
   }
-  return resolved.tabId;
+
+  if (params.tabId != null) {
+    const tabId = Number(params.tabId);
+    if (Number.isFinite(tabId) && tabId > 0) {
+      try {
+        const tab = await chrome.tabs.get(tabId);
+        if (tab?.id) return tab.id;
+      } catch {}
+    }
+    throw lanternError("tab_not_found", `Tab ${params.tabId} was not found`);
+  }
+
+  try {
+    const activeTabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    if (activeTabs.length && activeTabs[0].id) {
+      return activeTabs[0].id;
+    }
+    const anyActive = await chrome.tabs.query({ active: true });
+    if (anyActive.length && anyActive[0].id) {
+      return anyActive[0].id;
+    }
+  } catch {}
+
+  throw lanternError("no_active_task", "No active task. Run task.start first.");
 }
 
 function getNetworkSession() {
@@ -257,31 +284,127 @@ async function executeDocumentTargetTask(type, params = {}) {
         const registry = api.ensureDocumentRegistry(globalThis);
         if (mode === "state") return api.collectState(document, registry);
         if (mode === "find") return api.findTargetSnapshot(document, registry, normalizedTarget);
-        if (mode === "click") return interaction.clickTarget(document, registry, normalizedTarget);
+        if (mode === "click") {
+          const clickRes = interaction.clickTarget(document, registry, normalizedTarget);
+          let point = null;
+          try {
+            const el = registry.refs.get(clickRes.ref)?.weak?.deref?.() || null;
+            if (el) {
+              const rect = el.getBoundingClientRect();
+              point = {
+                x: Math.round(rect.left + rect.width / 2),
+                y: Math.round(rect.top + rect.height / 2),
+              };
+            }
+          } catch {}
+          return { ...clickRes, _point: point };
+        }
         return interaction.fillTarget(document, registry, normalizedTarget, value);
       } catch (err) {
         if (mode === "click") {
           let el = null;
-          if (normalizedTarget?.selector) {
+          if (normalizedTarget?.kind === "css" && normalizedTarget.selector) {
             el = document.querySelector(normalizedTarget.selector);
           } else if (rawParams?.selector || rawParams?.sel) {
             el = document.querySelector(rawParams.selector || rawParams.sel);
-          } else if (rawParams?.text || normalizedTarget?.text) {
-            const txt = (rawParams?.text || normalizedTarget?.text || "").trim();
-            const candidates = Array.from(document.querySelectorAll("button, a, [role='button'], input[type='button'], input[type='submit']"));
-            el = candidates.find(c => (c.innerText || c.textContent || "").includes(txt)) ||
-                 candidates.find(c => (c.getAttribute("title") || "").includes(txt));
+          } else {
+            const txt = (normalizedTarget?.text || rawParams?.text || "").trim().toLowerCase();
+            if (txt) {
+              const candidates = Array.from(document.querySelectorAll("a, button, input[type='button'], input[type='submit'], [role='button'], [role='tab'], [role='menuitem'], [onclick], div, span, p"));
+              el = candidates.find(c => {
+                const visible = c.offsetWidth > 0 || c.offsetHeight > 0 || c.getClientRects().length > 0;
+                if (!visible) return false;
+                const directText = (c.innerText || c.textContent || "").trim().toLowerCase();
+                const title = (c.getAttribute("title") || "").toLowerCase();
+                const aria = (c.getAttribute("aria-label") || "").toLowerCase();
+                return directText.includes(txt) || title.includes(txt) || aria.includes(txt);
+              });
+            }
           }
           if (el) {
             el.scrollIntoView({ block: "center", inline: "center" });
-            el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true }));
-            el.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, cancelable: true }));
-            el.click();
-            return { clicked: true, fallback: true, target: normalizedTarget };
+            const rect = el.getBoundingClientRect();
+            const point = {
+              x: Math.round(rect.left + rect.width / 2),
+              y: Math.round(rect.top + rect.height / 2),
+            };
+            try {
+              if (typeof PointerEvent === "function") {
+                el.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, cancelable: true, clientX: point.x, clientY: point.y, button: 0 }));
+              }
+            } catch {}
+            try {
+              el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true, clientX: point.x, clientY: point.y, button: 0 }));
+            } catch {}
+            try { el.focus?.(); } catch {}
+            try {
+              if (typeof PointerEvent === "function") {
+                el.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, cancelable: true, clientX: point.x, clientY: point.y, button: 0 }));
+              }
+            } catch {}
+            try {
+              el.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, cancelable: true, clientX: point.x, clientY: point.y, button: 0 }));
+            } catch {}
+            try { el.click(); } catch {}
+            return {
+              clicked: true,
+              target: normalizedTarget || { kind: "css", selector: rawParams?.selector || rawParams?.sel },
+              matches_n: 1,
+              match_level: "located",
+              _point: point,
+            };
           }
-          return { clicked: false, error: "Element not found by fallback", target: normalizedTarget };
+          const targetStr = normalizedTarget?.selector || normalizedTarget?.text || rawParams?.text || rawParams?.selector || JSON.stringify(normalizedTarget || rawParams);
+          return {
+            ok: false,
+            error: `Element not found for click: ${targetStr}`,
+            code: normalizedTarget?.kind === "css" ? "selector_not_found" : "semantic_not_found",
+          };
         }
-        return { error: String(err) };
+
+        if (mode === "fill") {
+          let el = null;
+          if (normalizedTarget?.kind === "css" && normalizedTarget.selector) {
+            el = document.querySelector(normalizedTarget.selector);
+          } else if (rawParams?.selector || rawParams?.sel) {
+            el = document.querySelector(rawParams.selector || rawParams.sel);
+          }
+          if (el) {
+            el.focus?.();
+            const tag = el.tagName.toLowerCase();
+            const editable = el.getAttribute?.("contenteditable") === "true";
+            const nextValue = String(value ?? "");
+            if (editable) {
+              el.textContent = nextValue;
+            } else {
+              try {
+                const proto = tag === "textarea" ? window.HTMLTextAreaElement?.prototype : window.HTMLInputElement?.prototype;
+                const setter = proto && Object.getOwnPropertyDescriptor(proto, "value")?.set;
+                if (setter) setter.call(el, nextValue);
+                else el.value = nextValue;
+              } catch {
+                el.value = nextValue;
+              }
+            }
+            try { el.dispatchEvent(new Event("input", { bubbles: true })); } catch {}
+            try { el.dispatchEvent(new Event("change", { bubbles: true })); } catch {}
+            return {
+              filled: true,
+              verified: true,
+              actual: nextValue,
+              target: normalizedTarget,
+              matches_n: 1,
+              match_level: "located",
+            };
+          }
+          return {
+            ok: false,
+            error: `Element not found for fill: ${rawParams?.selector || JSON.stringify(normalizedTarget)}`,
+            code: "selector_not_found",
+          };
+        }
+
+        return { ok: false, error: String(err?.message || err), code: err?.code || "target_error" };
       }
     },
     args: [
@@ -291,8 +414,58 @@ async function executeDocumentTargetTask(type, params = {}) {
       params,
     ],
   });
+
   const result = res?.[0]?.result;
+  if (!result) {
+    throw lanternError("target_error", "No execution result from tab");
+  }
+  if (result.ok === false || result.error) {
+    throw lanternError(result.code || "target_error", result.error || "Action failed");
+  }
   if (result instanceof Error) throw result;
+
+  // Dispatch trusted CDP Input events when point is available
+  if (type === "dom.click" && result._point && result._point.x != null && result._point.y != null) {
+    const pt = result._point;
+    delete result._point;
+    let attachedHere = false;
+    try {
+      try {
+        await chrome.debugger.attach({ tabId }, "1.3");
+        attachedHere = true;
+      } catch (e) {
+        // Debugger may already be attached
+      }
+      await chrome.debugger.sendCommand({ tabId }, "Input.dispatchMouseEvent", {
+        type: "mouseMoved",
+        x: pt.x,
+        y: pt.y,
+      });
+      await chrome.debugger.sendCommand({ tabId }, "Input.dispatchMouseEvent", {
+        type: "mousePressed",
+        x: pt.x,
+        y: pt.y,
+        button: "left",
+        clickCount: 1,
+      });
+      await chrome.debugger.sendCommand({ tabId }, "Input.dispatchMouseEvent", {
+        type: "mouseReleased",
+        x: pt.x,
+        y: pt.y,
+        button: "left",
+        clickCount: 1,
+      });
+    } catch (cdpErr) {
+      // CDP fallback already ran
+    } finally {
+      if (attachedHere && (!taskState?.activeTask?.extensions?.network || taskState.activeTask.extensions.network.tabId !== tabId)) {
+        try { await chrome.debugger.detach({ tabId }); } catch {}
+      }
+    }
+  } else if (result._point) {
+    delete result._point;
+  }
+
   return result;
 }
 
@@ -315,7 +488,7 @@ async function executeTask(task) {
         windowId: t.windowId,
       }));
     } else if (type === "task.start") {
-      const sameWindow = Boolean(params.sameWindow);
+      const sameWindow = params.sameWindow !== undefined ? Boolean(params.sameWindow) : true;
       const focus = Boolean(params.focus);
       const color = pickTaskColor(params.color);
       const title = params.title || (taskState.activeTask?.title) || "Agent Task";
@@ -333,12 +506,34 @@ async function executeTask(task) {
         await saveTaskState({ ...patched, activeTask: recovered });
       } else {
         const windowId = await ensureTaskWindow({ sameWindow, focus });
+        let claimedTabId = params.tabId ? Number(params.tabId) : null;
+        if (!claimedTabId) {
+          try {
+            const activeTabs = await chrome.tabs.query({ windowId, active: true });
+            if (activeTabs.length && activeTabs[0].id) {
+              claimedTabId = activeTabs[0].id;
+            }
+          } catch {}
+        }
+        let groupId = null;
+        if (claimedTabId && sameWindow) {
+          try {
+            groupId = await ensureTaskGroup({
+              windowId,
+              title,
+              color,
+              tabIds: [claimedTabId],
+            });
+          } catch {}
+        }
         await saveTaskState(
           upsertActiveTask(createEmptyTaskState(), {
             title,
             color,
             sameWindow,
             windowId,
+            groupId,
+            claimedTabId,
           })
         );
       }
@@ -477,18 +672,54 @@ async function executeTask(task) {
         target: { tabId },
         func: () => {
           const items = [];
-          const query = "a, button, input, textarea, select, [role='button'], h1, h2, h3";
-          const els = Array.from(document.querySelectorAll(query)).slice(0, 100);
+          const query = "a, button, input, textarea, select, [role='button'], [role='tab'], [role='menuitem'], [role='link'], h1, h2, h3, [data-testid]";
+          const els = Array.from(document.querySelectorAll(query)).slice(0, 150);
+          let ref = 1;
           for (const el of els) {
-            const text = (el.innerText || el.value || el.placeholder || "").trim().slice(0, 80);
-            items.push({
+            const rect = el.getBoundingClientRect();
+            const style = window.getComputedStyle(el);
+            const visible = rect.width > 0 && rect.height > 0 && style.visibility !== "hidden" && style.display !== "none";
+            if (!visible) continue;
+
+            const text = (el.innerText || el.value || el.placeholder || el.getAttribute("aria-label") || el.getAttribute("title") || "").trim().slice(0, 80);
+
+            let selector = "";
+            if (el.id) {
+              selector = `#${CSS.escape(el.id)}`;
+            } else if (el.getAttribute("data-testid")) {
+              selector = `[data-testid="${CSS.escape(el.getAttribute("data-testid"))}"]`;
+            } else if (el.name) {
+              selector = `${el.tagName.toLowerCase()}[name="${CSS.escape(el.name)}"]`;
+            } else if (el.className && typeof el.className === "string") {
+              const classes = el.className.trim().split(/\s+/).filter(c => !c.includes(":") && !c.includes("[")).slice(0, 2);
+              if (classes.length) {
+                selector = `${el.tagName.toLowerCase()}.${classes.map(c => CSS.escape(c)).join(".")}`;
+              }
+            }
+            if (!selector) {
+              selector = el.tagName.toLowerCase();
+            }
+
+            const item = {
+              ref: ref++,
               tag: el.tagName.toLowerCase(),
-              role: el.getAttribute("role") || undefined,
-              id: el.id || undefined,
-              name: el.getAttribute("name") || undefined,
-              type: el.getAttribute("type") || undefined,
+              role: el.getAttribute("role") || (el.tagName === "BUTTON" ? "button" : el.tagName === "A" ? "link" : undefined),
               text: text || undefined,
-            });
+              selector,
+              visible: true,
+              disabled: Boolean(el.disabled || el.getAttribute("aria-disabled") === "true"),
+              rect: {
+                x: Math.round(rect.left),
+                y: Math.round(rect.top),
+                width: Math.round(rect.width),
+                height: Math.round(rect.height),
+              },
+            };
+            if (el.id) item.id = el.id;
+            if (el.type) item.type = el.type;
+            if (el.name) item.name = el.name;
+            if (el.getAttribute("data-testid")) item.testId = el.getAttribute("data-testid");
+            items.push(item);
           }
           return { title: document.title, url: location.href, elements: items };
         },
@@ -496,19 +727,82 @@ async function executeTask(task) {
       result = res[0]?.result || {};
     } else if (type === "page.eval") {
       const tabId = await requireTaskTabId(params);
-      const res = await chrome.scripting.executeScript({
-        target: { tabId },
-        world: "MAIN",
-        func: (code) => {
-          try {
-            return (0, eval)(code);
-          } catch (e) {
-            return { error: e.message, stack: e.stack };
+      const script = params.script;
+      if (!script) throw lanternError("invalid_request", "Missing script parameter for eval");
+
+      let evalResult = null;
+      let evalError = null;
+      let evaluated = false;
+
+      // 1. Try CDP Runtime.evaluate first (handles expressions, async promises, and bypasses page CSP)
+      let attachedHere = false;
+      try {
+        try {
+          await chrome.debugger.attach({ tabId }, "1.3");
+          attachedHere = true;
+        } catch {}
+        const cdpRes = await chrome.debugger.sendCommand({ tabId }, "Runtime.evaluate", {
+          expression: script,
+          returnByValue: true,
+          awaitPromise: true,
+          userGesture: true,
+        });
+        if (cdpRes?.exceptionDetails) {
+          evalError = cdpRes.exceptionDetails.exception?.description || cdpRes.exceptionDetails.text;
+          evaluated = true;
+        } else if (cdpRes?.result) {
+          evalResult = cdpRes.result.value !== undefined ? cdpRes.result.value : cdpRes.result.description;
+          evaluated = true;
+        }
+      } catch (cdpErr) {
+        // Fallback to executeScript below
+      } finally {
+        if (attachedHere && (!taskState?.activeTask?.extensions?.network || taskState.activeTask.extensions.network.tabId !== tabId)) {
+          try { await chrome.debugger.detach({ tabId }); } catch {}
+        }
+      }
+
+      // 2. Fallback to chrome.scripting.executeScript if CDP was unavailable
+      if (!evaluated) {
+        try {
+          const res = await chrome.scripting.executeScript({
+            target: { tabId },
+            world: "MAIN",
+            func: (code) => {
+              try {
+                const fn = new Function("return (" + code + ")");
+                return { value: fn() };
+              } catch (e1) {
+                try {
+                  const fn = new Function(code);
+                  return { value: fn() };
+                } catch (e2) {
+                  try {
+                    return { value: (0, eval)(code) };
+                  } catch (e3) {
+                    return { error: e3.message || e2.message || e1.message };
+                  }
+                }
+              }
+            },
+            args: [script],
+          });
+          const injection = res?.[0]?.result;
+          if (injection?.error) {
+            evalError = injection.error;
+          } else if (injection) {
+            evalResult = injection.value;
           }
-        },
-        args: [params.script],
-      });
-      result = { evalResult: res[0]?.result };
+        } catch (scriptErr) {
+          evalError = scriptErr.message;
+        }
+      }
+
+      if (evalError) {
+        throw lanternError("eval_error", String(evalError));
+      }
+
+      result = await withTaskSummary({ evalResult });
     } else if (type === "dom.wait") {
       const tabId = await requireTaskTabId(params);
       const wait = assertWaitParams(params);
@@ -635,6 +929,7 @@ async function init() {
 }
 
 // Keep-alive with alarms
+createCredentialRelayClient().start().catch(() => undefined);
 chrome.alarms.create("bridge_heartbeat", { periodInMinutes: 0.4 });
 chrome.alarms.create("bridge_claim", { periodInMinutes: 0.1 });
 chrome.alarms.onAlarm.addListener((alarm) => {
