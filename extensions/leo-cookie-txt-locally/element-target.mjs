@@ -127,7 +127,7 @@ function semanticCandidates(document) {
   const tags = new Set(["button", "a", "input", "select", "textarea", "summary", "h1", "h2", "h3", "h4", "h5", "h6"]);
   return all.filter((element) => {
     const tag = element.tagName.toLowerCase();
-    return tags.has(tag) || ["role", "aria-label", "aria-labelledby", "data-testid"].some((name) => element.getAttribute?.(name) != null);
+    return tags.has(tag) || ["role", "aria-label", "aria-labelledby", "data-testid", "onclick"].some((name) => element.getAttribute?.(name) != null);
   });
 }
 
@@ -151,11 +151,20 @@ function touchRegistry(registry, ref, fingerprint, element) {
   return ref;
 }
 
+function generateUuid() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    try {
+      return crypto.randomUUID();
+    } catch {}
+  }
+  return "gen_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 10);
+}
+
 export function ensureDocumentRegistry(globalObject = globalThis, options = {}) {
   const key = "__leoLanternTargets";
   if (!globalObject[key]) {
     globalObject[key] = {
-      generation: options.generation || crypto.randomUUID(),
+      generation: options.generation || generateUuid(),
       nextRef: 1,
       capacity: options.capacity || 1000,
       refs: new Map(),
@@ -363,7 +372,7 @@ export function findTargets(document, registry, target) {
   if (target.kind !== "semantic") return [];
 
   const candidates = semanticCandidates(document);
-  return candidates.filter((element) => {
+  const matches = candidates.filter((element) => {
     if (!isVisible(element)) return false;
     const values = semanticValues(element, document);
     return SEMANTIC_FIELDS.every((field) => {
@@ -372,6 +381,13 @@ export function findTargets(document, registry, target) {
       return matchesText(target[field], values[field], target);
     });
   });
+
+  if (matches.length > 1) {
+    const nonAncestors = matches.filter((a) => !matches.some((b) => b !== a && (typeof a.contains === "function" ? a.contains(b) : false)));
+    if (nonAncestors.length > 0) return nonAncestors;
+  }
+
+  return matches;
 }
 
 export function normalizeTarget(params = {}) {

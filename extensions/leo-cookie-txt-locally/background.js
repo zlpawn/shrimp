@@ -189,8 +189,14 @@ async function registerTo(url) {
 
 async function sendHeartbeats() {
   const urls = await getTargetUrls();
+  const version = chrome.runtime.getManifest?.()?.version || "1.3.3";
   for (const url of urls) {
-    await heartbeatTarget(url, { id: chrome.runtime.id, task: currentTaskSummary() });
+    await heartbeatTarget(url, {
+      id: chrome.runtime.id,
+      name: "Leo cookie.txt Locally",
+      version,
+      task: currentTaskSummary(),
+    });
   }
 }
 
@@ -312,124 +318,14 @@ async function executeDocumentTargetTask(type, params = {}) {
         }
         return interaction.fillTarget(document, registry, normalizedTarget, value);
       } catch (err) {
-        if (err?.code === "selector_ambiguous" || err?.code === "semantic_ambiguous" || err?.reason === "ambiguous_match") {
-          return {
-            ok: false,
-            clicked: false,
-            code: err.code || "ambiguous_match",
-            reason: "ambiguous_match",
-            matches_n: err.matches_n,
-            error: err.message,
-          };
-        }
-        if (mode === "click") {
-          let el = null;
-          let matchCount = 0;
-          if (normalizedTarget?.kind === "css" && normalizedTarget.selector) {
-            const list = Array.from(document.querySelectorAll(normalizedTarget.selector));
-            matchCount = list.length;
-            if (matchCount === 1) el = list[0];
-          } else if (rawParams?.selector || rawParams?.sel) {
-            const list = Array.from(document.querySelectorAll(rawParams.selector || rawParams.sel));
-            matchCount = list.length;
-            if (matchCount === 1) el = list[0];
-          } else {
-            const txt = (normalizedTarget?.text || rawParams?.text || "").trim().toLowerCase();
-            if (txt) {
-              const candidates = Array.from(document.querySelectorAll("a, button, input[type='button'], input[type='submit'], [role='button'], [role='tab'], [role='menuitem'], [onclick], div, span, p"));
-              const matched = candidates.filter(c => {
-                const visible = c.offsetWidth > 0 || c.offsetHeight > 0 || c.getClientRects().length > 0;
-                if (!visible) return false;
-                const directText = (c.innerText || c.textContent || "").trim().toLowerCase();
-                const title = (c.getAttribute("title") || "").toLowerCase();
-                const aria = (c.getAttribute("aria-label") || "").toLowerCase();
-                return directText.includes(txt) || title.includes(txt) || aria.includes(txt);
-              });
-              matchCount = matched.length;
-              if (matchCount === 1) el = matched[0];
-            }
-          }
-
-          if (matchCount > 1) {
-            return {
-              ok: false,
-              clicked: false,
-              code: "ambiguous_match",
-              reason: "ambiguous_match",
-              matches_n: matchCount,
-              error: `${matchCount} matches found for click target. Please specify a more specific selector or ref.`,
-            };
-          }
-
-          if (el) {
-            el.scrollIntoView({ block: "center", inline: "center", behavior: "instant" });
-            const rect = el.getBoundingClientRect();
-            const point = {
-              x: Math.round(rect.left + Math.max(1, rect.width / 2)),
-              y: Math.round(rect.top + Math.max(1, rect.height / 2)),
-            };
-            const clickToken = "lantern_clk_" + Math.random().toString(36).slice(2, 10);
-            el.setAttribute("data-lantern-click-token", clickToken);
-            return {
-              clicked: true,
-              target: normalizedTarget || { kind: "css", selector: rawParams?.selector || rawParams?.sel },
-              matches_n: 1,
-              match_level: "located",
-              _point: point,
-              _clickToken: clickToken,
-            };
-          }
-          const targetStr = normalizedTarget?.selector || normalizedTarget?.text || rawParams?.text || rawParams?.selector || JSON.stringify(normalizedTarget || rawParams);
-          return {
-            ok: false,
-            error: `Element not found for click: ${targetStr}`,
-            code: normalizedTarget?.kind === "css" ? "selector_not_found" : "semantic_not_found",
-          };
-        }
-
-        if (mode === "fill") {
-          let el = null;
-          if (normalizedTarget?.kind === "css" && normalizedTarget.selector) {
-            el = document.querySelector(normalizedTarget.selector);
-          } else if (rawParams?.selector || rawParams?.sel) {
-            el = document.querySelector(rawParams.selector || rawParams.sel);
-          }
-          if (el) {
-            el.focus?.();
-            const tag = el.tagName.toLowerCase();
-            const editable = el.getAttribute?.("contenteditable") === "true";
-            const nextValue = String(value ?? "");
-            if (editable) {
-              el.textContent = nextValue;
-            } else {
-              try {
-                const proto = tag === "textarea" ? window.HTMLTextAreaElement?.prototype : window.HTMLInputElement?.prototype;
-                const setter = proto && Object.getOwnPropertyDescriptor(proto, "value")?.set;
-                if (setter) setter.call(el, nextValue);
-                else el.value = nextValue;
-              } catch {
-                el.value = nextValue;
-              }
-            }
-            try { el.dispatchEvent(new Event("input", { bubbles: true })); } catch {}
-            try { el.dispatchEvent(new Event("change", { bubbles: true })); } catch {}
-            return {
-              filled: true,
-              verified: true,
-              actual: nextValue,
-              target: normalizedTarget,
-              matches_n: 1,
-              match_level: "located",
-            };
-          }
-          return {
-            ok: false,
-            error: `Element not found for fill: ${rawParams?.selector || JSON.stringify(normalizedTarget)}`,
-            code: "selector_not_found",
-          };
-        }
-
-        return { ok: false, error: String(err?.message || err), code: err?.code || "target_error" };
+        return {
+          ok: false,
+          clicked: false,
+          code: err?.code || (err?.reason === "ambiguous_match" ? "ambiguous_match" : "target_error"),
+          reason: err?.reason || (err?.code === "selector_ambiguous" || err?.code === "semantic_ambiguous" ? "ambiguous_match" : undefined),
+          matches_n: err?.matches_n,
+          error: err?.message || String(err),
+        };
       }
     },
     args: [
@@ -762,58 +658,70 @@ async function executeTask(task) {
         target: { tabId },
         world: "ISOLATED",
         func: async () => {
-          const api = await import(chrome.runtime.getURL("/element-target.mjs"));
-          const registry = api.ensureDocumentRegistry(globalThis);
-          const state = api.collectState(document, registry);
-          const enriched = state.elements.map((el) => {
-            const rawEl = registry.refs.get(el.ref)?.weak?.deref?.() || null;
-            let rect = undefined;
-            let selector = el.tag;
-            let id = undefined;
-            let type = undefined;
-            let testId = undefined;
-            if (rawEl) {
-              const r = rawEl.getBoundingClientRect();
-              rect = {
-                x: Math.round(r.left),
-                y: Math.round(r.top),
-                width: Math.round(r.width),
-                height: Math.round(r.height),
-              };
-              if (rawEl.id) {
-                id = rawEl.id;
-                selector = `#${CSS.escape(rawEl.id)}`;
-              } else if (rawEl.getAttribute("data-testid")) {
-                testId = rawEl.getAttribute("data-testid");
-                selector = `[data-testid="${CSS.escape(testId)}"]`;
-              } else if (rawEl.name) {
-                selector = `${rawEl.tagName.toLowerCase()}[name="${CSS.escape(rawEl.name)}"]`;
-              } else if (rawEl.className && typeof rawEl.className === "string") {
-                const classes = rawEl.className.trim().split(/\s+/).filter((c) => !c.includes(":") && !c.includes("[")).slice(0, 2);
-                if (classes.length) {
-                  selector = `${rawEl.tagName.toLowerCase()}.${classes.map((c) => CSS.escape(c)).join(".")}`;
+          try {
+            const api = await import(chrome.runtime.getURL("/element-target.mjs"));
+            const registry = api.ensureDocumentRegistry(globalThis);
+            const state = api.collectState(document, registry);
+            const enriched = state.elements.map((el) => {
+              const rawEl = registry.refs.get(el.ref)?.weak?.deref?.() || null;
+              let rect = undefined;
+              let selector = el.tag;
+              let id = undefined;
+              let type = undefined;
+              let testId = undefined;
+              if (rawEl) {
+                const r = rawEl.getBoundingClientRect();
+                rect = {
+                  x: Math.round(r.left),
+                  y: Math.round(r.top),
+                  width: Math.round(r.width),
+                  height: Math.round(r.height),
+                };
+                if (rawEl.id) {
+                  id = rawEl.id;
+                  selector = `#${CSS.escape(rawEl.id)}`;
+                } else if (rawEl.getAttribute("data-testid")) {
+                  testId = rawEl.getAttribute("data-testid");
+                  selector = `[data-testid="${CSS.escape(testId)}"]`;
+                } else if (rawEl.name) {
+                  selector = `${rawEl.tagName.toLowerCase()}[name="${CSS.escape(rawEl.name)}"]`;
+                } else if (rawEl.className && typeof rawEl.className === "string") {
+                  const classes = rawEl.className.trim().split(/\s+/).filter((c) => !c.includes(":") && !c.includes("[")).slice(0, 2);
+                  if (classes.length) {
+                    selector = `${rawEl.tagName.toLowerCase()}.${classes.map((c) => CSS.escape(c)).join(".")}`;
+                  }
                 }
+                if (rawEl.type) type = rawEl.type;
               }
-              if (rawEl.type) type = rawEl.type;
-            }
+              return {
+                ...el,
+                selector,
+                id,
+                type,
+                testId,
+                rect,
+              };
+            });
             return {
-              ...el,
-              selector,
-              id,
-              type,
-              testId,
-              rect,
+              title: state.title,
+              url: state.url,
+              generation: state.generation,
+              elements: enriched,
             };
-          });
-          return {
-            title: state.title,
-            url: state.url,
-            generation: state.generation,
-            elements: enriched,
-          };
+          } catch (snapshotErr) {
+            return {
+              error: snapshotErr.message || String(snapshotErr),
+              title: document.title,
+              url: location.href,
+              elements: [],
+            };
+          }
         },
       });
       result = res?.[0]?.result || {};
+      if (result.error) {
+        throw lanternError("snapshot_error", result.error);
+      }
     } else if (type === "page.eval") {
       const tabId = await requireTaskTabId(params);
       const script = params.script;
