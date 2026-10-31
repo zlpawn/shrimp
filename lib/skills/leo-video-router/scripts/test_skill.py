@@ -192,6 +192,12 @@ class DocsTest(unittest.TestCase):
                 self.assertIn(s, text, f"{name}: missing {s!r}")
             self.assertNotIn("python3 scripts/registry.py", text, f"{name}: registry.py needs <本 skill 目录>")
 
+    def test_audio_doc(self):
+        text = self.read("references/audio-omnivoice.md")
+        for s in ["http://127.0.0.1:3900/v1", "/v1/audio/speech", "/v1/audio/voices",
+                  "--retry", "3902", "asr_model_missing", "口型"]:
+            self.assertIn(s, text, s)
+
     def test_relative_links_resolve(self):
         import re
         for md in SKILL.rglob("*.md"):
