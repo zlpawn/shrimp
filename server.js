@@ -13744,6 +13744,9 @@ function syncClaudeCodeSettingsIfEnabled(config) {
   if (CLAUDE_CODE_SYNC_DISABLED) {
     return { updated: false, reason: "disabled" };
   }
+  if (config?.clients?.code?.sync_settings !== true) {
+    return { updated: false, reason: "disabled-by-client-config" };
+  }
   return syncClaudeCodeSettings({
     config,
     ...(CLAUDE_CODE_SETTINGS_FILE
