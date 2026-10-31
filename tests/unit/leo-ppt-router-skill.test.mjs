@@ -23,3 +23,43 @@ test("cjk-text-fit extracts the CJK width and font sizing rules", () => {
   assert.match(cjk, /italic/i);         // 禁用斜体规则
   assert.match(cjk, /44 - \(25\.2-15\)\*0\.5/); // 字号收缩示例
 });
+
+test("pptxgenjs guide ships a runnable editable-PPTX skeleton", () => {
+  const g = read("references/fallback/pptxgenjs-guide.md");
+  const code = g.match(/```js\r?\n([\s\S]*?)```/)?.[1] ?? "";
+  assert.ok(code.length > 0, "guide must contain a ```js skeleton");
+  for (const api of ['from "pptxgenjs"', "LAYOUT_WIDE", "addSlide", "addText", "addChart", "addNotes", "writeFile"]) {
+    assert.ok(code.includes(api), `skeleton missing ${api}`);
+  }
+  for (const layout of ["cover", "agenda", "bullets", "data", "closing"]) {
+    assert.ok(code.includes(layout), `skeleton missing layout ${layout}`);
+  }
+  assert.match(g, /npm i pptxgenjs/);
+});
+
+test("marp guide documents image and editable pptx export", () => {
+  const g = read("references/fallback/marp-guide.md");
+  assert.match(g, /marp: true/);
+  assert.match(g, /npx @marp-team\/marp-cli@latest deck\.md --pptx/);
+  assert.match(g, /--pptx-editable/);
+  assert.match(g, /LibreOffice/);
+});
+
+test("html deck guide defines a single-file horizontal deck", () => {
+  const g = read("references/fallback/html-deck-guide.md");
+  assert.match(g, /单文件/);
+  assert.match(g, /ArrowRight|←|→/);
+  assert.match(g, /16:9/);
+});
+
+test("template fill guide ships a runnable python-pptx 3-page corporate template skeleton", () => {
+  const g = read("references/fallback/template-fill-guide.md");
+  const py = g.match(/```python\r?\n([\s\S]*?)```/)?.[1] ?? "";
+  assert.ok(py.length > 0, "guide must contain a ```python skeleton");
+  for (const sym of ["python-pptx", "duplicate_slide", "move_slide", "set_text", "inspect", "build"]) {
+    assert.ok(py.includes(sym), `skeleton missing ${sym}`);
+  }
+  assert.match(g, /uv run/);
+  assert.match(g, /弱于 ppt-master/);
+});
+
