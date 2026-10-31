@@ -166,3 +166,9 @@ test("leo-ppt-router is registered as the featured creative PPT skill", () => {
   assert.equal(entry.requiresDaemon, false);
   assert.ok(entry.tags.includes("ppt"));
 });
+
+test("leo-ppt-agent is fully retired", () => {
+  assert.ok(!fs.existsSync(path.join(ROOT, "lib", "skills", "leo-ppt-agent")), "leo-ppt-agent dir still exists");
+  const catalog = JSON.parse(fs.readFileSync(path.join(ROOT, "lib", "skills", "managed-catalog.json"), "utf8"));
+  assert.ok(!catalog.skills.some((i) => i.name === "leo-ppt-agent"), "catalog still lists leo-ppt-agent");
+});
