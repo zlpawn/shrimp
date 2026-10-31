@@ -33,7 +33,7 @@ flowchart TD
     I --> J{"用户选择"}
     J -- "同意安装" --> K["Agent 执行全局安装/同步并热加载"] --> H
     J -- "暂不安装 / 直接出图" --> F
-    H --> L["Step 6: 调用 leo-codex-imagine 执行渲染并交付"]
+    H --> L["Step 6: 交由下游 Skill 或环境中可用的生图 Skill 渲染并交付"]
     F --> L
 ```
 
@@ -158,16 +158,11 @@ flowchart TD
 
 ## 🎨 Step 6: 生图执行与回传规范
 
-在生成提示词后，若当前环境具备生图工具或引擎（优先推荐 `leo-codex-imagine`）：
-1. 自动调用底层生图引擎执行渲染：
-   ```bash
-   node ~/.agents/skills/leo-codex-imagine/scripts/leo_codex_imagine.mjs \
-     --prompt "<Compiled Prompt>" \
-     --images "<Reference Image Path (if any)>" \
-     --aspect-ratio "3:4"
-   ```
-2. 无论成功与否，必须将生成的提示词（结构化中文与英文 Prompt）清晰展示给用户；
-3. 图片渲染成功后，以标准的 Markdown 格式输出可点击的文件链接与图片预览：
+Router 只负责场景与提示词，**不绑定、不指定任何底层生图引擎**：
+1. **下游 Skill 自带执行流程**（如 Live Photo 动效类）：完全按该 Skill 自己的规约渲染与交付，Router 不干预其引擎选择。
+2. **下游 Skill 只产出提示词，或走 Step 5 兜底**：从 Agent 上下文的 `Available skills:` 中挑选可用的生图类 Skill，按该 Skill 自身文档传入提示词、参考图与画面比例；有多个可选时让用户选择，没有则只交付提示词。
+3. 无论成功与否，必须将生成的提示词（结构化中文与英文 Prompt）清晰展示给用户；
+4. 图片渲染成功后，以标准的 Markdown 格式输出可点击的文件链接与图片预览：
    ```markdown
    ![渲染图效果](file:///path/to/image.png)
    *原图文件：[image.png](file:///path/to/image.png)*
