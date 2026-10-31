@@ -106,6 +106,9 @@ lib/skills/leo-video-router/
 ### 6.1 探测顺序
 
 1. `~/.shrimp/skills/leo-video-router/registry.json` 里登记的路径；
+
+（由 `scripts/registry.py locate` 统一实现第 1、3、4、5 步：入口文件按 frontmatter `name` 或 OpenMontage 文件头校验，输出 `entry_dir` 作为交接时的 skill 目录；registry 损坏时报错退出、不覆盖。）
+
 2. agent 上下文中的可用 skill 列表；
 3. 标准 skill 目录：`~/.agents/skills/<名>`、`~/.claude/skills/<名>`、`~/.codex/skills/<名>`、`~/.gemini/config/skills/<名>`；
 4. 默认下载目录：`~/.shrimp/skills/<项目名>`；
@@ -114,21 +117,21 @@ lib/skills/leo-video-router/
 ### 6.2 安装卡片
 
 - 先问用户要不要指定目录；不指定就用 `~/.shrimp/skills/<项目名>`。
-- skill 类：展示 `npx skills add <repo> -g`；源码类：展示 `git clone <url> <目录>`。用户同意后由 agent 执行。
+- skill 类：展示 `npx skills add <repo> -g -y`（`-y` 免交互，安装目录名 = skill 名，已在临时 HOME 实装验证）；多个项目逐个安装，并行 clone 实测会中断；源码类：展示 `git clone <url> <目录>`。用户同意后由 agent 执行。
 - 用户说「已经 clone 在某某目录」→ 校验目录里有入口文件后写进 registry，不重复下载。
 - 依赖安装（uv、npm、ffmpeg 等）按项目自己的文档进行，Router 不管。
 - 自带「全自动、不问确认」规则的项目（如 MoneyPrinterTurbo 的 skill）：Router 先拿到用户同意再交接，交接后由它自动跑完。
 
 | 项目 | 安装命令 | 验证情况 |
 |---|---|---|
-| MoneyPrinterTurbo | `npx skills add harry0703/MoneyPrinterTurbo -g`；源码目录用 helper 的 `--root` 指定 | `--list` 识别到 `moneyprinterturbo-video` |
-| lemo-opuscar | `npx skills add lemomo-ai/lemo-opuscar -g`；风格库目录用 `LEMO_OPUSCAR_HOME` 指定 | `--list` 识别到 `lemo-opuscar` |
+| MoneyPrinterTurbo | `npx skills add harry0703/MoneyPrinterTurbo -g -y`；源码目录用 helper 的 `--root` 指定 | `--list` 识别到 `moneyprinterturbo-video` |
+| lemo-opuscar | `npx skills add lemomo-ai/lemo-opuscar -g -y`；风格库目录用 `LEMO_OPUSCAR_HOME` 指定 | `--list` 识别到 `lemo-opuscar` |
 | OpenMontage | `git clone https://github.com/calesthio/OpenMontage.git <目录>`，**不要用 `npx skills add`** | `--list` 找到的是它内部 `.agents/skills/` 下的 89 个工具类 skill（threejs-*、text-to-speech 等），不是入口，全局安装会污染 skill 列表 |
-| hypit | `npx skills add hypit-ai/hypit -g` | `--list` 识别到 `hypit` |
-| huashu-art-motion | `npx skills add alchaincyf/huashu-art-motion -g` | `--list` 识别到 `huashu-art-motion`；仓库约 77 MB，第一次 clone 因网络中断失败，重试成功，安装失败时应重试一次 |
-| video-shotcraft | `npx skills add Vincentwei1021/video-shotcraft -g` | `--list` 识别到 `video-shotcraft` |
-| xilo-opus-video | `npx skills add Kianzzz/xilo-opus-video -g` | `--list` 识别到 `xilo-opus-video` |
-| dashi-animationstyle | `npx skills add chuspeeism/dashi-animationstyle -g` | `--list` 识别到 `dashi-animationstyle` |
+| hypit | `npx skills add hypit-ai/hypit -g -y` | `--list` 识别到 `hypit` |
+| huashu-art-motion | `npx skills add alchaincyf/huashu-art-motion -g -y` | `--list` 识别到 `huashu-art-motion`；仓库约 77 MB，第一次 clone 因网络中断失败，重试成功，安装失败时应重试一次 |
+| video-shotcraft | `npx skills add Vincentwei1021/video-shotcraft -g -y` | `--list` 识别到 `video-shotcraft` |
+| xilo-opus-video | `npx skills add Kianzzz/xilo-opus-video -g -y` | `--list` 识别到 `xilo-opus-video` |
+| dashi-animationstyle | `npx skills add chuspeeism/dashi-animationstyle -g -y` | `--list` 识别到 `dashi-animationstyle` |
 
 ### 6.3 registry.json
 
