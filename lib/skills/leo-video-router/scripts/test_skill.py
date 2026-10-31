@@ -159,13 +159,16 @@ SKILL = HERE.parent
 
 class DocsTest(unittest.TestCase):
     def read(self, rel):
-        return (SKILL / rel).read_text()
+        return (SKILL / rel).read_text(encoding="utf-8")
 
     def test_matrix_lists_every_project_and_drops_mg_styles(self):
         text = self.read("references/routing-matrix.md")
         for name in registry.PROJECTS:
             self.assertIn(f"projects/{name}.md", text, name)
         self.assertIn("mg-styles-15", text)  # recorded as removed, with reason
+        self.assertIn("## 重叠项目的区分规则", text)
+        self.assertIn("## 歧义处理", text)
+        self.assertIn("references/fallback.md", text)  # no-match path
 
 
 if __name__ == "__main__":

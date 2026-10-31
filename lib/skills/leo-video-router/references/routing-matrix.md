@@ -15,6 +15,8 @@ Router 只决定交给谁，执行方式看各项目接入卡。
 
 ## 重叠项目的区分规则
 
+下面规则里的简称：huashu = huashu-art-motion，lemo = lemo-opuscar（「lemo 目录」指它的 66 种风格库），dashi = dashi-animationstyle，xilo = xilo-opus-video。
+
 - 要 AI 生成人物表演 → hypit；加工已有素材 → OpenMontage。两者都能复刻参考视频：社媒真人表演类 → hypit，混剪 / 预告 / 讲解类 → OpenMontage。
 - 「批量」「快速出一条」「信息流」「矩阵号」「给个主题就行」 → MoneyPrinterTurbo；要镜头设计和风格 → 代码视频类或 OpenMontage。
 - 点名艺术家或要「穿越」 → huashu；风格在 lemo 目录里 → lemo。
@@ -24,7 +26,9 @@ Router 只决定交给谁，执行方式看各项目接入卡。
 
 ## 歧义处理
 
-命中两个以上项目时，给出最多 2 个候选和一句话区别，让用户选。
+先按上面的「重叠项目的区分规则」判断；规则仍判断不了、且命中两个以上项目时，再给出最多 2 个候选和一句话区别，让用户选。
+
+没有命中任何触发词时（比如「我想做个视频」），回到 SKILL.md 展示场景导航卡片；用户描述需求后仍然一个都不命中，按 references/fallback.md 处理。
 
 ## 已移除
 
