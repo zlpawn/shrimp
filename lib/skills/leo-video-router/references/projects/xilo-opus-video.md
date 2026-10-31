@@ -22,7 +22,7 @@
 
 ## 交接
 
-- 从 `python3 scripts/registry.py locate xilo-opus-video`（Windows 上用 `python`）输出的 `entry_dir` 读其 SKILL.md，按六步执行：`check_env.py` → 问清需求 → 三个方案 → 预览 → `brief.md` → 制作与验收。
+- 从 `python3 <本 skill 目录>/scripts/registry.py locate xilo-opus-video`（`<本 skill 目录>` 即含 SKILL.md 的 leo-video-router 目录；Windows 上用 `python`）输出的 `entry_dir` 读其 SKILL.md，按六步执行：`check_env.py` → 问清需求 → 三个方案 → 预览 → `brief.md` → 制作与验收。
 - 工作目录 `opus-video/<slug>/`。
 
 ## 音频

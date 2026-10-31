@@ -20,8 +20,10 @@
 
 ## 交接
 
-- 从 `python3 scripts/registry.py locate dashi-animationstyle`（Windows 上用 `python`）输出的 `entry_dir` 读其 SKILL.md，按用法一执行：
-  `新建作品.mjs <作品目录> --style <风格> --audio <口播文件> [--script <稿子.txt>]` → `字幕.mjs` → 分镜确认 → 3 张静帧确认 → 出片。
+- 从 `python3 <本 skill 目录>/scripts/registry.py locate dashi-animationstyle`（`<本 skill 目录>` 即含 SKILL.md 的 leo-video-router 目录；Windows 上用 `python`）输出的 `entry_dir` 读其 SKILL.md，按用法一执行：
+  1. `node "<entry_dir>/pipeline/新建作品.mjs" <作品目录> --style <风格> --audio <口播文件> [--script <稿子.txt>]`
+  2. `node "<entry_dir>/pipeline/字幕.mjs" <作品目录>`
+  3. 分镜确认 → 3 张静帧确认 → 出片。
 
 ## 音频
 

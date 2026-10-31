@@ -20,7 +20,7 @@
 
 ## 交接
 
-- 从 `python3 scripts/registry.py locate hypit`（Windows 上用 `python`）输出的 `entry_dir` 读其 SKILL.md 并按它执行。
+- 从 `python3 <本 skill 目录>/scripts/registry.py locate hypit`（`<本 skill 目录>` 即含 SKILL.md 的 leo-video-router 目录；Windows 上用 `python`）输出的 `entry_dir` 读其 SKILL.md 并按它执行。
 - 生成模型通过 HypiHub 或用户自己的 API Key 接入，付费前它会和用户确认预算。
 
 ## 音频

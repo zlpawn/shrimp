@@ -15,12 +15,12 @@
 ## 安装
 
 - 源码项目：`git clone https://github.com/calesthio/OpenMontage.git <目录>`，默认目录 `~/.shrimp/skills/OpenMontage`。
-- **不要用 `npx skills add`**：它会找到内部 `.agents/skills/` 下 89 个工具类 skill，不是入口。
+- **不要用 `npx skills add`**：它会找到内部 `.agents/skills/` 下数十个工具类 skill（2026-10-31 远端 `--list` 显示 89 个，随上游变化），不是入口。
 - 依赖：Python 3.10+、FFmpeg，按其 README 安装。
 
 ## 交接
 
-- 项目根目录取 `python3 scripts/registry.py locate OpenMontage`（Windows 上用 `python`）输出的 `path`，在该目录工作。
+- 项目根目录取 `python3 <本 skill 目录>/scripts/registry.py locate OpenMontage`（`<本 skill 目录>` 即含 SKILL.md 的 leo-video-router 目录；Windows 上用 `python`）输出的 `path`，在该目录工作。
 - 先读 `AGENT_GUIDE.md`（`AGENTS.md` 只指向它），按 Rule Zero 走 pipeline：选 pipeline → 读 `pipeline_defs/<pipeline>.yaml` → preflight → 逐阶段读 director skill 后执行。
 
 ## 音频

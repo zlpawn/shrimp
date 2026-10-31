@@ -19,7 +19,7 @@
 
 ## 交接
 
-- 从 `python3 scripts/registry.py locate video-shotcraft`（Windows 上用 `python`）输出的 `entry_dir` 读其 SKILL.md：先判断任务范围；未选模式时先做只读产品检查，再让用户选三种模式之一。
+- 从 `python3 <本 skill 目录>/scripts/registry.py locate video-shotcraft`（`<本 skill 目录>` 即含 SKILL.md 的 leo-video-router 目录；Windows 上用 `python`）输出的 `entry_dir` 读其 SKILL.md：先判断任务范围；未选模式时先做只读产品检查，再让用户选三种模式之一。
 
 ## 音频
 

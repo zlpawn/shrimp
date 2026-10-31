@@ -172,13 +172,16 @@ class DocsTest(unittest.TestCase):
 
     CARD_SECTIONS = ["## 适合", "## 不适合", "## 安装", "## 交接", "## 音频", "## 注意"]
     CARD_FACTS = {
-        "MoneyPrinterTurbo": ["npx skills add harry0703/MoneyPrinterTurbo -g -y", "--root", "entry_dir", "--custom-audio-file", "--video-script"],
+        "MoneyPrinterTurbo": ["npx skills add harry0703/MoneyPrinterTurbo -g -y", "--root", "entry_dir", "--custom-audio-file", "--video-script", "subtitle_provider", "绝对路径"],
         "OpenMontage": ["git clone https://github.com/calesthio/OpenMontage.git", "AGENT_GUIDE.md", "OPENAI_BASE_URL=http://127.0.0.1:3900/v1", "tts-1", "不要写进"],
         "hypit": ["npx skills add hypit-ai/hypit -g -y"],
-        "lemo-opuscar": ["npx skills add lemomo-ai/lemo-opuscar -g -y", "LEMO_OPUSCAR_HOME"],
+        "lemo-opuscar": ["npx skills add lemomo-ai/lemo-opuscar -g -y", "LEMO_OPUSCAR_HOME",
+                         'LEMO_OPUSCAR_HOME=<目录> sh "<entry_dir>/scripts/setup.sh"',
+                         'LEMO_OPUSCAR_HOME=<目录> sh "<entry_dir>/scripts/setup.sh" deps',
+                         'LEMO_OPUSCAR_HOME=<目录> sh "<entry_dir>/scripts/setup.sh" demo <slug>'],
         "xilo-opus-video": ["npx skills add Kianzzz/xilo-opus-video -g -y", "绿幕"],
-        "dashi-animationstyle": ["npx skills add chuspeeism/dashi-animationstyle -g -y", "--audio"],
-        "huashu-art-motion": ["npx skills add alchaincyf/huashu-art-motion -g -y", "use-audio", "重试"],
+        "dashi-animationstyle": ["npx skills add chuspeeism/dashi-animationstyle -g -y", "--audio", "pipeline/新建作品.mjs", 'node "'],
+        "huashu-art-motion": ["npx skills add alchaincyf/huashu-art-motion -g -y", "use-audio", "重试", "S=<entry_dir>"],
         "video-shotcraft": ["npx skills add Vincentwei1021/video-shotcraft -g -y"],
     }
 
@@ -187,6 +190,7 @@ class DocsTest(unittest.TestCase):
             text = self.read(f"references/projects/{name}.md")
             for s in self.CARD_SECTIONS + facts:
                 self.assertIn(s, text, f"{name}: missing {s!r}")
+            self.assertNotIn("python3 scripts/registry.py", text, f"{name}: registry.py needs <本 skill 目录>")
 
     def test_relative_links_resolve(self):
         import re
