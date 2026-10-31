@@ -18,7 +18,7 @@
 - 不做场景化内容整理（述职/路演等内容框架），留待后续单独决策；
 - 不重复下游 Skill 内部的流程（ppt-master 自身的三路由、dashi 的风格确认等）；
 - 不集成 PPTist（Web GUI，无 CLI/API，AGPL-3.0），仅在交付时作为"手动精修"提示；
-- 不修改、不删除 `leo-ppt-agent`（其处置在 router 完成后另行决定）。
+- `leo-ppt-agent` 由本 router 取代：其 4 份有价值的提示词规范迁入 router 后，整体删除（见 §11）。
 
 ## 2. 目录结构
 
@@ -193,10 +193,14 @@ flowchart TD
 
 ## 11. 迁移与上线
 
-1. 新建 `lib/skills/leo-ppt-router/`，从 `leo-ppt-agent/references/prompts/` 复制三份规范并摘出 CJK 规则（`leo-ppt-agent` 原文件保持不动）；
-2. 与 leo-imagine-router 保持一致：**不**加入 `managed-catalog.json`；
-3. 本地验证通过后，复制到 `~/.agents/skills/leo-ppt-router`，并软链到 `~/.gemini/config/skills/leo-ppt-router`；
-4. `leo-ppt-agent` 的废弃/删除另行决策。
+1. 新建 `lib/skills/leo-ppt-router/`，从 `leo-ppt-agent/references/prompts/` 复制三份规范并摘出 CJK 规则；
+2. 在 `lib/skills/managed-catalog.json` 中加入 `leo-ppt-router` 条目，**接替** `leo-ppt-agent` 的位置（`category: creative`、`categoryLabel: 创意与演示`、`icon: 📊`、`featured: true`、`promoted: true`、`managed: true`、`requiresDaemon: false`），并补一条单元测试校验该条目；
+3. 本地验证通过后，复制到 `~/.agents/skills/leo-ppt-router` 与 `~/.gemini/config/skills/leo-ppt-router`（与本机现有 leo-imagine-router 一致：两处均为目录副本，非软链）；
+4. **最后一步**（router 已验证、规范已迁入之后）删除 `leo-ppt-agent`：
+   - `lib/skills/leo-ppt-agent/` 整个目录；
+   - `managed-catalog.json` 中的 `leo-ppt-agent` 条目；
+   - 已安装副本 `~/.agents/skills/leo-ppt-agent`；
+   - 删除前再次 `git grep leo-ppt-agent` 确认无其他引用（2026-10-31 扫描结果：仅 catalog 引用）。
 
 ## 12. 验证方案
 
