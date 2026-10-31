@@ -198,6 +198,18 @@ class DocsTest(unittest.TestCase):
                   "--retry", "3902", "asr_model_missing", "口型"]:
             self.assertIn(s, text, s)
 
+    def test_install_doc(self):
+        text = self.read("references/install-and-registry.md")
+        for s in ["registry.py locate", "registry.py register", "entry_dir", "-g -y", "~/.shrimp/skills/<项目名>",
+                  "~/.shrimp/skills/leo-video-router/registry.json", "用户同意"]:
+            self.assertIn(s, text, s)
+
+    def test_fallback_doc_names_no_engine_commands(self):
+        text = self.read("references/fallback.md")
+        self.assertIn("让用户选", text)
+        for s in ["leo_huoshan_imagine.mjs", "grok_imagine.mjs", "client.py"]:
+            self.assertNotIn(s, text, f"fallback must not hard-code {s}")
+
     def test_relative_links_resolve(self):
         import re
         for md in SKILL.rglob("*.md"):
