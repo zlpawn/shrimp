@@ -29,6 +29,7 @@
 
 - **必须先有口播**，`--audio` 必填。
 - 用户没有录音时：omnivoice 生成 wav 作为 `--audio`，同时把文案存为稿子传 `--script`。
+- 它没有自带 TTS。omnivoice 不可用、用户又不想启动 VoiceStudio 时，回到用户：请用户录音、启动 VoiceStudio，或明确同意用别的 TTS；不要擅自用 edge-tts 或任何云端 TTS。
 
 ## 注意
 
