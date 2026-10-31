@@ -23,9 +23,10 @@ python3 <本 skill 目录>/scripts/registry.py locate <项目名>
 |---|---|---|
 | 0 | `{"name", "path", "entry", "entry_dir", "via"}` | 已安装。交接时读 `entry`，skill 目录一律取 `entry_dir`，不要自己拼路径；项目根目录取 `path` |
 | 1 | `{"name", "found": false}` | 没找到，展示安装卡片 |
-| 3 | `{"error": ...}` | registry.json 损坏。把错误原文告诉用户，请用户修复或删除该文件后再继续；**不要自行覆盖或删除它** |
+| 2 | stderr 打印 `usage: ...` 和 `invalid choice` | 项目名写错或大小写不对（与 `register` 的退出码 2 不同）。按安装命令表第一列改正后重跑 |
+| 3 | `{"error": ...}` | registry.json 损坏或读写失败（无权限、磁盘写不进等）。把错误原文告诉用户，请用户修复或删除该文件后再继续；**不要自行覆盖或删除它** |
 
-`locate` 没找到、但 agent 上下文里已经列出了同名的可用 skill（按上面的 `<skill 名>` 匹配）时，也算已安装：用 agent 给出的那份 SKILL.md 所在目录交接，不展示安装卡片。
+`locate` 没找到、但 agent 上下文里已经列出了同名的可用 skill（按上面的 `<skill 名>` 匹配，如 lemo 作为 Claude 插件装在标准目录之外）时，也算已安装，不展示安装卡片：先 `python3 <本 skill 目录>/scripts/registry.py register <项目名> <那个 SKILL.md 所在目录> --source user`，再重跑 `locate`，交接仍用 `locate` 输出的 `entry_dir`。
 
 ## 安装卡片模板
 
@@ -33,15 +34,15 @@ python3 <本 skill 目录>/scripts/registry.py locate <项目名>
 💡 场景推荐：您的需求适合交给 【<项目名>】（<一句话特性>）。
 当前环境未检测到它：
 * 开源地址：<仓库地址>
-* 安装命令：<npx skills add <repo> -g -y 或 git clone <url> <目录>>
-* 源码目录：默认 ~/.shrimp/skills/<项目名>，也可以指定其他目录（仅 git clone 的源码类项目）
+* 安装命令：<安装命令表里该项目的命令>
+* 源码目录：默认 ~/.shrimp/skills/<项目名>，也可以指定其他目录
 请问是否需要我帮您安装？
 * 回复「安装」：我来执行上面的命令，完成后直接接着做
 * 回复「已经下载在 <目录>」：我登记这个目录，不重复下载
 * 回复「直接出片」：改用通用兜底方式
 ```
 
-`<一句话特性>`、仓库地址和安装命令从 [routing-matrix.md](routing-matrix.md) 和该项目接入卡（`projects/<项目名>.md`）的 `## 安装` 节取。用户回复「直接出片」时按 [fallback.md](fallback.md) 处理。
+「源码目录」一行只给 git clone 的源码类项目（OpenMontage）展示，skill 类项目删掉这一行。`<一句话特性>`、仓库地址和安装命令从 [routing-matrix.md](routing-matrix.md) 和该项目接入卡（`projects/<项目名>.md`）的 `## 安装` 节取。用户拒绝安装（包括回复「直接出片」）时按 [fallback.md](fallback.md) 处理。
 
 ## 执行规则
 
@@ -51,6 +52,7 @@ python3 <本 skill 目录>/scripts/registry.py locate <项目名>
 - 源码类：`git clone <url> <目录>`。OpenMontage 只能 `git clone`，**不要用 `npx skills add`**（它会装上项目内部数十个工具类 skill，不是入口）。
 - 要装多个项目时**逐个**安装，等上一个结束再装下一个，不要并行（并行 clone 实测会中断）。
 - 安装或 clone 失败时重试一次；仍失败就把错误告诉用户，让用户选择指定其他目录、稍后再装或「直接出片」。
+- 安装命令报告成功、但紧接着 `locate` 仍退出 1：按安装失败处理，把情况告诉用户，不要自己拼路径继续。
 - 装好后登记：
   - 源码类：`python3 <本 skill 目录>/scripts/registry.py register <项目名> <clone 目录> --source install`
   - skill 类：先 `locate` 确认能找到，再用它输出的 `path` 登记：`python3 <本 skill 目录>/scripts/registry.py register <项目名> <path> --source install`
@@ -58,7 +60,8 @@ python3 <本 skill 目录>/scripts/registry.py locate <项目名>
 - `register` 退出码：
   - 0：登记成功，输出这条记录；
   - 2：这个目录不是该项目（入口文件缺失，或 SKILL.md 的 `name` 对不上 / OpenMontage 文件头不对），输出的 `error` 里列出了它找过的入口文件。把错误告诉用户，让其确认路径（常见情况：给的是上一级或下一级目录）；
-  - 3：registry.json 损坏，同「探测」一节的处理。
+  - 3：registry.json 损坏或读写失败，同「探测」一节的处理。
+  - 项目名写错时 argparse 同样以退出码 2 退出，但 stdout 没有 JSON、stderr 打印 `usage`，和上面的「目录不是该项目」不同。
 - 依赖安装（uv、npm、ffmpeg 等）和项目自己的数据目录（如 MoneyPrinterTurbo 的 `--root`、lemo-opuscar 的 `LEMO_OPUSCAR_HOME`）按接入卡和项目自己的文档进行，Router 不管。
 - 自带「全自动、不问确认」规则的项目（如 MoneyPrinterTurbo 的 skill）：先拿到用户同意再交接，交接后由它自动跑完。
 
@@ -79,7 +82,7 @@ python3 <本 skill 目录>/scripts/registry.py locate <项目名>
 
 ## registry.json
 
-路径：`~/.shrimp/skills/leo-video-router/registry.json`（不在 skill 目录内，换 agent、重装 skill 都不丢；设了环境变量 `LEO_VIDEO_ROUTER_HOME` 时改为 `$LEO_VIDEO_ROUTER_HOME/registry.json`）。
+路径：`~/.shrimp/skills/leo-video-router/registry.json`（不在 skill 目录内，换 agent、重装 skill 都不丢）。环境变量 `LEO_VIDEO_ROUTER_HOME` 只供测试覆盖数据目录，正常使用不要设置。
 
 ```json
 {

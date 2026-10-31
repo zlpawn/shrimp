@@ -101,6 +101,13 @@ class RegistryTest(Base):
         touch(self.home / ".agents/skills/hypit/SKILL.md", "name: hypit\n")  # no frontmatter at all
         self.assertIsNone(registry.locate("hypit", self.home, self.cwd))
 
+    def test_quoted_frontmatter_name(self):
+        for q in ('"', "'"):
+            touch(self.home / ".agents/skills/hypit/SKILL.md", f"---\nname: {q}hypit{q}\n---\n")
+            self.assertIsNotNone(registry.locate("hypit", self.home, self.cwd), q)
+        touch(self.home / ".agents/skills/hypit/SKILL.md", "---\nname: \"hypit'\n---\n")  # mismatched
+        self.assertIsNone(registry.locate("hypit", self.home, self.cwd))
+
     def test_workspace_dir(self):
         touch(self.cwd / "lib/skills/video-shotcraft/SKILL.md", skill_md("video-shotcraft"))
         r = registry.locate("video-shotcraft", self.home, self.cwd)
@@ -146,6 +153,23 @@ class CliTest(Base):
         code, obj = self.run_cli("list")
         self.assertEqual(code, 3)
         self.assertIn("error", obj)
+
+    def test_unreadable_registry_exits_3(self):
+        (self.data / "registry.json").mkdir(parents=True)  # exists but read fails with OSError
+        code, obj = self.run_cli("locate", "hypit")
+        self.assertEqual(code, 3)
+        self.assertIn("error", obj)
+
+    def test_save_failure_during_prune_exits_3(self):
+        repo = self.tmp / "gone/hypit"
+        touch(repo / "SKILL.md", skill_md("hypit"))
+        registry.register("hypit", repo, "user", self.home)
+        (repo / "SKILL.md").unlink()
+        with mock.patch.object(registry.os, "replace", side_effect=PermissionError("denied")):
+            code, obj = self.run_cli("locate", "hypit")
+        self.assertEqual(code, 3)
+        self.assertIn("error", obj)
+        self.assertEqual(list(self.data.glob(".registry-*")), [])  # temp file cleaned up
 
     def test_locate_installed(self):
         touch(self.cwd / "lib/skills/video-shotcraft/SKILL.md", skill_md("video-shotcraft"))

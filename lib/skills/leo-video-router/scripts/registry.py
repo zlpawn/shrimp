@@ -5,7 +5,7 @@ Usage:
   registry.py locate <project>
   registry.py register <project> <dir> [--source user|install]
   registry.py list
-Exit codes: 0 ok, 1 not found, 2 directory is not that project, 3 registry.json is corrupt.
+Exit codes: 0 ok, 1 not found, 2 directory is not that project, 3 registry.json is corrupt or unreadable/unwritable.
 """
 import argparse, json, os, re, sys, tempfile
 from datetime import date
@@ -28,10 +28,10 @@ WORKSPACE_DIRS = ["lib/skills", ".agents/skills"]
 
 
 class RegistryError(Exception):
-    """registry.json exists but cannot be read; never overwrite it."""
+    """registry.json is corrupt, or reading/writing it failed; never overwrite it."""
 
 
-def data_dir(home: Path) -> Path:
+def data_dir(home: Path) -> Path:  # LEO_VIDEO_ROUTER_HOME: test-only override
     return Path(os.environ.get("LEO_VIDEO_ROUTER_HOME") or home / ".shrimp/skills/leo-video-router")
 
 
@@ -47,6 +47,8 @@ def load(home: Path) -> dict:
         data = json.loads(f.read_text(encoding="utf-8"))
     except ValueError as e:  # includes UnicodeDecodeError
         raise RegistryError(f"{f} is corrupt ({e}); fix or delete it") from e
+    except OSError as e:
+        raise RegistryError(f"{f} cannot be read ({e})") from e
     projects = data.get("projects") if isinstance(data, dict) else None
     if not isinstance(projects, dict) or not all(
             isinstance(r, dict) and isinstance(r.get("path"), str) for r in projects.values()):
@@ -56,15 +58,18 @@ def load(home: Path) -> dict:
 
 def save(home: Path, data: dict) -> None:
     f = registry_file(home)
-    f.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=f.parent, prefix=".registry-", suffix=".tmp")
-    try:  # atomic: a crash mid-write never leaves a truncated registry.json
-        with os.fdopen(fd, "w", encoding="utf-8") as fh:
-            fh.write(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
-        os.replace(tmp, f)
-    except BaseException:
-        os.unlink(tmp)
-        raise
+    try:
+        f.parent.mkdir(parents=True, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(dir=f.parent, prefix=".registry-", suffix=".tmp")
+        try:  # atomic: a crash mid-write never leaves a truncated registry.json
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                fh.write(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
+            os.replace(tmp, f)
+        except BaseException:
+            os.unlink(tmp)
+            raise
+    except OSError as e:
+        raise RegistryError(f"cannot write {f} ({e})") from e
 
 
 def is_entry(name: str, f: Path) -> bool:
@@ -81,7 +86,7 @@ def is_entry(name: str, f: Path) -> bool:
     for line in lines[1:]:  # only the leading frontmatter block counts
         if line.strip() == "---":
             return False
-        if re.fullmatch(rf"name:\s*{re.escape(p['skill'])}\s*", line):
+        if re.fullmatch(rf"name:\s*([\"']?){re.escape(p['skill'])}\1\s*", line):
             return True
     return False
 
