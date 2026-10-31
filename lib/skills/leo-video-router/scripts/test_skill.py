@@ -181,7 +181,7 @@ class DocsTest(unittest.TestCase):
                          'LEMO_OPUSCAR_HOME=<目录> sh "<entry_dir>/scripts/setup.sh" demo <slug>'],
         "xilo-opus-video": ["npx skills add Kianzzz/xilo-opus-video -g -y", "绿幕"],
         "dashi-animationstyle": ["npx skills add chuspeeism/dashi-animationstyle -g -y", "--audio", "pipeline/新建作品.mjs", 'node "'],
-        "huashu-art-motion": ["npx skills add alchaincyf/huashu-art-motion -g -y", "use-audio", "重试", "S=<entry_dir>"],
+        "huashu-art-motion": ["npx skills add alchaincyf/huashu-art-motion -g -y", "use-audio", "重试", 'python3 "<entry_dir>/scripts/capabilities.py" use-audio'],
         "video-shotcraft": ["npx skills add Vincentwei1021/video-shotcraft -g -y"],
     }
 
@@ -191,6 +191,12 @@ class DocsTest(unittest.TestCase):
             for s in self.CARD_SECTIONS + facts:
                 self.assertIn(s, text, f"{name}: missing {s!r}")
             self.assertNotIn("python3 scripts/registry.py", text, f"{name}: registry.py needs <本 skill 目录>")
+
+    def test_lemo_setup_always_prefixed(self):
+        import re
+        text = self.read("references/projects/lemo-opuscar.md")
+        bare = re.findall(r'(?<!LEMO_OPUSCAR_HOME=<目录> )sh "<entry_dir>/scripts/setup.sh"', text)
+        self.assertEqual(bare, [], "every setup.sh call needs the LEMO_OPUSCAR_HOME prefix")
 
     def test_dashi_card_runs_subtitles(self):
         self.assertIn("pipeline/字幕.mjs", self.read("references/projects/dashi-animationstyle.md"))

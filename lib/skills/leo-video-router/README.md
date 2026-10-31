@@ -42,6 +42,17 @@ cp -r "lib/skills/leo-video-router" ~/.agents/skills/
 Copy-Item -Path "lib\skills\leo-video-router" -Destination "$HOME\.agents\skills\" -Recurse -Force
 ```
 
+再给各 agent 的 skill 目录建软链，指向中央库：
+
+```bash
+# Claude Code
+ln -sfn ~/.agents/skills/leo-video-router ~/.claude/skills/leo-video-router
+# Antigravity / Gemini
+ln -sfn ~/.agents/skills/leo-video-router ~/.gemini/config/skills/leo-video-router
+# Codex 读 ~/.codex/skills，同样建软链
+ln -sfn ~/.agents/skills/leo-video-router ~/.codex/skills/leo-video-router
+```
+
 需要 Python 3（探测与登记脚本 `scripts/registry.py` 只用标准库）。
 
 ---

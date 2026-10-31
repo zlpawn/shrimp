@@ -27,7 +27,7 @@
 ## 音频
 
 - 可选。
-- 已有录音：先设 `S=<entry_dir>`（它的 `references/capabilities.md` 里 `S` 指 skill 目录），再运行 `python3 "$S/scripts/capabilities.py" use-audio --audio <录音> --out <项目>/音频/口播.wav`（Windows 上用 `python`）。
+- 已有录音：`python3 "<entry_dir>/scripts/capabilities.py" use-audio --audio <录音> --out <项目>/音频/口播.wav`（它的 `references/capabilities.md` 里的 `$S` 就是 `entry_dir`；Windows 上用 `python`）。
 - omnivoice 生成的 wav 同样走 `use-audio`。
 - 它自带的声音路径是 macOS `say` 和火山复刻。
 

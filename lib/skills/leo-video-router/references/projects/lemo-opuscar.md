@@ -26,7 +26,7 @@
 - 从 `locate` 输出的 `entry_dir` 读其 SKILL.md 并按它执行，每条都带前缀：
   1. 取库：`LEMO_OPUSCAR_HOME=<目录> sh "<entry_dir>/scripts/setup.sh"`（最后一行打印 `LIB=<path>`）
   2. 装依赖：`LEMO_OPUSCAR_HOME=<目录> sh "<entry_dir>/scripts/setup.sh" deps [voice] [music]`
-  3. 读 `$LIB/AGENTS.md`；需要看某风格的 demo 时：`LEMO_OPUSCAR_HOME=<目录> sh "<entry_dir>/scripts/setup.sh" demo <slug>`
+  3. 读 `<LIB>/AGENTS.md`（`<LIB>` 是第 1 步 `setup.sh` 最后一行打印的 `LIB=` 后面的路径，不是 shell 变量）；需要看某风格的 demo 时：`LEMO_OPUSCAR_HOME=<目录> sh "<entry_dir>/scripts/setup.sh" demo <slug>`
 - 项目目录建在用户发起时所在文件夹。
 
 ## 音频
