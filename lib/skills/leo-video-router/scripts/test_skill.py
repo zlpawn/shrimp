@@ -154,5 +154,19 @@ class CliTest(Base):
         self.assertIn("entry_dir", obj)
 
 
+SKILL = HERE.parent
+
+
+class DocsTest(unittest.TestCase):
+    def read(self, rel):
+        return (SKILL / rel).read_text()
+
+    def test_matrix_lists_every_project_and_drops_mg_styles(self):
+        text = self.read("references/routing-matrix.md")
+        for name in registry.PROJECTS:
+            self.assertIn(f"projects/{name}.md", text, name)
+        self.assertIn("mg-styles-15", text)  # recorded as removed, with reason
+
+
 if __name__ == "__main__":
     unittest.main()
