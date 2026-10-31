@@ -210,6 +210,15 @@ class DocsTest(unittest.TestCase):
         for s in ["leo_huoshan_imagine.mjs", "grok_imagine.mjs", "client.py"]:
             self.assertNotIn(s, text, f"fallback must not hard-code {s}")
 
+    def test_skill_md(self):
+        text = self.read("SKILL.md")
+        self.assertTrue(text.startswith("---\nname: leo-video-router\ndescription: "))
+        for s in ["references/routing-matrix.md", "references/install-and-registry.md",
+                  "references/audio-omnivoice.md", "references/fallback.md",
+                  "scripts/registry.py locate", "entry_dir", "不选择、不调用任何底层生成引擎"]:
+            self.assertIn(s, text, s)
+        self.assertLess(len(text.splitlines()), 200, "keep SKILL.md lean; details live in references/")
+
     def test_relative_links_resolve(self):
         import re
         for md in SKILL.rglob("*.md"):
