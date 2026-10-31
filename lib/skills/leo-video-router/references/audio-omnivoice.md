@@ -50,7 +50,7 @@ OpenAI 兼容，`http://127.0.0.1:3900/v1`：`/v1/audio/speech` 生成，`/v1/au
      && file /abs/path/narration.wav
    ```
 
-   成功时 `file` 显示 `RIFF ... WAVE audio`。curl 非 0 退出（HTTP 4xx/5xx）时，输出文件里是错误 JSON，不是音频：把错误告诉用户，不要交给下游。Windows 上用 `python`；没有 `file` 命令时检查文件开头 4 字节是 `RIFF`。
+   成功时 `file` 显示 `RIFF ... WAVE audio`。curl 非 0 退出（HTTP 4xx/5xx）时，输出文件里是错误 JSON，不是音频：把错误告诉用户，不要交给下游。上面是 bash 语法：Windows 上在 Git Bash 或 WSL 里运行，不要用 PowerShell / cmd，没有 `python3` 就用 `python`；没有 `file` 命令时检查文件开头 4 字节是 `RIFF`。
 
 说明：3902 端口是 VoiceStudio 控制服务，不是语音引擎；应用启动后约 60 秒 3900 才响应。不可用时提示用户启动 VoiceStudio，不要擅自换云端服务。
 

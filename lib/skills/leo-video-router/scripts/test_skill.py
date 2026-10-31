@@ -222,13 +222,23 @@ class DocsTest(unittest.TestCase):
         bare = re.findall(r'(?<!LEMO_OPUSCAR_HOME=<目录> )sh "<entry_dir>/scripts/setup.sh"', text)
         self.assertEqual(bare, [], "every setup.sh call needs the LEMO_OPUSCAR_HOME prefix")
 
+    def test_mpt_script_from_file_and_clone_asks_dir(self):
+        text = self.read("references/projects/MoneyPrinterTurbo.md")
+        self.assertIn('--video-script "$(cat ', text)  # same file the narration came from; quotes-safe
+        self.assertNotIn('--video-script "<文案>"', text)
+        self.assertIn("共用同一份文案和同一段旁白", text)  # --video-count N: one script, one narration
+        ask = text.find("先问用户要不要换目录")
+        self.assertNotEqual(ask, -1)
+        self.assertLess(ask, text.find("git clone https://github.com/harry0703/MoneyPrinterTurbo.git"))
+        self.assertIn("registry.py register MoneyPrinterTurbo", text)
+
     def test_dashi_card_runs_subtitles(self):
         self.assertIn("pipeline/字幕.mjs", self.read("references/projects/dashi-animationstyle.md"))
 
     def test_audio_doc(self):
         text = self.read("references/audio-omnivoice.md")
         for s in ["http://127.0.0.1:3900/v1", "/v1/audio/speech", "/v1/audio/voices", "--fail-with-body",
-                  "--retry", "3902", "asr_model_missing", "口型"]:
+                  "--retry", "3902", "asr_model_missing", "口型", "Git Bash", "WSL"]:
             self.assertIn(s, text, s)
 
     def test_install_doc(self):

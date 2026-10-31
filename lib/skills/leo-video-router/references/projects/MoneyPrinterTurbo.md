@@ -5,7 +5,7 @@
 ## 适合
 
 - 主题或文案 → 旁白 + 素材混剪 + 字幕 + BGM 的竖屏信息流短视频。
-- `--video-count` 一次出多条（`cli.py` 另有 `--batch-file`，但不能经 helper 传，见「音频」）。
+- `--video-count N` 一次出 N 条，但 N 条共用同一份文案和同一段旁白，只有素材画面不同（`task.py` 每个任务只生成一次文案）。要 N 条不同的视频就跑 N 次 helper、配 N 份文案，Edge TTS 和 omnivoice 都一样（`cli.py` 另有 `--batch-file`，但不能经 helper 传，见「音频」）。
 - 可一键发布 TikTok / Instagram / YouTube Shorts。
 
 ## 不适合
@@ -42,8 +42,8 @@
   - **omnivoice 配音**（推荐，音质更好）：agent 写文案，omnivoice 生成配音；
   - **MPT 自带 Edge TTS**：快，不需要 whisper。
 - 选 omnivoice 前先说明代价：自定义音频会跳过 TTS，要从这段音频出字幕，须在 `<root>/config.toml` 的 `[app]` 段设 `subtitle_provider = "whisper"`（默认 `"edge"`）。这会让 MPT 下载并运行 whisper `large-v3`（`config.example.toml` 的 `[whisper]` 段，数 GB，默认 CPU），且设置会保留到以后每次 MPT 运行；改用户 config.toml 前先告知，用完问用户要不要改回 `"edge"`。
-- 首次运行（`<root>` 还不存在）：不要先建 `<root>/config.toml`，否则 helper 会报「exists but is not a valid project」拒绝运行（`mpt_agent.py` 的 `ensure_project`）。经用户同意（这是一次安装）后先 `git clone https://github.com/harry0703/MoneyPrinterTurbo.git <root>`（helper 之后会复用它），`config.toml` 不存在就从 `config.example.toml` 复制一份，再改 `subtitle_provider`。
-- 交接：`-- --video-script "<文案>" --custom-audio-file <wav 绝对路径>`。`--custom-audio-file` 必须写绝对路径：helper 以 `<root>` 为工作目录运行 `cli.py`，相对路径按 `<root>` 解析，不是 `entry_dir`。
+- 首次运行（`<root>` 还不存在）：不要先建 `<root>/config.toml`，否则 helper 会报「exists but is not a valid project」拒绝运行（`mpt_agent.py` 的 `ensure_project`）。这是一次下载源码：先问用户要不要换目录（默认用上面 `--root` 规则得出的目录），经用户同意后 `git clone https://github.com/harry0703/MoneyPrinterTurbo.git <root>`（helper 之后会复用它）；用户换了目录就用 `python3 <本 skill 目录>/scripts/registry.py register MoneyPrinterTurbo <root> --source install` 登记（Windows 上用 `python`），以后 `locate` 会按规则第一条找到它。`config.toml` 不存在就从 `config.example.toml` 复制一份，再改 `subtitle_provider`。
+- 交接：文案不要直接写进命令行（引号会断），用生成配音的同一个文本文件：`-- --video-script "$(cat /abs/path/script.txt)" --custom-audio-file /abs/path/narration.wav`。`--custom-audio-file` 必须写绝对路径：helper 以 `<root>` 为工作目录运行 `cli.py`，相对路径按 `<root>` 解析，不是 `entry_dir`。
 - N 条不同的视频要 N 份文案和 N 段配音，每条单独跑一次 helper。`--video-count N` 配一个 `--custom-audio-file` 只会让 N 条视频共用同一段旁白。`cli.py` 的 `--batch-file`（JSONL 每行可带自己的 `video_script` 和 `custom_audio_file`）不能经 helper 传：helper 每次都加 `--task-id`，两者互斥。
 
 ## 注意
