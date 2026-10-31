@@ -170,6 +170,30 @@ class DocsTest(unittest.TestCase):
         self.assertIn("## 歧义处理", text)
         self.assertIn("references/fallback.md", text)  # no-match path
 
+    CARD_SECTIONS = ["## 适合", "## 不适合", "## 安装", "## 交接", "## 音频", "## 注意"]
+    CARD_FACTS = {
+        "MoneyPrinterTurbo": ["npx skills add harry0703/MoneyPrinterTurbo -g -y", "--root", "entry_dir", "--custom-audio-file", "--video-script"],
+        "OpenMontage": ["git clone https://github.com/calesthio/OpenMontage.git", "AGENT_GUIDE.md", "OPENAI_BASE_URL=http://127.0.0.1:3900/v1", "tts-1", "不要写进"],
+        "hypit": ["npx skills add hypit-ai/hypit -g -y"],
+        "lemo-opuscar": ["npx skills add lemomo-ai/lemo-opuscar -g -y", "LEMO_OPUSCAR_HOME"],
+        "xilo-opus-video": ["npx skills add Kianzzz/xilo-opus-video -g -y", "绿幕"],
+        "dashi-animationstyle": ["npx skills add chuspeeism/dashi-animationstyle -g -y", "--audio"],
+        "huashu-art-motion": ["npx skills add alchaincyf/huashu-art-motion -g -y", "use-audio", "重试"],
+        "video-shotcraft": ["npx skills add Vincentwei1021/video-shotcraft -g -y"],
+    }
+
+    def test_project_cards(self):
+        for name, facts in self.CARD_FACTS.items():
+            text = self.read(f"references/projects/{name}.md")
+            for s in self.CARD_SECTIONS + facts:
+                self.assertIn(s, text, f"{name}: missing {s!r}")
+
+    def test_relative_links_resolve(self):
+        import re
+        for md in SKILL.rglob("*.md"):
+            for link in re.findall(r"\]\(([^)#:]+\.md)", md.read_text(encoding="utf-8")):
+                self.assertTrue((md.parent / link).exists(), f"{md.relative_to(SKILL)} -> {link}")
+
 
 if __name__ == "__main__":
     unittest.main()
