@@ -1,5 +1,6 @@
-import json, os, sys, tempfile, unittest
+import contextlib, io, json, os, shutil, sys, tempfile, unittest
 from pathlib import Path
+from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -15,17 +16,20 @@ def skill_md(name: str) -> str:
     return f"---\nname: {name}\ndescription: test\n---\n\n# {name}\n"
 
 
-class RegistryTest(unittest.TestCase):
+class Base(unittest.TestCase):
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
         self.home = self.tmp / "home"
         self.cwd = self.tmp / "cwd"
         self.cwd.mkdir(parents=True)
         self.data = self.tmp / "data"
-        os.environ["LEO_VIDEO_ROUTER_HOME"] = str(self.data)
+        env = mock.patch.dict(os.environ, {"LEO_VIDEO_ROUTER_HOME": str(self.data)})  # restores prior value
+        env.start()
+        self.addCleanup(env.stop)
 
-    def tearDown(self):
-        os.environ.pop("LEO_VIDEO_ROUTER_HOME", None)
+
+class RegistryTest(Base):
 
     def test_unknown_project_raises(self):
         with self.assertRaises(KeyError):
@@ -85,6 +89,18 @@ class RegistryTest(unittest.TestCase):
         data = json.loads((self.data / "registry.json").read_text())
         self.assertNotIn("dashi-animationstyle", data["projects"])
 
+    def test_projects_not_a_dict_is_corrupt(self):
+        touch(self.data / "registry.json", '{"projects": []}')
+        with self.assertRaises(registry.RegistryError):
+            registry.locate("hypit", self.home, self.cwd)
+        self.assertEqual((self.data / "registry.json").read_text(), '{"projects": []}')
+
+    def test_name_outside_frontmatter_is_not_a_match(self):
+        touch(self.home / ".agents/skills/hypit/SKILL.md", skill_md("other") + "name: hypit\n")
+        self.assertIsNone(registry.locate("hypit", self.home, self.cwd))
+        touch(self.home / ".agents/skills/hypit/SKILL.md", "name: hypit\n")  # no frontmatter at all
+        self.assertIsNone(registry.locate("hypit", self.home, self.cwd))
+
     def test_workspace_dir(self):
         touch(self.cwd / "lib/skills/video-shotcraft/SKILL.md", skill_md("video-shotcraft"))
         r = registry.locate("video-shotcraft", self.home, self.cwd)
@@ -99,6 +115,43 @@ class RegistryTest(unittest.TestCase):
         with self.assertRaises(registry.RegistryError):
             registry.locate("video-shotcraft", self.home, self.cwd)
         self.assertEqual((self.data / "registry.json").read_text(), "{not json")
+
+
+class CliTest(Base):
+    def setUp(self):
+        super().setUp()
+        env = mock.patch.dict(os.environ, {"HOME": str(self.home)})  # Path.home() follows $HOME
+        env.start()
+        self.addCleanup(env.stop)
+        self.addCleanup(os.chdir, os.getcwd())
+        os.chdir(self.cwd)
+
+    def run_cli(self, *argv):
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            code = registry.main(list(argv))
+        return code, json.loads(buf.getvalue())
+
+    def test_locate_missing(self):
+        self.assertEqual(self.run_cli("locate", "hypit"), (1, {"name": "hypit", "found": False}))
+
+    def test_register_dir_without_entry(self):
+        (self.tmp / "empty").mkdir()
+        code, obj = self.run_cli("register", "hypit", str(self.tmp / "empty"))
+        self.assertEqual(code, 2)
+        self.assertIn("error", obj)
+
+    def test_list_corrupt_registry(self):
+        touch(self.data / "registry.json", "{not json")
+        code, obj = self.run_cli("list")
+        self.assertEqual(code, 3)
+        self.assertIn("error", obj)
+
+    def test_locate_installed(self):
+        touch(self.cwd / "lib/skills/video-shotcraft/SKILL.md", skill_md("video-shotcraft"))
+        code, obj = self.run_cli("locate", "video-shotcraft")
+        self.assertEqual(code, 0)
+        self.assertIn("entry_dir", obj)
 
 
 if __name__ == "__main__":

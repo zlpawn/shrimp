@@ -7,7 +7,7 @@ Usage:
   registry.py list
 Exit codes: 0 ok, 1 not found, 2 directory is not that project, 3 registry.json is corrupt.
 """
-import argparse, json, os, re, sys
+import argparse, json, os, re, sys, tempfile
 from datetime import date
 from pathlib import Path
 
@@ -44,28 +44,46 @@ def load(home: Path) -> dict:
     if not f.exists():
         return {"version": 1, "projects": {}}
     try:
-        data = json.loads(f.read_text())
-        data["projects"]
-    except (ValueError, KeyError, TypeError) as e:
+        data = json.loads(f.read_text(encoding="utf-8"))
+    except ValueError as e:  # includes UnicodeDecodeError
         raise RegistryError(f"{f} is corrupt ({e}); fix or delete it") from e
+    projects = data.get("projects") if isinstance(data, dict) else None
+    if not isinstance(projects, dict) or not all(
+            isinstance(r, dict) and isinstance(r.get("path"), str) for r in projects.values()):
+        raise RegistryError(f"{f} is corrupt (unexpected structure); fix or delete it")
     return data
 
 
 def save(home: Path, data: dict) -> None:
     f = registry_file(home)
     f.parent.mkdir(parents=True, exist_ok=True)
-    f.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
+    fd, tmp = tempfile.mkstemp(dir=f.parent, prefix=".registry-", suffix=".tmp")
+    try:  # atomic: a crash mid-write never leaves a truncated registry.json
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
+        os.replace(tmp, f)
+    except BaseException:
+        os.unlink(tmp)
+        raise
 
 
 def is_entry(name: str, f: Path) -> bool:
     """The file exists and belongs to this project (not just any SKILL.md)."""
     if not f.is_file():
         return False
-    head = f.read_text(errors="ignore")[:2000]
+    text = f.read_text(encoding="utf-8", errors="ignore")
     p = PROJECTS[name]
-    if p["skill"]:
-        return re.search(rf"^name:\s*{re.escape(p['skill'])}\s*$", head, re.M) is not None
-    return head.startswith(p["header"])
+    if not p["skill"]:
+        return text.startswith(p["header"])
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return False  # no frontmatter
+    for line in lines[1:]:  # only the leading frontmatter block counts
+        if line.strip() == "---":
+            return False
+        if re.fullmatch(rf"name:\s*{re.escape(p['skill'])}\s*", line):
+            return True
+    return False
 
 
 def entry_in(name: str, path: Path):
