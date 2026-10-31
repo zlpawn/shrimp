@@ -93,3 +93,53 @@ test("skills catalog lists style menus used for dynamic filtering", () => {
   assert.match(c, /pptx-editable/);
 });
 
+test("SKILL.md frontmatter, size and references", () => {
+  const s = read("SKILL.md");
+  assert.match(s, /^---\r?\nname: leo-ppt-router\r?\ndescription: .+/);
+  assert.ok(Buffer.byteLength(s, "utf8") <= 15 * 1024, "SKILL.md exceeds 15KB");
+  for (const ref of [
+    "references/skills-catalog.md",
+    "references/fallback/outline-architect.md",
+    "references/fallback/bento-grid-layout.md",
+    "references/fallback/cognitive-design-principles.md",
+    "references/fallback/cjk-text-fit.md",
+    "references/fallback/pptxgenjs-guide.md",
+    "references/fallback/marp-guide.md",
+    "references/fallback/html-deck-guide.md",
+    "references/fallback/template-fill-guide.md",
+  ]) {
+    assert.ok(s.includes(ref), `SKILL.md must reference ${ref}`);
+    assert.ok(exists(ref), `${ref} referenced but missing`);
+  }
+});
+
+test("SKILL.md navigation card covers the four dimensions, Z1/Z2 brand options and skip/delegate rules", () => {
+  const s = read("SKILL.md");
+  for (const dim of ["① 用途场景", "② 交付形态", "③ 风格", "④ 素材"]) assert.ok(s.includes(dim), `missing ${dim}`);
+  assert.match(s, /要在 WPS \/ PowerPoint 里继续修改/);
+  assert.match(s, /Z1.*公司品牌色/);
+  assert.match(s, /Z2.*公司 PPT 模板/);
+  assert.match(s, /1B 2A 3推荐 4B/);
+  assert.match(s, /不再询问/);
+  assert.match(s, /你定/);
+});
+
+test("SKILL.md routing matrix, brand priority rules, conflict rule, install protocol and delivery", () => {
+  const s = read("SKILL.md");
+  for (const [id, cmd] of Object.entries(DOWNSTREAM)) {
+    assert.ok(s.includes(`\`${id}\``), `matrix missing ${id}`);
+    assert.ok(s.includes(cmd), `install command for ${id} missing`);
+  }
+  assert.ok(s.includes("`built-in-fallback`"));
+  assert.match(s, /冲突提醒/);
+  assert.match(s, /一次性.*常用/);
+  assert.match(s, /Edit Native PPTX/);
+  assert.match(s, /不直接使用原色值|偏差/);
+  assert.match(s, /~\/\.agents\/skills\/<skill-name>/);
+  assert.match(s, /~\/\.gemini\/config\/skills\/<skill-name>/);
+  assert.match(s, /attribution_guard/);
+  assert.match(s, /PPTist/);
+  assert.match(s, /规划中/);
+  assert.doesNotMatch(s, /C:\\Users\\xtea|\/Users\/pa\//);
+  assert.doesNotMatch(s, /leo-ppt-agent/);
+});
