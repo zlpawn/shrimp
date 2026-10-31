@@ -63,3 +63,33 @@ test("template fill guide ships a runnable python-pptx 3-page corporate template
   assert.match(g, /弱于 ppt-master/);
 });
 
+const DOWNSTREAM = {
+  "ppt-master": "npx skills add hugohe3/ppt-master -g",
+  "dashi-ppt": "npx dashi-ppt-skill@latest",
+  "guizang-ppt-skill": "npx skills add https://github.com/op7418/guizang-ppt-skill --skill guizang-ppt-skill -g",
+  "codex-ppt": "npx -y skills@latest add ningzimu/codex-ppt-skill --skill codex-ppt -g",
+  "slidev": "npx skills add slidevjs/slidev -g",
+};
+
+test("skills catalog has a section, install command, editability and brand support for each downstream skill", () => {
+  const c = read("references/skills-catalog.md");
+  for (const [id, cmd] of Object.entries(DOWNSTREAM)) {
+    const section = c.split(/^## /m).find((s) => s.startsWith(`${id}\n`) || s.startsWith(`${id}\r\n`) || s.startsWith(`${id} `));
+    assert.ok(section, `missing section ## ${id}`);
+    assert.ok(section.includes(cmd), `${id} install command mismatch`);
+    assert.match(section, /WPS 可编辑/, `${id} missing editability line`);
+    assert.match(section, /品牌色 \/ 公司模板/, `${id} missing brand/template support line`);
+    assert.match(section, /运行依赖/, `${id} missing dependency line`);
+  }
+});
+
+test("skills catalog lists style menus used for dynamic filtering", () => {
+  const c = read("references/skills-catalog.md");
+  for (const theme of ["theme01", "theme12"]) assert.ok(c.includes(theme));
+  for (const style of ["麦肯锡风格", "党政红风格", "科研答辩风", "教学课件风"]) assert.ok(c.includes(style));
+  assert.match(c, /电子杂志/);
+  assert.match(c, /瑞士/);
+  assert.match(c, /attribution_guard/);
+  assert.match(c, /pptx-editable/);
+});
+
