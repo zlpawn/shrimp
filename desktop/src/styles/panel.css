@@ -1774,6 +1774,29 @@ input:focus, select:focus {
     color: var(--text-secondary);
     margin: 0;
 }
+.sync-toggle-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+.sync-toggle-info {
+    flex: 1;
+}
+.sync-toggle-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+.sync-toggle-title-row h3 {
+    margin: 0;
+}
+.sync-toggle-control {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
 .code-snippet {
     position: relative;
     background: var(--bg-color);

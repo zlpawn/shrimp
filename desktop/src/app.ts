@@ -4626,6 +4626,7 @@ function render() {
         el.textContent = codexModelCatalogPath || '~/.codex/gateway-model-catalog.json';
     });
     renderClaudeCodeModelSlots();
+    renderClaudeCodeSyncToggle();
 
     // Keep selection valid after delete/reorder
     if (selectedEndpoint) {
@@ -4725,9 +4726,12 @@ function renderClaudeCodeModelSlots() {
     const models = getEndpointPublicModels(endpoint);
     const slots = config.clients?.code?.model_slots || {};
     const help = document.getElementById('claude-code-model-slots-help');
+    const syncEnabled = Boolean(config.clients?.code?.sync_settings);
     if (help) {
         help.textContent = endpoint
-            ? `当前默认节点：${endpoint.name || endpoint.id}。保存配置后会同步到 ~/.claude/settings.json。`
+            ? (syncEnabled
+                ? `当前默认节点：${endpoint.name || endpoint.id}。保存配置后会同步到 ~/.claude/settings.json。`
+                : `当前默认节点：${endpoint.name || endpoint.id}。同步开关已关闭，保存配置后仅更新网关。`)
             : '请先设置一个默认节点，再选择四个快捷模型。';
     }
     for (const slot of ['opus', 'sonnet', 'haiku', 'fable']) {
@@ -4742,6 +4746,33 @@ function renderClaudeCodeModelSlots() {
         ].join('');
     }
 }
+
+function renderClaudeCodeSyncToggle() {
+    const toggle = document.getElementById('claude-code-sync-toggle') as HTMLInputElement | null;
+    const desc = document.getElementById('claude-code-sync-desc');
+    const isSync = Boolean(config.clients?.code?.sync_settings);
+    if (toggle) {
+        toggle.checked = isSync;
+    }
+    if (desc) {
+        desc.textContent = isSync
+            ? '已开启：保存节点或快捷模型时，网关会自动将最新代理与模型配置同步至 ~/.claude/settings.json。完全重启 Claude Code 后生效。'
+            : '已关闭（默认）：保存节点或快捷模型时，仅更新网关配置，不会修改本地 ~/.claude/settings.json。';
+    }
+}
+
+(window as any).toggleClaudeCodeSync = function(checked: boolean) {
+    if (!config.clients) (config as any).clients = {};
+    if (!config.clients.code) (config.clients as any).code = { endpoints: [] };
+    config.clients.code.sync_settings = Boolean(checked);
+    const desc = document.getElementById('claude-code-sync-desc');
+    if (desc) {
+        desc.textContent = checked
+            ? '已开启：保存节点或快捷模型时，网关会自动将最新代理与模型配置同步至 ~/.claude/settings.json。完全重启 Claude Code 后生效。'
+            : '已关闭（默认）：保存节点或快捷模型时，仅更新网关配置，不会修改本地 ~/.claude/settings.json。';
+    }
+    renderClaudeCodeModelSlots();
+};
 
 window.updateClaudeCodeModelSlot = function(slot, model) {
     config.clients.code.model_slots ||= {};
@@ -9053,6 +9084,8 @@ window.saveConfig = async function(options = {}) {
                     showToast('节点已保存，Claude Code 模型配置已同步', 'success');
                 } else if (payload.claudeCodeSync?.reason === 'already-in-sync') {
                     showToast('节点已保存，Claude Code 模型配置无变化', 'success');
+                } else if (payload.claudeCodeSync?.reason === 'disabled-by-client-config') {
+                    showToast('节点已保存（未同步至 settings.json）', 'success');
                 } else {
                     const reason = payload.claudeCodeSync?.error || payload.claudeCodeSync?.reason || '未知原因';
                     showToast(`节点已保存，但 Claude Code 同步未完成：${reason}`, 'error');
@@ -9081,6 +9114,8 @@ window.saveConfig = async function(options = {}) {
                     showToast('配置已保存，Claude Code 模型配置已同步', 'success');
                 } else if (payload.claudeCodeSync?.reason === 'already-in-sync') {
                     showToast('配置已保存，Claude Code 模型配置无变化', 'success');
+                } else if (payload.claudeCodeSync?.reason === 'disabled-by-client-config') {
+                    showToast('配置已保存（未同步至 settings.json）', 'success');
                 } else {
                     showToast('配置已保存', 'success');
                 }

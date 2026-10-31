@@ -184,9 +184,24 @@
                     </div>
                 </div>
 
-                <div class="usage-guide">
-                    <h3>配置自动同步</h3>
-                    <p>保存 Claude Code 节点或本页配置后，网关会自动同步到 <code>~/.claude/settings.json</code>。完全退出并重新启动 Claude Code 后生效。</p>
+                <div class="usage-guide sync-toggle-card">
+                    <div class="sync-toggle-info">
+                        <div class="sync-toggle-title-row">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);">
+                                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+                            </svg>
+                            <h3 style="margin: 0; font-size: 14px;">自动同步到 ~/.claude/settings.json</h3>
+                        </div>
+                        <p id="claude-code-sync-desc" style="margin: 4px 0 0; font-size: 12px; color: var(--text-secondary);">
+                            已关闭（默认）：保存节点或快捷模型时，仅更新网关配置，不会修改本地 ~/.claude/settings.json。
+                        </p>
+                    </div>
+                    <div class="sync-toggle-control">
+                        <label class="node-card-switch" title="开启或关闭自动同步到 ~/.claude/settings.json">
+                            <input type="checkbox" id="claude-code-sync-toggle" onchange="toggleClaudeCodeSync(this.checked)">
+                            <span class="node-card-switch-track"></span>
+                        </label>
+                    </div>
                 </div>
 
                 <div class="model-slots-panel" id="claude-code-model-slots">
