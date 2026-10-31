@@ -240,3 +240,32 @@ test("scoped save preserves custom client display_name and protocol metadata", (
   assert.equal(nodeSaved.clients["work-buddy"].protocol, "openai");
   assert.equal(nodeSaved.clients["work-buddy"].endpoints[0].name, "WB Edited");
 });
+
+
+test("scoped saves preserve clients.code.sync_settings", () => {
+  const persisted = {
+    server: { host: "127.0.0.1", port: 8788 },
+    clients: {
+      code: {
+        sync_settings: false,
+        endpoints: [{ id: "ep_c1", name: "C1", is_default: true }],
+      },
+    },
+  };
+  const working = structuredClone(persisted);
+  working.clients.code.sync_settings = true;
+  working.clients.code.endpoints[0].name = "C1 Edited";
+
+  const nodeSaved = buildScopedSaveConfig(persisted, working, {
+    client: "code",
+    scope: "node",
+    endpoint: { id: "ep_c1", index: 0 },
+  });
+  assert.equal(nodeSaved.clients.code.sync_settings, true);
+
+  const defaultSaved = buildScopedSaveConfig(persisted, working, {
+    client: "code",
+    scope: "default",
+  });
+  assert.equal(defaultSaved.clients.code.sync_settings, true);
+});

@@ -180,8 +180,13 @@ export function buildNodeSaveConfig(
           : endpoint.is_default;
     });
   }
-  if (client === "code" && working?.clients?.code?.model_slots) {
-    targetClient.model_slots = clone(working.clients.code.model_slots);
+  if (client === "code") {
+    if (working?.clients?.code?.model_slots) {
+      targetClient.model_slots = clone(working.clients.code.model_slots);
+    }
+    if (typeof working?.clients?.code?.sync_settings === "boolean") {
+      targetClient.sync_settings = working.clients.code.sync_settings;
+    }
   }
   return next;
 }
@@ -254,6 +259,9 @@ export function buildScopedSaveConfig(persisted, working, options = {}) {
     } else if (Number.isInteger(options.deletedEndpointIndex)) {
       target.endpoints.splice(options.deletedEndpointIndex, 1);
     }
+    if (client === "code" && typeof working?.clients?.code?.sync_settings === "boolean") {
+      target.sync_settings = working.clients.code.sync_settings;
+    }
   } else if (["default", "default-embedding", "default-web-search"].includes(scope)) {
     next = clone(persisted);
     const target = ensureClient(next, working, client);
@@ -267,8 +275,13 @@ export function buildScopedSaveConfig(persisted, working, options = {}) {
           .is_default === true;
       }
     });
-    if (client === "code" && working?.clients?.code?.model_slots) {
-      target.model_slots = clone(working.clients.code.model_slots);
+    if (client === "code") {
+      if (working?.clients?.code?.model_slots) {
+        target.model_slots = clone(working.clients.code.model_slots);
+      }
+      if (typeof working?.clients?.code?.sync_settings === "boolean") {
+        target.sync_settings = working.clients.code.sync_settings;
+      }
     }
   } else {
     next = clone(working);
