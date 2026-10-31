@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-11T14:30:00.000Z",
+  "updatedAt": "2026-10-31T04:25:20.193Z",
   "skills": [
     {
       "id": "leo-fooocus-imagine",
@@ -91,6 +91,29 @@
         "uv-tool",
         "音乐搜索",
         "歌曲下载"
+      ],
+      "requiresDaemon": false,
+      "promoted": true,
+      "managed": true
+    },
+    {
+      "id": "leo-ppt-router",
+      "name": "leo-ppt-router",
+      "title": "Leo PPT 需求引导与路由",
+      "summary": "引导式确认场景、交付形态（含 WPS 可编辑性）、风格与素材，智能路由到 ppt-master、dashi-ppt、guizang、codex-ppt、Slidev 等专精 PPT 技能，缺失时引导安装，并内置 PptxGenJS / Marp / HTML 兜底出片。",
+      "category": "creative",
+      "categoryLabel": "创意与演示",
+      "icon": "📊",
+      "featured": true,
+      "tags": [
+        "ppt",
+        "slides",
+        "presentation",
+        "router",
+        "pptx",
+        "wps",
+        "幻灯片",
+        "演示文稿"
       ],
       "requiresDaemon": false,
       "promoted": true,

@@ -143,3 +143,26 @@ test("SKILL.md routing matrix, brand priority rules, conflict rule, install prot
   assert.doesNotMatch(s, /C:\\Users\\xtea|\/Users\/pa\//);
   assert.doesNotMatch(s, /leo-ppt-agent/);
 });
+
+test("README documents scenes and installation", () => {
+  const r = read("README.md");
+  assert.match(r, /^# leo-ppt-router/m);
+  for (const id of Object.keys(DOWNSTREAM)) assert.ok(r.includes(id));
+  assert.match(r, /\$HOME\\\.agents\\skills/);
+  assert.match(r, /\.gemini/);
+});
+
+test("leo-ppt-router is registered as the featured creative PPT skill", () => {
+  const catalog = JSON.parse(fs.readFileSync(path.join(ROOT, "lib", "skills", "managed-catalog.json"), "utf8"));
+  const entry = catalog.skills.find((i) => i.name === "leo-ppt-router");
+  assert.ok(entry, "catalog entry missing");
+  assert.equal(entry.id, "leo-ppt-router");
+  assert.equal(entry.category, "creative");
+  assert.equal(entry.categoryLabel, "创意与演示");
+  assert.equal(entry.icon, "📊");
+  assert.equal(entry.featured, true);
+  assert.equal(entry.promoted, true);
+  assert.equal(entry.managed, true);
+  assert.equal(entry.requiresDaemon, false);
+  assert.ok(entry.tags.includes("ppt"));
+});
