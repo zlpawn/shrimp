@@ -35,7 +35,8 @@ lib/skills/leo-ppt-router/
         ├── cjk-text-fit.md          # 从 leo-ppt-agent/svg-generator.md 摘出 CJK 1.8x 宽度折算与字号收缩规则
         ├── pptxgenjs-guide.md       # 新写：用 PptxGenJS 输出原生可编辑 PPTX 的规范与代码骨架
         ├── marp-guide.md            # 新写：Marp Markdown 语法要点与 marp-cli 导出命令
-        └── html-deck-guide.md       # 新写：单文件 HTML 横向翻页 deck 的最小规范
+        ├── html-deck-guide.md       # 新写：单文件 HTML 横向翻页 deck 的最小规范
+        └── template-fill-guide.md   # 新写：用 python-pptx 基于公司模板扩页填充（保留母版/logo）
 ```
 
 SKILL.md 只保留导航卡片、路由矩阵与流程协议；各下游 Skill 的风格明细放在 `skills-catalog.md`，按需读取，控制 SKILL.md 体积（目标 ≤ 15KB，与 leo-imagine-router 相当）。
@@ -72,7 +73,7 @@ flowchart TD
 - 已从用户输入中能确定的维度**不再询问**，卡片只展示缺失维度；
 - 用户回复编号即可（如 `1B 2A 3推荐 4B`）；
 - 用户明确委托（"你定""不用问直接做"）时跳过卡片，取默认值：①按内容推断、②A 可编辑 PPTX、③推荐、④按实际提供的材料判断；交付时列出全部假设；
-- ③风格选项**依据 ①② 的选择动态过滤**，只列与目标 Skill 匹配的风格（明细取自 `skills-catalog.md`）。
+- ③风格选项**依据 ①② 的选择动态过滤**，只列与目标 Skill 匹配的风格（明细取自 `skills-catalog.md`）；**无论如何过滤，③ 始终附带 Z1 / Z2 两个公司品牌选项**。
 
 **卡片模板**：
 
@@ -93,6 +94,9 @@ flowchart TD
   E 已有 PPTX，要美化 / 改内容 / 套模板
 
 ③ 风格（根据 ①② 动态列出，或回复「推荐」）
+  …（动态风格项）
+  Z1 使用公司品牌色（请给出色值或 logo）
+  Z2 使用公司 PPT 模板（请提供 .pptx，常见为首页 / 内容页 / 感谢页 3 页）
 
 ④ 素材
   A 只有主题，需要帮忙调研   B 有文档 / 文章 / 大纲   C 有现成 PPTX
@@ -112,6 +116,17 @@ flowchart TD
 | 任意 | 目标未安装且用户拒绝安装 | `built-in-fallback` | 视兜底工具而定（见 §8） |
 
 **冲突提醒**：用户选 ②B/②C，但同时表达"要在 WPS/PowerPoint 里改"时，必须提醒该形态不可编辑（或仅部分可编辑），并建议改选 ②A；用户坚持则照办。
+
+### 5.1 公司品牌路由（③ Z1 / Z2，优先级高于主矩阵）
+
+| 选择 | 路由 | 说明 |
+| :--- | :--- | :--- |
+| **Z2 公司 PPT 模板** | 强制 `ppt-master`（任何 ② 形态都改为 PPTX 交付，若用户原选 ②B/②C/②D 则提醒） | 追问一次：「本次一次性使用，还是以后常用？」<br>· 一次性 → ppt-master **Edit Native PPTX**：把模板当页面库，首页/感谢页复用，内容页以模板内容页为骨架复制扩页（母版、logo、页眉页脚保留），动手前出页面映射计划待确认<br>· 常用 → ppt-master **Create Template（kind: deck）**：提取品牌（色/字/logo）+ 结构（母版/版式）为可复用工作区，再 Generate PPTX 套用<br>交接时附模板 .pptx 绝对路径与所选模式 |
+| **Z1 公司品牌色** + ②A/②E | `ppt-master` | 交接时附色值/logo；建议走 Create Brand 沉淀为可复用品牌工作区 |
+| **Z1** + ②B | `guizang-ppt-skill` | 它用脚本按品牌色生成受约束主题，**不直接使用原色值**，必须提示用户颜色可能有偏差 |
+| **Z1** + ②C | `codex-ppt` | 在风格提示中指定色值；AI 生图**不保证精确色值**，须提示 |
+| **Z1** + ②D | `slidev` | 通过主题 CSS 变量精确设置 |
+| **Z1** 且目标为 `dashi-ppt` | 不路由到 dashi | dashi 仅 12 套固定主题、无自定义品牌色入口；提醒后改荐 ppt-master（②A）或 guizang（②B） |
 
 **场景 → 默认推荐**（③回复"推荐"时使用）：
 
@@ -136,6 +151,16 @@ flowchart TD
 | `guizang-ppt-skill` | github.com/op7418/guizang-ppt-skill | `npx skills add https://github.com/op7418/guizang-ppt-skill --skill guizang-ppt-skill -g` | 浏览器即可 | 不支持导出 PPTX；来源/赞助信息不得写入产物 |
 | `codex-ppt` | github.com/ningzimu/codex-ppt-skill | `npx -y skills@latest add ningzimu/codex-ppt-skill --skill codex-ppt -g` | Python 3；生图后端（内置生图工具，或 `OPENAI_API_KEY` 等 API 配置） | 有样张审批门禁；不可编辑，需可编辑时提示作者的 image-to-editable-ppt-skill |
 | `slidev` | github.com/slidevjs/slidev（官方 skill） | `npx skills add slidevjs/slidev -g` | Node.js + pnpm；导出需 playwright-chromium | 需 WPS 编辑时导出用 `slidev export --format pptx-editable` |
+
+**品牌色 / 公司模板支持**（每个档案小节须含此行）：
+
+| 标识符 | 品牌色 | 公司 .pptx 模板 |
+| :--- | :--- | :--- |
+| `ppt-master` | ✅ Create Brand（色值、SVG/PNG logo、品牌手册） | ✅ Edit Native PPTX 扩页填充 / Create Template 可复用 |
+| `dashi-ppt` | ❌ 仅 12 套固定主题 | ❌ |
+| `guizang-ppt-skill` | 🟡 受约束生成品牌主题，不直接用原色值 | ❌ |
+| `codex-ppt` | 🟡 提示词指定，生图不保证精确 | 🟡 仅可作风格参考图 |
+| `slidev` | ✅ 主题 CSS 变量 | ❌ |
 
 ## 7. 运行期探测与 JIT 安装
 
@@ -170,6 +195,8 @@ flowchart TD
 | B HTML | 按 `html-deck-guide.md` 写单文件 HTML | ❌ |
 | C 图片式 | 逐页调用 `leo-codex-imagine` 生图，再用 PptxGenJS 拼装整页图片 | ❌ |
 | D Markdown | 按 `marp-guide.md` 写 Markdown，`npx @marp-team/marp-cli@latest deck.md --pptx`（需可编辑则加 `--pptx-editable`，依赖 LibreOffice） | 默认 ❌ / 加参数 🟡 |
+| ③ Z2 公司模板 | 按 `template-fill-guide.md`：`uv run --with python-pptx` 打开公司模板，用模板自带版式（`slide_layouts`）新增页并填占位符，保留母版 / logo；模板内容页无标准占位符时，退化为整页复制 + 文本替换。**须事先告知用户效果明显弱于 ppt-master** | ✅ |
+| ③ Z1 品牌色 | 各行工具照常，色值写入：PptxGenJS 色板常量 / HTML CSS 变量 / Marp `<style>` | 同所在行 |
 
 兜底不内置维护脚本：`pptxgenjs-guide.md` 提供可直接改写的代码骨架（封面、目录、要点、数据、结束页 5 种版式），由 agent 按内容生成脚本。
 
@@ -216,5 +243,7 @@ flowchart TD
 | 6 | "把这份旧 PPTX 美化一下" | 路由 `ppt-master` |
 | 7 | 目标未安装 + 用户回复"直接出" | 走兜底：先出大纲确认，再按形态选兜底工具 |
 | 8 | "你定，不用问" | 跳过卡片，按默认值执行并在交付时列出假设 |
+| 9 | "用公司模板（3 页 .pptx：首页/内容页/感谢页）做 15 页述职" | 路由 `ppt-master`，并追问「一次性 / 常用」 |
+| 10 | "公司主色 #1E5AA8，做个网页版发布会 PPT" | 路由 `guizang-ppt-skill`，并提示品牌色可能有偏差 |
 
 另做一次真实探测：在本机运行探测逻辑，确认 5 个下游 Skill 当前均判定为"未安装"、触发安装卡片。

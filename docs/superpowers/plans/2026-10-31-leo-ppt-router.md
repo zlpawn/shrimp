@@ -4,9 +4,9 @@
 
 **Goal:** 新建 `leo-ppt-router` Skill（引导式 PPT 需求导航 + 双层路由 + JIT 安装 + 内置兜底），接替并删除 `leo-ppt-agent`。
 
-**Architecture:** 纯文档型 Skill：`SKILL.md` 承载导航卡片、路由矩阵与协议；`references/skills-catalog.md` 承载下游 Skill 档案；`references/fallback/` 承载兜底规范（3 份迁自 leo-ppt-agent + 1 份摘录 + 3 份新写）。用 `node:test` 静态契约测试锁定关键字符串与文件，用子 agent 场景测试验证路由行为。
+**Architecture:** 纯文档型 Skill：`SKILL.md` 承载导航卡片、路由矩阵（含公司品牌色 Z1 / 公司 PPT 模板 Z2 优先路由）与协议；`references/skills-catalog.md` 承载下游 Skill 档案；`references/fallback/` 承载兜底规范（3 份迁自 leo-ppt-agent + 1 份摘录 + 4 份新写）。用 `node:test` 静态契约测试锁定关键字符串与文件，用子 agent 场景测试验证路由行为。
 
-**Tech Stack:** Markdown、Node.js 24 `node:test`、PptxGenJS（仅兜底骨架验证时临时安装，不进仓库依赖）、PowerShell。
+**Tech Stack:** Markdown、Node.js 24 `node:test`、PptxGenJS 与 `uv` + `python-pptx`（仅兜底骨架验证时临时运行，不进仓库依赖）、PowerShell。
 
 **Spec:** `docs/superpowers/specs/2026-10-30-leo-ppt-router-design.md`
 
@@ -123,17 +123,18 @@ git commit -m "feat(leo-ppt-router): migrate fallback layout references from leo
 
 ---
 
-### Task 2: 新写兜底工具指南（PptxGenJS / Marp / HTML）
+### Task 2: 新写兜底工具指南（PptxGenJS / Marp / HTML / 公司模板扩页）
 
 **Files:**
 - Create: `lib/skills/leo-ppt-router/references/fallback/pptxgenjs-guide.md`
 - Create: `lib/skills/leo-ppt-router/references/fallback/marp-guide.md`
 - Create: `lib/skills/leo-ppt-router/references/fallback/html-deck-guide.md`
+- Create: `lib/skills/leo-ppt-router/references/fallback/template-fill-guide.md`
 - Test: `tests/unit/leo-ppt-router-skill.test.mjs`（追加）
 
 **Interfaces:**
 - Consumes: Task 1 的 `read` / `exists`。
-- Produces: 三份指南文件名，Task 4 的 SKILL.md §兜底 会引用。
+- Produces: 四份指南文件名，Task 4 的 SKILL.md §兜底 会引用。
 
 - [ ] **Step 1: 追加失败测试**
 
@@ -165,6 +166,17 @@ test("html deck guide defines a single-file horizontal deck", () => {
   assert.match(g, /ArrowRight|←|→/);
   assert.match(g, /16:9/);
 });
+
+test("template fill guide ships a runnable python-pptx 3-page corporate template skeleton", () => {
+  const g = read("references/fallback/template-fill-guide.md");
+  const py = g.match(/```python\r?\n([\s\S]*?)```/)?.[1] ?? "";
+  assert.ok(py.length > 0, "guide must contain a ```python skeleton");
+  for (const sym of ["python-pptx", "duplicate_slide", "move_slide", "set_text", "inspect", "build"]) {
+    assert.ok(py.includes(sym), `skeleton missing ${sym}`);
+  }
+  assert.match(g, /uv run/);
+  assert.match(g, /弱于 ppt-master/);
+});
 ```
 
 - [ ] **Step 2: 运行确认失败**
@@ -174,7 +186,7 @@ Expected: FAIL，`ENOENT ... pptxgenjs-guide.md`
 
 - [ ] **Step 3: 写 pptxgenjs-guide.md**
 
-结构：`# PptxGenJS 兜底出片指南` → `## 何时使用`（②A 可编辑 PPTX、②E 重新生成、②C 拼装整页图片）→ `## 准备`（在产物目录执行 `npm init -y && npm i pptxgenjs`，不得安装进仓库根）→ `## 代码骨架` → `## 规则`（字号下限 14pt、中文字体链 `"Microsoft YaHei", "PingFang SC", sans-serif`、每页要点 ≤ 5 条、按 `cjk-text-fit.md` 估算溢出、所有文字用 `addText` 保持可编辑，禁止把文字渲染成图片）→ `## ②C 图片拼装`（`slide.addImage({ path, x: 0, y: 0, w: "100%", h: "100%" })`）。
+结构：`# PptxGenJS 兜底出片指南` → `## 何时使用`（②A 可编辑 PPTX、②E 重新生成、②C 拼装整页图片；③ Z1 公司品牌色时把 `C.accent` 替换为无 `#` 的 6 位色值）→ `## 准备`（在产物目录执行 `npm init -y && npm i pptxgenjs`，不得安装进仓库根）→ `## 代码骨架` → `## 规则`（字号下限 14pt、中文字体链 `"Microsoft YaHei", "PingFang SC", sans-serif`、每页要点 ≤ 5 条、按 `cjk-text-fit.md` 估算溢出、所有文字用 `addText` 保持可编辑，禁止把文字渲染成图片）→ `## ②C 图片拼装`（`slide.addImage({ path, x: 0, y: 0, w: "100%", h: "100%" })`）。
 
 代码骨架（完整写入文件）：
 
@@ -254,18 +266,155 @@ console.log("OK presentation.pptx");
 - 可编辑 PPTX（🟡 实验功能，需 PATH 中有 LibreOffice，复杂 CSS 需手修）：`npx @marp-team/marp-cli@latest deck.md --pptx --pptx-editable`
 - HTML：`npx @marp-team/marp-cli@latest deck.md --html`
 - PDF：`npx @marp-team/marp-cli@latest deck.md --pdf`
-→ `## 规则`（每页一个观点、要点 ≤ 5 条、中文用 `section { font-family: "Microsoft YaHei", sans-serif; }` 的 `<style>` 块）。
+→ `## 规则`（每页一个观点、要点 ≤ 5 条、中文用 `section { font-family: "Microsoft YaHei", sans-serif; }` 的 `<style>` 块；③ Z1 公司品牌色写入 `<style>` 中的标题与强调色）。
 
 - [ ] **Step 5: 写 html-deck-guide.md**
 
-结构：`# 单文件 HTML Deck 兜底指南` → `## 何时使用`（②B 且 guizang/dashi 均未安装）→ `## 硬性要求`：单文件（CSS/JS 内联，无外部依赖或仅可选 CDN 且有降级）；每页 `<section class="slide">` 固定 16:9（`aspect-ratio: 16 / 9`，按视口等比缩放）；键盘 `ArrowRight`/`ArrowLeft`（→/←）、空格翻页；`Esc` 总览网格；URL hash 记录页码；讲稿写在 `<aside class="notes">` 默认隐藏 → `## 版式`（复用 `bento-grid-layout.md` 的网格规则）→ `## 交付说明`（❌ 不可在 WPS 编辑，如需 PPTX 应改走 ②A）。
+结构：`# 单文件 HTML Deck 兜底指南` → `## 何时使用`（②B 且 guizang/dashi 均未安装）→ `## 硬性要求`：单文件（CSS/JS 内联，无外部依赖或仅可选 CDN 且有降级）；每页 `<section class="slide">` 固定 16:9（`aspect-ratio: 16 / 9`，按视口等比缩放）；键盘 `ArrowRight`/`ArrowLeft`（→/←）、空格翻页；`Esc` 总览网格；URL hash 记录页码；讲稿写在 `<aside class="notes">` 默认隐藏；③ Z1 公司品牌色写入 `:root { --accent: #...; }` → `## 版式`（复用 `bento-grid-layout.md` 的网格规则）→ `## 交付说明`（❌ 不可在 WPS 编辑，如需 PPTX 应改走 ②A）。
 
-- [ ] **Step 6: 运行确认通过**
+- [ ] **Step 6: 写 template-fill-guide.md**
+
+结构：`# 公司 PPT 模板扩页填充兜底指南` → `## 何时使用`（③ Z2 公司提供 .pptx 模板且 `ppt-master` 未安装、用户拒绝安装）→ `## 局限声明`（动手前**必须事先告知用户**本兜底方案效果明显弱于 ppt-master：仅能复用模板页现有文本槽位或占位符做扩页与文本替换，无法自动自由重排版式或绘制复杂 SVG/原生图表）→ `## 流程`（1. `uv run fill_template.py inspect <template.pptx>` 查看每页文本槽位序号；2. 生成 `deck.json`；3. `uv run fill_template.py build <template.pptx> deck.json presentation.pptx`）→ `## 脚本骨架（PEP 723）` → `## deck.json 示例`。
+
+脚本骨架（完整写入文件）：
+
+```python
+# /// script
+# requires-python = ">=3.10"
+# dependencies = ["python-pptx>=1.0.0"]
+# ///
+"""基于公司 3 页模板（首页 / 内容页 / 感谢页）扩页填充，保留母版、logo 与版式。
+
+用法：
+  uv run fill_template.py inspect <template.pptx>
+  uv run fill_template.py build <template.pptx> <deck.json> <out.pptx>
+"""
+import copy
+import json
+import sys
+
+from pptx import Presentation
+
+
+def text_slots(slide):
+    """模板页中带文字的形状，按从上到下、从左到右排序。"""
+    shapes = [s for s in slide.shapes if s.has_text_frame and s.text_frame.text.strip()]
+    return sorted(shapes, key=lambda s: (s.top or 0, s.left or 0))
+
+
+def inspect(path):
+    prs = Presentation(path)
+    for i, slide in enumerate(prs.slides):
+        print(f"[slide {i}] layout={slide.slide_layout.name!r}")
+        for j, s in enumerate(text_slots(slide)):
+            print(f"  slot {j}: name={s.name!r} top={s.top} left={s.left} text={s.text_frame.text[:40]!r}")
+
+
+def duplicate_slide(prs, index):
+    """复制第 index 页到末尾：同一版式 + 深拷贝全部形状 + 安全重映射资源关系。"""
+    src = prs.slides[index]
+    dst = prs.slides.add_slide(src.slide_layout)
+    for shp in list(dst.shapes):
+        shp._element.getparent().remove(shp._element)
+    rid_map = {}
+    for rId, rel in src.part.rels.items():
+        if "slideLayout" in rel.reltype or "notesSlide" in rel.reltype:
+            continue
+        rid_map[rId] = (
+            dst.part.rels.get_or_add_ext_rel(rel.reltype, rel._target)
+            if rel.is_external
+            else dst.part.relate_to(rel._target, rel.reltype)
+        )
+    for shp in src.shapes:
+        el = copy.deepcopy(shp._element)
+        for node in el.iter():
+            for k, v in list(node.attrib.items()):
+                if v in rid_map:
+                    node.attrib[k] = rid_map[v]
+        dst.shapes._spTree.append(el)
+    return dst
+
+
+def move_slide(prs, old_index, new_index):
+    lst = prs.slides._sldIdLst
+    el = list(lst)[old_index]
+    lst.remove(el)
+    lst.insert(new_index, el)
+
+
+def set_text(shape, lines):
+    """替换文字但保留首段首个 run 的字体、字号、颜色。"""
+    lines = [lines] if isinstance(lines, str) else list(lines)
+    tf = shape.text_frame
+    proto = copy.deepcopy(tf.paragraphs[0]._p)
+    for p in list(tf.paragraphs):
+        p._p.getparent().remove(p._p)
+    for _ in lines:
+        tf._txBody.append(copy.deepcopy(proto))
+    for para, line in zip(tf.paragraphs, lines):
+        runs = para.runs
+        if runs:
+            runs[0].text = line
+            for r in runs[1:]:
+                r._r.getparent().remove(r._r)
+        else:
+            para.text = line
+
+
+def build(template, deck_path, out):
+    with open(deck_path, encoding="utf-8") as f:
+        deck = json.load(f)
+    m = deck.get("slots", {"cover": 0, "content": 1, "closing": 2})
+    prs = Presentation(template)
+    pages = deck["pages"]
+
+    copies = [duplicate_slide(prs, m["content"]) for _ in pages[1:]]
+    cover = text_slots(prs.slides[m["cover"]])
+    set_text(cover[0], deck["cover"]["title"])
+    if len(cover) > 1 and deck["cover"].get("subtitle"):
+        set_text(cover[1], deck["cover"]["subtitle"])
+    for slide, page in zip([prs.slides[m["content"]], *copies], pages):
+        slots = text_slots(slide)
+        set_text(slots[0], page["title"])
+        if len(slots) > 1:
+            set_text(slots[1], page["points"])
+    closing = text_slots(prs.slides[m["closing"]])
+    set_text(closing[0], deck["closing"]["title"])
+    move_slide(prs, m["closing"], len(prs.slides) - 1)
+    prs.save(out)
+    print(f"OK {out} slides={len(prs.slides)}")
+
+
+if __name__ == "__main__":
+    cmd = sys.argv[1]
+    if cmd == "inspect":
+        inspect(sys.argv[2])
+    elif cmd == "build":
+        build(sys.argv[2], sys.argv[3], sys.argv[4])
+    else:
+        sys.exit(f"unknown command {cmd}")
+```
+
+`deck.json` 示例：
+
+```json
+{
+  "slots": { "cover": 0, "content": 1, "closing": 2 },
+  "cover": { "title": "2026 年度述职报告", "subtitle": "张三 · 平台研发部" },
+  "pages": [
+    { "title": "核心业绩", "points": ["交付 12 个项目", "成本下降 18%"] },
+    { "title": "下阶段规划", "points": ["目标一", "目标二"] }
+  ],
+  "closing": { "title": "谢谢" }
+}
+```
+
+- [ ] **Step 7: 运行确认通过**
 
 Run: `npm run test:leo-ppt-router`
-Expected: PASS（5 tests）
+Expected: PASS（6 tests）
 
-- [ ] **Step 7: 实跑 PptxGenJS 骨架（临时目录，验证后删除）**
+- [ ] **Step 8: 实跑 PptxGenJS 与 python-pptx 模板扩页骨架（临时目录，验证后删除）**
 
 ```powershell
 $tmp = Join-Path $env:TEMP "leo-ppt-router-skeleton"; New-Item -ItemType Directory -Force $tmp | Out-Null; Set-Location $tmp
@@ -274,15 +423,21 @@ $g = Get-Content "D:\agent-transfer\lib\skills\leo-ppt-router\references\fallbac
 [regex]::Match($g, '```js\r?\n([\s\S]*?)```').Groups[1].Value | Set-Content build-deck.mjs -Encoding UTF8
 node build-deck.mjs
 Expand-Archive presentation.pptx x -Force; Select-String x\ppt\slides\slide3.xml -Pattern '要点一' -Quiet
+
+$t = Get-Content "D:\agent-transfer\lib\skills\leo-ppt-router\references\fallback\template-fill-guide.md" -Raw -Encoding UTF8
+[regex]::Match($t, '```python\r?\n([\s\S]*?)```').Groups[1].Value | Set-Content fill_template.py -Encoding UTF8
+[regex]::Match($t, '```json\r?\n([\s\S]*?)```').Groups[1].Value | Set-Content deck.json -Encoding UTF8
+uv run --with python-pptx python -c "from pptx import Presentation; p=Presentation(); [s.shapes.add_textbox(100,100+i*50,500,50).text_frame.__setattr__('text',t) for s,ts in [(p.slides.add_slide(p.slide_layouts[6]),['封面','副标题']),(p.slides.add_slide(p.slide_layouts[6]),['内容','要点']),(p.slides.add_slide(p.slide_layouts[6]),['感谢'])] for i,t in enumerate(ts)]; p.save('tpl.pptx')"
+uv run fill_template.py build tpl.pptx deck.json out.pptx
 ```
 
-Expected: 输出 `OK presentation.pptx`，最后一行 `True`（文字以 `<a:t>` 原生文本存在 = 可编辑）。若失败，修正骨架后重跑 Step 6–7。之后 `Remove-Item $tmp -Recurse -Force`。
+Expected: 输出 `OK presentation.pptx`、`True`、`OK out.pptx slides=4`。若失败，修正骨架后重跑 Step 7–8。之后 `Set-Location D:\agent-transfer; Remove-Item $tmp -Recurse -Force`。
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
 git add lib/skills/leo-ppt-router/references/fallback tests/unit/leo-ppt-router-skill.test.mjs
-git commit -m "feat(leo-ppt-router): add PptxGenJS, Marp and HTML fallback guides"
+git commit -m "feat(leo-ppt-router): add PptxGenJS, Marp, HTML and template-fill fallback guides"
 ```
 
 ---
@@ -307,13 +462,14 @@ const DOWNSTREAM = {
   "slidev": "npx skills add slidevjs/slidev -g",
 };
 
-test("skills catalog has a section, install command and editability for each downstream skill", () => {
+test("skills catalog has a section, install command, editability and brand support for each downstream skill", () => {
   const c = read("references/skills-catalog.md");
   for (const [id, cmd] of Object.entries(DOWNSTREAM)) {
     const section = c.split(/^## /m).find((s) => s.startsWith(`${id}\n`) || s.startsWith(`${id} `));
     assert.ok(section, `missing section ## ${id}`);
     assert.ok(section.includes(cmd), `${id} install command mismatch`);
     assert.match(section, /WPS 可编辑/, `${id} missing editability line`);
+    assert.match(section, /品牌色 \/ 公司模板/, `${id} missing brand/template support line`);
     assert.match(section, /运行依赖/, `${id} missing dependency line`);
   }
 });
@@ -347,23 +503,24 @@ Expected: FAIL，`ENOENT ... skills-catalog.md`
 - **运行依赖**：
 - **交付形态**：
 - **WPS 可编辑**：✅ / 🟡 / ❌ + 原因
+- **品牌色 / 公司模板**：品牌色 <✅/🟡/❌ + 说明>；公司 .pptx 模板 <✅/🟡/❌ + 说明>
 - **风格菜单**：
 - **交接注意事项**：
 ```
 
 各小节内容：
-- `ppt-master`：AI 生成原生可编辑 PPTX（v6.8.0，MIT，github.com/hugohe3/ppt-master）；运行依赖 Python 3.10–3.14 + 安装目录内 `pip install -r requirements.txt`；风格菜单：自由设计或品牌/模板工作区；图像配色 14 种（cool-corporate、dark-cinematic、duotone、earthy-dusty、editorial-classic、frost-ice、jewel-tone、macaron、mono-ink、nature-organic、sunset-gradient、tech-neon、vivid-launch、warm-earth）；WPS ✅ 原生形状/图表/表格，动画与形状调节手柄在 WPS 中可能有差异；交接：首步运行 `attribution_guard.py`，非零即停，不得绕过；其内部三路由（Generate PPTX / Create Template / Edit Native PPTX）由它自己判定。
-- `dashi-ppt`：12 主题 HTML 演示，可导出 PPTX/PDF（v0.4.14，github.com/chuspeeism/dashi-ppt-skill）；安装附国内镜像 `npx --registry=https://registry.npmmirror.com dashi-ppt-skill@latest`；运行依赖 Node.js，导出 PPTX 需本机预览服务 + Playwright；风格菜单 theme01 轻拟态风（产品介绍/企业汇报）、theme02 炫光紫绿风（科技发布会）、theme03 深浅代码风（技术方案）、theme04 玻璃糖果风（年轻化品牌）、theme05 色谱图表风（数据报告）、theme06 深色图谱风（战略分析）、theme07 冷白调研风（调研报告/白皮书）、theme08 黑金实验风（高端发布）、theme09 深蓝杂志风（品牌故事）、theme10 金色指数风（金融指数，仅用户点名）、theme11 高能增长风、theme12 声波霓虹风；WPS 🟡 DOM 提取文字可编辑，映射失败区域退化为截图（官方 editableFidelity 0.851）；交接：它强制展示风格图并确认风格与是否用图片/视频，router 已收集答案随交接传入，其余遵从其门禁；只有明确要 PPTX 才导出。
-- `guizang-ppt-skill`：单文件 HTML 横向翻页（作者歸藏，github.com/op7418/guizang-ppt-skill）；运行依赖：浏览器；风格菜单：A 电子杂志 × 电子墨水（衬线 + WebGL 流体，人文/行业观察/发布）、B 瑞士国际主义（无衬线 + 网格点阵，IKB/柠檬黄/柠檬绿/安全橙，科技/数据/年度总结）；WPS ❌ 官方不支持导出 PPTX；交接：来源与赞助信息不得写入产物。
-- `codex-ppt`：整页图片式 PPTX（github.com/ningzimu/codex-ppt-skill）；运行依赖 Python 3 + 生图后端（宿主内置生图工具，或 `OPENAI_API_KEY`/`OPENAI_BASE_URL`/`CODEX_PPT_IMAGE_MODEL`）；风格菜单 12 种：党政红风格、创意杂志风、复古扁平插画风、手绘技术解释风、手绘白板风、教学课件风、数据仪表盘风、清爽专业风、温暖手工风、电子墨水杂志风、科研答辩风、麦肯锡风格；WPS ❌ 每页整图；交接：有样张审批门禁；需可编辑时提示作者的 image-to-editable-ppt-skill（规划中，未接入）。
-- `slidev`：开发者 Markdown 幻灯片官方 skill（github.com/slidevjs/slidev）；运行依赖 Node.js + pnpm，导出需 playwright-chromium；风格菜单：Slidev 主题（default、seriph 等）+ 代码高亮/Magic Move/Mermaid/LaTeX；WPS ✅ 仅当用 `slidev export --format pptx-editable` 导出（默认 `--format pptx` 为图片 ❌）；交接：需 WPS 编辑时必须指定 `pptx-editable`。
+- `ppt-master`：AI 生成原生可编辑 PPTX（v6.8.0，MIT，github.com/hugohe3/ppt-master）；运行依赖 Python 3.10–3.14 + 安装目录内 `pip install -r requirements.txt`；品牌色 ✅ Create Brand（色值、SVG/PNG logo、品牌手册），公司 .pptx 模板 ✅ Edit Native PPTX 扩页填充（一次性）或 Create Template kind: deck（常用可复用）；风格菜单：自由设计或品牌/模板工作区；图像配色 14 种（cool-corporate、dark-cinematic、duotone、earthy-dusty、editorial-classic、frost-ice、jewel-tone、macaron、mono-ink、nature-organic、sunset-gradient、tech-neon、vivid-launch、warm-earth）；WPS ✅ 原生形状/图表/表格，动画与形状调节手柄在 WPS 中可能有差异；交接：首步运行 `attribution_guard.py`，非零即停，不得绕过；其内部三路由（Generate PPTX / Create Template / Edit Native PPTX）由它自己判定。
+- `dashi-ppt`：12 主题 HTML 演示，可导出 PPTX/PDF（v0.4.14，github.com/chuspeeism/dashi-ppt-skill）；安装附国内镜像 `npx --registry=https://registry.npmmirror.com dashi-ppt-skill@latest`；运行依赖 Node.js，导出 PPTX 需本机预览服务 + Playwright；品牌色 ❌ 仅 12 套固定主题，公司 .pptx 模板 ❌；风格菜单 theme01 轻拟态风（产品介绍/企业汇报）、theme02 炫光紫绿风（科技发布会）、theme03 深浅代码风（技术方案）、theme04 玻璃糖果风（年轻化品牌）、theme05 色谱图表风（数据报告）、theme06 深色图谱风（战略分析）、theme07 冷白调研风（调研报告/白皮书）、theme08 黑金实验风（高端发布）、theme09 深蓝杂志风（品牌故事）、theme10 金色指数风（金融指数，仅用户点名）、theme11 高能增长风、theme12 声波霓虹风；WPS 🟡 DOM 提取文字可编辑，映射失败区域退化为截图（官方 editableFidelity 0.851）；交接：它强制展示风格图并确认风格与是否用图片/视频，router 已收集答案随交接传入，其余遵从其门禁；只有明确要 PPTX 才导出。
+- `guizang-ppt-skill`：单文件 HTML 横向翻页（作者歸藏，github.com/op7418/guizang-ppt-skill）；运行依赖：浏览器；品牌色 🟡 受约束生成品牌主题（不直接用原色值，须提示用户颜色可能有偏差），公司 .pptx 模板 ❌；风格菜单：A 电子杂志 × 电子墨水（衬线 + WebGL 流体，人文/行业观察/发布）、B 瑞士国际主义（无衬线 + 网格点阵，IKB/柠檬黄/柠檬绿/安全橙，科技/数据/年度总结）；WPS ❌ 官方不支持导出 PPTX；交接：来源与赞助信息不得写入产物。
+- `codex-ppt`：整页图片式 PPTX（github.com/ningzimu/codex-ppt-skill）；运行依赖 Python 3 + 生图后端（宿主内置生图工具，或 `OPENAI_API_KEY`/`OPENAI_BASE_URL`/`CODEX_PPT_IMAGE_MODEL`）；品牌色 🟡 提示词指定（AI 生图不保证精确色值），公司 .pptx 模板 🟡 仅可作风格参考图；风格菜单 12 种：党政红风格、创意杂志风、复古扁平插画风、手绘技术解释风、手绘白板风、教学课件风、数据仪表盘风、清爽专业风、温暖手工风、电子墨水杂志风、科研答辩风、麦肯锡风格；WPS ❌ 每页整图；交接：有样张审批门禁；需可编辑时提示作者的 image-to-editable-ppt-skill（规划中，未接入）。
+- `slidev`：开发者 Markdown 幻灯片官方 skill（github.com/slidevjs/slidev）；运行依赖 Node.js + pnpm，导出需 playwright-chromium；品牌色 ✅ 主题 CSS 变量，公司 .pptx 模板 ❌；风格菜单：Slidev 主题（default、seriph 等）+ 代码高亮/Magic Move/Mermaid/LaTeX；WPS ✅ 仅当用 `slidev export --format pptx-editable` 导出（默认 `--format pptx` 为图片 ❌）；交接：需 WPS 编辑时必须指定 `pptx-editable`。
 
-文件末尾加 `## 非路由目标（仅供参考）`：PPTist（Web GUI、AGPL-3.0，仅作交付后"手动精修"提示）、PptxGenJS 与 Marp CLI（内置兜底工具，见 `fallback/`）。
+文件末尾加 `## 非路由目标（仅供参考）`：PPTist（Web GUI、AGPL-3.0，仅作交付后"手动精修"提示）、PptxGenJS、Marp CLI 与 python-pptx 模板扩页（内置兜底工具，见 `fallback/`）。
 
 - [ ] **Step 4: 运行确认通过**
 
 Run: `npm run test:leo-ppt-router`
-Expected: PASS（7 tests）
+Expected: PASS（8 tests）
 
 - [ ] **Step 5: Commit**
 
@@ -392,22 +549,24 @@ test("SKILL.md frontmatter, size and references", () => {
   assert.ok(Buffer.byteLength(s, "utf8") <= 15 * 1024, "SKILL.md exceeds 15KB");
   for (const ref of ["references/skills-catalog.md", "references/fallback/outline-architect.md",
     "references/fallback/pptxgenjs-guide.md", "references/fallback/marp-guide.md", "references/fallback/html-deck-guide.md",
-    "references/fallback/bento-grid-layout.md", "references/fallback/cjk-text-fit.md"]) {
+    "references/fallback/template-fill-guide.md", "references/fallback/bento-grid-layout.md", "references/fallback/cjk-text-fit.md"]) {
     assert.ok(s.includes(ref), `SKILL.md must reference ${ref}`);
     assert.ok(exists(ref), `${ref} referenced but missing`);
   }
 });
 
-test("SKILL.md navigation card covers the four dimensions and skip/delegate rules", () => {
+test("SKILL.md navigation card covers the four dimensions, Z1/Z2 brand options and skip/delegate rules", () => {
   const s = read("SKILL.md");
   for (const dim of ["① 用途场景", "② 交付形态", "③ 风格", "④ 素材"]) assert.ok(s.includes(dim), `missing ${dim}`);
   assert.match(s, /要在 WPS \/ PowerPoint 里继续修改/);
+  assert.match(s, /Z1.*公司品牌色/);
+  assert.match(s, /Z2.*公司 PPT 模板/);
   assert.match(s, /1B 2A 3推荐 4B/);
   assert.match(s, /不再询问/);
   assert.match(s, /你定/);
 });
 
-test("SKILL.md routing matrix, conflict rule, install protocol and delivery", () => {
+test("SKILL.md routing matrix, brand priority rules, conflict rule, install protocol and delivery", () => {
   const s = read("SKILL.md");
   for (const [id, cmd] of Object.entries(DOWNSTREAM)) {
     assert.ok(s.includes(`\`${id}\``), `matrix missing ${id}`);
@@ -415,6 +574,9 @@ test("SKILL.md routing matrix, conflict rule, install protocol and delivery", ()
   }
   assert.ok(s.includes("`built-in-fallback`"));
   assert.match(s, /冲突提醒/);
+  assert.match(s, /一次性.*常用/);
+  assert.match(s, /Edit Native PPTX/);
+  assert.match(s, /不直接使用原色值|偏差/);
   assert.match(s, /~\/\.agents\/skills\/<skill-name>/);
   assert.match(s, /~\/\.gemini\/config\/skills\/<skill-name>/);
   assert.match(s, /attribution_guard/);
@@ -444,12 +606,12 @@ description: Use when the user wants to make a PPT, slide deck, presentation, �
 正文章节（按 leo-imagine-router 的版式与语气，内容逐字取自 spec 对应章节）：
 1. `# Leo PPT Router（PPT 需求引导与技能路由中心）` + `## 📖 核心定位`（spec §1，含非目标中的"不做场景化内容整理""PPTist 仅提示"两条）
 2. `## 🧭 工作流概览`：spec §3 mermaid 图原样
-3. `## 💡 方案导航（需求引导）`：spec §4 触发条件、规则、卡片模板原样；③ 写明"按 ①② 结果，从 `references/skills-catalog.md` 对应小节的风格菜单中过滤列出"
-4. `## 🗂️ 路由矩阵`：spec §5 主矩阵 + 冲突提醒 + 场景默认推荐表原样
+3. `## 💡 方案导航（需求引导）`：spec §4 触发条件、规则、卡片模板原样；③ 写明"按 ①② 结果，从 `references/skills-catalog.md` 对应小节的风格菜单中过滤列出，且始终附带 Z1 公司品牌色与 Z2 公司 PPT 模板两项"
+4. `## 🗂️ 路由矩阵`：spec §5 主矩阵 + 冲突提醒 + §5.1 公司品牌路由（③ Z1 / Z2 优先级高于主矩阵，含 Z2 强制 `ppt-master` 并追问「本次一次性使用，还是以后常用？」及 Z1 在各形态下的品牌色规则）+ 场景默认推荐表原样
 5. `## ⚡ Step 2：运行期探测`：spec §7 四条探测路径
 6. `## 📦 Step 4：缺失技能安装`：安装卡片模板（下方代码块）+ spec §7 同意后流程 + 安装失败处理；安装命令表列出 Global Constraints 中 5 条命令
-7. `## 🤝 Step 3：交接给下游 Skill`：携带已选四维度；遵守下游自身门禁；ppt-master 的 `attribution_guard.py` 非零即停不得绕过；下游细节读 `references/skills-catalog.md`
-8. `## 🛡️ Step 5：内置兜底`：spec §8 内容（大纲先确认）+ 形态→工具表，链接到 `references/fallback/` 下 7 份文件
+7. `## 🤝 Step 3：交接给下游 Skill`：携带已选四维度（含 Z1 色值/logo 或 Z2 模板路径与一次性/常用模式）；遵守下游自身门禁；ppt-master 的 `attribution_guard.py` 非零即停不得绕过；下游细节读 `references/skills-catalog.md`
+8. `## 🛡️ Step 5：内置兜底`：spec §8 内容（大纲先确认）+ 形态→工具表（含 ③ Z2 `template-fill-guide.md` 弱于 ppt-master 提示与 ③ Z1 色值写入规则），链接到 `references/fallback/` 下 8 份文件
 9. `## 📤 Step 6：交付规范`：spec §9 五条
 10. `## 🚀 规划中`：spec §10 表格原样（场景化内容整理、独立 Marp Skill、image-to-editable-ppt-skill）
 
@@ -472,7 +634,7 @@ description: Use when the user wants to make a PPT, slide deck, presentation, �
 - [ ] **Step 4: 运行确认通过**
 
 Run: `npm run test:leo-ppt-router`
-Expected: PASS（10 tests）。若体积超 15KB，把场景默认推荐表移入 `skills-catalog.md` 末尾并在 SKILL.md 中改为引用。
+Expected: PASS（11 tests）。若体积超 15KB，把场景默认推荐表移入 `skills-catalog.md` 末尾并在 SKILL.md 中改为引用。
 
 - [ ] **Step 5: Commit**
 
@@ -552,7 +714,7 @@ Expected: FAIL，`ENOENT ... README.md`
 - [ ] **Step 5: 运行确认通过 + 不破坏既有 catalog 测试**
 
 Run: `npm run test:leo-ppt-router; node --test tests/unit/leo-fooocus-imagine-skill.test.mjs tests/unit/wendao-cli.test.mjs`
-Expected: 全部 PASS（12 tests + 既有测试）
+Expected: 全部 PASS（13 tests + 既有测试）
 
 - [ ] **Step 6: Commit**
 
@@ -570,7 +732,7 @@ git commit -m "feat(leo-ppt-router): add README and register in managed catalog"
 
 - [ ] **Step 1: 逐个场景派发子 agent**
 
-对 spec §12 的 8 个场景，每个派发一个全新子 agent，提示词：
+对 spec §12 的 10 个场景，每个派发一个全新子 agent，提示词：
 
 ```text
 你是一个加载了下列 Skill 的 agent。只阅读 D:\agent-transfer\lib\skills\leo-ppt-router\SKILL.md 及其引用的 references 文件，不要执行任何安装或生成命令。
@@ -579,7 +741,9 @@ git commit -m "feat(leo-ppt-router): add README and register in managed catalog"
 请输出：1) 你回复用户的完整第一条消息；2) 你选择的路由目标标识符（或"先提问"）；3) 依据 SKILL.md 的哪一节。
 ```
 
-场景 7 的输入为两轮："帮我做一份季度汇报 PPT，要能在 WPS 改，商务简约风，素材如下：……" → 期望安装卡片；再给"直接出" → 期望先出大纲确认，工具为 PptxGenJS。
+- 场景 7 的输入为两轮："帮我做一份季度汇报 PPT，要能在 WPS 改，商务简约风，素材如下：……" → 期望安装卡片；再给"直接出" → 期望先出大纲确认，工具为 PptxGenJS。
+- 场景 9："用公司模板（3 页 .pptx：首页/内容页/感谢页）做 15 页述职" → 期望锁定路由 `ppt-master`，并追问「一次性使用 / 以后常用」（或在给出 ppt-master 安装卡片的同时询问该模式）。
+- 场景 10："公司主色 #1E5AA8，做个网页版发布会 PPT" → 期望路由 `guizang-ppt-skill`，且明确提示品牌色是受约束生成、可能与原色值有偏差。
 
 - [ ] **Step 2: 对照期望判定**
 
