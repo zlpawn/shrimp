@@ -83,6 +83,7 @@
     "test:kb": "node --test tests/unit/kb-*.test.mjs",
     "test:scheduler": "node --test tests/unit/scheduler-*.test.mjs tests/integration/scheduler-api.test.mjs",
     "test:leo-lantern": "node --test --test-concurrency=1 lib/skills/leo-lantern/tests/*.test.mjs",
+    "test:leo-lc-transcoder": "node --test --test-concurrency=1 lib/skills/leo-lc-transcoder/tests/*.test.mjs",
     "test:leo-fooocus-imagine": "node --test tests/unit/leo-fooocus-imagine-skill.test.mjs tests/unit/leo-fooocus-model-*.test.mjs tests/integration/leo-fooocus-model-download.test.mjs && python tests/unit/test_fooocus_gradio_client.py -v",
     "test:leo-typesafe-ai": "node --test lib/skills/leo-typesafe-ai/tests/*.test.mjs",
     "test:leo-ppt-router": "node --test tests/unit/leo-ppt-router-skill.test.mjs",
