@@ -45,7 +45,7 @@
           "purpose": "web_search",
           "provider": "tavily",
           "enabled": true,
-          "is_default": true,
+          "is_default": false,
           "options": {
             "search_depth": "basic",
             "max_results": 5,
@@ -68,10 +68,7 @@
         }
       ],
       "model_slots": {
-        "opus": "glm-5.2",
-        "fable": "glm-5.2",
-        "sonnet": "minimax-m3",
-        "haiku": "deepseek-v4-pro"
+        "opus": "minimax-m3"
       }
     },
     "desktop": {
@@ -165,7 +162,8 @@
           "models": [
             "minimax-m3"
           ],
-          "model_mapping": {}
+          "model_mapping": {},
+          "enabled": false
         },
         {
           "name": "grok-subscription",
@@ -995,20 +993,6 @@
       "preserve_stage_text": true,
       "prompt": "请立即直接调用工具执行下一步操作，禁止输出自然语言确认、开场白或阶段性总结。",
       "inject_agent_rules": false
-    }
-  },
-  "sessionSync": {
-    "skillMounts": {
-      "leo-imagine-router": {
-        "antigravity": false,
-        "claude": false,
-        "codex": true
-      },
-      "leo-codex-imagine": {
-        "antigravity": false,
-        "claude": false,
-        "codex": true
-      }
     }
   }
 }
