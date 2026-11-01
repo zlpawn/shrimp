@@ -104,8 +104,8 @@ lib/skills/leo-lc-transcoder/
 
 原则：**图上的每一步都来自真实运行的代码**，不手写动画逻辑。
 
-1. agent 写 Java 解法，在关键位置插入 `T.frame(line, note, state...)`，记录当前状态。
-2. `viz.mjs` 把 `assets/T.java` 作为静态嵌套类附加到解法文件末尾，然后用 `java Solution.java` 运行（单文件源码启动，无需编译；JDK 11–21 只会编译这一个文件，所以 T 必须写在同一个文件里），每帧输出一行 JSON。
+1. agent 写 Java 解法，在关键位置插入 `T.frame("中文说明", 视图...)`，记录当前状态。行号由 T 从调用栈自动取得，不用手写。
+2. `viz.mjs` 把 `assets/T.java` 作为顶层类 `class T` 追加到解法文件末尾，然后用 `java Solution.java` 运行（单文件源码启动，无需编译；JDK 11–21 只会编译这一个文件，所以 T 必须写在同一个文件里；启动器运行文件里第一个顶层类，所以带 `main` 的类要写在最前面），每帧输出一行 JSON（以 `@@T ` 开头）。
 3. 以上由一条命令完成：`node scripts/viz.mjs Solution.java --out <vault>/assets/LC0003.html`。运行结束后，把帧和代码嵌入 player.html，生成可以离线打开的单个 HTML。
 4. 播放器提供上一步、下一步、自动播放和调速；每一帧高亮当前代码行，并显示一句中文说明。
 
@@ -199,6 +199,7 @@ difficulty: Medium
 patterns: ["[[P03_滑动窗口]]"]
 mastery: 2
 next_review: 2026-11-04
+interval: 3        # 当前复习间隔档（1/3/7/14/30 天）
 reviews: 1
 last: { hints: 1, minutes: 18, first_submit_ac: false }
 ```
