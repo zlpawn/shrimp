@@ -57,6 +57,7 @@ description: "LeetCode 算法面试教练，面向算法基础薄弱的 Java 工
 - `run` 的结果以 `passed` 为准。LeetCode 在答案错误时仍返回 "Accepted"，脚本已改写为 "Wrong Answer"。
 - 连续 `run` / `submit` 太快会被限流，脚本会等待重试；不要并行调用。
 - 提交的 Java 文件只放 LeetCode 模板里的 `class Solution`（和需要的辅助类），不要带 `main` 和 `T.frame`。
+- **不要在提交的文件里重新定义 `ListNode` / `TreeNode`**（模板注释里的定义只是说明）。LeetCode 自带的版本有解析测试输入用的方法，重新定义后会报 `Runtime Error`，错误信息是 `NoSuchMethodError: 'ListNode ListNode.deserialize(...)'`。反过来，动画用的 `Demo.java` 不在 LeetCode 上运行，需要自己定义这些类。
 
 ## 二、解题四问（每道题都走一遍）
 

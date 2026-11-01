@@ -119,7 +119,11 @@ function layoutTree(root) {
 function renderTree(v) {
   const nodes = layoutTree(v.root);
   if (!nodes.length) return '<div class="empty">（空树）</div>';
-  const W = 48, H = 60, R = 17;
+  // 节点大小随最长的标签变化：递归树、回溯树的标签常是 f(3)、[1,2] 这类较长的文字
+  const longest = Math.max(...nodes.map((p) => fmt(p.n.val).length));
+  const R = Math.max(17, longest * 4 + 6);
+  const W = Math.max(48, 2 * R + 12);
+  const H = Math.max(60, 2 * R + 24);
   const byId = new Map(nodes.map((p) => [p.n.id, p]));
   const X = (p) => p.x * W + W / 2;
   const Y = (p) => p.d * H + R + 4;
