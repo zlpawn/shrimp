@@ -41,7 +41,7 @@
 **Interfaces:**
 - Produces: 测试文件常量 `SKILL_DIR`、`read(rel)` 辅助函数，后续任务往同一文件追加 `test(...)`。
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 ```js
 // tests/unit/leo-ppt-router-skill.test.mjs
@@ -72,12 +72,12 @@ test("cjk-text-fit extracts the CJK width and font sizing rules", () => {
 });
 ```
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `node --test tests/unit/leo-ppt-router-skill.test.mjs`
 Expected: FAIL，`missing outline-architect.md`
 
-- [ ] **Step 3: 复制三份规范**
+- [x] **Step 3: 复制三份规范**
 
 ```powershell
 $src = "lib\skills\leo-ppt-agent\references\prompts"
@@ -86,7 +86,7 @@ New-Item -ItemType Directory -Force $dst | Out-Null
 Copy-Item "$src\outline-architect.md","$src\bento-grid-layout.md","$src\cognitive-design-principles.md" $dst
 ```
 
-- [ ] **Step 4: 摘录 cjk-text-fit.md**
+- [x] **Step 4: 摘录 cjk-text-fit.md**
 
 从 `lib/skills/leo-ppt-agent/references/prompts/svg-generator.md` 摘出以下段落，原文照搬、不改写，组成新文件：
 - 第 99–126 行 `## Dynamic Font Sizing`（含 Slide Title / Card Title / CJK Adjustment / Example）
@@ -101,7 +101,7 @@ Copy-Item "$src\outline-architect.md","$src\bento-grid-layout.md","$src\cognitiv
 > 摘自 leo-ppt-agent `svg-generator.md`。适用于兜底出片（PptxGenJS / HTML / SVG）时估算中文字宽、行数与字号，防止文字溢出。PptxGenJS 中以英寸为单位时，先按 1 in = 96 px 换算。
 ```
 
-- [ ] **Step 5: package.json 增加脚本**
+- [x] **Step 5: package.json 增加脚本**
 
 在 `scripts` 中 `test:leo-typesafe-ai` 之后加入：
 
@@ -109,12 +109,12 @@ Copy-Item "$src\outline-architect.md","$src\bento-grid-layout.md","$src\cognitiv
 "test:leo-ppt-router": "node --test tests/unit/leo-ppt-router-skill.test.mjs",
 ```
 
-- [ ] **Step 6: 运行确认通过**
+- [x] **Step 6: 运行确认通过**
 
 Run: `npm run test:leo-ppt-router`
 Expected: PASS（2 tests）
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add tests/unit/leo-ppt-router-skill.test.mjs lib/skills/leo-ppt-router/references/fallback package.json
@@ -136,7 +136,7 @@ git commit -m "feat(leo-ppt-router): migrate fallback layout references from leo
 - Consumes: Task 1 的 `read` / `exists`。
 - Produces: 四份指南文件名，Task 4 的 SKILL.md §兜底 会引用。
 
-- [ ] **Step 1: 追加失败测试**
+- [x] **Step 1: 追加失败测试**
 
 ```js
 test("pptxgenjs guide ships a runnable editable-PPTX skeleton", () => {
@@ -179,12 +179,12 @@ test("template fill guide ships a runnable python-pptx 3-page corporate template
 });
 ```
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `npm run test:leo-ppt-router`
 Expected: FAIL，`ENOENT ... pptxgenjs-guide.md`
 
-- [ ] **Step 3: 写 pptxgenjs-guide.md**
+- [x] **Step 3: 写 pptxgenjs-guide.md**
 
 结构：`# PptxGenJS 兜底出片指南` → `## 何时使用`（②A 可编辑 PPTX、②E 重新生成、②C 拼装整页图片；③ Z1 公司品牌色时把 `C.accent` 替换为无 `#` 的 6 位色值）→ `## 准备`（在产物目录执行 `npm init -y && npm i pptxgenjs`，不得安装进仓库根）→ `## 代码骨架` → `## 规则`（字号下限 14pt、中文字体链 `"Microsoft YaHei", "PingFang SC", sans-serif`、每页要点 ≤ 5 条、按 `cjk-text-fit.md` 估算溢出、所有文字用 `addText` 保持可编辑，禁止把文字渲染成图片）→ `## ②C 图片拼装`（`slide.addImage({ path, x: 0, y: 0, w: "100%", h: "100%" })`）。
 
@@ -259,7 +259,7 @@ await pptx.writeFile({ fileName: "presentation.pptx" });
 console.log("OK presentation.pptx");
 ```
 
-- [ ] **Step 4: 写 marp-guide.md**
+- [x] **Step 4: 写 marp-guide.md**
 
 结构：`# Marp 兜底出片指南` → `## 何时使用`（②D 且 slidev 未安装、或用户要极简纯文字快速出片）→ `## 最小模板`（frontmatter：`marp: true`、`theme: default`、`paginate: true`、`size: 16:9`；`---` 分页；`<!-- 讲稿 -->` 写备注）→ `## 导出`：
 - 图片式 PPTX（❌ 不可编辑）：`npx @marp-team/marp-cli@latest deck.md --pptx`
@@ -268,11 +268,11 @@ console.log("OK presentation.pptx");
 - PDF：`npx @marp-team/marp-cli@latest deck.md --pdf`
 → `## 规则`（每页一个观点、要点 ≤ 5 条、中文用 `section { font-family: "Microsoft YaHei", sans-serif; }` 的 `<style>` 块；③ Z1 公司品牌色写入 `<style>` 中的标题与强调色）。
 
-- [ ] **Step 5: 写 html-deck-guide.md**
+- [x] **Step 5: 写 html-deck-guide.md**
 
 结构：`# 单文件 HTML Deck 兜底指南` → `## 何时使用`（②B 且 guizang/dashi 均未安装）→ `## 硬性要求`：单文件（CSS/JS 内联，无外部依赖或仅可选 CDN 且有降级）；每页 `<section class="slide">` 固定 16:9（`aspect-ratio: 16 / 9`，按视口等比缩放）；键盘 `ArrowRight`/`ArrowLeft`（→/←）、空格翻页；`Esc` 总览网格；URL hash 记录页码；讲稿写在 `<aside class="notes">` 默认隐藏；③ Z1 公司品牌色写入 `:root { --accent: #...; }` → `## 版式`（复用 `bento-grid-layout.md` 的网格规则）→ `## 交付说明`（❌ 不可在 WPS 编辑，如需 PPTX 应改走 ②A）。
 
-- [ ] **Step 6: 写 template-fill-guide.md**
+- [x] **Step 6: 写 template-fill-guide.md**
 
 结构：`# 公司 PPT 模板扩页填充兜底指南` → `## 何时使用`（③ Z2 公司提供 .pptx 模板且 `ppt-master` 未安装、用户拒绝安装）→ `## 局限声明`（动手前**必须事先告知用户**本兜底方案效果明显弱于 ppt-master：仅能复用模板页现有文本槽位或占位符做扩页与文本替换，无法自动自由重排版式或绘制复杂 SVG/原生图表）→ `## 流程`（1. `uv run fill_template.py inspect <template.pptx>` 查看每页文本槽位序号；2. 生成 `deck.json`；3. `uv run fill_template.py build <template.pptx> deck.json presentation.pptx`）→ `## 脚本骨架（PEP 723）` → `## deck.json 示例`。
 
@@ -409,12 +409,12 @@ if __name__ == "__main__":
 }
 ```
 
-- [ ] **Step 7: 运行确认通过**
+- [x] **Step 7: 运行确认通过**
 
 Run: `npm run test:leo-ppt-router`
 Expected: PASS（6 tests）
 
-- [ ] **Step 8: 实跑 PptxGenJS 与 python-pptx 模板扩页骨架（临时目录，验证后删除）**
+- [x] **Step 8: 实跑 PptxGenJS 与 python-pptx 模板扩页骨架（临时目录，验证后删除）**
 
 ```powershell
 $tmp = Join-Path $env:TEMP "leo-ppt-router-skeleton"; New-Item -ItemType Directory -Force $tmp | Out-Null; Set-Location $tmp
@@ -433,7 +433,7 @@ uv run fill_template.py build tpl.pptx deck.json out.pptx
 
 Expected: 输出 `OK presentation.pptx`、`True`、`OK out.pptx slides=4`。若失败，修正骨架后重跑 Step 7–8。之后 `Set-Location D:\agent-transfer; Remove-Item $tmp -Recurse -Force`。
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add lib/skills/leo-ppt-router/references/fallback tests/unit/leo-ppt-router-skill.test.mjs
@@ -451,7 +451,7 @@ git commit -m "feat(leo-ppt-router): add PptxGenJS, Marp, HTML and template-fill
 **Interfaces:**
 - Produces: 每个下游 Skill 一个 `## <identifier>` 二级标题，SKILL.md 的风格过滤与安装卡片引用这些小节。
 
-- [ ] **Step 1: 追加失败测试**
+- [x] **Step 1: 追加失败测试**
 
 ```js
 const DOWNSTREAM = {
@@ -485,12 +485,12 @@ test("skills catalog lists style menus used for dynamic filtering", () => {
 });
 ```
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `npm run test:leo-ppt-router`
 Expected: FAIL，`ENOENT ... skills-catalog.md`
 
-- [ ] **Step 3: 写 skills-catalog.md**
+- [x] **Step 3: 写 skills-catalog.md**
 
 每个小节固定字段（逐项照填，数据全部来自 spec §6 与以下事实）：
 
@@ -517,12 +517,12 @@ Expected: FAIL，`ENOENT ... skills-catalog.md`
 
 文件末尾加 `## 非路由目标（仅供参考）`：PPTist（Web GUI、AGPL-3.0，仅作交付后"手动精修"提示）、PptxGenJS、Marp CLI 与 python-pptx 模板扩页（内置兜底工具，见 `fallback/`）。
 
-- [ ] **Step 4: 运行确认通过**
+- [x] **Step 4: 运行确认通过**
 
 Run: `npm run test:leo-ppt-router`
 Expected: PASS（8 tests）
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add lib/skills/leo-ppt-router/references/skills-catalog.md tests/unit/leo-ppt-router-skill.test.mjs
@@ -540,7 +540,7 @@ git commit -m "feat(leo-ppt-router): add downstream PPT skills catalog"
 **Interfaces:**
 - Consumes: Task 2/3 文件名（`references/skills-catalog.md`、`references/fallback/*.md`）与 `DOWNSTREAM` 常量。
 
-- [ ] **Step 1: 追加失败测试**
+- [x] **Step 1: 追加失败测试**
 
 ```js
 test("SKILL.md frontmatter, size and references", () => {
@@ -587,12 +587,12 @@ test("SKILL.md routing matrix, brand priority rules, conflict rule, install prot
 });
 ```
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `npm run test:leo-ppt-router`
 Expected: FAIL，`ENOENT ... SKILL.md`
 
-- [ ] **Step 3: 写 SKILL.md**
+- [x] **Step 3: 写 SKILL.md**
 
 frontmatter：
 
@@ -631,12 +631,12 @@ description: Use when the user wants to make a PPT, slide deck, presentation, �
 * 回复 **"直接出"**：我将用内置兜底方案立即制作（<兜底工具> · <可编辑性>）。
 ```
 
-- [ ] **Step 4: 运行确认通过**
+- [x] **Step 4: 运行确认通过**
 
 Run: `npm run test:leo-ppt-router`
 Expected: PASS（11 tests）。若体积超 15KB，把场景默认推荐表移入 `skills-catalog.md` 末尾并在 SKILL.md 中改为引用。
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add lib/skills/leo-ppt-router/SKILL.md tests/unit/leo-ppt-router-skill.test.mjs
@@ -652,7 +652,7 @@ git commit -m "feat(leo-ppt-router): add guided navigation and routing SKILL.md"
 - Modify: `lib/skills/managed-catalog.json`（在 `leo-ppt-agent` 条目之前插入 `leo-ppt-router` 条目；`leo-ppt-agent` 条目留到 Task 8 删除）
 - Test: `tests/unit/leo-ppt-router-skill.test.mjs`（追加）
 
-- [ ] **Step 1: 追加失败测试**
+- [x] **Step 1: 追加失败测试**
 
 ```js
 test("README documents scenes and installation", () => {
@@ -679,16 +679,16 @@ test("leo-ppt-router is registered as the featured creative PPT skill", () => {
 });
 ```
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `npm run test:leo-ppt-router`
 Expected: FAIL，`ENOENT ... README.md`
 
-- [ ] **Step 3: 写 README.md**
+- [x] **Step 3: 写 README.md**
 
 照 `lib/skills/leo-imagine-router/README.md` 版式：标题 `# leo-ppt-router (PPT 需求引导与技能路由中心)`、`## 🌟 核心特性`（引导式四维度导航、双层路由、WPS 可编辑性标注与冲突提醒、JIT 安装、内置兜底）、`## 🚀 支持的路由矩阵`（交付形态 / 场景 / 目标 Skill / WPS 可编辑 四列，取 spec §5）、`## 💻 安装`（复制到 `~/.agents/skills` 与 `~/.gemini/config/skills`，给 bash 与 PowerShell 两版：`Copy-Item -Path "lib\skills\leo-ppt-router" -Destination "$HOME\.agents\skills\" -Recurse -Force`、`Copy-Item -Path "lib\skills\leo-ppt-router" -Destination "$HOME\.gemini\config\skills\" -Recurse -Force`）、`## 📄 许可协议` MIT。
 
-- [ ] **Step 4: 插入 catalog 条目**
+- [x] **Step 4: 插入 catalog 条目**
 
 在 `"id": "leo-ppt-agent"` 条目的 `{` 之前插入：
 
@@ -711,12 +711,12 @@ Expected: FAIL，`ENOENT ... README.md`
 
 并把顶层 `updatedAt` 改为执行当天的 ISO 时间。
 
-- [ ] **Step 5: 运行确认通过 + 不破坏既有 catalog 测试**
+- [x] **Step 5: 运行确认通过 + 不破坏既有 catalog 测试**
 
 Run: `npm run test:leo-ppt-router; node --test tests/unit/leo-fooocus-imagine-skill.test.mjs tests/unit/wendao-cli.test.mjs`
 Expected: 全部 PASS（13 tests + 既有测试）
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add lib/skills/leo-ppt-router/README.md lib/skills/managed-catalog.json tests/unit/leo-ppt-router-skill.test.mjs
@@ -730,7 +730,7 @@ git commit -m "feat(leo-ppt-router): add README and register in managed catalog"
 **Files:**
 - Create: `C:\Users\xtea\.gemini\antigravity\brain\48769b88-75ad-40e8-b610-a8b5500feb60\scratch\leo-ppt-router-scenarios.md`（结果记录，不进仓库）
 
-- [ ] **Step 1: 逐个场景派发子 agent**
+- [x] **Step 1: 逐个场景派发子 agent**
 
 对 spec §12 的 10 个场景，每个派发一个全新子 agent，提示词：
 
@@ -745,11 +745,11 @@ git commit -m "feat(leo-ppt-router): add README and register in managed catalog"
 - 场景 9："用公司模板（3 页 .pptx：首页/内容页/感谢页）做 15 页述职" → 期望锁定路由 `ppt-master`，并追问「一次性使用 / 以后常用」（或在给出 ppt-master 安装卡片的同时询问该模式）。
 - 场景 10："公司主色 #1E5AA8，做个网页版发布会 PPT" → 期望路由 `guizang-ppt-skill`，且明确提示品牌色是受约束生成、可能与原色值有偏差。
 
-- [ ] **Step 2: 对照期望判定**
+- [x] **Step 2: 对照期望判定**
 
 按 spec §12 表格逐条判 PASS/FAIL，记录到 scratch 文件。任何 FAIL：定位 SKILL.md 中导致误判的措辞，修改后重跑该场景，并重跑 `npm run test:leo-ppt-router`。
 
-- [ ] **Step 3: Commit（仅当有修改）**
+- [x] **Step 3: Commit（仅当有修改）**
 
 ```bash
 git add lib/skills/leo-ppt-router/SKILL.md
@@ -763,7 +763,7 @@ git commit -m "fix(leo-ppt-router): tighten routing wording from scenario tests"
 **Files:**
 - 无仓库改动
 
-- [ ] **Step 1: 复制安装**
+- [x] **Step 1: 复制安装**
 
 ```powershell
 Copy-Item -Path "D:\agent-transfer\lib\skills\leo-ppt-router" -Destination "$HOME\.agents\skills\" -Recurse -Force
@@ -773,7 +773,7 @@ Test-Path "$HOME\.agents\skills\leo-ppt-router\SKILL.md"; Test-Path "$HOME\.gemi
 
 Expected: `True` `True`
 
-- [ ] **Step 2: 真实探测**
+- [x] **Step 2: 真实探测**
 
 ```powershell
 foreach ($n in 'ppt-master','dashi-ppt','guizang-ppt-skill','codex-ppt','slidev') {
@@ -794,7 +794,7 @@ Expected: 5 行均为 `MISSING`（与 2026-10-30 扫描一致），即真实使�
 - Delete（仓库外）: `~/.agents/skills/leo-ppt-agent`
 - Test: `tests/unit/leo-ppt-router-skill.test.mjs`（追加）
 
-- [ ] **Step 1: 追加失败测试**
+- [x] **Step 1: 追加失败测试**
 
 ```js
 test("leo-ppt-agent is fully retired", () => {
@@ -804,17 +804,17 @@ test("leo-ppt-agent is fully retired", () => {
 });
 ```
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `npm run test:leo-ppt-router`
 Expected: FAIL，`leo-ppt-agent dir still exists`
 
-- [ ] **Step 3: 删除前复查引用**
+- [x] **Step 3: 删除前复查引用**
 
 Run: `git grep -l "leo-ppt-agent" -- . ':!docs/superpowers' ':!lib/skills/leo-ppt-agent' ':!lib/skills/leo-ppt-router' ':!tests/unit/leo-ppt-router-skill.test.mjs'`
 Expected: 仅 `lib/skills/managed-catalog.json`。若出现其他文件，停止并向用户报告。
 
-- [ ] **Step 4: 删除**
+- [x] **Step 4: 删除**
 
 ```powershell
 git rm -r -q lib/skills/leo-ppt-agent
@@ -823,12 +823,12 @@ Remove-Item "$HOME\.agents\skills\leo-ppt-agent" -Recurse -Force
 
 再从 `managed-catalog.json` 删除 `"id": "leo-ppt-agent"` 整个对象（含其前后逗号保持 JSON 合法），`updatedAt` 更新为当前 ISO 时间。
 
-- [ ] **Step 5: 运行确认通过**
+- [x] **Step 5: 运行确认通过**
 
 Run: `npm run test:leo-ppt-router; node --test tests/unit/leo-fooocus-imagine-skill.test.mjs tests/unit/wendao-cli.test.mjs; Test-Path "$HOME\.agents\skills\leo-ppt-agent"`
 Expected: 全部 PASS；最后输出 `False`
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A lib/skills/leo-ppt-agent lib/skills/managed-catalog.json tests/unit/leo-ppt-router-skill.test.mjs
