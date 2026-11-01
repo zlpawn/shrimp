@@ -73,11 +73,11 @@ export async function runPipeline(input: string) {
 
 ## 导出
 
-在 `deck.md` 所在目录通过 `npx` 直接调用 `marp-cli` 导出所需格式（无需污染项目依赖）：
+在 `deck.md` 所在目录通过 `npx` 直接调用 `marp-cli` 导出。未显式指定路径时，产物默认输出至 `~/.shrimp/skills/leo-ppt-router/output/`：
 
 - **图片式 PPTX**（`❌` 不可编辑，每页实为渲染图片，仅适合固定排版放映）：
   ```bash
-  npx @marp-team/marp-cli@latest deck.md --pptx
+  npx @marp-team/marp-cli@latest deck.md --pptx -o "$HOME/.shrimp/skills/leo-ppt-router/output/deck.pptx"
   ```
 - **可编辑 PPTX**（`🟡` 实验功能，需系统 `PATH` 中已安装 **LibreOffice** `soffice`，导出后复杂 CSS / 渐变 / 自定义网格可能走样，需在 PowerPoint / WPS 中手修；若用户强依赖高保真原生可编辑 PPTX `✅`，应改走 `pptxgenjs-guide.md`）：
   ```bash

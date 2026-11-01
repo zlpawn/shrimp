@@ -14,11 +14,7 @@ description: Use when the user wants to make a PPT, slide deck, presentation, �
 3. 动态探测下游 Skill 是否安装，缺失时给出安装卡片，经用户同意后代为安装并准备依赖；
 4. 用户拒绝安装或安装失败时，用内置兜底规范 + 工具（PptxGenJS / Marp CLI / 单文件 HTML / `python-pptx`）出片。
 
-**非目标（明确不做）**：
-
-- 不做场景化内容整理（述职/路演框架），留待后续决策；
-- 不重复下游内部流程（`ppt-master` 三路由、`dashi-ppt` 风格确认、`codex-ppt` 样张审批等）；
-- 不集成 PPTist（Web GUI，无 CLI/API，AGPL-3.0），仅在交付 `.pptx` 时提示在线精修。
+**非目标**：不做场景化内容整理（留待后续）；不重复下游内部流程；不集成 PPTist（仅在交付 `.pptx` 时提示在线精修）。
 
 ## 🧭 工作流概览
 
@@ -111,17 +107,19 @@ flowchart TD
 
 ### 场景 → 默认推荐（③ 回复「推荐」时使用）
 
-| ① 场景 | ②A 下推荐 | ②B 下推荐 | ②C 下推荐风格 |
-| --- | --- | --- | --- |
-| A 汇报/述职 | `ppt-master` | `dashi-ppt` theme01 轻拟态 / theme07 冷白调研 | `codex-ppt` 清爽专业风 |
-| B 产品/发布会 | `ppt-master` | `dashi-ppt` theme02 炫光紫绿 / `guizang-ppt-skill` 瑞士风 | `codex-ppt` 创意杂志风 |
-| C 技术分享 | `ppt-master`（或 ②D `slidev`） | `dashi-ppt` theme03 深浅代码 | `codex-ppt` 手绘技术解释风 |
-| D 数据报告 | `ppt-master` | `dashi-ppt` theme05 色谱图表 / theme06 深色图谱 | `codex-ppt` 数据仪表盘风 |
-| E 教学课件 | `ppt-master` | `guizang-ppt-skill` 杂志风 | `codex-ppt` 教学课件风 |
-| F 学术答辩 | `ppt-master` | `guizang-ppt-skill` 瑞士风 | `codex-ppt` 科研答辩风 |
-| G 咨询战略 | `ppt-master` | `dashi-ppt` theme06 深色图谱 | `codex-ppt` 麦肯锡风格 |
-| H 人文演讲 | `ppt-master` | `guizang-ppt-skill` 杂志风 | `codex-ppt` 电子墨水杂志风 |
-| I 党政汇报 | `ppt-master` | `dashi-ppt` theme07 冷白调研 | `codex-ppt` 党政红风格 |
+> ②A 全场景默认推荐 `ppt-master`；②B / ②C 按场景细分：
+
+| ① 场景 | ②B 下推荐 | ②C 下推荐风格 |
+| --- | --- | --- |
+| A 汇报/述职 | `dashi-ppt` theme01 / theme07 | `codex-ppt` 清爽专业风 |
+| B 产品/发布会 | `dashi-ppt` theme02 / `guizang-ppt-skill` 瑞士风 | `codex-ppt` 创意杂志风 |
+| C 技术分享 | `dashi-ppt` theme03（或 ②D `slidev`） | `codex-ppt` 手绘技术解释风 |
+| D 数据报告 | `dashi-ppt` theme05 / theme06 | `codex-ppt` 数据仪表盘风 |
+| E 教学课件 | `guizang-ppt-skill` 杂志风 | `codex-ppt` 教学课件风 |
+| F 学术答辩 | `guizang-ppt-skill` 瑞士风 | `codex-ppt` 科研答辩风 |
+| G 咨询战略 | `dashi-ppt` theme06 深色图谱 | `codex-ppt` 麦肯锡风格 |
+| H 人文演讲 | `guizang-ppt-skill` 杂志风 | `codex-ppt` 电子墨水杂志风 |
+| I 党政汇报 | `dashi-ppt` theme07 冷白调研 | `codex-ppt` 党政红风格 |
 
 ## ⚡ Step 2：运行期探测
 
@@ -186,7 +184,8 @@ flowchart TD
 
 1. **内容（大纲先确认）**：按 `references/fallback/outline-architect.md`（金字塔大纲）整理大纲，**展示给用户确认后再出片**；
 2. **版式**：遵循 `references/fallback/bento-grid-layout.md`、`references/fallback/cognitive-design-principles.md`、`references/fallback/cjk-text-fit.md`；
-3. **出片工具按交付形态选择**：
+3. **默认输出路径**：未明确指定时统一落盘至 `~/.shrimp/skills/leo-ppt-router/output/`，命名格式 `YYYYMMDD_HHMMSS_<主题>.<ext>`；用户指定路径优先。
+4. **出片工具按交付形态选择**：
 
 | ② 交付形态 | 兜底工具 | WPS 可编辑 |
 | --- | --- | --- |
@@ -202,7 +201,7 @@ flowchart TD
 
 交付时必须告知：
 
-1. 产物文件的可点击绝对路径（`.pptx` / `index.html` / `.md`）；
+1. 产物文件的可点击绝对路径（`.pptx` / `index.html` / `.md`，默认在 `~/.shrimp/skills/leo-ppt-router/output/`）；
 2. 本次使用的 Skill 或兜底工具；
 3. **可编辑性说明**：`✅` / `🟡` / `❌` 及原因（含 Z1 色值偏差说明，如有）；
 4. 若为 PPTX：附一句“如需在线手动精修，可将 `.pptx` 导入 PPTist（https://pipipi-pikachu.github.io/PPTist/）”；

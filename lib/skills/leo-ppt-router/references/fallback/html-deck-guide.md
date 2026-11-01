@@ -153,5 +153,6 @@
 
 ## 交付说明
 
+- **默认落盘目录**：未明确指定输出路径时，单文件 HTML 默认落盘至 `~/.shrimp/skills/leo-ppt-router/output/YYYYMMDD_HHMMSS_slides.html`；用户指定路径优先。
 - **可编辑性声明（`❌`）**：交付 HTML 文件时必须明确告知用户：该产物为浏览器交互式横向幻灯片（`❌` **不可在 PowerPoint / WPS 中作为幻灯片直接打开编辑**；可通过浏览器打印另存为 PDF 归档）。
 - 若用户后续需要将内容发给同事在 WPS / PowerPoint 中改字改图，应按同一份大纲改走 **②A 可编辑 PPTX**（见 `pptxgenjs-guide.md`，`✅` 原生可编辑）。

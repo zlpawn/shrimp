@@ -7,11 +7,14 @@
 - **②C 拼装整页图片**（`❌` 画面内文字不可在 PPT 中直接编辑）：先调用生图技能逐页生成 16:9 视觉海报，再用 `PptxGenJS` 铺满每页拼装成单个 `.pptx`。
 - **③ Z1 公司品牌色注入**：当用户指定公司品牌主色（如 `#E60012`）时，将骨架中的 `C.accent` 替换为**无 `#` 前缀**的 6 位十六进制色值（如 `"E60012"`）。
 
-## 准备
+## 准备与默认输出目录
 
-在**独立的产物输出目录**（或临时工作目录）中初始化并安装依赖，**严禁安装进当前项目/仓库根目录**：
+未显式指定路径时，产物默认落盘至中央持久目录：`~/.shrimp/skills/leo-ppt-router/output/`。
+在该目录（或临时构建目录）中初始化并安装依赖，**严禁安装进当前项目/代码仓库根目录**：
 
 ```bash
+mkdir -p "$HOME/.shrimp/skills/leo-ppt-router/output"
+cd "$HOME/.shrimp/skills/leo-ppt-router/output"
 npm init -y && npm i pptxgenjs
 ```
 
@@ -23,6 +26,9 @@ npm init -y && npm i pptxgenjs
 
 ```js
 // build-deck.mjs — 由 agent 按大纲改写 deck 数组后执行：node build-deck.mjs
+import os from "node:os";
+import path from "node:path";
+import fs from "node:fs";
 import pptxgen from "pptxgenjs";
 
 const FONT = "Microsoft YaHei";
@@ -86,8 +92,13 @@ for (const d of deck.slides) {
   if (d.notes) s.addNotes(d.notes);
 }
 
-await pptx.writeFile({ fileName: "presentation.pptx" });
-console.log("OK presentation.pptx");
+// 默认输出至 ~/.shrimp/skills/leo-ppt-router/output/，用户显式指定路径优先
+const defaultOutDir = path.join(os.homedir(), ".shrimp", "skills", "leo-ppt-router", "output");
+fs.mkdirSync(defaultOutDir, { recursive: true });
+const targetFile = path.join(defaultOutDir, "presentation.pptx");
+
+await pptx.writeFile({ fileName: targetFile });
+console.log(`OK ${targetFile}`);
 ```
 
 如需双栏对比、三卡片并列等更丰富版式，可按 `bento-grid-layout.md` 的网格比例将 `13.33 × 7.5 in` 画布拆分为多个 `roundRect` + `addText` 卡片函数扩展进 `render`。

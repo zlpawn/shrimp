@@ -16,9 +16,9 @@
    uv run fill_template.py inspect <template.pptx>
    ```
 2. **编写结构化大纲 `deck.json`**：根据 `inspect` 输出确认封面页、内容页、结束页的页码（`slots.cover` / `slots.content` / `slots.closing`），按 `outline-architect.md` 与 `cjk-text-fit.md` 控制每页要点字数与行数（避免超出原模板文本框高度），生成 `deck.json`。
-3. **扩页并填充生成产物**：
+3. **扩页并填充生成产物**（未显式指定路径时，产物默认输出至 `~/.shrimp/skills/leo-ppt-router/output/YYYYMMDD_HHMMSS_<template>_expanded.pptx`，严禁直接覆盖原模板）：
    ```bash
-   uv run fill_template.py build <template.pptx> deck.json presentation.pptx
+   uv run fill_template.py build <template.pptx> deck.json "$HOME/.shrimp/skills/leo-ppt-router/output/expanded.pptx"
    ```
 
 ## 脚本骨架（PEP 723）

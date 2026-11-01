@@ -35,6 +35,7 @@ test("pptxgenjs guide ships a runnable editable-PPTX skeleton", () => {
     assert.ok(code.includes(layout), `skeleton missing layout ${layout}`);
   }
   assert.match(g, /npm i pptxgenjs/);
+  assert.match(g, /~\/\.shrimp\/skills\/leo-ppt-router\/output/);
 });
 
 test("marp guide documents image and editable pptx export", () => {
@@ -43,6 +44,7 @@ test("marp guide documents image and editable pptx export", () => {
   assert.match(g, /npx @marp-team\/marp-cli@latest deck\.md --pptx/);
   assert.match(g, /--pptx-editable/);
   assert.match(g, /LibreOffice/);
+  assert.match(g, /~\/\.shrimp\/skills\/leo-ppt-router\/output/);
 });
 
 test("html deck guide defines a single-file horizontal deck", () => {
@@ -50,6 +52,7 @@ test("html deck guide defines a single-file horizontal deck", () => {
   assert.match(g, /单文件/);
   assert.match(g, /ArrowRight|←|→/);
   assert.match(g, /16:9/);
+  assert.match(g, /~\/\.shrimp\/skills\/leo-ppt-router\/output/);
 });
 
 test("template fill guide ships a runnable python-pptx 3-page corporate template skeleton", () => {
@@ -61,6 +64,7 @@ test("template fill guide ships a runnable python-pptx 3-page corporate template
   }
   assert.match(g, /uv run/);
   assert.match(g, /弱于 ppt-master/);
+  assert.match(g, /~\/\.shrimp\/skills\/leo-ppt-router\/output/);
 });
 
 const DOWNSTREAM = {
@@ -139,6 +143,7 @@ test("SKILL.md routing matrix, brand priority rules, conflict rule, install prot
   assert.match(s, /~\/\.gemini\/config\/skills\/<skill-name>/);
   assert.match(s, /attribution_guard/);
   assert.match(s, /PPTist/);
+  assert.match(s, /~\/\.shrimp\/skills\/leo-ppt-router\/output/);
   assert.match(s, /规划中/);
   assert.doesNotMatch(s, /C:\\Users\\xtea|\/Users\/pa\//);
   assert.doesNotMatch(s, /leo-ppt-agent/);
