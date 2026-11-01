@@ -1,0 +1,10 @@
+{
+  "name": "leo-lc-transcoder",
+  "version": "0.1.0",
+  "description": "LeetCode 算法面试教练技能",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "node --test --test-concurrency=1 tests/*.test.mjs"
+  }
+}

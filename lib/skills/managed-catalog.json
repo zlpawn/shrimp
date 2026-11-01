@@ -577,6 +577,27 @@
       "managed": true
     },
     {
+      "id": "leo-lc-transcoder",
+      "name": "leo-lc-transcoder",
+      "title": "Leo LC Transcoder (算法面试教练)",
+      "summary": "面向算法基础薄弱的 Java 工程师的 LeetCode 面试教练：用解题四问和题型模板讲透单题、沉淀可举一反三的解题框架，脚本直连 leetcode.com 搜题、运行、提交和获取高票题解，生成可单步播放的算法动画，学习成果沉淀到 Obsidian 并按间隔复习。",
+      "category": "career",
+      "categoryLabel": "职业与成长",
+      "icon": "🧩",
+      "featured": true,
+      "tags": [
+        "leetcode",
+        "algorithm",
+        "interview",
+        "java",
+        "obsidian",
+        "spaced-repetition"
+      ],
+      "requiresDaemon": false,
+      "promoted": true,
+      "managed": true
+    },
+    {
       "id": "leo-autodl-imagine-video",
       "name": "leo-autodl-imagine-video",
       "title": "Leo AutoDL 云端生图与音画同步生视频",
