@@ -852,6 +852,7 @@ async function executeTask(task) {
             evalError = injection.error;
           } else if (injection) {
             evalResult = injection.value;
+            evaluated = true;
           }
         } catch (scriptErr) {
           evalError = scriptErr.message;
@@ -964,6 +965,29 @@ async function executeTask(task) {
       });
       if (res?.[0]?.result?.ok === false) throw new Error(res[0].result.error);
       result = await withTaskSummary({ pressed: true, key, selector: params.selector || null });
+    } else if (type === "cdp.upload" || type === "dom.upload") {
+      const tabId = await requireTaskTabId(params);
+      const selector = params.selector || params.sel || "input[type='file']";
+      const rawFiles = params.files || params.file;
+      const files = Array.isArray(rawFiles) ? rawFiles : [rawFiles];
+      if (!files || files.length === 0 || !files[0]) {
+        throw lanternError("invalid_request", "files parameter is required for upload");
+      }
+      await ensureDebuggerAttached(tabId);
+      await chrome.debugger.sendCommand({ tabId }, "DOM.enable");
+      const doc = await chrome.debugger.sendCommand({ tabId }, "DOM.getDocument");
+      const node = await chrome.debugger.sendCommand({ tabId }, "DOM.querySelector", {
+        nodeId: doc.root.nodeId,
+        selector,
+      });
+      if (!node || !node.nodeId) {
+        throw lanternError("selector_not_found", "File input selector '" + selector + "' not found");
+      }
+      await chrome.debugger.sendCommand({ tabId }, "DOM.setFileInputFiles", {
+        nodeId: node.nodeId,
+        files: files.map((f) => String(f)),
+      });
+      result = await withTaskSummary({ uploaded: true, filesCount: files.length, selector });
     } else if (type === "cdp.screenshot") {
       const tabId = await requireTaskTabId(params);
       const fullPage = Boolean(params.fullPage);

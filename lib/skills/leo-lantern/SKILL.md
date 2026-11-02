@@ -43,6 +43,10 @@ description: 通过 leo-lantern CLI/服务实现 Chrome 浏览器远程调试 (C
      - `leo-lantern click --sel="button.submit"`
      - `leo-lantern click --target '{"kind":"ref","ref":10}'`（无需手动拼接 generation，缺省自动对齐当前文档）
    - 填写表单（原生 Prototype Setter，支持 React 受控组件）：`leo-lantern fill --ref 10 --val "text"` 或 `leo-lantern fill --sel "#input" --val "text"`
+    - 上传文件（原生 CDP `DOM.setFileInputFiles`，绕过系统弹窗直接注入）：
+      - 单文件：`leo-lantern upload "/path/to/file.png"`
+      - 多文件批量：`leo-lantern upload "/path/to/file1.png" "/path/to/file2.png"`
+      - 指定选择器：`leo-lantern upload --sel="input[type='file']" --files="file1.png,file2.png"`
    - 执行脚本（自动函数闭包隔离，避免 `const`/`let` 重复声明冲突，统一返回 `{ ok, evalResult, hasResult, resultType }`）：
      - `leo-lantern eval "1+1"`
      - `leo-lantern eval "const btns = document.querySelectorAll('button'); btns.length"`
