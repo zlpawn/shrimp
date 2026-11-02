@@ -32,7 +32,7 @@ description: 使用 yt-dlp 进行音视频高质量下载、音频提取、字�
 
 ## 2. 默认策略 (Defaults)
 
-- **默认存储根目录**：Windows 下优先使用 `D:\素材\B站`；或按用户具体任务指定的存放路径。
+- **默认存储根目录**：默认使用 `./downloads`（或按用户具体任务指定的存放路径）。
 - **画质策略**：默认选择最高可用画质（`bv*+ba/b`），音频提取默认最佳品质（`-x --audio-quality 0`）。
 - **流程规范**：遵循**先探测、后规划、再执行**原则（除非用户明确说明“直接下载”）。
 - **文件保护**：默认开启断点续传（`--continue`）与防止覆写（`--no-overwrites`）。
@@ -46,16 +46,16 @@ description: 使用 yt-dlp 进行音视频高质量下载、音频提取、字�
 下载需要高分辨率（1080P/4K）、会员权限或涉及反爬风控（如 B 站 412、YouTube 登录保护）的资源时，优先使用本地 Netscape Cookie 文件：
 
 1. **优先读取既有 Cookie**：
-   - B 站优先读取：`D:\素材\B站\www.bilibili.com_cookies.txt`
-   - YouTube 优先读取：`D:\media-downloader\_cookies\youtube-cookies.txt`
+   - B 站优先读取：`./cookies/bilibili.com.txt`
+   - YouTube 优先读取：`./cookies/youtube.com.txt`
 2. **自动导出联动（当 Cookie 缺失、过期或触发风控时）**：
-   通过项目内 `leo-lantern` CLI 直接向 Chrome 插件请求导出最新 Cookie，无需人工繁琐导出：
+   通过环境中的 `leo-lantern` CLI 直接向 Chrome 插件请求导出最新 Cookie，无需人工繁琐导出：
    ```powershell
-   # 导出 B站 Cookie（无感落盘为 Netscape 格式）
-   node D:\agent-transfer\lib\skills\leo-lantern\scripts\cli\index.mjs cookies --domain bilibili.com --format txt --out "D:\素材\B站\www.bilibili.com_cookies.txt"
+   # 导出 B站 Cookie（无感落盘为 Netscape 格式，支持全局命令或 node <lanternSkillDir>/scripts/cli/index.mjs）
+   leo-lantern cookies --domain bilibili.com --format txt --out "./cookies/bilibili.com.txt"
 
    # 导出 YouTube Cookie
-   node D:\agent-transfer\lib\skills\leo-lantern\scripts\cli\index.mjs cookies --domain youtube.com --format txt --out "D:\media-downloader\_cookies\youtube-cookies.txt"
+   leo-lantern cookies --domain youtube.com --format txt --out "./cookies/youtube.com.txt"
    ```
 
 ---
@@ -66,10 +66,10 @@ description: 使用 yt-dlp 进行音视频高质量下载、音频提取、字�
 
 ```powershell
 # 探测可用清晰度与音视频流格式
-yt-dlp --cookies "D:\素材\B站\www.bilibili.com_cookies.txt" --list-formats "URL"
+yt-dlp --cookies "./cookies/bilibili.com.txt" --list-formats "URL"
 
 # 或仅抓取元数据信息
-yt-dlp --cookies "D:\素材\B站\www.bilibili.com_cookies.txt" --dump-json "URL"
+yt-dlp --cookies "./cookies/bilibili.com.txt" --dump-json "URL"
 ```
 
 在正式下载前向用户清晰列出计划：
@@ -87,8 +87,8 @@ yt-dlp --cookies "D:\素材\B站\www.bilibili.com_cookies.txt" --dump-json "URL"
 yt-dlp -f "bv*+ba/b" --merge-output-format mp4 `
   --continue --no-overwrites `
   --write-info-json --write-thumbnail --embed-metadata `
-  --cookies "D:\素材\B站\www.bilibili.com_cookies.txt" `
-  -o "D:\素材\B站\%(title)s.%(ext)s" "URL"
+  --cookies "./cookies/bilibili.com.txt" `
+  -o "./downloads/%(title)s.%(ext)s" "URL"
 ```
 
 ### (2) 最佳品质音频提取 (无损转码)
@@ -96,15 +96,15 @@ yt-dlp -f "bv*+ba/b" --merge-output-format mp4 `
 yt-dlp -f "ba/b" -x --audio-quality 0 `
   --continue --no-overwrites `
   --write-thumbnail --embed-metadata `
-  --cookies "D:\素材\B站\www.bilibili.com_cookies.txt" `
-  -o "D:\素材\B站\%(title)s.%(ext)s" "URL"
+  --cookies "./cookies/bilibili.com.txt" `
+  -o "./downloads/%(title)s.%(ext)s" "URL"
 ```
 
 ### (3) 字幕抓取与转换为 SRT
 ```powershell
 yt-dlp --write-subs --write-auto-subs --sub-langs "zh-Hans,zh-Hant,en,all,-live_chat" `
   --convert-subs srt --skip-download `
-  --paths "D:\素材\B站" "URL"
+  --paths "./downloads" "URL"
 ```
 
 ---
@@ -115,7 +115,7 @@ yt-dlp --write-subs --write-auto-subs --sub-langs "zh-Hans,zh-Hant,en,all,-live_
 
 1. **第一阶段：自愈与 Cookie 刷新**
    - 升级工具：`uv tool upgrade yt-dlp`
-   - 刷新 Cookie：执行 `leo-lantern cookies --domain bilibili.com --format txt ...` 并重试。
+   - 刷新 Cookie：执行 `leo-lantern cookies --domain bilibili.com --format txt --out "./cookies/bilibili.com.txt"` 并重试。
 2. **第二阶段：API 底层降级通道**
    若 `yt-dlp` 依然无法通过，直接调用 B 站 Web API 获取 DASH 分离流：
    ```powershell
@@ -127,13 +127,13 @@ yt-dlp --write-subs --write-auto-subs --sub-langs "zh-Hans,zh-Hant,en,all,-live_
    
    # 获取最高码率音频流
    $audioUrl = ($play.data.dash.audio | Sort-Object bandwidth -Descending | Select-Object -First 1).baseUrl
-   $out = "D:\素材\B站\$title.m4s"
+   $out = "./downloads/$title.m4s"
    
    # 必须使用原生 curl.exe 携带合法 Referer 与 UA
    curl.exe -L $audioUrl -H "Referer: https://www.bilibili.com/video/$bvid/" -H "User-Agent: Mozilla/5.0" --output $out
    
    # 用 ffmpeg 封装转码为 mp3
-   ffmpeg -y -i $out -codec:a libmp3lame -b:a 192k "D:\素材\B站\$title.mp3"
+   ffmpeg -y -i $out -codec:a libmp3lame -b:a 192k "./downloads/$title.mp3"
    ```
 
 ---

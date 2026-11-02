@@ -67,32 +67,32 @@ EOF
 
 ## 2. 🪟 Windows 轨道：Chrome 插件（Leo Lantern 19527 端口）执行规范
 
-在 Windows 上，项目内置了专门的自动化控制 CLI：`lib/skills/leo-lantern/scripts/cli/index.mjs`（或全局命令 `leo-lantern`）。通过该 CLI 可直接向用户日常 Chrome（已加载 `extensions/leo-cookie-txt-locally`）派发指令，完全复用登录态。
+在 Windows 上，项目可联动专门的自动化控制 CLI：`leo-lantern`（或 `<lanternSkillDir>/scripts/cli/index.mjs`）。通过该 CLI 可直接向用户日常 Chrome（已加载 `leo-lantern` 扩展）派发指令，完全复用登录态。
 
 ### 原生 CLI 标准操作流水线 (Production CLI Pipeline)：
 
 ```bash
-# 1. 检查扩展与 Bridge 连通状态
-node ./lib/skills/leo-lantern/scripts/cli/index.mjs health
+# 1. 检查扩展与 Bridge 连通状态（支持全局命令 leo-lantern 或 node <lanternSkillDir>/scripts/cli/index.mjs）
+leo-lantern health
 
 # 2. 列出浏览器中打开的 Tab (识别小红书与一嗨页面)
-node ./lib/skills/leo-lantern/scripts/cli/index.mjs tabs
+leo-lantern tabs
 
 # 3. 开启任务窗口（后台不抢焦点）
-node ./lib/skills/leo-lantern/scripts/cli/index.mjs start-task --title="travel-scrape" --sameWindow=true
+leo-lantern start-task --title="travel-scrape" --sameWindow=true
 
 # 4. 接管小红书搜索 Tab 并抓取内容
-node ./lib/skills/leo-lantern/scripts/cli/index.mjs claim --tabId=<xhsTabId>
-node ./lib/skills/leo-lantern/scripts/cli/index.mjs goto "https://www.xiaohongshu.com/search_result?keyword=川西大环线%20避坑"
-node ./lib/skills/leo-lantern/scripts/cli/index.mjs wait --selector="section.note-item, .note-card, .title" --timeoutMs=8000
-node ./lib/skills/leo-lantern/scripts/cli/index.mjs content --maxChars=4000
+leo-lantern claim --tabId=<xhsTabId>
+leo-lantern goto "https://www.xiaohongshu.com/search_result?keyword=川西大环线%20避坑"
+leo-lantern wait --selector="section.note-item, .note-card, .title" --timeoutMs=8000
+leo-lantern content --maxChars=4000
 
 # 5. 接管一嗨租车 Tab 并抓取车型报价
-node ./lib/skills/leo-lantern/scripts/cli/index.mjs claim --tabId=<ehiTabId>
-node ./lib/skills/leo-lantern/scripts/cli/index.mjs content --maxChars=4000
+leo-lantern claim --tabId=<ehiTabId>
+leo-lantern content --maxChars=4000
 
 # 6. 结束任务
-node ./lib/skills/leo-lantern/scripts/cli/index.mjs end-task --closeGroup=false
+leo-lantern end-task --closeGroup=false
 ```
 ---
 

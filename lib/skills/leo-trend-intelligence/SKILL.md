@@ -42,8 +42,8 @@ Agent 在执行热点分析与选题策划时，支持三种数据获取渠道�
 * 获取跨平台升温事件流：`GET http://127.0.0.1:8787/v1/trend-intel/events?limit=20`
 * 或通过内置 CLI 脚本执行：
   ```bash
-  node lib/skills/leo-trend-intelligence/scripts/leo_trend_intel.mjs --brief
-  node lib/skills/leo-trend-intelligence/scripts/leo_trend_intel.mjs --events --limit 15
+  node <skillDir>/scripts/leo_trend_intel.mjs --brief
+  node <skillDir>/scripts/leo_trend_intel.mjs --events --limit 15
   ```
 
 ### 模式 2：本地标准文件读取（离线 / 容灾降级）

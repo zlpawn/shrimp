@@ -47,11 +47,11 @@ description: 专业旅行规划师与定制师的交付级生产力工作台。�
 * 🪟 **Windows 环境标准执行步骤（模块化插件架构 + 自动解散标签组）**：
   * **一键综合抓取（小红书 + 一嗨租车，数据自动固化至 `output/latest_scraped_data.json`）**：
     ```bash
-    node ./lib/skills/leo-travel-planner/scripts/scrape.mjs --keyword="川西大环线 避坑" --city="成都" --days=10
+    node <skillDir>/scripts/scrape.mjs --keyword="川西大环线 避坑" --city="成都" --days=10
     ```
   * **单平台按需独立运行（极速解耦）**：
-    - **小红书素人笔记独立抓取**：`node ./lib/skills/leo-travel-planner/scripts/scrapers/xhs.mjs --keyword="川西大环线 避坑" --limit=8`
-    - **一嗨租车全险与车型独立抓取**：`node ./lib/skills/leo-travel-planner/scripts/scrapers/ehi.mjs --city="成都" --type="SUV" --days=10`
+    - **小红书素人笔记独立抓取**：`node <skillDir>/scripts/scrapers/xhs.mjs --keyword="川西大环线 避坑" --limit=8`
+    - **一嗨租车全险与车型独立抓取**：`node <skillDir>/scripts/scrapers/ehi.mjs --city="成都" --type="SUV" --days=10`
   * 🛡️ **无污染退出保证**：底层 `base.mjs` 在 `finally` 中严格执行 `task.end --closeGroup=true`，抓完 100% 自动解散 Chrome 标签组，绝不在用户日常浏览器里残留彩色标签或干扰正常操作！
 * 🍎 **macOS 环境标准执行步骤**：
   * 通过 `ego-browser nodejs` 脚本驱动隔离空间抓取（参考 `references/cross-platform-fallback.md`）。

@@ -32,7 +32,7 @@ description: 使用 gallery-dl 进行海量画廊、漫画、插画相册、画�
 
 ## 2. 默认策略 (Defaults)
 
-- **默认存储根目录**：`D:\素材\图片`（或按用户具体任务指定的存放路径）。
+- **默认存储根目录**：默认使用 `./downloads/images`（或按用户具体任务指定的存放路径）。
 - **画质策略**：优先拉取平台提供的**原始无损/最高分辨率原图**，而非网页展示预览图。
 - **流程规范**：遵循**先探测模拟、后规划、再执行**原则（尤其针对图集数量未知、画师主页或大批量相册时）。
 - **去重与增量**：支持并推荐使用 `--download-archive` 避免重复下载已有资源。
@@ -47,19 +47,19 @@ description: 使用 gallery-dl 进行海量画廊、漫画、插画相册、画�
 
 1. **自动导出指定站点 Cookie**：
    ```powershell
-   # 导出 Twitter/X Cookie
-   node D:\agent-transfer\lib\skills\leo-lantern\scripts\cli\index.mjs cookies --domain x.com --format txt --out "D:\素材\图片\_cookies\x.com.txt"
+   # 导出 Twitter/X Cookie（支持全局命令 leo-lantern 或 node <lanternSkillDir>/scripts/cli/index.mjs）
+   leo-lantern cookies --domain x.com --format txt --out "./cookies/x.com.txt"
 
    # 导出 Pixiv Cookie
-   node D:\agent-transfer\lib\skills\leo-lantern\scripts\cli\index.mjs cookies --domain pixiv.net --format txt --out "D:\素材\图片\_cookies\pixiv.net.txt"
+   leo-lantern cookies --domain pixiv.net --format txt --out "./cookies/pixiv.net.txt"
 
    # 导出 微博 Cookie
-   node D:\agent-transfer\lib\skills\leo-lantern\scripts\cli\index.mjs cookies --domain weibo.com --format txt --out "D:\素材\图片\_cookies\weibo.com.txt"
+   leo-lantern cookies --domain weibo.com --format txt --out "./cookies/weibo.com.txt"
    ```
 
 2. **带 Cookie 执行采集**：
    ```powershell
-   gallery-dl --cookies "D:\素材\图片\_cookies\<domain>.txt" --dest "D:\素材\图片" "URL"
+   gallery-dl --cookies "./cookies/<domain>.txt" --dest "./downloads/images" "URL"
    ```
 
 ---
@@ -88,13 +88,13 @@ gallery-dl --extractor-info "URL"
 
 ### (1) 单张/单个作品图集原图下载
 ```powershell
-gallery-dl --dest "D:\素材\图片" "URL"
+gallery-dl --dest "./downloads/images" "URL"
 ```
 
 ### (2) 画师主页/大型画廊增量下载（带去重与目录结构）
 ```powershell
-gallery-dl --dest "D:\素材\图片" `
-  --download-archive "D:\素材\图片\archive.sqlite3" `
+gallery-dl --dest "./downloads/images" `
+  --download-archive "./downloads/images/archive.sqlite3" `
   --write-metadata `
   --mtime `
   "URL"
@@ -102,27 +102,27 @@ gallery-dl --dest "D:\素材\图片" `
 
 ### (3) 带登录态的批量抓取
 ```powershell
-gallery-dl --cookies "D:\素材\图片\_cookies\target_cookies.txt" `
-  --dest "D:\素材\图片" `
-  --download-archive "D:\素材\图片\archive.sqlite3" `
+gallery-dl --cookies "./cookies/target_cookies.txt" `
+  --dest "./downloads/images" `
+  --download-archive "./downloads/images/archive.sqlite3" `
   "URL"
 ```
 
 ### (4) 限制范围与条件过滤
 ```powershell
 # 仅下载最新的 10 篇帖子/作品
-gallery-dl --range 1-10 --dest "D:\素材\图片" "URL"
+gallery-dl --range 1-10 --dest "./downloads/images" "URL"
 
 # 过滤仅下载大于 2000px 宽度的原画
-gallery-dl --filter "width >= 2000" --dest "D:\素材\图片" "URL"
+gallery-dl --filter "width >= 2000" --dest "./downloads/images" "URL"
 ```
 
 ---
 
 ## 6. 配置文件管理 (`gallery-dl.conf`)
 
-当需要固化复杂的多站点配置、代理、全局请求头或自定义文件名模板时，推荐在 `D:\素材\图片\gallery-dl.conf` 维护配置，并通过 `--config` 载入：
+当需要固化复杂的多站点配置、代理、全局请求头或自定义文件名模板时，推荐在配置文件中维护配置，并通过 `--config` 载入：
 
 ```powershell
-gallery-dl --config "D:\素材\图片\gallery-dl.conf" "URL"
+gallery-dl --config "./gallery-dl.conf" "URL"
 ```

@@ -20,7 +20,7 @@ description: "面向资深 Java 工程师向 AI Agent 转型与求职进阶的�
 所有确定性操作统一由底层脚本支撑：
 
 ```bash
-node lib/skills/leo-job-career/scripts/leo_job_career.mjs <command>
+node <skillDir>/scripts/leo_job_career.mjs <command>
 ```
 
 ### 1. 环境与鉴权检查 (Doctor & Auth)
@@ -28,17 +28,17 @@ node lib/skills/leo-job-career/scripts/leo_job_career.mjs <command>
 在执行任何采集前，先检查环境和登录态：
 
 ```bash
-node lib/skills/leo-job-career/scripts/leo_job_career.mjs doctor
-node lib/skills/leo-job-career/scripts/leo_job_career.mjs auth status
+node <skillDir>/scripts/leo_job_career.mjs doctor
+node <skillDir>/scripts/leo_job_career.mjs auth status
 ```
 
 - **凭证全自动获取（首选）**：若 Chrome 浏览器已登录并开启 `leo-lantern` 桥接，直接执行全自动提取：
   ```bash
-  node lib/skills/leo-job-career/scripts/leo_job_career.mjs auth auto
+  node <skillDir>/scripts/leo_job_career.mjs auth auto
   ```
 - **手动剪贴板导入（备用）**：在 Chrome 中点击 `Leo cookie.txt Locally` 扩展的 **Copy Cookie Header**，然后执行导入：
   ```bash
-  node lib/skills/leo-job-career/scripts/leo_job_career.mjs auth import-clipboard
+  node <skillDir>/scripts/leo_job_career.mjs auth import-clipboard
   ```
 
 
@@ -47,9 +47,9 @@ node lib/skills/leo-job-career/scripts/leo_job_career.mjs auth status
 开始采集目标城市（默认北京）的 Java + Agent 核心岗位：
 
 ```bash
-node lib/skills/leo-job-career/scripts/leo_job_career.mjs market init --city 北京 --target 100
-node lib/skills/leo-job-career/scripts/leo_job_career.mjs market status
-node lib/skills/leo-job-career/scripts/leo_job_career.mjs market report
+node <skillDir>/scripts/leo_job_career.mjs market init --city 北京 --target 100
+node <skillDir>/scripts/leo_job_career.mjs market status
+node <skillDir>/scripts/leo_job_career.mjs market report
 ```
 
 - **质量门禁**：自动排除所有外包/外派公司；自动跳过纯 Python 算法岗；对同公司相似岗位语义去重；标记岗位时效。
@@ -62,13 +62,13 @@ node lib/skills/leo-job-career/scripts/leo_job_career.mjs market report
 1. **阶段 1：求职意向定锚**
    - 快速确认目标方向、城市、职级（如大厂P7/Tech Lead）、经验年限及期望薪资：
    ```bash
-   node lib/skills/leo-job-career/scripts/leo_job_career.mjs profile init --city 北京 --role "Java Agent架构师" --target-level "大厂P7" --exp 8
+   node <skillDir>/scripts/leo_job_career.mjs profile init --city 北京 --role "Java Agent架构师" --target-level "大厂P7" --exp 8
    ```
 2. **阶段 2：核心技能自评**
    - Agent 列出当前真实市场提炼出的 6~8 项关键硬核要求，向用户快速确认掌握程度（熟练 / 了解原理仅做Demo / 尚未接触）。
    - 用户自然回复后，快速记录自评结果：
    ```bash
-   node lib/skills/leo-job-career/scripts/leo_job_career.mjs profile set-eval --skill "Agent工作流编排" --level "demo_only"
+   node <skillDir>/scripts/leo_job_career.mjs profile set-eval --skill "Agent工作流编排" --level "demo_only"
    ```
 
 ### 4. 人岗差距推演与 Markdown 报告 (Gap Analyze & Report)
@@ -76,8 +76,8 @@ node lib/skills/leo-job-career/scripts/leo_job_career.mjs market report
 对比市场各梯队真实要求与个人掌握状态，生成全景透明的诊断报告：
 
 ```bash
-node lib/skills/leo-job-career/scripts/leo_job_career.mjs gap analyze
-node lib/skills/leo-job-career/scripts/leo_job_career.mjs gap report
+node <skillDir>/scripts/leo_job_career.mjs gap analyze
+node <skillDir>/scripts/leo_job_career.mjs gap report
 ```
 
 - **报告特色**：

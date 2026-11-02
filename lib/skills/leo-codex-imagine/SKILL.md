@@ -83,7 +83,7 @@ node <script_path> config get
 
 ## 用法示例
 ```bash
-S=~/.agents/skills/leo-codex-imagine/scripts/leo_codex_imagine.mjs
+S=<skillDir>/scripts/leo_codex_imagine.mjs
 
 # 先看有哪些服务商/模型
 node $S list

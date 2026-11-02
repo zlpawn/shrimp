@@ -32,70 +32,69 @@ description: 使用网关 huoshan-agentplan 节点凭证调用豆包 Seedance 2.
 3. **视频任务为异步长任务**：
    - 视频生成耗时较长（数十秒到数分钟），调用时 `yield_time_ms` 应设置足够大（建议 `300000` 即 5 分钟起步），避免宿主因超时中断轮询。
 
-## 脚本调度路径 (推荐绝对/主路径)
-为了避免 Agent 在不同工作区 (CWD) 执行命令时找不到相对路径，请优先使用以下兼容展开路径唤起脚本：
-- **通用挂载路径 (首选)**:
-  - Antigravity: `node ~/.gemini/config/skills/leo-huoshan-imagine/scripts/leo_huoshan_imagine.mjs`
-  - Claude: `node ~/.claude/skills/leo-huoshan-imagine/scripts/leo_huoshan_imagine.mjs`
-  - Codex: `node ~/.codex/skills/leo-huoshan-imagine/scripts/leo_huoshan_imagine.mjs`
-  - 中央库: `node ~/.agents/skills/leo-huoshan-imagine/scripts/leo_huoshan_imagine.mjs`
+## 脚本调度路径
+请使用 `<skillDir>/scripts/leo_huoshan_imagine.mjs` 调用脚本（在 Agent 环境中将 `<skillDir>` 解析为本 skill 的实际安装路径）：
+
+```bash
+S=<skillDir>/scripts/leo_huoshan_imagine.mjs
+```
 
 ## 命令行参数与用法示例
 
 ### 1. 文生视频 (Text to Video)
 ```bash
-node ~/.agents/skills/leo-huoshan-imagine/scripts/leo_huoshan_imagine.mjs video --prompt "镜头1：雨夜霓虹街道中景，行人撑伞缓慢走过；镜头2：镜头缓慢推近到积水倒影特写，霓虹灯光闪烁；电影质感，冷蓝紫调，无字幕无水印" --ratio 16:9 --duration 5
+node $S video --prompt "镜头1：雨夜霓虹街道中景，行人撑伞缓慢走过；镜头2：镜头缓慢推近到积水倒影特写，霓虹灯光闪烁；电影质感，冷蓝紫调，无字幕无水印" --ratio 16:9 --duration 5
 ```
 
 ### 2. 图生视频 - 首帧 (Image to Video)
 ```bash
-node ~/.agents/skills/leo-huoshan-imagine/scripts/leo_huoshan_imagine.mjs video --prompt "镜头缓缓推进，画面由静转动" --image scene.jpg
+node $S video --prompt "镜头缓缓推进，画面由静转动" --image scene.jpg
 ```
 
 ### 3. 多参考图生视频 (Multi-Image Reference Video)
 第一张图作为首帧，后续图片作为参考图：
 ```bash
-node ~/.agents/skills/leo-huoshan-imagine/scripts/leo_huoshan_imagine.mjs video --prompt "多图连贯过渡" --images "/path/img1.jpg,/path/img2.jpg" --duration 8
+node $S video --prompt "多图连贯过渡" --images "/path/img1.jpg,/path/img2.jpg" --duration 8
 ```
 
 ### 4. 指定输出规格 (Resolution / Ratio / Watermark)
 ```bash
-node ~/.agents/skills/leo-huoshan-imagine/scripts/leo_huoshan_imagine.mjs video --prompt "4k 高清风景" --resolution 1080p --ratio 16:9 --duration 10 --watermark
+node $S video --prompt "4k 高清风景" --resolution 1080p --ratio 16:9 --duration 10 --watermark
 ```
 
 ### 5. 预检模式 (--dry-run) 与帮助 (--help)
 ```bash
 # 查看完整 CLI 参数帮助
-node ~/.agents/skills/leo-huoshan-imagine/scripts/leo_huoshan_imagine.mjs --help
+node $S --help
 
 # 预检参数与凭证，打印 Payload 但不扣费、不创建任务
-node ~/.agents/skills/leo-huoshan-imagine/scripts/leo_huoshan_imagine.mjs video --prompt "测试" --dry-run
+node $S video --prompt "测试" --dry-run
 ```
 
 ### 6. 任务恢复与进度补抓 (--check-status)
 视频生成是异步任务，若因网络波动或宿主超时中断，可从报错信息中复制任务 ID 恢复查询并下载：
 ```bash
-node ~/.agents/skills/leo-huoshan-imagine/scripts/leo_huoshan_imagine.mjs --check-status "cgt-2026xxxx"
+node $S --check-status "cgt-2026xxxx"
 ```
 
 ### 7. 文生图 (Text to Image)
 ```bash
-node ~/.agents/skills/leo-huoshan-imagine/scripts/leo_huoshan_imagine.mjs image --prompt "赛博朋克夜景，霓虹雨夜" --size 2K --output-format png
+node $S image --prompt "赛博朋克夜景，霓虹雨夜" --size 2K --output-format png
 ```
 
 ### 8. 图文生图 / 多图融合 (Image to Image)
 基于参考图 URL 编辑或融合：
 ```bash
-node ~/.agents/skills/leo-huoshan-imagine/scripts/leo_huoshan_imagine.mjs image --prompt "把图片风格转为水彩画" --image-urls "https://example.com/scene.png"
+node $S image --prompt "把图片风格转为水彩画" --image-urls "https://example.com/scene.png"
 ```
 
 ### 9. 文本转语音 (Text to Speech)
 ```bash
-node ~/.agents/skills/leo-huoshan-imagine/scripts/leo_huoshan_imagine.mjs tts --text "你好，这是火山引擎语音合成。" --voice zh_female_qingxin
+node $S tts --text "你好，这是火山引擎语音合成。" --voice zh_female_qingxin
 ```
 指定音频格式与语速：
 ```bash
-node ~/.agents/skills/leo-huoshan-imagine/scripts/leo_huoshan_imagine.mjs tts --text "快速朗读这段文本" --voice zh_female_qingxin --encoding mp3 --speed-ratio 1.5
+node $S tts --text "快速朗读这段文本" --voice zh_female_qingxin --encoding mp3 --speed-ratio 1.5
 ```
 
 ## 视频输出规格参考 (Seedance 2.0 系列)

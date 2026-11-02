@@ -25,50 +25,49 @@ description: 使用用户的 Grok 订阅凭证，进行文生图、图生图（�
 2. **绝对路径规约**：
    - 图片与输出目录路径如果包含空格，必须使用双引号包裹，如 `--image "/path with space/cat.jpg"`。
 
-## 脚本调度路径 (推荐绝对/主路径)
-为了避免 Agent 在不同工作区 (CWD) 执行命令时找不到相对路径，请优先使用以下兼容展开路径唤起脚本：
-- **通用挂载路径 (首选)**:
-  - Antigravity: `node ~/.gemini/config/skills/leo-grok-imagine/scripts/grok_imagine.mjs`
-  - Claude: `node ~/.claude/skills/leo-grok-imagine/scripts/grok_imagine.mjs`
-  - Codex: `node ~/.codex/skills/leo-grok-imagine/scripts/grok_imagine.mjs`
-  - 中央库: `node ~/.agents/skills/leo-grok-imagine/scripts/grok_imagine.mjs`
+## 脚本调度路径
+请使用 `<skillDir>/scripts/grok_imagine.mjs` 调用脚本（在 Agent 环境中将 `<skillDir>` 解析为本 skill 的实际安装根路径）：
+
+```bash
+S=<skillDir>/scripts/grok_imagine.mjs
+```
 
 ## 命令行参数与用法示例
 
 ### 1. 文生图 (Text to Image)
 ```bash
-node ~/.agents/skills/leo-grok-imagine/scripts/grok_imagine.mjs --prompt "赛博朋克风的未来城市夜景，霓虹灯光" --aspect-ratio "16:9"
+node $S --prompt "赛博朋克风的未来城市夜景，霓虹灯光" --aspect-ratio "16:9"
 ```
 
 ### 2. 多参考图图生图 / 修改图片 (Image Edit)
 ```bash
-node ~/.agents/skills/leo-grok-imagine/scripts/grok_imagine.mjs --prompt "给图中的猫咪戴上一顶海盗帽" --images "/path/cat.jpg,/path/hat.jpg"
+node $S --prompt "给图中的猫咪戴上一顶海盗帽" --images "/path/cat.jpg,/path/hat.jpg"
 ```
 
 ### 3. 文生视频 / 首帧图生视频 (Text/Image to Video)
 ```bash
-node ~/.agents/skills/leo-grok-imagine/scripts/grok_imagine.mjs --type video --prompt "海浪拍打沙滩，夕阳余晖" --duration 6 --aspect-ratio "16:9"
+node $S --type video --prompt "海浪拍打沙滩，夕阳余晖" --duration 6 --aspect-ratio "16:9"
 ```
 
 ### 4. 多参考图生成视频 / 动图 (Multi-Image Reference Video)
 支持传入多张图片路径（逗号分隔）：
 ```bash
-node ~/.agents/skills/leo-grok-imagine/scripts/grok_imagine.mjs --type video --prompt "多图连贯过渡动画" --images "/path/img1.jpg,/path/img2.jpg" --duration 10
+node $S --type video --prompt "多图连贯过渡动画" --images "/path/img1.jpg,/path/img2.jpg" --duration 10
 ```
 
 ### 5. 预检模式 (--dry-run) 与帮助 (--help)
 ```bash
 # 查看完整 CLI 参数帮助
-node ~/.agents/skills/leo-grok-imagine/scripts/grok_imagine.mjs --help
+node $S --help
 
 # 预检参数与凭证，打印 Payload 但不扣费
-node ~/.agents/skills/leo-grok-imagine/scripts/grok_imagine.mjs --type video --prompt "测试" --dry-run
+node $S --type video --prompt "测试" --dry-run
 ```
 
 ### 6. 任务恢复与进度补抓 (--check-status)
 若因网络波动导致视频生成超时，可以从报错中复制 Request ID 并恢复查询下载：
 ```bash
-node ~/.agents/skills/leo-grok-imagine/scripts/grok_imagine.mjs --check-status "req_123456789"
+node $S --check-status "req_123456789"
 ```
 
 ## 输出目录与文件命名

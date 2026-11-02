@@ -17,31 +17,32 @@ description: 通过网关 Antigravity 订阅节点调用 Google Gemini 图片生
 3. **节点配置**: 需在网关配置面板为某个 client 添加 `purpose=image_generation`、`provider=antigravity` 的节点。
 
 ## 脚本调度路径
-- Antigravity: `node ~/.gemini/config/skills/leo-antigravity-imagine/scripts/leo_antigravity_imagine.mjs`
-- Claude: `node ~/.claude/skills/leo-antigravity-imagine/scripts/leo_antigravity_imagine.mjs`
-- Codex: `node ~/.codex/skills/leo-antigravity-imagine/scripts/leo_antigravity_imagine.mjs`
-- 中央库: `node ~/.agents/skills/leo-antigravity-imagine/scripts/leo_antigravity_imagine.mjs`
+请使用 `<skillDir>/scripts/leo_antigravity_imagine.mjs` 调用脚本（在 Agent 环境中将 `<skillDir>` 解析为本 skill 的实际安装根路径）：
+
+```bash
+S=<skillDir>/scripts/leo_antigravity_imagine.mjs
+```
 
 ## 命令行参数与用法示例
 
 ### 1. 文生图 (Text to Image)
 ```bash
-node ~/.agents/skills/leo-antigravity-imagine/scripts/leo_antigravity_imagine.mjs --prompt "赛博朋克风的未来城市夜景" --aspect-ratio "16:9"
+node $S --prompt "赛博朋克风的未来城市夜景" --aspect-ratio "16:9"
 ```
 
 ### 2. 参考图生成 (Reference Image Generation, 最多 3 张)
 ```bash
-node ~/.agents/skills/leo-antigravity-imagine/scripts/leo_antigravity_imagine.mjs --prompt "保持人物特征，转为水彩画风格" --images "/path/face.jpg,/path/style.jpg"
+node $S --prompt "保持人物特征，转为水彩画风格" --images "/path/face.jpg,/path/style.jpg"
 ```
 
 ### 3. 指定画面比例
 ```bash
-node ~/.agents/skills/leo-antigravity-imagine/scripts/leo_antigravity_imagine.mjs --prompt "竖屏壁纸" --aspect-ratio "9:16"
+node $S --prompt "竖屏壁纸" --aspect-ratio "9:16"
 ```
 
 ### 4. 预检模式 (--dry-run)
 ```bash
-node ~/.agents/skills/leo-antigravity-imagine/scripts/leo_antigravity_imagine.mjs --prompt "测试" --dry-run
+node $S --prompt "测试" --dry-run
 ```
 
 ## 参数说明

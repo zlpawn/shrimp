@@ -48,10 +48,10 @@ description: "面向传统 Java 后端工程师的 AI/Agent 认知破壁与面�
   * **严禁私自硬编码生成或静默跳过**！
   * **必须立即暂停主流程，向用户发起友好的前置初始化询问**：
     > “👋 **首次使用配置确认**：检测到您尚未初始化 `leo-ai-transcoder` 的本地事实底本配置文件（`~/.shrimp/skills/leo-ai-transcoder/config.json`）。为了确保后续的 Java 架构转译与代码对齐真实准确，请确认或提供以下本地路径：
-    > 1. **AgentScope 2.0 Java 源码路径**（如 `/Users/pa/project/IOT/KF/ASDK/agentscope-java-2.0.3`）
-    > 2. **Java JDK 路径**（默认探测：`~/.sdkman/candidates/java/current`）
-    > 3. **AI 理论参考课程路径**（如 `/Users/pa/project/AI-SU/ai-engineering-from-scratch`，可选）
-    > 4. **知识沉淀 Obsidian 根目录**（如 `/Users/pa/project/OBDI/bg/nightmare`，可选）
+    > 1. **AgentScope 2.0 Java 源码路径**（如 `/path/to/agentscope-java-2.0.3` 或对应项目目录）
+    > 2. **Java JDK 路径**（默认探测：`~/.sdkman/candidates/java/current` 或系统 `JAVA_HOME`）
+    > 3. **AI 理论参考课程路径**（如 `/path/to/ai-engineering-from-scratch`，可选）
+    > 4. **知识沉淀 Obsidian 根目录**（如 `/path/to/obsidian-vault`，可选）
     > 
     > 您可以直接回复『确认默认探测路径』，或修改为您实际的本地目录。”
   * 待用户回复确认或提供新路径后，Agent 自动将配置写入 `~/.shrimp/skills/leo-ai-transcoder/config.json`，再进入主转译流程。

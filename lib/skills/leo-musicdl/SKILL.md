@@ -32,8 +32,8 @@ description: 使用 musicdl 进行多源高品质音乐搜索、单曲/专辑/�
 
 ## 2. 默认策略 (Defaults)
 
-- **默认存储根目录**：`D:\素材\音乐`（保持单层或按歌手分类的清爽布局）。
-- **临时下载缓存区**：`D:\素材\音乐\_musicdl_tmp`（避免客户端生成冗长的时间戳子目录污染根目录）。
+- **默认存储根目录**：默认使用 `./downloads/music`（或按用户具体任务指定的存放路径）。
+- **临时下载缓存区**：`./downloads/music/_musicdl_tmp`（避免客户端生成冗长的时间戳子目录污染根目录）。
 - **音源优先级**：默认优先使用 `QQMusicClient,NeteaseMusicClient`；仅在优选源受限时启用 `MiguMusicClient,KuwoMusicClient` 作为后备。
 - **音质策略**：优先选择无损（FLAC）或最高码率（320k MP3 / M4A），保留嵌入封面与 LRC 歌词。
 - **防止覆写**：遇到同名文件默认保留，避免覆盖既有收藏。
@@ -49,7 +49,7 @@ description: 使用 musicdl 进行多源高品质音乐搜索、单曲/专辑/�
 2. **候选结果核验**：
    - 在向用户展示候选或做自动决策时，重点核对**歌手名、准确曲名、时长与发行专辑**，不要单纯迷信排序第一项。
 3. **格式清洗规则**：
-   - 严禁将平台专有加密格式（如 `.mgg` / `.mflac`）当作最终音频；若遭遇加密流，移入 `_musicdl_tmp\unsupported_formats` 并换源重试。
+   - 严禁将平台专有加密格式（如 `.mgg` / `.mflac`）当作最终音频；若遭遇加密流，移入 `_musicdl_tmp/unsupported_formats` 并换源重试。
 
 ---
 
@@ -59,13 +59,13 @@ description: 使用 musicdl 进行多源高品质音乐搜索、单曲/专辑/�
 ```powershell
 musicdl -k "歌曲名 歌手" `
   -m "QQMusicClient,NeteaseMusicClient" `
-  -i '{"work_dir": "D:\\素材\\音乐\\_musicdl_tmp"}'
+  -i '{"work_dir": "./downloads/music/_musicdl_tmp"}'
 ```
 
 ### (2) 导入整张歌单自动拉取
 ```powershell
 musicdl -p "https://music.163.com/#/playlist?id=XXXXXXXX" `
-  -i '{"work_dir": "D:\\素材\\音乐\\_musicdl_tmp"}'
+  -i '{"work_dir": "./downloads/music/_musicdl_tmp"}'
 ```
 
 ### (3) 指定多线程并发与全源搜索
@@ -73,7 +73,7 @@ musicdl -p "https://music.163.com/#/playlist?id=XXXXXXXX" `
 musicdl -k "稀缺曲目名" `
   -m "QQMusicClient,NeteaseMusicClient,KuwoMusicClient,MiguMusicClient" `
   -c '{"QQMusicClient": 4, "NeteaseMusicClient": 4}' `
-  -i '{"work_dir": "D:\\素材\\音乐\\_musicdl_tmp"}'
+  -i '{"work_dir": "./downloads/music/_musicdl_tmp"}'
 ```
 
 ---
@@ -84,8 +84,8 @@ musicdl -k "稀缺曲目名" `
 
 ```powershell
 # 整理音频与歌词文件到根目录，清理空目录
-Get-ChildItem -Path "D:\素材\音乐\_musicdl_tmp" -Recurse -Include *.flac, *.mp3, *.m4a, *.lrc | ForEach-Object {
-  $target = Join-Path "D:\素材\音乐" $_.Name
+Get-ChildItem -Path "./downloads/music/_musicdl_tmp" -Recurse -Include *.flac, *.mp3, *.m4a, *.lrc | ForEach-Object {
+  $target = Join-Path "./downloads/music" $_.Name
   if (-not (Test-Path $target)) {
     Move-Item $_.FullName $target
   }
@@ -97,9 +97,9 @@ Get-ChildItem -Path "D:\素材\音乐\_musicdl_tmp" -Recurse -Include *.flac, *.
 ## 6. 联动与兜底策略 (与 leo-yt-dlp 协同)
 
 当某首音乐因独家版权、下架或 VIP 付费限制无法在主流音乐源找到可用版本时：
-- 自动触发或建议用户使用 **[`leo-yt-dlp`](file:///D:/agent-transfer/lib/skills/leo-yt-dlp)**：
+- 自动触发或建议用户使用 **`leo-yt-dlp`**：
   通过 B 站官方现场/MV、YouTube 高保真原声视频进行无损音频提取：
   ```powershell
-  yt-dlp -f "ba/b" -x --audio-quality 0 --paths "D:\素材\音乐" "URL"
+  yt-dlp -f "ba/b" -x --audio-quality 0 --paths "./downloads/music" "URL"
   ```
 - 实现各大下载技能之间的优势互补与无缝兜底。

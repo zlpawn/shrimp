@@ -20,7 +20,7 @@ description: "LeetCode 算法面试教练，面向算法基础薄弱的 Java 工
 
 1. 执行 `lc config`。若返回 `exists: false`，**暂停主流程**，向用户确认：
    > 👋 首次使用 leo-lc-transcoder，需要确认 3 项配置：
-   > 1. 知识库目录（例如 `/Users/pa/project/OBDI/bg/nightmare/LC-Agent-Wiki`）
+   > 1. 知识库目录（例如 `/path/to/Obsidian-Vault/LC-Agent-Wiki` 或对应笔记目录）
    > 2. JDK 目录，用于生成算法动画（默认探测 `~/.sdkman/candidates/java/current`）
    > 3. 显示语言（默认 `zh`）
 
@@ -211,7 +211,7 @@ description: "LeetCode 算法面试教练，面向算法基础薄弱的 Java 工
 
 ## 十、维护与扩展
 
-下面每一条都是改 skill 自身的文件，一律改源码仓库里的那份：`/Users/pa/project/AI/local-ai-gateway/lib/skills/leo-lc-transcoder/`。不要改安装目录（`~/.agents/skills/leo-lc-transcoder`），那是安装时复制过去的，下次安装会被源码覆盖。改完在仓库根目录执行：
+下面每一条都是改 skill 自身的文件，若在仓库内开发，一律改源码仓库里的那份（如 `lib/skills/leo-lc-transcoder/`）。不要改客户端安装目录（如 `~/.agents/skills/leo-lc-transcoder` 等），那是安装时复制过去的，下次安装会被源码覆盖。改完在仓库根目录执行：
 
 ```bash
 npm run test:leo-lc-transcoder

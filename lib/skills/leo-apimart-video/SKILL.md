@@ -25,7 +25,7 @@ scripts/
 **新增一种结果类型** = 改 `task.mjs` 的 `collectOutputs` / `planOutputFiles`。
 
 ```bash
-S=~/.agents/skills/leo-apimart-video/scripts/leo_apimart_video.mjs
+S=<skillDir>/scripts/leo_apimart_video.mjs
 node $S config set --api-key "sk-..."              # 首次配置
 node $S config set --default-model grok-imagine-1.5-video-ext
 node $S config get                                  # Key 自动脱敏

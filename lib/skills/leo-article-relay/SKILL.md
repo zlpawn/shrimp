@@ -72,26 +72,26 @@ wechat-articles/
 
 ## 常用 CLI 命令
 
-脚本位于：`/Users/pa/.agents/skills/leo-article-relay/scripts/wechat-dl.mjs`
+脚本位于：`<skillDir>/scripts/wechat-dl.mjs`
 
 ### 1. 抓取单个或多个微信文章链接（自动路由到配置的知识库或 ~/.shrimp）
 ```bash
-node /Users/pa/.agents/skills/leo-article-relay/scripts/wechat-dl.mjs "<url1>" ["<url2>"]
+node <skillDir>/scripts/wechat-dl.mjs "<url1>" ["<url2>"]
 ```
 
 ### 2. 显式指定输出目录
 ```bash
-node /Users/pa/.agents/skills/leo-article-relay/scripts/wechat-dl.mjs "<url1>" -o /path/to/custom/dir
+node <skillDir>/scripts/wechat-dl.mjs "<url1>" -o /path/to/custom/dir
 ```
 
 ### 2. 从链接清单文本文件中批量抓取
 ```bash
-node /Users/pa/.agents/skills/leo-article-relay/scripts/wechat-dl.mjs -f links.txt -o ./wechat-articles
+node <skillDir>/scripts/wechat-dl.mjs -f links.txt -o ./wechat-articles
 ```
 
 ### 3. 从终端管道或标准输入（Stdin）抓取
 ```bash
-cat article_urls.txt | node /Users/pa/.agents/skills/leo-article-relay/scripts/wechat-dl.mjs -s -o ./wechat-articles
+cat article_urls.txt | node <skillDir>/scripts/wechat-dl.mjs -s -o ./wechat-articles
 ```
 
 ### 4. 与 Craft 笔记深度联动（一阶段 -> 二阶段桥梁）
@@ -100,7 +100,7 @@ cat article_urls.txt | node /Users/pa/.agents/skills/leo-article-relay/scripts/w
 2. 提取文本中出现的 `https://mp.weixin.qq.com/s/...` 链接；
 3. 直接调用 CLI 脚本批量保存至本地：
 ```bash
-node /Users/pa/.agents/skills/leo-article-relay/scripts/wechat-dl.mjs "<extracted_url1>" "<extracted_url2>" -o ./wechat-articles
+node <skillDir>/scripts/wechat-dl.mjs "<extracted_url1>" "<extracted_url2>" -o ./wechat-articles
 ```
 
 ---
@@ -128,7 +128,7 @@ node /Users/pa/.agents/skills/leo-article-relay/scripts/wechat-dl.mjs "<extracte
 #### Step 1: 准备分块与图床映射
 运行切片预处理脚本，自动反解公网图床 URL、清理 Frontmatter、转义特殊字符并切分文件：
 ```bash
-node /Users/pa/.agents/skills/leo-article-relay/scripts/prepare-craft-chunks.mjs "<articleDir>"
+node <skillDir>/scripts/prepare-craft-chunks.mjs "<articleDir>"
 ```
 输出：`<articleDir>/craft-chunks/` 包含切片文件 `chunk_01.md`, `chunk_02.md` ... 及 `manifest.json`。
 

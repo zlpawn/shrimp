@@ -22,7 +22,7 @@
 
 - **基础输出目录**：
   ```powershell
-  gallery-dl --dest "D:\素材\图片" "URL"
+  gallery-dl --dest "./downloads/images" "URL"
   ```
 - **自定义目录与文件名格式**（通过 `--filename` 和 `--directory`）：
   ```powershell
@@ -36,7 +36,7 @@
 
 - **下载记录归档文件**：
   ```powershell
-  gallery-dl --download-archive "D:\素材\图片\archive.sqlite3" "URL"
+  gallery-dl --download-archive "./downloads/images/archive.sqlite3" "URL"
   ```
   已记录在 archive 中的项目将自动跳过，实现无人值守的定时增量备份。
 

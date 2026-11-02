@@ -22,7 +22,7 @@ critical/high candidate is a failed comparison.
 
 ## Fixed Extended Java Acceptance
 
-Run `extended-java` against `/Users/pa/project/JZ/utopia-scs-recorder` at commit
+Run `extended-java` against `<benchmark-repo-path>/utopia-scs-recorder` at commit
 `c6893715d0d52477849595e7ed7c8c5ec276f322`. The harness clones to a temporary detached checkout
 and writes only to an explicit external output root. It must find work-order creation, the
 `/app/video/relate` family, uploaded-3D relation, Linjing device upload, concatenation callback,
@@ -34,7 +34,7 @@ evidence.
 
 ## Work-Order Creation
 
-The first benchmark repository is `/Users/pa/project/JZ/utopia-scs-recorder` at commit
+The first benchmark repository is `<benchmark-repo-path>/utopia-scs-recorder` at commit
 `c6893715d0d52477849595e7ed7c8c5ec276f322`.
 
 Required chain:

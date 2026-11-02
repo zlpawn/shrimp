@@ -97,5 +97,5 @@ graph TD
 
 ## 📚 附录参考文档
 在使用本 Skill 时，可随时查阅以下知识库文件：
-- 向上对齐 OKR、高高度结构与务实防虚参考库：[references/frameworks.md](file:///C:/Users/xtea/.agents/skills/leo-debrief-performance-master/references/frameworks.md)
-- 述职输出范例模板：[templates/debrief-template.md](file:///C:/Users/xtea/.agents/skills/leo-debrief-performance-master/templates/debrief-template.md)
+- 向上对齐 OKR、高高度结构与务实防虚参考库：[references/frameworks.md](references/frameworks.md)
+- 述职输出范例模板：[templates/debrief-template.md](templates/debrief-template.md)
