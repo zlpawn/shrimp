@@ -7,7 +7,8 @@
   "author": "Shrimp contributors",
   "type": "module",
   "bin": {
-    "shrimp": "bin/shrimp.js"
+    "shrimp": "bin/shrimp.js",
+    "leo-lantern": "lib/skills/leo-lantern/scripts/cli/index.mjs"
   },
   "files": [
     "bin",

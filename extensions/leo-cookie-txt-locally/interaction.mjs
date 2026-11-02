@@ -67,7 +67,14 @@ function envelope(document, registry, element, target, action, matchLevel) {
 }
 
 export function clickTarget(document, registry, target, { deferClick = false } = {}) {
-  const { element, matchLevel } = uniqueElement(document, registry, target);
+  const { element: rawElement, matchLevel } = uniqueElement(document, registry, target);
+  let element = rawElement;
+  if (element.classList?.contains?.("ant-select")) {
+    const selectorChild = element.querySelector?.(".ant-select-selector, input[role='combobox'], .ant-select-selection-search input");
+    if (selectorChild) {
+      element = selectorChild;
+    }
+  }
   element.scrollIntoView?.({ block: "center", inline: "center", behavior: "instant" });
   if (!deferClick) {
     element.click();

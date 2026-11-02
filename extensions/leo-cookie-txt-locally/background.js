@@ -33,6 +33,7 @@ import {
   contentMatches,
   summarizeContent,
   normalizePressKey,
+  wrapEvalScript,
 } from "./page-drive.mjs";
 import { createCdpSessionManager } from "./cdp-session.mjs";
 import { normalizeTarget } from "./element-target.mjs";
@@ -275,7 +276,7 @@ async function registerTo(url) {
 
 async function sendHeartbeats() {
   const urls = await getTargetUrls();
-  const version = chrome.runtime.getManifest?.()?.version || "1.3.9";
+  const version = chrome.runtime.getManifest?.()?.version || "1.3.10";
   for (const url of urls) {
     await heartbeatTarget(url, {
       id: chrome.runtime.id,
@@ -788,8 +789,9 @@ async function executeTask(task) {
       result = await executeDocumentTargetTask(type === "dom.snapshot" ? "dom.state" : type, params);
     } else if (type === "page.eval") {
       const tabId = await requireTaskTabId(params);
-      const script = params.script;
-      if (!script) throw lanternError("invalid_request", "Missing script parameter for eval");
+      const rawScript = params.script;
+      if (!rawScript) throw lanternError("invalid_request", "Missing script parameter for eval");
+      const script = wrapEvalScript(rawScript);
 
       let evalResult = null;
       let evalError = null;
@@ -860,20 +862,32 @@ async function executeTask(task) {
         throw lanternError("eval_error", String(evalError));
       }
 
-      result = await withTaskSummary({ evalResult });
+      result = await withTaskSummary({
+        ok: true,
+        evalResult: evalResult !== undefined ? evalResult : null,
+        hasResult: evaluated && !evalError,
+        resultType: evalResult === null ? "null" : typeof evalResult,
+      });
     } else if (type === "dom.wait") {
       const tabId = await requireTaskTabId(params);
       const wait = assertWaitParams(params);
       const started = Date.now();
+      let lastText = null;
+      let lastChangedAt = Date.now();
+
       for (;;) {
         let page = {};
         try {
           const res = await chrome.scripting.executeScript({
             target: { tabId },
-            func: (text, selector) => ({
-              text: document.body?.innerText || "",
-              selectorFound: Boolean(selector && document.querySelector(selector)),
-            }),
+            func: (text, selector) => {
+              const el = selector ? document.querySelector(selector) : null;
+              const content = selector ? (el ? (el.innerText ?? el.textContent ?? "") : null) : (document.body?.innerText || "");
+              return {
+                text: content,
+                selectorFound: Boolean(selector && el),
+              };
+            },
             args: [wait.text || null, wait.selector || null],
           });
           page = res?.[0]?.result || {};
@@ -881,12 +895,42 @@ async function executeTask(task) {
           // Page might be navigating or loading; ignore transient execution errors
           page = {};
         }
-        if (contentMatches({ haystack: page.text, text: wait.text, selectorFound: page.selectorFound })) {
-          result = await withTaskSummary({ waited: true, matched: wait.text || wait.selector, tabId });
-          break;
+
+        const currentText = page.text != null ? String(page.text) : null;
+
+        if (wait.idle) {
+          const meetsCriteria = (!wait.text || contentMatches({ haystack: currentText, text: wait.text })) &&
+            (!wait.selector || page.selectorFound);
+
+          if (meetsCriteria && currentText !== null) {
+            if (lastText === null || currentText !== lastText) {
+              lastText = currentText;
+              lastChangedAt = Date.now();
+            } else if (Date.now() - lastChangedAt >= wait.idleMs) {
+              result = await withTaskSummary({
+                waited: true,
+                idle: true,
+                stableMs: wait.idleMs,
+                matched: wait.text || wait.selector || "idle",
+                textLength: lastText.length,
+                tabId,
+              });
+              break;
+            }
+          }
+        } else {
+          if (contentMatches({ haystack: currentText, text: wait.text, selectorFound: page.selectorFound })) {
+            result = await withTaskSummary({ waited: true, matched: wait.text || wait.selector, tabId });
+            break;
+          }
         }
+
         if (Date.now() - started >= wait.timeoutMs) {
-          throw new Error(`Timed out after ${wait.timeoutMs}ms waiting for ${wait.text || wait.selector}`);
+          throw new Error(
+            wait.idle
+              ? `Timed out after ${wait.timeoutMs}ms waiting for content to stabilize for ${wait.idleMs}ms`
+              : `Timed out after ${wait.timeoutMs}ms waiting for ${wait.text || wait.selector}`
+          );
         }
         await sleep(Math.min(250, Math.max(25, wait.timeoutMs - (Date.now() - started))));
       }
@@ -939,12 +983,52 @@ async function executeTask(task) {
             });
           }
         }
+
+        let clip = undefined;
+        const targetSel = params.selector || params.sel;
+        const targetRef = params.ref !== undefined ? Number(params.ref) : null;
+        if (targetSel || targetRef) {
+          try {
+            const rectRes = await chrome.scripting.executeScript({
+              target: { tabId },
+              world: "ISOLATED",
+              func: async (selector, ref) => {
+                let el = null;
+                if (ref) {
+                  const api = await import(chrome.runtime.getURL("/element-target.mjs"));
+                  const registry = api.ensureDocumentRegistry(globalThis);
+                  el = registry.refs.get(Number(ref))?.weak?.deref?.() || registry.refs.get(Number(ref))?.node || null;
+                }
+                if (!el && selector) {
+                  el = document.querySelector(selector);
+                }
+                if (!el) return null;
+                el.scrollIntoView?.({ block: "center", inline: "center", behavior: "instant" });
+                const r = el.getBoundingClientRect();
+                return { x: r.x, y: r.y, width: r.width, height: r.height };
+              },
+              args: [targetSel || null, targetRef],
+            });
+            const r = rectRes?.[0]?.result;
+            if (r && r.width > 0 && r.height > 0) {
+              clip = {
+                x: Math.round(r.x),
+                y: Math.round(r.y),
+                width: Math.round(r.width),
+                height: Math.round(r.height),
+                scale: 1,
+              };
+            }
+          } catch {}
+        }
+
         const shot = await chrome.debugger.sendCommand({ tabId }, "Page.captureScreenshot", {
           format: "png",
           fromSurface: true,
           captureBeyondViewport: fullPage,
+          ...(clip ? { clip } : {}),
         });
-        result = { data: shot.data, mimeType: "image/png", fullPage };
+        result = { data: shot.data, mimeType: "image/png", fullPage, clipped: Boolean(clip) };
       } finally {
         if (fullPage) {
           try {

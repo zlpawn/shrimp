@@ -266,8 +266,8 @@ function isAcceptable(score, stored, current) {
 }
 
 export function resolveRef(document, registry, target) {
-  if (target.generation !== registry.generation) {
-    throw lanternError("stale_ref_generation", "Target ref belongs to a different document generation");
+  if (target.generation && target.generation !== registry.generation) {
+    throw lanternError("stale_ref_generation", `Target ref generation '${target.generation}' does not match current document generation '${registry.generation}'`);
   }
   const record = registry.refs.get(target.ref);
   if (!record) throw lanternError("stale_ref_node", "Target ref is no longer registered");
@@ -335,6 +335,7 @@ function formatElementRecord(element, document, registry, precomputedRect = null
   }
   return {
     ref,
+    generation: registry.generation,
     tag: element.tagName.toLowerCase(),
     role: values.role || undefined,
     name: values.name || undefined,
@@ -441,7 +442,8 @@ export function normalizeTarget(params = {}) {
   const target = params.target ?? null;
   const legacySelector = params.selector !== undefined ? params.selector : null;
   const legacyText = params.text !== undefined ? params.text : null;
-  const legacyFormCount = Number(legacySelector !== null) + Number(legacyText !== null);
+  const directRef = params.ref !== undefined ? params.ref : null;
+  const legacyFormCount = Number(legacySelector !== null) + Number(legacyText !== null) + Number(directRef !== null);
 
   if (target !== null) {
     if (legacyFormCount || typeof target !== "object" || Array.isArray(target)) {
@@ -451,6 +453,13 @@ export function normalizeTarget(params = {}) {
   }
 
   if (legacyFormCount === 1) {
+    if (directRef !== null) {
+      return normalizeTargetObject({
+        kind: "ref",
+        ref: directRef,
+        generation: params.generation,
+      });
+    }
     if (legacySelector !== null) {
       return normalizeTargetObject({ kind: "css", selector: legacySelector });
     }
@@ -479,12 +488,14 @@ function ensureOnlyFields(target, allowed) {
 function normalizeRefTarget(target) {
   ensureOnlyFields(target, ["kind", "ref", "generation"]);
   const ref = Number(target.ref);
-  const generation = normalizeText(target.generation);
   if (!Number.isInteger(ref) || ref <= 0 || Number(target.ref) !== ref) {
     throw invalidTarget("Target ref must be a positive integer");
   }
-  if (!generation) throw invalidTarget("Target ref requires a document generation");
-  return { kind: "ref", ref, generation };
+  const generation = target.generation !== undefined ? normalizeText(target.generation) : undefined;
+  if (target.generation !== undefined && !generation) {
+    throw invalidTarget("Target ref generation must be a non-empty string when provided (obtained from dom.state or dom.find)");
+  }
+  return { kind: "ref", ref, ...(generation ? { generation } : {}) };
 }
 
 function normalizeCssTarget(target) {
