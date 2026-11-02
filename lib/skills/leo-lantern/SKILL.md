@@ -18,15 +18,17 @@ description: 通过 leo-lantern CLI/服务实现 Chrome 浏览器远程调试 (C
 1. **服务启动与健康探测**：
    - **手动启动后台服务（若未启动或提示 `bridge_unavailable` / `command not found`）**：
      - 若全局命令可用：`leo-lantern server --port 19527`
-     - 若命令不在 PATH 中，直接使用 Node 启动：
+     - 若 `leo-lantern` 未在系统 PATH 中，Agent 直接使用 Node 从本 Skill 目录拉起服务：
        ```bash
-       node lib/skills/leo-lantern/scripts/cli/index.mjs server --port 19527
-       # 或从任何目录指定绝对路径：
-       node /Users/pa/project/AI/local-ai-gateway/lib/skills/leo-lantern/scripts/cli/index.mjs server --port 19527
+       # 形式 1：使用当前 Skill 目录路径（无论本 Skill 安装在何处）
+       node <skillDir>/scripts/cli/index.mjs server --port 19527
+
+       # 形式 2：若当前终端已处于本 Skill 根目录下：
+       node scripts/cli/index.mjs server --port 19527
        ```
    - 检查服务与扩展在线状态：
-     - `leo-lantern health`（或 `node .../scripts/cli/index.mjs health`）
-     - 若 `extensionOnline: false`，打开 Chrome 并在扩展管理页确认 `Leo cookie.txt Locally` 扩展已开启并加载。
+     - `leo-lantern health`（或 `node <skillDir>/scripts/cli/index.mjs health`）
+     - 若 `extensionOnline: false`，请在 Chrome 扩展管理页（`chrome://extensions`）确认已加载扩展，并保持 Chrome 处于运行状态。
 2. **任务生命周期（可选，支持直接操作当前标签页）**：
    - 开启/复用任务组：`leo-lantern start-task --title="browser-task"`（默认新开独立窗口，不干扰用户浏览；若需在同窗口执行可指定 `--same-window=true`）
    - 查看所有标签页：`leo-lantern tabs`
