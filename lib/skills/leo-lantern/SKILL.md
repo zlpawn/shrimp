@@ -50,6 +50,7 @@ description: 通过 leo-lantern CLI/服务实现 Chrome 浏览器远程调试 (C
    - 执行脚本（自动函数闭包隔离，避免 `const`/`let` 重复声明冲突，统一返回 `{ ok, evalResult, hasResult, resultType }`）：
      - `leo-lantern eval "1+1"`
      - `leo-lantern eval "const btns = document.querySelectorAll('button'); btns.length"`
+     - 执行本地脚本文件（免 Windows 命令行引号与中文转义）：`leo-lantern eval --file "/path/to/script.js"`
    - 等待内容出现或流式文本稳定：
      - 固定文本等待：`leo-lantern wait --text="成功" --timeout-ms 5000`
      - AI/流式内容静止等待（N 毫秒无内容变化）：`leo-lantern wait --idle --idle-ms 2000`
@@ -127,6 +128,49 @@ leo-lantern end-task
 
 5. **流式 AI 对话与动态页面等待**：
    - 针对 LLM 流式输出或长轮询接口，建议使用 `wait --idle --idle-ms 2000`，当页面文本连续 2 秒不再发生变化时自动唤醒继续执行后续步骤。
+
+6. **Web Component 与 Shadow DOM 穿透交互**：
+   - **现象**：在小红书、Shopify 或使用现代前端框架（Vue 3 `defineCustomElement` / Lit / Polymer）的页面上，部分核心按钮（如 `<xhs-publish-btn>`）在常规 DOM 查找中返回空或未匹配。
+   - **根因**：元素被封装在闭包 Shadow DOM 中（`el.shadowRoot` 为 null，或存储于内部属性 `el._sr`）。
+   - **穿透方案**：
+     ```bash
+     leo-lantern eval "(() => {
+       const host = document.querySelector('custom-element-tag');
+       const root = host?._sr || host?.shadowRoot || host;
+       const btn = root.querySelector('button.submit');
+       if (btn) btn.click();
+     })()"
+     ```
+
+7. **富文本编辑框（Contenteditable）安全数据绑定**：
+   - **现象**：对 `div[contenteditable="true"]` 直接使用常规表单赋值，界面虽有文字但框架（Vue/React）字数统计和发布按钮未激活。
+   - **最佳实践**：使用原生 `insertText` 模拟用户输入流：
+     ```bash
+     leo-lantern eval "(() => {
+       const el = document.querySelector('div[contenteditable=\"true\"]');
+       if (el) {
+         el.focus();
+         document.execCommand('selectAll', false, null);
+         document.execCommand('insertText', false, '要注入的文本内容');
+       }
+     })()"
+     ```
+
+## 平台自动化配方 (Recipes)
+
+针对高频复杂业务场景，技能内置了开箱即用的 Recipe 脚本：
+
+- **小红书创作者平台一键发布 (`recipes/xhs-publish.mjs`)**：
+  集成了标题 20 字截断安全校验、正文 1000 字符限制校验与 Markdown 脱壳、CDP 原生多图批量上传、黄金时段（15:00~17:00）定时发布配置、Shadow DOM 穿透提交以及后台结果截图存档：
+  ```bash
+  node <skillDir>/recipes/xhs-publish.mjs \
+    --title "别再用Chrome了！实测Zig极速AI浏览器" \
+    --content-file "./内容.md" \
+    --images "01.png,02.png,03.png" \
+    --schedule "2026-11-03 16:00" \
+    --out "publish_proof.png"
+  ```
+  *(注：支持 `--dry-run` 预览停留在提交前并截取表单)*
 
 > **提示（脱离网关自包含运行）**：
 > - **独立 CLI 模式**：可在技能目录直接通过 Node.js 执行命令行交互：
