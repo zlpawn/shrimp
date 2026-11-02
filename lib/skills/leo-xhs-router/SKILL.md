@@ -27,6 +27,9 @@ description: Use when the user requests Xiaohongshu / 小红书 / RedNote operat
    - 抽象出可插拔的视觉生成插槽，支持在 `leo-codex-imagine`（AI扩散生图/图生图）、`xhs-html`（62套纯HTML杂志排版）、Pillow 确定性图卡之间自由无缝切换。
 6. **无缝联动 `leo-lantern` 闭环自动发布**：
    - 笔记制作完成并通过质检后，可直接调用 `leo-lantern` 的通用原生 CDP 文件上传和表单注入能力，一键在浏览器中完成上传、填表，并在用户确认后点击发布。
+7. **个性化账号策略与人设资产外置（Smart Persona & Guidelines Loading）**：
+   - Router 保持通用性与中立性，不硬编码具体用户的业务方向与信源；
+   - 自动检测并读取 `~/.shrimp/skills/leo-xhs-router/account-positioning.md`（若存在），动态加载用户专属的账号定位、人设语调、偏好的情报摄取通道与二次创作准则，实现“通用调度引擎 + 个性化私有资产”的分层解耦。
 
 ---
 
