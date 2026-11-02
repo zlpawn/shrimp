@@ -19,7 +19,7 @@ description: Use when the user requests Xiaohongshu / 小红书 / RedNote operat
 3. **输出目录记忆与智能持久化（Smart Workspace Persistence）**：
    - 参考 `/leo-ppt-router` 标准，配置统一保存在 `~/.shrimp/skills/leo-xhs-router/config.json`；
    - 默认输出目录为 `~/.shrimp/skills/leo-xhs-router/output/`；
-   - 一旦用户指定了工作区（例如 `D:\素材\xhs`），Router 自动持久化记住该路径，后续会话默认复用，免除重复输入。
+   - 一旦用户指定了工作区目录，Router 自动持久化记住该路径，后续会话默认复用，免除重复输入。
 4. **全面吸收并平替废弃 `xhs-post-creator`**：
    - 将原 `xhs-post-creator` 中最硬核的**“纯读者视角违禁词品控禁令”**（严禁出现“AI生成”、“参考重绘”、“TODO”、“01/06页码”、“草稿水印”）沉淀为统一质检门禁；
    - 统一输出标准归档结构（`YYYY-MM-DD-主题/`、`内容.md`、`图片/发布版/`）；原 `xhs-post-creator` 即可安全停用废弃。
@@ -87,7 +87,7 @@ flowchart TD
 ⑥ 🏥 **账号体检与数据复盘**：主页八维诊断、已发笔记六层漏斗归因（曝光/CTR/互动卡点定位）
 ⑦ 🚀 **浏览器自动化发布**：调用 leo-lantern 自动上传卡片、填好草稿并在确认后一键发布
 
-💡 *您也可以直接输入素材、粘贴文章或指定路径，例如：「帮我把 D:\素材\xhs\... 优化并发布」*
+💡 *您也可以直接输入素材、粘贴文章或指定路径，例如：「帮我把指定目录下的素材做成小红书并发布」*
 ```
 
 ---
@@ -139,7 +139,7 @@ flowchart TD
 所有生成产物统一由 Router 的目录管理器调度（见 `scripts/config.mjs`）：
 
 ### 1. 三级级联决策
-1. **用户本次显式指定**（如“输出到 `D:\素材\xhs`”）：
+1. **用户本次显式指定**（如“输出到指定目录”）：
    - 本次直接落盘到该路径；
    - **自动写入** `~/.shrimp/skills/leo-xhs-router/config.json` 的 `workspace_dir`；
    - 提示用户已记住该目录，后续自动复用。
@@ -211,14 +211,14 @@ flowchart TD
 node lib/skills/leo-xhs-router/scripts/cli.mjs status
 
 # 配置默认工作区（免重复输入）
-node lib/skills/leo-xhs-router/scripts/cli.mjs config --workspace "D:\素材\xhs"
+node lib/skills/leo-xhs-router/scripts/cli.mjs config --workspace "<自定义输出目录>"
 
-# 从本地源码仓（D:\Java Project\AI-ZMT）一键安装小红书技能
+# 从已配置的本地源码仓一键安装小红书技能
 node lib/skills/leo-xhs-router/scripts/cli.mjs install --all
 
 # 初始化新帖子标准目录
 node lib/skills/leo-xhs-router/scripts/cli.mjs init-post "GLM-5.2开源模型解析"
 
 # 体检帖子目录中的违禁词与完整性
-node lib/skills/leo-xhs-router/scripts/cli.mjs audit "D:\素材\xhs\2026-06-17-GLM-5.2开源模型解析"
+node lib/skills/leo-xhs-router/scripts/cli.mjs audit "<待体检的帖子目录>"
 ```
