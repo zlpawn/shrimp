@@ -1,6 +1,6 @@
 # 题型目录
 
-每个题型包含：识别信号、Java 模板（`【变化点】` 标出不同题目要改的地方）、易错点、模板题。讲题和写题型卡都以这里为准；新增题型按同样格式追加 `P14` 起的条目。
+每个题型包含：识别信号、Java 模板（`【变化点】` 标出不同题目要改的地方）、易错点、模板题。讲题和写题型卡都以这里为准；新增题型按同样格式追加 `P17` 起的条目。各题型在国内面试里的频率和学习顺序见 `high-frequency.md`。
 
 ## 数据规模 → 允许的复杂度（解题四问第 1 问）
 
@@ -340,7 +340,7 @@ return heap.peek();
 
 **易错点**：求第 K 大用小顶堆、第 K 小用大顶堆（`(a, b) -> b - a`，注意溢出时改用 `Integer.compare`）。
 
-**模板题**：215. 数组中的第K个最大元素、347. 前 K 个高频元素、23. 合并 K 个升序链表
+**模板题**：215. 数组中的第K个最大元素（也可用 P14 的快速选择）、347. 前 K 个高频元素、23. 合并 K 个升序链表
 
 ## P13 图与拓扑排序
 
@@ -372,3 +372,182 @@ return done == n;                                // 有环时，环上的点入�
 **易错点**：边的方向建反；忘了入度为 0 的点要先全部入队。
 
 **模板题**：207. 课程表、210. 课程表 II、547. 省份数量
+
+## P14 手写排序
+
+国内面试常要求不用 `Arrays.sort` 手写快排（CodeTop 的"手撕快速排序"，对应 912. 排序数组），第 K 大也常被追问"能不能 O(n)"。
+
+**识别信号**
+- "手写一个排序""不许用库函数"
+- "第 K 大 / 第 K 小"且要求平均 O(n)——快速选择
+- 链表排序（148）——归并
+
+**模板**（快排、快速选择、归并）
+
+```java
+static final Random RAND = new Random();
+
+void quickSort(int[] a, int l, int r) {
+    if (l >= r) return;
+    swap(a, l, l + RAND.nextInt(r - l + 1));    // 随机选基准，换到最左边，防止有序数组退化成 O(n²)
+    int p = a[l], i = l - 1, j = r + 1;
+    while (i < j) {                             // 左边找 >= p 的，右边找 <= p 的，交换
+        do i++; while (a[i] < p);
+        do j--; while (a[j] > p);
+        if (i < j) swap(a, i, j);
+    }
+    quickSort(a, l, j);                         // 按 j 分两半，全是相同元素也不会退化
+    quickSort(a, j + 1, r);
+}
+
+// 快速选择：同样的划分，只往目标所在的一半走，平均 O(n)
+int findKthLargest(int[] a, int k) {
+    int target = a.length - k, l = 0, r = a.length - 1;   // 【变化点】第 K 大 = 升序下标 n - k
+    while (l < r) {
+        swap(a, l, l + RAND.nextInt(r - l + 1));
+        int p = a[l], i = l - 1, j = r + 1;
+        while (i < j) {
+            do i++; while (a[i] < p);
+            do j--; while (a[j] > p);
+            if (i < j) swap(a, i, j);
+        }
+        if (target <= j) r = j; else l = j + 1;
+    }
+    return a[l];
+}
+
+// 归并：先排好两半，再像合并两个有序链表一样合起来
+void mergeSort(int[] a, int l, int r, int[] tmp) {
+    if (l >= r) return;
+    int mid = l + (r - l) / 2;
+    mergeSort(a, l, mid, tmp);
+    mergeSort(a, mid + 1, r, tmp);
+    int i = l, j = mid + 1, k = l;
+    while (i <= mid && j <= r) tmp[k++] = a[i] <= a[j] ? a[i++] : a[j++];   // <= 保证稳定
+    while (i <= mid) tmp[k++] = a[i++];
+    while (j <= r) tmp[k++] = a[j++];
+    for (k = l; k <= r; k++) a[k] = tmp[k];
+}
+
+void swap(int[] a, int i, int j) { int t = a[i]; a[i] = a[j]; a[j] = t; }
+```
+
+**易错点**：固定选第一个元素当基准，遇到有序数组会超时；`do...while` 写成 `while` 会在等于基准时死循环；按 `j` 分区时基准不能取 `a[r]`（所以先换到最左边）。面试官常追问：快排不稳定、归并稳定；快排平均 O(n log n)、最坏 O(n²)，归并始终 O(n log n) 但要 O(n) 额外空间。
+
+**模板题**：912. 排序数组、215. 数组中的第K个最大元素、148. 排序链表
+
+## P15 数据结构设计
+
+题目让你实现一个类（`LRUCache`、`MinStack`），每个操作都有复杂度要求。思路是"哪个操作要 O(1)，就配一个能 O(1) 做到它的结构"，几个结构互相配合。
+
+**识别信号**
+- 题目给出类名和方法签名，要求"每个操作 O(1)"
+- "最近最少使用""最小值""用 A 实现 B"
+
+**模板**（LRU：哈希表负责 O(1) 查找，双向链表负责 O(1) 挪动和淘汰）
+
+```java
+class LRUCache {
+    class Node {
+        int key, val;                           // 存 key：淘汰尾节点时要用它删哈希表
+        Node prev, next;
+        Node(int k, int v) { key = k; val = v; }
+    }
+    private final int capacity;
+    private final Map<Integer, Node> map = new HashMap<>();
+    private final Node head = new Node(0, 0), tail = new Node(0, 0);   // 哨兵：不用判空
+
+    public LRUCache(int capacity) {
+        this.capacity = capacity;
+        head.next = tail;
+        tail.prev = head;
+    }
+
+    public int get(int key) {
+        Node node = map.get(key);
+        if (node == null) return -1;
+        remove(node);
+        addFirst(node);                         // 用过就挪到最前面
+        return node.val;
+    }
+
+    public void put(int key, int value) {
+        Node node = map.get(key);
+        if (node != null) {
+            node.val = value;
+            remove(node);
+            addFirst(node);
+            return;
+        }
+        if (map.size() == capacity) {           // 【变化点】淘汰规则：LRU 淘汰最久没用的，也就是尾部
+            Node last = tail.prev;
+            remove(last);
+            map.remove(last.key);
+        }
+        node = new Node(key, value);
+        map.put(key, node);
+        addFirst(node);
+    }
+
+    private void remove(Node n) {
+        n.prev.next = n.next;
+        n.next.prev = n.prev;
+    }
+
+    private void addFirst(Node n) {
+        n.next = head.next;
+        n.prev = head;
+        head.next.prev = n;
+        head.next = n;
+    }
+}
+```
+
+**易错点**：节点里不存 key，淘汰时没法删哈希表；更新已有 key 时忘了挪到最前；先判容量再判 key 是否存在，会误删。面试官问"能用库吗"，可以说 `LinkedHashMap(capacity, 0.75f, true)` 加重写 `removeEldestEntry`，但通常要求手写。
+
+**模板题**：146. LRU 缓存、155. 最小栈、232. 用栈实现队列
+
+## P16 模拟
+
+没有巧妙算法，按题意一步步做，考的是边界处理和代码整洁。国内面试常见两类：大数运算（字符串加减乘）和矩阵按规则遍历。
+
+**识别信号**
+- "两个字符串表示的数字相加 / 相乘"、"比较版本号"、"字符串转整数"
+- "螺旋""旋转""按某种顺序遍历矩阵"
+
+**模板**（大数相加、螺旋遍历）
+
+```java
+// 字符串相加：从个位往高位加，带上进位
+StringBuilder sb = new StringBuilder();
+int i = a.length() - 1, j = b.length() - 1, carry = 0;
+while (i >= 0 || j >= 0 || carry > 0) {        // 【变化点】最后还有进位也要再走一轮
+    int x = i >= 0 ? a.charAt(i--) - '0' : 0;   // 短的那个数，高位补 0
+    int y = j >= 0 ? b.charAt(j--) - '0' : 0;
+    int sum = x + y + carry;
+    sb.append(sum % 10);
+    carry = sum / 10;
+}
+return sb.reverse().toString();                  // 从低位拼的，最后反转
+
+// 螺旋矩阵：上下左右四条边界，走完一条边就收缩一条
+int top = 0, bottom = m - 1, left = 0, right = n - 1;
+while (top <= bottom && left <= right) {
+    for (int c = left; c <= right; c++) res.add(g[top][c]);
+    top++;
+    for (int r = top; r <= bottom; r++) res.add(g[r][right]);
+    right--;
+    if (top <= bottom) {                         // 只剩一行时，不能再从右往左走一遍
+        for (int c = right; c >= left; c--) res.add(g[bottom][c]);
+        bottom--;
+    }
+    if (left <= right) {                         // 只剩一列时同理
+        for (int r = bottom; r >= top; r--) res.add(g[r][left]);
+        left++;
+    }
+}
+```
+
+**易错点**：最后的进位丢了（999 + 1）；字符转数字忘了 `- '0'`；螺旋遍历只剩一行或一列时重复输出；转整数（8）的溢出要在乘 10 之前判断。
+
+**模板题**：415. 字符串相加、43. 字符串相乘、54. 螺旋矩阵、165. 比较版本号

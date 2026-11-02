@@ -25,7 +25,7 @@ description: "LeetCode 算法面试教练，面向算法基础薄弱的 Java 工
    > 3. 显示语言（默认 `zh`）
 
    用户确认后执行 `lc config set vault_root=<路径> java_home=<路径> display_lang=zh`。
-2. 若 `vault_root` 下没有 `LEARNING.md`，按 `references/card-templates.md` 的「知识库初始化」创建骨架，并询问用户的面试时间窗口，填入 LEARNING.md。
+2. 若 `vault_root` 下没有 `LEARNING.md`，按 `references/card-templates.md` 的「知识库初始化」创建骨架，并询问用户的面试时间窗口，填入 LEARNING.md；再按 `references/high-frequency.md` 的「默认学习顺序」，从今天起每周一组排好日期，写进 LEARNING.md 的「学习计划」；并执行 `lc config set study_start=<今天>`，记下本轮学习的开始日期。
 3. 本次用不到的配置项缺失时，不要打扰用户；用到时再问，并用 `lc config set` 写回。
 
 **登录**：`lc login`。它通过 Chrome 上的 `Leo cookie.txt Locally` 扩展读取 leetcode.com 的 cookie：19527 端口上已有桥接服务就借用，没有就临时起一个，拿到 cookie 或超时（60 秒）后立即退出。其他命令遇到登录失效时，会自动重新登录一次。失败时按 `error.code` 告诉用户：
@@ -51,9 +51,12 @@ description: "LeetCode 算法面试教练，面向算法基础薄弱的 Java 工
 | `lc run <题号> <Java 文件> [--input <文件>]` | 用示例用例（或自定义输入）运行 |
 | `lc submit <题号> <Java 文件>` | 提交并等待判题结果 |
 | `lc solutions <题号> [--top 5]` | 按票数（`MOST_VOTES`）取 Java 题解，附 `javaCode` |
+| `lc history <题号> [--since 日期]` | 这道题在 LeetCode 上的全部提交，按本轮开始日期（`study_start`）分成 `before`（以前）和 `current`（本轮），各含提交次数、首次是否通过、通过前失败几次 |
+| `lc history [--since 日期]` | 总体概况：做过 / 通过的题数、难度分布、最后一次提交日期、本轮碰过的题数、常见标签 |
 | `node <skill>/scripts/viz.mjs <Demo.java> --out <html> [--title 标题]` | 生成算法动画 |
 
 注意：
+- **以前的记录只作参考**：`lc history` 的 `before`、`lc show` / `lc search` 返回的 `status`（LeetCode 上的"已通过"）都不能用来判断掌握度、一次提交通过、复习间隔或跳过题目。这些只看本轮表现和知识库记录。
 - `run` 的结果以 `passed` 为准。LeetCode 在答案错误时仍返回 "Accepted"，脚本已改写为 "Wrong Answer"。
 - 连续 `run` / `submit` 太快会被限流，脚本会等待重试；不要并行调用。
 - 提交的 Java 文件只放 LeetCode 模板里的 `class Solution`（和需要的辅助类），不要带 `main` 和 `T.frame`。
@@ -70,6 +73,8 @@ description: "LeetCode 算法面试教练，面向算法基础薄弱的 Java 工
 
 ## 三、四种模式
 
+用户没指定学什么（如"今天学什么"）时：有到期复习先走模式 D；否则按 LEARNING.md「学习计划」取下一题，走模式 A。
+
 ### A. 学一道题（一轮一步，等用户回应再往下）
 
 1. `lc show` 拿题面，按第五节翻译并展示图片和示例。先让用户试着回答四问的第 1、2 问，答不上来也没关系。
@@ -78,7 +83,7 @@ description: "LeetCode 算法面试教练，面向算法基础薄弱的 Java 工
 4. 讲核心思路：先讲生活故事，再当场点出术语；配一道 ASCII 手算练习（数组不超过 6 个元素）。然后问"要不要看动画走一遍"。
 5. 套模板：贴出 `pattern-catalog.md` 里的模板，标出本题改动的行。
 6. 写代码：掌握度低于 2 时，只让用户填写改动的那几行；之后完整地写。用户写完先 `lc run`，再 `lc submit`。失败时用失败用例一步步演算，指出错在哪条规则上。
-7. 收尾：讲复杂度；请用户用术语复述一遍 30 秒面试说法；用一句话介绍一个变体；推荐一道同题型的下一题。
+7. 收尾：讲复杂度；执行 `lc history <题号>`，`before` 不为空时和本次对比一句（如"这次一次通过；以前提交了 5 次，4 次超时"），本次错的地方和当年一样时，写进卡片的易错点。讲题开头不要提以前做过；请用户用术语复述一遍 30 秒面试说法；用一句话介绍一个变体；推荐下一题：按 LEARNING.md「学习计划」的顺序，取第一道知识库 `题目/` 下还没有卡片的题；没有计划时，推荐同题型的下一题。
 8. 询问是否沉淀（第八节）。
 
 ### B. 学一个题型
@@ -206,7 +211,17 @@ description: "LeetCode 算法面试教练，面向算法基础薄弱的 Java 工
 
 ## 十、维护与扩展
 
+下面每一条都是改 skill 自身的文件，一律改源码仓库里的那份：`/Users/pa/project/AI/local-ai-gateway/lib/skills/leo-lc-transcoder/`。不要改安装目录（`~/.agents/skills/leo-lc-transcoder`），那是安装时复制过去的，下次安装会被源码覆盖。改完在仓库根目录执行：
+
+```bash
+npm run test:leo-lc-transcoder
+node -e 'import("./lib/session-sync/skill-installer.mjs").then(({ SkillInstaller }) => SkillInstaller.install(null, "leo-lc-transcoder"))'
+```
+
+测试通过、重新安装后，问用户是否提交。
+
 - **新增站点**：新建 `scripts/sites/<site>/`。其中 `api.mjs` 导出 `createApi(creds)`，返回 `whoami / search / show / run / submit / solutions`，返回结构与 leetcode-com 保持一致；`cookie.mjs` 导出 `login()`，返回 creds 对象。然后执行 `lc config set site=<site>`。
-- **新增题型**：在 `references/pattern-catalog.md` 末尾按现有格式追加 `P14` 起的条目。
+- **新增题型**：在 `references/pattern-catalog.md` 末尾按现有格式追加 `P17` 起的条目，同时在 `high-frequency.md` 和知识库的掌握度表里加上。
+- **高频数据**：`references/high-frequency.md` 写明了拉取方式；用户要求更新，或数据已超过半年时，重新拉取并归类。
 - **新的教学经验**：在 `references/teaching-examples.md` 追加正反对照。
 - **接口变更**：先用浏览器抓包确认，再改 `api.mjs` 和 `tests/fixtures.mjs`，最后跑 `npm run test:leo-lc-transcoder`。
