@@ -125,53 +125,50 @@ flowchart TD
 
 ---
 
-## 🎨 视觉引擎自主决策仲裁树 (Autonomous Visual Decision Matrix)
+## 🎨 视觉引擎自主决策仲裁机制 (Autonomous Visual Decision Matrix)
 
-在小红书图文制作阶段，**AI 必须自主评估笔记的内容属性与受众需求，在 `leo-imagine-router`（先锋艺术生态）与 `xhs-router` 内置组件（通用卡片套件）之间进行二选一裁决，并在执行时打印决策日志，严禁仅输出文字性配图建议**！
+在小红书视觉图卡制作阶段，**AI 必须自主评估页面信息的本质诉求，在先锋视觉生态（`leo-imagine-router`）、结构化排版引擎（`xhs-html`）与通用标准组件（`space-xhs-*`）之间进行动态裁决，并在执行时打印决策日志，严禁仅输出文字性配图建议**！
 
-### 1. 核心裁决决策树 (Decision Tree)
+### 1. 基于信息诉求的元决策模型 (Meta-Decision Framework)
+
+本模型面向所有赛道通用，解耦具体业务场景，保持对未来新增技能的无限扩展：
 
 ```text
-[识别内容核心属性]
+[评估当前页面的核心信息诉求本质]
    │
-   ├─► 场景 1: 【深度开源评测 / 先锋技术洞察 / 极客态度观点 / 震撼首发】
-   │    │
-   │    └─► 🎯 封面裁决: 强制自主选用 【leo-imagine-router】
-   │         ├─ 观点/理念/金句/重磅 ➔ 调度 mono-color（受控双色孔版印刷、大字报、高逼格）
-   │         ├─ 影像/情感/意境 ➔ 调度 scene-distillation-zine-v1-3（极简插画、单色块）
-   │         └─ 严格执行 70% 中文主干 + 30% 英文点缀
+   ├─► 范式 A: 【调性与艺术表达 (Aesthetic & Hook-Driven)】
+   │    │  · 特征: 封面抓眼球、观点金句、艺术留白、情绪共鸣、摄影与海报重构
+   │    └─► 🎯 裁决: 全权委托给 【leo-imagine-router】
+   │         · 由 imagine-router 根据内容动态匹配最适合的专精画风（如 mono-color、scenes-gathered、photo-abstract 或未来新装技能）
+   │         · 严格执行 70% 中文主干 + 30% 英文点缀的黄金法则
    │
-   ├─► 场景 2: 【多步教程 / 代码实操 / 参数横评 / 流程链路 / SOP干货】
-   │    │
-   │    ├─► 🎯 封面裁决: 自主选用 【leo-imagine-router】(mono-color) 或 【space-xhs-cover】
-   │    └─► 🎯 内页裁决: 强制自主选用 【xhs-html】(Linear / Stripe 科技杂志风)
-   │         └─ 原因: 杜绝 AI 绘图的文字乱码，确保代码块、对比表格 100% 矢量清晰
+   ├─► 范式 B: 【高密度结构化信息 (High-Density Structured Data)】
+   │    │  · 特征: 代码高亮、对比表格、参数面板、多步实操 SOP、结构拓扑
+   │    └─► 🎯 裁决: 强制选用 【xhs-html】(Linear / Stripe / Notion 科技杂志风)
+   │         · 核心依据: 任何扩散生图模型在此类场景必崩字，必须依靠 100% 矢量 HTML 截图杜绝乱码
    │
-   ├─► 场景 3: 【真机开箱 / 极客工位桌搭 / 真实硬件实测 / 现场探访】
-   │    │
-   │    └─► 🎯 封面/插图裁决: 强制自主选用 【leo-imagine-router】
-   │         ├─ 硬件/工位照片 ➔ 调度 scenes-gathered-zine-v1-3（手撕纸刊、实景拼贴）
-   │         └─ 展会/特写照片 ➔ 调度 photo-abstract-editorial（原图双联、象牙白展签）
+   ├─► 范式 C: 【日常通识与轻量图文 (Standard Consumer Infographic)】
+   │    │  · 特征: 泛科技快讯、日常清单、轻量效率分享、普惠知识
+   │    └─► 🎯 裁决: 选用 【space-xhs-cover】/ 【space-xhs-image】
+   │         · 核心依据: 标准圆角卡片系统，零配置开箱即用，降低调度链路
    │
-   ├─► 场景 4: 【日常泛科技快讯 / 效率小工具轻推荐 / 普惠职场经验】
-   │    │
-   │    └─► 🎯 裁决: 自主选用 【space-xhs-cover】+【space-xhs-image】
-   │         └─ 原因: 内容偏轻量生活化，标准圆角卡片即可满足，降低调用复杂度
-   │
-   └─► 场景 5: 【用户已提供真实界面截图 / 对比测试结果】
-        │
-        └─► 🎯 裁决: 自主选用 【xhs-writer】真实素材提炼 + 【xhs-html】卡片嵌图
+   └─► 范式 D: 【真机实景与真实素材 (Real Photographic Assets)】
+        │  · 特征: 用户提供了真实终端截图、测试数据图、实机开箱照片
+        └─► 🎯 裁决: 【真实素材优先】+ 【xhs-html】卡片嵌图 / 【scenes-gathered-zine】真景拼贴
 ```
 
-### 2. 执行门禁与日志规范 (Mandatory Execution & Logging)
+### 2. 个性化覆盖机制 (User Preference Override)
+若 `~/.shrimp/skills/leo-xhs-router/account-positioning.md` 中声明了博主专属的视觉绑定策略（如“所有封面必须使用特定画风”），优先遵循个性化资产，未声明部分遵循上述元决策模型。
+
+### 3. 执行门禁与日志规范 (Mandatory Execution & Logging)
 
 在进入配图环节时，AI **必须**显式在输出中打印裁决依据，并立即调起生成：
 
 ```markdown
 【🎨 视觉引擎自主裁决结果】
-* 笔记赛道/属性：[例如: 深度开源评测 / 极客观点]
-* 裁决引擎：leo-imagine-router (专精画风: mono-color 双色孔版) + 内页 xhs-html
-* 裁决理由：需要先锋视觉冲破信息流，内页含代码对比需 100% 矢量排版不乱码
+* 诉求范式：[例如: 范式 A - 调性艺术封面 + 范式 B - 内页高密度数据]
+* 裁决引擎：封面 -> leo-imagine-router (动态匹配画风)；内页 -> xhs-html (科技排版)
+* 裁决理由：封面需先锋视觉打破滑屏惯性；内页含代码/对比表格需 100% 矢量不乱码
 * 执行动作：正在调起对应技能生成 1080x1440 图片至 图片/发布版/ ...
 ```
 
