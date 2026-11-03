@@ -35,9 +35,21 @@ description: Use when the user requests Xiaohongshu / 小红书 / RedNote operat
 
 ## 🧭 工作流总览 (Workflow Pipeline)
 
+### ⚠️ 核心工作原则 (Core Principle - Step 0 强制门禁)
+
+> [!IMPORTANT]
+> **Step 0：前置强制读取个性化资产库（Mandatory Preflight）**
+> 在开始任何分流、创作、写稿或调用生图前，**必须首先读取 `~/.shrimp/skills/leo-xhs-router/account-positioning.md`（若存在）**！
+> 严格遵照其中的资产准则执行：
+> 1. **账号定位与人设语气**：遵循博主技术极客口语化人设与价值主张；
+> 2. **反抄袭红线与合规守则**：严格执行事实核验与原创表述；
+> 3. **视觉风格与生图路由（第六章）**：在需要配图或封面时，**必须优先参考第六章视觉场景映射表，调用 `leo-imagine-router` 调度专精生图技能**（如 `mono-color`、`photo-abstract-editorial` 等），实现差异化视觉美学；
+> 4. **中英文排版黄金法则（第七章）**：严格遵循 70% 中文核心语义 + 30% 英文点缀/专有名词的黄金比例，确保国内用户极速读懂同时兼具高级视觉感。
+
 ```mermaid
 flowchart TD
-    User["用户输入 / 唤起 @leo-xhs-router"] --> Detect{"是否为模糊需求 / 寻求全局建议？"}
+    User["用户输入 / 唤起 @leo-xhs-router"] --> Step0["Step 0: 检查并载入 ~/.shrimp/skills/leo-xhs-router/account-positioning.md<br>(人设/合规/生图路由/中英黄金比例)"]
+    Step0 --> Detect{"是否为模糊需求 / 寻求全局建议？"}
     
     Detect -- "是 (无参数/求指引)" --> Nav["主动呈现【小红书全链路方案导航菜单】"]
     Nav --> User
@@ -51,15 +63,15 @@ flowchart TD
     Route -- "写正文 / 7大体裁" --> S4["space-xhs-writer"]
     Route -- "开源项目/产品爆款" --> S5["xhs-writer (卖点打分+真实素材重绘)"]
     Route -- "杂志级 HTML 排版" --> S6["xhs-html (62套模板绝不崩字)"]
-    Route -- "封面制作 / 视觉图卡" --> S7["space-xhs-cover / space-xhs-image"]
+    Route -- "封面制作 / 视觉图卡" --> S7["视觉路由: 优先联动 leo-imagine-router 专精生图<br>或 space-xhs-cover / space-xhs-image"]
     Route -- "账号体检 / 数据复盘" --> S8["space-xhs-account-audit / note-analytics"]
     Route -- "浏览器自动发布" --> S9["leo-lantern (通用CDP自动化)"]
     
-    S1 & S2 & S3 & S4 & S5 & S6 & S7 & S8 --> Probe{"检测目标 XHS 技能是否已安装？"}
+    S1 & S2 & S3 & S4 & S5 & S6 & S7 & S8 --> Probe{"检测目标技能是否已安装？"}
     Probe -- "已安装" --> Exec["交由该 Skill 执行深度生产"]
     Probe -- "未安装" --> Guide["展示【定向安装卡片】(仅限XHS模块)<br>用户确认后一键安装或使用内置爆款规范兜底"]
     
-    Exec & Guide --> PostProcess["统一质检交付流水线<br>1. 纯读者视角品控 (去草稿/去AI痕迹)<br>2. 规范化落盘 YYYY-MM-DD-主题/ (记忆工作区)<br>3. 生成 审核记录.md"]
+    Exec & Guide --> PostProcess["统一质检交付流水线<br>1. 纯读者视角品控 (去草稿/去AI痕迹)<br>2. 规范化落盘 YYYY-MM-DD-主题/ (记忆工作区)<br>3. 严格中英比例校验 (70%中文+30%英文)<br>4. 生成 审核记录.md"]
     PostProcess --> S9
 ```
 
@@ -105,7 +117,7 @@ flowchart TD
 | **产品/项目单篇** | 开源项目、工具推广、卖点打分、截图图生图 | `xhs-writer` | `xhs-writer-skill` | 卖点打分表 + 卡片文案 + 配图建议 |
 | **通用正文撰写** | 写正文、干货笔记、教程、避坑、生活分享 | `space-xhs-writer` | `creator-buddy` | 7大体裁标准文案 + 标签策略 |
 | **HTML 杂志排版** | HTML排版、高颜值卡片、3:4代码转图 | `xhs-html` | `creator-buddy` | 3:4 单文件 HTML + 截图渲染 |
-| **封面/AI图卡** | 做封面、小红书配图、科技感组图 | `space-xhs-cover` / `space-xhs-image` | `creator-buddy` | 1080x1440 高清卡片 |
+| **封面/AI图卡** | 做封面、小红书配图、科技感组图、专精艺术风格 | `space-xhs-cover` / `space-xhs-image` / 或按 `account-positioning.md` 指引联动 `leo-imagine-router` 调度专精生图 | `creator-buddy` / 专精视觉体系 | 1080x1440 高清卡片 |
 | **账号诊断** | 账号体检、卡点诊断、主页装修 | `space-xhs-account-audit` | `creator-buddy` | 八维打分雷达图 + 诊断报告 |
 | **数据复盘** | 笔记复盘、曝光低、互动差、六层漏斗 | `space-xhs-note-analytics` | `creator-buddy` | 漏斗归因分析 + 针对性修改方案 |
 | **自动发布** | 自动发布、上传小红书、填草稿 | `leo-lantern` | `lib/skills/leo-lantern` | CDP 自动化页面注入与一键发布 |
