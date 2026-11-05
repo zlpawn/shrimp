@@ -155,6 +155,51 @@ class AutoDLRemoteEngine:
         except Exception as e:
             return {"ok": False, "message": f"开机调用异常: {e}"}
 
+    def poll_power_on(self, interval_seconds: int = 5, max_attempts: int = 180, wait_seconds: int = 45) -> dict:
+        """
+        以指定间隔（默认 5 秒）持续高频轮询向官方 OpenAPI 发起开机请求，直到抢到物理 GPU 库存并成功开机
+        """
+        import time
+        if not self.token or not self.instance_uuid:
+            return {"ok": False, "message": "未配置 token 或 instance_uuid，无法调用开机 API"}
+        url = f"{self.API_BASE}/api/v1/adl_dev/dev/instance/pro/power_on"
+        payload = {"instance_uuid": self.instance_uuid, "payload": "gpu"}
+        for attempt in range(1, max_attempts + 1):
+            try:
+                r = requests.post(url, headers=self._api_headers(), json=payload, timeout=10)
+                res = r.json()
+                if res.get("code") == "Success":
+                    start_t = time.time()
+                    while time.time() - start_t < wait_seconds:
+                        time.sleep(3)
+                        status_res = self.get_instance_status()
+                        if status_res.get("status") == "running":
+                            self.refresh_credentials_from_api()
+                            # 持续探活直到 ComfyUI 进程完全就绪
+                            probe_ok = False
+                            for _ in range(12):
+                                time.sleep(3)
+                                p = self.probe()
+                                if p.get("ok"):
+                                    probe_ok = True
+                                    break
+                            return {
+                                "ok": True,
+                                "attempts": attempt,
+                                "host": self.host,
+                                "port": self.port,
+                                "comfy_ready": probe_ok,
+                                "message": f"第 {attempt} 次轮询抢卡成功！实例已开机且 ComfyUI 完全就绪，连接地址: {self.host}:{self.port}"
+                            }
+                    return {"ok": True, "attempts": attempt, "message": f"第 {attempt} 次开机指令已下发，实例启动中。"}
+                msg = res.get("msg", "未知原因")
+                if attempt % 6 == 1 or attempt == 1:
+                    print(f"[{time.strftime('%H:%M:%S')}] 第 {attempt} 次抢卡轮询中: {msg}（{interval_seconds}s 后重试）", flush=True)
+            except Exception as e:
+                print(f"[{time.strftime('%H:%M:%S')}] 第 {attempt} 次请求异常: {e}", flush=True)
+            time.sleep(interval_seconds)
+        return {"ok": False, "attempts": max_attempts, "message": f"已达到最大轮询次数 {max_attempts} 次，暂未抢到显卡库存。"}
+
     def power_off(self, confirm: bool = False) -> dict:
         """
         通过官方 OpenAPI 远程关机实例（释放 GPU 并停止计费）
@@ -210,6 +255,9 @@ class AutoDLRemoteEngine:
             password=self.password,
             timeout=timeout
         )
+        transport = client.get_transport()
+        if transport:
+            transport.set_keepalive(15)
         return client
 
     def probe(self) -> dict:
@@ -267,12 +315,15 @@ class AutoDLRemoteEngine:
             if comfy_stats and "comfyui_version" in comfy_stats:
                 comfy_running = True
             else:
+                # 触发启动或等待开机自动拉起脚本（加载大量节点通常需要 15~35 秒）
                 client.exec_command("nohup bash /root/zealman-app/start-comfyui.sh > /dev/null 2>&1 &")
-                time.sleep(3)
-                stdin, stdout, stderr = client.exec_command(f"curl -s http://127.0.0.1:{self.remote_port}/system_stats")
-                comfy_stats = stdout.read().decode("utf-8", errors="replace").strip()
-                if comfy_stats and "comfyui_version" in comfy_stats:
-                    comfy_running = True
+                for _ in range(15):
+                    time.sleep(3)
+                    stdin, stdout, stderr = client.exec_command(f"curl -s http://127.0.0.1:{self.remote_port}/system_stats")
+                    comfy_stats = stdout.read().decode("utf-8", errors="replace").strip()
+                    if comfy_stats and "comfyui_version" in comfy_stats:
+                        comfy_running = True
+                        break
 
             gpu_name = "Unknown GPU"
             vram_total = "0"
@@ -546,15 +597,33 @@ except urllib.error.HTTPError as e:
             if not prompt_id:
                 return {"ok": False, "message": f"ComfyUI 工作流提交失败: {submit_res}"}
 
-            # 4. 轮询 /history/{prompt_id}
+            # 4. 轮询 /history/{prompt_id}（带断线自愈重连）
             start_time = time.time()
             output_filenames = []
             while time.time() - start_time < timeout_seconds:
-                time.sleep(1.5)
-                _, stdout, _ = client.exec_command(f"curl -s http://127.0.0.1:{self.remote_port}/history/{prompt_id}")
-                history_str = stdout.read().decode("utf-8", errors="replace").strip()
+                time.sleep(4.0)
+                history_str = ""
+                try:
+                    _, stdout, _ = client.exec_command(f"curl -s http://127.0.0.1:{self.remote_port}/history/{prompt_id}", timeout=15)
+                    history_str = stdout.read().decode("utf-8", errors="replace").strip()
+                except Exception as poll_e:
+                    # SSH 抖动自愈：重新连接 SSH 保持轮询
+                    try:
+                        client.close()
+                    except Exception:
+                        pass
+                    time.sleep(3)
+                    try:
+                        client = self.connect_ssh(timeout=10)
+                    except Exception:
+                        pass
+                    continue
+
                 if prompt_id in history_str:
-                    history = json.loads(history_str)
+                    try:
+                        history = json.loads(history_str)
+                    except Exception:
+                        continue
                     item_hist = history.get(prompt_id, {})
                     status_info = item_hist.get("status", {})
                     if status_info.get("status_str") == "error":
@@ -571,16 +640,28 @@ except urllib.error.HTTPError as e:
             if not output_filenames:
                 return {"ok": False, "prompt_id": prompt_id, "message": f"渲染超时或未捕获输出文件 (Prompt ID: {prompt_id})"}
 
-            # 5. SFTP 下载产物至本地暂存目录
+            # 5. SFTP 下载产物至本地暂存目录（带重连重试）
             target_output_dir.mkdir(parents=True, exist_ok=True)
-            sftp = client.open_sftp()
             local_paths = []
             for fname in output_filenames:
                 remote_file = f"/root/ComfyUI/output/{fname}"
                 local_file = str(target_output_dir / fname)
-                sftp.get(remote_file, local_file)
-                local_paths.append(local_file)
-            sftp.close()
+                for dl_attempt in range(3):
+                    try:
+                        sftp = client.open_sftp()
+                        sftp.get(remote_file, local_file)
+                        sftp.close()
+                        local_paths.append(local_file)
+                        break
+                    except Exception as sftp_e:
+                        try:
+                            client.close()
+                        except Exception:
+                            pass
+                        time.sleep(2)
+                        client = self.connect_ssh(timeout=10)
+                        if dl_attempt == 2:
+                            raise sftp_e
 
             elapsed = round(time.time() - start_time, 1)
             return {

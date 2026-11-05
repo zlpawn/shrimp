@@ -66,10 +66,12 @@ class AutoDLMediaClient:
         self.engine = AutoDLRemoteEngine(self.config)
         return self.probe()
 
-    def power_on(self, wait_seconds: int = 45) -> dict:
-        """通过 AutoDL 官方 OpenAPI 远程开机实例并自动同步新端口"""
+    def power_on(self, wait_seconds: int = 45, poll: bool = False, interval: int = 5, max_attempts: int = 180) -> dict:
+        """通过 AutoDL 官方 OpenAPI 远程开机实例并自动同步新端口（支持 --poll 自动高频抢卡轮询）"""
         if not self.engine:
             return {"ok": False, "message": "未配置云端连接。"}
+        if poll:
+            return self.engine.poll_power_on(interval_seconds=interval, max_attempts=max_attempts, wait_seconds=wait_seconds)
         return self.engine.power_on(wait_seconds=wait_seconds)
 
     def power_off(self, confirm: bool = False) -> dict:
@@ -298,6 +300,9 @@ def main():
     # 1. 实例生命周期与自愈
     parser.add_argument("--probe", action="store_true", help="探测云端实例状态 (GPU + ComfyUI)")
     parser.add_argument("--power-on", action="store_true", help="通过 AutoDL 官方 API 远程开机并同步动态端口")
+    parser.add_argument("--poll", action="store_true", help="无库存时自动以高频间隔轮询抢卡，直到成功开机")
+    parser.add_argument("--interval", type=int, default=5, help="抢卡轮询间隔秒数 (默认 5 秒)")
+    parser.add_argument("--max-attempts", type=int, default=180, help="最大轮询次数 (默认 180 次，即 15 分钟)")
     parser.add_argument("--power-off", action="store_true", help="通过 AutoDL 官方 API 远程关机 (必须配合 --confirm)")
     parser.add_argument("--confirm", action="store_true", help="确认已获用户明确同意执行关机")
     parser.add_argument("--refresh", action="store_true", help="从 AutoDL 官方 API 刷新最新动态 SSH 端口凭证")
@@ -343,7 +348,7 @@ def main():
     parser.add_argument("--crf", type=int, default=19, help="MP4 H.264 压制质量 CRF (默认 19，高清可设 17)")
     parser.add_argument("--output-dir", type=str, default=None, help="自定义输出目录 (默认 ~/.shrimp/skills/leo-autodl-imagine-video/outputs/)")
 
-    # 5. 暂存资产导出与清理
+    # 6. 暂存资产导出与清理
     parser.add_argument("--export", type=str, help="要导出的暂存文件名或路径")
     parser.add_argument("--to", type=str, help="导出目标目录或文件路径")
     parser.add_argument("--copy", action="store_true", help="导出时使用复制而非移动")
@@ -378,7 +383,7 @@ def main():
     elif args.clean_outputs:
         result = client.clean_outputs()
     elif args.power_on:
-        result = client.power_on()
+        result = client.power_on(poll=args.poll, interval=args.interval, max_attempts=args.max_attempts)
     elif args.power_off:
         result = client.power_off(confirm=args.confirm)
     elif args.refresh:
