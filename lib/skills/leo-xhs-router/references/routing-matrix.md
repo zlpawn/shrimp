@@ -8,8 +8,7 @@
 | **单篇产品/开源项目** | 推广工具、开源项目推广、产品种草、功能卖点打分、带截图做图 | `xhs-writer` | `xhs-writer-skill` | Router 运用 `稀缺性×实用性×可感知度` 卖点打分模型，提炼核心卖点并草拟卡片大纲 |
 | **通用正文与体检** | 撰写笔记正文、改写文案、查违禁词、7种体裁笔记、发帖前体检 | `space-xhs-writer` | `creator-buddy/xhs-Skills` | Router 采用短段落、痛点引导与 `humanizer-zh` 拟人化口吻直接输出可复制正文 |
 | **HTML 杂志级排版** | HTML排版、做卡片、高颜值图卡、3:4纯代码转图、62套模板 | `xhs-html` | `creator-buddy/xhs-Skills` | Router 生成自包含样式的单文件 3:4 HTML 页面，提供手机端自适应预览 |
-| **封面制作与反差** | 做封面、小红书封面图、大标题封面、高点击封面、艺术风格封面 | `leo-imagine-router` 或 `space-xhs-cover` | `leo-imagine-router` / `creator-buddy` | AI 依据《视觉引擎自主决策仲裁树》自主判定：观点/深度/先锋封面路由至 `leo-imagine-router`（mono-color等）；通用生活轻量封面路由至 `space-xhs-cover` |
-| **AI 信息图组图** | AI生图、科技感组图、信息图卡、生成多张小红书配图 | `xhs-html` 或 `space-xhs-image` | `creator-buddy/xhs-Skills` | AI 依据《视觉引擎自主决策仲裁树》自主判定：教程/代码/参数表格强制路由至 `xhs-html` 杜绝乱码；常规泛科技信息卡路由至 `space-xhs-image` |
+| **封面与全套视觉图卡** | 做封面、小红书配图、艺术画风、科技感组图、信息图卡、出图 | `leo-imagine-router` | 视觉智能调度中枢 | **全权委托至 `leo-imagine-router`**：由其动态裁决画风（如 `mono-color`、`scenes-gathered`、`photo-abstract`、`xhs-html` 或通用生图），统一输出 3:4 竖屏图片至 `图片/发布版/`，严格遵循 7:3 中英文排版与至少 5 张图硬指标 |
 | **账号八维体检** | 账号体检、卡点诊断、为什么没流量、主页装修诊断 | `space-xhs-account-audit` | `creator-buddy/xhs-Skills` | 针对博主主页介绍、封面一致性、近期笔记互动率进行八维打分并给出改进建议 |
 | **六层漏斗数据复盘** | 笔记复盘、曝光低、点赞低、有点击没收藏、完播率低 | `space-xhs-note-analytics` | `creator-buddy/xhs-Skills` | 采用六层漏斗归因（曝光→CTR→阅读→互动→转粉→转化）定位卡点，反哺标题与正文 |
 | **自动化上传与发布** | 自动发小红书、帮我上传、填好草稿、发到小红书 | `leo-lantern` | `lib/skills/leo-lantern` | 通过 CDP 原生上传图片、自动填充标题和 ProseMirror 富文本，经用户确认后一键发布 |
