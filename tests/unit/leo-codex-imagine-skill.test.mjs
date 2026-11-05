@@ -143,7 +143,7 @@ test("config save/load round-trips providers and upsert merges models", withTemp
   assert.deepEqual(reloaded.providers[0].models, ["m1", "m2", "m3"]);
   assert.equal(reloaded.providers[0].api_key, "sk-a");
   assert.ok(reloaded.updated_at);
-  assert.equal(fs.statSync(configPath).mode & 0o777, 0o600);
+  if (process.platform !== "win32") assert.equal(fs.statSync(configPath).mode & 0o777, 0o600);
 }));
 
 test("pickProvider never guesses the provider from the model", () => {

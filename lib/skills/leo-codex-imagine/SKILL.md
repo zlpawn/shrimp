@@ -57,7 +57,7 @@ scripts/
       "name": "xinglan",
       "api_url": "https://api.xinglan.me",
       "api_key": "sk-...",
-      "models": ["gpt-image-2.5-sunburst"]
+      "models": ["gpt-image-2.6-flare", "gpt-image-2.6-sunburst"]
     }
   ],
   "default_model": "grok-imagine-2.0-ext"
