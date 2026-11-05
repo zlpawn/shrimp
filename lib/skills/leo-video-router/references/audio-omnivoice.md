@@ -58,4 +58,4 @@ OpenAI 兼容，`http://127.0.0.1:3900/v1`：`/v1/audio/speech` 生成，`/v1/au
 
 - 12.5 秒中文音频：冷启动 40 秒、热启动 22 秒。
 - 输出 24 kHz 单声道 16-bit wav。
-- 语音转文字需先在 VoiceStudio 下载 Whisper 模型（约 3 GB），否则返回 `asr_model_missing`；字幕交给各项目自己的 whisper。
+- 语音转文字需先在 VoiceStudio 下载 Whisper 模型（约 3 GB），否则返回 `asr_model_missing`；字幕转写、单行重排与成片压制规范见 [subtitle-standard.md](subtitle-standard.md)，由 Router 统管并在 Step 7 交付时执行。

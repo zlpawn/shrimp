@@ -1,15 +1,17 @@
 import contextlib, io, json, os, shutil, sys, tempfile, unittest
+from datetime import date
 from pathlib import Path
 from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-import registry  # noqa: E402
+import registry   # noqa: E402
+import workspace  # noqa: E402
 
 
 def touch(p: Path, text="x"):
     p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(text)
+    p.write_text(text, encoding="utf-8")
 
 
 def skill_md(name: str) -> str:
@@ -24,7 +26,11 @@ class Base(unittest.TestCase):
         self.cwd = self.tmp / "cwd"
         self.cwd.mkdir(parents=True)
         self.data = self.tmp / "data"
-        env = mock.patch.dict(os.environ, {"LEO_VIDEO_ROUTER_HOME": str(self.data)})  # restores prior value
+        env = mock.patch.dict(os.environ, {
+            "LEO_VIDEO_ROUTER_HOME": str(self.data),
+            "HOME": str(self.home),
+            "USERPROFILE": str(self.home),
+        })
         env.start()
         self.addCleanup(env.stop)
 
@@ -66,7 +72,7 @@ class RegistryTest(Base):
         r = registry.locate("lemo-opuscar", self.home, self.cwd)
         self.assertEqual(r["via"], "registry")
         self.assertEqual(r["path"], str(repo.resolve()))  # macOS: /var -> /private/var
-        self.assertTrue(r["entry_dir"].endswith("plugin/skills/lemo-opuscar"))
+        self.assertTrue(Path(r["entry_dir"]).as_posix().endswith("plugin/skills/lemo-opuscar"))
 
     def test_register_rejects_dir_without_entry(self):
         empty = self.tmp / "empty"
@@ -86,14 +92,14 @@ class RegistryTest(Base):
         registry.register("dashi-animationstyle", repo, "user", self.home)
         (repo / "SKILL.md").unlink()
         self.assertIsNone(registry.locate("dashi-animationstyle", self.home, self.cwd))
-        data = json.loads((self.data / "registry.json").read_text())
+        data = json.loads((self.data / "registry.json").read_text(encoding="utf-8"))
         self.assertNotIn("dashi-animationstyle", data["projects"])
 
     def test_projects_not_a_dict_is_corrupt(self):
         touch(self.data / "registry.json", '{"projects": []}')
         with self.assertRaises(registry.RegistryError):
             registry.locate("hypit", self.home, self.cwd)
-        self.assertEqual((self.data / "registry.json").read_text(), '{"projects": []}')
+        self.assertEqual((self.data / "registry.json").read_text(encoding="utf-8"), '{"projects": []}')
 
     def test_name_outside_frontmatter_is_not_a_match(self):
         touch(self.home / ".agents/skills/hypit/SKILL.md", skill_md("other") + "name: hypit\n")
@@ -121,15 +127,78 @@ class RegistryTest(Base):
             registry.register("video-shotcraft", repo, "user", self.home)
         with self.assertRaises(registry.RegistryError):
             registry.locate("video-shotcraft", self.home, self.cwd)
-        self.assertEqual((self.data / "registry.json").read_text(), "{not json")
+        self.assertEqual((self.data / "registry.json").read_text(encoding="utf-8"), "{not json")
+
+
+class WorkspaceTest(Base):
+
+    def test_config_paths(self):
+        self.assertEqual(workspace.get_config_path(), self.data / "config.json")
+        self.assertEqual(workspace.get_default_output_dir(), self.data / "output")
+
+    def test_read_and_update_config(self):
+        cfg = workspace.read_config()
+        self.assertEqual(cfg["workspace_dir"], "")
+        self.assertEqual(cfg["default_platform"], "bilibili")
+
+        workspace.update_config({"workspace_dir": str(self.tmp / "custom_ws")})
+        cfg2 = workspace.read_config()
+        self.assertEqual(cfg2["workspace_dir"], str((self.tmp / "custom_ws").resolve()))
+        self.assertIsNotNone(cfg2["updated_at"])
+
+    def test_resolve_workspace_cascade(self):
+        # 1. default fallback
+        res_def = workspace.resolve_workspace_dir()
+        self.assertEqual(res_def["source"], "default")
+        self.assertEqual(res_def["dir"], str((self.data / "output").resolve()))
+        self.assertFalse(res_def["persisted"])
+
+        # 2. explicit user specified (persisted)
+        my_ws = self.tmp / "my_videos"
+        res_user = workspace.resolve_workspace_dir(str(my_ws))
+        self.assertEqual(res_user["source"], "user_specified")
+        self.assertEqual(res_user["dir"], str(my_ws.resolve()))
+        self.assertTrue(res_user["persisted"])
+
+        # 3. re-read from config history
+        res_cfg = workspace.resolve_workspace_dir()
+        self.assertEqual(res_cfg["source"], "config")
+        self.assertEqual(res_cfg["dir"], str(my_ws.resolve()))
+        self.assertFalse(res_cfg["persisted"])
+
+    def test_format_folder_name(self):
+        fixed_date = date(2026, 11, 5)
+        name1 = workspace.format_project_folder_name("高概念 微短剧:请慢用?", fixed_date)
+        self.assertEqual(name1, "2026-11-05-高概念-微短剧-请慢用")
+
+        name2 = workspace.format_project_folder_name("2026-12-01-已经带日期", fixed_date)
+        self.assertEqual(name2, "2026-12-01-已经带日期")
+
+    def test_init_project_dir(self):
+        fixed_date = date(2026, 11, 5)
+        out_ws = self.tmp / "projects"
+        res = workspace.init_project_dir("测试短片", user_specified_dir=str(out_ws), project_date=fixed_date)
+
+        p = Path(res["project_path"])
+        self.assertTrue(p.exists())
+        self.assertTrue((p / "成片" / "发布版").is_dir())
+        self.assertTrue((p / "成片" / "原始版").is_dir())
+        self.assertTrue((p / "音频").is_dir())
+        self.assertTrue((p / "素材").is_dir())
+        self.assertTrue((p / "脚本.md").is_file())
+        self.assertTrue((p / "交付记录.md").is_file())
+
+        script_text = (p / "脚本.md").read_text(encoding="utf-8")
+        self.assertIn("《测试短片》分镜与剧本", script_text)
+
+        record_text = (p / "交付记录.md").read_text(encoding="utf-8")
+        self.assertIn("《测试短片》视频交付记录", record_text)
+        self.assertIn("哔哩哔哩 (Bilibili)", record_text)
 
 
 class CliTest(Base):
     def setUp(self):
         super().setUp()
-        env = mock.patch.dict(os.environ, {"HOME": str(self.home)})  # Path.home() follows $HOME
-        env.start()
-        self.addCleanup(env.stop)
         self.addCleanup(os.chdir, os.getcwd())
         os.chdir(self.cwd)
 

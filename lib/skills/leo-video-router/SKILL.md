@@ -1,83 +1,99 @@
 ---
 name: leo-video-router
-description: Use when the user wants to make a video (短视频、宣传片、讲解动画、口播动画、风格短片、AI 人物出镜、素材剪辑、批量出片) or asks what video scenes are supported. Routes the request by scene to the best open-source project or skill (MoneyPrinterTurbo, OpenMontage, hypit, lemo-opuscar, xilo-opus-video, dashi-animationstyle, huashu-art-motion, video-shotcraft), detects whether it is installed, guides user-approved installation, prefers local omnivoice narration when no recording or paid TTS is available, and falls back to any available video-generation skill.
+description: Use when the user wants to make a video (短视频、宣传片、讲解动画、口播动画、风格短片、AI 人物出镜、素材剪辑、批量出片) or asks what video scenes are supported. Routes the request by scene to the best open-source project or skill (MoneyPrinterTurbo, OpenMontage, hypit, lemo-opuscar, xilo-opus-video, dashi-animationstyle, huashu-art-motion, video-shotcraft), detects whether it is installed, guides user-approved installation, manages output paths with smart persistence (~/.shrimp/skills/leo-video-router/config.json), prefers local omnivoice narration when no recording or paid TTS is available, and falls back to any available video-generation skill.
 ---
 
-# Leo Video Router（视频场景路由）
+# Leo Video Router（视频场景与调度中枢）
 
 ## 核心定位
 
-`leo-video-router` 只回答一个问题：**这个视频需求交给谁做**。
+`leo-video-router` 是面向**多场景 AI 视频生产的智能路由器、工程归档管家与交付中枢**。
 
 - 按场景把需求交给 8 个下游项目之一，下游怎么执行由它自己的入口文档决定。
-- Router **不选择、不调用任何底层生成引擎**：用哪个视频模型、下游内部用哪个 TTS，都由下游自己决定。只有音频来源由 Router 建议：需要旁白又没有录音时，按 Step 5 先用本机 omnivoice 生成配音，再从下游的外部音频入口交给它。
-- 本 skill 独立可用、不绑定任何 agent：所有接入知识都在 `references/` 和 `scripts/` 里，不依赖 agent 的记忆或私有工具。
-
-下文的 `<本 skill 目录>` 指本 SKILL.md 所在目录；命令写 `python3`，Windows 上换成 `python`。
+- **输出目录记忆与智能持久化（Smart Persistence）**：参考 `leo-xhs-router` 标准，配置保存在 `~/.shrimp/skills/leo-video-router/config.json`；默认输出到 `output/`；一旦用户指定工作区（如 `D:\素材\douyin`），自动持久化记住并复用；统一落盘至 `YYYY-MM-DD-视频主题/` 标准工程。
+- Router **不选择、不调用任何底层生成引擎**：模型与内部 TTS 由下游决定。音频建议按 Step 5 优先用本机 omnivoice 生成再交接。
+- 含对白成片按 [references/subtitle-standard.md](references/subtitle-standard.md) 执行单行独立重排（$\le 16$ 字，院线黑体白字黑边），压制并输出至 `成片/发布版/`。
+- 本 skill 独立可用，知识均在 `references/` 与 `scripts/`。命令写 `python3`，Windows 换成 `python`。
 
 ---
 
 ## 工作流
 
+### ⚠️ 核心工作原则 (Step 0 前置偏好与工作区检查)
+
+> [!IMPORTANT]
+> **Step 0：前置读取创作者偏好与工作区（Preferences & Workspace Preflight）**
+> 1. 读取 `~/.shrimp/skills/leo-video-router/style-preferences.md`（若存在）：提取全局分发偏好（B站首选、去AI标签片名、极简一句话悬念简介、16:30定时排期）并按题材激活对应风格预设（如悬疑短剧 `preset: suspense-short-drama`）。
+> 2. 读取 `~/.shrimp/skills/leo-video-router/config.json` 解析有效工作区（三级级联：用户本次指定 > 历史记录 > 默认兜底）。
+
 ```mermaid
 flowchart TD
-    A["用户提出视频需求"] --> B{"需求是否模糊？"}
-    B -- "是" --> C["Step 1: 展示场景导航卡片"]
-    C --> A
-    B -- "否" --> D["Step 2: 意图分类（routing-matrix）"]
-    D -- "命中一个项目" --> G["Step 3: registry.py locate 探测"]
-    D -- "规则判断不了" --> Q["给最多 2 个候选让用户选"] --> G
-    D -- "未命中（首次）" --> C
-    D -- "描述后仍未命中" --> F["兜底（fallback）"]
-    G -- "退出码 0 已安装" --> H["Step 5: 音频决策"]
-    G -- "退出码 1 未找到" --> I["Step 4: 展示安装卡片"]
-    G -- "退出码 3 registry 损坏或读写失败" --> X["把错误告诉用户，等用户修复"]
-    I --> J{"用户选择"}
-    J -- "安装（明确同意）" --> K["逐个安装 + register 登记"] --> G
-    J -- "已经下载在某目录" --> R["register 登记"] --> G
-    J -- "拒绝安装 / 直接出片" --> F
-    H --> L["Step 6: 交接给下游项目"]
-    L --> M["Step 7: 交付成片"]
-    F --> M
+    A["用户提出视频需求"] --> Step0["Step 0: 读取风格偏好与工作区解析"]
+    Step0 --> B{"需求是否模糊？"}
+    B -- "是" --> C["Step 1: 场景导航"] --> A
+    B -- "否" --> D["Step 2: 意图分类 (routing-matrix)"]
+    D -- "命中项目" --> G["Step 3: registry.py locate 探测"]
+    D -- "未命中/重叠" --> Q["候选二选一 / fallback 兜底"] --> G
+    G -- "已安装(0)" --> H["Step 5: 音频决策 (audio-omnivoice)"]
+    G -- "未找到(1)" --> I["Step 4: 安装引导 (install-and-registry)"]
+    I --> J{"用户授权"} -- "同意" --> K["安装并登记"] --> G
+    J -- "拒绝/直接出片" --> F["兜底 (fallback)"] --> H
+    H --> Init["初始化标准工程目录 (workspace.py init)"]
+    Init --> L["Step 6: 交接给下游项目执行"]
+    L --> S{"含对白且需字幕？"}
+    S -- "是" --> N["字幕重排与压制 (subtitle_engine)"] --> M["Step 7: 交付成片与归档"]
+    S -- "否" --> M
 ```
 
 ### Step 1：场景导航
-
-满足以下任一条件时，先展示下面的「场景导航卡片」，等用户选择或描述：
-
-- 用户只调用了本 skill，没说要做什么视频；
-- 用户问「你能做什么」「支持哪些视频场景」「我想做个视频」；
-- 用户给了素材（视频、录音、图片、网址），但没说想做成什么。
+需求模糊或仅提供未指明用途的素材时，展示下方「场景导航卡片」。
 
 ### Step 2：意图分类
-
-按 [references/routing-matrix.md](references/routing-matrix.md) 的触发词选出一个项目：先套「重叠项目的区分规则」；规则判断不了时，给最多 2 个候选和一句话区别让用户选。一个都没命中时回到 Step 1；用户描述后仍不命中，按 [references/fallback.md](references/fallback.md) 兜底。
+按 [references/routing-matrix.md](references/routing-matrix.md) 的触发词与区分规则选定项目；规则无法判断时给最多 2 个候选让用户选；仍未命中按 [references/fallback.md](references/fallback.md) 兜底。
 
 ### Step 3：探测
-
 ```bash
 python3 <本 skill 目录>/scripts/registry.py locate <项目名>
 ```
-
-`<项目名>` 必须和路由矩阵里的写法完全一致。退出码 0 表示已安装，之后交接时 skill 目录一律用输出里的 `entry_dir`，**不要自己拼路径**；退出码 1 进入 Step 4；退出码 3 表示 registry.json 损坏或读写失败，把错误原文告诉用户，不要覆盖或删除它。
-
-例外：退出码 1，但 agent 自己的上下文里已经列出同名 skill（如 lemo 作为 Claude 插件装在标准目录之外）时，也算已安装：`python3 <本 skill 目录>/scripts/registry.py register <项目名> <那个 skill 的目录> --source user`，再重跑 `locate`，`entry_dir` 仍从 `locate` 取。细节见 [references/install-and-registry.md](references/install-and-registry.md)。
+退出码 0 表示已安装，交接时 skill 目录一律用输出里的 `entry_dir`，**不要自己拼路径**；退出码 1 进 Step 4；退出码 3 报 registry.json 损坏。例外：上下文已有同名 skill 时先 `registry.py register <项目名> <目录> --source user` 再 locate。细节见 [references/install-and-registry.md](references/install-and-registry.md)。
 
 ### Step 4：安装引导
-
-按 [references/install-and-registry.md](references/install-and-registry.md) 展示安装卡片。**只在用户明确同意后**执行安装；多个项目逐个装；源码类项目下载前先问目录（默认 `~/.shrimp/skills/<项目名>`）；装好或用户给出已有目录后用 `registry.py register` 登记，再回到 Step 3 拿 `entry_dir`。用户拒绝安装（包括回复「直接出片」）时按 [references/fallback.md](references/fallback.md) 处理。
+按 [references/install-and-registry.md](references/install-and-registry.md) 展示卡片。**只在用户明确同意后**安装；源码类先问目录（默认 `~/.shrimp/skills/<项目名>`）；装好后 `registry.py register` 登记再重跑 Step 3。拒绝安装按 [references/fallback.md](references/fallback.md) 兜底。
 
 ### Step 5：音频决策
+需旁白时按 [references/audio-omnivoice.md](references/audio-omnivoice.md) 顺序：用户录音 → 下游商业 TTS → 本机 omnivoice（带重试检查）→ 下游免费 TTS。音画绑定镜头不替换音频。
 
-需要旁白或配音时，按 [references/audio-omnivoice.md](references/audio-omnivoice.md) 的顺序决定音频来源：用户录音 → 下游已配的商业 TTS → 本机 omnivoice（健康检查要带重试）→ omnivoice 不可用时请用户启动 VoiceStudio，用户不想开才退回下游免费 TTS 并说明音质有限；下游没有免费 TTS（如 dashi）时回到用户，不要擅自用其他 TTS。音画必须一起生成的镜头（AI 人物开口说话）不替换音频，否则口型对不上。
+### Step 6：初始化工程目录与交接
+1. 先初始化标准目录：`python3 <本 skill 目录>/scripts/workspace.py init "<视频主题>"`。
+2. 旁白统一存至 `<工程目录>/音频/旁白.wav`；脚本记入 `脚本.md`。
+3. 读 `references/projects/<项目名>.md` 与项目自己的入口文档（`locate` 输出里的 `entry`），交接素材与音频执行。直出原始成片放入 `成片/原始版/`。Router 不干预下游引擎生成。
 
-### Step 6：交接
+### Step 7：交付成片与字幕后处理
+1. **字幕与压制**：含对白视频调用 `python3 <本 skill 目录>/scripts/subtitle_engine.py "<成片路径>" --burn`。自动将重排单行字幕（$\le 16$ 字）与压制成片落盘到 `成片/发布版/`。
+2. **交付记录**：更新 `<工程目录>/交付记录.md`（记录所用项目、音频来源、字幕统计与 B 站排期策略）。
+3. **交付成片**：向创作者反馈带字幕成片绝对路径、字幕路径、封面图及音频来源。
 
-读 `references/projects/<项目名>.md` 的「交接」「音频」「注意」三节，再读项目自己的入口文档（`locate` 输出里的 `entry`），把用户需求、素材路径和配音文件路径（如有）按它的文档交给它执行。下游的生成方式、引擎和参数一律以它自己的文档为准，Router 不干预。
+---
 
-### Step 7：交付
+## 📁 产物目录与智能工作区记忆 (Smart Persistence)
 
-告诉用户：成片路径、用了哪个项目、音频来源（用户录音 / 下游 TTS / omnivoice / 下游免费 TTS）。兜底出片时同样说明用了哪个 skill，以及哪些提示词槽位是补的。
+### 1. 三级级联决策
+1. **用户显式指定**（传参 `--workspace` 或对话指明）：落盘并持久化保存至 `config.json` 的 `workspace_dir`，后续免重复输入；
+2. **已记录的历史目录**：自动复用 `config.json` 中的 `workspace_dir`；
+3. **默认兜底目录**：`~/.shrimp/skills/leo-video-router/output/`。
+
+### 2. 标准单视频工程目录
+```text
+<workspace_dir>/
+└── YYYY-MM-DD-视频主题/
+    ├── 交付记录.md                 # 记录项目、音频来源、字幕条数、发布文案与B站排期策略
+    ├── 脚本.md                    # 分镜、运镜机位、Prompt 提示词、对白台词
+    ├── 音频/                      # 旁白.wav (omnivoice/录音) 与音效/BGM
+    ├── 素材/                      # 过程素材、参考图、分镜切片或下游工程文件 (可选)
+    └── 成片/
+        ├── 发布版/                 # 最终成片 (带字幕版.mp4、.srt、封面.png)
+        └── 原始版/                 # 下游直出的无字幕/生肉成片 (可选)
+```
 
 ---
 
@@ -85,36 +101,28 @@ python3 <本 skill 目录>/scripts/registry.py locate <项目名>
 
 ```text
 🎬 Leo Video Router 视频场景导航
+【批量/快速】1. 信息流短视频 —— MoneyPrinterTurbo（主题出竖屏片）
+【素材加工】2. 素材剪辑与再创作 —— OpenMontage（口播剪辑/长切短/播客）
+【人物出镜】3. AI 人物表演 —— hypit（口播/短剧/双人播客/数字人）
+【风格短片】4. 指定风格短片 —— lemo-opuscar（66种风格）
+            5. 自由代码视频 —— xilo-opus-video（卡点/绿幕/Manim）
+            6. 口播讲解动画 —— dashi-animationstyle（知识口播/剪映）
+            7. 艺术与解说风格 —— huashu-art-motion（名画/Vox/3b1b）
+【产品宣传】8. 产品宣传片 —— video-shotcraft（网页截图电影感/音效）
+也可直接描述需求，由 Router 自动判断。
+```
 
-请回复编号或项目名：
+---
 
-【批量 / 快速出片】
- 1. 信息流短视频 —— MoneyPrinterTurbo
-    给个主题，自动出「旁白 + 素材混剪 + 字幕 + BGM」的竖屏短视频，可批量
+## 🛠️ 管理与调试 CLI
 
-【加工已有素材】
- 2. 素材剪辑与再创作 —— OpenMontage
-    真人口播剪辑、长视频切短、播客转视频、多语字幕配音、录屏演示、纪录片、预告片、数字人口播
-
-【AI 人物出镜】
- 3. AI 人物表演 —— hypit
-    UGC 口播、短剧、双人播客、街头采访、排行榜、讲解员 + MG、旁白带货
-
-【代码动画 / 风格短片】
- 4. 指定风格短片 —— lemo-opuscar
-    66 种风格（油画厚涂、浮世绘、卫星简报、产品拆解……），可存成自己的风格
- 5. 自由代码视频 —— xilo-opus-video
-    先出三个方案加预览，按音乐卡点、绿幕人物 + 代码场景、Manim
- 6. 口播讲解动画 —— dashi-animationstyle
-    15–60 秒中文知识口播 → 7 套风格讲解动画，可直接拖进剪映
- 7. 艺术与解说风格 —— huashu-art-motion
-    梵高 / 莫奈等艺术家笔法、名画穿越、Vox / 3b1b / Kurzgesagt 式解说
-
-【产品宣传】
- 8. 产品宣传片 —— video-shotcraft
-    用真实网页 / App 截图做电影感宣传片，导出剪映工程；也能给视频配音效
-
-也可以直接描述您想做的视频，我来判断交给谁。
+```bash
+# 查看工作区与配置状态
+python3 <本 skill 目录>/scripts/workspace.py status
+# 配置并记住默认工作区（免重复输入）
+python3 <本 skill 目录>/scripts/workspace.py set-workspace "D:\素材\douyin"
+# 初始化新视频标准工程目录
+python3 <本 skill 目录>/scripts/workspace.py init "悬疑微短剧请慢用"
 ```
 
 ---
@@ -122,7 +130,8 @@ python3 <本 skill 目录>/scripts/registry.py locate <项目名>
 ## 铁律
 
 1. **安装只在用户同意后执行**；没同意之前只展示安装卡片。
-2. **不改下游项目的代码**；依赖安装和项目数据目录按接入卡和项目自己的文档进行。
-3. **付费调用由下游按自己的规则向用户确认**，Router 不替用户同意任何付费操作。
+2. **不改下游项目的代码**；依赖安装和项目数据目录按接入卡和项目文档进行。
+3. **付费调用由下游确认**；Router 不替用户同意任何付费操作。
 4. **交付时必须说明音频来源**。
-5. 不选择、不调用任何底层生成引擎；兜底时也只按环境里已有 skill 自己的文档调用，见 [references/fallback.md](references/fallback.md)。
+5. **产物规范落盘**：统一归档在 `<workspace_dir>/YYYY-MM-DD-视频主题/` 标准工程。
+6. 不选择、不调用任何底层生成引擎；兜底时只按已有 skill 文档调用。
