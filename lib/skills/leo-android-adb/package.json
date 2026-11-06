@@ -1,0 +1,6 @@
+{
+  "name": "leo-android-adb",
+  "version": "0.1.0",
+  "description": "Android 模拟器环境搭建与 adb CLI 自动化操作技能（截图、点击、输入、日志、APK 安装）",
+  "type": "module"
+}
