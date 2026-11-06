@@ -11,6 +11,7 @@ Usage:
   python workspace.py set-workspace <dir>
   python workspace.py init <topic> [--workspace <dir>]
   python workspace.py resolve <topic> [--workspace <dir>]
+Exit codes: 0 ok, 3 config.json is corrupt or unreadable.
 """
 
 import argparse
@@ -21,6 +22,14 @@ import re
 import sys
 from pathlib import Path
 from typing import Optional, Dict, Any
+
+
+class ConfigError(Exception):
+    """config.json is corrupt or unreadable; never overwrite it."""
+
+
+def absolute_path(path: str) -> Path:
+    return Path(path.strip()).expanduser().resolve()
 
 
 def get_config_path() -> Path:
@@ -49,13 +58,11 @@ def get_default_output_dir() -> Path:
 
 def read_config() -> Dict[str, Any]:
     """Reads configuration from ~/.shrimp/skills/leo-video-router/config.json.
-    Returns defaults if not present or corrupt.
+    Returns defaults if not present; raises ConfigError if corrupt.
     """
     cfg_path = get_config_path()
     defaults = {
         "workspace_dir": "",
-        "default_audio_source": "omnivoice",
-        "default_platform": "bilibili",
         "updated_at": None,
     }
 
@@ -63,14 +70,12 @@ def read_config() -> Dict[str, Any]:
         return defaults
 
     try:
-        content = cfg_path.read_text(encoding="utf-8")
-        data = json.loads(content)
-        if isinstance(data, dict):
-            return {**defaults, **data}
-        return defaults
-    except Exception as e:
-        sys.stderr.write(f"[leo-video-router] Failed to parse config at {cfg_path}: {e}\n")
-        return defaults
+        data = json.loads(cfg_path.read_text(encoding="utf-8"))
+    except (ValueError, OSError) as e:  # ValueError includes UnicodeDecodeError
+        raise ConfigError(f"{cfg_path} is corrupt or unreadable ({e}); fix or delete it") from e
+    if not isinstance(data, dict):
+        raise ConfigError(f"{cfg_path} is corrupt (expected a JSON object); fix or delete it")
+    return {**defaults, **data}
 
 
 def write_config(config: Dict[str, Any]) -> Dict[str, Any]:
@@ -104,25 +109,26 @@ def update_config(partial: Dict[str, Any]) -> Dict[str, Any]:
     return write_config(current)
 
 
-def resolve_workspace_dir(user_specified_dir: Optional[str] = None) -> Dict[str, Any]:
+def resolve_workspace_dir(user_specified_dir: Optional[str] = None, persist: bool = True) -> Dict[str, Any]:
     """Resolves effective workspace directory with smart persistence:
-    1. User explicitly specified -> persists to config.json
+    1. User explicitly specified -> persists to config.json (unless persist=False)
     2. config.json workspace_dir -> reuses silently
     3. fallback -> ~/.shrimp/skills/leo-video-router/output/
     """
     if user_specified_dir and str(user_specified_dir).strip():
-        resolved = Path(str(user_specified_dir).strip()).resolve()
-        update_config({"workspace_dir": str(resolved)})
+        resolved = absolute_path(str(user_specified_dir))
+        if persist:
+            update_config({"workspace_dir": str(resolved)})
         return {
             "dir": str(resolved),
             "source": "user_specified",
-            "persisted": True,
+            "persisted": persist,
         }
 
     cfg = read_config()
     cfg_ws = cfg.get("workspace_dir")
     if cfg_ws and isinstance(cfg_ws, str) and cfg_ws.strip():
-        resolved = Path(cfg_ws.strip()).resolve()
+        resolved = absolute_path(cfg_ws)
         return {
             "dir": str(resolved),
             "source": "config",
@@ -146,12 +152,11 @@ def format_project_folder_name(topic: str, project_date: Optional[datetime.date]
 
     date_prefix = project_date.strftime("%Y-%m-%d")
     clean_topic = (topic or "未命名视频").strip()
-    clean_topic = Path(clean_topic).name  # prevent path traversal
 
-    # Replace forbidden path characters with '-'
+    # Replace forbidden path characters with '-'; no separator left means no path traversal
     clean_topic = re.sub(r'[\\/:*?"<>|]+', "-", clean_topic)
     clean_topic = re.sub(r"\s+", "-", clean_topic)
-    clean_topic = clean_topic.strip("-")
+    clean_topic = clean_topic.strip("-. ")
 
     if not clean_topic:
         clean_topic = "未命名视频"
@@ -167,9 +172,10 @@ def resolve_project_dir(
     topic: str,
     user_specified_dir: Optional[str] = None,
     project_date: Optional[datetime.date] = None,
+    persist: bool = True,
 ) -> Dict[str, Any]:
     """Resolves standard video project directory under effective workspace."""
-    ws = resolve_workspace_dir(user_specified_dir)
+    ws = resolve_workspace_dir(user_specified_dir, persist)
     folder_name = format_project_folder_name(topic, project_date)
     project_path = Path(ws["dir"]) / folder_name
 
@@ -250,7 +256,7 @@ def init_project_dir(
 
 ---
 
-## 三、 提示词工程 (MiniMax-H3 / 下游引擎)
+## 三、 提示词工程 (下游引擎)
 ```text
 (待生成或填入提示词公式)
 ```
@@ -265,33 +271,33 @@ def init_project_dir(
 
 - **创建时间**：{now_str}
 - **归档路径**：`{project_path}`
-- **选用下游项目**：待指定 (MoneyPrinterTurbo / OpenMontage / hypit / MiniMax-H3 / video-shotcraft 等)
+- **选用下游项目**：待指定 (MoneyPrinterTurbo / OpenMontage / hypit / lemo-opuscar / xilo-opus-video / dashi-animationstyle / huashu-art-motion / video-shotcraft)
 - **音频来源**：VoiceStudio omnivoice / 用户录音 / 下游TTS
-- **字幕处理**：已应用 VoiceStudio 单行独立重排算法（单行 $\\le 16$ 字，院线白字黑边）
+- **字幕处理**：待处理（下游已烧录字幕 / subtitle_engine 重排压制 / 不需要字幕）
 
 ---
 
 ## 平台分发建议 (Bilibili / 社交平台)
 - **首选发布平台**：哔哩哔哩 (Bilibili) 优先，联动 `leo-lantern` 自动发布
 - **去 AI 标签原生标题**：《{topic}》
-- **极简一句话悬念简介**：（待提炼，$\\le 50$ 字符）
+- **极简一句话悬念简介**：（待提炼，≤ 50 字符）
 - **建议发布排期**：次日 16:30（黄金高峰时段）
 - **平台合规标签**：声明为自制，规范勾选「含AI生成内容」
 
 ---
 
 ## 交付文件清单
-- [ ] 成片/原始版/{res['folder_name']}_原始成片.mp4
-- [ ] 成片/发布版/{res['folder_name']}_带字幕成片.mp4
+- [ ] 成片/原始版/{res['folder_name']}.mp4
+- [ ] 成片/发布版/{res['folder_name']}_with_subtitles.mp4
 - [ ] 成片/发布版/{res['folder_name']}.srt
-- [ ] 成片/发布版/封面.png
+- [ ] 成片/发布版/封面.png（可选：下游或用户提供）
 """
         record_file.write_text(record_content, encoding="utf-8")
 
     return res
 
 
-def main():
+def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="leo-video-router workspace and config manager")
     subparsers = parser.add_subparsers(dest="subcommand", help="Subcommand to execute")
 
@@ -308,45 +314,50 @@ def main():
     p_init.add_argument("--workspace", default=None, help="Explicit workspace directory override")
 
     # resolve
-    p_resolve = subparsers.add_parser("resolve", help="Resolve project directory paths without creating files")
+    p_resolve = subparsers.add_parser("resolve", help="Resolve project directory paths without writing anything")
     p_resolve.add_argument("topic", help="Video topic / project title")
     p_resolve.add_argument("--workspace", default=None, help="Explicit workspace directory override")
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
-    if args.subcommand == "status":
-        cfg = read_config()
-        cfg_path = get_config_path()
-        ws = resolve_workspace_dir()
-        print(json.dumps({
-            "config_path": str(cfg_path),
-            "config_exists": cfg_path.exists(),
-            "config": cfg,
-            "effective_workspace": ws["dir"],
-            "workspace_source": ws["source"],
-            "default_fallback": str(get_default_output_dir()),
-        }, ensure_ascii=False, indent=2))
-        return
+    try:
+        if args.subcommand == "status":
+            cfg = read_config()
+            cfg_path = get_config_path()
+            ws = resolve_workspace_dir()
+            print(json.dumps({
+                "config_path": str(cfg_path),
+                "config_exists": cfg_path.exists(),
+                "config": cfg,
+                "effective_workspace": ws["dir"],
+                "workspace_source": ws["source"],
+                "default_fallback": str(get_default_output_dir()),
+            }, ensure_ascii=False, indent=2))
+            return 0
 
-    if args.subcommand == "set-workspace":
-        resolved = Path(args.dir).resolve()
-        payload = update_config({"workspace_dir": str(resolved)})
-        print(f"✅ 工作区目录已更新并持久化记忆: {resolved}")
-        print(f"配置文件: {get_config_path()}")
-        return
+        if args.subcommand == "set-workspace":
+            resolved = absolute_path(args.dir)
+            update_config({"workspace_dir": str(resolved)})
+            print(f"✅ 工作区目录已更新并持久化记忆: {resolved}")
+            print(f"配置文件: {get_config_path()}")
+            return 0
 
-    if args.subcommand == "init":
-        res = init_project_dir(args.topic, user_specified_dir=args.workspace)
-        print(json.dumps(res, ensure_ascii=False, indent=2))
-        return
+        if args.subcommand == "init":
+            res = init_project_dir(args.topic, user_specified_dir=args.workspace)
+            print(json.dumps(res, ensure_ascii=False, indent=2))
+            return 0
 
-    if args.subcommand == "resolve":
-        res = resolve_project_dir(args.topic, user_specified_dir=args.workspace)
-        print(json.dumps(res, ensure_ascii=False, indent=2))
-        return
+        if args.subcommand == "resolve":
+            res = resolve_project_dir(args.topic, user_specified_dir=args.workspace, persist=False)
+            print(json.dumps(res, ensure_ascii=False, indent=2))
+            return 0
+    except ConfigError as e:
+        print(json.dumps({"error": str(e)}, ensure_ascii=False))
+        return 3
 
     parser.print_help()
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

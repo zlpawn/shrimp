@@ -6,6 +6,7 @@ from unittest import mock
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import registry   # noqa: E402
+import subtitle_engine  # noqa: E402
 import workspace  # noqa: E402
 
 
@@ -133,18 +134,69 @@ class RegistryTest(Base):
 class WorkspaceTest(Base):
 
     def test_config_paths(self):
-        self.assertEqual(workspace.get_config_path(), self.data / "config.json")
-        self.assertEqual(workspace.get_default_output_dir(), self.data / "output")
+        self.assertEqual(workspace.get_config_path(), self.data.resolve() / "config.json")  # macOS: /var -> /private/var
+        self.assertEqual(workspace.get_default_output_dir(), self.data.resolve() / "output")
 
     def test_read_and_update_config(self):
         cfg = workspace.read_config()
         self.assertEqual(cfg["workspace_dir"], "")
-        self.assertEqual(cfg["default_platform"], "bilibili")
+        self.assertNotIn("default_platform", cfg)  # nothing reads it
+        self.assertNotIn("default_audio_source", cfg)
 
         workspace.update_config({"workspace_dir": str(self.tmp / "custom_ws")})
         cfg2 = workspace.read_config()
-        self.assertEqual(cfg2["workspace_dir"], str((self.tmp / "custom_ws").resolve()))
+        self.assertEqual(cfg2["workspace_dir"], str(self.tmp / "custom_ws"))
         self.assertIsNotNone(cfg2["updated_at"])
+
+    def test_tilde_expands_to_home(self):
+        res = workspace.resolve_workspace_dir("~/Videos")
+        self.assertEqual(res["dir"], str((self.home / "Videos").resolve()))
+
+    def test_corrupt_config_is_reported_not_overwritten(self):
+        touch(self.data / "config.json", "{broken")
+        with self.assertRaises(workspace.ConfigError):
+            workspace.update_config({"workspace_dir": "x"})
+        self.assertEqual((self.data / "config.json").read_text(encoding="utf-8"), "{broken")
+
+    def test_cli_corrupt_config_exits_3(self):
+        touch(self.data / "config.json", "[]")
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            self.assertEqual(workspace.main(["status"]), 3)
+        self.assertIn("error", json.loads(buf.getvalue()))
+
+    def test_cli_resolve_does_not_persist(self):
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            self.assertEqual(workspace.main(["resolve", "demo", "--workspace", str(self.tmp / "other")]), 0)
+        self.assertFalse((self.data / "config.json").exists())
+        self.assertFalse(json.loads(buf.getvalue())["persisted"])
+
+    def test_cli_init_persists(self):
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(workspace.main(["init", "demo", "--workspace", str(self.tmp / "other")]), 0)
+        self.assertEqual(workspace.read_config()["workspace_dir"], str((self.tmp / "other").resolve()))
+
+    def test_topic_with_slash_keeps_every_part(self):
+        name = workspace.format_project_folder_name("AI/机器人 评测", date(2026, 11, 5))
+        self.assertEqual(name, "2026-11-05-AI-机器人-评测")
+
+    def test_topic_cannot_escape_workspace(self):
+        for topic in ("../../etc", "..", "2026-01-01/../..", "a\\..\\b"):
+            name = workspace.format_project_folder_name(topic, date(2026, 11, 5))
+            self.assertNotIn("/", name, topic)
+            self.assertNotIn("\\", name, topic)
+            self.assertNotIn(name, ("..", "."), topic)
+
+    def test_init_records_only_what_has_happened(self):
+        res = workspace.init_project_dir("短片", str(self.tmp / "p"), date(2026, 11, 5))
+        p = Path(res["project_path"])
+        record = (p / "交付记录.md").read_text(encoding="utf-8")
+        script = (p / "脚本.md").read_text(encoding="utf-8")
+        self.assertNotIn("已应用", record)  # subtitles have not run yet
+        self.assertNotIn("MiniMax", record + script)  # Router does not pick engines
+        self.assertNotIn("$", record)  # LaTeX does not render in plain markdown
+        self.assertIn("2026-11-05-短片_with_subtitles.mp4", record)  # what subtitle_engine writes
 
     def test_resolve_workspace_cascade(self):
         # 1. default fallback
@@ -194,6 +246,159 @@ class WorkspaceTest(Base):
         record_text = (p / "交付记录.md").read_text(encoding="utf-8")
         self.assertIn("《测试短片》视频交付记录", record_text)
         self.assertIn("哔哩哔哩 (Bilibili)", record_text)
+
+
+class SubtitleReflowTest(unittest.TestCase):
+    def texts(self, text, **kw):
+        cues = subtitle_engine.reflow_segments_single_line([{"start": 0, "end": 3, "text": text}], **kw)
+        return [c["text"] for c in cues]
+
+    def test_min_duration_survives_overlap_removal(self):
+        cues = subtitle_engine.reflow_segments_single_line(
+            [{"start": 0, "end": 1.6, "text": "今天我们来聊一聊，人工智能如何改变，每个普通人的生活方式。"}])
+        self.assertEqual(len(cues), 3)
+        for c in cues:
+            self.assertGreaterEqual(c["end"] - c["start"], 0.8 - 1e-9, c)
+        for a, b in zip(cues, cues[1:]):
+            self.assertLessEqual(a["end"], b["start"] + 1e-9)
+
+    def test_drift_recovers_after_a_pause(self):
+        cues = subtitle_engine.reflow_segments_single_line([
+            {"start": 0, "end": 1.0, "text": "第一句，第二句，第三句"},
+            {"start": 10, "end": 12, "text": "停顿之后"}])
+        self.assertEqual(cues[-1]["start"], 10)
+
+    def test_leading_punctuation_is_dropped(self):
+        self.assertEqual(self.texts("，你好，世界"), ["你好", "世界"])
+
+    def test_mechanical_trailing_punctuation_is_dropped(self):
+        self.assertEqual(self.texts("你好世界。真的吗？太好了！！"), ["你好世界", "真的吗？", "太好了！"])
+
+    def test_punctuation_only_gives_no_cue(self):
+        self.assertEqual(self.texts("，。！"), [])
+
+    def test_latin_words_are_not_cut(self):
+        text = "Artificial intelligence changes everything for everyone"
+        lines = self.texts(text)
+        self.assertEqual(" ".join(lines), text)
+
+    def test_ascii_comma_inside_number_is_kept(self):
+        self.assertEqual(self.texts("价格是1,000元"), ["价格是1,000元"])
+
+    def test_every_line_fits_and_split_is_even(self):
+        lines = self.texts("字" * 17)
+        self.assertEqual([len(s) for s in lines], [9, 8])
+        for s in self.texts("字" * 50):
+            self.assertLessEqual(len(s), 16)
+
+    def test_overlong_latin_token_is_hard_cut(self):
+        for s in self.texts("x" * 100):
+            self.assertLessEqual(subtitle_engine.text_width(s), 16)
+
+    def test_never_multiline(self):
+        for s in self.texts("第一行\n第二行\r\n第三行"):
+            self.assertNotIn("\n", s)
+            self.assertNotIn("\r", s)
+
+
+class SubtitleEngineTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
+
+    def test_burn_flags(self):
+        p = subtitle_engine.build_parser()
+        self.assertTrue(p.parse_args(["v.mp4"]).burn)
+        self.assertTrue(p.parse_args(["v.mp4", "--burn"]).burn)
+        self.assertFalse(p.parse_args(["v.mp4", "--no-burn"]).burn)
+
+    def test_failure_exits_nonzero(self):
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(subtitle_engine.main([str(self.tmp / "missing.mp4")]), 1)
+
+    def test_text_only_transcript_uses_real_duration(self):
+        segs = subtitle_engine.segments_from_transcript({"text": "全文"}, 42.0)
+        self.assertEqual(segs, [{"start": 0.0, "end": 42.0, "text": "全文"}])
+
+    def test_default_font_follows_platform(self):
+        self.assertEqual(subtitle_engine.default_font("darwin"), "PingFang SC")
+        self.assertEqual(subtitle_engine.default_font("win32"), "Microsoft YaHei")
+
+    def test_font_is_standard_size_on_landscape(self):
+        self.assertIn("FontSize=20,", subtitle_engine.subtitle_style(1920, 1080, "F"))
+
+    def test_font_shrinks_so_a_full_line_fits_vertical_video(self):
+        style = dict(kv.split("=") for kv in subtitle_engine.subtitle_style(1080, 1920, "F", max_chars=16).split(","))
+        px = float(style["FontSize"]) * 1920 / 288  # SRT is converted to ASS with PlayResY=288
+        line = px * 0.72 * 16  # measured: a PingFang SC glyph renders about 0.72 of the nominal size
+        self.assertLessEqual(line, 1080 * 0.9)
+        self.assertGreaterEqual(line, 1080 * 0.75)  # as large as fits; phones need readable text
+
+    def test_missing_libass_fails_before_transcribing(self):
+        video = self.tmp / "v.mp4"
+        touch(video)
+        with mock.patch.object(subtitle_engine, "has_subtitles_filter", return_value=False), \
+                mock.patch.object(subtitle_engine, "check_voicestudio_health") as health:
+            res = subtitle_engine.process_video_subtitles(str(video))
+        self.assertFalse(res["ok"])
+        self.assertEqual(res["error_type"], "FFMPEG_NO_SUBTITLES_FILTER")
+        health.assert_not_called()
+
+    def test_no_burn_does_not_need_libass(self):
+        video = self.tmp / "v.mp4"
+        touch(video)
+        with mock.patch.object(subtitle_engine, "has_subtitles_filter", return_value=False), \
+                mock.patch.object(subtitle_engine, "check_voicestudio_health", return_value=(False, "down")):
+            res = subtitle_engine.process_video_subtitles(str(video), burn=False)
+        self.assertEqual(res["error_type"], "VOICESTUDIO_NOT_RUNNING")
+
+    def test_health_check_retries_while_app_starts(self):
+        import urllib.error
+        ok = mock.MagicMock(status=200)
+        ok.__enter__.return_value = ok
+        ok.read.return_value = b'{"version": "1"}'
+        with mock.patch("urllib.request.urlopen", side_effect=[urllib.error.URLError("refused"), ok]), \
+                mock.patch.object(subtitle_engine.time, "sleep"):
+            good, _ = subtitle_engine.check_voicestudio_health("http://x", wait_seconds=30)
+        self.assertTrue(good)
+
+    def test_health_check_gives_up_with_start_hint(self):
+        import urllib.error
+        with mock.patch("urllib.request.urlopen", side_effect=urllib.error.URLError("refused")), \
+                mock.patch.object(subtitle_engine.time, "sleep"):
+            good, msg = subtitle_engine.check_voicestudio_health("http://x", wait_seconds=10)
+        self.assertFalse(good)
+        self.assertIn("请先启动 VoiceStudio", msg)
+
+    def test_health_http_error_is_not_called_not_running(self):
+        import urllib.error
+        err = urllib.error.HTTPError("http://x", 500, "boom", None, None)
+        with mock.patch("urllib.request.urlopen", side_effect=err), \
+                mock.patch.object(subtitle_engine.time, "sleep"):
+            good, msg = subtitle_engine.check_voicestudio_health("http://x", wait_seconds=0)
+        self.assertFalse(good)
+        self.assertIn("500", msg)
+        self.assertNotIn("未运行", msg)
+
+    @unittest.skipUnless(subtitle_engine.has_subtitles_filter(), "ffmpeg has no subtitles filter")
+    def test_burn_handles_filter_syntax_in_file_names(self):
+        import subprocess
+        video = self.tmp / "it's, a [test].mp4"
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i", "color=c=gray:s=320x240:d=1",
+                        "-c:v", "libx264", str(video)], check=True)
+        srt = self.tmp / "it's, a [test].srt"
+        touch(srt, "1\n00:00:00,000 --> 00:00:01,000\n你好\n")
+        out = self.tmp / "out.mp4"
+        good, err = subtitle_engine.burn_subtitles_to_video(video, srt, out)
+        self.assertTrue(good, err)
+        self.assertTrue(out.exists())
+
+    def test_burn_failure_reports_ffmpeg_error(self):
+        srt = self.tmp / "s.srt"
+        touch(srt, "")
+        good, err = subtitle_engine.burn_subtitles_to_video(self.tmp / "missing.mp4", srt, self.tmp / "o.mp4")
+        self.assertFalse(good)
+        self.assertTrue(err)
 
 
 class CliTest(Base):
@@ -330,6 +535,29 @@ class DocsTest(unittest.TestCase):
                   "scripts/registry.py locate", "entry_dir", "不选择、不调用任何底层生成引擎"]:
             self.assertIn(s, text, s)
         self.assertLess(len(text.splitlines()), 200, "keep SKILL.md lean; details live in references/")
+
+    def test_documented_subtitle_flags_exist(self):
+        import re
+        known = {o for a in subtitle_engine.build_parser()._actions for o in a.option_strings}
+        for rel in ("SKILL.md", "references/subtitle-standard.md"):
+            for line in self.read(rel).split("subtitle_engine.py")[1:]:
+                cmd = line.split("```")[0].split("。")[0]
+                for flag in re.findall(r"(?<![\w-])--[a-z][a-z-]+", cmd):
+                    self.assertIn(flag, known, f"{rel}: {flag}")
+
+    def test_step7_skips_video_with_burned_subtitles(self):
+        self.assertIn("已烧录", self.read("SKILL.md"))
+        self.assertIn("已烧录", self.read("references/subtitle-standard.md"))
+
+    def test_subtitle_standard_documents_libass_install(self):
+        text = self.read("references/subtitle-standard.md")
+        for s in ["libass", "ffmpeg-full", "FFMPEG_NO_SUBTITLES_FILTER"]:
+            self.assertIn(s, text, s)
+
+    def test_readme_lists_runtime_data_and_subtitles(self):
+        text = self.read("README.md")
+        for s in ["config.json", "style-preferences.md", "subtitle_engine.py"]:
+            self.assertIn(s, text, s)
 
     def test_relative_links_resolve(self):
         import re

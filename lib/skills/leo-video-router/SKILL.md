@@ -1,6 +1,6 @@
 ---
 name: leo-video-router
-description: Use when the user wants to make a video (短视频、宣传片、讲解动画、口播动画、风格短片、AI 人物出镜、素材剪辑、批量出片) or asks what video scenes are supported. Routes the request by scene to the best open-source project or skill (MoneyPrinterTurbo, OpenMontage, hypit, lemo-opuscar, xilo-opus-video, dashi-animationstyle, huashu-art-motion, video-shotcraft), detects whether it is installed, guides user-approved installation, manages output paths with smart persistence (~/.shrimp/skills/leo-video-router/config.json), prefers local omnivoice narration when no recording or paid TTS is available, and falls back to any available video-generation skill.
+description: Use when the user wants to make a video (短视频、宣传片、讲解动画、口播动画、风格短片、AI 人物出镜、素材剪辑、批量出片) or asks what video scenes are supported. Routes the request by scene to the best open-source project or skill (MoneyPrinterTurbo, OpenMontage, hypit, lemo-opuscar, xilo-opus-video, dashi-animationstyle, huashu-art-motion, video-shotcraft), detects whether it is installed, guides user-approved installation, manages output paths with smart persistence (~/.shrimp/skills/leo-video-router/config.json), prefers local omnivoice narration when no recording or paid TTS is available, adds single-line subtitles to finished videos that have none, and falls back to any available video-generation skill.
 ---
 
 # Leo Video Router（视频场景与调度中枢）
@@ -12,7 +12,7 @@ description: Use when the user wants to make a video (短视频、宣传片、�
 - 按场景把需求交给 8 个下游项目之一，下游怎么执行由它自己的入口文档决定。
 - **输出目录记忆与智能持久化（Smart Persistence）**：参考 `leo-xhs-router` 标准，配置保存在 `~/.shrimp/skills/leo-video-router/config.json`；默认输出到 `output/`；一旦用户指定工作区（如 `D:\素材\douyin`），自动持久化记住并复用；统一落盘至 `YYYY-MM-DD-视频主题/` 标准工程。
 - Router **不选择、不调用任何底层生成引擎**：模型与内部 TTS 由下游决定。音频建议按 Step 5 优先用本机 omnivoice 生成再交接。
-- 含对白成片按 [references/subtitle-standard.md](references/subtitle-standard.md) 执行单行独立重排（$\le 16$ 字，院线黑体白字黑边），压制并输出至 `成片/发布版/`。
+- 含对白且未烧录字幕的成片，按 [references/subtitle-standard.md](references/subtitle-standard.md) 执行单行独立重排（≤ 16 字，院线黑体白字黑边），压制并输出至 `成片/发布版/`。
 - 本 skill 独立可用，知识均在 `references/` 与 `scripts/`。命令写 `python3`，Windows 换成 `python`。
 
 ---
@@ -23,7 +23,7 @@ description: Use when the user wants to make a video (短视频、宣传片、�
 
 > [!IMPORTANT]
 > **Step 0：前置读取创作者偏好与工作区（Preferences & Workspace Preflight）**
-> 1. 读取 `~/.shrimp/skills/leo-video-router/style-preferences.md`（若存在）：提取全局分发偏好（B站首选、去AI标签片名、极简一句话悬念简介、16:30定时排期）并按题材激活对应风格预设（如悬疑短剧 `preset: suspense-short-drama`）。
+> 1. 读取 `~/.shrimp/skills/leo-video-router/style-preferences.md`（创作者手写的自由格式 Markdown，Router 不生成；不存在就跳过，不要假设任何偏好）：提取全局分发偏好（如首选平台、片名与简介风格、发布排期）并按题材激活对应风格预设（如悬疑短剧 `preset: suspense-short-drama`）。
 > 2. 读取 `~/.shrimp/skills/leo-video-router/config.json` 解析有效工作区（三级级联：用户本次指定 > 历史记录 > 默认兜底）。
 
 ```mermaid
@@ -40,9 +40,9 @@ flowchart TD
     J -- "拒绝/直接出片" --> F["兜底 (fallback)"] --> H
     H --> Init["初始化标准工程目录 (workspace.py init)"]
     Init --> L["Step 6: 交接给下游项目执行"]
-    L --> S{"含对白且需字幕？"}
+    L --> S{"含对白且未烧录字幕？"}
     S -- "是" --> N["字幕重排与压制 (subtitle_engine)"] --> M["Step 7: 交付成片与归档"]
-    S -- "否" --> M
+    S -- "否（无对白/下游已烧录）" --> M
 ```
 
 ### Step 1：场景导航
@@ -61,7 +61,7 @@ python3 <本 skill 目录>/scripts/registry.py locate <项目名>
 按 [references/install-and-registry.md](references/install-and-registry.md) 展示卡片。**只在用户明确同意后**安装；源码类先问目录（默认 `~/.shrimp/skills/<项目名>`）；装好后 `registry.py register` 登记再重跑 Step 3。拒绝安装按 [references/fallback.md](references/fallback.md) 兜底。
 
 ### Step 5：音频决策
-需旁白时按 [references/audio-omnivoice.md](references/audio-omnivoice.md) 顺序：用户录音 → 下游商业 TTS → 本机 omnivoice（带重试检查）→ 下游免费 TTS。音画绑定镜头不替换音频。
+需旁白时按 [references/audio-omnivoice.md](references/audio-omnivoice.md) 顺序：用户录音 → 下游商业 TTS → 本机 omnivoice（带重试检查）→ 下游免费 TTS。音画绑定镜头不替换音频。这一步只做决定，配音在 Step 6 建好工程目录后生成。
 
 ### Step 6：初始化工程目录与交接
 1. 先初始化标准目录：`python3 <本 skill 目录>/scripts/workspace.py init "<视频主题>"`。
@@ -69,9 +69,10 @@ python3 <本 skill 目录>/scripts/registry.py locate <项目名>
 3. 读 `references/projects/<项目名>.md` 与项目自己的入口文档（`locate` 输出里的 `entry`），交接素材与音频执行。直出原始成片放入 `成片/原始版/`。Router 不干预下游引擎生成。
 
 ### Step 7：交付成片与字幕后处理
-1. **字幕与压制**：含对白视频调用 `python3 <本 skill 目录>/scripts/subtitle_engine.py "<成片路径>" --burn`。自动将重排单行字幕（$\le 16$ 字）与压制成片落盘到 `成片/发布版/`。
-2. **交付记录**：更新 `<工程目录>/交付记录.md`（记录所用项目、音频来源、字幕统计与 B 站排期策略）。
-3. **交付成片**：向创作者反馈带字幕成片绝对路径、字幕路径、封面图及音频来源。
+1. **字幕判断**：先确认成片是否已烧录字幕（看下游报告或抽帧）。多个下游默认或可选烧录字幕，已烧录就不再压制，否则会叠成两层。
+2. **字幕与压制**：含对白且未烧录字幕时调用 `python3 <本 skill 目录>/scripts/subtitle_engine.py "<成片路径>" --burn`。自动将重排单行字幕（≤ 16 字）与压制成片落盘到 `成片/发布版/`。退出码 1 表示失败：把错误告诉创作者，不要交付无字幕成片冒充完成（处理方法见 [references/subtitle-standard.md](references/subtitle-standard.md)）。
+3. **交付记录**：更新 `<工程目录>/交付记录.md`（记录所用项目、音频来源、字幕处理方式与发布排期策略）。
+4. **交付成片**：向创作者反馈成片绝对路径、字幕路径、封面图（如有）及音频来源。
 
 ---
 
@@ -91,7 +92,7 @@ python3 <本 skill 目录>/scripts/registry.py locate <项目名>
     ├── 音频/                      # 旁白.wav (omnivoice/录音) 与音效/BGM
     ├── 素材/                      # 过程素材、参考图、分镜切片或下游工程文件 (可选)
     └── 成片/
-        ├── 发布版/                 # 最终成片 (带字幕版.mp4、.srt、封面.png)
+        ├── 发布版/                 # 最终成片 (<原片名>_with_subtitles.mp4、<原片名>.srt、封面.png 可选)
         └── 原始版/                 # 下游直出的无字幕/生肉成片 (可选)
 ```
 

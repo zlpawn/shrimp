@@ -11,7 +11,9 @@
 3. **JIT 安装与目录记忆**：探测项目是否已在本地；未安装时展示仓库和安装命令，用户同意后逐个安装，并把目录登记到 registry，换 agent、重装 skill 都不丢。
 4. **omnivoice 优先**：没有录音、也没配商业 TTS 时，优先用本机 omnivoice（VoiceStudio）生成配音，再交给下游。
 5. **兜底**：没有命中任何场景或用户拒绝安装时，把需求整理成通用视频提示词，交给环境里已有的视频生成 skill。
-6. **不绑定 agent**：所有接入知识都在 skill 自己的 `references/` 和 `scripts/` 里，Claude、Codex、Gemini 等都能直接使用。
+6. **工程归档**：`scripts/workspace.py` 记住工作区，并按 `YYYY-MM-DD-视频主题/` 建标准工程目录。
+7. **字幕保底**：成片含对白且未烧录字幕时，`scripts/subtitle_engine.py` 用本机 VoiceStudio 转写，重排成单行字幕并压制，标准见 [references/subtitle-standard.md](references/subtitle-standard.md)。
+8. **不绑定 agent**：所有接入知识都在 skill 自己的 `references/` 和 `scripts/` 里，Claude、Codex、Gemini 等都能直接使用。
 
 ---
 
@@ -53,13 +55,18 @@ ln -sfn ~/.agents/skills/leo-video-router ~/.gemini/config/skills/leo-video-rout
 ln -sfn ~/.agents/skills/leo-video-router ~/.codex/skills/leo-video-router
 ```
 
-需要 Python 3（探测与登记脚本 `scripts/registry.py` 只用标准库）。
+需要 Python 3（`scripts/` 下的脚本只用标准库）。字幕压制还需要带 libass 的 ffmpeg，以及本机运行 VoiceStudio；macOS 的 Homebrew 标准版不带 libass，安装方法见 [references/subtitle-standard.md](references/subtitle-standard.md)。
+
+更新 `lib/skills/leo-video-router` 后要重新执行上面的复制命令，中央技能库不会自动同步。
 
 ---
 
 ## 🗂️ 运行期数据
 
 - `~/.shrimp/skills/leo-video-router/registry.json`：已登记的下游项目目录，不在 skill 目录内，换 agent、重装 skill 都不丢。
+- `~/.shrimp/skills/leo-video-router/config.json`：记住的工作区，首次指定工作区时生成。
+- `~/.shrimp/skills/leo-video-router/style-preferences.md`：可选的创作者偏好，自由格式 Markdown，由您手写，Router 只读。
+- `~/.shrimp/skills/leo-video-router/output/`：没有指定工作区时的默认输出目录。
 - `~/.shrimp/skills/<项目名>`：源码类下游项目（如 OpenMontage）的默认下载目录；下载前会先问您要不要指定其他目录。
 
 ---

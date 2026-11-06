@@ -41,7 +41,8 @@
 - 先让用户二选一：
   - **omnivoice 配音**（推荐，音质更好）：agent 写文案，omnivoice 生成配音；
   - **MPT 自带 Edge TTS**：快，不需要 whisper。
-- 选 omnivoice 前先说明代价：自定义音频会跳过 TTS，要从这段音频出字幕，须在 `<root>/config.toml` 的 `[app]` 段设 `subtitle_provider = "whisper"`（默认 `"edge"`）。这会让 MPT 下载并运行 whisper `large-v3`（`config.example.toml` 的 `[whisper]` 段，数 GB，默认 CPU），且设置会保留到以后每次 MPT 运行；改用户 config.toml 前先告知，用完问用户要不要改回 `"edge"`。
+- 字幕默认由 MPT 烧录，Router 的 Step 7 不再重复压制。不想下载 whisper 时，可加 `--no-subtitle-enabled` 关掉 MPT 字幕，由 Step 7 用 VoiceStudio 转写并压制。
+- 选 omnivoice 且要 MPT 自己出字幕时，先说明代价：自定义音频会跳过 TTS，要从这段音频出字幕，须在 `<root>/config.toml` 的 `[app]` 段设 `subtitle_provider = "whisper"`（默认 `"edge"`）。这会让 MPT 下载并运行 whisper `large-v3`（`config.example.toml` 的 `[whisper]` 段，数 GB，默认 CPU），且设置会保留到以后每次 MPT 运行；改用户 config.toml 前先告知，用完问用户要不要改回 `"edge"`。
 - 首次运行（`<root>` 还不存在）：不要先建 `<root>/config.toml`，否则 helper 会报「exists but is not a valid project」拒绝运行（`mpt_agent.py` 的 `ensure_project`）。这是一次下载源码：先问用户要不要换目录（默认用上面 `--root` 规则得出的目录），经用户同意后 `git clone https://github.com/harry0703/MoneyPrinterTurbo.git <root>`（helper 之后会复用它）；用户换了目录就用 `python3 <本 skill 目录>/scripts/registry.py register MoneyPrinterTurbo <root> --source install` 登记（Windows 上用 `python`），以后 `locate` 会按规则第一条找到它。`config.toml` 不存在就从 `config.example.toml` 复制一份，再改 `subtitle_provider`。
 - 交接：文案不要直接写进命令行（引号会断），用生成配音的同一个文本文件：`-- --video-script "$(cat /abs/path/script.txt)" --custom-audio-file /abs/path/narration.wav`。`--custom-audio-file` 必须写绝对路径：helper 以 `<root>` 为工作目录运行 `cli.py`，相对路径按 `<root>` 解析，不是 `entry_dir`。
 - N 条不同的视频要 N 份文案和 N 段配音，每条单独跑一次 helper。`--video-count N` 配一个 `--custom-audio-file` 只会让 N 条视频共用同一段旁白。`cli.py` 的 `--batch-file`（JSONL 每行可带自己的 `video_script` 和 `custom_audio_file`）不能经 helper 传：helper 每次都加 `--task-id`，两者互斥。
