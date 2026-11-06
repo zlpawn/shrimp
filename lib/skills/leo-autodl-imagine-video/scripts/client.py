@@ -18,8 +18,8 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
-from config_manager import load_config, update_credentials, get_config_path, get_default_output_dir
-from remote_engine import AutoDLRemoteEngine
+from config_manager import ConfigError, load_config, update_credentials, get_config_path, get_default_output_dir
+from remote_engine import AutoDLRemoteEngine, DEFAULT_RENDER_TIMEOUT
 
 
 class AutoDLMediaClient:
@@ -66,7 +66,7 @@ class AutoDLMediaClient:
         self.engine = AutoDLRemoteEngine(self.config)
         return self.probe()
 
-    def power_on(self, wait_seconds: int = 45, poll: bool = False, interval: int = 5, max_attempts: int = 180) -> dict:
+    def power_on(self, wait_seconds: int = 45, poll: bool = False, interval: int = 3, max_attempts: int = 300) -> dict:
         """通过 AutoDL 官方 OpenAPI 远程开机实例并自动同步新端口（支持 --poll 自动高频抢卡轮询）"""
         if not self.engine:
             return {"ok": False, "message": "未配置云端连接。"}
@@ -114,13 +114,20 @@ class AutoDLMediaClient:
             return {"ok": False, "message": "未配置云端连接。"}
         return self.engine.fetch_remote_workflow(remote_path=remote_path, save_to=save_to)
 
+    def interrupt_queue(self) -> dict:
+        """中断远端正在跑的任务并清空等待队列"""
+        if not self.engine:
+            return {"ok": False, "message": "未配置云端连接。"}
+        return self.engine.interrupt_queue()
+
     def run_workflow(
         self,
         workflow,
         patches: dict = None,
         reference_images: list = None,
         reference_videos: list = None,
-        output_dir: str = None
+        output_dir: str = None,
+        timeout_seconds: int = DEFAULT_RENDER_TIMEOUT
     ) -> dict:
         """直接执行任意自定义或预设 ComfyUI API 工作流 JSON，支持 patches 动态修改任意节点"""
         target_dir = output_dir or self.output_dir
@@ -131,7 +138,8 @@ class AutoDLMediaClient:
             patches=patches,
             reference_images=reference_images,
             reference_videos=reference_videos,
-            output_dir=target_dir
+            output_dir=target_dir,
+            timeout_seconds=timeout_seconds
         )
 
     def generate_image(
@@ -151,7 +159,8 @@ class AutoDLMediaClient:
         video_vae: str = "minimax_h3_video_vae_fp16.safetensors",
         workflow_template: str = "minimax_h3_image_u33_api.json",
         extra_patches: dict = None,
-        output_dir: str = None
+        output_dir: str = None,
+        timeout_seconds: int = DEFAULT_RENDER_TIMEOUT
     ) -> dict:
         """调用 MiniMax-H3 生成单张高清图、多参考图合拍或电影分镜板"""
         target_dir = output_dir or self.output_dir
@@ -173,7 +182,8 @@ class AutoDLMediaClient:
             video_vae=video_vae,
             workflow_template=workflow_template,
             extra_patches=extra_patches,
-            output_dir=target_dir
+            output_dir=target_dir,
+            timeout_seconds=timeout_seconds
         )
 
     def generate_video(
@@ -194,7 +204,8 @@ class AutoDLMediaClient:
         crf: int = 19,
         workflow_template: str = "minimax_h3_video_1pass_api.json",
         extra_patches: dict = None,
-        output_dir: str = None
+        output_dir: str = None,
+        timeout_seconds: int = DEFAULT_RENDER_TIMEOUT
     ) -> dict:
         """调用 MiniMax-H3 生成音画同步视频（支持文生视频、参考图生视频、电影感高清流切换与节点微调）"""
         target_dir = output_dir or self.output_dir
@@ -217,7 +228,8 @@ class AutoDLMediaClient:
             crf=crf,
             workflow_template=workflow_template,
             extra_patches=extra_patches,
-            output_dir=target_dir
+            output_dir=target_dir,
+            timeout_seconds=timeout_seconds
         )
 
     def export_asset(self, src_file: str, target_path: str, move: bool = True, clean_others: bool = False) -> dict:
@@ -301,16 +313,19 @@ def main():
     parser.add_argument("--probe", action="store_true", help="探测云端实例状态 (GPU + ComfyUI)")
     parser.add_argument("--power-on", action="store_true", help="通过 AutoDL 官方 API 远程开机并同步动态端口")
     parser.add_argument("--poll", action="store_true", help="无库存时自动以高频间隔轮询抢卡，直到成功开机")
-    parser.add_argument("--interval", type=int, default=5, help="抢卡轮询间隔秒数 (默认 5 秒)")
-    parser.add_argument("--max-attempts", type=int, default=180, help="最大轮询次数 (默认 180 次，即 15 分钟)")
+    parser.add_argument("--interval", type=int, default=3, help="抢卡轮询间隔秒数 (默认 3 秒)")
+    parser.add_argument("--max-attempts", type=int, default=300, help="最大轮询次数 (默认 300 次，即 15 分钟)")
     parser.add_argument("--power-off", action="store_true", help="通过 AutoDL 官方 API 远程关机 (必须配合 --confirm)")
     parser.add_argument("--confirm", action="store_true", help="确认已获用户明确同意执行关机")
+    parser.add_argument("--interrupt", action="store_true", help="中断远端正在跑的任务并清空等待队列")
+    parser.add_argument("--timeout", type=int, default=DEFAULT_RENDER_TIMEOUT, help=f"单次渲染时限秒数，超时取消远端任务 (默认 {DEFAULT_RENDER_TIMEOUT})")
+    parser.add_argument("--off-on-fail", action="store_true", help="--image/--video/--run-workflow 失败时自动关机，用于无人值守")
     parser.add_argument("--refresh", action="store_true", help="从 AutoDL 官方 API 刷新最新动态 SSH 端口凭证")
     parser.add_argument("--update-config", action="store_true", help="更新 SSH 主机、密码或 API Token")
     parser.add_argument("--ssh", type=str, help="SSH 登录指令，如 'ssh -p 12345 root@connect.xxx.com'")
     parser.add_argument("--password", type=str, help="云端机器密码")
     parser.add_argument("--token", type=str, help="AutoDL 官方 API Token (JWT)")
-    parser.add_argument("--instance-uuid", type=str, help="实例 UUID，如 'pro-7927c3f34e28'")
+    parser.add_argument("--instance-uuid", type=str, help="实例 UUID，如 'pro-xxxxxxxxxxxx'")
 
     # 2. ComfyUI 节点自省与远端成熟工作流库发现
     parser.add_argument("--inspect-node", type=str, help="查看 ComfyUI 某个节点的完整输入槽位与枚举值，如 'MiniMaxH3ReferenceToVideo'")
@@ -357,7 +372,12 @@ def main():
     parser.add_argument("--json", action="store_true", help="输出纯 JSON 格式供外部 Agent 解析")
 
     args = parser.parse_args()
-    client = AutoDLMediaClient(output_dir=args.output_dir)
+    try:
+        client = AutoDLMediaClient(output_dir=args.output_dir)
+    except ConfigError as e:
+        result = {"ok": False, "error_type": "CONFIG_CORRUPT", "message": str(e)}
+        print(json.dumps(result, ensure_ascii=False, indent=2) if args.json else f"[FAILED] {e}")
+        return
     patches = _parse_patches(args.patch)
     ref_imgs = [p.strip() for p in args.ref_images.split(",") if p.strip()] if args.ref_images else None
     ref_vids = [p.strip() for p in args.ref_videos.split(",") if p.strip()] if args.ref_videos else None
@@ -388,6 +408,8 @@ def main():
         result = client.power_off(confirm=args.confirm)
     elif args.refresh:
         result = client.refresh()
+    elif args.interrupt:
+        result = client.interrupt_queue()
     elif args.inspect_node:
         result = client.inspect_node(node_class=args.inspect_node)
     elif args.list_models:
@@ -402,7 +424,8 @@ def main():
             patches=patches,
             reference_images=ref_imgs,
             reference_videos=ref_vids,
-            output_dir=args.output_dir
+            output_dir=args.output_dir,
+            timeout_seconds=args.timeout
         )
     elif args.video:
         if not args.prompt:
@@ -427,7 +450,8 @@ def main():
                 crf=args.crf,
                 workflow_template=wf_tpl,
                 extra_patches=patches,
-                output_dir=args.output_dir
+                output_dir=args.output_dir,
+                timeout_seconds=args.timeout
             )
     elif args.image:
         if not args.prompt:
@@ -451,10 +475,14 @@ def main():
                 video_vae=args.video_vae or "minimax_h3_video_vae_fp16.safetensors",
                 workflow_template=wf_tpl,
                 extra_patches=patches,
-                output_dir=args.output_dir
+                output_dir=args.output_dir,
+                timeout_seconds=args.timeout
             )
     else:
         result = client.probe()
+
+    if args.off_on_fail and (args.image or args.video or args.run_workflow) and not result.get("ok"):
+        result["power_off"] = client.power_off(confirm=True)
 
     if args.json:
         print(json.dumps(result, ensure_ascii=False, indent=2))

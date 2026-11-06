@@ -6,6 +6,11 @@ from pathlib import Path
 DEFAULT_CONFIG_DIR = Path.home() / ".shrimp" / "skills" / "leo-autodl-imagine-video"
 CONFIG_FILE = DEFAULT_CONFIG_DIR / "config.json"
 DEFAULT_OUTPUT_DIR = DEFAULT_CONFIG_DIR / "outputs"
+NO_WHITESPACE_FIELDS = ("token", "instance_uuid")  # 粘贴时常被折行，这两个值本身不含空白
+
+
+class ConfigError(Exception):
+    """config.json 损坏。不能当成空配置，否则下次保存会把它覆盖掉。"""
 
 
 def get_config_path() -> Path:
@@ -23,11 +28,13 @@ def load_config() -> dict:
     if not cfg_path.exists():
         return {}
     try:
-        with open(cfg_path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception as e:
-        print(f"[ConfigManager] Error reading config: {e}")
-        return {}
+        config = json.loads(cfg_path.read_text(encoding="utf-8"), strict=False)
+    except ValueError as e:
+        raise ConfigError(f"{cfg_path} 不是合法 JSON（{e}），请修好后重试；文件没有被改动。") from e
+    for field in NO_WHITESPACE_FIELDS:
+        if isinstance(config.get(field), str):
+            config[field] = re.sub(r"\s", "", config[field])
+    return config
 
 
 def save_config(config: dict) -> bool:
@@ -43,7 +50,7 @@ def save_config(config: dict) -> bool:
 
 def parse_ssh_command(ssh_cmd: str) -> dict:
     """
-    解析类似 'ssh -p 52742 root@connect.westd.seetacloud.com' 的指令
+    解析类似 'ssh -p 12345 root@connect.example.com' 的指令
     """
     pattern = r"ssh\s+(?:-p\s+(\d+)\s+)?([a-zA-Z0-9_\-]+)@([a-zA-Z0-9.\-]+)(?:\s+-p\s+(\d+))?"
     m = re.search(pattern, ssh_cmd.strip())
@@ -80,9 +87,9 @@ def update_credentials(
     if password:
         config["password"] = password
     if token:
-        config["token"] = token
+        config["token"] = re.sub(r"\s", "", token)
     if instance_uuid:
-        config["instance_uuid"] = instance_uuid
+        config["instance_uuid"] = re.sub(r"\s", "", instance_uuid)
 
     if "remote_port" not in config:
         config["remote_port"] = 6006

@@ -18,9 +18,10 @@ description: "MiniMax-H3 dedicated cloud image & audio-synced video generation s
 >    * 若用户对效果不满意需要调优，或需使用二采超分、武戏、文戏等进阶工作流，Agent 可通过 `--patch` 修改已知节点参数，或选用 `references/workflows/u_series_api/` 下的备用工作流。**任何新改造的工作流必须经真机运行验证通过后，才可沉淀进 `references/workflows/`，严禁凭空捏造未经验证的节点连线。**
 > 2. **开机后的出片节奏与安全关机**：
 >    * **开机后先盘点（几秒钟）**：`--list-remote-workflows` 和 `--list-models all`，和本地 `references/workflows/` 备份比对。远端有本地没有的工作流时告诉用户；换用没验证过的工作流前先征得同意。
->    * **成本优先（默认）**：开机后全自动跑完全部镜头的生成、下载与拼接，中途不停下来确认，避免显卡空等计费。
->    * **效果优先（用户说“效果优先”“先出效果”等时）**：参考图或布局定妆图出完后可以停下来请用户挑选，确认后再生视频。开机前要告诉用户：等待期间也在计费。
+>    * **效果优先（默认）**：参考图或布局定妆图出完后停下来请用户挑选，确认后再生视频。开机前告诉用户：等待期间照常计费；用户想省钱可以选成本优先。
+>    * **成本优先（用户说“省钱”“一口气跑完”“不用确认”等时）**：开机后全自动跑完全部镜头的生成、下载与拼接，中途不停下来确认。
 >    * **中途不私自关机**；**完整视频下载、拼接回本地后立即 `--power-off --confirm` 关机**。
+>    * **任务失败**：默认不自动关机，因为重新抢显卡可能等很久。把错误告诉用户，由用户决定重试还是关机。用户不在场时生成命令加 `--off-on-fail`。
 > 3. **默认输出目录规范（严禁污染工作区代码库）**：
 >    * **默认输出位置**：若用户未显式指定目标输出目录，**所有产物（包括中间分镜、参考图、音频及最终合成完整视频）一律且必须默认存放在 `~/.shrimp/skills/leo-autodl-imagine-video/outputs/`（即 `~/.shrimp/skills/<当前技能名>/outputs/`）**，严禁未经允许直接写入当前工作区根目录、代码目录或污染项目环境。
 >    * **按需显式导出**：仅当用户明确指示导出目标路径时，才使用 `--export <文件名> --to <用户目标路径> --clean-others` 将最终成片复制/移动到用户指定目录。
@@ -56,9 +57,9 @@ description: "MiniMax-H3 dedicated cloud image & audio-synced video generation s
 # <本 skill 目录> 指含本 SKILL.md 的目录，用实际路径替换。uv 按 client.py 头部声明自动安装依赖
 CLI_PATH="<本 skill 目录>/scripts/client.py"
 
-# 1. 探活 / 远程开机（支持高峰期高频抢卡轮询）
+# 1. 探活 / 远程开机（--poll 默认 3 秒一次、共约 15 分钟，--interval / --max-attempts 可调）
 uv run --script "$CLI_PATH" --probe --json
-uv run --script "$CLI_PATH" --power-on --poll --interval 5 --json
+uv run --script "$CLI_PATH" --power-on --poll --json
 
 # 2. 查询云端 MiniMax-H3 模型清单 / 查询任意 ComfyUI 节点 Schema
 uv run --script "$CLI_PATH" --list-models all --json
@@ -87,7 +88,15 @@ uv run --script "$CLI_PATH" --export "MiniMaxH3_Image_00001_.png" --to "<目标�
 
 # 8. 远程关机停止计费（完整视频全部生成完毕后可直接自动执行；若处于生图/多镜中途阶段则须先获用户确认）
 uv run --script "$CLI_PATH" --power-off --confirm --json
+
+# 9. 中断远端正在跑的任务并清空队列（本地进程被杀后远端任务还在跑时用）
+uv run --script "$CLI_PATH" --interrupt --json
 ```
+
+生成命令（`--image` / `--video` / `--run-workflow`）的通用参数：
+* `--timeout <秒>`：单次渲染时限，默认 1800，超时会取消远端任务。
+* `--off-on-fail`：失败时自动关机，用于无人值守。
+* `--ref-images a.png,b.png`：参考图。工作流没有可绑定的节点时，结果里的 `warnings` 会说明；生图模板带参考图的连线**还没有真机验证**，第一次用时要抽查结果是否真的参考了。
 
 **跨平台说明**：
 * **Windows PowerShell**：变量写成 `$CLI_PATH = "<本 skill 目录>/scripts/client.py"`，多行命令的续行符 `\` 换成反引号。

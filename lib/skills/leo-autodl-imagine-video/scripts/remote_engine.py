@@ -23,6 +23,37 @@ ASPECT_RATIO_MAP = {
 }
 
 
+DEFAULT_RENDER_TIMEOUT = 1800
+MEDIA_NODE = "VRGDG_MiniMaxH3ReferenceMediaFromPaths"
+INJECTED_MEDIA_NODE_ID = "9001"
+
+
+def bind_reference_media(wf: dict, remote_imgs: list, remote_vids: list) -> bool:
+    """
+    把参考图/视频绑定到工作流。没有媒体节点、但有 MiniMaxH3ReferenceToVideo 时（如生图模板），
+    按已验证的生视频模板同样的连线补一个。没有可绑定的节点时返回 False。
+    """
+    nodes = [n for n in wf.values() if isinstance(n, dict)]
+    media = [n for n in nodes if n.get("class_type") == MEDIA_NODE]
+    if not media:
+        targets = [n for n in nodes if n.get("class_type") == "MiniMaxH3ReferenceToVideo"]
+        if not targets:
+            return False
+        wf[INJECTED_MEDIA_NODE_ID] = {"class_type": MEDIA_NODE, "inputs": {"image_paths": "[]", "video_references": "[]"}}
+        media = [wf[INJECTED_MEDIA_NODE_ID]]
+        for node in targets:
+            for i in range(9):
+                node["inputs"][f"ref_images.ref_image_{i}"] = [INJECTED_MEDIA_NODE_ID, i]
+            for i in range(3):
+                node["inputs"][f"ref_videos.ref_video_{i}"] = [INJECTED_MEDIA_NODE_ID, 9 + i]
+    for node in media:
+        if remote_imgs:
+            node["inputs"]["image_paths"] = json.dumps(remote_imgs)
+        if remote_vids:
+            node["inputs"]["video_references"] = json.dumps(remote_vids)
+    return True
+
+
 def apply_workflow_patches(wf: dict, patches: dict) -> dict:
     """
     对 ComfyUI API 工作流 JSON 进行动态节点属性覆盖或新增节点。
@@ -155,9 +186,9 @@ class AutoDLRemoteEngine:
         except Exception as e:
             return {"ok": False, "message": f"开机调用异常: {e}"}
 
-    def poll_power_on(self, interval_seconds: int = 5, max_attempts: int = 180, wait_seconds: int = 45) -> dict:
+    def poll_power_on(self, interval_seconds: int = 3, max_attempts: int = 300, wait_seconds: int = 45) -> dict:
         """
-        以指定间隔（默认 5 秒）持续高频轮询向官方 OpenAPI 发起开机请求，直到抢到物理 GPU 库存并成功开机
+        以指定间隔（默认 3 秒）持续高频轮询向官方 OpenAPI 发起开机请求，直到抢到物理 GPU 库存并成功开机
         """
         import time
         if not self.token or not self.instance_uuid:
@@ -267,12 +298,18 @@ class AutoDLRemoteEngine:
         """
         if not self.host or not self.password:
             if self.token and self.instance_uuid:
-                self.refresh_credentials_from_api()
+                refreshed = self.refresh_credentials_from_api()
+                if not refreshed.get("ok"):
+                    return {
+                        "ok": False,
+                        "error_type": "CREDENTIAL_REFRESH_FAILED",
+                        "message": f"用 token 获取实例连接信息失败：{refreshed.get('message')}。请检查 token 和 instance_uuid 是否正确、是否过期。"
+                    }
             if not self.host or not self.password:
                 return {
                     "ok": False,
                     "error_type": "CONFIG_MISSING",
-                    "message": "未配置 AutoDL 实例连接信息。请提供 SSH 登录指令与密码。"
+                    "message": "未配置 AutoDL 连接信息。请配置 token 和 instance_uuid（SSH 地址和密码会自动获取）。"
                 }
 
         client = None
@@ -493,13 +530,43 @@ class AutoDLRemoteEngine:
         try:
             for lf in local_files:
                 p = Path(lf)
-                if p.exists():
-                    remote_target = f"/root/ComfyUI/input/{p.name}"
-                    sftp_up.put(str(p), remote_target)
-                    remote_paths.append(remote_target)
+                remote_target = f"/root/ComfyUI/input/{p.name}"
+                sftp_up.put(str(p), remote_target)
+                remote_paths.append(remote_target)
         finally:
             sftp_up.close()
         return remote_paths
+
+    def _comfy_post(self, client: paramiko.SSHClient, path: str, body: str = "{}") -> None:
+        cmd = f"curl -s -X POST http://127.0.0.1:{self.remote_port}{path} -H 'Content-Type: application/json' -d '{body}'"
+        _, stdout, _ = client.exec_command(cmd, timeout=15)
+        stdout.read()
+
+    def _cancel_prompt(self, client: paramiko.SSHClient, prompt_id: str) -> None:
+        """超时后取消这个任务，否则它留在远端继续占显卡，还会挡住下一个任务。"""
+        try:
+            self._comfy_post(client, "/queue", json.dumps({"delete": [prompt_id]}))
+            self._comfy_post(client, "/interrupt")
+        except Exception:
+            pass  # 连接已断；留给 --interrupt 处理
+
+    def interrupt_queue(self) -> dict:
+        """中断正在跑的任务并清空等待队列（本地进程被杀后，远端任务还会继续跑）"""
+        try:
+            client = self.connect_ssh()
+        except Exception as e:
+            return {"ok": False, "message": f"无法连接实例: {e}"}
+        try:
+            self._comfy_post(client, "/queue", json.dumps({"clear": True}))
+            self._comfy_post(client, "/interrupt")
+            _, stdout, _ = client.exec_command(f"curl -s http://127.0.0.1:{self.remote_port}/queue", timeout=15)
+            queue = json.loads(stdout.read().decode("utf-8", errors="replace") or "{}")
+            running, pending = len(queue.get("queue_running", [])), len(queue.get("queue_pending", []))
+            return {"ok": True, "running": running, "pending": pending, "message": f"已中断并清空队列（运行中 {running}，等待 {pending}）"}
+        except Exception as e:
+            return {"ok": False, "message": f"中断失败: {e}"}
+        finally:
+            client.close()
 
     # ==================== 3. 通用 ComfyUI 工作流构建、微调与执行引擎 ====================
 
@@ -529,7 +596,7 @@ class AutoDLRemoteEngine:
         reference_images: list = None,
         reference_videos: list = None,
         output_dir: str = None,
-        timeout_seconds: int = 360
+        timeout_seconds: int = DEFAULT_RENDER_TIMEOUT
     ) -> dict:
         """
         通用 ComfyUI API 工作流执行器（支持任意自定义或预设 MiniMax-H3 工作流）：
@@ -539,6 +606,10 @@ class AutoDLRemoteEngine:
         4. 提交至 POST http://127.0.0.1:6006/prompt 并轮询 /history/{prompt_id}
         5. 将产出的图片/视频自动回传至暂存目录 ~/.shrimp/skills/leo-autodl-imagine-video/outputs/
         """
+        missing = [f for f in (reference_images or []) + (reference_videos or []) if not Path(f).exists()]
+        if missing:
+            return {"ok": False, "error_type": "REF_FILE_MISSING", "message": f"参考文件不存在: {missing}"}
+
         probe_res = self.probe()
         if not probe_res["ok"]:
             return probe_res
@@ -560,13 +631,10 @@ class AutoDLRemoteEngine:
             remote_imgs = self._upload_media_files(client, reference_images)
             remote_vids = self._upload_media_files(client, reference_videos)
 
-            # 自动注入到工作流中的 VRGDG_MiniMaxH3ReferenceMediaFromPaths 节点
-            for nid, node in wf.items():
-                if isinstance(node, dict) and node.get("class_type") == "VRGDG_MiniMaxH3ReferenceMediaFromPaths":
-                    if remote_imgs:
-                        node["inputs"]["image_paths"] = json.dumps(remote_imgs)
-                    if remote_vids:
-                        node["inputs"]["video_references"] = json.dumps(remote_vids)
+            warnings = []
+            if (remote_imgs or remote_vids) and not bind_reference_media(wf, remote_imgs, remote_vids):
+                uploaded = [Path(f).name for f in (reference_images or []) + (reference_videos or [])]
+                warnings.append(f"工作流没有可自动绑定参考素材的节点，{uploaded} 只上传到了 /root/ComfyUI/input/，要用 --patch 指定给对应节点。")
 
             # 2. 应用动态节点补丁 (Patches)
             if patches:
@@ -600,6 +668,7 @@ except urllib.error.HTTPError as e:
             # 4. 轮询 /history/{prompt_id}（带断线自愈重连）
             start_time = time.time()
             output_filenames = []
+            finished = False
             while time.time() - start_time < timeout_seconds:
                 time.sleep(4.0)
                 history_str = ""
@@ -635,10 +704,19 @@ except urllib.error.HTTPError as e:
                                 for it in nout[media_key]:
                                     if it.get("type", "output") == "output":
                                         output_filenames.append(it["filename"])
+                    finished = True
                     break
 
+            if not finished:
+                self._cancel_prompt(client, prompt_id)
+                return {
+                    "ok": False,
+                    "error_type": "RENDER_TIMEOUT",
+                    "prompt_id": prompt_id,
+                    "message": f"渲染超过 {timeout_seconds} 秒，已取消远端任务。长工作流用 --timeout 加大时限。"
+                }
             if not output_filenames:
-                return {"ok": False, "prompt_id": prompt_id, "message": f"渲染超时或未捕获输出文件 (Prompt ID: {prompt_id})"}
+                return {"ok": False, "error_type": "NO_OUTPUT", "prompt_id": prompt_id, "message": f"工作流已结束，但没有输出文件 (Prompt ID: {prompt_id})"}
 
             # 5. SFTP 下载产物至本地暂存目录（带重连重试）
             target_output_dir.mkdir(parents=True, exist_ok=True)
@@ -664,7 +742,7 @@ except urllib.error.HTTPError as e:
                             raise sftp_e
 
             elapsed = round(time.time() - start_time, 1)
-            return {
+            result = {
                 "ok": True,
                 "prompt_id": prompt_id,
                 "elapsed_seconds": elapsed,
@@ -672,6 +750,9 @@ except urllib.error.HTTPError as e:
                 "output_files": local_paths,
                 "message": f"MiniMax-H3 工作流执行完成 (耗时 {elapsed}s，产物已存入暂存目录 {target_output_dir})"
             }
+            if warnings:
+                result["warnings"] = warnings
+            return result
         except Exception as e:
             return {"ok": False, "message": f"工作流执行异常: {str(e)}"}
         finally:
@@ -696,7 +777,8 @@ except urllib.error.HTTPError as e:
         video_vae: str = "minimax_h3_video_vae_fp16.safetensors",
         workflow_template: str = "minimax_h3_image_u33_api.json",
         extra_patches: dict = None,
-        output_dir: str = None
+        output_dir: str = None,
+        timeout_seconds: int = DEFAULT_RENDER_TIMEOUT
     ) -> dict:
         """
         基于成熟工作流 minimax_h3_image_u33_api.json 执行 MiniMax-H3 生图 / 多图参考编辑 / 宫格分镜生成
@@ -726,7 +808,8 @@ except urllib.error.HTTPError as e:
             workflow=workflow_template,
             patches=patches,
             reference_images=reference_images,
-            output_dir=output_dir
+            output_dir=output_dir,
+            timeout_seconds=timeout_seconds
         )
         if res.get("ok"):
             res.update({
@@ -759,7 +842,8 @@ except urllib.error.HTTPError as e:
         crf: int = 19,
         workflow_template: str = "minimax_h3_video_1pass_api.json",
         extra_patches: dict = None,
-        output_dir: str = None
+        output_dir: str = None,
+        timeout_seconds: int = DEFAULT_RENDER_TIMEOUT
     ) -> dict:
         """
         基于成熟工作流 (默认 minimax_h3_video_1pass_api.json，或高清电影感流 minimax_h3_video_cinematic_lora_api.json)
@@ -794,7 +878,8 @@ except urllib.error.HTTPError as e:
             patches=patches,
             reference_images=reference_images,
             reference_videos=reference_videos,
-            output_dir=output_dir
+            output_dir=output_dir,
+            timeout_seconds=timeout_seconds
         )
         if res.get("ok"):
             res.update({
