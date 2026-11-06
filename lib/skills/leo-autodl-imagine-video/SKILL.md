@@ -52,39 +52,42 @@ description: "MiniMax-H3 dedicated cloud image & audio-synced video generation s
 ## 3. CLI 命令速查
 
 ```bash
-PYTHON_BIN="$HOME/.shrimp/skills/leo-autodl-imagine-video/.venv/Scripts/python.exe"
-# CLI_PATH 取当前 SKILL.md 所在目录下的 scripts/client.py（如 "$HOME/.agents/skills/leo-autodl-imagine-video/scripts/client.py"）
-CLI_PATH="$HOME/.agents/skills/leo-autodl-imagine-video/scripts/client.py"
+# <本 skill 目录> 指含本 SKILL.md 的目录，用实际路径替换。uv 按 client.py 头部声明自动安装依赖
+CLI_PATH="<本 skill 目录>/scripts/client.py"
 
 # 1. 探活 / 远程开机（支持高峰期高频抢卡轮询）
-& $PYTHON_BIN $CLI_PATH --probe --json
-& $PYTHON_BIN $CLI_PATH --power-on --poll --interval 5 --json
+uv run --script "$CLI_PATH" --probe --json
+uv run --script "$CLI_PATH" --power-on --poll --interval 5 --json
 
 # 2. 查询云端 MiniMax-H3 模型清单 / 查询任意 ComfyUI 节点 Schema
-& $PYTHON_BIN $CLI_PATH --list-models all --json
-& $PYTHON_BIN $CLI_PATH --inspect-node MiniMaxH3ReferenceToVideo --json
+uv run --script "$CLI_PATH" --list-models all --json
+uv run --script "$CLI_PATH" --inspect-node MiniMaxH3ReferenceToVideo --json
 
 # 3. 列出或拉取远端预置的成熟工作流原文件 (U00~U43 / VRGDG)
-& $PYTHON_BIN $CLI_PATH --list-remote-workflows --json
-& $PYTHON_BIN $CLI_PATH --fetch-remote-workflow "/root/ComfyUI/custom_nodes/comfyui-vrgamedevgirl/Workflows/UsedForUIDoNotTouch/minimax_audio_driven_builder_latent_upscale_2pass_api.json"
+uv run --script "$CLI_PATH" --list-remote-workflows --json
+uv run --script "$CLI_PATH" --fetch-remote-workflow "/root/ComfyUI/custom_nodes/comfyui-vrgamedevgirl/Workflows/UsedForUIDoNotTouch/minimax_audio_driven_builder_latent_upscale_2pass_api.json"
 
 # 4. 执行已验证的 MiniMax-H3 生图工作流（默认暂存至 ~/.shrimp/skills/leo-autodl-imagine-video/outputs/）
-& $PYTHON_BIN $CLI_PATH --image \
+uv run --script "$CLI_PATH" --image \
   --prompt "A cinematic close-up portrait of a cyberpunk girl in neon rain, glowing blue eyes, 8k photorealistic masterpiece" \
   --width 1280 --height 736 --steps 12 --json
 
 # 5. 执行已验证的 MiniMax-H3 音画同步生视频工作流（支持 --patch 动态调整任意节点字段）
-& $PYTHON_BIN $CLI_PATH --video \
+uv run --script "$CLI_PATH" --video \
   --prompt "A sleek futuristic sports car speeding through neon rain, dynamic tracking shot, 8k cinematic" \
   --duration 3.0 --aspect-ratio "16:9" --steps 10 \
   --patch "174.inputs.reuse_threshold=0.15" --json
 
 # 6. 直接运行任意自定义或拉取转换后的工作流 JSON
-& $PYTHON_BIN $CLI_PATH --run-workflow "path/to/workflow.json" --json
+uv run --script "$CLI_PATH" --run-workflow "path/to/workflow.json" --json
 
 # 7. 将用户选定的最终产物移至指定目录，并清理暂存目录中其余无用草稿
-& $PYTHON_BIN $CLI_PATH --export "MiniMaxH3_Image_00001_.png" --to "D:/my-project/assets/" --clean-others --json
+uv run --script "$CLI_PATH" --export "MiniMaxH3_Image_00001_.png" --to "<目标目录>" --clean-others --json
 
 # 8. 远程关机停止计费（完整视频全部生成完毕后可直接自动执行；若处于生图/多镜中途阶段则须先获用户确认）
-& $PYTHON_BIN $CLI_PATH --power-off --confirm --json
+uv run --script "$CLI_PATH" --power-off --confirm --json
 ```
+
+**跨平台说明**：
+* **Windows PowerShell**：变量写成 `$CLI_PATH = "<本 skill 目录>/scripts/client.py"`，多行命令的续行符 `\` 换成反引号。
+* **没有 uv**：先 `python3 -m pip install paramiko requests`，再把 `uv run --script` 换成 `python3`（Windows 用 `python`）。

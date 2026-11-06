@@ -10,7 +10,7 @@ description: Use when the user wants to make a video (短视频、宣传片、�
 `leo-video-router` 是面向**多场景 AI 视频生产的智能路由器、工程归档管家与交付中枢**。
 
 - 按场景把需求交给 8 个下游项目之一，下游怎么执行由它自己的入口文档决定。
-- **输出目录记忆与智能持久化（Smart Persistence）**：参考 `leo-xhs-router` 标准，配置保存在 `~/.shrimp/skills/leo-video-router/config.json`；默认输出到 `output/`；一旦用户指定工作区（如 `D:\素材\douyin`），自动持久化记住并复用；统一落盘至 `YYYY-MM-DD-视频主题/` 标准工程。
+- **输出目录记忆与智能持久化（Smart Persistence）**：参考 `leo-xhs-router` 标准，配置保存在 `~/.shrimp/skills/leo-video-router/config.json`；默认输出到 `output/`；一旦用户指定工作区，自动持久化记住并复用；统一落盘至 `YYYY-MM-DD-视频主题/` 标准工程。
 - Router **不选择、不调用任何底层生成引擎**：模型与内部 TTS 由下游决定。音频建议按 Step 5 优先用本机 omnivoice 生成再交接。
 - 含对白且未烧录字幕的成片，按 [references/subtitle-standard.md](references/subtitle-standard.md) 执行单行独立重排（≤ 16 字，院线黑体白字黑边），压制并输出至 `成片/发布版/`。
 - 本 skill 独立可用，知识均在 `references/` 与 `scripts/`。命令写 `python3`，Windows 换成 `python`。
@@ -121,7 +121,7 @@ python3 <本 skill 目录>/scripts/registry.py locate <项目名>
 # 查看工作区与配置状态
 python3 <本 skill 目录>/scripts/workspace.py status
 # 配置并记住默认工作区（免重复输入）
-python3 <本 skill 目录>/scripts/workspace.py set-workspace "D:\素材\douyin"
+python3 <本 skill 目录>/scripts/workspace.py set-workspace "<工作区目录>"
 # 初始化新视频标准工程目录
 python3 <本 skill 目录>/scripts/workspace.py init "悬疑微短剧请慢用"
 ```
