@@ -12,7 +12,7 @@
 4. **omnivoice 优先**：没有录音、也没配商业 TTS 时，优先用本机 omnivoice（VoiceStudio）生成配音，再交给下游。
 5. **兜底**：没有命中任何场景或用户拒绝安装时，把需求整理成通用视频提示词，交给环境里已有的视频生成 skill。
 6. **工程归档**：`scripts/workspace.py` 记住工作区，并按 `YYYY-MM-DD-视频主题/` 建标准工程目录。
-7. **字幕保底**：成片含对白且未烧录字幕时，`scripts/subtitle_engine.py` 用本机 VoiceStudio 转写，重排成单行字幕并压制，标准见 [references/subtitle-standard.md](references/subtitle-standard.md)。
+7. **字幕保底**：成片含对白且未烧录字幕时，`scripts/subtitle_engine.py` 用本机 VoiceStudio 转写，重排成单行字幕并压制，标准见 [references/subtitle-standard.md](references/subtitle-standard.md)。`scripts/endcard.py` 可在压字幕前加片尾金句卡，见 [references/post-effects.md](references/post-effects.md)。
 8. **不绑定 agent**：所有接入知识都在 skill 自己的 `references/` 和 `scripts/` 里，Claude、Codex、Gemini 等都能直接使用。
 
 ---

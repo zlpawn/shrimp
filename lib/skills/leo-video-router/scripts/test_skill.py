@@ -5,6 +5,7 @@ from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+import endcard  # noqa: E402
 import registry   # noqa: E402
 import subtitle_engine  # noqa: E402
 import workspace  # noqa: E402
@@ -435,6 +436,42 @@ class SubtitleEngineTest(unittest.TestCase):
         self.assertTrue(err)
 
 
+class EndcardTest(unittest.TestCase):
+    def test_ass_has_canvas_timing_and_every_char(self):
+        ass = endcard.card_ass(736, 1280, "路窄处，", "见人宽", 73.3, 76.1, "PingFang SC")
+        self.assertIn("PlayResX: 736", ass)
+        self.assertIn("PlayResY: 1280", ass)
+        self.assertIn("Dialogue: 0,0:01:13.30,0:01:16.10,Card", ass)  # past one minute
+        for ch in "路窄处，见人宽":
+            self.assertIn(f"}}{ch}", ass)
+        self.assertIn("\\fsp", ass)  # the second phrase opens up
+
+    def test_card_sits_above_subtitle_zone(self):
+        ass = endcard.card_ass(736, 1280, "a", "", 1, 2, "F")
+        self.assertIn(f"\\move(368,{round(1280 * endcard.CARD_Y) + 16},368,{round(1280 * endcard.CARD_Y)}", ass)
+        # subtitle top = (MarginV 35 + font 20) / 288 of height from the bottom
+        self.assertLess(endcard.CARD_Y, 1 - 55 / 288)
+
+    def test_filter_pads_audio_only_when_present(self):
+        self.assertIn("apad", endcard.build_filter(10, 0.8, 2.8, True, 736, 1280))
+        self.assertNotIn("[0:a]", endcard.build_filter(10, 0.8, 2.8, False, 736, 1280))
+
+    @unittest.skipUnless(subtitle_engine.find_ffmpeg(), "needs an ffmpeg with libass")
+    def test_render_extends_video_by_hold(self):
+        import subprocess
+        ffmpeg = subtitle_engine.find_ffmpeg()
+        with tempfile.TemporaryDirectory() as tmp:
+            src, out = Path(tmp) / "in.mp4", Path(tmp) / "out.mp4"
+            subprocess.run([ffmpeg, "-y", "-loglevel", "error", "-f", "lavfi", "-i", "color=c=gray:s=320x568:d=2",
+                            "-f", "lavfi", "-i", "sine=d=2", "-c:v", "libx264", "-c:a", "aac", "-shortest", str(src)],
+                           check=True)
+            self.assertEqual(endcard.main([str(src), "路窄处，", "见人宽", str(out), "--hold", "0.5"]), 0)
+            dur = float(subprocess.run([subtitle_engine.ffprobe_for(ffmpeg), "-v", "error", "-show_entries",
+                                        "format=duration", "-of", "csv=p=0", str(out)],
+                                       capture_output=True, text=True).stdout)
+            self.assertAlmostEqual(dur, 2.5, delta=0.15)
+
+
 class CliTest(Base):
     def setUp(self):
         super().setUp()
@@ -592,6 +629,21 @@ class DocsTest(unittest.TestCase):
         text = self.read("README.md")
         for s in ["config.json", "style-preferences.md", "subtitle_engine.py"]:
             self.assertIn(s, text, s)
+
+    def test_playbook_and_post_effects_are_wired(self):
+        text = self.read("SKILL.md")
+        self.assertIn("references/production-playbook.md", text)
+        self.assertIn("references/post-effects.md", text)
+        self.assertIn("endcard.py", self.read("references/post-effects.md"))
+        std = self.read("references/subtitle-standard.md")
+        for s in ["asr_model_missing", "hf-mirror.com", "hf_revisions.py"]:
+            self.assertIn(s, std, s)
+
+    def test_documented_endcard_flags_exist(self):
+        import re
+        known = set(re.findall(r'add_argument\("(--[a-z-]+)"', (HERE / "endcard.py").read_text(encoding="utf-8")))
+        for flag in re.findall(r"`(--[a-z][a-z-]+)`", self.read("references/post-effects.md")):
+            self.assertIn(flag, known, flag)
 
     def test_relative_links_resolve(self):
         import re

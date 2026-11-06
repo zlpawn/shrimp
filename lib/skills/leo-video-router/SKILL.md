@@ -66,13 +66,16 @@ python3 <本 skill 目录>/scripts/registry.py locate <项目名>
 ### Step 6：初始化工程目录与交接
 1. 先初始化标准目录：`python3 <本 skill 目录>/scripts/workspace.py init "<视频主题>"`。
 2. 旁白统一存至 `<工程目录>/音频/旁白.wav`；脚本记入 `脚本.md`。
-3. 读 `references/projects/<项目名>.md` 与项目自己的入口文档（`locate` 输出里的 `entry`），交接素材与音频执行。直出原始成片放入 `成片/原始版/`。Router 不干预下游引擎生成。
+3. 写脚本和提示词前读 [references/production-playbook.md](references/production-playbook.md)（台词语速、画面左右、先用图验证构图）。
+4. 读 `references/projects/<项目名>.md` 与项目自己的入口文档（`locate` 输出里的 `entry`），交接素材与音频执行。直出原始成片放入 `成片/原始版/`。Router 不干预下游引擎生成。
 
 ### Step 7：交付成片与字幕后处理
 1. **字幕判断**：先确认成片是否已烧录字幕（看下游报告或抽帧）。多个下游默认或可选烧录字幕，已烧录就不再压制，否则会叠成两层。
-2. **字幕与压制**：含对白且未烧录字幕时调用 `python3 <本 skill 目录>/scripts/subtitle_engine.py "<成片路径>" --burn`。自动将重排单行字幕（≤ 16 字）与压制成片落盘到 `成片/发布版/`。退出码 1 表示失败：把错误告诉创作者，不要交付无字幕成片冒充完成（处理方法见 [references/subtitle-standard.md](references/subtitle-standard.md)）。
-3. **交付记录**：更新 `<工程目录>/交付记录.md`（记录所用项目、音频来源、字幕处理方式与发布排期策略）。
-4. **交付成片**：向创作者反馈成片绝对路径、字幕路径、封面图（如有）及音频来源。
+2. **后期效果（可选）**：结尾画面停滞或需要点题时，按 [references/post-effects.md](references/post-effects.md) 加片尾金句卡，做完再压字幕。
+3. **字幕与压制**：含对白且未烧录字幕时调用 `python3 <本 skill 目录>/scripts/subtitle_engine.py "<成片路径>" --burn`。自动将重排单行字幕（≤ 16 字）与压制成片落盘到 `成片/发布版/`。退出码 1 表示失败：把错误告诉创作者，不要交付无字幕成片冒充完成（处理方法见 [references/subtitle-standard.md](references/subtitle-standard.md)）。
+4. **交付前检查**：按 production-playbook.md 第 5 条抽帧，并把字幕和脚本台词逐字比对。
+5. **交付记录**：更新 `<工程目录>/交付记录.md`（记录所用项目、音频来源、字幕处理方式与发布排期策略）。
+6. **交付成片**：向创作者反馈成片绝对路径、字幕路径、封面图（如有）及音频来源。
 
 ---
 

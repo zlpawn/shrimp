@@ -48,10 +48,29 @@ ffprobe 取同目录的那个。
 |---|---|---|
 | `FFMPEG_NO_SUBTITLES_FILTER` | ffmpeg 未安装或没有 libass | 按上面安装；只要 .srt 就加 `--no-burn` |
 | `VOICESTUDIO_NOT_RUNNING` | 重试约 90 秒后 VoiceStudio 仍未响应 | 提示创作者启动，再重跑 |
-| `HTTP_<状态码>` | 转写接口报错（如 `asr_model_missing`） | 把错误原文告诉创作者 |
+| `HTTP_<状态码>` | 转写接口报错 | `asr_model_missing` 按下一节装模型；其他错误把原文告诉创作者 |
 | `FFMPEG_BURN_FAILED` | .srt 已生成，压制失败 | 把输出里的 ffmpeg 错误告诉创作者 |
 
 失败时退出码为 1，成功为 0。
+
+---
+
+## 转写模型没装：`asr_model_missing`
+
+在 VoiceStudio 的 Model Catalogue → Models 里安装 Whisper large-v3。macOS 上是 MLX 版，约 3 GB。
+
+**开了系统代理时，VoiceStudio 内的下载大概率失败**：它走系统代理，而下载源 `hf-mirror.com` 走代理会出 SSL 错误，直连正常。二选一：
+
+1. 在代理工具里把 `hf-mirror.com` 设为直连，再在 VoiceStudio 里点安装；
+2. 绕过代理，直接下载到 VoiceStudio 的模型缓存（macOS 实测；Windows 未验证）：
+
+```bash
+env -u http_proxy -u https_proxy -u all_proxy -u HTTP_PROXY -u HTTPS_PROXY -u ALL_PROXY NO_PROXY='*' \
+  HF_ENDPOINT=https://hf-mirror.com HF_HUB_DISABLE_XET=1 \
+  uv run --with huggingface_hub python -c "from huggingface_hub import snapshot_download; import os; snapshot_download('mlx-community/whisper-large-v3-mlx', revision='<版本>', cache_dir=os.path.expanduser('~/OmniVoiceStudio-Data/data/models'))"
+```
+
+`<版本>` 必须和 VoiceStudio 锁定的一致，在它安装目录的 `backend/services/hf_revisions.py` 里查（2026-11 时是 `49e6aa286ad60c14352c404340ded53710378a11`）。下载中断就重跑，会断点续传。下完后 VoiceStudio 的模型列表应显示已安装，不需要重启。
 
 ---
 
