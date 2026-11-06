@@ -31,8 +31,16 @@ Router 只给**没有字幕**的成片保底，不重复压制。已烧录就跳
 
 压制依赖 libass。检查：`ffmpeg -hide_banner -filters | grep subtitles`（Windows 用 `findstr`），有输出才可用。
 
-- macOS：Homebrew 标准版 `ffmpeg` 不带 libass，要装 `brew install ffmpeg-full`。它是 keg-only：卸载 `ffmpeg` 后执行 `brew link --force ffmpeg-full`，或把 `$(brew --prefix ffmpeg-full)/bin` 排到 PATH 最前面。
-- Windows：用带 libass 的完整版构建。
+脚本按顺序找带 subtitles 滤镜的 ffmpeg，找到即用，不写死任何系统路径：
+
+1. 环境变量 `LEO_FFMPEG` 指定的 ffmpeg（设了就只认它）；
+2. PATH 上的 `ffmpeg`；
+3. Homebrew 的 `ffmpeg-full`（只在装了 brew 的系统上尝试）。
+
+ffprobe 取同目录的那个。
+
+- macOS：Homebrew 标准版 `ffmpeg` 不带 libass，要另装 `brew install ffmpeg-full`。两者可以共存：VoiceStudio 启动时会自动装回标准版 `ffmpeg` 并占用 `/opt/homebrew/bin/ffmpeg`，脚本会自动改用 `ffmpeg-full`，不用卸载。
+- Windows：PATH 上的 ffmpeg 要用带 libass 的完整版构建；不是的话，把完整版路径设到 `LEO_FFMPEG`。
 
 脚本带 `--burn`（默认）时会先做这个检查，不满足就在转写前退出。
 

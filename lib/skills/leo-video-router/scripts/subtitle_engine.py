@@ -3,6 +3,7 @@
 # dependencies = []
 # ///
 
+import os
 import sys
 import re
 import json
@@ -56,19 +57,52 @@ def check_voicestudio_health(
         waited += HEALTH_RETRY_DELAY
 
 
-def has_subtitles_filter() -> bool:
+def has_subtitles_filter(ffmpeg: str = "ffmpeg") -> bool:
     """压制依赖 ffmpeg 的 subtitles 滤镜（libass），部分发行版默认不带。"""
     try:
-        res = subprocess.run(["ffmpeg", "-hide_banner", "-filters"], capture_output=True, text=True)
+        res = subprocess.run([ffmpeg, "-hide_banner", "-filters"], capture_output=True, text=True)
     except OSError:
         return False
     return re.search(r"^\s*\S*\s+subtitles\s", res.stdout, re.M) is not None
 
 
-def extract_audio(video_path: Path, output_wav: Path) -> bool:
+def brew_ffmpeg_full() -> Optional[str]:
+    """Homebrew 的 ffmpeg-full 是 keg-only，不在 PATH 上；没装 brew（如 Windows）时返回 None。"""
+    if not shutil.which("brew"):
+        return None
+    try:
+        res = subprocess.run(["brew", "--prefix", "ffmpeg-full"], capture_output=True, text=True)
+    except OSError:
+        return None
+    path = Path(res.stdout.strip()) / "bin" / "ffmpeg"
+    return str(path) if res.returncode == 0 and path.exists() else None
+
+
+def find_ffmpeg() -> Optional[str]:
+    """
+    找带 subtitles 滤镜的 ffmpeg：LEO_FFMPEG 指定了就只认它；否则先用 PATH 上的，
+    不带滤镜时再试 Homebrew 的 ffmpeg-full（VoiceStudio 等软件会装回不带 libass 的标准版）。
+    """
+    override = os.environ.get("LEO_FFMPEG")
+    if override:
+        return override if has_subtitles_filter(override) else None
+    for candidate in (lambda: shutil.which("ffmpeg"), brew_ffmpeg_full):
+        path = candidate()
+        if path and has_subtitles_filter(path):
+            return path
+    return None
+
+
+def ffprobe_for(ffmpeg: str) -> str:
+    """用和 ffmpeg 同目录的 ffprobe，找不到就用 PATH 上的。"""
+    sibling = Path(ffmpeg).with_name(Path(ffmpeg).name.replace("ffmpeg", "ffprobe"))
+    return str(sibling) if sibling.parent != Path(".") and sibling.exists() else "ffprobe"
+
+
+def extract_audio(video_path: Path, output_wav: Path, ffmpeg: str = "ffmpeg") -> bool:
     """使用 FFmpeg 从视频中提取 16kHz 单声道 WAV 音轨"""
     cmd = [
-        "ffmpeg", "-y",
+        ffmpeg, "-y",
         "-i", str(video_path),
         "-vn",
         "-ar", "16000",
@@ -289,9 +323,9 @@ def default_font(platform: str = sys.platform) -> str:
     return "Noto Sans CJK SC"
 
 
-def probe_video_size(video_path: Path) -> Optional[Tuple[int, int]]:
+def probe_video_size(video_path: Path, ffprobe: str = "ffprobe") -> Optional[Tuple[int, int]]:
     cmd = [
-        "ffprobe", "-v", "error", "-select_streams", "v:0",
+        ffprobe, "-v", "error", "-select_streams", "v:0",
         "-show_entries", "stream=width,height", "-of", "csv=p=0:s=x",
         str(video_path)
     ]
@@ -334,21 +368,23 @@ def burn_subtitles_to_video(
     srt_path: Path,
     output_video: Path,
     font_name: Optional[str] = None,
-    max_chars: int = 16
+    max_chars: int = 16,
+    ffmpeg: Optional[str] = None
 ) -> Tuple[bool, str]:
     """
     使用 FFmpeg 压制院线级暗影描边单行字幕至视频中，返回 (是否成功, 错误信息)。
     字幕复制到临时目录并用固定文件名，文件名里的引号、逗号、方括号和 Windows 盘符
     都不会进入滤镜语法。
     """
+    ffmpeg = ffmpeg or find_ffmpeg() or "ffmpeg"
     output_video.parent.mkdir(parents=True, exist_ok=True)
-    width, height = probe_video_size(video_path) or (1920, 1080)
+    width, height = probe_video_size(video_path, ffprobe_for(ffmpeg)) or (1920, 1080)
     style = subtitle_style(width, height, font_name or default_font(), max_chars)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         shutil.copyfile(srt_path, Path(tmp_dir) / "subtitles.srt")
         cmd = [
-            "ffmpeg", "-y",
+            ffmpeg, "-y",
             "-i", str(video_path.resolve()),
             "-vf", f"subtitles=subtitles.srt:force_style='{style}'",
             "-c:a", "copy",
@@ -387,13 +423,16 @@ def process_video_subtitles(
     if not video_path.exists():
         return {"ok": False, "message": f"视频文件不存在: {video_path}"}
 
-    if burn and not has_subtitles_filter():
+    ffmpeg = find_ffmpeg()
+    if burn and not ffmpeg:
         return {
             "ok": False,
             "error_type": "FFMPEG_NO_SUBTITLES_FILTER",
-            "message": "当前 ffmpeg 缺少 subtitles 滤镜（未启用 libass）或未安装，无法压制字幕。"
-                       "安装方法见 references/subtitle-standard.md；只要 .srt 可加 --no-burn。"
+            "message": "没有找到带 subtitles 滤镜（libass）的 ffmpeg，无法压制字幕。"
+                       "安装方法见 references/subtitle-standard.md，也可用环境变量 LEO_FFMPEG 指定路径；"
+                       "只要 .srt 可加 --no-burn。"
         }
+    ffmpeg = ffmpeg or "ffmpeg"
 
     # 严格检查 VoiceStudio 状态
     ok, msg = check_voicestudio_health(base_url)
@@ -427,7 +466,7 @@ def process_video_subtitles(
         tmp_wav = Path(tmp_dir) / "audio.wav"
 
         # 提取音轨
-        if not extract_audio(video_path, tmp_wav):
+        if not extract_audio(video_path, tmp_wav, ffmpeg):
             return {"ok": False, "message": "FFmpeg 提取视频音轨失败，请确认已安装 ffmpeg 且视频包含有效音频流。"}
         duration = wav_duration(tmp_wav)
 
@@ -452,7 +491,7 @@ def process_video_subtitles(
     burned = False
     if burn:
         burned, burn_error = burn_subtitles_to_video(
-            video_path, target_srt, target_video, font_name=font_name, max_chars=max_chars
+            video_path, target_srt, target_video, font_name=font_name, max_chars=max_chars, ffmpeg=ffmpeg
         )
         if not burned:
             return {

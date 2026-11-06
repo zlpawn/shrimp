@@ -337,7 +337,7 @@ class SubtitleEngineTest(unittest.TestCase):
     def test_missing_libass_fails_before_transcribing(self):
         video = self.tmp / "v.mp4"
         touch(video)
-        with mock.patch.object(subtitle_engine, "has_subtitles_filter", return_value=False), \
+        with mock.patch.object(subtitle_engine, "find_ffmpeg", return_value=None), \
                 mock.patch.object(subtitle_engine, "check_voicestudio_health") as health:
             res = subtitle_engine.process_video_subtitles(str(video))
         self.assertFalse(res["ok"])
@@ -347,10 +347,44 @@ class SubtitleEngineTest(unittest.TestCase):
     def test_no_burn_does_not_need_libass(self):
         video = self.tmp / "v.mp4"
         touch(video)
-        with mock.patch.object(subtitle_engine, "has_subtitles_filter", return_value=False), \
+        with mock.patch.object(subtitle_engine, "find_ffmpeg", return_value=None), \
                 mock.patch.object(subtitle_engine, "check_voicestudio_health", return_value=(False, "down")):
             res = subtitle_engine.process_video_subtitles(str(video), burn=False)
         self.assertEqual(res["error_type"], "VOICESTUDIO_NOT_RUNNING")
+
+    def capable(self, *good):
+        return mock.patch.object(subtitle_engine, "has_subtitles_filter", side_effect=lambda b="ffmpeg": b in good)
+
+    def test_env_override_wins(self):
+        with mock.patch.dict(os.environ, {"LEO_FFMPEG": "/custom/ffmpeg"}), self.capable("/custom/ffmpeg"), \
+                mock.patch.object(subtitle_engine.shutil, "which", return_value="/path/ffmpeg"):
+            self.assertEqual(subtitle_engine.find_ffmpeg(), "/custom/ffmpeg")
+
+    def test_env_override_without_libass_is_reported_not_skipped(self):
+        with mock.patch.dict(os.environ, {"LEO_FFMPEG": "/custom/ffmpeg"}), self.capable("/path/ffmpeg"), \
+                mock.patch.object(subtitle_engine.shutil, "which", return_value="/path/ffmpeg"):
+            self.assertIsNone(subtitle_engine.find_ffmpeg())
+
+    def test_path_ffmpeg_used_when_capable(self):
+        env = {k: v for k, v in os.environ.items() if k != "LEO_FFMPEG"}
+        with mock.patch.dict(os.environ, env, clear=True), self.capable("/path/ffmpeg"), \
+                mock.patch.object(subtitle_engine.shutil, "which", return_value="/path/ffmpeg"), \
+                mock.patch.object(subtitle_engine, "brew_ffmpeg_full") as brew:
+            self.assertEqual(subtitle_engine.find_ffmpeg(), "/path/ffmpeg")
+        brew.assert_not_called()  # no brew call when PATH already works (e.g. Windows)
+
+    def test_falls_back_to_brew_full_build_when_path_lacks_libass(self):
+        env = {k: v for k, v in os.environ.items() if k != "LEO_FFMPEG"}
+        with mock.patch.dict(os.environ, env, clear=True), self.capable("/brew/full/ffmpeg"), \
+                mock.patch.object(subtitle_engine.shutil, "which", return_value="/path/ffmpeg"), \
+                mock.patch.object(subtitle_engine, "brew_ffmpeg_full", return_value="/brew/full/ffmpeg"):
+            self.assertEqual(subtitle_engine.find_ffmpeg(), "/brew/full/ffmpeg")
+
+    def test_ffprobe_is_taken_next_to_chosen_ffmpeg(self):
+        d = self.tmp / "bin"
+        touch(d / "ffprobe")
+        self.assertEqual(subtitle_engine.ffprobe_for(str(d / "ffmpeg")), str(d / "ffprobe"))
+        self.assertEqual(subtitle_engine.ffprobe_for("ffmpeg"), "ffprobe")
 
     def test_health_check_retries_while_app_starts(self):
         import urllib.error
@@ -380,7 +414,7 @@ class SubtitleEngineTest(unittest.TestCase):
         self.assertIn("500", msg)
         self.assertNotIn("未运行", msg)
 
-    @unittest.skipUnless(subtitle_engine.has_subtitles_filter(), "ffmpeg has no subtitles filter")
+    @unittest.skipUnless(getattr(subtitle_engine, "find_ffmpeg", lambda: None)(), "no ffmpeg with subtitles filter")
     def test_burn_handles_filter_syntax_in_file_names(self):
         import subprocess
         video = self.tmp / "it's, a [test].mp4"
@@ -551,7 +585,7 @@ class DocsTest(unittest.TestCase):
 
     def test_subtitle_standard_documents_libass_install(self):
         text = self.read("references/subtitle-standard.md")
-        for s in ["libass", "ffmpeg-full", "FFMPEG_NO_SUBTITLES_FILTER"]:
+        for s in ["libass", "ffmpeg-full", "FFMPEG_NO_SUBTITLES_FILTER", "LEO_FFMPEG", "VoiceStudio"]:
             self.assertIn(s, text, s)
 
     def test_readme_lists_runtime_data_and_subtitles(self):
