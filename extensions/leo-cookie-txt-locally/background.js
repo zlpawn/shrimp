@@ -1,4 +1,4 @@
-import { createCredentialRelayClient } from "./credential-relay.mjs";
+import { exportCookies } from "./cookie-export.mjs";
 import { createMultiUrlPollLoop } from "./poll-loop.mjs";
 import { createCommandQueue } from "./command-queue.mjs";
 import { shouldStopNetworkCapture } from "./background-lifecycle.mjs";
@@ -35,6 +35,7 @@ import {
   summarizeContent,
   normalizePressKey,
   pressKeyEventInit,
+  evalOutcome,
   evalShouldFallback,
   wrapEvalScript,
 } from "./page-drive.mjs";
@@ -574,9 +575,7 @@ async function executeTask(task) {
   let result = null;
 
     if (type === "cookies.export" || type === "cookies.get") {
-      const domain = params.domain || "";
-      const cookies = await chrome.cookies.getAll({ domain });
-      result = { cookies, count: cookies.length };
+      result = await exportCookies(chrome, params);
     } else if (type === "tabs.list") {
       const tabs = await chrome.tabs.query({});
       result = tabs.map((t) => ({
@@ -873,12 +872,7 @@ async function executeTask(task) {
         throw lanternError("eval_error", String(evalError));
       }
 
-      result = await withTaskSummary({
-        ok: true,
-        evalResult: evalResult !== undefined ? evalResult : null,
-        hasResult: evaluated && !evalError,
-        resultType: evalResult === null ? "null" : typeof evalResult,
-      });
+      result = await withTaskSummary(evalOutcome(evalResult, evaluated));
     } else if (type === "dom.wait") {
       const tabId = await requireTaskTabId(params);
       const wait = assertWaitParams(params);
@@ -1096,7 +1090,6 @@ async function init() {
 }
 
 // Keep-alive with alarms
-createCredentialRelayClient().start().catch(() => undefined);
 chrome.alarms.create("bridge_heartbeat", { periodInMinutes: 0.4 });
 chrome.alarms.create("bridge_claim", { periodInMinutes: 0.1 });
 chrome.alarms.onAlarm.addListener((alarm) => {

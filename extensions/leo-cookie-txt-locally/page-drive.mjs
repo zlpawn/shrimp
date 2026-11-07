@@ -117,6 +117,12 @@ export function pressKeyEventInit(key) {
   return { key };
 }
 
+// No `ok` field here: the command queue would take this for a whole envelope and drop the value.
+export function evalOutcome(value, evaluated) {
+  const evalResult = value !== undefined ? value : null;
+  return { evalResult, hasResult: evaluated, resultType: evalResult === null ? "null" : typeof evalResult };
+}
+
 // A timed-out CDP evaluate may still be running, so injecting it again would repeat its side effects.
 export function evalShouldFallback(cdpError) {
   return cdpError?.code !== "command_timeout";

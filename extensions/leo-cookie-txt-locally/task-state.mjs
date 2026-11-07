@@ -87,6 +87,7 @@ export function upsertActiveTask(state, patch = {}, now = Date.now()) {
       groupId: patch.groupId ?? null,
       windowId: patch.windowId ?? null,
       claimedTabId: patch.claimedTabId ?? null,
+      placeholderTabId: patch.placeholderTabId ?? null,
       sameWindow: Boolean(patch.sameWindow),
       createdAt: now,
       updatedAt: now,

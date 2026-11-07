@@ -59,6 +59,7 @@ description: 通过 leo-lantern CLI/服务实现 Chrome 浏览器远程调试 (C
    - 导出 Cookie（凭证中继神器，直接给 curl / Python 脚本使用）：
      - Netscape 格式（curl 直接读）：`leo-lantern cookies --domain="example.com" --format=txt --out=cookies.txt`
      - JSON 格式：`leo-lantern cookies --domain="example.com" --format=json`
+     - 按 URL 读取（包含父域名上的 Cookie，需要扩展 1.3.13+）：`leo-lantern cookies --url="https://a.example.com/path" --out=cookies.json`
 5. **任务清理**：
    - 结束任务：`leo-lantern end-task`
 
