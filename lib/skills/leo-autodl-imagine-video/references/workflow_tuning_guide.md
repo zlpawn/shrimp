@@ -59,8 +59,25 @@
 
 1. **在基准工作流上微调参数 (`--patch`)**：
    * 调整步数 `--steps`（如 `10 -> 16`）；
-   * 调整 `EasyCache` 阈值：`--patch "174.inputs.reuse_threshold=0.15"`；
+   * 调整 `EasyCache` 阈值：`--patch "174.inputs.reuse_threshold=0.08"`（彻底压低缓存复用，锁死发丝与微表情高频细节）；
+   * 提升原生分辨率：`--megapixels 1.1` 或 `1.2`；
+   * 近无损色彩压制：`--crf 17`；
    * 切换底模或 LoRA（需对照 [minimax_h3_models_and_loras.json](prompts_and_guides/minimax_h3_models_and_loras.json) 中的 `adaln` 兼容性）。
 2. **按场景选用 `references/workflows/u_series_api/` 下的备用工作流**：
    * 可先查阅 [U视频-MINIMAX-H3_工作流说明.md](prompts_and_guides/U视频-MINIMAX-H3_工作流说明.md) 了解 `U00~U37` 各工作流定位；
    * 查看对应 `API-U*.json` 底部的 `_api_config` 了解可调参数槽位（如 `"139:prompt"`），并通过 `--run-workflow "API-U03-..." --patch "139:prompt=..."` 提交远端运行。
+
+---
+
+## 5. 🏆 ComfyUI 50+ 工作流场景能力图谱与选型矩阵（效果优先指南）
+
+Agent **必须根据分镜的视听特征与成品画质要求自主推理，动态匹配最佳工作流**，严禁死板套用单一模板：
+
+| 分镜场景特征 | 推荐最佳工作流 | 画质原理与关键技术栈 | 适用镜头类型 |
+| :--- | :--- | :--- | :--- |
+| **微表情对白 / 极致光影 / 电影感质感** | `minimax_audio_driven_builder_latent_upscale_2pass_api.json`<br/>`API-U30.json` | **2-Pass 潜空间放大超分**：一采出基础构图与动态，二采利用 Latent Upscale + 真实高斯噪声注入毛孔级皮肤纹理、眼眶微光与织物褶皱，彻底消除 AI 视频的塑料平滑感。 | 近景对白、心理交锋、领奖致辞、情感高潮 |
+| **疾驰奔跑 / 剧烈运动 / 武戏打斗** | `API-U24-文武双修T8版.json`<br/>`API-U08.json` | **Combat / Motion Repair LoRA 链**：专门优化大范围肢体位移与高速运动，解决常规模型在大动作时容易产生的肢体拉丝、面部扭曲崩塌与残影问题。 | 公路夜奔、策马疾驰、体育竞技、动作打斗 |
+| **多角色 / 多服装跨镜头严格一致** | `API-U01-minimax_h3_基础版API.json`<br/>`API-U06-9图版API-V5.json`<br/>`API-U22-9图3音.json` | **9 图多模态多参考绑定**：支持上传 3~9 张角色、服装、道具三视图参考图，通过 `MiniMaxH3ReferenceToVideo` 多图像槽位对齐身份与特征。 | 固定主角短剧、商业广告角色、品牌服装展示 |
+| **纯音频驱动 / 严丝合缝说话对口型** | `API-U11-Minimax-图片音频对口型API.json`<br/>`minimax_audio_driven_builder_api.json` | **Audio-driven Lip-sync**：以真实音轨作为核心 Conditioning 驱动源，强制嘴唇几何形态跟随音素运动，避免出现画面张嘴声音不对齐的“假唱感”。 | 播客对话、严肃口播、新闻宣讲 |
+| **电影长镜头顺接 / 段落色彩无缝对齐** | `API-U43.json`<br/>`API-U02-minimax_h3_图生视频基础版-V2.json` | **首尾帧插值与时序上下文传递**：将前一段镜头的最后一帧或关键定妆图作为起始锚点，并执行偏色自动校准，确保镜头切换时色彩与光照不跳帧。 | 长运镜穿越、时空流转、叙事段落平滑转场 |
+| **构图快速验证 / 语法试跑** | `minimax_h3_video_1pass_api.json` | **1-Pass 单通道极速采样**：10 步采样仅需 19 秒，用于低成本验证提示词是否跑通、运镜方向是否正确。 | 草稿预览、构图试验、快速验证 |

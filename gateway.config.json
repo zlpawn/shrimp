@@ -997,7 +997,7 @@
   },
   "sessionSync": {
     "skillMounts": {
-      "leo-autodl-imagine-video": {
+      "leo-video-relay": {
         "antigravity": false,
         "claude": false,
         "codex": true
