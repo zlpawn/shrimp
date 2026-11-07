@@ -293,15 +293,15 @@
       "managed": true
     },
     {
-      "id": "leo-video-to-karpathy-wiki",
-      "name": "leo-video-to-karpathy-wiki",
-      "title": "Video To Karpathy Wiki",
-      "summary": "将技术、架构或系统设计视频（URL 或本地文件）转写、抽帧审计并沉淀为 Karpathy 风格 Wiki。用户要求解析技术视频、制作系统设计视频笔记或归档到知识库时使用。支持 Windows 与 macOS。",
-      "category": "download",
-      "categoryLabel": "下载采集",
-      "icon": "⬇️",
+      "id": "leo-video-relay",
+      "name": "leo-video-relay",
+      "title": "Leo Video Relay",
+      "summary": "读懂网络或本地视频并沉淀可追溯的视频事实包（字幕、转写、关键帧），再按需转为知识笔记、小红书素材或短视频素材，知识笔记可同步到 Craft。支持 Windows 与 macOS。",
+      "category": "research",
+      "categoryLabel": "研究与知识",
+      "icon": "🎞️",
       "featured": false,
-      "tags": [],
+      "tags": ["video", "transcript", "knowledge-base", "craft", "xhs"],
       "requiresDaemon": false,
       "promoted": true,
       "managed": true

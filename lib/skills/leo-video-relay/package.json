@@ -1,0 +1,10 @@
+{
+  "name": "leo-video-relay",
+  "version": "1.0.0",
+  "description": "读懂视频并沉淀可追溯的事实包，再按需转为知识笔记或二创素材",
+  "type": "module",
+  "bin": {
+    "video-relay": "./scripts/relay.mjs"
+  },
+  "license": "MIT"
+}
