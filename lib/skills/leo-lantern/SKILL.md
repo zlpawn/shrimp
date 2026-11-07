@@ -16,16 +16,9 @@ description: 通过 leo-lantern CLI/服务实现 Chrome 浏览器远程调试 (C
 ## 工作流
 
 1. **服务启动与健康探测**：
-   - **手动启动后台服务（若未启动或提示 `bridge_unavailable` / `command not found`）**：
-     - 若全局命令可用：`leo-lantern server --port 19527`
-     - 若 `leo-lantern` 未在系统 PATH 中，Agent 直接使用 Node 从本 Skill 目录拉起服务：
-       ```bash
-       # 形式 1：使用当前 Skill 目录路径（无论本 Skill 安装在何处）
-       node <skillDir>/scripts/cli/index.mjs server --port 19527
-
-       # 形式 2：若当前终端已处于本 Skill 根目录下：
-       node scripts/cli/index.mjs server --port 19527
-       ```
+   - **桥接按需启动，一般不用手动管**：操作浏览器的命令发现桥接没开，会自动在后台拉起并等扩展连上（需要 Chrome 已打开）。桥接连续 10 分钟没有收到命令就自动退出；扩展的轮询和心跳不算命令。`health`、`doctor` 只检查，不会启动桥接。
+     - 主动启动并等待扩展：`leo-lantern start`（或 `node <skillDir>/scripts/cli/index.mjs start`）
+     - 前台运行、调整空闲时间：`node <skillDir>/scripts/cli/index.mjs server --port 19527 --idle-exit-min 30`（`0` 表示不自动退出，也可用环境变量 `LEO_LANTERN_IDLE_EXIT_MIN`）
    - 检查服务与扩展在线状态：
      - `leo-lantern health`（或 `node <skillDir>/scripts/cli/index.mjs health`）
      - 若 `extensionOnline: false`，请在 Chrome 扩展管理页（`chrome://extensions`）确认已加载扩展，并保持 Chrome 处于运行状态。
@@ -72,8 +65,8 @@ description: 通过 leo-lantern CLI/服务实现 Chrome 浏览器远程调试 (C
 ## 常用命令
 
 ```bash
-# 启动后台服务（若未启动）
-leo-lantern server --port 19527
+# 启动桥接并等待扩展（可省略，操作浏览器的命令会自动启动）
+leo-lantern start
 
 # 健康状态探测
 leo-lantern health

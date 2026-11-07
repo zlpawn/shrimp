@@ -32,7 +32,7 @@ node <skillDir>/scripts/leo_job_career.mjs doctor
 node <skillDir>/scripts/leo_job_career.mjs auth status
 ```
 
-- **凭证全自动获取（首选）**：若 Chrome 浏览器已登录并开启 `leo-lantern` 桥接，直接执行全自动提取：
+- **凭证全自动获取（首选）**：若 Chrome 浏览器已登录并启用 `leo-lantern` 扩展（桥接未运行时会自动拉起），直接执行全自动提取：
   ```bash
   node <skillDir>/scripts/leo_job_career.mjs auth auto
   ```
