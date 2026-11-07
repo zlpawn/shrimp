@@ -24,6 +24,7 @@ ASPECT_RATIO_MAP = {
 
 
 DEFAULT_RENDER_TIMEOUT = 1800
+INTERRUPT_WAIT_ATTEMPTS = 10  # 每次 2 秒
 MEDIA_NODE = "VRGDG_MiniMaxH3ReferenceMediaFromPaths"
 INJECTED_MEDIA_NODE_ID = "9001"
 
@@ -521,6 +522,49 @@ class AutoDLRemoteEngine:
         finally:
             client.close()
 
+    def backup_new_workflows(self) -> dict:
+        """
+        把远端有、本地没有的工作流下载到 references/workflows/remote_backup/。
+        只做备份：模板查找不搜这个目录，也不会自动运行。失败不影响开机，结果里说明。
+        ponytail: 按文件名比对，远端改了同名文件不会更新；需要时改成比对内容。
+        """
+        try:
+            listed = self.list_remote_workflows()
+            if not listed.get("ok"):
+                return {"ok": False, "saved": [], "failed": [], "message": f"没能备份远端工作流，可稍后用 --backup-remote-workflows 重试: {listed.get('message')}"}
+            local_names = {p.name for p in self.workflows_dir.rglob("*.json")}
+            new = [r for r in listed["remote_workflows"] if Path(r).name not in local_names]
+            if not new:
+                return {"ok": True, "saved": [], "failed": [], "message": "远端没有本地未备份的工作流"}
+
+            backup_dir = self.workflows_dir / "remote_backup"
+            backup_dir.mkdir(parents=True, exist_ok=True)
+            saved, failed = [], []
+            client = self.connect_ssh()
+            try:
+                sftp = client.open_sftp()
+                for remote in new:
+                    dst = backup_dir / Path(remote).name
+                    part = dst.with_name(dst.name + ".part")  # 中途断开不留半个文件，否则下次会被当成已备份
+                    try:
+                        sftp.get(remote, str(part))
+                        os.replace(part, dst)
+                        saved.append(str(dst))
+                    except Exception:
+                        part.unlink(missing_ok=True)
+                        failed.append(remote)
+                sftp.close()
+            finally:
+                client.close()
+            return {
+                "ok": not failed,
+                "saved": saved,
+                "failed": failed,
+                "message": f"备份了 {len(saved)} 个远端新工作流到 {backup_dir}（未经验证，只做备份）" + (f"，{len(failed)} 个失败" if failed else "")
+            }
+        except Exception as e:
+            return {"ok": False, "saved": [], "failed": [], "message": f"没能备份远端工作流，可稍后用 --backup-remote-workflows 重试: {e}"}
+
     def _upload_media_files(self, client: paramiko.SSHClient, local_files: list) -> list:
         """通过 SFTP 将本地参考图或参考视频上传至远端 /root/ComfyUI/input/ 并返回远端绝对路径列表"""
         remote_paths = []
@@ -542,6 +586,24 @@ class AutoDLRemoteEngine:
         _, stdout, _ = client.exec_command(cmd, timeout=15)
         stdout.read()
 
+    def _read_queue(self, client: paramiko.SSHClient) -> dict:
+        """读不到或返回不完整时给 None，调用方不能把它当成队列为空。"""
+        _, stdout, _ = client.exec_command(f"curl -s http://127.0.0.1:{self.remote_port}/queue", timeout=15)
+        try:
+            queue = json.loads(stdout.read().decode("utf-8", errors="replace"))
+        except ValueError:
+            return None
+        return queue if "queue_running" in queue and "queue_pending" in queue else None
+
+    def _prompt_gone(self, client: paramiko.SSHClient, prompt_id: str) -> bool:
+        """任务既不在队列也不在历史里：被 --interrupt 清掉了，或 ComfyUI 重启了，再等也不会有结果。"""
+        queue = self._read_queue(client)
+        if queue is None or prompt_id in json.dumps(queue):
+            return False
+        # ComfyUI 同时写历史和移出队列，这里再查一次，排除刚好在两次查询之间跑完的情况
+        _, stdout, _ = client.exec_command(f"curl -s http://127.0.0.1:{self.remote_port}/history/{prompt_id}", timeout=15)
+        return prompt_id not in stdout.read().decode("utf-8", errors="replace")
+
     def _cancel_prompt(self, client: paramiko.SSHClient, prompt_id: str) -> None:
         """超时后取消这个任务，否则它留在远端继续占显卡，还会挡住下一个任务。"""
         try:
@@ -559,10 +621,15 @@ class AutoDLRemoteEngine:
         try:
             self._comfy_post(client, "/queue", json.dumps({"clear": True}))
             self._comfy_post(client, "/interrupt")
-            _, stdout, _ = client.exec_command(f"curl -s http://127.0.0.1:{self.remote_port}/queue", timeout=15)
-            queue = json.loads(stdout.read().decode("utf-8", errors="replace") or "{}")
+            queue = self._read_queue(client) or {}
+            for _ in range(INTERRUPT_WAIT_ATTEMPTS):  # 采样器要走完当前一步才停，所以等它退出
+                if not queue.get("queue_running"):
+                    break
+                time.sleep(2.0)
+                queue = self._read_queue(client) or queue
             running, pending = len(queue.get("queue_running", [])), len(queue.get("queue_pending", []))
-            return {"ok": True, "running": running, "pending": pending, "message": f"已中断并清空队列（运行中 {running}，等待 {pending}）"}
+            message = "已中断并清空队列" if not running else f"已发出中断，还有 {running} 个任务没停下，稍后再查"
+            return {"ok": True, "running": running, "pending": pending, "message": message}
         except Exception as e:
             return {"ok": False, "message": f"中断失败: {e}"}
         finally:
@@ -695,6 +762,8 @@ except urllib.error.HTTPError as e:
                         continue
                     item_hist = history.get(prompt_id, {})
                     status_info = item_hist.get("status", {})
+                    if any(m and m[0] == "execution_interrupted" for m in status_info.get("messages", [])):
+                        return {"ok": False, "error_type": "RENDER_INTERRUPTED", "prompt_id": prompt_id, "message": "任务在运行中被中断（--interrupt 或 ComfyUI 网页），没有产物。"}
                     if status_info.get("status_str") == "error":
                         return {"ok": False, "prompt_id": prompt_id, "message": f"ComfyUI 执行报错: {json.dumps(status_info, ensure_ascii=False)}"}
                     outputs = item_hist.get("outputs", {})
@@ -706,6 +775,12 @@ except urllib.error.HTTPError as e:
                                         output_filenames.append(it["filename"])
                     finished = True
                     break
+
+                try:
+                    if self._prompt_gone(client, prompt_id):
+                        return {"ok": False, "error_type": "RENDER_CANCELLED", "prompt_id": prompt_id, "message": "任务已不在 ComfyUI 队列里（被清空或 ComfyUI 重启），没有产物。"}
+                except Exception:
+                    pass  # SSH 抖动，下一轮的自愈逻辑会处理
 
             if not finished:
                 self._cancel_prompt(client, prompt_id)

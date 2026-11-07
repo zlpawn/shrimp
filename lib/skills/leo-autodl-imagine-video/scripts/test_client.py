@@ -29,8 +29,9 @@ class FakeStream:
 class FakeSSH:
     """history: /history 的返回；submitted: 提交给 ComfyUI 的工作流。"""
 
-    def __init__(self, history="{}"):
-        self.history = history
+    def __init__(self, history="{}", queue=None):
+        self.history = history  # 字符串，或按次序返回的列表（最后一个重复）
+        self.queue = queue if queue is not None else [json.dumps({"queue_running": [], "queue_pending": []})]
         self.commands = []
         self.submitted = None
 
@@ -46,9 +47,10 @@ class FakeSSH:
                     return json.dumps({"prompt_id": "pid"}).encode()
             return stdin, Out(), FakeStream()
         if "/history/" in cmd:
-            return FakeStream(), FakeStream(self.history), FakeStream()
+            history = self.history if isinstance(self.history, str) else (self.history.pop(0) if len(self.history) > 1 else self.history[0])
+            return FakeStream(), FakeStream(history), FakeStream()
         if "/queue" in cmd and "POST" not in cmd:
-            return FakeStream(), FakeStream(json.dumps({"queue_running": [], "queue_pending": []})), FakeStream()
+            return FakeStream(), FakeStream(self.queue.pop(0) if len(self.queue) > 1 else self.queue[0]), FakeStream()
         return FakeStream(), FakeStream("{}"), FakeStream()
 
     def open_sftp(self):
@@ -148,7 +150,51 @@ class TimeoutTest(unittest.TestCase):
             self.assertEqual(rw.call_args.kwargs["timeout_seconds"], 7)
 
 
+class VanishedJobTest(unittest.TestCase):
+    """真机上发现：等待中的任务被 --interrupt 清掉后，本地进程会一直等到超时。"""
+
+    def test_job_cleared_from_queue_stops_waiting(self):
+        res = run(engine(), FakeSSH("{}"), copy.deepcopy(IMAGE_WF), timeout_seconds=60)
+        self.assertEqual(res["error_type"], "RENDER_CANCELLED")
+
+    def test_job_still_queued_keeps_waiting(self):
+        queued = json.dumps({"queue_running": [], "queue_pending": [[1, "pid"]]})
+        res = run(engine(), FakeSSH("{}", [queued]), copy.deepcopy(IMAGE_WF), timeout_seconds=0.05)
+        self.assertEqual(res["error_type"], "RENDER_TIMEOUT")
+
+    def test_unreadable_queue_is_not_treated_as_cleared(self):
+        for bad in ("", "<html>", "{}"):
+            res = run(engine(), FakeSSH("{}", [bad]), copy.deepcopy(IMAGE_WF), timeout_seconds=0.05)
+            self.assertEqual(res["error_type"], "RENDER_TIMEOUT", bad)
+
+    def test_job_finishing_between_the_two_queries_is_not_lost(self):
+        res = run(engine(), FakeSSH(["{}", DONE]), copy.deepcopy(IMAGE_WF), timeout_seconds=60, output_dir=tempfile.mkdtemp())
+        self.assertNotEqual(res.get("error_type"), "RENDER_CANCELLED", res)
+
+    def test_interrupted_job_has_its_own_error_type(self):
+        history = json.dumps({"pid": {"status": {"status_str": "error", "messages": [["execution_interrupted", {}]]}}})
+        res = run(engine(), FakeSSH(history), copy.deepcopy(IMAGE_WF))
+        self.assertEqual(res["error_type"], "RENDER_INTERRUPTED")
+
+
 class InterruptTest(unittest.TestCase):
+    def test_interrupt_waits_for_the_running_job_to_stop(self):
+        busy = json.dumps({"queue_running": [[1, "pid"]], "queue_pending": []})
+        idle = json.dumps({"queue_running": [], "queue_pending": []})
+        ssh, eng = FakeSSH(queue=[busy, busy, idle]), engine()
+        with mock.patch.object(eng, "connect_ssh", return_value=ssh), mock.patch.object(remote_engine.time, "sleep"):
+            res = eng.interrupt_queue()
+        self.assertEqual(res["running"], 0)
+        self.assertEqual(res["message"], "已中断并清空队列")
+
+    def test_interrupt_says_so_when_the_job_will_not_stop(self):
+        busy = json.dumps({"queue_running": [[1, "pid"]], "queue_pending": []})
+        ssh, eng = FakeSSH(queue=[busy]), engine()
+        with mock.patch.object(eng, "connect_ssh", return_value=ssh), mock.patch.object(remote_engine.time, "sleep"):
+            res = eng.interrupt_queue()
+        self.assertEqual(res["running"], 1)
+        self.assertIn("没停下", res["message"])
+
     def test_interrupt_clears_queue_and_reports(self):
         ssh = FakeSSH()
         eng = engine()
@@ -164,6 +210,88 @@ class InterruptTest(unittest.TestCase):
         with mock.patch.object(eng, "connect_ssh", side_effect=OSError("down")):
             res = eng.interrupt_queue()
         self.assertFalse(res["ok"])
+
+
+class WorkflowBackupTest(unittest.TestCase):
+    REMOTE = ["/root/wf/known.json", "/root/wf/new1.json", "/root/wf/new2.json"]
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.dir = Path(tmp.name)
+        (self.dir / "u_series_canvas").mkdir()
+        (self.dir / "u_series_canvas" / "known.json").write_text("{}")
+        self.eng = engine()
+        self.eng.workflows_dir = self.dir
+
+    def backup(self, get=None, listed=None):
+        def default_get(remote, local):
+            Path(local).write_text(remote)
+        ssh = FakeSSH()
+        sftp = mock.Mock()
+        sftp.get.side_effect = get or default_get
+        ssh.open_sftp = lambda: sftp
+        with mock.patch.object(self.eng, "connect_ssh", return_value=ssh), \
+                mock.patch.object(self.eng, "list_remote_workflows", return_value=listed or {"ok": True, "remote_workflows": self.REMOTE}):
+            return self.eng.backup_new_workflows(), sftp
+
+    def test_downloads_only_what_is_missing_anywhere_locally(self):
+        res, sftp = self.backup()
+        self.assertTrue(res["ok"], res)
+        self.assertEqual(sorted(c.args[0] for c in sftp.get.call_args_list), self.REMOTE[1:])
+        self.assertEqual(sorted(p.name for p in (self.dir / "remote_backup").iterdir()), ["new1.json", "new2.json"])
+
+    def test_second_run_downloads_nothing(self):
+        self.backup()
+        res, sftp = self.backup()
+        self.assertTrue(res["ok"])
+        self.assertEqual(res["saved"], [])
+        sftp.get.assert_not_called()
+
+    def test_failed_download_leaves_no_partial_file_and_retries_next_time(self):
+        def flaky(remote, local):
+            Path(local).write_text("half")
+            if remote.endswith("new1.json"):
+                raise OSError("dropped")
+        res, _ = self.backup(get=flaky)
+        self.assertFalse(res["ok"])
+        self.assertEqual(res["failed"], ["/root/wf/new1.json"])
+        self.assertEqual([p.name for p in (self.dir / "remote_backup").iterdir()], ["new2.json"])
+        res, sftp = self.backup()
+        self.assertEqual([c.args[0] for c in sftp.get.call_args_list], ["/root/wf/new1.json"])
+
+    def test_backups_are_not_picked_up_as_runnable_templates(self):
+        self.backup()
+        with self.assertRaises(FileNotFoundError):
+            self.eng.load_workflow_template("new1.json")
+
+    def test_listing_failure_is_reported_not_raised(self):
+        res, _ = self.backup(listed={"ok": False, "message": "ComfyUI 未就绪"})
+        self.assertFalse(res["ok"])
+        self.assertIn("--backup-remote-workflows", res["message"])
+        with mock.patch.object(self.eng, "list_remote_workflows", side_effect=OSError("ssh down")):
+            self.assertFalse(self.eng.backup_new_workflows()["ok"])
+
+
+class PowerOnBackupTest(unittest.TestCase):
+    def client(self, power_on):
+        c = client_mod.AutoDLMediaClient.__new__(client_mod.AutoDLMediaClient)
+        c.engine = mock.Mock()
+        c.engine.power_on.return_value = power_on
+        c.engine.poll_power_on.return_value = power_on
+        c.engine.backup_new_workflows.return_value = {"ok": False, "message": "backup failed"}
+        return c
+
+    def test_successful_boot_backs_up_on_both_paths_and_backup_failure_does_not_fail_it(self):
+        for poll in (False, True):
+            res = self.client({"ok": True}).power_on(poll=poll)
+            self.assertTrue(res["ok"])
+            self.assertEqual(res["workflow_backup"]["message"], "backup failed")
+
+    def test_failed_boot_does_not_touch_the_instance(self):
+        c = self.client({"ok": False})
+        c.power_on()
+        c.engine.backup_new_workflows.assert_not_called()
 
 
 class ProbeErrorTest(unittest.TestCase):
@@ -249,6 +377,12 @@ class CliTest(unittest.TestCase):
         c.generate_video.return_value = {"ok": True}
         self.cli("--video", "--prompt", "p", "--timeout", "99", client=c)
         self.assertEqual(c.generate_video.call_args.kwargs["timeout_seconds"], 99)
+
+    def test_backup_flag(self):
+        c = mock.Mock()
+        c.backup_remote_workflows.return_value = {"ok": True}
+        self.cli("--backup-remote-workflows", client=c)
+        c.backup_remote_workflows.assert_called_once()
 
     def test_interrupt_flag(self):
         c = mock.Mock()

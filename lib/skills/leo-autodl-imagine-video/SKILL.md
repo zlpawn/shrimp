@@ -17,7 +17,7 @@ description: "MiniMax-H3 dedicated cloud image & audio-synced video generation s
 >    * 优先使用 `references/workflows/` 下**已经真机实测跑通**的两个基准工作流（生图 `minimax_h3_image_u33_api.json`、生视频 `minimax_h3_video_1pass_api.json`）。
 >    * 若用户对效果不满意需要调优，或需使用二采超分、武戏、文戏等进阶工作流，Agent 可通过 `--patch` 修改已知节点参数，或选用 `references/workflows/u_series_api/` 下的备用工作流。**任何新改造的工作流必须经真机运行验证通过后，才可沉淀进 `references/workflows/`，严禁凭空捏造未经验证的节点连线。**
 > 2. **开机后的出片节奏与安全关机**：
->    * **开机后先盘点（几秒钟）**：`--list-remote-workflows` 和 `--list-models all`，和本地 `references/workflows/` 备份比对。远端有本地没有的工作流时告诉用户；换用没验证过的工作流前先征得同意。
+>    * **开机后先盘点（几秒钟）**：`--power-on` 会自动把远端有、本地没有的工作流备份到 `references/workflows/remote_backup/`，结果在 `workflow_backup` 字段，失败不影响开机，可用 `--backup-remote-workflows` 重试。有新增时告诉用户。这些备份没验证过，不会自动使用，换用前先征得同意。模型清单用 `--list-models all` 查。
 >    * **效果优先（默认）**：参考图或布局定妆图出完后停下来请用户挑选，确认后再生视频。开机前告诉用户：等待期间照常计费；用户想省钱可以选成本优先。
 >    * **成本优先（用户说“省钱”“一口气跑完”“不用确认”等时）**：开机后全自动跑完全部镜头的生成、下载与拼接，中途不停下来确认。
 >    * **中途不私自关机**；**完整视频下载、拼接回本地后立即 `--power-off --confirm` 关机**。
@@ -44,6 +44,7 @@ description: "MiniMax-H3 dedicated cloud image & audio-synced video generation s
 * **可选参考资料与工作流/提示词备份库（供 Agent 按需查阅或跨镜像复用，非强制规范）**：
   * 这些文件很大（工作流 JSON 共约 7 MB，工作流说明约 47 KB）：不要整份读取，先按文件名或标题 grep 出需要的那一节。
   * [workflows/u_series_api/](references/workflows/u_series_api/) —— 19 套 `API-U*.json` 工作流备份（标准 ComfyUI API 格式，内含 `_api_config` 参数说明，可直接通过 `--run-workflow` 运行）
+  * `workflows/remote_backup/` —— 开机时自动备份的远端新工作流，未经验证（第一次备份前这个目录不存在）
   * [workflows/u_series_canvas/](references/workflows/u_series_canvas/) —— 61 套 `U00~U43` ComfyUI 网页画布原始工作流备份（供参考节点连线或导入其他镜像画布）
   * [prompts_and_guides/U视频-MINIMAX-H3_工作流说明.md](references/prompts_and_guides/U视频-MINIMAX-H3_工作流说明.md) —— `U00~U37` 各工作流的用途、输入与模型技术栈参考说明
   * [prompts_and_guides/minimax_h3_prompt_guide.md](references/prompts_and_guides/minimax_h3_prompt_guide.md) —— MiniMax-H3 六段式分镜、运镜与角色对白提示词编写指南（去重精简版）
@@ -68,6 +69,9 @@ uv run --script "$CLI_PATH" --inspect-node MiniMaxH3ReferenceToVideo --json
 # 3. 列出或拉取远端预置的成熟工作流原文件 (U00~U43 / VRGDG)
 uv run --script "$CLI_PATH" --list-remote-workflows --json
 uv run --script "$CLI_PATH" --fetch-remote-workflow "/root/ComfyUI/custom_nodes/comfyui-vrgamedevgirl/Workflows/UsedForUIDoNotTouch/minimax_audio_driven_builder_latent_upscale_2pass_api.json"
+
+# 把远端有、本地没有的工作流备份到 references/workflows/remote_backup/（开机时自动执行，这条用于重试）
+uv run --script "$CLI_PATH" --backup-remote-workflows --json
 
 # 4. 执行已验证的 MiniMax-H3 生图工作流（默认暂存至 ~/.shrimp/skills/leo-autodl-imagine-video/outputs/）
 uv run --script "$CLI_PATH" --image \
@@ -96,7 +100,7 @@ uv run --script "$CLI_PATH" --interrupt --json
 生成命令（`--image` / `--video` / `--run-workflow`）的通用参数：
 * `--timeout <秒>`：单次渲染时限，默认 1800，超时会取消远端任务。
 * `--off-on-fail`：失败时自动关机，用于无人值守。
-* `--ref-images a.png,b.png`：参考图。工作流没有可绑定的节点时，结果里的 `warnings` 会说明；生图模板带参考图的连线**还没有真机验证**，第一次用时要抽查结果是否真的参考了。
+* `--ref-images a.png,b.png`：参考图。工作流没有可绑定的节点时，结果里的 `warnings` 会说明。生图模板带参考图已真机验证（2026-11-07，同 seed 对比，人物、毛衣、眼镜都跟随参考图）。
 
 **跨平台说明**：
 * **Windows PowerShell**：变量写成 `$CLI_PATH = "<本 skill 目录>/scripts/client.py"`，多行命令的续行符 `\` 换成反引号。

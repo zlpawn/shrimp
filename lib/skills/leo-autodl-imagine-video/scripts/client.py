@@ -71,8 +71,12 @@ class AutoDLMediaClient:
         if not self.engine:
             return {"ok": False, "message": "未配置云端连接。"}
         if poll:
-            return self.engine.poll_power_on(interval_seconds=interval, max_attempts=max_attempts, wait_seconds=wait_seconds)
-        return self.engine.power_on(wait_seconds=wait_seconds)
+            result = self.engine.poll_power_on(interval_seconds=interval, max_attempts=max_attempts, wait_seconds=wait_seconds)
+        else:
+            result = self.engine.power_on(wait_seconds=wait_seconds)
+        if result.get("ok"):
+            result["workflow_backup"] = self.engine.backup_new_workflows()
+        return result
 
     def power_off(self, confirm: bool = False) -> dict:
         """
@@ -107,6 +111,12 @@ class AutoDLMediaClient:
         if not self.engine:
             return {"ok": False, "message": "未配置云端连接。"}
         return self.engine.list_remote_workflows()
+
+    def backup_remote_workflows(self) -> dict:
+        """把远端有、本地没有的工作流备份到 references/workflows/remote_backup/（开机时会自动执行）"""
+        if not self.engine:
+            return {"ok": False, "message": "未配置云端连接。"}
+        return self.engine.backup_new_workflows()
 
     def fetch_remote_workflow(self, remote_path: str, save_to: str = None) -> dict:
         """从 AutoDL 远端下载指定的成熟工作流 JSON 到本地进行分析或复用"""
@@ -331,6 +341,7 @@ def main():
     parser.add_argument("--inspect-node", type=str, help="查看 ComfyUI 某个节点的完整输入槽位与枚举值，如 'MiniMaxH3ReferenceToVideo'")
     parser.add_argument("--list-models", type=str, nargs="?", const="all", help="查询云端 MiniMax-H3 相关模型: all | diffusion_models | clips | vaes | loras")
     parser.add_argument("--list-remote-workflows", action="store_true", help="列出 AutoDL 远端镜像预置的 43+ 个成熟 MiniMax-H3 工作流")
+    parser.add_argument("--backup-remote-workflows", action="store_true", help="把远端有、本地没有的工作流备份到 references/workflows/remote_backup/（开机时会自动执行）")
     parser.add_argument("--fetch-remote-workflow", type=str, help="下载远端某个成熟工作流 JSON 文件到本地，供分析或沉淀")
     parser.add_argument("--save-to", type=str, default=None, help="配合 --fetch-remote-workflow 指定本地保存路径")
 
@@ -414,6 +425,8 @@ def main():
         result = client.inspect_node(node_class=args.inspect_node)
     elif args.list_models:
         result = client.list_models(category=args.list_models)
+    elif args.backup_remote_workflows:
+        result = client.backup_remote_workflows()
     elif args.list_remote_workflows:
         result = client.list_remote_workflows()
     elif args.fetch_remote_workflow:
