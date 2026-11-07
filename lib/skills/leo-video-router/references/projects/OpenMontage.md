@@ -23,6 +23,14 @@
 - 项目根目录取 `python3 <本 skill 目录>/scripts/registry.py locate OpenMontage`（`<本 skill 目录>` 即含 SKILL.md 的 leo-video-router 目录；Windows 上用 `python`）输出的 `path`，在该目录工作。
 - 先读 `AGENT_GUIDE.md`（`AGENTS.md` 只指向它），按 Rule Zero 走 pipeline：选 pipeline → 读 `pipeline_defs/<pipeline>.yaml` → preflight → 逐阶段读 director skill 后执行。
 
+## 素材替换与 AI 资产联动 (Asset Generation Integration)
+
+- 当分析发现原始视频素材包含明星肖像侵权风险、版权切片、大面积台标水印或画质损毁时：
+  1. OpenMontage 编排工程不直接硬切侵权素材；
+  2. 按照分镜时间轴向底层生成引擎（如 `leo-autodl-imagine-video`）发出分镜生成需求；
+  3. 将生成的无版权原创 8K 镜头生肉（RAW `.mp4`）放入工程 `<工程目录>/素材/`；
+  4. OpenMontage 将这些生成资产挂载进多轨时间线，完成调色、转场与多镜头时序拼接。
+
 ## 音频
 
 - 内生（ElevenLabs、Piper 等）。

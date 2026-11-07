@@ -132,6 +132,15 @@ class RegistryTest(Base):
         self.assertEqual((self.data / "registry.json").read_text(encoding="utf-8"), "{not json")
 
 
+    def test_dynamic_custom_project_register_and_locate(self):
+        repo = self.tmp / "custom-repo/future-video-project"
+        touch(repo / "SKILL.md", skill_md("future-video-project"))
+        registry.register("future-video-project", repo, "user", self.home)
+        r = registry.locate("future-video-project", self.home, self.cwd)
+        self.assertIsNotNone(r)
+        self.assertEqual(r["via"], "registry")
+        self.assertEqual(r["name"], "future-video-project")
+
 class WorkspaceTest(Base):
 
     def test_config_paths(self):
