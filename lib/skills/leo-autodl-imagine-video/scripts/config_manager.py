@@ -6,6 +6,7 @@ from pathlib import Path
 DEFAULT_CONFIG_DIR = Path.home() / ".shrimp" / "skills" / "leo-autodl-imagine-video"
 CONFIG_FILE = DEFAULT_CONFIG_DIR / "config.json"
 DEFAULT_OUTPUT_DIR = DEFAULT_CONFIG_DIR / "outputs"
+SOURCE_FILE = DEFAULT_CONFIG_DIR / "source.json"  # skill 源目录，由 Agent 判断后用 --set-source-dir 写入
 NO_WHITESPACE_FIELDS = ("token", "instance_uuid")  # 粘贴时常被折行，这两个值本身不含空白
 
 
@@ -21,6 +22,24 @@ def get_config_path() -> Path:
 def get_default_output_dir() -> Path:
     DEFAULT_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     return DEFAULT_OUTPUT_DIR
+
+
+def get_source_dir():
+    """返回记录的 skill 源目录；没记录或目录已失效时返回 None。"""
+    try:
+        source = Path(json.loads(SOURCE_FILE.read_text(encoding="utf-8"))["source_dir"]).expanduser()
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    return source if (source / "SKILL.md").is_file() else None
+
+
+def set_source_dir(path: str) -> Path:
+    source = Path(path).expanduser().resolve()
+    if not (source / "SKILL.md").is_file():
+        raise ValueError(f"不是 skill 目录（没有 SKILL.md）: {source}")
+    DEFAULT_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    SOURCE_FILE.write_text(json.dumps({"source_dir": str(source)}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return source
 
 
 def load_config() -> dict:

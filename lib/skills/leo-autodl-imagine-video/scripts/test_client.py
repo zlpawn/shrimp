@@ -1,5 +1,5 @@
 """uv run --with paramiko --with requests python -B scripts/test_client.py  （全部 mock，不连云端、不花钱）"""
-import contextlib, copy, io, json, os, sys, tempfile, unittest
+import contextlib, copy, hashlib, io, json, os, shutil, sys, tempfile, unittest
 from pathlib import Path
 from unittest import mock
 
@@ -212,65 +212,166 @@ class InterruptTest(unittest.TestCase):
         self.assertFalse(res["ok"])
 
 
+class FakeRemote(FakeSSH):
+    """远端工作流目录：path -> 内容。sha256sum 和 sftp 都按它返回。"""
+
+    def __init__(self, files):
+        super().__init__()
+        self.files = files
+        self.downloads = []
+        self.fail = set()
+
+    def exec_command(self, cmd, timeout=None):
+        if cmd.startswith("sha256sum"):
+            lines = [f"{hashlib.sha256(c.encode()).hexdigest()}  {p}" for p, c in self.files.items()]
+            return FakeStream(), FakeStream("\n".join(lines)), FakeStream()
+        return super().exec_command(cmd, timeout)
+
+    def open_sftp(self):
+        def get(remote, local):
+            self.downloads.append(remote)
+            Path(local).write_text(self.files[remote], encoding="utf-8")
+            if remote in self.fail:
+                raise OSError("dropped")
+        sftp = mock.Mock()
+        sftp.get.side_effect = get
+        return sftp
+
+
 class WorkflowBackupTest(unittest.TestCase):
-    REMOTE = ["/root/wf/known.json", "/root/wf/new1.json", "/root/wf/new2.json"]
+    """真实文件系统：源目录 -> ~/.agents/skills（真实目录）<- ~/.claude/skills（软链）。"""
+    NAME = "leo-autodl-imagine-video"
 
     def setUp(self):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
-        self.dir = Path(tmp.name)
-        (self.dir / "u_series_canvas").mkdir()
-        (self.dir / "u_series_canvas" / "known.json").write_text("{}")
+        home = Path(tmp.name).resolve()
+        self.source = home / "repo" / self.NAME
+        (self.source / "references/workflows/u_series_canvas").mkdir(parents=True)
+        (self.source / "SKILL.md").write_text("x")
+        (self.source / "references/workflows/verified.json").write_text("verified")
+        (self.source / "references/workflows/u_series_canvas/known.json").write_text("old")
+        self.central = home / ".agents/skills" / self.NAME
+        shutil.copytree(self.source, self.central)
+        (home / ".claude/skills").mkdir(parents=True)
+        (home / ".claude/skills" / self.NAME).symlink_to(self.central)
+        self.roots = [home / ".agents/skills", home / ".claude/skills", home / "absent/skills"]
         self.eng = engine()
-        self.eng.workflows_dir = self.dir
+        self.eng.skill_root = self.central  # 从已安装的副本运行
+        self.eng.workflows_dir = self.central / "references/workflows"
+        self.remote = FakeRemote({"/r/known.json": "old", "/r/new.json": "new"})
 
-    def backup(self, get=None, listed=None):
-        def default_get(remote, local):
-            Path(local).write_text(remote)
-        ssh = FakeSSH()
-        sftp = mock.Mock()
-        sftp.get.side_effect = get or default_get
-        ssh.open_sftp = lambda: sftp
-        with mock.patch.object(self.eng, "connect_ssh", return_value=ssh), \
-                mock.patch.object(self.eng, "list_remote_workflows", return_value=listed or {"ok": True, "remote_workflows": self.REMOTE}):
-            return self.eng.backup_new_workflows(), sftp
+    def backup(self, source="default"):
+        source = self.source if source == "default" else source
+        with mock.patch.object(remote_engine, "get_source_dir", return_value=source), \
+                mock.patch.object(remote_engine, "INSTALLED_SKILL_ROOTS", self.roots), \
+                mock.patch.object(self.eng, "connect_ssh", return_value=self.remote), \
+                mock.patch.object(self.eng, "list_remote_workflows", return_value={"ok": True, "remote_workflows": list(self.remote.files)}):
+            return self.eng.backup_remote_workflows()
 
-    def test_downloads_only_what_is_missing_anywhere_locally(self):
-        res, sftp = self.backup()
+    def read(self, root, rel):
+        return (root / "references/workflows" / rel).read_text()
+
+    def test_new_workflow_reaches_source_then_every_agent(self):
+        res = self.backup()
         self.assertTrue(res["ok"], res)
-        self.assertEqual(sorted(c.args[0] for c in sftp.get.call_args_list), self.REMOTE[1:])
-        self.assertEqual(sorted(p.name for p in (self.dir / "remote_backup").iterdir()), ["new1.json", "new2.json"])
+        self.assertEqual((res["new"], res["updated"]), (["new.json"], []))
+        self.assertEqual(self.read(self.source, "remote_backup/new.json"), "new")
+        self.assertEqual(self.read(self.central, "remote_backup/new.json"), "new")
+        self.assertEqual(self.remote.downloads, ["/r/new.json"])
+
+    def test_same_name_with_new_content_is_updated_in_place_everywhere(self):
+        self.remote.files["/r/known.json"] = "changed"
+        res = self.backup()
+        self.assertEqual(res["updated"], ["known.json"])
+        self.assertEqual(self.read(self.source, "u_series_canvas/known.json"), "changed")
+        self.assertEqual(self.read(self.central, "u_series_canvas/known.json"), "changed")
+        self.assertFalse((self.source / "references/workflows/remote_backup/known.json").exists())
 
     def test_second_run_downloads_nothing(self):
         self.backup()
-        res, sftp = self.backup()
+        self.remote.downloads.clear()
+        res = self.backup()
         self.assertTrue(res["ok"])
-        self.assertEqual(res["saved"], [])
-        sftp.get.assert_not_called()
+        self.assertEqual((res["new"], res["updated"], self.remote.downloads), ([], [], []))
 
-    def test_failed_download_leaves_no_partial_file_and_retries_next_time(self):
-        def flaky(remote, local):
-            Path(local).write_text("half")
-            if remote.endswith("new1.json"):
-                raise OSError("dropped")
-        res, _ = self.backup(get=flaky)
+    def test_verified_template_is_never_overwritten(self):
+        self.remote.files["/r/verified.json"] = "remote version"
+        self.backup()
+        self.assertEqual(self.read(self.source, "verified.json"), "verified")
+        self.assertEqual(self.read(self.source, "remote_backup/verified.json"), "remote version")
+
+    def test_failed_download_leaves_no_partial_file_and_retries(self):
+        self.remote.fail = {"/r/new.json"}
+        res = self.backup()
         self.assertFalse(res["ok"])
-        self.assertEqual(res["failed"], ["/root/wf/new1.json"])
-        self.assertEqual([p.name for p in (self.dir / "remote_backup").iterdir()], ["new2.json"])
-        res, sftp = self.backup()
-        self.assertEqual([c.args[0] for c in sftp.get.call_args_list], ["/root/wf/new1.json"])
+        self.assertEqual(res["failed"], ["/r/new.json"])
+        self.assertEqual(list((self.source / "references/workflows/remote_backup").iterdir()), [])
+        self.remote.fail = set()
+        self.assertEqual(self.backup()["new"], ["new.json"])
+
+    def test_failed_distribution_is_reported_and_healed_next_run(self):
+        real_copy = shutil.copyfile
+        with mock.patch.object(remote_engine.shutil, "copyfile", side_effect=OSError("denied")):
+            res = self.backup()
+        self.assertFalse(res["ok"])
+        self.assertEqual(self.read(self.source, "remote_backup/new.json"), "new")
+        self.assertTrue(res["distribute_failed"])
+        self.assertIs(shutil.copyfile, real_copy)
+        res = self.backup()
+        self.assertTrue(res["ok"], res)
+        self.assertEqual(self.remote.downloads, ["/r/new.json"])  # 没有重新下载，直接从源目录补
+        self.assertEqual(self.read(self.central, "remote_backup/new.json"), "new")
+
+    def test_no_recorded_source_writes_nowhere(self):
+        res = self.backup(source=None)
+        self.assertFalse(res["ok"])
+        self.assertIn("--set-source-dir", res["message"])
+        self.assertEqual(self.remote.downloads, [])
+        self.assertFalse((self.central / "references/workflows/remote_backup").exists())
+
+    def test_running_from_the_source_itself_still_distributes(self):
+        self.eng.skill_root = self.source
+        self.backup()
+        self.assertEqual(self.read(self.central, "remote_backup/new.json"), "new")
 
     def test_backups_are_not_picked_up_as_runnable_templates(self):
         self.backup()
         with self.assertRaises(FileNotFoundError):
-            self.eng.load_workflow_template("new1.json")
+            self.eng.load_workflow_template("new.json")
 
     def test_listing_failure_is_reported_not_raised(self):
-        res, _ = self.backup(listed={"ok": False, "message": "ComfyUI 未就绪"})
+        with mock.patch.object(remote_engine, "get_source_dir", return_value=self.source), \
+                mock.patch.object(self.eng, "list_remote_workflows", side_effect=OSError("ssh down")):
+            res = self.eng.backup_remote_workflows()
         self.assertFalse(res["ok"])
         self.assertIn("--backup-remote-workflows", res["message"])
-        with mock.patch.object(self.eng, "list_remote_workflows", side_effect=OSError("ssh down")):
-            self.assertFalse(self.eng.backup_new_workflows()["ok"])
+
+
+class SourceDirTest(unittest.TestCase):
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.home = Path(tmp.name).resolve()
+        patches = [mock.patch.object(config_manager, "DEFAULT_CONFIG_DIR", self.home / "cfg"),
+                   mock.patch.object(config_manager, "SOURCE_FILE", self.home / "cfg/source.json")]
+        for p in patches:
+            p.start()
+            self.addCleanup(p.stop)
+
+    def test_round_trip_and_validation(self):
+        self.assertIsNone(config_manager.get_source_dir())
+        with self.assertRaises(ValueError):
+            config_manager.set_source_dir(str(self.home))
+        (self.home / "SKILL.md").write_text("x")
+        self.assertEqual(config_manager.set_source_dir(str(self.home)), self.home)
+        self.assertEqual(config_manager.get_source_dir(), self.home)
+
+    def test_moved_or_corrupt_source_is_none(self):
+        config_manager.DEFAULT_CONFIG_DIR.mkdir()
+        for bad in ('{"source_dir": "/nope"}', "not json", "[]", '{"source_dir": null}'):
+            config_manager.SOURCE_FILE.write_text(bad)
+            self.assertIsNone(config_manager.get_source_dir(), bad)
 
 
 class PowerOnBackupTest(unittest.TestCase):
@@ -279,7 +380,7 @@ class PowerOnBackupTest(unittest.TestCase):
         c.engine = mock.Mock()
         c.engine.power_on.return_value = power_on
         c.engine.poll_power_on.return_value = power_on
-        c.engine.backup_new_workflows.return_value = {"ok": False, "message": "backup failed"}
+        c.engine.backup_remote_workflows.return_value = {"ok": False, "message": "backup failed"}
         return c
 
     def test_successful_boot_backs_up_on_both_paths_and_backup_failure_does_not_fail_it(self):
@@ -291,7 +392,7 @@ class PowerOnBackupTest(unittest.TestCase):
     def test_failed_boot_does_not_touch_the_instance(self):
         c = self.client({"ok": False})
         c.power_on()
-        c.engine.backup_new_workflows.assert_not_called()
+        c.engine.backup_remote_workflows.assert_not_called()
 
 
 class ProbeErrorTest(unittest.TestCase):

@@ -1,5 +1,8 @@
+import hashlib
 import os
 import json
+import shlex
+import shutil
 import time
 import random
 from pathlib import Path
@@ -9,7 +12,16 @@ import urllib3
 
 urllib3.disable_warnings()
 
-from config_manager import get_default_output_dir
+from config_manager import SOURCE_FILE, get_default_output_dir, get_source_dir
+
+# 已安装 skill 的位置；软链到同一目录的会自动去重，不存在的跳过
+INSTALLED_SKILL_ROOTS = [
+    Path.home() / ".agents" / "skills",
+    Path.home() / ".claude" / "skills",
+    Path.home() / ".codex" / "skills",
+    Path.home() / ".gemini" / "config" / "skills",
+    Path("/Library/Application Support/Claude/org-plugins/pawn/skills"),
+]
 
 ASPECT_RATIO_MAP = {
     "1:1": "1:1 (Square)",
@@ -84,6 +96,10 @@ def apply_workflow_patches(wf: dict, patches: dict) -> dict:
             elif isinstance(val, dict):
                 wf[key] = val
     return wf
+
+
+def _sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 class AutoDLRemoteEngine:
@@ -522,48 +538,99 @@ class AutoDLRemoteEngine:
         finally:
             client.close()
 
-    def backup_new_workflows(self) -> dict:
+    def backup_remote_workflows(self) -> dict:
         """
-        把远端有、本地没有的工作流下载到 references/workflows/remote_backup/。
-        只做备份：模板查找不搜这个目录，也不会自动运行。失败不影响开机，结果里说明。
-        ponytail: 按文件名比对，远端改了同名文件不会更新；需要时改成比对内容。
+        让源目录的工作流备份和远端保持一致，再分发到已安装的各 agent 目录。
+        远端新文件放 remote_backup/，内容变了的就地覆盖（旧版本看 git）。
+        只做备份：模板查找不搜这些目录，也不会自动运行；根目录的已验证模板不参与。失败不影响开机。
         """
+        def failure(why):
+            return {"ok": False, "new": [], "updated": [], "failed": [], "distribute_failed": [],
+                    "message": f"没能备份远端工作流，可稍后用 --backup-remote-workflows 重试: {why}"}
+
+        source = get_source_dir()
+        if source is None:
+            return failure(f"没有有效的 skill 源目录。确定源目录后用 --set-source-dir 写入（记录在 {SOURCE_FILE}）")
         try:
             listed = self.list_remote_workflows()
             if not listed.get("ok"):
-                return {"ok": False, "saved": [], "failed": [], "message": f"没能备份远端工作流，可稍后用 --backup-remote-workflows 重试: {listed.get('message')}"}
-            local_names = {p.name for p in self.workflows_dir.rglob("*.json")}
-            new = [r for r in listed["remote_workflows"] if Path(r).name not in local_names]
-            if not new:
-                return {"ok": True, "saved": [], "failed": [], "message": "远端没有本地未备份的工作流"}
-
-            backup_dir = self.workflows_dir / "remote_backup"
-            backup_dir.mkdir(parents=True, exist_ok=True)
-            saved, failed = [], []
+                return failure(listed.get("message"))
+            remotes = listed["remote_workflows"]
+            workflows = source / "references" / "workflows"
+            local = {p.name: p for p in workflows.rglob("*.json") if p.parent != workflows}
+            backup_dir = workflows / "remote_backup"
+            new, updated, failed = [], [], []
             client = self.connect_ssh()
             try:
+                hashes = self._remote_sha256(client, remotes)
                 sftp = client.open_sftp()
-                for remote in new:
-                    dst = backup_dir / Path(remote).name
-                    part = dst.with_name(dst.name + ".part")  # 中途断开不留半个文件，否则下次会被当成已备份
+                for remote in remotes:
+                    name = Path(remote).name
+                    dst = local.get(name)
+                    if dst is not None and _sha256(dst) == hashes.get(remote):
+                        continue
+                    target = dst or backup_dir / name
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    part = target.with_name(target.name + ".part")  # 中途断开不留半个文件
                     try:
                         sftp.get(remote, str(part))
-                        os.replace(part, dst)
-                        saved.append(str(dst))
+                        os.replace(part, target)
+                        local[name] = target
+                        (updated if dst else new).append(name)
                     except Exception:
                         part.unlink(missing_ok=True)
                         failed.append(remote)
                 sftp.close()
             finally:
                 client.close()
+
+            names = {Path(r).name for r in remotes}
+            distribute_failed = self._distribute(source, [local[n] for n in names if n in local])
             return {
-                "ok": not failed,
-                "saved": saved,
+                "ok": not failed and not distribute_failed,
+                "new": new,
+                "updated": updated,
                 "failed": failed,
-                "message": f"备份了 {len(saved)} 个远端新工作流到 {backup_dir}（未经验证，只做备份）" + (f"，{len(failed)} 个失败" if failed else "")
+                "distribute_failed": distribute_failed,
+                "source_dir": str(source),
+                "message": f"远端工作流备份完成：新增 {len(new)}，更新 {len(updated)}，下载失败 {len(failed)}，分发失败 {len(distribute_failed)}。"
+                           + ("源目录有改动，需要提交。" if new or updated else "")
             }
         except Exception as e:
-            return {"ok": False, "saved": [], "failed": [], "message": f"没能备份远端工作流，可稍后用 --backup-remote-workflows 重试: {e}"}
+            return failure(e)
+
+    def _remote_sha256(self, client: paramiko.SSHClient, remotes: list) -> dict:
+        """一条命令取全部哈希；取不到的文件不在结果里，后面会按内容不同重新下载。"""
+        _, stdout, _ = client.exec_command("sha256sum " + " ".join(shlex.quote(r) for r in remotes) + " 2>/dev/null", timeout=60)
+        hashes = {}
+        for line in stdout.read().decode("utf-8", errors="replace").splitlines():
+            digest, _, path = line.partition("  ")
+            if path:
+                hashes[path] = digest
+        return hashes
+
+    def _distribute(self, source: Path, files: list) -> list:
+        """
+        把源目录的文件同步到已安装的各目录。每次都比对内容，上次分发失败的下次会补上。
+        ponytail: 只覆盖 INSTALLED_SKILL_ROOTS 里的位置，装在别处的副本不会更新，需要时加进列表。
+        """
+        name = source.name
+        candidates = [self.skill_root] + [root / name for root in INSTALLED_SKILL_ROOTS]
+        targets = {c.resolve() for c in candidates if c.exists()} - {source.resolve()}
+        failed = []
+        for target in sorted(targets):
+            for src in files:
+                dst = target / src.relative_to(source)
+                try:
+                    if dst.is_file() and _sha256(dst) == _sha256(src):
+                        continue
+                    dst.parent.mkdir(parents=True, exist_ok=True)
+                    part = dst.with_name(dst.name + ".part")
+                    shutil.copyfile(src, part)
+                    os.replace(part, dst)
+                except OSError as e:
+                    failed.append(f"{dst}: {e}")
+        return failed
 
     def _upload_media_files(self, client: paramiko.SSHClient, local_files: list) -> list:
         """通过 SFTP 将本地参考图或参考视频上传至远端 /root/ComfyUI/input/ 并返回远端绝对路径列表"""
