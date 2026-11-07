@@ -60,6 +60,7 @@ description: 通过 leo-lantern CLI/服务实现 Chrome 浏览器远程调试 (C
      - Netscape 格式（curl 直接读）：`leo-lantern cookies --domain="example.com" --format=txt --out=cookies.txt`
      - JSON 格式：`leo-lantern cookies --domain="example.com" --format=json`
      - 按 URL 读取（包含父域名上的 Cookie，需要扩展 1.3.13+）：`leo-lantern cookies --url="https://a.example.com/path" --out=cookies.json`
+     - 读不到时打开网站再读（需要扩展 1.3.15+）：`leo-lantern cookies --url="https://a.example.com/" --open-if-missing --out=cookies.json`。在后台独立窗口打开，读完一定关闭，不影响正在执行的任务。如果跳到登录页或出现密码框，就以 `login_required` 报错退出，请提示用户在 Chrome 登录后重试，不要反复尝试。
 5. **任务清理**：
    - 结束任务：`leo-lantern end-task`
 

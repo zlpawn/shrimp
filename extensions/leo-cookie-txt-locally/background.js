@@ -1,4 +1,4 @@
-import { exportCookies } from "./cookie-export.mjs";
+import { exportCookies, visitForCookies } from "./cookie-export.mjs";
 import { createMultiUrlPollLoop } from "./poll-loop.mjs";
 import { createCommandQueue } from "./command-queue.mjs";
 import { shouldStopNetworkCapture } from "./background-lifecycle.mjs";
@@ -576,6 +576,8 @@ async function executeTask(task) {
 
     if (type === "cookies.export" || type === "cookies.get") {
       result = await exportCookies(chrome, params);
+    } else if (type === "cookies.visit") {
+      result = await visitForCookies(chrome, params);
     } else if (type === "tabs.list") {
       const tabs = await chrome.tabs.query({});
       result = tabs.map((t) => ({

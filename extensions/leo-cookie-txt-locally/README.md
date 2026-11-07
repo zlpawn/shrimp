@@ -26,6 +26,7 @@ A Chrome/Edge/Brave extension that exports cookies from the browser to the Shrim
 更新至 1.3.13 并重新加载扩展，在同一个普通 Profile 登录业务网站后，直接运行 skill 命令。无需手动复制、导入配对文件或启动网关。
 
 - 缓存可用时不读取浏览器；凭据缺失或明确登录失败时，业务进程按需拉起 `127.0.0.1:19527` 的桥接，通过 `cookies.export` 调用 `chrome.cookies.getAll({url})`。
+- 读不到 Cookie 或 Cookie 已被服务端拒绝时，通过 `cookies.visit`（1.3.15 起）在后台独立窗口打开网站，等加载稳定后重新读取并关闭窗口；跳到登录页或出现密码框时返回 `loginRequired`，脚本提示用户登录，不使用这些 Cookie。
 - `url` 需要 1.3.13 及以上：结果带 `matchedBy: "url"`，脚本没看到它就提示重新加载扩展，并丢弃结果。请求同时带上 `domain`，所以旧版扩展最多读到该主机名下的 Cookie。
 - 结果和其他命令一样，会在扩展内存的命令队列里保留最多 5 分钟，不落盘。
 - 脚本默认最多等待 180 秒，桥接空闲 10 分钟后自动退出。
