@@ -96,3 +96,5 @@ gateway-8789.log*
 /scheduler.config.json
 punk-assets/
 /work/
+
+.agents/

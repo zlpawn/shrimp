@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-31T04:55:32.340Z",
+  "updatedAt": "2026-11-07T06:01:20.125Z",
   "skills": [
     {
       "id": "leo-fooocus-imagine",
@@ -616,6 +616,29 @@
         "cloud-gpu",
         "云端生图",
         "音画同步视频"
+      ],
+      "requiresDaemon": false,
+      "promoted": true,
+      "managed": true
+    },
+    {
+      "id": "leo-craft-api",
+      "name": "leo-craft-api",
+      "title": "Leo Craft API 笔记中枢操作引擎",
+      "summary": "基于 Craft 官方 Full Space API 的全功能空间操作与文档编排技能，支持目录与位置发现、文档读写与搜索、块级内容注入、任务清单管理、集合数据表及本地文件与图片直传，凭证本地隔离不入库。",
+      "category": "research",
+      "categoryLabel": "研究与知识",
+      "icon": "📝",
+      "featured": true,
+      "tags": [
+        "craft",
+        "craftdocs",
+        "notes",
+        "knowledge-base",
+        "api",
+        "blocks",
+        "tasks",
+        "markdown"
       ],
       "requiresDaemon": false,
       "promoted": true,

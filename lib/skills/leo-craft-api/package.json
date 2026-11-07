@@ -1,0 +1,18 @@
+{
+  "name": "leo-craft-api",
+  "version": "1.0.0",
+  "description": "Craft Full Space API 命令行与编程接口工具，支持文档、文件夹、块级内容、任务、集合与文件的完整操作",
+  "type": "module",
+  "bin": {
+    "craft-api": "./scripts/craft-api.mjs"
+  },
+  "keywords": [
+    "craft",
+    "craftdocs",
+    "craft-api",
+    "notes",
+    "knowledge-base"
+  ],
+  "author": "Leo",
+  "license": "MIT"
+}
