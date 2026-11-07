@@ -6,7 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { computeStatus, validateDraft } from "../../lib/skills/leo-video-relay/scripts/lib/facts.mjs";
 import { framesPublicByDefault, splitNote } from "../../lib/skills/leo-video-relay/scripts/lib/craft.mjs";
-import { isMachineTranslated, keepSegment, maxIntervalFor, parseCues, planFrames, selectDistinctFrames } from "../../lib/skills/leo-video-relay/scripts/lib/media.mjs";
+import { isMachineTranslated, keepSegment, maxIntervalFor, originalManualTrack, parseCues, planFrames, platformSubtitleSource, selectDistinctFrames, importTranscript } from "../../lib/skills/leo-video-relay/scripts/lib/media.mjs";
 
 const ROOT = path.resolve(import.meta.dirname, "../..");
 const SKILL = path.join(ROOT, "lib", "skills", "leo-video-relay");
@@ -91,6 +91,18 @@ test("machine-translated platform captions are not treated as a source", () => {
   assert.equal(isMachineTranslated(info, "en-US"), false);
 });
 
+test("only uploaded subtitles in the video's own language count as the original", () => {
+  const manual = (lang) => ({ track: lang, lang, source: "platform_manual" });
+  assert.equal(originalManualTrack([manual("en-US")], { language: "en" })?.track, "en-US");
+  assert.equal(originalManualTrack([manual("zh-Hans")], { language: "zh-CN" })?.track, "zh-Hans");
+  assert.equal(originalManualTrack([manual("zh-Hans")], { language: "en" }), null, "a translation is not the original");
+  assert.equal(originalManualTrack([manual("en")], {}), null, "unknown video language can't prove it");
+  assert.equal(originalManualTrack([{ track: "en", lang: "en", source: "platform_auto" }], { language: "en" }), null);
+  assert.equal(platformSubtitleSource({ subtitles: { "ai-zh": [], zh: [] } }, "ai-zh"), "platform_auto", "Bilibili AI captions are not manual");
+  assert.equal(platformSubtitleSource({ subtitles: { zh: [] } }, "zh"), "platform_manual");
+  assert.equal(platformSubtitleSource({ automatic_captions: { en: [] } }, "en"), "platform_auto");
+});
+
 test("whisper silence segments are dropped by its own thresholds", () => {
   assert.equal(keepSegment({ text: "字幕由 Amara 提供", no_speech_prob: 0.9, avg_logprob: -1.5 }), false);
   assert.equal(keepSegment({ text: "真实内容", no_speech_prob: 0.9, avg_logprob: -0.2 }), true);
@@ -159,7 +171,7 @@ test("frames only go to Craft by default for publicly available web videos", () 
 });
 
 test("the skill source names no machine-specific directory", () => {
-  const files = ["SKILL.md", "references/facts-schema.md", "references/scenes/knowledge-note.md", "references/scenes/xhs-material.md", "references/scenes/short-video-material.md", "scripts/relay.mjs", "scripts/lib/store.mjs", "scripts/lib/media.mjs", "scripts/lib/facts.mjs", "scripts/lib/craft.mjs"];
+  const files = ["SKILL.md", "references/facts-schema.md", "references/voicestudio-asr.md", "references/scenes/knowledge-note.md", "references/scenes/xhs-material.md", "references/scenes/short-video-material.md", "scripts/relay.mjs", "scripts/lib/store.mjs", "scripts/lib/media.mjs", "scripts/lib/facts.mjs", "scripts/lib/craft.mjs"];
   for (const file of files) {
     const text = fs.readFileSync(path.join(SKILL, file), "utf8");
     assert.doesNotMatch(text, /\/Users\/|\/home\/|[A-Z]:\\|~\/(Videos|Downloads|Documents|\.claude|\.codex|\.agents)/, file);
@@ -168,7 +180,66 @@ test("the skill source names no machine-specific directory", () => {
 
 const hasFfmpeg = spawnSync("ffmpeg", ["-version"]).status === 0;
 
-test("local video: sidecar and embedded subtitles are found, and failed ASR degrades to partial", { skip: !hasFfmpeg }, () => {
+test("transcript import maps segments, drops silence and rejects non-transcripts", () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "video-relay-asr-test-"));
+  try {
+    const ok = importTranscript(tmp, { language: "zh", segments: [{ start: 0, end: 0.5, text: " 你好 " }, { start: 0.5, end: 1, text: "杂音", no_speech_prob: 0.9, avg_logprob: -2 }] }, 1);
+    assert.deepEqual(ok, { status: "ok", language: "zh", segments: 1 });
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(tmp, "transcript.json"), "utf8")).segments, [{ id: "ASR-S00001", start: 0, end: 0.5, text: "你好" }]);
+    assert.match(fs.readFileSync(path.join(tmp, "transcript.txt"), "utf8"), /^ASR-S00001 \[00:00\.0-00:00\.5\] 你好\n$/);
+    assert.equal(importTranscript(tmp, { text: "只有全文" }, 9).segments, 1);
+    assert.equal(importTranscript(tmp, { text: "", segments: [] }, 9).status, "no_speech");
+    assert.throws(() => importTranscript(tmp, { detail: "请在 Settings 打开 ASR 引擎" }, 9), /这不是转写结果.*Settings/);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("web video with original manual subtitles skips transcription and says so", { skip: !hasFfmpeg }, () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "video-relay-skip-"));
+  const env = { ...process.env, LEO_VIDEO_RELAY_HOME: path.join(tmp, "home") };
+  const relay = (...args) => {
+    const res = spawnSync(process.execPath, [SCRIPT, ...args], { encoding: "utf8", env });
+    assert.equal(res.status, 0, res.stderr);
+    return JSON.parse(res.stdout);
+  };
+  try {
+    const { run_dir: runDir } = relay("init", "https://example.test/watch?v=abc");
+    execFileSync("ffmpeg", ["-hide_banner", "-nostdin", "-loglevel", "error", "-y", "-f", "lavfi", "-i", "color=green:s=320x180:d=2:r=10", "-f", "lavfi", "-i", "sine=frequency=440:duration=2", path.join(runDir, "source.mp4")], { timeout: 30_000 });
+    fs.writeFileSync(path.join(runDir, "source.info.json"), JSON.stringify({ extractor_key: "Test", id: "abc", title: "T", language: "en", subtitles: { "en-US": [] }, automatic_captions: { en: [] } }));
+    fs.writeFileSync(path.join(runDir, "source.en-US.srt"), "1\n00:00:00,500 --> 00:00:01,500\nhuman words\n");
+    fs.writeFileSync(path.join(runDir, "source.en.srt"), "1\n00:00:00,500 --> 00:00:01,500\nauto words\n");
+
+    const prepared = relay("prepare", runDir);
+    assert.equal(prepared.audio.status, "skipped");
+    assert.equal(prepared.audio.subtitle_track, "en-US");
+    assert.match(prepared.audio.reason, /跳过转写/);
+    assert.equal(prepared.transcribe, undefined);
+    assert.deepEqual(prepared.read_these, ["subtitles/en-US.txt"]);
+    assert.ok(!fs.existsSync(path.join(runDir, "audio.wav")));
+
+    relay("review", runDir, "--sheet", "SHEET-0001", "--note", "绿色");
+    const segment = JSON.parse(fs.readFileSync(path.join(runDir, "subtitles", "en-US.json"), "utf8")).segments[0];
+    fs.writeFileSync(path.join(runDir, "facts.draft.json"), JSON.stringify({
+      type: "测试",
+      topic: "字幕",
+      sections: [{ start: 0, end: 2, title: "全片", fact_ids: ["FACT-0001"] }],
+      facts: [{ id: "FACT-0001", kind: "speech", text: "human words", start: 0.5, end: 1.5, evidence: [segment.id] }],
+    }));
+    const checked = relay("check", runDir);
+    assert.equal(checked.status, "complete");
+    assert.match(checked.speech_source, /人工字幕 en-US.*跳过转写/);
+    assert.match(fs.readFileSync(path.join(runDir, "facts.md"), "utf8"), /语音来源：人工字幕 en-US/);
+
+    const forced = relay("prepare", runDir, "--redo", "asr");
+    assert.equal(forced.audio.status, "pending", "the user can still ask for a transcript");
+    assert.ok(fs.existsSync(forced.transcribe.audio));
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("local video: subtitles are found, audio waits for omnivoice, and a skipped transcript degrades to partial", { skip: !hasFfmpeg }, () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "video-relay-subs-"));
   const env = { ...process.env, LEO_VIDEO_RELAY_HOME: path.join(tmp, "home") };
   const relay = (...args) => {
@@ -186,10 +257,11 @@ test("local video: sidecar and embedded subtitles are found, and failed ASR degr
       "-i", embedded, "-map", "0", "-map", "1", "-map", "2", "-c:s", "mov_text", video], { timeout: 30_000 });
 
     const { run_dir: runDir } = relay("init", video);
-    const prepared = relay("prepare", runDir, "--asr-tool", "not-a-real-asr");
-    assert.equal(prepared.audio.status, "failed");
+    const prepared = relay("prepare", runDir);
+    assert.equal(prepared.audio.status, "pending");
+    assert.ok(fs.existsSync(prepared.transcribe.audio), "audio is ready for omnivoice");
+    assert.equal(prepared.transcribe.response_format, "verbose_json");
     assert.deepEqual(prepared.subtitles.map((s) => s.source).sort(), ["embedded", "sidecar"]);
-    assert.equal(prepared.read_these.length, 1);
     assert.match(fs.readFileSync(path.join(runDir, "subtitles", "sidecar-zh.txt"), "utf8"), /SUB-S\d+ .*外挂字幕/);
 
     relay("review", runDir, "--sheet", "SHEET-0001", "--note", "绿色画面");
@@ -200,6 +272,14 @@ test("local video: sidecar and embedded subtitles are found, and failed ASR degr
       sections: [{ start: 0, end: 2, title: "全片", fact_ids: ["FACT-0001"] }],
       facts: [{ id: "FACT-0001", kind: "speech", text: "字幕写着外挂字幕", start: 0.5, end: 1.5, evidence: [sidecar.id] }],
     }));
+    const beforeTranscript = spawnSync(process.execPath, [SCRIPT, "check", runDir], { encoding: "utf8", env });
+    assert.equal(beforeTranscript.status, 1);
+    assert.match(beforeTranscript.stderr, /还没有转写/);
+
+    const skipped = relay("transcript", runDir, "--failed", "VoiceStudio 未运行，用户同意跳过");
+    assert.equal(skipped.read_these.length, 1);
+    assert.ok(!fs.existsSync(prepared.transcribe.audio), "audio is removed once it is no longer needed");
+
     const checked = relay("check", runDir);
     assert.equal(checked.status, "partial");
     assert.match(checked.status_reasons[0], /转写失败/);

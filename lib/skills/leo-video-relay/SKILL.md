@@ -29,7 +29,21 @@ For a web video, follow the `leo-yt-dlp` skill to download with exactly the `yt_
 relay.mjs prepare <run_dir>
 ```
 
-This covers metadata, subtitles, transcription and frames, and can take a while on long videos, so run it in the background. If it stops, run it again and it continues. If a tool is missing, run `relay.mjs doctor`. Read the transcript and subtitle files named in `read_these`.
+This covers metadata, subtitles, audio and frames, and can take a while on long videos, so run it in the background. If it stops, run it again and it continues. If a tool is missing, run `relay.mjs doctor`.
+
+If `audio.status` is `skipped`, the video has uploaded subtitles in its own language, so there is no transcription. Tell the user in your next reply: `audio.reason`. Run `prepare <run_dir> --redo asr` if they want it transcribed anyway.
+
+If the output has `transcribe`, use the `omnivoice` skill (VoiceStudio) to transcribe `transcribe.audio`, passing its `response_format` and `language`, and save the response to `transcribe.save_to`. Long audio can take a while, so run that in the background too. Then:
+
+```bash
+relay.mjs transcript <run_dir> --from <save_to>
+```
+
+For choosing or installing the model, and for timeouts, see [references/voicestudio-asr.md](references/voicestudio-asr.md).
+
+If omnivoice still can't transcribe, tell the user why. Go on without a transcript only if the user agrees: `relay.mjs transcript <run_dir> --failed "<原因>"`.
+
+Read the files named in `read_these`.
 
 ## 3. Watch
 
@@ -60,7 +74,7 @@ Fix what it reports and rerun. `check` decides the final status. A `partial` sta
 relay.mjs publish <run_dir>
 ```
 
-Tell the user: 判定为 X，写到 Y. If it returns `need_route`, ask once which directory this type should use, then run `relay.mjs route set <类型> [--workspace <目录>]` (without `--workspace` it uses the default) and publish again. If the user named a directory for this video, pass `--workspace <目录>` instead. For a local video the user wants archived, add `--copy-source`.
+Tell the user: 判定为 X，写到 Y，语音来源是 `speech_source`. If it returns `need_route`, ask once which directory this type should use, then run `relay.mjs route set <类型> [--workspace <目录>]` (without `--workspace` it uses the default) and publish again. If the user named a directory for this video, pass `--workspace <目录>` instead. For a local video the user wants archived, add `--copy-source`.
 
 ## 5. Do what the user asked
 
