@@ -27,12 +27,15 @@ import {
   resolveChromeTaskTab,
   navigateTaskTab,
   closeTaskTab,
+  closeTaskPlaceholder,
 } from "./task-chrome.mjs";
 import {
   assertWaitParams,
   contentMatches,
   summarizeContent,
   normalizePressKey,
+  pressKeyEventInit,
+  evalShouldFallback,
   wrapEvalScript,
 } from "./page-drive.mjs";
 import { createCdpSessionManager } from "./cdp-session.mjs";
@@ -652,6 +655,7 @@ async function executeTask(task) {
             windowId,
             groupId,
             claimedTabId,
+            placeholderTabId: params.tabId ? null : claimedTabId,
           })
         );
       }
@@ -671,6 +675,7 @@ async function executeTask(task) {
           if (tabIds.length) await chrome.tabs.ungroup(tabIds);
         } catch {}
       }
+      await closeTaskPlaceholder(taskState.activeTask);
       await saveTaskState(clearActiveTask(taskState));
       result = await withTaskSummary({ ended: true, closedGroup: closeGroup });
     } else if (type === "tabs.claim") {
@@ -698,11 +703,13 @@ async function executeTask(task) {
         groupId,
         tabIds: [tabId],
       });
+      await closeTaskPlaceholder(taskState.activeTask, { keepTabId: tabId });
       await saveTaskState(
         upsertActiveTask(taskState, {
           windowId: moved.windowId,
           groupId,
           claimedTabId: tabId,
+          placeholderTabId: null,
           sameWindow,
         })
       );
@@ -818,6 +825,9 @@ async function executeTask(task) {
           evaluated = true;
         }
       } catch (cdpErr) {
+        if (!evalShouldFallback(cdpErr)) {
+          throw lanternError("eval_timeout", "Script did not finish within 8s; it may still be running in the page");
+        }
         attachedDebuggers.delete(Number(tabId));
         // Fallback to executeScript below
       }
@@ -952,16 +962,16 @@ async function executeTask(task) {
       const key = normalizePressKey(params.key);
       const res = await chrome.scripting.executeScript({
         target: { tabId },
-        func: (keyName, selector) => {
+        func: (keyName, selector, eventInit) => {
           const target = selector ? document.querySelector(selector) : document.activeElement || document.body;
           if (!target) return { ok: false, error: `Key target not found: ${selector || "activeElement"}` };
-          const common = { key: keyName, bubbles: true, cancelable: true };
+          const common = { ...eventInit, bubbles: true, cancelable: true };
           target.dispatchEvent(new KeyboardEvent("keydown", common));
           target.dispatchEvent(new KeyboardEvent("keypress", common));
           target.dispatchEvent(new KeyboardEvent("keyup", common));
           return { ok: true, key: keyName };
         },
-        args: [key, params.selector || null],
+        args: [key, params.selector || null, pressKeyEventInit(key)],
       });
       if (res?.[0]?.result?.ok === false) throw new Error(res[0].result.error);
       result = await withTaskSummary({ pressed: true, key, selector: params.selector || null });

@@ -1,6 +1,6 @@
 ---
 name: leo-lantern
-description: 通过 leo-lantern CLI/服务实现 Chrome 浏览器远程调试 (CDP) 控制与无头自动化，支持页面导航、元素交互、DOM 快照、网络抓包与 Cookie 提取。
+description: 通过 leo-lantern CLI/服务实现 Chrome 浏览器远程调试 (CDP) 控制与自动化（操作用户真实的有界面 Chrome），支持页面导航、元素交互、DOM 快照、网络抓包与 Cookie 提取。
 ---
 
 # Leo Lantern 浏览器自动化控制
@@ -32,7 +32,7 @@ description: 通过 leo-lantern CLI/服务实现 Chrome 浏览器远程调试 (C
 2. **任务生命周期（可选，支持直接操作当前标签页）**：
    - 开启/复用任务组：`leo-lantern start-task --title="browser-task"`（默认新开独立窗口，不干扰用户浏览；若需在同窗口执行可指定 `--same-window=true`）
    - 查看所有标签页：`leo-lantern tabs`
-   - 接管指定标签页：`leo-lantern claim --tabId=<tabId>`（显式接管用户已有的指定标签页，此操作会控制该页面，慎用）
+   - 接管指定标签页：`leo-lantern claim --tabId=<tabId>`（显式接管用户已有的指定标签页，此操作会控制该页面，慎用；`start-task` 开的 `about:blank` 占位页若还没用过，会在接管或 `end-task` 时自动关闭）
    - 导航或新标签：`leo-lantern goto "https://example.com"` 或 `leo-lantern new-tab "https://example.com"`
 3. **页面感知与交互**：
    - 获取高信息量交互 DOM 树（含 tag, text, selector, id, rect, visible, ref, generation 等）：`leo-lantern snapshot` 或 `leo-lantern state`
@@ -168,7 +168,7 @@ leo-lantern end-task
 
 10. **标签组件（Tag Input）与键盘 Enter 键模拟**：
     - **现象**：向标签输入框填入文本后，页面未生成胶囊标签标签。
-    - **对策**：许多现代组件库要求在 `input` 事件后触发真实的 `Enter` 按键，使用 `leo-lantern press Enter --sel="input[placeholder*='标签']"` 或在 `eval` 中派发带 `keyCode: 13, code: 'Enter'` 的完整键盘事件序列。
+    - **对策**：许多现代组件库要求在 `input` 事件后触发 `Enter` 按键，使用 `leo-lantern press Enter --sel="input[placeholder*='标签']"`。`press` 派发的是带 `key/code/keyCode` 的脚本键盘事件（`isTrusted: false`），不是物理按键；只接受可信事件的组件和浏览器默认行为（如回车提交表单）不会响应。
 
 11. **自定义日历与分时联动控件交互 (Cascading Date/Time Picker)**：
     - **机制**：平台定时发布面板并非标准 HTML5 日期控件，而是包含时区、日历表格、时/分双列滚动的复合控件。
@@ -180,7 +180,7 @@ leo-lantern end-task
 
 ### 1. 哔哩哔哩视频自动化投稿 (`recipes/bilibili-publish.mjs`)
 
-集成视频 CDP 极速批量上传（绕过系统文件弹窗）、标题 80 字符校验、简介 2000 字符限制校验、视频系统推荐高光封面帧定位选取（支持 `--cover-index`）、AIGC 平台合规声明（`含AI生成内容`）、标签批量注入与 Enter 确认、定时发布日历与时分自动选择（黄金时段 15:00~17:00）、默认安全防误发（`--dry-run` 预览停留在提交前并截取表单核对图，传入 `--publish` 真正提交）。
+集成视频 CDP 极速批量上传（绕过系统文件弹窗）、标题 80 字符校验、简介 2000 字符限制校验、视频系统推荐高光封面帧定位选取（支持 `--cover-index`）、AIGC 平台合规声明（`含AI生成内容`）、标签批量注入与 Enter 确认、定时发布日历与时分自动选择（黄金时段 15:00~17:00）。**默认直接发布**；传入 `--dry-run` 才会停在提交前并截取表单核对图。
 
 #### 参数完全参考表
 
@@ -195,8 +195,8 @@ leo-lantern end-task
 | `--cover` | - | string | 否 | `""` | 本地自定义封面图片路径（jpg/png）。若提供则优先上传自定义封面，忽略 `--cover-index`。 |
 | `--no-ai` | - | boolean | 否 | `false` | 关闭默认的平台 AI 声明。默认会自动在“创作声明”中勾选「含AI生成内容」（同时保持「自制」属性）。 |
 | `--schedule` | `-s` | string | 否 | `""` | 定时发布时间，格式为 `YYYY-MM-DD HH:MM`（例如 `"2026-11-05 16:30"`）。平台要求距离当前 $\ge 5$ 分钟且 $\le 15$ 天。留空则为立即发布模式。 |
-| `--dry-run` | - | boolean | 否 | `true` | **安全防误发调试模式（默认开启）**。完成上传、所有表单字段填妥、封面选中并联动日历后，**停留在最终提交前**，截取核对截图供人工复核。 |
-| `--publish` | - | boolean | 否 | `false` | **显式确认提交**。传入此项才会真正穿透定位并点击「立即投稿」按钮，完成正式排期提交。 |
+| `--dry-run` | - | boolean | 否 | `false` | 预览模式。完成上传、所有表单字段填妥、封面选中并联动日历后，**停留在最终提交前**，截取核对截图供人工复核。不传时会直接点击「立即投稿」。 |
+| `--upload-timeout-sec` | - | number | 否 | `1800` | 等待视频上传完成的最长秒数。超时未确认完成则中止，不会继续提交。 |
 | `--out` | - | string | 否 | `bilibili_publish_review.png` | 流程结束后的核对/存证截图落盘路径。 |
 
 > **无硬编码说明**：脚本内部**无任何写死/固定的业务参数**（无写死视频名、无写死标题、无写死标签与发布时间），所有内容均由调用方通过参数传入，具有 100% 的通用性与平台独立性。
@@ -204,24 +204,22 @@ leo-lantern end-task
 #### 调用示例
 
 ```bash
-# 1. 默认预览调试（Dry Run 模式，填妥所有选项，停在提交前并保存核对截图）：
+# 1. 直接发布（默认行为，不传 --schedule 时立即发布）：
 node <skillDir>/recipes/bilibili-publish.mjs \
   --video "<视频文件路径，如 path/to/your_video.mp4>" \
   --title "<视频标题，不超过80字>" \
   --desc "<视频简介文案，不超过2000字>" \
   --tags "<标签1,标签2,标签3>" \
   --cover-index 1 \
-  --schedule "<YYYY-MM-DD HH:MM，留空为立即发布>" \
-  --dry-run
+  --schedule "<YYYY-MM-DD HH:MM，留空为立即发布>"
 
-# 2. 确认无误，正式排期/立即发布（显式传入 --publish 才会点击立即投稿）：
+# 2. 只预览（填妥所有选项，停在提交前并保存核对截图）：
 node <skillDir>/recipes/bilibili-publish.mjs \
   --video "<视频文件路径>" \
   --title "<视频标题>" \
   --desc "<视频简介>" \
   --tags "<标签1,标签2>" \
-  --schedule "YYYY-MM-DD HH:MM" \
-  --publish
+  --dry-run
 ```
 
 ---
@@ -257,7 +255,7 @@ node <skillDir>/recipes/xhs-publish.mjs \
 
 ### 3. 抖音创作者服务平台自动化发布 (`recipes/douyin-publish.mjs`)
 
-原生支持**视频投稿**与**多图图文**双模自动发布。集成作品标题与描述限制校验、CDP 极速文件上传、遗留未发布草稿自动清理、Bytedance EditorKit 富文本与话题标签注入、自定义封面上传裁剪弹层联动、平台「内容由AI生成」自主声明、定时发布（2小时~14天）、全页高保真预览核对图（Full-Page Screenshot）与安全防误发守卫。
+原生支持**视频投稿**与**多图图文**双模自动发布。集成作品标题与描述限制校验、CDP 极速文件上传、遗留未发布草稿自动清理、Bytedance EditorKit 富文本与话题标签注入、自定义封面上传裁剪弹层联动、平台「内容由AI生成」自主声明、定时发布（2小时~14天）、全页高保真预览核对图（Full-Page Screenshot）。**默认直接发布**；传入 `--dry-run` 才会停在提交前。
 
 #### 参数完全参考表
 
@@ -273,29 +271,28 @@ node <skillDir>/recipes/xhs-publish.mjs \
 | `--no-ai` | - | boolean | 否 | `false` | 关闭默认的平台 AI 声明。默认会自动在「自主声明」中规范勾选「内容由AI生成」。 |
 | `--visibility` | - | string | 否 | `"公开"` | 谁可以看：`公开` / `好友可见` / `仅自己可见`。 |
 | `--schedule` | `-s` | string | 否 | `""` | 定时发布时间，格式为 `YYYY-MM-DD HH:MM`。平台要求在当前时间 **2 小时后至 14 天内**。 |
-| `--dry-run` | - | boolean | 否 | `true` | **安全防误发调试模式（默认开启）**。完成上传、所有表单字段填妥并渲染手机预览后，**停留在最终提交前**，截取高清全页核对图供人工复核。 |
-| `--publish` | - | boolean | 否 | `false` | **显式确认提交**。传入此项才会真正穿透定位并点击「发布」按钮完成最终提交。 |
+| `--dry-run` | - | boolean | 否 | `false` | 预览模式。完成上传、所有表单字段填妥并渲染手机预览后，**停留在最终提交前**，截取高清全页核对图供人工复核。不传时会直接点击「发布」。 |
+| `--reuse-form` | - | boolean | 否 | `false` | 沿用已打开的同体裁编辑页，**不上传** `--video`/`--images`，只重新填写字段。用于失败后续跑；不传时总是重新上传。 |
 | `--out` | - | string | 否 | `douyin_publish_review.png` | 流程结束后的全页核对/存证截图落盘路径。 |
 
 #### 调用示例
 
 ```bash
-# 1. 视频投稿预览（默认 Dry-Run 模式，填妥所有选项并截取全页预览图）：
+# 1. 视频直接发布（默认行为）：
 node <skillDir>/recipes/douyin-publish.mjs \
   --video "path/to/video.mp4" \
   --title "视频标题（30字内）" \
   --desc "视频简介文案" \
   --tags "AI视频,效率工具" \
-  --schedule "2026-11-06 15:30" \
-  --dry-run
+  --schedule "2026-11-06 15:30"
 
-# 2. 视频投稿正式发布（传入 --publish 真正点击「发布」）：
+# 2. 只预览（填妥所有选项，截取全页预览图，不提交）：
 node <skillDir>/recipes/douyin-publish.mjs \
   --video "path/to/video.mp4" \
   --title "视频标题" \
   --desc "视频简介文案" \
   --tags "AI视频,效率工具" \
-  --publish
+  --dry-run
 
 # 3. 多图图文发布：
 node <skillDir>/recipes/douyin-publish.mjs \
@@ -303,8 +300,7 @@ node <skillDir>/recipes/douyin-publish.mjs \
   --title "图文标题（20字内）" \
   --desc "图文正文描述" \
   --tags "摄影,胶片感" \
-  --schedule "2026-11-06 17:00" \
-  --dry-run
+  --schedule "2026-11-06 17:00"
 ```
 
 ---
@@ -312,5 +308,4 @@ node <skillDir>/recipes/douyin-publish.mjs \
 > **提示（脱离网关自包含运行）**：
 > - **独立 CLI 模式**：可在技能目录直接通过 Node.js 执行命令行交互：
 >   `node ./scripts/cli/index.mjs <command>`
-> - **独立 MCP 模式**：客户端（如 Claude Desktop / Codex）可直接将以下命令注册为 Stdio MCP 服务：
->   `node <skillDir>/scripts/mcp/index.mjs`
+> - **发布 Recipe 的退出码**：任一步骤失败都以非零退出并中止，不会继续提交；`🎉` 只在确认发布成功时出现。B 站和小红书无法确认平台是否受理，点击后只提示“已点击”，须查看截图或平台管理页核对。

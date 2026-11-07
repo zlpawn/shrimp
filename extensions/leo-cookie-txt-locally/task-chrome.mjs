@@ -59,6 +59,7 @@ export async function ensureRecoverableTaskResources(task, { focus = false } = {
     api
   );
   let claimedTabId = reconciled.claimedTabId;
+  let placeholder = {};
   if (claimedTabId == null) {
     const created = await api.tabs.create({
       windowId,
@@ -66,6 +67,7 @@ export async function ensureRecoverableTaskResources(task, { focus = false } = {
       active: Boolean(focus),
     });
     claimedTabId = created.id;
+    placeholder = { placeholderTabId: created.id };
   }
 
   const nextGroupId = await ensureTaskGroup(
@@ -81,10 +83,26 @@ export async function ensureRecoverableTaskResources(task, { focus = false } = {
 
   return {
     ...reconciled,
+    ...placeholder,
     windowId,
     groupId: nextGroupId,
     claimedTabId,
   };
+}
+
+// Closes the blank tab a task opened for itself, unless it has been navigated or is being kept.
+// Best effort: a leftover blank tab must never fail the command that triggered the cleanup.
+export async function closeTaskPlaceholder(task, { keepTabId = null } = {}, api = chrome) {
+  const tabId = task?.placeholderTabId;
+  if (tabId == null || Number(tabId) === Number(keepTabId)) return false;
+  try {
+    const tab = await api.tabs.get(tabId);
+    if (tab.url !== "about:blank" || tab.pendingUrl) return false;
+    await api.tabs.remove(tabId);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function navigateTaskTab(

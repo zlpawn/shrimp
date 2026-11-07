@@ -16,6 +16,29 @@ export function assertWaitParams(params = {}) {
   };
 }
 
+// eval() cannot contain await, so compile in the page: as one expression, then with the last
+// statement returned, then as plain statements. Only the final form may report a syntax error.
+function wrapAwaitWithoutReturn(script) {
+  return `(async () => {
+  const AsyncFunction = (async () => {}).constructor;
+  const source = ${JSON.stringify(script)}.trim().replace(/;+\\s*$/, "");
+  const lastSemi = source.lastIndexOf(";");
+  const bodies = ["return (" + source + "\\n);"];
+  if (lastSemi !== -1) bodies.push(source.slice(0, lastSemi + 1) + "\\nreturn (" + source.slice(lastSemi + 1) + "\\n);");
+  bodies.push(source);
+  for (const body of bodies) {
+    let fn;
+    try {
+      fn = new AsyncFunction(body);
+    } catch (err) {
+      if (body === source) throw err;
+      continue;
+    }
+    return await fn();
+  }
+})()`;
+}
+
 export function wrapEvalScript(script) {
   if (!script || typeof script !== "string") return script;
   const trimmed = script.trim();
@@ -36,7 +59,7 @@ export function wrapEvalScript(script) {
     if (/\breturn\b/.test(trimmed)) {
       return `(async () => {\n${script}\n})()`;
     }
-    return `(async () => {\n  return eval(${JSON.stringify(script)});\n})()`;
+    return wrapAwaitWithoutReturn(script);
   }
 
   // Explicit return
@@ -65,4 +88,36 @@ export function normalizePressKey(key) {
   const value = String(key || "").trim();
   if (!value) throw new Error("dom.press requires key");
   return value;
+}
+
+const NAMED_KEY_CODES = {
+  Enter: 13,
+  Escape: 27,
+  Tab: 9,
+  Backspace: 8,
+  Delete: 46,
+  ArrowLeft: 37,
+  ArrowUp: 38,
+  ArrowRight: 39,
+  ArrowDown: 40,
+};
+
+// Many components still read code/keyCode; a KeyboardEvent carrying only `key` is ignored by them.
+export function pressKeyEventInit(key) {
+  const named = NAMED_KEY_CODES[key];
+  if (named) return { key, code: key, keyCode: named, which: named };
+  if (key === " ") return { key, code: "Space", keyCode: 32, which: 32 };
+  if (/^[a-zA-Z]$/.test(key)) {
+    const upper = key.toUpperCase();
+    return { key, code: `Key${upper}`, keyCode: upper.charCodeAt(0), which: upper.charCodeAt(0) };
+  }
+  if (/^[0-9]$/.test(key)) {
+    return { key, code: `Digit${key}`, keyCode: key.charCodeAt(0), which: key.charCodeAt(0) };
+  }
+  return { key };
+}
+
+// A timed-out CDP evaluate may still be running, so injecting it again would repeat its side effects.
+export function evalShouldFallback(cdpError) {
+  return cdpError?.code !== "command_timeout";
 }
