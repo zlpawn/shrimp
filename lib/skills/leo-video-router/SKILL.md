@@ -80,8 +80,9 @@ python3 <本 skill 目录>/scripts/registry.py locate <项目名>
 2. **后期效果（可选）**：结尾画面停滞或需要点题时，按 [references/post-effects.md](references/post-effects.md) 加片尾金句卡，做完再压字幕。
 3. **字幕与压制**：含对白且未烧录字幕时调用 `python3 <本 skill 目录>/scripts/subtitle_engine.py "<成片路径>" --burn`。自动将重排单行字幕（≤ 16 字）与压制成片落盘到 `成片/发布版/`。
 4. **交付前检查**：按 production-playbook.md 第 5 条抽帧，并把字幕和脚本台词逐字比对。
-5. **交付记录与标题矩阵**：更新 <工程目录>/交付记录.md，按 [references/video-title-methodology.md](references/video-title-methodology.md) 填充针对 B站、抖音、小红书视频的「3-Pick 即用型标题矩阵（1条综合首选+2条差异化备选）」，告别选择困难。
-6. **交付成片**：向创作者反馈成片绝对路径、字幕路径、封面图（如有）及音频来源。
+5. **交付记录与多端战术标题**：更新 `<工程目录>/交付记录.md`，按 [references/video-title-methodology.md](references/video-title-methodology.md) 填充针对 B站、抖音、小红书视频的「3-Pick 战术矩阵」，杜绝平庸与选择困难。
+6. **高潮帧提取与双簧封面交付**：按 [references/cover-methodology.md](references/cover-methodology.md) 提取情绪/动作/奇观高潮帧，压制 4~10 字双簧封面大字，落盘至 `<工程目录>/成片/发布版/封面.png`。
+7. **交付成片与归档反馈**：向创作者反馈成片绝对路径、字幕路径、高清封面及音频来源。
 
 ---
 
@@ -96,12 +97,12 @@ python3 <本 skill 目录>/scripts/registry.py locate <项目名>
 ```text
 <workspace_dir>/
 └── YYYY-MM-DD-视频主题/
-    ├── 交付记录.md                 # 记录项目、音频来源、字幕条数、三端3-Pick精选题名矩阵与排期策略
+    ├── 交付记录.md                 # 记录项目、音频来源、字幕条数、三端3-Pick战术题名、封面策略与排期
     ├── 脚本.md                    # 分镜、运镜机位、Prompt 提示词、对白台词
     ├── 音频/                      # 旁白.wav (omnivoice/录音) 与音效/BGM
     ├── 素材/                      # 过程素材、参考图、生成的RAW镜头或下游工程文件
     └── 成片/
-        ├── 发布版/                 # 最终成片 (<原片名>_with_subtitles.mp4、<原片名>.srt、封面.png 可选)
+        ├── 发布版/                 # 最终成片 (<原片名>_with_subtitles.mp4、<原片名>.srt、封面.png 标准就绪)
         └── 原始版/                 # 下游直出的无字幕/生肉成片 (可选)
 ```
 
