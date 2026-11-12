@@ -1,8 +1,8 @@
 # VoiceStudio ASR model
 
-Read this the first time you transcribe on a machine, when omnivoice reports a missing model, when a transcript reads badly, or when a transcription times out.
+Read this the first time you transcribe on a machine, when `voicestudio` / `omnivoice` reports a missing model, when a transcript reads badly, or when a transcription times out.
 
-All routes are on VoiceStudio's local server, the same host omnivoice uses.
+All routes are on VoiceStudio's local server, the same host `voicestudio` and `omnivoice` use.
 
 ## Check what is active
 

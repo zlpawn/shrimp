@@ -1,8 +1,8 @@
-# 音频决策：何时用 omnivoice
+# 音频决策：何时用 voicestudio / omnivoice
 
-配音要不要用本机 omnivoice（VoiceStudio，OpenAI 兼容 TTS）生成、生成后怎么交给下游，看这里。各项目的具体参数看接入卡的「音频」节。
+配音要不要用本机 `voicestudio` 或 `omnivoice`（取决于当前机器安装的是哪个 skill，底层同为 VoiceStudio OpenAI 兼容 TTS）生成、生成后怎么交给下游，看这里。各项目的具体参数看接入卡的「音频」节。
 
-## 为什么优先 omnivoice
+## 为什么优先 voicestudio / omnivoice
 
 不配商业 API Key 时，各项目的免费 TTS 都很一般（MoneyPrinterTurbo 用 Edge TTS；lemo 中文用 edge-tts，作者自己说 Kokoro 中文 "sound plain"；OpenMontage 用 Piper 兜底；huashu 用 macOS `say`）。2026-10-31 同一段中文对比试听：omnivoice 与 Edge TTS 接近，omnivoice 更像真人。
 
@@ -10,8 +10,8 @@
 
 1. 用户给了录音 → 直接用。
 2. 用户在下游项目里配了商业 TTS 并想用 → 用下游自带的。
-3. 其余情况 → **omnivoice 生成配音**，从下游的外部音频入口传入。
-4. omnivoice 不可用 → 提示用户启动 VoiceStudio；用户不想开，就退回下游自带的免费 TTS，并说明音质有限。下游没有免费 TTS（如 dashi-animationstyle）时回到用户：请用户录音、启动 VoiceStudio，或明确同意用别的 TTS；**不要擅自用 edge-tts 或任何云端 TTS**。
+3. 其余情况 → **voicestudio / omnivoice 生成配音**，从下游的外部音频入口传入。
+4. voicestudio / omnivoice 不可用 → 提示用户启动 VoiceStudio；用户不想开，就退回下游自带的免费 TTS，并说明音质有限。下游没有免费 TTS（如 dashi-animationstyle）时回到用户：请用户录音、启动 VoiceStudio，或明确同意用别的 TTS；**不要擅自用 edge-tts 或任何云端 TTS**。
 
 **例外**：音频必须和画面一起生成的场景不替换（音画同步模型、AI 人物开口说话），否则口型对不上。只有模型接受音频输入时（如图片 + 音频对口型），才先出 omnivoice 音频再交给它。
 

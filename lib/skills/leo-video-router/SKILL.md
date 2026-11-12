@@ -11,9 +11,9 @@ description: 面向多场景 AI 视频生产的可插拔智能路由器、工程
 
 - **双层正交解耦架构**：
   - **编排工程层（Orchestrators）**：下游开源项目负责整片叙事结构、时间线剪辑与视听风格。系统预置多套成熟工程卡，并**支持无限动态注册与感知未来任意新开源项目**；
-  - **底层资产与算力服务商（Capability & Asset Providers）**：`leo-autodl-imagine-video`（MiniMax-H3 远程渲染）、`omnivoice`（本地人声）、`leo-codex-imagine` 等作为独立的资产提供方。当下游编排项目遇到素材缺失、版权侵权风险（明星肖像/台标水印）或需要原创 8K 画面时，按需申请分镜资产生成。
+  - **底层资产与算力服务商（Capability & Asset Providers）**：`leo-autodl-imagine-video`（MiniMax-H3 远程渲染）、`voicestudio` / `omnivoice`（本地人声）、`leo-codex-imagine` 等作为独立的资产提供方。当下游编排项目遇到素材缺失、版权侵权风险（明星肖像/台标水印）或需要原创 8K 画面时，按需申请分镜资产生成。
 - **输出目录记忆与智能持久化（Smart Persistence）**：配置保存在 `~/.shrimp/skills/leo-video-router/config.json`；默认输出到 `output/`；一旦用户指定工作区（如 `D:\素材\douyin`），自动持久化记住并复用；统一落盘至 `YYYY-MM-DD-视频主题/` 标准工程。
-- Router **不选择、不调用任何底层生成引擎**：模型与内部 TTS 由下游决定。音频建议按 Step 5 优先用本机 omnivoice 生成再交接。
+- Router **不选择、不调用任何底层生成引擎**：模型与内部 TTS 由下游决定。音频建议按 Step 5 优先用本机 `voicestudio` / `omnivoice` 生成再交接。
 - 含对白且未烧录字幕的成片，按 [references/subtitle-standard.md](references/subtitle-standard.md) 执行单行独立重排（≤ 16 字，院线黑体白字黑边），压制并输出至 `成片/发布版/`。
 - 本 skill 独立可用，知识均在 `references/` 与 `scripts/`。命令写 `python3`，Windows 换成 `python`。
 
@@ -65,7 +65,7 @@ python3 <本 skill 目录>/scripts/registry.py locate <项目名>
 按 [references/install-and-registry.md](references/install-and-registry.md) 展示卡片。**只在用户明确同意后**安装；源码类先问目录（默认 `~/.shrimp/skills/<项目名>`）；装好后 `registry.py register` 登记再重跑 Step 3。未来若引入新开源项目，可通过 `python3 registry.py register <新项目名> <路径> [--entry <入口文件>]` 动态纳入管理。拒绝安装按 [references/fallback.md](references/fallback.md) 兜底。
 
 ### Step 5：音频决策
-需旁白时按 [references/audio-omnivoice.md](references/audio-omnivoice.md) 顺序：用户录音 → 下游商业 TTS → 本机 omnivoice（带重试检查）→ 下游免费 TTS。音画绑定镜头不替换音频。这一步只做决定，配音在 Step 6 建好工程目录后生成。
+需旁白时按 [references/audio-omnivoice.md](references/audio-omnivoice.md) 顺序：用户录音 → 下游商业 TTS → 本机 `voicestudio` / `omnivoice`（带重试检查）→ 下游免费 TTS。音画绑定镜头不替换音频。这一步只做决定，配音在 Step 6 建好工程目录后生成。
 
 ### Step 6：初始化工程目录与交接编排
 1. 先初始化标准目录：`python3 <本 skill 目录>/scripts/workspace.py init "<视频主题>"`。

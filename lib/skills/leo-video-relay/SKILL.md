@@ -33,7 +33,7 @@ This covers metadata, subtitles, audio and frames, and can take a while on long 
 
 If `audio.status` is `skipped`, the video has uploaded subtitles in its own language, so there is no transcription. Tell the user in your next reply: `audio.reason`. Run `prepare <run_dir> --redo asr` if they want it transcribed anyway.
 
-If the output has `transcribe`, use the `omnivoice` skill (VoiceStudio) to transcribe `transcribe.audio`, passing its `response_format` and `language`, and save the response to `transcribe.save_to`. Long audio can take a while, so run that in the background too. Then:
+If the output has `transcribe`, use the `voicestudio` or `omnivoice` skill (whichever is installed on this machine; both connect to the local VoiceStudio server) to transcribe `transcribe.audio`, passing its `response_format` and `language`, and save the response to `transcribe.save_to`. Long audio can take a while, so run that in the background too. Then:
 
 ```bash
 relay.mjs transcript <run_dir> --from <save_to>
@@ -41,7 +41,7 @@ relay.mjs transcript <run_dir> --from <save_to>
 
 For choosing or installing the model, and for timeouts, see [references/voicestudio-asr.md](references/voicestudio-asr.md).
 
-If omnivoice still can't transcribe, tell the user why. Go on without a transcript only if the user agrees: `relay.mjs transcript <run_dir> --failed "<原因>"`.
+If `voicestudio` / `omnivoice` still can't transcribe, tell the user why. Go on without a transcript only if the user agrees: `relay.mjs transcript <run_dir> --failed "<原因>"`.
 
 Read the files named in `read_these`.
 

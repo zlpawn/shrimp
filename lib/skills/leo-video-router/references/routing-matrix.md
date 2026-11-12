@@ -30,7 +30,7 @@ Router **绝不锁死项目上限**：
 ## 编排工程与底层生成服务商的正交协同架构
 
 编排项目（如 OpenMontage、hypit、lemo 等）决定**全片剪辑逻辑、时序轨道与表现形式**；
-生成工具（如 `leo-autodl-imagine-video`、`omnivoice`）作为**无版权原创资产服务商**。
+生成工具（如 `leo-autodl-imagine-video`、`voicestudio` / `omnivoice`）作为**无版权原创资产服务商**。
 
 - **协同机制**：
   当编排工程在制作过程中发现：

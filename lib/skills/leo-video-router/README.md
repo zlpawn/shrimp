@@ -9,7 +9,7 @@
 1. **场景路由**：按触发词和重叠区分规则，把需求分发到 8 个下游项目之一；判断不了时最多给 2 个候选让用户选。
 2. **与生成引擎解耦**：Router 只决定交给谁，不选择、不调用任何底层生成引擎，下游用什么模型由它自己决定。
 3. **JIT 安装与目录记忆**：探测项目是否已在本地；未安装时展示仓库和安装命令，用户同意后逐个安装，并把目录登记到 registry，换 agent、重装 skill 都不丢。
-4. **omnivoice 优先**：没有录音、也没配商业 TTS 时，优先用本机 omnivoice（VoiceStudio）生成配音，再交给下游。
+4. **voicestudio / omnivoice 优先**：没有录音、也没配商业 TTS 时，优先用本机 `voicestudio` 或 `omnivoice`（VoiceStudio）生成配音，再交给下游。
 5. **兜底**：没有命中任何场景或用户拒绝安装时，把需求整理成通用视频提示词，交给环境里已有的视频生成 skill。
 6. **工程归档**：`scripts/workspace.py` 记住工作区，并按 `YYYY-MM-DD-视频主题/` 建标准工程目录。
 7. **字幕保底**：成片含对白且未烧录字幕时，`scripts/subtitle_engine.py` 用本机 VoiceStudio 转写，重排成单行字幕并压制，标准见 [references/subtitle-standard.md](references/subtitle-standard.md)。`scripts/endcard.py` 可在压字幕前加片尾金句卡，见 [references/post-effects.md](references/post-effects.md)。

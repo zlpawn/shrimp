@@ -37,7 +37,7 @@ Done when the Timeline IR validates. If the user asked to write into Jianying, a
 
 When a video requires speech synthesis, voiceover narration, or subtitle alignment:
 1. Do not hardcode custom TTS synthesis engines into `leo-capcut`.
-2. Awaken and invoke the peer `omnivoice` skill (installed peer skill, e.g. `<skillDir>/../omnivoice` or configured skill path):
+2. Awaken and invoke the peer `voicestudio` or `omnivoice` skill (whichever is installed, e.g. `<skillDir>/../voicestudio`, `<skillDir>/../omnivoice`, or configured skill path):
    - Check backend health at `http://localhost:3900/health` (VoiceStudio).
    - Synthesize narration via `http://localhost:3900/v1/audio/speech` (prioritizing user cloned voice profiles discovered via `/v1/audio/voices`).
    - Extract millisecond-precision subtitles via `http://localhost:3900/v1/audio/transcriptions` (model `whisper-1`, `response_format=srt`).
