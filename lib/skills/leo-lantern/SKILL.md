@@ -35,7 +35,7 @@ description: 通过 leo-lantern CLI/服务实现 Chrome 浏览器远程调试 (C
      - `leo-lantern click --text="进入配置"`
      - `leo-lantern click --sel="button.submit"`
      - `leo-lantern click --target '{"kind":"ref","ref":10}'`（无需手动拼接 generation，缺省自动对齐当前文档）
-   - 填写表单（原生 Prototype Setter，支持 React 受控组件）：`leo-lantern fill --ref 10 --val "text"` 或 `leo-lantern fill --sel "#input" --val "text"`
+   - 填写表单（原生 CDP `Input.insertText` 可信物理输入，全自动驱动 React/Vue 受控组件与 FormStore，支持 `--blur` 失焦校验）：`leo-lantern fill --ref 10 --val "text"` 或 `leo-lantern fill --sel "#input" --val "text" --blur`
     - 上传文件（原生 CDP `DOM.setFileInputFiles`，绕过系统弹窗直接注入）：
       - 单文件：`leo-lantern upload "/path/to/file.png"`
       - 多文件批量：`leo-lantern upload "/path/to/file1.png" "/path/to/file2.png"`
@@ -163,7 +163,7 @@ leo-lantern end-task
 
 10. **标签组件（Tag Input）与键盘 Enter 键模拟**：
     - **现象**：向标签输入框填入文本后，页面未生成胶囊标签标签。
-    - **对策**：许多现代组件库要求在 `input` 事件后触发 `Enter` 按键，使用 `leo-lantern press Enter --sel="input[placeholder*='标签']"`。`press` 派发的是带 `key/code/keyCode` 的脚本键盘事件（`isTrusted: false`），不是物理按键；只接受可信事件的组件和浏览器默认行为（如回车提交表单）不会响应。
+    - **对策**：许多现代组件库要求在 `input` 事件后触发 `Enter` 按键，使用 `leo-lantern press Enter --sel="input[placeholder*='标签']"`。`press` 优先采用 CDP 原生可信键盘事件（`Input.dispatchKeyEvent`，`isTrusted: true`），完全支持回车确认、提交表单与快捷键；若 CDP 遇到极端受限环境则自动降级为合成键盘事件。
 
 11. **自定义日历与分时联动控件交互 (Cascading Date/Time Picker)**：
     - **机制**：平台定时发布面板并非标准 HTML5 日期控件，而是包含时区、日历表格、时/分双列滚动的复合控件。例如新版 B 站创作者中心将时间滚轮拆分为双列 `ul`（`uls[0]` 为 00~23 小时，`uls[1]` 为 00~55 分钟）。

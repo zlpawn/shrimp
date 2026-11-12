@@ -82,7 +82,7 @@ export function clickTarget(document, registry, target, { deferClick = false } =
   return envelope(document, registry, element, target, "clicked", matchLevel);
 }
 
-export function fillTarget(document, registry, target, value) {
+export function fillTarget(document, registry, target, value, { deferFill = false, blur = false } = {}) {
   const { element, matchLevel } = uniqueElement(document, registry, target);
   const tag = element.tagName.toLowerCase();
   const editable = element.getAttribute?.("contenteditable") === "true";
@@ -90,7 +90,36 @@ export function fillTarget(document, registry, target, value) {
     throw lanternError("unsupported_target", "Fill supports input, textarea, and contenteditable");
   }
   const nextValue = String(value ?? "");
+  element.scrollIntoView?.({ block: "center", inline: "center", behavior: "instant" });
   element.focus?.();
+
+  if (deferFill) {
+    if (tag === "input" || tag === "textarea") {
+      try {
+        if (typeof element.select === "function") {
+          element.select();
+        } else if (typeof element.setSelectionRange === "function") {
+          element.setSelectionRange(0, element.value?.length || 0);
+        }
+      } catch {}
+    } else if (editable) {
+      try {
+        const range = document.createRange?.();
+        if (range) {
+          range.selectNodeContents(element);
+          const sel = globalThis.getSelection?.();
+          sel?.removeAllRanges();
+          sel?.addRange(range);
+        }
+      } catch {}
+    }
+    return {
+      ...envelope(document, registry, element, target, "filled", matchLevel),
+      deferred: true,
+      expected: nextValue,
+    };
+  }
+
   if (editable) {
     element.textContent = nextValue;
   } else {
@@ -106,16 +135,44 @@ export function fillTarget(document, registry, target, value) {
       element.value = nextValue;
     }
   }
+
+  // Break React _valueTracker cache if present
   try {
-    element.dispatchEvent?.(typeof Event === "function" ? new Event("input", { bubbles: true }) : { type: "input", bubbles: true });
+    if (element._valueTracker && typeof element._valueTracker.setValue === "function") {
+      element._valueTracker.setValue("");
+    }
+  } catch {}
+
+  // Dispatch InputEvent with inputType: 'insertText' (modern React & UI libraries)
+  try {
+    const InputEventCtor = typeof InputEvent === "function" ? InputEvent : null;
+    if (InputEventCtor) {
+      element.dispatchEvent(new InputEventCtor("beforeinput", { bubbles: true, cancelable: true, inputType: "insertText", data: nextValue }));
+      element.dispatchEvent(new InputEventCtor("input", { bubbles: true, inputType: "insertText", data: nextValue }));
+    } else {
+      element.dispatchEvent(new Event("input", { bubbles: true }));
+    }
   } catch {
-    element.dispatchEvent?.({ type: "input", bubbles: true });
+    try {
+      element.dispatchEvent(new Event("input", { bubbles: true }));
+    } catch {
+      element.dispatchEvent?.({ type: "input", bubbles: true });
+    }
   }
+
   try {
     element.dispatchEvent?.(typeof Event === "function" ? new Event("change", { bubbles: true }) : { type: "change", bubbles: true });
   } catch {
     element.dispatchEvent?.({ type: "change", bubbles: true });
   }
+
+  if (blur) {
+    try {
+      element.dispatchEvent?.(typeof Event === "function" ? new Event("blur", { bubbles: true }) : { type: "blur", bubbles: true });
+      element.blur?.();
+    } catch {}
+  }
+
   const actual = editable ? element.textContent : element.value;
   if (actual !== nextValue) {
     throw lanternError("fill_verification_failed", `Expected ${JSON.stringify(nextValue)}, got ${JSON.stringify(actual)}`);

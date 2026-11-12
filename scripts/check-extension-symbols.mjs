@@ -1,5 +1,6 @@
 import { readdirSync } from "node:fs";
 import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
 const noop = () => {};
 const listener = { addListener: noop, removeListener: noop };
@@ -30,7 +31,7 @@ const files = readdirSync(extDir).filter((file) => file.endsWith(".mjs") || file
 let hasError = false;
 for (const file of files) {
   try {
-    await import(resolve(extDir, file));
+    await import(pathToFileURL(resolve(extDir, file)).href);
   } catch (err) {
     console.error(`Check failed for ${file}:`, err);
     hasError = true;

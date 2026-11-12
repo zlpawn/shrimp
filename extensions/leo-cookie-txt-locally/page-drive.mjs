@@ -117,6 +117,67 @@ export function pressKeyEventInit(key) {
   return { key };
 }
 
+export function cdpKeyEventParams(key) {
+  const named = NAMED_KEY_CODES[key];
+  if (named) {
+    const code = key === "Enter" ? "Enter" :
+                 key === "Escape" ? "Escape" :
+                 key === "Tab" ? "Tab" :
+                 key === "Backspace" ? "Backspace" :
+                 key === "Delete" ? "Delete" :
+                 key.startsWith("Arrow") ? key : key;
+    return {
+      key,
+      code,
+      keyCode: named,
+      windowsVirtualKeyCode: named,
+      nativeVirtualKeyCode: named,
+      text: key === "Enter" ? "\r" : key === "Tab" ? "\t" : "",
+    };
+  }
+  if (key === " ") {
+    return {
+      key: " ",
+      code: "Space",
+      keyCode: 32,
+      windowsVirtualKeyCode: 32,
+      nativeVirtualKeyCode: 32,
+      text: " ",
+    };
+  }
+  if (/^[a-zA-Z]$/.test(key)) {
+    const upper = key.toUpperCase();
+    const codeVal = upper.charCodeAt(0);
+    return {
+      key,
+      code: `Key${upper}`,
+      keyCode: codeVal,
+      windowsVirtualKeyCode: codeVal,
+      nativeVirtualKeyCode: codeVal,
+      text: key,
+    };
+  }
+  if (/^[0-9]$/.test(key)) {
+    const codeVal = key.charCodeAt(0);
+    return {
+      key,
+      code: `Digit${key}`,
+      keyCode: codeVal,
+      windowsVirtualKeyCode: codeVal,
+      nativeVirtualKeyCode: codeVal,
+      text: key,
+    };
+  }
+  return {
+    key,
+    code: key,
+    keyCode: 0,
+    windowsVirtualKeyCode: 0,
+    nativeVirtualKeyCode: 0,
+    text: key.length === 1 ? key : "",
+  };
+}
+
 // No `ok` field here: the command queue would take this for a whole envelope and drop the value.
 export function evalOutcome(value, evaluated) {
   const evalResult = value !== undefined ? value : null;
