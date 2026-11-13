@@ -643,6 +643,31 @@
       "requiresDaemon": false,
       "promoted": true,
       "managed": true
+    },
+    {
+      "id": "leo-classify-eval",
+      "name": "leo-classify-eval",
+      "title": "Leo 分类评估实验室",
+      "summary": "导入已打标数据集（CSV / JSONL / XLSX / 大模型评测输出）即时计算 TP/FP/FN/TN、准确率、精准率、召回率、F1 及置信区间，支持多分类、阈值选择、两模型显著性对比与错例导出，并用生活化例子讲清每个指标。",
+      "category": "research",
+      "categoryLabel": "研究与知识",
+      "icon": "🎯",
+      "featured": true,
+      "tags": [
+        "classification",
+        "metrics",
+        "precision",
+        "recall",
+        "f1",
+        "confusion-matrix",
+        "model-eval",
+        "召回率",
+        "精准率",
+        "混淆矩阵"
+      ],
+      "requiresDaemon": false,
+      "promoted": true,
+      "managed": true
     }
   ]
 }
