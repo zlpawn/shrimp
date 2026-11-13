@@ -1,0 +1,20 @@
+[project]
+name = "leo-classify-eval"
+version = "0.1.0"
+description = "分类评估：指标计算、模型对比、错例导出与讲解"
+requires-python = ">=3.10"
+dependencies = [
+    "pandas>=2.0",
+    "openpyxl>=3.1",
+    "scikit-learn>=1.3",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+pythonpath = ["scripts"]
+testpaths = ["tests"]
