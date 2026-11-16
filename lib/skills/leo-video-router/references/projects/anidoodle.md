@@ -24,10 +24,11 @@
 ## 交接
 
 - 从 `python3 <本 skill 目录>/scripts/registry.py locate anidoodle`（`<本 skill 目录>` 即含 SKILL.md 的 leo-video-router 目录；Windows 上用 `python`）输出的 `entry_dir` 读其 SKILL.md：
-  1. 初始化项目：`node "<entry_dir>/engine/tools/scaffold.mjs" <作品目录> --still <名> --film <名> --format <画幅> --duration <秒>`
-  2. 单帧审查（先看最难的一帧确认画风）：`node "<entry_dir>/tools/still.mjs" <名> --out out/look.png --scale 2`
-  3. 全片自检（验证确定性纯函数与无死帧）：`node "<entry_dir>/tools/gate.mjs" <名>`
-  4. 最终导出：MP4 视频 `node "<entry_dir>/tools/render.mjs" <名>`，或自包含离线 HTML `node "<entry_dir>/tools/emit.mjs" <名>`。
+  1. 初始化工程：`node "<entry_dir>/engine/tools/scaffold.mjs" <作品目录> --still <名> --film <名> --format <画幅> --duration <秒>`
+  2. 进入工程安装依赖：`cd <作品目录> && npm install && npx playwright-core install chromium`
+  3. 单帧审查（先看最难的一帧确认画风）：在 `<作品目录>` 执行 `node tools/still.mjs <名> --out out/look.png --scale 2`
+  4. 全片自检（验证确定性纯函数与无死帧）：在 `<作品目录>` 执行 `node tools/gate.mjs <名>`
+  5. 最终导出：在 `<作品目录>` 执行 `node tools/render.mjs <名>`（MP4/GIF），或 `node tools/emit.mjs <名> --out out/<名>.html`（自包含离线 HTML）。
 
 ## 音频
 
