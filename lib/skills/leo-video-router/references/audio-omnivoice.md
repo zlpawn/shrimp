@@ -27,6 +27,7 @@
 | [dashi-animationstyle](projects/dashi-animationstyle.md#音频) | `--audio <文件>` 必填，文案同时存为稿子传 `--script` |
 | [huashu-art-motion](projects/huashu-art-motion.md#音频) | `capabilities.py use-audio --audio <文件>` |
 | [video-shotcraft](projects/video-shotcraft.md#音频) | 不需要（无旁白） |
+| [anidoodle](projects/anidoodle.md#音频) | 内生（代码算术合成配乐与物理音效）；可选传入旁白 |
 
 ## omnivoice 接口
 

@@ -561,6 +561,7 @@ class DocsTest(unittest.TestCase):
         "dashi-animationstyle": ["npx skills add chuspeeism/dashi-animationstyle -g -y", "--audio", "pipeline/新建作品.mjs", 'node "'],
         "huashu-art-motion": ["npx skills add alchaincyf/huashu-art-motion -g -y", "use-audio", "重试", 'python3 "<entry_dir>/scripts/capabilities.py" use-audio'],
         "video-shotcraft": ["npx skills add Vincentwei1021/video-shotcraft -g -y"],
+        "anidoodle": ["npx skills add alexgreensh/anidoodle -g -y", "scaffold.mjs", "still.mjs", "render.mjs", "gate.mjs"],
     }
 
     def test_project_cards(self):

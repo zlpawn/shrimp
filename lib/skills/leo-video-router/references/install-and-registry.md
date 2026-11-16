@@ -77,8 +77,9 @@ python3 <本 skill 目录>/scripts/registry.py locate <项目名>
 | video-shotcraft | `npx skills add Vincentwei1021/video-shotcraft -g -y` | `--list` 识别到 `video-shotcraft` |
 | xilo-opus-video | `npx skills add Kianzzz/xilo-opus-video -g -y` | `--list` 识别到 `xilo-opus-video` |
 | dashi-animationstyle | `npx skills add chuspeeism/dashi-animationstyle -g -y` | `--list` 识别到 `dashi-animationstyle` |
+| anidoodle | `npx skills add alexgreensh/anidoodle -g -y` | `--list` 识别到 `anidoodle` |
 
-各项目的安装细节和注意事项见接入卡：[MoneyPrinterTurbo](projects/MoneyPrinterTurbo.md)、[lemo-opuscar](projects/lemo-opuscar.md)、[OpenMontage](projects/OpenMontage.md)、[hypit](projects/hypit.md)、[huashu-art-motion](projects/huashu-art-motion.md)、[video-shotcraft](projects/video-shotcraft.md)、[xilo-opus-video](projects/xilo-opus-video.md)、[dashi-animationstyle](projects/dashi-animationstyle.md)。
+各项目的安装细节和注意事项见接入卡：[MoneyPrinterTurbo](projects/MoneyPrinterTurbo.md)、[lemo-opuscar](projects/lemo-opuscar.md)、[OpenMontage](projects/OpenMontage.md)、[hypit](projects/hypit.md)、[huashu-art-motion](projects/huashu-art-motion.md)、[video-shotcraft](projects/video-shotcraft.md)、[xilo-opus-video](projects/xilo-opus-video.md)、[dashi-animationstyle](projects/dashi-animationstyle.md)、[anidoodle](projects/anidoodle.md)。
 
 ## registry.json
 
