@@ -1305,10 +1305,113 @@ async function init() {
 // Keep-alive with alarms
 chrome.alarms.create("bridge_heartbeat", { periodInMinutes: 0.4 });
 chrome.alarms.create("bridge_claim", { periodInMinutes: 0.1 });
+chrome.alarms.create("scs_keep_alive", { periodInMinutes: 20 });
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === "bridge_heartbeat") sendHeartbeats();
   if (alarm.name === "bridge_claim" || alarm.name === "bridge_heartbeat") startPollLoop();
+  if (alarm.name === "scs_keep_alive") keepAliveScsTargets();
 });
+
+const SCS_ALLOWED_TARGETS = [
+  {
+    slot: 'CLOUD_CONSOLE',
+    url: 'https://cloud.intra.ke.com',
+    probeUrl: 'https://cloud.intra.ke.com/cloud-proxy-api/xmen/mysql/dql/query_port',
+    cookieNames: ['session', 'session.sig', 'cloud_console_token_egg']
+  },
+  {
+    slot: 'APOLLO_TEST',
+    url: 'http://test-apollo.portal.life.ke.com',
+    probeUrl: 'http://test-apollo.portal.life.ke.com/apps/smart-customer-service/envs/TEST/clusters/default/namespaces',
+    cookieNames: ['jt_apollo_login_token']
+  },
+  {
+    slot: 'APOLLO_PROD',
+    url: 'http://apollo.portal.life.ke.com',
+    probeUrl: 'http://apollo.portal.life.ke.com/apps/smart-customer-service/envs/PROD/clusters/default/namespaces',
+    cookieNames: ['jt_apollo_login_token']
+  },
+  {
+    slot: 'LUKE_TEST',
+    url: 'https://test-luke.ke.com',
+    probeUrl: 'https://test-luke.ke.com/api/panels/LukePanel/gateway/iot_auth/graphql',
+    probeMethod: 'POST',
+    probeBody: '{"query":"query ListExts($filter: JSON, $pager: Pagination) { allExts(filter: $filter, pager: $pager) { total nodes { id name } } }","variables":{"pager":{"pageSize":1,"current":1}}}',
+    cookieNames: ['luke-test-token', 'security_ticket_test', 'login_ucid', 'lianjia_uuid', 'lianjia_ssid']
+  },
+  {
+    slot: 'LUKE_PROD',
+    url: 'https://luke.ke.com',
+    probeUrl: 'https://luke.ke.com/api/panels/LukePanel/gateway/iot_auth/graphql',
+    probeMethod: 'POST',
+    probeBody: '{"query":"query ListExts($filter: JSON, $pager: Pagination) { allExts(filter: $filter, pager: $pager) { total nodes { id name } } }","variables":{"pager":{"pageSize":1,"current":1}}}',
+    cookieNames: ['luke-token', 'security_ticket', 'login_ucid', 'lianjia_uuid', 'lianjia_ssid']
+  },
+  {
+    slot: 'SEARCH_CONSOLE',
+    url: 'https://search.ke.com',
+    probeUrl: 'https://search.ke.com/ajax/createApp/getAppList',
+    probeMethod: 'POST',
+    probeBody: '{"page":1,"size":1,"auth":true}',
+    cookieNames: ['session', 'session.sig', 'search_token', 'login_ucid']
+  }
+];
+
+async function checkHasAnyCookie(target) {
+  for (const name of target.cookieNames) {
+    try {
+      const cookie = await chrome.cookies.get({ url: target.url, name });
+      if (cookie && cookie.value) return true;
+    } catch (e) {
+      // ignore
+    }
+  }
+  return false;
+}
+
+async function keepAliveScsTargets() {
+  for (const target of SCS_ALLOWED_TARGETS) {
+    if (!target.probeUrl) continue;
+    try {
+      const hasCookie = await checkHasAnyCookie(target);
+      if (!hasCookie) continue;
+      const isPost = target.probeMethod === 'POST';
+      await fetch(target.probeUrl, {
+        method: isPost ? 'POST' : 'GET',
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json, text/plain, */*',
+          ...(isPost ? { 'Content-Type': 'application/json;charset=UTF-8' } : {})
+        },
+        ...(isPost ? { body: target.probeBody } : {})
+      });
+    } catch (e) {
+      // ignore
+    }
+  }
+}
+
+async function handleFetchScsTokens(requestedSlots) {
+  const result = {};
+  for (const target of SCS_ALLOWED_TARGETS) {
+    if (requestedSlots && requestedSlots.length > 0 && !requestedSlots.includes(target.slot)) {
+      continue;
+    }
+    const pairs = [];
+    for (const name of target.cookieNames) {
+      try {
+        const cookie = await chrome.cookies.get({ url: target.url, name });
+        if (cookie && cookie.value) {
+          pairs.push(`${name}=${cookie.value}`);
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+    result[target.slot] = pairs.length > 0 ? pairs.join('; ') : null;
+  }
+  return result;
+}
 
 setInterval(sendHeartbeats, HEARTBEAT_INTERVAL_MS);
 
@@ -1383,6 +1486,13 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
         sendResponse({ cookies });
       }
     });
+    return true;
+  }
+
+  if (msg && msg.action === "GET_TOKENS") {
+    handleFetchScsTokens(msg.slots)
+      .then((tokens) => sendResponse({ success: true, data: tokens }))
+      .catch((err) => sendResponse({ success: false, error: err && err.message }));
     return true;
   }
 
