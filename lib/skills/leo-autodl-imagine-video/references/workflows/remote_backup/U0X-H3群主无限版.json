@@ -1,0 +1,1926 @@
+{
+  "id": "bbfb0379-38cd-4e9f-aed2-1be623e3435b",
+  "revision": 0,
+  "last_node_id": 291,
+  "last_link_id": 666,
+  "nodes": [
+    {
+      "id": 120,
+      "type": "Label (rgthree)",
+      "pos": [
+        -489.25908787375465,
+        -1197.4903119782205
+      ],
+      "size": [
+        2324.619140625,
+        60
+      ],
+      "flags": {
+        "allow_interaction": true
+      },
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "AUTODL🐧🔴1群1046279436🔴2群1102535136🟢3群1053358977🟢4群541575695",
+      "properties": {
+        "fontSize": 60,
+        "fontFamily": "Arial",
+        "fontColor": "#ff5500",
+        "textAlign": "left",
+        "backgroundColor": "transparent",
+        "padding": 0,
+        "borderRadius": 0,
+        "angle": 0,
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        },
+        "widget_ue_connectable": {}
+      },
+      "color": "#fff0",
+      "bgcolor": "#fff0"
+    },
+    {
+      "id": 121,
+      "type": "Label (rgthree)",
+      "pos": [
+        -506.1972272259575,
+        -1378.8054156708802
+      ],
+      "size": [
+        2725.48828125,
+        150
+      ],
+      "flags": {
+        "allow_interaction": true
+      },
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "U08-MiniMax-H3-极速生成10S只要2分半",
+      "properties": {
+        "fontSize": 150,
+        "fontFamily": "Arial",
+        "fontColor": "#ffff00",
+        "textAlign": "left",
+        "backgroundColor": "transparent",
+        "padding": 0,
+        "borderRadius": 0,
+        "angle": 0,
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        },
+        "widget_ue_connectable": {}
+      },
+      "color": "#fff0",
+      "bgcolor": "#fff0"
+    },
+    {
+      "id": 122,
+      "type": "Label (rgthree)",
+      "pos": [
+        -482.3854366861084,
+        -1089.4338484729471
+      ],
+      "size": [
+        1865.4296875,
+        80
+      ],
+      "flags": {
+        "allow_interaction": true
+      },
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "API云端镜像https://autodl.art/app/market/252?v=709",
+      "properties": {
+        "fontSize": 80,
+        "fontFamily": "Arial",
+        "fontColor": "#00ff00",
+        "textAlign": "left",
+        "backgroundColor": "transparent",
+        "padding": 0,
+        "borderRadius": 0,
+        "angle": 0,
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        },
+        "widget_ue_connectable": {}
+      },
+      "color": "#fff0",
+      "bgcolor": "#fff0"
+    },
+    {
+      "id": 138,
+      "type": "ZealmanH3PickReferenceMedia",
+      "pos": [
+        1296.5660739020416,
+        61.1704088993843
+      ],
+      "size": [
+        440,
+        1270
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "ref_image_0",
+          "type": "IMAGE",
+          "links": [
+            225
+          ]
+        },
+        {
+          "name": "ref_image_1",
+          "type": "IMAGE",
+          "links": [
+            232
+          ]
+        },
+        {
+          "name": "ref_image_2",
+          "type": "IMAGE",
+          "links": [
+            233
+          ]
+        },
+        {
+          "name": "ref_image_3",
+          "type": "IMAGE",
+          "links": [
+            234
+          ]
+        },
+        {
+          "name": "ref_image_4",
+          "type": "IMAGE",
+          "links": [
+            235
+          ]
+        },
+        {
+          "name": "ref_image_5",
+          "type": "IMAGE",
+          "links": [
+            238
+          ]
+        },
+        {
+          "name": "ref_image_6",
+          "type": "IMAGE",
+          "links": [
+            239
+          ]
+        },
+        {
+          "name": "ref_image_7",
+          "type": "IMAGE",
+          "links": [
+            240
+          ]
+        },
+        {
+          "name": "ref_image_8",
+          "type": "IMAGE",
+          "links": [
+            241
+          ]
+        },
+        {
+          "name": "ref_video_0",
+          "type": "IMAGE",
+          "links": [
+            226
+          ]
+        },
+        {
+          "name": "ref_video_1",
+          "type": "IMAGE",
+          "links": []
+        },
+        {
+          "name": "ref_video_2",
+          "type": "IMAGE",
+          "links": []
+        },
+        {
+          "name": "ref_video_audio_0",
+          "type": "AUDIO",
+          "links": []
+        },
+        {
+          "name": "ref_video_audio_1",
+          "type": "AUDIO",
+          "links": []
+        },
+        {
+          "name": "ref_video_audio_2",
+          "type": "AUDIO",
+          "links": []
+        },
+        {
+          "name": "ref_audio_0",
+          "type": "AUDIO",
+          "links": [
+            227
+          ]
+        },
+        {
+          "name": "ref_audio_1",
+          "type": "AUDIO",
+          "links": [
+            236
+          ]
+        },
+        {
+          "name": "ref_audio_2",
+          "type": "AUDIO",
+          "links": [
+            237
+          ]
+        },
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": [
+            228
+          ]
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "links": [
+            229
+          ]
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": [
+            230
+          ]
+        },
+        {
+          "name": "length",
+          "type": "INT",
+          "links": [
+            231,
+            662
+          ]
+        },
+        {
+          "name": "seconds",
+          "type": "INT",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ZealmanH3PickReferenceMedia",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        24,
+        "auto",
+        "auto",
+        "auto",
+        "512",
+        "subject_definitions:\n<Subject 1> 是 <Picture 1> 中的多视图角色设定，红衣龙盔剑士，只使用一个身体。年轻女性，齐肩黑短发，留海分开，灰眸，肤色冷白，额上银龙盔，龙口与双角朝前，盔侧垂银流苏，不遮眼、不遮口，红丝绒短袍绣金龙，黑皮高领正中一枚金花扣，黑皮手套，左臂银甲，大红披风背面一条金龙、下摆到膝，右手一柄银长剑，背后一柄黑白缠柄长剑，银龙首高跟战靴。披风上的金龙只是刺绣，不变成龙，也不离开布面。剑走银白色的细光。\n<Subject 2> 是 <Picture 2> 中的多视图角色设定，恶魔王，只使用一个身体，比剑士高出一个头。赤红裂纹皮肤，灰白长发，两根完整的弯角，尖耳，黄瞳，獠牙，破布战裙，皮带与暗色肩甲，赤足，背上交叉背着数柄长剑，右手握其中一柄，双手是正常比例的红色爪手。剑走暗红色的光。两只角在最后一击之前保持完整。\n<Subject 3> 是 <Picture 3> 中的骷髅骑士团。每名骑士头盔下是白骨骷髅脸，没有皮肉，身穿锈黑日式铠甲，戴角盔，背插圆纹破旗，骑着只剩白骨的骨马。\n<Picture 4> 是场景参考：雾中荒原战场。前景和中景是开阔湿泥地，有倒影，插着断矛、散落头盔，左侧一排破红旗，右侧倾倒的木架；残堡灰黑色，很小，立在远处浓雾里。\n\nsummary:\n[reference generation] 做一条十五秒的游戏 CG 预告片，16:9，镜头之间硬切。<Subject 1> 与 <Subject 2> 开场已经在半空撞剑，时间冻结后弹回；她被震退滑行，穿过他的三剑，顺着他的剑跑上肩侧，慢动作一剑砍掉他的左角，最后单膝落在前景，他跪在她身后。披风上的金龙只是刺绣。\n\nretention_analysis:\n<Subject 1> (appears in [Shot 1], [Shot 2], [Shot 3], [Shot 4], [Shot 5], [Shot 6]): fully_preserved - 齐肩黑短发、银龙盔、银流苏、红丝绒短袍、大红披风、黑皮高领、左臂银甲、银长剑、背后黑白缠柄长剑和银龙高跟战靴保持不变。金龙纹留在披风布面上。\n<Subject 2> (appears in [Shot 1], [Shot 2], [Shot 3], [Shot 4], [Shot 5], [Shot 6]): fully_preserved - 赤红裂纹皮肤、灰白长发、黄瞳、獠牙、破布战裙、肩甲、赤足和背上的剑保持不变。右手始终握着一柄长剑。头留在脖子上，右角全程完整。[Shot 1] 到 [Shot 4] 两只角都完整。[Shot 5] 起左角被砍掉。\n<Subject 3> (appears in [Shot 1], [Shot 3], [Shot 6]): fully_preserved - 骷髅脸、锈黑铠甲、角盔、圆纹破旗和白骨马保持不变，全程骑在马上，停在外圈，不参战。\n<Picture 1> ([Shot 1] 到 [Shot 6] 的剑士外观): fully_preserved - 多视图只锁定同一个人。\n<Picture 2> ([Shot 1] 到 [Shot 6] 的恶魔王外观): fully_preserved - 多视图只锁定同一个恶魔王。\n<Picture 3> ([Shot 1]、[Shot 3]、[Shot 6] 的骑士外观): fully_preserved - 骷髅骑士与白骨马保持一致。\n<Picture 4> ([Shot 1] 首帧战场): fully_preserved - 湿泥在中央，骑士在外圈，残堡缩在远处雾里。\n\ndetailed_description:\n3A 游戏过场，虚幻引擎风格化写实，轮廓光，体积雾，湿泥、皮革和金属的质感清楚，快动作带运动模糊，轻微胶片颗粒，暗部仍能看清脸和剑。冷白雾从远处打来。银白只属于 <Subject 1> 的剑，暗红只属于 <Subject 2> 的剑。场景沿用 <Picture 4>。除开头的时间冻结和 11 秒的慢动作重击外，其余是 1.0 倍速。每次换镜都是硬切。画面不出现字幕、白底和三视图。\n[Shot 1] 中景。冷开场，<Subject 1> 和 <Subject 2> 已经在半空，银剑和长剑正好锁在一起。时间冻结，雾里的水珠停住，两剑周围的火星也停住。她在画面左侧，他在右侧，两人都侧对镜头。<Subject 3> 停在远处的圈子上，也是静止的。镜头绕着这次碰撞慢慢转过 180 度，雾从背后勾出两人的轮廓。3 秒时时间弹回，一圈冲击波把停住的水珠向外掀开。Arc Shot with large amplitude at slow speed，冻结期间绕行，时间弹回时停住。\n[Shot 2] At 00:03.000, 硬切到低角度。接上冲击刚爆开。<Subject 1> 被震得向后飞，空中后翻，落在湿泥上滑行，银剑在泥里擦出一串火星，披风拖在身后。结束时她还在滑，没有站起。Tracking Shot with large amplitude at fast speed，贴着泥地跟着她滑行。\n[Shot 3] At 00:05.000, 硬切。<Subject 2> 连续刺出三剑，<Subject 1> 在三剑之间穿过去，银白和暗红每次擦过都迸一点火星。穿插之后给一个很短的俯拍，两人在泥地上互相绕。两只角都完整。<Subject 3> 仍在外圈马上。Tracking Shot with large amplitude at fast speed，俯拍只有一下，随即回到侧面。\n[Shot 4] At 00:08.000, 硬切到跟拍。<Subject 1> 向前冲，顺着 <Subject 2> 横在身前的那柄长剑跑上去，一步到剑身，一步到他肩侧，雾从镜头前掠过。这一镜中间不切。结束时她已经在他肩侧。Tracking Shot with large amplitude at fast speed，贴着她跑过的剑身。\n[Shot 5] At 00:11.000, 硬切到慢动作。她在他肩侧腾空，旋身，银剑自上而下斩落，拖着一道银白的光。剑砍掉 <Subject 2> 的左角，断角翻落。头留在脖子上，右角还在。命中的那一帧闪一下白。冲击把他压得单膝跪进泥里。Slow motion，Push In with small amplitude at slow speed，从两人砍中推到剑与左角的接触点。\n[Shot 6] At 00:14.000, 硬切到海报帧。<Subject 1> 落在前景，单膝点地，银剑横在身前，披风还在动，正面略侧对镜头。<Subject 2> 跪在她身后，剑撑着地，左角已经不在，右角还在，灰白长发垂下来。<Subject 3> 仍在外圈马上。雾变薄，两人头顶留出空。这一帧停到结尾。Static Shot。\n\noverall_soundscape:\n风和雾是底。冻结的三秒里只有一声拉长的金属鸣和一下很慢的心跳。3 秒时间弹回时一个低音正好落上。每次剑相碰是短促的金属声和破风，滑行时剑尖擦过湿泥。11 秒砍断左角时一声短促的脆响。14 秒所有声音退下，只剩风和她一次缓慢的呼气。\n\nnon_diegetic_music:\n预告片鼓点，太鼓和低频混合，无歌词。每一次硬切上落一击。3 秒时间弹回时一个低音下沉。11 秒的慢动作里鼓拉成一个长音，命中白闪时重击一次。14 秒音乐收掉。",
+        15,
+        "16:9 (Widescreen)",
+        1,
+        32,
+        "IB3VowLDUtUQ9gCyqZdBQ_Ih4PV2O8_26966f8e6b96.png",
+        "hf_20260425_181834_62c07669-a286-4ec4-91_051f5d791a39.png",
+        "hf_20260430_160408_c84a5f2a-8dfd-4ccd-9a_a11b28d2048e.png",
+        "hf_20261007_114709_0946bad7-0ec6-46c9-a2_c57019e7c382.png",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ],
+      "widgets_values_named": {
+        "fps": 24,
+        "video_trim_seconds": "auto",
+        "audio_trim_seconds": "auto",
+        "image_max_side": "auto",
+        "video_max_side": "512",
+        "prompt": "subject_definitions:\n<Subject 1> 是 <Picture 1> 中的多视图角色设定，红衣龙盔剑士，只使用一个身体。年轻女性，齐肩黑短发，留海分开，灰眸，肤色冷白，额上银龙盔，龙口与双角朝前，盔侧垂银流苏，不遮眼、不遮口，红丝绒短袍绣金龙，黑皮高领正中一枚金花扣，黑皮手套，左臂银甲，大红披风背面一条金龙、下摆到膝，右手一柄银长剑，背后一柄黑白缠柄长剑，银龙首高跟战靴。披风上的金龙只是刺绣，不变成龙，也不离开布面。剑走银白色的细光。\n<Subject 2> 是 <Picture 2> 中的多视图角色设定，恶魔王，只使用一个身体，比剑士高出一个头。赤红裂纹皮肤，灰白长发，两根完整的弯角，尖耳，黄瞳，獠牙，破布战裙，皮带与暗色肩甲，赤足，背上交叉背着数柄长剑，右手握其中一柄，双手是正常比例的红色爪手。剑走暗红色的光。两只角在最后一击之前保持完整。\n<Subject 3> 是 <Picture 3> 中的骷髅骑士团。每名骑士头盔下是白骨骷髅脸，没有皮肉，身穿锈黑日式铠甲，戴角盔，背插圆纹破旗，骑着只剩白骨的骨马。\n<Picture 4> 是场景参考：雾中荒原战场。前景和中景是开阔湿泥地，有倒影，插着断矛、散落头盔，左侧一排破红旗，右侧倾倒的木架；残堡灰黑色，很小，立在远处浓雾里。\n\nsummary:\n[reference generation] 做一条十五秒的游戏 CG 预告片，16:9，镜头之间硬切。<Subject 1> 与 <Subject 2> 开场已经在半空撞剑，时间冻结后弹回；她被震退滑行，穿过他的三剑，顺着他的剑跑上肩侧，慢动作一剑砍掉他的左角，最后单膝落在前景，他跪在她身后。披风上的金龙只是刺绣。\n\nretention_analysis:\n<Subject 1> (appears in [Shot 1], [Shot 2], [Shot 3], [Shot 4], [Shot 5], [Shot 6]): fully_preserved - 齐肩黑短发、银龙盔、银流苏、红丝绒短袍、大红披风、黑皮高领、左臂银甲、银长剑、背后黑白缠柄长剑和银龙高跟战靴保持不变。金龙纹留在披风布面上。\n<Subject 2> (appears in [Shot 1], [Shot 2], [Shot 3], [Shot 4], [Shot 5], [Shot 6]): fully_preserved - 赤红裂纹皮肤、灰白长发、黄瞳、獠牙、破布战裙、肩甲、赤足和背上的剑保持不变。右手始终握着一柄长剑。头留在脖子上，右角全程完整。[Shot 1] 到 [Shot 4] 两只角都完整。[Shot 5] 起左角被砍掉。\n<Subject 3> (appears in [Shot 1], [Shot 3], [Shot 6]): fully_preserved - 骷髅脸、锈黑铠甲、角盔、圆纹破旗和白骨马保持不变，全程骑在马上，停在外圈，不参战。\n<Picture 1> ([Shot 1] 到 [Shot 6] 的剑士外观): fully_preserved - 多视图只锁定同一个人。\n<Picture 2> ([Shot 1] 到 [Shot 6] 的恶魔王外观): fully_preserved - 多视图只锁定同一个恶魔王。\n<Picture 3> ([Shot 1]、[Shot 3]、[Shot 6] 的骑士外观): fully_preserved - 骷髅骑士与白骨马保持一致。\n<Picture 4> ([Shot 1] 首帧战场): fully_preserved - 湿泥在中央，骑士在外圈，残堡缩在远处雾里。\n\ndetailed_description:\n3A 游戏过场，虚幻引擎风格化写实，轮廓光，体积雾，湿泥、皮革和金属的质感清楚，快动作带运动模糊，轻微胶片颗粒，暗部仍能看清脸和剑。冷白雾从远处打来。银白只属于 <Subject 1> 的剑，暗红只属于 <Subject 2> 的剑。场景沿用 <Picture 4>。除开头的时间冻结和 11 秒的慢动作重击外，其余是 1.0 倍速。每次换镜都是硬切。画面不出现字幕、白底和三视图。\n[Shot 1] 中景。冷开场，<Subject 1> 和 <Subject 2> 已经在半空，银剑和长剑正好锁在一起。时间冻结，雾里的水珠停住，两剑周围的火星也停住。她在画面左侧，他在右侧，两人都侧对镜头。<Subject 3> 停在远处的圈子上，也是静止的。镜头绕着这次碰撞慢慢转过 180 度，雾从背后勾出两人的轮廓。3 秒时时间弹回，一圈冲击波把停住的水珠向外掀开。Arc Shot with large amplitude at slow speed，冻结期间绕行，时间弹回时停住。\n[Shot 2] At 00:03.000, 硬切到低角度。接上冲击刚爆开。<Subject 1> 被震得向后飞，空中后翻，落在湿泥上滑行，银剑在泥里擦出一串火星，披风拖在身后。结束时她还在滑，没有站起。Tracking Shot with large amplitude at fast speed，贴着泥地跟着她滑行。\n[Shot 3] At 00:05.000, 硬切。<Subject 2> 连续刺出三剑，<Subject 1> 在三剑之间穿过去，银白和暗红每次擦过都迸一点火星。穿插之后给一个很短的俯拍，两人在泥地上互相绕。两只角都完整。<Subject 3> 仍在外圈马上。Tracking Shot with large amplitude at fast speed，俯拍只有一下，随即回到侧面。\n[Shot 4] At 00:08.000, 硬切到跟拍。<Subject 1> 向前冲，顺着 <Subject 2> 横在身前的那柄长剑跑上去，一步到剑身，一步到他肩侧，雾从镜头前掠过。这一镜中间不切。结束时她已经在他肩侧。Tracking Shot with large amplitude at fast speed，贴着她跑过的剑身。\n[Shot 5] At 00:11.000, 硬切到慢动作。她在他肩侧腾空，旋身，银剑自上而下斩落，拖着一道银白的光。剑砍掉 <Subject 2> 的左角，断角翻落。头留在脖子上，右角还在。命中的那一帧闪一下白。冲击把他压得单膝跪进泥里。Slow motion，Push In with small amplitude at slow speed，从两人砍中推到剑与左角的接触点。\n[Shot 6] At 00:14.000, 硬切到海报帧。<Subject 1> 落在前景，单膝点地，银剑横在身前，披风还在动，正面略侧对镜头。<Subject 2> 跪在她身后，剑撑着地，左角已经不在，右角还在，灰白长发垂下来。<Subject 3> 仍在外圈马上。雾变薄，两人头顶留出空。这一帧停到结尾。Static Shot。\n\noverall_soundscape:\n风和雾是底。冻结的三秒里只有一声拉长的金属鸣和一下很慢的心跳。3 秒时间弹回时一个低音正好落上。每次剑相碰是短促的金属声和破风，滑行时剑尖擦过湿泥。11 秒砍断左角时一声短促的脆响。14 秒所有声音退下，只剩风和她一次缓慢的呼气。\n\nnon_diegetic_music:\n预告片鼓点，太鼓和低频混合，无歌词。每一次硬切上落一击。3 秒时间弹回时一个低音下沉。11 秒的慢动作里鼓拉成一个长音，命中白闪时重击一次。14 秒音乐收掉。",
+        "seconds": 15,
+        "aspect_ratio": "16:9 (Widescreen)",
+        "megapixels": 1,
+        "multiple": 32,
+        "ref_image_0": "IB3VowLDUtUQ9gCyqZdBQ_Ih4PV2O8_26966f8e6b96.png",
+        "ref_image_1": "hf_20260425_181834_62c07669-a286-4ec4-91_051f5d791a39.png",
+        "ref_image_2": "hf_20260430_160408_c84a5f2a-8dfd-4ccd-9a_a11b28d2048e.png",
+        "ref_image_3": "hf_20261007_114709_0946bad7-0ec6-46c9-a2_c57019e7c382.png",
+        "ref_image_4": "",
+        "ref_image_5": "",
+        "ref_image_6": "",
+        "ref_image_7": "",
+        "ref_image_8": "",
+        "ref_video_0": "",
+        "ref_video_1": "",
+        "ref_video_2": "",
+        "ref_audio_0": "",
+        "ref_audio_1": "",
+        "ref_audio_2": ""
+      }
+    },
+    {
+      "id": 141,
+      "type": "MiniMaxH3ReferenceToVideo",
+      "pos": [
+        1433.030705469749,
+        10.161762509356036
+      ],
+      "size": [
+        289.482421875,
+        604
+      ],
+      "flags": {
+        "collapsed": true
+      },
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "clip",
+          "name": "clip",
+          "type": "CLIP",
+          "link": 642
+        },
+        {
+          "label": "vae",
+          "name": "vae",
+          "shape": 7,
+          "type": "VAE",
+          "link": 643
+        },
+        {
+          "label": "audio_vae",
+          "name": "audio_vae",
+          "shape": 7,
+          "type": "VAE",
+          "link": 646
+        },
+        {
+          "label": "ref_images.ref_image_0",
+          "name": "ref_images.ref_image_0",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 225
+        },
+        {
+          "name": "ref_images.ref_image_1",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 232
+        },
+        {
+          "name": "ref_images.ref_image_2",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 233
+        },
+        {
+          "name": "ref_images.ref_image_3",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 234
+        },
+        {
+          "name": "ref_images.ref_image_4",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 235
+        },
+        {
+          "label": "ref_videos.ref_video_0",
+          "name": "ref_videos.ref_video_0",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 226
+        },
+        {
+          "name": "ref_videos.ref_video_1",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "ref_videos.ref_video_2",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "label": "ref_video_audios.ref_video_audio_0",
+          "name": "ref_video_audios.ref_video_audio_0",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "name": "ref_video_audios.ref_video_audio_1",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "name": "ref_video_audios.ref_video_audio_2",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "label": "ref_audios.ref_audio_0",
+          "name": "ref_audios.ref_audio_0",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": 227
+        },
+        {
+          "name": "ref_audios.ref_audio_1",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": 236
+        },
+        {
+          "name": "ref_audios.ref_audio_2",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": 237
+        },
+        {
+          "label": "prompt",
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": 228
+        },
+        {
+          "label": "width",
+          "name": "width",
+          "type": "INT",
+          "widget": {
+            "name": "width"
+          },
+          "link": 229
+        },
+        {
+          "label": "height",
+          "name": "height",
+          "type": "INT",
+          "widget": {
+            "name": "height"
+          },
+          "link": 230
+        },
+        {
+          "label": "length",
+          "name": "length",
+          "type": "INT",
+          "widget": {
+            "name": "length"
+          },
+          "link": 231
+        },
+        {
+          "label": "ref_image_size",
+          "name": "ref_image_size",
+          "type": "COMBO",
+          "widget": {
+            "name": "ref_image_size"
+          },
+          "link": null
+        },
+        {
+          "name": "ref_images.ref_image_5",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 238
+        },
+        {
+          "name": "ref_images.ref_image_6",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 239
+        },
+        {
+          "name": "ref_images.ref_image_7",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 240
+        },
+        {
+          "name": "ref_images.ref_image_8",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 241
+        }
+      ],
+      "outputs": [
+        {
+          "label": "positive",
+          "name": "positive",
+          "type": "CONDITIONING",
+          "links": [
+            617,
+            650
+          ]
+        },
+        {
+          "label": "LATENT",
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            653
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.44.0",
+        "Node name for S&R": "MiniMaxH3ReferenceToVideo",
+        "ue_properties": {
+          "version": "8.0.1",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "title_regex": null,
+          "input_regex": null,
+          "group_regex": null,
+          "title_regex_invert": false,
+          "input_regex_invert": false,
+          "group_regex_invert": false,
+          "apply_to_unrepeated": 0,
+          "send_to_any": 0,
+          "string_to_combo": 0,
+          "repeated_type_rule": 0,
+          "group_restricted": 0,
+          "color_restricted": 0
+        }
+      },
+      "widgets_values": [
+        "",
+        1344,
+        32,
+        124,
+        "match"
+      ],
+      "widgets_values_named": {
+        "prompt": "",
+        "width": 1344,
+        "height": 32,
+        "length": 124,
+        "ref_image_size": "match"
+      },
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 142,
+      "type": "ZealmanVideoOutput",
+      "pos": [
+        3266.4400466096167,
+        38.28085675942019
+      ],
+      "size": [
+        940.7622189261433,
+        661.9391905206978
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 623
+        },
+        {
+          "name": "audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": 624
+        }
+      ],
+      "outputs": [
+        {
+          "name": "saved_path",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ZealmanVideoOutput",
+        "ue_properties": {
+          "version": "8.0.1",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "title_regex": null,
+          "input_regex": null,
+          "group_regex": null,
+          "title_regex_invert": false,
+          "input_regex_invert": false,
+          "group_regex_invert": false,
+          "apply_to_unrepeated": 0,
+          "send_to_any": 0,
+          "string_to_combo": 0,
+          "repeated_type_rule": 0,
+          "group_restricted": 0,
+          "color_restricted": 0
+        }
+      },
+      "widgets_values": [
+        24,
+        "V7",
+        true
+      ],
+      "widgets_values_named": {
+        "frame_rate": 24,
+        "filename_prefix": "V7",
+        "save_output": true
+      }
+    },
+    {
+      "id": 272,
+      "type": "MiniMaxH3VAEDecodeFast",
+      "pos": [
+        2609.394061058262,
+        1016.9333217020278
+      ],
+      "size": [
+        260.8398401260374,
+        246
+      ],
+      "flags": {
+        "collapsed": false,
+        "disabled": false
+      },
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "samples",
+          "name": "samples",
+          "type": "LATENT",
+          "link": 658
+        },
+        {
+          "label": "vae",
+          "name": "vae",
+          "type": "VAE",
+          "link": 644
+        },
+        {
+          "label": "tiling",
+          "name": "tiling",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "tiling"
+          },
+          "link": null
+        },
+        {
+          "label": "tile_size",
+          "name": "tile_size",
+          "type": "INT",
+          "widget": {
+            "name": "tile_size"
+          },
+          "link": null
+        },
+        {
+          "label": "tile_overlap",
+          "name": "tile_overlap",
+          "type": "INT",
+          "widget": {
+            "name": "tile_overlap"
+          },
+          "link": null
+        },
+        {
+          "label": "output_device",
+          "name": "output_device",
+          "type": "COMBO",
+          "widget": {
+            "name": "output_device"
+          },
+          "link": null
+        },
+        {
+          "label": "temporal_tiling",
+          "name": "temporal_tiling",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "temporal_tiling"
+          },
+          "link": null
+        },
+        {
+          "label": "temporal_tile_frames",
+          "name": "temporal_tile_frames",
+          "type": "INT",
+          "widget": {
+            "name": "temporal_tile_frames"
+          },
+          "link": null
+        },
+        {
+          "label": "temporal_context_frames",
+          "name": "temporal_context_frames",
+          "type": "INT",
+          "widget": {
+            "name": "temporal_context_frames"
+          },
+          "link": null
+        },
+        {
+          "label": "seam_warning_threshold",
+          "name": "seam_warning_threshold",
+          "type": "FLOAT",
+          "widget": {
+            "name": "seam_warning_threshold"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "label": "images",
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            623
+          ]
+        }
+      ],
+      "properties": {
+        "aux_id": "TripleHeadedMonkey/ComfyUI-MiniMaxH3_LatentUpscaler",
+        "ver": "2e568dfe3e4f5e81da178bc845e05dcfbb64d55b",
+        "Node name for S&R": "MiniMaxH3VAEDecodeFast",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        },
+        "widget_ue_connectable": {},
+        "ttNbgOverride": {
+          "bgcolor": "#335",
+          "groupcolor": "#88A",
+          "color": "#223"
+        }
+      },
+      "widgets_values": [
+        true,
+        256,
+        64,
+        "cpu",
+        false,
+        85,
+        39,
+        0.02
+      ],
+      "widgets_values_named": {
+        "tiling": true,
+        "tile_size": 256,
+        "tile_overlap": 64,
+        "output_device": "cpu",
+        "temporal_tiling": false,
+        "temporal_tile_frames": 85,
+        "temporal_context_frames": 39,
+        "seam_warning_threshold": 0.02
+      },
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 273,
+      "type": "VAEDecodeAudio",
+      "pos": [
+        2600.390375901301,
+        907.8741863622248
+      ],
+      "size": [
+        256.8629150390625,
+        52.67375183105469
+      ],
+      "flags": {
+        "collapsed": false,
+        "disabled": false
+      },
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "samples",
+          "name": "samples",
+          "type": "LATENT",
+          "link": 656
+        },
+        {
+          "label": "vae",
+          "name": "vae",
+          "type": "VAE",
+          "link": 647
+        }
+      ],
+      "outputs": [
+        {
+          "label": "AUDIO",
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            624
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.33.0",
+        "Node name for S&R": "VAEDecodeAudio",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        },
+        "widget_ue_connectable": {},
+        "ttNbgOverride": {
+          "bgcolor": "#335",
+          "groupcolor": "#88A",
+          "color": "#223"
+        }
+      },
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 277,
+      "type": "BasicScheduler",
+      "pos": [
+        1781.3471863863688,
+        470.4385202175252
+      ],
+      "size": [
+        395.78620138592487,
+        106
+      ],
+      "flags": {
+        "disabled": false
+      },
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "model",
+          "name": "model",
+          "type": "MODEL",
+          "link": 665
+        },
+        {
+          "label": "scheduler",
+          "name": "scheduler",
+          "type": "COMBO",
+          "widget": {
+            "name": "scheduler"
+          },
+          "link": null
+        },
+        {
+          "label": "steps",
+          "name": "steps",
+          "type": "INT",
+          "widget": {
+            "name": "steps"
+          },
+          "link": null
+        },
+        {
+          "label": "denoise",
+          "name": "denoise",
+          "type": "FLOAT",
+          "widget": {
+            "name": "denoise"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "label": "SIGMAS",
+          "name": "SIGMAS",
+          "type": "SIGMAS",
+          "links": [
+            609
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.33.0",
+        "Node name for S&R": "BasicScheduler",
+        "ue_properties": {
+          "widget_ue_connectable": {
+            "scheduler": true,
+            "denoise": true,
+            "steps": true
+          },
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        },
+        "widget_ue_connectable": {},
+        "ttNbgOverride": {
+          "bgcolor": "#335",
+          "groupcolor": "#88A",
+          "color": "#223"
+        }
+      },
+      "widgets_values": [
+        "simple",
+        8,
+        1
+      ],
+      "widgets_values_named": {
+        "scheduler": "simple",
+        "steps": 8,
+        "denoise": 1
+      },
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 281,
+      "type": "H3SigmaRefiner",
+      "pos": [
+        1780.4362927031077,
+        634.3217151610618
+      ],
+      "size": [
+        401.2248569582607,
+        130
+      ],
+      "flags": {
+        "collapsed": false,
+        "disabled": false
+      },
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "sigmas",
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 609
+        },
+        {
+          "label": "extra_steps",
+          "name": "extra_steps",
+          "type": "INT",
+          "widget": {
+            "name": "extra_steps"
+          },
+          "link": null
+        },
+        {
+          "label": "start_at_sigma",
+          "name": "start_at_sigma",
+          "type": "FLOAT",
+          "widget": {
+            "name": "start_at_sigma"
+          },
+          "link": null
+        },
+        {
+          "label": "end_at_sigma",
+          "name": "end_at_sigma",
+          "type": "FLOAT",
+          "widget": {
+            "name": "end_at_sigma"
+          },
+          "link": null
+        },
+        {
+          "label": "spacing",
+          "name": "spacing",
+          "type": "COMBO",
+          "widget": {
+            "name": "spacing"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "label": "sigmas",
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "links": [
+            655
+          ]
+        }
+      ],
+      "properties": {
+        "aux_id": "yichengup/ComfyUI-YCNodes-MiniMax-H3",
+        "ver": "146207295c1d2bd6b64a6552484cb6ed8be1c9ef",
+        "Node name for S&R": "H3SigmaRefiner",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        },
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        2,
+        0.7,
+        0,
+        "cosine"
+      ],
+      "widgets_values_named": {
+        "extra_steps": 2,
+        "start_at_sigma": 0.7,
+        "end_at_sigma": 0,
+        "spacing": "cosine"
+      },
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 282,
+      "type": "KSamplerSelect",
+      "pos": [
+        1777.4285678903457,
+        358.3558361880613
+      ],
+      "size": [
+        396.9298020411345,
+        58
+      ],
+      "flags": {
+        "collapsed": false,
+        "disabled": false
+      },
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "sampler_name",
+          "name": "sampler_name",
+          "type": "COMBO",
+          "widget": {
+            "name": "sampler_name"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "label": "SAMPLER",
+          "name": "SAMPLER",
+          "type": "SAMPLER",
+          "links": [
+            654
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.33.0",
+        "Node name for S&R": "KSamplerSelect",
+        "ue_properties": {
+          "widget_ue_connectable": {
+            "sampler_name": true
+          },
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        },
+        "widget_ue_connectable": {},
+        "ttNbgOverride": {
+          "bgcolor": "#335",
+          "groupcolor": "#88A",
+          "color": "#223"
+        }
+      },
+      "widgets_values": [
+        "euler"
+      ],
+      "widgets_values_named": {
+        "sampler_name": "euler"
+      },
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 283,
+      "type": "ConditioningZeroOut",
+      "pos": [
+        1642.5994712744396,
+        9.025477898301409
+      ],
+      "size": [
+        242.7472686767578,
+        39.45499801635742
+      ],
+      "flags": {
+        "collapsed": true,
+        "disabled": false
+      },
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "label": "conditioning",
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 617
+        }
+      ],
+      "outputs": [
+        {
+          "label": "CONDITIONING",
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            651
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.34.0",
+        "Node name for S&R": "ConditioningZeroOut",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        },
+        "widget_ue_connectable": {},
+        "ttNbgOverride": {
+          "bgcolor": "#335",
+          "groupcolor": "#88A",
+          "color": "#223"
+        }
+      },
+      "color": "#223",
+      "bgcolor": "#335"
+    },
+    {
+      "id": 286,
+      "type": "ZealmanH3ModelLoader",
+      "pos": [
+        1759.254296743205,
+        34.39798259765099
+      ],
+      "size": [
+        460,
+        286
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "links": [
+            659
+          ]
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "links": [
+            642
+          ]
+        },
+        {
+          "name": "video_vae",
+          "type": "VAE",
+          "links": [
+            643,
+            644,
+            652
+          ]
+        },
+        {
+          "name": "audio_vae",
+          "type": "VAE",
+          "links": [
+            646,
+            647
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ZealmanH3ModelLoader",
+        "ue_properties": {
+          "version": "8.0.1",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "title_regex": null,
+          "input_regex": null,
+          "group_regex": null,
+          "title_regex_invert": false,
+          "input_regex_invert": false,
+          "group_regex_invert": false,
+          "apply_to_unrepeated": 0,
+          "send_to_any": 0,
+          "string_to_combo": 0,
+          "repeated_type_rule": 0,
+          "group_restricted": 0,
+          "color_restricted": 0
+        }
+      },
+      "widgets_values": [
+        "minimax/minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+        "default",
+        "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+        "default",
+        "minimax_h3_video_vae_int8_convrot.safetensors",
+        "minimax_h3_audio_vae_fp32.safetensors",
+        "comfy kitchen attention",
+        "[{\"on\":true,\"lora\":\"minimax/minimax_h3_turbo_v4_step600_ema_pruned_comfyui.safetensors\",\"strength\":0.75},{\"on\":false,\"lora\":\"minimax/Motion_Repair_V2.safetensors\",\"strength\":0.25}]"
+      ],
+      "widgets_values_named": {
+        "unet_name": "minimax/minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+        "weight_dtype": "default",
+        "clip_name": "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+        "clip_device": "default",
+        "video_vae": "minimax_h3_video_vae_int8_convrot.safetensors",
+        "audio_vae": "minimax_h3_audio_vae_fp32.safetensors",
+        "attention": "comfy kitchen attention",
+        "lora_stack": "[{\"on\":true,\"lora\":\"minimax/minimax_h3_turbo_v4_step600_ema_pruned_comfyui.safetensors\",\"strength\":0.75},{\"on\":false,\"lora\":\"minimax/Motion_Repair_V2.safetensors\",\"strength\":0.25}]"
+      }
+    },
+    {
+      "id": 287,
+      "type": "SelfLiftAvatarH3Sampler",
+      "pos": [
+        2234.473266103965,
+        33.45756354000167
+      ],
+      "size": [
+        468.2767788589299,
+        795.7958631940742
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "low_res_model",
+          "type": "MODEL",
+          "link": 666
+        },
+        {
+          "name": "high_res_model",
+          "shape": 7,
+          "type": "MODEL",
+          "link": null
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 650
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 651
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 652
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 653
+        },
+        {
+          "name": "sampler",
+          "type": "SAMPLER",
+          "link": 654
+        },
+        {
+          "name": "sigmas",
+          "type": "SIGMAS",
+          "link": 655
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            656,
+            658
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "selflift-avatar",
+        "ver": "af4d50129fe7f8e9066fc26e368b175f33ddb3df",
+        "Node name for S&R": "SelfLiftAvatarH3Sampler",
+        "ue_properties": {
+          "version": "8.0.1",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "title_regex": null,
+          "input_regex": null,
+          "group_regex": null,
+          "title_regex_invert": false,
+          "input_regex_invert": false,
+          "group_regex_invert": false,
+          "apply_to_unrepeated": 0,
+          "send_to_any": 0,
+          "string_to_combo": 0,
+          "repeated_type_rule": 0,
+          "group_restricted": 0,
+          "color_restricted": 0
+        }
+      },
+      "widgets_values": [
+        666,
+        "fixed",
+        1,
+        6,
+        0.5,
+        0,
+        0.5,
+        1,
+        "minimax_h3_latent_upscaler_3d_conv_v1_bf16.safetensors",
+        true,
+        "auto",
+        2,
+        "auto",
+        "global_stream",
+        4096,
+        4,
+        "",
+        ""
+      ],
+      "widgets_values_named": {
+        "seed": 666,
+        "control_after_generate": "fixed",
+        "cfg": 1,
+        "transition_step": 6,
+        "lowres_scale": 0.5,
+        "rho": 0,
+        "w_min": 0.5,
+        "w_max": 1,
+        "upscaler_model": "minimax_h3_latent_upscaler_3d_conv_v1_bf16.safetensors",
+        "highres_tiling": true,
+        "tiling_mode": "auto",
+        "tiling_tiles": 2,
+        "tiling_axis": "auto",
+        "highres_tiling_mode": "global_stream",
+        "highres_token_chunk": 4096,
+        "highres_weight_cache_gb": 4,
+        "selflift_tiling_plan": "",
+        "selflift_seam_diag": ""
+      }
+    },
+    {
+      "id": 288,
+      "type": "ZealmanH3Dials",
+      "pos": [
+        1784.5805011087184,
+        906.4196958023448
+      ],
+      "size": [
+        776,
+        1010
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 659
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "slot_index": 0,
+          "links": [
+            664
+          ]
+        },
+        {
+          "name": "report",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "title": "Zealman H3 Dials",
+      "properties": {
+        "Node name for S&R": "ZealmanH3Dials",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "8.0.1",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        true,
+        "[{\"on\":true,\"dial\":\"h3_motion\",\"strength\":0.5},{\"on\":false,\"dial\":\"h3_arcane_sigils\",\"strength\":2},{\"on\":false,\"dial\":\"h3_aura\",\"strength\":0.5},{\"on\":true,\"dial\":\"h3_blur_moving_edges_hook\",\"strength\":0.5},{\"on\":false,\"dial\":\"h3_colour_drain\",\"strength\":4},{\"on\":false,\"dial\":\"h3_dramatic_light\",\"strength\":1.5},{\"on\":false,\"dial\":\"h3_evil_cold\",\"strength\":1.5},{\"on\":false,\"dial\":\"h3_evil_corrupted\",\"strength\":0.5},{\"on\":false,\"dial\":\"h3_evil_creepy\",\"strength\":-1},{\"on\":true,\"dial\":\"h3_evil_dread\",\"strength\":0.5},{\"on\":false,\"dial\":\"h3_evil_impish\",\"strength\":0.5},{\"on\":false,\"dial\":\"h3_evil_seductive\",\"strength\":0.5},{\"on\":false,\"dial\":\"h3_evil_sinister\",\"strength\":1},{\"on\":false,\"dial\":\"h3_evil_unhinged\",\"strength\":0.5},{\"on\":false,\"dial\":\"h3_impact_frame\",\"strength\":2},{\"on\":false,\"dial\":\"h3_ink_wash\",\"strength\":1.5},{\"on\":false,\"dial\":\"h3_motion_lora\",\"strength\":0.75},{\"on\":false,\"dial\":\"h3_psychedelic\",\"strength\":2},{\"on\":false,\"dial\":\"h3_space_warp\",\"strength\":3},{\"on\":false,\"dial\":\"h3_storm\",\"strength\":2},{\"on\":false,\"dial\":\"experimental/h3_x_datamosh\",\"strength\":2},{\"on\":false,\"dial\":\"experimental/h3_x_film_artifact\",\"strength\":3},{\"on\":false,\"dial\":\"experimental/h3_x_memory_present\",\"strength\":3},{\"on\":false,\"dial\":\"experimental/h3_x_oil_pixel\",\"strength\":2.5},{\"on\":false,\"dial\":\"experimental/h3_x_order_entropy\",\"strength\":3},{\"on\":false,\"dial\":\"experimental/h3_x_owl_octopus\",\"strength\":2.5},{\"on\":false,\"dial\":\"experimental/h3_x_silentfilm_cyberpunk\",\"strength\":1.5},{\"on\":false,\"dial\":\"experimental/h3_x_sinister_noview\",\"strength\":1},{\"on\":false,\"dial\":\"experimental/h3_x_template_placebo\",\"strength\":0.5},{\"on\":false,\"dial\":\"experimental/h3_x_vhs\",\"strength\":1.5}]",
+        ""
+      ],
+      "widgets_values_named": {
+        "enabled": true,
+        "rack": "[{\"on\":true,\"dial\":\"h3_motion\",\"strength\":0.5},{\"on\":false,\"dial\":\"h3_arcane_sigils\",\"strength\":2},{\"on\":false,\"dial\":\"h3_aura\",\"strength\":0.5},{\"on\":true,\"dial\":\"h3_blur_moving_edges_hook\",\"strength\":0.5},{\"on\":false,\"dial\":\"h3_colour_drain\",\"strength\":4},{\"on\":false,\"dial\":\"h3_dramatic_light\",\"strength\":1.5},{\"on\":false,\"dial\":\"h3_evil_cold\",\"strength\":1.5},{\"on\":false,\"dial\":\"h3_evil_corrupted\",\"strength\":0.5},{\"on\":false,\"dial\":\"h3_evil_creepy\",\"strength\":-1},{\"on\":true,\"dial\":\"h3_evil_dread\",\"strength\":0.5},{\"on\":false,\"dial\":\"h3_evil_impish\",\"strength\":0.5},{\"on\":false,\"dial\":\"h3_evil_seductive\",\"strength\":0.5},{\"on\":false,\"dial\":\"h3_evil_sinister\",\"strength\":1},{\"on\":false,\"dial\":\"h3_evil_unhinged\",\"strength\":0.5},{\"on\":false,\"dial\":\"h3_impact_frame\",\"strength\":2},{\"on\":false,\"dial\":\"h3_ink_wash\",\"strength\":1.5},{\"on\":false,\"dial\":\"h3_motion_lora\",\"strength\":0.75},{\"on\":false,\"dial\":\"h3_psychedelic\",\"strength\":2},{\"on\":false,\"dial\":\"h3_space_warp\",\"strength\":3},{\"on\":false,\"dial\":\"h3_storm\",\"strength\":2},{\"on\":false,\"dial\":\"experimental/h3_x_datamosh\",\"strength\":2},{\"on\":false,\"dial\":\"experimental/h3_x_film_artifact\",\"strength\":3},{\"on\":false,\"dial\":\"experimental/h3_x_memory_present\",\"strength\":3},{\"on\":false,\"dial\":\"experimental/h3_x_oil_pixel\",\"strength\":2.5},{\"on\":false,\"dial\":\"experimental/h3_x_order_entropy\",\"strength\":3},{\"on\":false,\"dial\":\"experimental/h3_x_owl_octopus\",\"strength\":2.5},{\"on\":false,\"dial\":\"experimental/h3_x_silentfilm_cyberpunk\",\"strength\":1.5},{\"on\":false,\"dial\":\"experimental/h3_x_sinister_noview\",\"strength\":1},{\"on\":false,\"dial\":\"experimental/h3_x_template_placebo\",\"strength\":0.5},{\"on\":false,\"dial\":\"experimental/h3_x_vhs\",\"strength\":1.5}]",
+        "zealman_dials_ui": ""
+      }
+    },
+    {
+      "id": 290,
+      "type": "ModelPreviewOverrideKJ",
+      "pos": [
+        2722.1904085899364,
+        31.957234674473852
+      ],
+      "size": [
+        518.3537818220111,
+        801.9994844083651
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 664
+        },
+        {
+          "name": "vae",
+          "shape": 7,
+          "type": "VAE",
+          "link": null
+        },
+        {
+          "name": "audio_vae",
+          "shape": 7,
+          "type": "VAE",
+          "link": null
+        },
+        {
+          "name": "preview_frames",
+          "type": "INT",
+          "widget": {
+            "name": "preview_frames"
+          },
+          "link": 662
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            665,
+            666
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-kjnodes",
+        "ver": "unknown",
+        "Node name for S&R": "ModelPreviewOverrideKJ",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        1024,
+        80,
+        true,
+        50,
+        12,
+        "taeh3.safetensors",
+        ""
+      ],
+      "widgets_values_named": {
+        "max_resolution": 1024,
+        "jpeg_quality": 80,
+        "suppress_default_preview": true,
+        "preview_frames": 50,
+        "preview_fps": 12,
+        "tiny_vae": "taeh3.safetensors",
+        "preview": ""
+      }
+    },
+    {
+      "id": 291,
+      "type": "Label (rgthree)",
+      "pos": [
+        1306.495877400051,
+        -204.02993431493897
+      ],
+      "size": [
+        1283.49609375,
+        150
+      ],
+      "flags": {
+        "allow_interaction": true
+      },
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "U0X-H3群主无限版",
+      "properties": {
+        "fontSize": 150,
+        "fontFamily": "Arial",
+        "fontColor": "#ffff00",
+        "textAlign": "left",
+        "backgroundColor": "transparent",
+        "padding": 0,
+        "borderRadius": 0,
+        "angle": 0,
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        },
+        "widget_ue_connectable": {}
+      },
+      "color": "#fff0",
+      "bgcolor": "#fff0"
+    }
+  ],
+  "links": [
+    [
+      609,
+      277,
+      0,
+      281,
+      0,
+      "SIGMAS"
+    ],
+    [
+      617,
+      141,
+      0,
+      283,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      623,
+      272,
+      0,
+      142,
+      0,
+      "IMAGE"
+    ],
+    [
+      624,
+      273,
+      0,
+      142,
+      1,
+      "AUDIO"
+    ],
+    [
+      644,
+      286,
+      2,
+      272,
+      1,
+      "VAE"
+    ],
+    [
+      647,
+      286,
+      3,
+      273,
+      1,
+      "VAE"
+    ],
+    [
+      650,
+      141,
+      0,
+      287,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      651,
+      283,
+      0,
+      287,
+      3,
+      "CONDITIONING"
+    ],
+    [
+      652,
+      286,
+      2,
+      287,
+      4,
+      "VAE"
+    ],
+    [
+      653,
+      141,
+      1,
+      287,
+      5,
+      "LATENT"
+    ],
+    [
+      654,
+      282,
+      0,
+      287,
+      6,
+      "SAMPLER"
+    ],
+    [
+      655,
+      281,
+      0,
+      287,
+      7,
+      "SIGMAS"
+    ],
+    [
+      656,
+      287,
+      0,
+      273,
+      0,
+      "LATENT"
+    ],
+    [
+      658,
+      287,
+      0,
+      272,
+      0,
+      "LATENT"
+    ],
+    [
+      659,
+      286,
+      0,
+      288,
+      0,
+      "MODEL"
+    ],
+    [
+      662,
+      138,
+      21,
+      290,
+      3,
+      "INT"
+    ],
+    [
+      664,
+      288,
+      0,
+      290,
+      0,
+      "MODEL"
+    ],
+    [
+      665,
+      290,
+      0,
+      277,
+      0,
+      "MODEL"
+    ],
+    [
+      666,
+      290,
+      0,
+      287,
+      0,
+      "MODEL"
+    ],
+    [
+      642,
+      286,
+      1,
+      141,
+      0,
+      "CLIP"
+    ],
+    [
+      643,
+      286,
+      2,
+      141,
+      1,
+      "VAE"
+    ],
+    [
+      646,
+      286,
+      3,
+      141,
+      2,
+      "VAE"
+    ],
+    [
+      225,
+      138,
+      0,
+      141,
+      3,
+      "IMAGE"
+    ],
+    [
+      232,
+      138,
+      1,
+      141,
+      4,
+      "IMAGE"
+    ],
+    [
+      233,
+      138,
+      2,
+      141,
+      5,
+      "IMAGE"
+    ],
+    [
+      234,
+      138,
+      3,
+      141,
+      6,
+      "IMAGE"
+    ],
+    [
+      235,
+      138,
+      4,
+      141,
+      7,
+      "IMAGE"
+    ],
+    [
+      226,
+      138,
+      9,
+      141,
+      8,
+      "IMAGE"
+    ],
+    [
+      227,
+      138,
+      15,
+      141,
+      14,
+      "AUDIO"
+    ],
+    [
+      236,
+      138,
+      16,
+      141,
+      15,
+      "AUDIO"
+    ],
+    [
+      237,
+      138,
+      17,
+      141,
+      16,
+      "AUDIO"
+    ],
+    [
+      228,
+      138,
+      18,
+      141,
+      17,
+      "STRING"
+    ],
+    [
+      229,
+      138,
+      19,
+      141,
+      18,
+      "INT"
+    ],
+    [
+      230,
+      138,
+      20,
+      141,
+      19,
+      "INT"
+    ],
+    [
+      231,
+      138,
+      21,
+      141,
+      20,
+      "INT"
+    ],
+    [
+      238,
+      138,
+      5,
+      141,
+      22,
+      "IMAGE"
+    ],
+    [
+      239,
+      138,
+      6,
+      141,
+      23,
+      "IMAGE"
+    ],
+    [
+      240,
+      138,
+      7,
+      141,
+      24,
+      "IMAGE"
+    ],
+    [
+      241,
+      138,
+      8,
+      141,
+      25,
+      "IMAGE"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.6115909044841938,
+      "offset": [
+        -594.888463199367,
+        353.1882869683446
+      ]
+    },
+    "frontendVersion": "1.58.5",
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true,
+    "ue_links": [],
+    "links_added_by_ue": []
+  },
+  "extensions": {
+    "seed_widgets": {
+      "287": 0
+    }
+  },
+  "version": 0.4,
+  "seed_widgets": {
+    "287": 0
+  }
+}

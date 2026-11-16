@@ -45,21 +45,24 @@ description: 使用 gallery-dl 进行海量画廊、漫画、插画相册、画�
 
 针对 Pixiv、Twitter/X、Instagram、Danbooru、微博等需要登录、年龄验证（R18）或会员权限的站点，优先联动 `leo-lantern` 导出 Chrome 当前登录态：
 
-1. **自动导出指定站点 Cookie**：
+1. **自动导出指定站点 Cookie**（统一存放在 `~/.shrimp/skills/leo-lantern/cookies/`）：
    ```powershell
    # 导出 Twitter/X Cookie（支持全局命令 leo-lantern 或 node <lanternSkillDir>/scripts/cli/index.mjs）
-   leo-lantern cookies --domain x.com --format txt --out "./cookies/x.com.txt"
+   leo-lantern cookies --domain x.com --format txt --out "$HOME/.shrimp/skills/leo-lantern/cookies/x.com.txt"
 
    # 导出 Pixiv Cookie
-   leo-lantern cookies --domain pixiv.net --format txt --out "./cookies/pixiv.net.txt"
+   leo-lantern cookies --domain pixiv.net --format txt --out "$HOME/.shrimp/skills/leo-lantern/cookies/pixiv.net.txt"
+
+   # 导出 Instagram Cookie
+   leo-lantern cookies --domain instagram.com --format txt --out "$HOME/.shrimp/skills/leo-lantern/cookies/instagram.com.txt"
 
    # 导出 微博 Cookie
-   leo-lantern cookies --domain weibo.com --format txt --out "./cookies/weibo.com.txt"
+   leo-lantern cookies --domain weibo.com --format txt --out "$HOME/.shrimp/skills/leo-lantern/cookies/weibo.com.txt"
    ```
 
 2. **带 Cookie 执行采集**：
    ```powershell
-   gallery-dl --cookies "./cookies/<domain>.txt" --dest "./downloads/images" "URL"
+   gallery-dl --cookies "$HOME/.shrimp/skills/leo-lantern/cookies/<domain>.txt" --dest "./downloads/images" "URL"
    ```
 
 ---
@@ -102,7 +105,7 @@ gallery-dl --dest "./downloads/images" `
 
 ### (3) 带登录态的批量抓取
 ```powershell
-gallery-dl --cookies "./cookies/target_cookies.txt" `
+gallery-dl --cookies "$HOME/.shrimp/skills/leo-lantern/cookies/<domain>.txt" `
   --dest "./downloads/images" `
   --download-archive "./downloads/images/archive.sqlite3" `
   "URL"

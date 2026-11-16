@@ -45,17 +45,17 @@ description: 使用 yt-dlp 进行音视频高质量下载、音频提取、字�
 
 下载需要高分辨率（1080P/4K）、会员权限或涉及反爬风控（如 B 站 412、YouTube 登录保护）的资源时，优先使用本地 Netscape Cookie 文件：
 
-1. **优先读取既有 Cookie**：
-   - B 站优先读取：`./cookies/bilibili.com.txt`
-   - YouTube 优先读取：`./cookies/youtube.com.txt`
+1. **优先读取既有 Cookie**（统一存放在 `~/.shrimp/skills/leo-lantern/cookies/`）：
+   - B 站优先读取：`~/.shrimp/skills/leo-lantern/cookies/bilibili.com.txt`
+   - YouTube 优先读取：`~/.shrimp/skills/leo-lantern/cookies/youtube.com.txt`
 2. **自动导出联动（当 Cookie 缺失、过期或触发风控时）**：
    通过环境中的 `leo-lantern` CLI 直接向 Chrome 插件请求导出最新 Cookie，无需人工繁琐导出：
    ```powershell
    # 导出 B站 Cookie（无感落盘为 Netscape 格式，支持全局命令或 node <lanternSkillDir>/scripts/cli/index.mjs）
-   leo-lantern cookies --domain bilibili.com --format txt --out "./cookies/bilibili.com.txt"
+   leo-lantern cookies --domain bilibili.com --format txt --out "$HOME/.shrimp/skills/leo-lantern/cookies/bilibili.com.txt"
 
    # 导出 YouTube Cookie
-   leo-lantern cookies --domain youtube.com --format txt --out "./cookies/youtube.com.txt"
+   leo-lantern cookies --domain youtube.com --format txt --out "$HOME/.shrimp/skills/leo-lantern/cookies/youtube.com.txt"
    ```
 
 ---
@@ -66,10 +66,10 @@ description: 使用 yt-dlp 进行音视频高质量下载、音频提取、字�
 
 ```powershell
 # 探测可用清晰度与音视频流格式
-yt-dlp --cookies "./cookies/bilibili.com.txt" --list-formats "URL"
+yt-dlp --cookies "$HOME/.shrimp/skills/leo-lantern/cookies/bilibili.com.txt" --list-formats "URL"
 
 # 或仅抓取元数据信息
-yt-dlp --cookies "./cookies/bilibili.com.txt" --dump-json "URL"
+yt-dlp --cookies "$HOME/.shrimp/skills/leo-lantern/cookies/bilibili.com.txt" --dump-json "URL"
 ```
 
 在正式下载前向用户清晰列出计划：
@@ -87,7 +87,7 @@ yt-dlp --cookies "./cookies/bilibili.com.txt" --dump-json "URL"
 yt-dlp -f "bv*+ba/b" --merge-output-format mp4 `
   --continue --no-overwrites `
   --write-info-json --write-thumbnail --embed-metadata `
-  --cookies "./cookies/bilibili.com.txt" `
+  --cookies "$HOME/.shrimp/skills/leo-lantern/cookies/bilibili.com.txt" `
   -o "./downloads/%(title)s.%(ext)s" "URL"
 ```
 
@@ -96,7 +96,7 @@ yt-dlp -f "bv*+ba/b" --merge-output-format mp4 `
 yt-dlp -f "ba/b" -x --audio-quality 0 `
   --continue --no-overwrites `
   --write-thumbnail --embed-metadata `
-  --cookies "./cookies/bilibili.com.txt" `
+  --cookies "$HOME/.shrimp/skills/leo-lantern/cookies/bilibili.com.txt" `
   -o "./downloads/%(title)s.%(ext)s" "URL"
 ```
 
@@ -115,7 +115,7 @@ yt-dlp --write-subs --write-auto-subs --sub-langs "zh-Hans,zh-Hant,en,all,-live_
 
 1. **第一阶段：自愈与 Cookie 刷新**
    - 升级工具：`uv tool upgrade yt-dlp`
-   - 刷新 Cookie：执行 `leo-lantern cookies --domain bilibili.com --format txt --out "./cookies/bilibili.com.txt"` 并重试。
+   - 刷新 Cookie：执行 `leo-lantern cookies --domain bilibili.com --format txt --out "$HOME/.shrimp/skills/leo-lantern/cookies/bilibili.com.txt"` 并重试。
 2. **第二阶段：API 底层降级通道**
    若 `yt-dlp` 依然无法通过，直接调用 B 站 Web API 获取 DASH 分离流：
    ```powershell

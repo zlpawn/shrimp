@@ -19,8 +19,9 @@
 - **指定音乐源优先级**：`-m, --music-sources "<源列表>"`
   - 默认优选源：`QQMusicClient,NeteaseMusicClient`
   - 全量备选源：`MiguMusicClient,NeteaseMusicClient,QQMusicClient,KuwoMusicClient,QianqianMusicClient`
-- **工作目录与配置**：`-i, --init-music-clients-cfg '{"work_dir": "./downloads/music/_musicdl_tmp"}'`
+- **工作目录与配置**：`-i, --init-music-clients-cfg '{"work_dir": "<output_dir>/_musicdl_tmp"}'`
   - 控制各平台客户端的下载临时工作区，避免在根目录生成深层时间戳文件夹。
+  - 正式输出路径由 `~/.shrimp/skills/leo-musicdl/config.json` 记忆管理，后备默认 `./downloads/music`。
 
 ---
 
@@ -36,3 +37,13 @@
 
 - 若各大音乐平台因版权下架或 VIP 限制无法下载：
   - 联动 **`leo-yt-dlp`**：从 B 站（官方 MV/现场 Live）或 YouTube 抽取最佳品质纯音频（`-f "ba/b" -x --audio-quality 0`）。
+
+---
+
+## 5. 网络策略与代理红线 (Network & Proxy)
+
+- **国内音源严禁走境外代理**：国内各大平台（酷我、QQ、网易云等）受唱片公司地域版权限制（Geo-blocking），境外 IP 会被平台直接拦截（返回 403、空列表或超时）。
+- **必须直连执行**：在开启终端代理的环境下，必须显式剥离代理变量：
+  - macOS/Linux: `env -u http_proxy -u https_proxy -u all_proxy musicdl ...`
+  - Windows: `$env:http_proxy=""; $env:https_proxy=""; musicdl ...`
+- **仅海外音源走代理**：只有在联动 `leo-yt-dlp` 从 YouTube 提取音频时，才开启代理。

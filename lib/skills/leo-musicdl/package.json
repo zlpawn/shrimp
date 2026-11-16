@@ -6,6 +6,7 @@
   "scripts": {
     "check": "musicdl --version",
     "install-tool": "uv tool install musicdl",
-    "upgrade-tool": "uv tool upgrade musicdl"
+    "upgrade-tool": "uv tool upgrade musicdl",
+    "config": "node scripts/config.mjs"
   }
 }

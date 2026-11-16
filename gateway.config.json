@@ -1001,6 +1001,76 @@
         "antigravity": false,
         "claude": false,
         "codex": true
+      },
+      "leo-autodl-imagine-video": {
+        "antigravity": false,
+        "claude": false,
+        "codex": true
+      },
+      "leo-musicdl": {
+        "antigravity": false,
+        "claude": false,
+        "codex": true
+      },
+      "leo-gallery-dl": {
+        "antigravity": false,
+        "claude": false,
+        "codex": true
+      },
+      "leo-ai-transcoder": {
+        "antigravity": false,
+        "claude": false,
+        "codex": true
+      },
+      "leo-yt-dlp": {
+        "antigravity": false,
+        "claude": false,
+        "codex": true
+      },
+      "leo-article-relay": {
+        "antigravity": false,
+        "claude": false,
+        "codex": true
+      },
+      "leo-craft-api": {
+        "antigravity": false,
+        "claude": false,
+        "codex": true
+      },
+      "leo-lc-transcoder": {
+        "antigravity": false,
+        "claude": false,
+        "codex": true
+      },
+      "leo-xhs-router": {
+        "antigravity": false,
+        "claude": false,
+        "codex": true
+      },
+      "leo-typesafe-ai": {
+        "antigravity": false,
+        "claude": false,
+        "codex": true
+      },
+      "leo-codex-imagine": {
+        "antigravity": false,
+        "claude": false,
+        "codex": true
+      },
+      "leo-imagine-router": {
+        "antigravity": false,
+        "claude": false,
+        "codex": true
+      },
+      "leo-lantern": {
+        "antigravity": false,
+        "claude": false,
+        "codex": true
+      },
+      "leo-apimart-video": {
+        "antigravity": false,
+        "claude": false,
+        "codex": true
       }
     }
   }

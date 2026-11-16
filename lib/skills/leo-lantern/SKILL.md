@@ -56,11 +56,11 @@ description: 通过 leo-lantern CLI/服务实现 Chrome 浏览器远程调试 (C
    - 页面或元素截图：
      - 整页截图：`leo-lantern screenshot --out=page.png`
      - 元素区域截图：`leo-lantern screenshot --sel=".chat-box" --out=chat.png` 或 `leo-lantern screenshot --ref=10 --out=btn.png`
-   - 导出 Cookie（凭证中继神器，直接给 curl / Python 脚本使用）：
-     - Netscape 格式（curl 直接读）：`leo-lantern cookies --domain="example.com" --format=txt --out=cookies.txt`
+   - 导出 Cookie（凭证中继神器，直接给 curl / Python / yt-dlp / gallery-dl 使用，推荐统一存放在 `~/.shrimp/skills/leo-lantern/cookies/<domain>.txt`）：
+     - Netscape 格式（curl / yt-dlp / gallery-dl 直接读）：`leo-lantern cookies --domain="example.com" --format=txt --out="$HOME/.shrimp/skills/leo-lantern/cookies/example.com.txt"`
      - JSON 格式：`leo-lantern cookies --domain="example.com" --format=json`
-     - 按 URL 读取（包含父域名上的 Cookie，需要扩展 1.3.13+）：`leo-lantern cookies --url="https://a.example.com/path" --out=cookies.json`
-     - 读不到时打开网站再读（需要扩展 1.3.15+）：`leo-lantern cookies --url="https://a.example.com/" --open-if-missing --out=cookies.json`。在后台独立窗口打开，读完一定关闭，不影响正在执行的任务。如果跳到登录页或出现密码框，就以 `login_required` 报错退出，请提示用户在 Chrome 登录后重试，不要反复尝试。
+     - 按 URL 读取（包含父域名上的 Cookie，需要扩展 1.3.13+）：`leo-lantern cookies --url="https://a.example.com/path" --out="$HOME/.shrimp/skills/leo-lantern/cookies/example.com.json"`
+     - 读不到时打开网站再读（需要扩展 1.3.15+）：`leo-lantern cookies --url="https://a.example.com/" --open-if-missing --out="$HOME/.shrimp/skills/leo-lantern/cookies/example.com.json"`。在后台独立窗口打开，读完一定关闭，不影响正在执行的任务。如果跳到登录页或出现密码框，就以 `login_required` 报错退出，请提示用户在 Chrome 登录后重试，不要反复尝试。
 5. **任务清理**：
    - 结束任务：`leo-lantern end-task`
 
@@ -86,8 +86,8 @@ leo-lantern eval "1+1"
 leo-lantern wait --idle --idle-ms 2000
 leo-lantern screenshot --sel ".result-box" --out result.png
 
-# 凭证中继与导出
-leo-lantern cookies --domain "example.com" --format txt --out /tmp/cookie.txt
+# 凭证中继与导出（统一存放在 ~/.shrimp/skills/leo-lantern/cookies/）
+leo-lantern cookies --domain "example.com" --format txt --out "$HOME/.shrimp/skills/leo-lantern/cookies/example.com.txt"
 
 # 结束任务
 leo-lantern end-task

@@ -52,7 +52,7 @@
 
 ## 5. 网络与鉴权控制
 
-- **使用 Netscape 格式 Cookie 文件**：`--cookies "path/to/cookies.txt"`
+- **使用 Netscape 格式 Cookie 文件（统一存放在 `~/.shrimp/skills/leo-lantern/cookies/`）**：`--cookies "$HOME/.shrimp/skills/leo-lantern/cookies/<domain>.txt"`
 - **直接从浏览器读取（备用）**：`--cookies-from-browser chrome`（注意 Windows 上可能因文件锁冲突）
 - **代理支持**：`--proxy "http://127.0.0.1:7890"` 或 `--proxy "socks5://127.0.0.1:1080"`
 - **限速与重试**：`--limit-rate 5M --retries 10 --fragment-retries 10`
