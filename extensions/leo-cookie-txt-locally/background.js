@@ -1364,6 +1364,27 @@ const SCS_ALLOWED_TARGETS = [
       'access_token',
       'search_token'
     ]
+  },
+  {
+    // 白鸽微服务网关测试环境：服务登记、路由组、子路由与测试配置变更
+    slot: 'BAIGE_TEST',
+    url: 'http://life-fe-baige-node.offline-beta.ttb.test.ke.com',
+    probeUrl: 'http://life-fe-baige-node.offline-beta.ttb.test.ke.com/api/gatewayConfig/application/list?pageSize=1&currentPage=1',
+    cookieNames: ['security_ticket_test', 'security_ticket', 'login_ucid', 'lianjia_uuid', 'lianjia_ssid']
+  },
+  {
+    // 白鸽微服务网关预发环境：服务登记与路由组只读探查
+    slot: 'BAIGE_PREVIEW',
+    url: 'http://preview.baige.ke.com',
+    probeUrl: 'http://preview.baige.ke.com/api/gatewayConfig/application/list?pageSize=1&currentPage=1',
+    cookieNames: ['security_ticket', 'login_ucid', 'lianjia_uuid', 'lianjia_ssid']
+  },
+  {
+    // 白鸽微服务网关线上生产环境：服务登记与路由组只读探查
+    slot: 'BAIGE_PROD',
+    url: 'https://baige.ke.com',
+    probeUrl: 'https://baige.ke.com/api/gatewayConfig/application/list?pageSize=1&currentPage=1',
+    cookieNames: ['security_ticket', 'login_ucid', 'lianjia_uuid', 'lianjia_ssid']
   }
 ];
 
