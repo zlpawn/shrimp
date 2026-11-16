@@ -1388,26 +1388,76 @@ const SCS_ALLOWED_TARGETS = [
   }
 ];
 
-async function checkHasAnyCookie(target) {
-  if (target.slot === 'SEARCH_CONSOLE') {
+async function extractCookiesForSlot(target) {
+  const pairs = [];
+  const seen = new Set();
+  const addCookie = (c) => {
+    if (c && c.name && c.value && !seen.has(c.name)) {
+      seen.add(c.name);
+      pairs.push(`${c.name}=${c.value}`);
+    }
+  };
+
+  // 1. 如果有 target.url，尝试按 target.url 获取全量 Cookie
+  if (target.url) {
     try {
-      const allCookies = await chrome.cookies.getAll({ url: target.url });
-      if (allCookies && allCookies.some(c => c.name === 'search_self_token' || c.name === 'security_ticket' || c.name === 'login_ucid' || c.name === 'search_token')) {
-        return true;
+      const list = await chrome.cookies.getAll({ url: target.url });
+      if (list && list.length > 0) list.forEach(addCookie);
+    } catch (e) {}
+
+    // 如果是 http://，尝试按 https:// 镜像读取（解决 Chrome 阻止给 HTTP URL 返回 Secure Cookie 的问题）
+    if (target.url.startsWith('http://')) {
+      try {
+        const httpsUrl = target.url.replace(/^http:\/\//, 'https://');
+        const list = await chrome.cookies.getAll({ url: httpsUrl });
+        if (list && list.length > 0) list.forEach(addCookie);
+      } catch (e) {}
+    }
+  }
+
+  // 2. 针对 BAIGE_* 槽位，做根域和 SSO 凭据兜底
+  if (target.slot.startsWith('BAIGE_')) {
+    try {
+      const u = new URL(target.url);
+      const hostCookies = await chrome.cookies.getAll({ domain: u.hostname });
+      if (hostCookies && hostCookies.length > 0) hostCookies.forEach(addCookie);
+    } catch (e) {}
+
+    // 从 .ke.com / .test.ke.com 捞取 SSO 鉴权凭证
+    const hasCoreAuth = pairs.some((p) => p.startsWith('security_ticket=') || p.startsWith('security_ticket_test=') || p.startsWith('lianjia_token='));
+    if (!hasCoreAuth) {
+      try {
+        const rootDomain = target.slot === 'BAIGE_TEST' ? 'test.ke.com' : 'ke.com';
+        const rootCookies = await chrome.cookies.getAll({ domain: rootDomain });
+        const coreNames = [
+          'security_ticket', 'security_ticket_test', 'login_ucid', 'lianjia_token',
+          'lianjia_uuid', 'lianjia_ssid', 'prd-assistant-token-prod', 'crosSdkDT2019DeviceId',
+        ];
+        if (rootCookies && rootCookies.length > 0) {
+          rootCookies.filter((c) => coreNames.includes(c.name)).forEach(addCookie);
+        }
+      } catch (e) {}
+    }
+  }
+
+  // 3. 兜底按 target.cookieNames 单独读取
+  if (target.cookieNames && target.cookieNames.length > 0) {
+    for (const name of target.cookieNames) {
+      if (!seen.has(name)) {
+        try {
+          const cookie = await chrome.cookies.get({ url: target.url, name });
+          if (cookie && cookie.value) addCookie(cookie);
+        } catch (e) {}
       }
-    } catch (e) {
-      // ignore
     }
   }
-  for (const name of target.cookieNames) {
-    try {
-      const cookie = await chrome.cookies.get({ url: target.url, name });
-      if (cookie && cookie.value) return true;
-    } catch (e) {
-      // ignore
-    }
-  }
-  return false;
+
+  return pairs;
+}
+
+async function checkHasAnyCookie(target) {
+  const pairs = await extractCookiesForSlot(target);
+  return pairs.length > 0;
 }
 
 async function keepAliveScsTargets() {
@@ -1438,33 +1488,7 @@ async function handleFetchScsTokens(requestedSlots) {
     if (requestedSlots && requestedSlots.length > 0 && !requestedSlots.includes(target.slot)) {
       continue;
     }
-    const pairs = [];
-    if (target.slot === 'SEARCH_CONSOLE') {
-      try {
-        const allCookies = await chrome.cookies.getAll({ url: target.url });
-        if (allCookies && allCookies.length > 0) {
-          for (const c of allCookies) {
-            if (c && c.name && c.value) {
-              pairs.push(`${c.name}=${c.value}`);
-            }
-          }
-        }
-      } catch (e) {
-        // ignore
-      }
-    }
-    if (pairs.length === 0) {
-      for (const name of target.cookieNames) {
-        try {
-          const cookie = await chrome.cookies.get({ url: target.url, name });
-          if (cookie && cookie.value) {
-            pairs.push(`${name}=${cookie.value}`);
-          }
-        } catch (e) {
-          // ignore
-        }
-      }
-    }
+    const pairs = await extractCookiesForSlot(target);
     result[target.slot] = pairs.length > 0 ? pairs.join('; ') : null;
   }
   return result;
