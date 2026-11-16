@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Leo cookie.txt Locally",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Export cookies and empower AI Agents (MCP/CLI) to interact with real Chrome.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApTpVSAi2QQOhEmDxVKjChip7bzXdeQArxB8XaAXtH5JIJJb74c2q3oZgGm6Efw+Okeo1VQZjZd06ZXJxs8XWhl6mVvEua+0lPQo+/TY9NZMyr5KgG8EjMXIzNKIFPjblzT9qwZSgL+H08uvWQSbsi8dWnrlmn7uJ6wdiCOHKnskJuux3TxjtQImE6nuuBlb7CvnW3iA58wpSCuZWHX8NMpSWSzclX++mcPnv72tWTfX95xA7vOLUC0XsQmArxv/xzRCHP+Ir7lZZ1dwQVNUQb7d4hkebjxKkSiqiTX/geuHkP8zWGahdUUpdcbTuz+nRxcpy1lMiEIbxmCr3QjsKdwIDAQAB",
   "permissions": [

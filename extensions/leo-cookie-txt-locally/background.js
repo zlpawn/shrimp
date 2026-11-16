@@ -1353,11 +1353,31 @@ const SCS_ALLOWED_TARGETS = [
     probeUrl: 'https://search.ke.com/ajax/createApp/getAppList',
     probeMethod: 'POST',
     probeBody: '{"page":1,"size":1,"auth":true}',
-    cookieNames: ['session', 'session.sig', 'search_token', 'login_ucid']
+    cookieNames: [
+      'search_self_token',
+      'security_ticket',
+      'login_ucid',
+      'session_id',
+      'session',
+      'session.sig',
+      'sso_login_token',
+      'access_token',
+      'search_token'
+    ]
   }
 ];
 
 async function checkHasAnyCookie(target) {
+  if (target.slot === 'SEARCH_CONSOLE') {
+    try {
+      const allCookies = await chrome.cookies.getAll({ url: target.url });
+      if (allCookies && allCookies.some(c => c.name === 'search_self_token' || c.name === 'security_ticket' || c.name === 'login_ucid' || c.name === 'search_token')) {
+        return true;
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
   for (const name of target.cookieNames) {
     try {
       const cookie = await chrome.cookies.get({ url: target.url, name });
@@ -1398,14 +1418,30 @@ async function handleFetchScsTokens(requestedSlots) {
       continue;
     }
     const pairs = [];
-    for (const name of target.cookieNames) {
+    if (target.slot === 'SEARCH_CONSOLE') {
       try {
-        const cookie = await chrome.cookies.get({ url: target.url, name });
-        if (cookie && cookie.value) {
-          pairs.push(`${name}=${cookie.value}`);
+        const allCookies = await chrome.cookies.getAll({ url: target.url });
+        if (allCookies && allCookies.length > 0) {
+          for (const c of allCookies) {
+            if (c && c.name && c.value) {
+              pairs.push(`${c.name}=${c.value}`);
+            }
+          }
         }
       } catch (e) {
         // ignore
+      }
+    }
+    if (pairs.length === 0) {
+      for (const name of target.cookieNames) {
+        try {
+          const cookie = await chrome.cookies.get({ url: target.url, name });
+          if (cookie && cookie.value) {
+            pairs.push(`${name}=${cookie.value}`);
+          }
+        } catch (e) {
+          // ignore
+        }
       }
     }
     result[target.slot] = pairs.length > 0 ? pairs.join('; ') : null;
