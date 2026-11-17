@@ -197,7 +197,8 @@ leo-lantern end-task
 | `--cover-index`| - | number | 否 | `1` | 自动选取视频系统推荐高光帧序号（从 1 开始，默认使用第 1 帧推荐封面）。 |
 | `--cover` | - | string | 否 | `""` | 本地自定义封面图片路径（jpg/png）。若提供则优先上传自定义封面，忽略 `--cover-index`。 |
 | `--no-ai` | - | boolean | 否 | `false` | 关闭默认的平台 AI 声明。默认会自动在“创作声明”中勾选「含AI生成内容」（同时保持「自制」属性）。 |
-| `--schedule` | `-s` | string | 否 | `""` | 定时发布时间，格式为 `YYYY-MM-DD HH:MM`（例如 `"2026-11-05 16:30"`）。平台要求距离当前 $\ge 5$ 分钟且 $\le 15$ 天。留空则为立即发布模式。 |
+| `--schedule` | `-s` | string | 否 | 黄金时段(`16:30`) | 定时发布时间，格式为 `YYYY-MM-DD HH:MM`。**未传时默认优先读取 `~/.shrimp/skills/leo-video-router/config.json`（及 `style-preferences.md`）开启定时发布**（若距当前不足 2.5 小时则自动顺延至次日 16:30；若无对应 skill 配置文件则中止并提示询问用户定时发布时间）。 |
+| `--now` | - | boolean | 否 | `false` | 显式立即发布模式。仅在传入 `--now`（或 `--immediate` / `--schedule now`）时跳过定时发布、立即公开上线。 |
 | `--dry-run` | - | boolean | 否 | `false` | 预览模式。完成上传、所有表单字段填妥、封面选中并联动日历后，**停留在最终提交前**，截取核对截图供人工复核。不传时会直接点击「立即投稿」。 |
 | `--upload-timeout-sec` | - | number | 否 | `1800` | 等待视频上传完成的最长秒数。超时未确认完成则中止，不会继续提交。 |
 | `--out` | - | string | 否 | `bilibili_publish_review.png` | 流程结束后的核对/存证截图落盘路径。 |
@@ -239,7 +240,8 @@ node <skillDir>/recipes/bilibili-publish.mjs \
 | `--title` | `-t` | string | **是** | - | 笔记标题。**严格限制 $\le 20$ 字符**，超出自动拦截报错。 |
 | `--content` | `-c` | string | 否 | `""` | 笔记正文。**严格限制 $\le 1000$ 字符**，支持自动 Markdown 标记脱壳清洗。 |
 | `--content-file`| `-f` | string | 否 | `""` | 从 Markdown 文件提取正文（优先匹配 `## 正文可复制版` 区块）。 |
-| `--schedule` | `-s` | string | 否 | `""` | 定时发布时间，格式为 `YYYY-MM-DD HH:MM`（支持 15:00~17:00 黄金时段）。 |
+| `--schedule` | `-s` | string | 否 | 黄金时段(`16:00`) | 定时发布时间，格式为 `YYYY-MM-DD HH:MM`。**未传时默认优先读取 `~/.shrimp/skills/leo-xhs-router/config.json` 下的 `preferred_publish_window`（`15:00-17:00`）开启定时发布**（若无对应配置文件则提示询问用户定时发布时间）。 |
+| `--now` | - | boolean | 否 | `false` | 显式立即发布模式（跳过默认定时发布）。 |
 | `--dry-run` | - | boolean | 否 | `false` | 安全预览模式，填完表单停留在提交前并截取表单。 |
 | `--out` | - | string | 否 | `xhs_publish_result.png` | 存证截图落盘路径。 |
 
@@ -273,7 +275,8 @@ node <skillDir>/recipes/xhs-publish.mjs \
 | `--cover` | - | string | 否 | `""` | 自定义封面图片路径。提供时自动穿透视频封面裁剪弹窗上传，并跳过横屏补充提示。 |
 | `--no-ai` | - | boolean | 否 | `false` | 关闭默认的平台 AI 声明。默认会自动在「自主声明」中规范勾选「内容由AI生成」。 |
 | `--visibility` | - | string | 否 | `"公开"` | 谁可以看：`公开` / `好友可见` / `仅自己可见`。 |
-| `--schedule` | `-s` | string | 否 | `""` | 定时发布时间，格式为 `YYYY-MM-DD HH:MM`。平台要求在当前时间 **2 小时后至 14 天内**。 |
+| `--schedule` | `-s` | string | 否 | 黄金时段(`16:30`) | 定时发布时间，格式为 `YYYY-MM-DD HH:MM`。**未传时默认优先读取 `~/.shrimp/skills/leo-video-router/config.json`（及 `style-preferences.md`）开启定时发布**（距当前不足 2.5 小时则自动顺延至次日 16:30；若无对应 skill 配置文件则中止并提示询问用户定时发布时间）。 |
+| `--now` | - | boolean | 否 | `false` | 显式立即发布模式。仅在传入 `--now`（或 `--immediate` / `--schedule now`）时跳过定时发布、立即公开上线。 |
 | `--dry-run` | - | boolean | 否 | `false` | 预览模式。完成上传、所有表单字段填妥并渲染手机预览后，**停留在最终提交前**，截取高清全页核对图供人工复核。不传时会直接点击「发布」。 |
 | `--reuse-form` | - | boolean | 否 | `false` | 沿用已打开的同体裁编辑页，**不上传** `--video`/`--images`，只重新填写字段。用于失败后续跑；不传时总是重新上传。 |
 | `--out` | - | string | 否 | `douyin_publish_review.png` | 流程结束后的全页核对/存证截图落盘路径。 |
