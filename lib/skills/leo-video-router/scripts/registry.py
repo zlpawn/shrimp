@@ -25,6 +25,7 @@ DEFAULT_PROJECTS = {
     "huashu-art-motion": {"skill": "huashu-art-motion", "entries": ["SKILL.md"]},
     "video-shotcraft": {"skill": "video-shotcraft", "entries": ["SKILL.md"]},
     "anidoodle": {"skill": "anidoodle", "entries": ["SKILL.md", "skills/anidoodle/SKILL.md"]},
+    "ArcReel": {"skill": "arcreel", "entries": ["AGENTS.md", "README.md", "server/app.py"], "header": "# ArcReel"},
 }
 PROJECTS = dict(DEFAULT_PROJECTS)
 SKILL_DIRS = [".agents/skills", ".claude/skills", ".codex/skills", ".gemini/config/skills"]

@@ -17,6 +17,7 @@ Router 负责识别用户场景意图并调度最匹配的下游编排工程。�
 | 具名艺术家笔法、名画穿越、YouTube 解说语法（Vox / 3b1b / Kurzgesagt / 白板 / 财经） | 梵高/莫奈等具名艺术家、名画穿越、艺术史、Vox/3b1b/Kurzgesagt/白板/财经解说 | huashu-art-motion | 代码 + 生成帧 | 可选 | [接入卡](projects/huashu-art-motion.md) |
 | 用真实网页做产品宣传片（镜头卡、Ink Press 模板、导出剪映工程），或给已有视频配音效 | 产品宣传片、给我的网站/App 做片、Ink Press、给视频配音效 | video-shotcraft | 真实页面截图 + Remotion | 无旁白 | [接入卡](projects/video-shotcraft.md) |
 | 物理手绘工艺（32 种）、逐笔绘画延时动画、纯代码作曲、网页交互组件 | 真实笔触手绘（圆珠笔/蓝晒/水墨/版画/粉笔）、画画过程延时、纯代码算术配乐、网页交互 (<ani-doodle>) | anidoodle | 代码纯函数 | 纯代码实时合成 | [接入卡](projects/anidoodle.md) |
+| 小说/长篇剧本漫剧改编、角色一致性短剧、多宫格分镜、导出剪映工程精修 | 小说改漫剧、网文改编、角色一致性、短剧、多宫格分镜、导出剪映草稿、剪映工程精修 | ArcReel | 生成优先 (Asset Sheet + 多宫格切片 + 视频) | 内生/外配 | [接入卡](projects/ArcReel.md) |
 
 ---
 
@@ -47,6 +48,7 @@ Router **绝不锁死项目上限**：
 下面规则里的简称：huashu = huashu-art-motion，lemo = lemo-opuscar（「lemo 目录」指它的 66 种风格库），dashi = dashi-animationstyle，xilo = xilo-opus-video。
 
 - 手绘延时与物理工艺：需要真实的绘画下笔过程（Timelapse/画法教学）、32 种物理工艺（圆珠笔/蓝晒/水墨/版画/粉笔等）、纯代码实时配乐/音效、或轻量网页组件（<ani-doodle>/离线 HTML）一律 → anidoodle。
+- 小说改编漫剧/连贯剧情短剧、多宫格分镜、需要导出剪映草稿精修一律 → ArcReel。
 - 要 AI 生成人物表演 → hypit；加工已有素材 → OpenMontage。两者都能复刻参考视频：社媒真人表演类 → hypit，混剪 / 预告 / 讲解类 → OpenMontage。
 - 「批量」「快速出一条」「信息流」「矩阵号」「给个主题就行」 → MoneyPrinterTurbo；要镜头设计和风格 → 代码视频类或 OpenMontage。
 - 点名艺术家或要「穿越」 → huashu；风格在 lemo 目录里 → lemo。

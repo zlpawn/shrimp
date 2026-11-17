@@ -1,6 +1,6 @@
 ---
 name: leo-video-router
-description: 面向多场景 AI 视频生产的可插拔智能路由器、工程归档管家与交付中枢。采用开放式注册表与接入卡架构（Plugin & Registry），动态聚合各类下游编排工程（预置 MoneyPrinterTurbo、OpenMontage、hypit、lemo-opuscar、xilo-opus-video、dashi-animationstyle、huashu-art-motion、video-shotcraft、anidoodle，支持注册任意新开源项目），按需调度底层资产生成引擎（leo-autodl-imagine-video 等），实现工程记忆、单行字幕压制与标准归档。
+description: 面向多场景 AI 视频生产的可插拔智能路由器、工程归档管家与交付中枢。采用开放式注册表与接入卡架构（Plugin & Registry），动态聚合各类下游编排工程（预置 MoneyPrinterTurbo、OpenMontage、hypit、lemo-opuscar、xilo-opus-video、dashi-animationstyle、huashu-art-motion、video-shotcraft、anidoodle、ArcReel，支持注册任意新开源项目），按需调度底层资产生成引擎（leo-autodl-imagine-video 等），实现工程记忆、单行字幕压制与标准归档。
 ---
 
 # Leo Video Router（视频场景与调度中枢）
@@ -121,6 +121,7 @@ python3 <本 skill 目录>/scripts/registry.py locate <项目名>
             7. 艺术与解说风格 —— huashu-art-motion（名画/Vox/3b1b）
             8. 物理手绘与延时 —— anidoodle（32种工艺/逐笔画出/纯代码配乐/交互）
 【产品宣传】9. 产品宣传片 —— video-shotcraft（网页截图电影感/音效）
+【剧情漫剧】10. 小说漫剧与短剧 —— ArcReel（多宫格分镜/角色一致性/剪映工程导出）
 【未来项目】支持在 references/projects/ 放入新接入卡，或通过 registry.py register 动态接入任意新开源项目。
 也可直接描述需求，由 Router 自动判断。
 ```
