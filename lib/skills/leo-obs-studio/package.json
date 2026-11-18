@@ -1,0 +1,11 @@
+{
+  "name": "leo-obs-studio",
+  "version": "1.0.0",
+  "description": "通过 WebSocket v5 自动化控制 OBS Studio 录屏、场景切换与截图的网关技能",
+  "license": "MIT",
+  "scripts": {
+    "doctor": "~/.shrimp/skills/leo-obs-studio/venv/bin/python ./scripts/obs_ctl.py doctor",
+    "status": "~/.shrimp/skills/leo-obs-studio/venv/bin/python ./scripts/obs_ctl.py status",
+    "workspace": "~/.shrimp/skills/leo-obs-studio/venv/bin/python ./scripts/workspace.py status"
+  }
+}
