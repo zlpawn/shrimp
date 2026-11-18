@@ -1,0 +1,13 @@
+{
+  "name": "leo-3d-blender",
+  "version": "1.0.0",
+  "private": true,
+  "description": "面向 3D 场景构建、Blender 自动化建模与多引擎扩展的智能调度与归档中枢（默认零本地源码依赖，通过 uvx mcp-for-blender 驱动实时 Blender）",
+  "license": "MIT",
+  "scripts": {
+    "status": "uv run ./scripts/blender_bridge.py status",
+    "tools": "uv run ./scripts/blender_bridge.py tools --format markdown",
+    "workspace": "python3 ./scripts/workspace.py status",
+    "test": "uv run --with mcp>=1.26.0,<2 python -m unittest discover -s tests -p \"test_*.py\" -v"
+  }
+}

@@ -697,6 +697,30 @@
       "requiresDaemon": false,
       "promoted": true,
       "managed": true
+    },
+    {
+      "id": "leo-3d-blender",
+      "name": "leo-3d-blender",
+      "title": "Leo 3D Blender 场景与 MCP 调度中枢",
+      "summary": "通过无头 stdio MCP 桥接（默认 uvx mcp-for-blender，零本地源码依赖）直连实时 Blender，支持工作区记忆、标准 3D 工程落盘、bpy 脚本执行与 look 多视角截图验收。",
+      "category": "media",
+      "categoryLabel": "媒体创作",
+      "icon": "🧊",
+      "featured": true,
+      "tags": [
+        "blender",
+        "3d",
+        "mcp",
+        "bpy",
+        "modeling",
+        "rendering",
+        "uvx",
+        "3D建模",
+        "场景搭建"
+      ],
+      "requiresDaemon": false,
+      "promoted": true,
+      "managed": true
     }
   ]
 }
