@@ -301,7 +301,13 @@
       "categoryLabel": "研究与知识",
       "icon": "🎞️",
       "featured": false,
-      "tags": ["video", "transcript", "knowledge-base", "craft", "xhs"],
+      "tags": [
+        "video",
+        "transcript",
+        "knowledge-base",
+        "craft",
+        "xhs"
+      ],
       "requiresDaemon": false,
       "promoted": true,
       "managed": true
@@ -664,6 +670,29 @@
         "召回率",
         "精准率",
         "混淆矩阵"
+      ],
+      "requiresDaemon": false,
+      "promoted": true,
+      "managed": true
+    },
+    {
+      "id": "leo-obs-studio",
+      "name": "leo-obs-studio",
+      "title": "Leo OBS Studio 自动化录屏控制",
+      "summary": "通过 WebSocket v5 自动化控制 OBS Studio 录屏启停、暂停恢复、场景切换与截图，支持三级级联工作区记忆、标准日期工程归档以及与下游视频技能联动。",
+      "category": "media",
+      "categoryLabel": "媒体创作",
+      "icon": "🎥",
+      "featured": true,
+      "tags": [
+        "obs",
+        "obs-studio",
+        "screen-recording",
+        "websocket",
+        "screenshot",
+        "video",
+        "录屏",
+        "切场景"
       ],
       "requiresDaemon": false,
       "promoted": true,
