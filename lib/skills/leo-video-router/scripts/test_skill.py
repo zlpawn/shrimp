@@ -763,6 +763,16 @@ class ArcReelBridgeTest(Base):
         self.assertEqual(payloads["get_episode_script"]["script"], "episode_2.json")
         self.assertEqual(payloads["generate_videos"]["target"], {"scope": "episode", "episode_id": 2})
 
+    def test_no_hardcoded_user_home_paths(self):
+        import re
+
+        pat = re.compile(r"(/Users/[A-Za-z0-9._-]+|/home/[A-Za-z0-9._-]+|C:\\Users\\[A-Za-z0-9._-]+)")
+        for f in [*SKILL.rglob("*.md"), *SKILL.rglob("*.py")]:
+            if f.name == "test_skill.py":
+                continue
+            m = pat.search(f.read_text(encoding="utf-8"))
+            self.assertIsNone(m, f"Hardcoded user path in {f.relative_to(SKILL)}: {m.group(0) if m else ''}")
+
 
 if __name__ == "__main__":
     unittest.main()

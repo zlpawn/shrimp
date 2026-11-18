@@ -1,7 +1,6 @@
 # ArcReel
 
 仓库：https://github.com/ArcReel/ArcReel
-本地代码：`/Users/pa/project/AI-JJ/ArcReel`
 架构文档：https://docs.arc-reel.com
 
 ## 适合
@@ -19,20 +18,21 @@
 
 ## 安装
 
-1. **启动服务（端口 1241）**：
-   - 本地 `uv` 启动：
-     ```bash
-     cd /Users/pa/project/AI-JJ/ArcReel && uv run uvicorn server.app:app --port 1241
-     ```
-   - 或 Docker 启动：
-     ```bash
-     cd /Users/pa/project/AI-JJ/ArcReel/deploy && docker compose up -d
-     ```
-2. **配置 API Token（存储于独立权限 600 文件）**：
-   - 浏览器打开 `http://localhost:1241` →「系统设置」生成 API Key（`arc-` 开头），并配置用于拆剧本的文本大模型：
-     ```bash
-     uv run <本 skill 目录>/scripts/arcreel_bridge.py set-token arc-xxxx
-     ```
+- 源码项目：`git clone https://github.com/ArcReel/ArcReel.git <目录>`（默认目录 `~/.shrimp/skills/ArcReel`），装好后执行 `python3 <本 skill 目录>/scripts/registry.py register ArcReel "<目录>"` 持久化登记。
+- **启动服务（端口 1241）**：项目根目录 `<ArcReel 目录>` 取自 `python3 <本 skill 目录>/scripts/registry.py locate ArcReel` 输出的 `path`：
+  - 本地 `uv` 启动：
+    ```bash
+    cd "<ArcReel 目录>" && uv run uvicorn server.app:app --port 1241
+    ```
+  - 或 Docker 启动：
+    ```bash
+    cd "<ArcReel 目录>/deploy" && docker compose up -d
+    ```
+- **配置 API Token（存储于独立权限 600 文件）**：
+  - 浏览器打开 `http://localhost:1241` →「系统设置」生成 API Key（`arc-` 开头），并配置用于拆剧本的文本大模型：
+    ```bash
+    uv run <本 skill 目录>/scripts/arcreel_bridge.py set-token arc-xxxx
+    ```
 
 ## 交接
 
