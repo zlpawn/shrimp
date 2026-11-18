@@ -50,6 +50,16 @@ test("leo-imagine-router SKILL.md and references exist", () => {
 
   const samplePath = path.join(ROOT, "lib", "skills", "leo-imagine-router", "references", "sample-prompts.md");
   assert.ok(fs.existsSync(samplePath));
+
+  const cookbookPath = path.join(ROOT, "lib", "skills", "leo-imagine-router", "references", "cookbook.md");
+  assert.ok(fs.existsSync(cookbookPath));
+  const cookbookContent = fs.readFileSync(cookbookPath, "utf8");
+  assert.match(cookbookContent, /博物馆图鉴式中文拆解/);
+  assert.match(cookbookContent, /马卡龙手绘科技\/商业单页信息图/);
+  assert.match(cookbookContent, /3D 诗画卷轴世界海报/);
+  assert.match(cookbookContent, /注入历史情绪内核的书法真迹/);
+  assert.match(cookbookContent, /4:5 品牌包装家族视觉系统提案图/);
+  assert.match(cookbookContent, /12格电影感短剧分镜插画/);
 });
 
 test("leo-codex-imagine script is valid ESM", () => {
