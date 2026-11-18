@@ -662,5 +662,67 @@ class DocsTest(unittest.TestCase):
                 self.assertTrue((md.parent / link).exists(), f"{md.relative_to(SKILL)} -> {link}")
 
 
+class ArcReelBridgeTest(Base):
+    def test_serialize_tool_result_saves_mcp_image_blocks_to_disk(self):
+        import base64
+        import arcreel_bridge
+
+        raw_png = b"\x89PNG\r\n\x1a\nfake-image"
+        b64 = base64.b64encode(raw_png).decode("ascii")
+
+        class FakeBlock:
+            def __init__(self, text=None, data=None, mime=None):
+                self.text = text
+                self.data = data
+                self.mimeType = mime
+
+        class FakeResult:
+            isError = False
+            structuredContent = {"status": "ok"}
+            content = [
+                FakeBlock(text='{"id":"林默","status":"ok"}'),
+                FakeBlock(data=b64, mime="image/png"),
+            ]
+
+        review_dir = self.tmp / "reviews"
+        out = arcreel_bridge.serialize_tool_result("inspect_images", FakeResult(), save_media_dir=review_dir)
+        self.assertFalse(out["isError"])
+        self.assertEqual(len(out["saved_images"]), 1)
+        saved_file = Path(out["saved_images"][0])
+        self.assertTrue(saved_file.exists())
+        self.assertEqual(saved_file.suffix, ".png")
+        self.assertEqual(saved_file.read_bytes(), raw_png)
+        self.assertEqual(out["content"][0]["id"], "林默")
+        self.assertEqual(out["content"][1]["type"], "saved_image")
+
+    def test_byo_upload_routes_match_arcreel_v1_endpoints(self):
+        import arcreel_bridge
+
+        p = arcreel_bridge.build_parser()
+
+        args = p.parse_args(["upload-asset", "--project", "地府打工", "--type", "character", "--name", "林默", "--file", "a.png"])
+        route, params = arcreel_bridge.build_upload_route(args)
+        self.assertEqual(route, "/api/v1/projects/%E5%9C%B0%E5%BA%9C%E6%89%93%E5%B7%A5/upload/character")
+        self.assertEqual(params, {"name": "林默"})
+
+        args = p.parse_args(["upload-derivative", "--project", "demo", "--character", "林默", "--derivative", "夜行衣", "--file", "b.png"])
+        route, params = arcreel_bridge.build_upload_route(args)
+        self.assertEqual(route, "/api/v1/projects/demo/characters/%E6%9E%97%E9%BB%98/derivatives/%E5%A4%9C%E8%A1%8C%E8%A1%A3/upload")
+        self.assertEqual(params, {})
+
+        args = p.parse_args(["upload-grid", "--project", "demo", "--grid-id", "grid_01", "--file", "g.png"])
+        route, params = arcreel_bridge.build_upload_route(args)
+        self.assertEqual(route, "/api/v1/projects/demo/grids/grid_01/upload")
+
+        args = p.parse_args(["upload-shot", "--project", "demo", "--kind", "video", "--shot-id", "E1S01", "--file", "s.mp4"])
+        route, params = arcreel_bridge.build_upload_route(args)
+        self.assertEqual(route, "/api/v1/projects/demo/shots/E1S01/upload/video")
+        self.assertEqual(params, {"script_file": "episode_1.json"})
+
+        args = p.parse_args(["upload-shot", "--project", "demo", "--kind", "end-frame", "--shot-id", "E1S01", "--file", "end.png"])
+        route, params = arcreel_bridge.build_upload_route(args)
+        self.assertEqual(route, "/api/v1/projects/demo/shots/E1S01/end-frame/upload")
+
+
 if __name__ == "__main__":
     unittest.main()
