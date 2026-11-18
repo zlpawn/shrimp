@@ -198,13 +198,50 @@ flowchart TD
 
 ---
 
+## 💾 存储策略与智能归档规范 (Dynamic Paths & File Organization)
+
+遵循 Shrimp 生态规范（完全对齐 `leo-musicdl` 与 `leo-video-router`），生图的输出目录与命名遵循「三级解析 + 记忆持久化」策略，杜绝硬编码：
+
+- **记忆配置文件**：统一保存在 `~/.shrimp/skills/leo-imagine-router/config.json`。
+- **全局输出根目录三级解析**：
+  1. **用户显式指定（最高优先级）**：用户在对话中直接指定或使用 `--dir` / `--output-dir` 参数，立即采用，并**自动回写更新**到 `~/.shrimp/skills/leo-imagine-router/config.json`（或由 Agent 执行 `node scripts/config.mjs set --dir "<path>"`），实现后续任务无感记忆，无需重复询问。
+  2. **持久化记忆配置**：读取 `~/.shrimp/skills/leo-imagine-router/config.json` 中的 `output_dir`（当前默认配置为 `~/素材/imagine`，自动解析为绝对路径如 `/Users/pa/素材/imagine`）。
+  3. **默认兜底目录**：若未配置且未指定，回退到当前工程的 `./images`。
+- **两级分层归档架构 (策略 B + 时间分层)**：
+  每个场景大类建立独立的分类文件夹，并在其下方按当天日期（`YYYY-MM-DD`）建立时间文件夹：
+  ```text
+  <output_dir>/<场景大类>/YYYY-MM-DD/
+  ```
+  例如：
+  - `~/素材/imagine/海报艺术/2026-11-18/`
+  - `~/素材/imagine/拆解图鉴/2026-11-18/`
+  - `~/素材/imagine/商业包装/2026-11-18/`
+  - `~/素材/imagine/视觉信息图/2026-11-18/`
+  - `~/素材/imagine/古代书画/2026-11-18/`
+  - `~/素材/imagine/影视分镜/2026-11-18/`
+  - `~/素材/imagine/脑洞跨界/2026-11-18/`
+  - `~/素材/imagine/通用出图/2026-11-18/`
+- **精炼语义文件名生成规约**：
+  杜绝直接截断超长 Prompt 产生杂乱下划线的做法，统一按结构生成：
+  ```text
+  <主题>_<细分风格>_<时间戳>.<ext>
+  ```
+  例如：
+  - `西游记_写意双重曝光海报_20261118_142013.png`
+  - `明制汉服_博物馆四区拆解_20261118_142013.png`
+  - `GPT5.5发布_马卡龙手绘信息图_20261118_142013.png`
+
+---
+
 ## 🎨 Step 6: 生图执行与回传规范
 
 Router 只负责场景与提示词，**不绑定、不指定任何底层生图引擎**：
 1. **下游 Skill 自带执行流程**（如 Live Photo 动效类）：完全按该 Skill 自己的规约渲染与交付，Router 不干预其引擎选择。
 2. **下游 Skill 只产出提示词，或走 Step 5 内置画风/兜底**：
+   - **自动计算归档目录与文件名**：调用 `node scripts/config.mjs resolve --cat "<场景大类>" --topic "<主题>" --style "<细分风格>"` 或等效逻辑计算得到 `targetDir` 与 `filename`；
    - 优先从当前工作区或上下文中选择功能最完善的生图执行类 Skill（推荐首选 **`leo-codex-imagine`**，支持 Codex 本机订阅 gpt-image-2、第三方中转 API 与 APIMart，自带任务轮询与落盘）；
    - 也支持环境内可用的其他生图 Skill（如 `leo-antigravity-imagine`、`leo-grok-imagine`、`baoyu-image-gen` 等）；
+   - **调用生图引擎时，必须显式传入 `--output-dir "<targetDir>"` 与 `--filename "<filename>"`**，确保底层引擎即使未单独配置也会精准落盘到由 Router 规范管理的归档路径；
    - 传入构造好的提示词、参考图路径与画面宽高比（`--aspect-ratio`）。
 3. 无论成功与否，必须将生成的结构化提示词清晰展示给用户；
 4. 图片渲染成功后，以标准的 Markdown 格式输出可点击的文件链接与图片预览：

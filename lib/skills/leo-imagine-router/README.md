@@ -51,6 +51,22 @@
 
 ---
 
+## 💾 存储策略与智能归档
+
+遵循 Shrimp 生态规范（对齐 `leo-musicdl`）：
+- **记忆配置文件**：`~/.shrimp/skills/leo-imagine-router/config.json`
+- **全局输出根目录**：默认 `~/素材/imagine`（支持持久化记忆与三级动态解析）；
+- **二级与三级分层归档**：`<output_dir>/<场景大类>/YYYY-MM-DD/`；
+- **精炼语义文件名**：`<主题>_<细分风格>_<时间戳>.png`（如 `西游记_写意双重曝光海报_20261118_142013.png`）；
+- **CLI 管理命令**：
+  ```bash
+  node scripts/config.mjs get                    # 查看当前配置
+  node scripts/config.mjs set --dir "<path>"     # 持久化设置全局根目录
+  node scripts/config.mjs resolve --cat "<场景>" --topic "<主题>" --style "<风格>"
+  ```
+
+---
+
 ## 💻 安装到中央技能库 (Installation to ~/.agents/skills)
 
 ### 拷贝到中央 Skills 目录 (~/.agents/skills)

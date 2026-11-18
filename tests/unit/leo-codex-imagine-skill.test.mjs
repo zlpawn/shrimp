@@ -281,3 +281,17 @@ test("leo-codex-imagine filename generator", () => {
   assert.ok(filename.startsWith("codex_test_"));
   assert.ok(filename.endsWith(".png"));
 });
+
+test("leo-imagine-router resolveImageDestination generates category/date structure and clean filename", async () => {
+  const { resolveImageDestination } = await import(path.join(ROOT, "lib", "skills", "leo-imagine-router", "scripts", "config.mjs"));
+  const d = new Date(2026, 10, 18, 14, 20, 0); // 2026-11-18 14:20:00
+  const res = resolveImageDestination({
+    category: "海报艺术",
+    topic: "西游记",
+    style: "写意双重曝光海报",
+    date: d,
+    explicitOutputDir: "/tmp/mock-imagine"
+  });
+  assert.equal(res.targetDir, path.join("/tmp/mock-imagine", "海报艺术", "2026-11-18"));
+  assert.equal(res.filename, "西游记_写意双重曝光海报_20261118_142000.png");
+});
