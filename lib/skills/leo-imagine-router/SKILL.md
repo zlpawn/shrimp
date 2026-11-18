@@ -205,7 +205,7 @@ flowchart TD
 - **记忆配置文件**：统一保存在 `~/.shrimp/skills/leo-imagine-router/config.json`。
 - **全局输出根目录三级解析**：
   1. **用户显式指定（最高优先级）**：用户在对话中直接指定或使用 `--dir` / `--output-dir` 参数，立即采用，并**自动回写更新**到 `~/.shrimp/skills/leo-imagine-router/config.json`（或由 Agent 执行 `node scripts/config.mjs set --dir "<path>"`），实现后续任务无感记忆，无需重复询问。
-  2. **持久化记忆配置**：读取 `~/.shrimp/skills/leo-imagine-router/config.json` 中的 `output_dir`（当前默认配置为 `~/素材/imagine`，自动解析为绝对路径如 `/Users/pa/素材/imagine`）。
+  2. **持久化记忆配置**：读取 `~/.shrimp/skills/leo-imagine-router/config.json` 中的 `output_dir`（当前默认配置为 `~/素材/imagine`，跨平台自动解析为系统家目录绝对路径如 `$HOME/素材/imagine`）。
   3. **默认兜底目录**：若未配置且未指定，回退到当前工程的 `./images`。
 - **两级分层归档架构 (策略 B + 时间分层)**：
   每个场景大类建立独立的分类文件夹，并在其下方按当天日期（`YYYY-MM-DD`）建立时间文件夹：
