@@ -4,6 +4,7 @@ import os
 import json
 import shlex
 import shutil
+import struct
 import time
 import random
 from pathlib import Path
@@ -55,10 +56,89 @@ DEFAULT_I2V_WORKFLOW = "API-U02-minimax_h3_图生视频基础版-V2.json"
 DEFAULT_R2V_WORKFLOW = "API-U06-9图版API-V5.json"
 
 
-def compute_resolution_wh(aspect_ratio: str, megapixels: float = 1.0, multiple: int = 32) -> tuple[int, int]:
-    """按宽高比与百万像素数计算对齐 multiple (32) 的像素宽高。"""
-    key = aspect_ratio.strip().split()[0]
-    rw, rh = RATIO_NUMBERS.get(key, (16.0, 9.0))
+def sniff_image_dimensions(path_str: str | Path) -> tuple[int, int] | None:
+    """纯标准库读取本地 PNG / JPEG / WEBP 文件头像素宽高，避免未显式传 --aspect-ratio 时把 9:16 竖屏首帧压成 16:9。"""
+    try:
+        p = Path(path_str)
+        if not p.is_file():
+            return None
+        with p.open("rb") as f:
+            head = f.read(64)
+            if len(head) >= 24 and head[:8] == b"\x89PNG\r\n\x1a\n" and head[12:16] == b"IHDR":
+                w, h = struct.unpack(">II", head[16:24])
+                return (int(w), int(h)) if w > 0 and h > 0 else None
+            if len(head) >= 30 and head[:4] == b"RIFF" and head[8:12] == b"WEBP":
+                chunk = head[12:16]
+                if chunk == b"VP8X" and len(head) >= 30:
+                    w = 1 + int.from_bytes(head[24:27], "little")
+                    h = 1 + int.from_bytes(head[27:30], "little")
+                    return (w, h)
+                if chunk == b"VP8 " and len(head) >= 30 and head[23:26] == b"\x9d\x01\x2a":
+                    w, h = struct.unpack("<HH", head[26:30])
+                    return (w & 0x3FFF, h & 0x3FFF)
+                if chunk == b"VP8L" and len(head) >= 25 and head[20] == 0x2F:
+                    bits = int.from_bytes(head[21:25], "little")
+                    return ((bits & 0x3FFF) + 1, ((bits >> 14) & 0x3FFF) + 1)
+            if len(head) >= 4 and head[:2] == b"\xff\xd8":
+                f.seek(2)
+                while True:
+                    b = f.read(1)
+                    if not b:
+                        break
+                    if b != b"\xff":
+                        continue
+                    while b == b"\xff":
+                        b = f.read(1)
+                    if not b:
+                        break
+                    marker = b[0]
+                    if marker in (0xD8, 0xD9):
+                        continue
+                    seg_len_bytes = f.read(2)
+                    if len(seg_len_bytes) < 2:
+                        break
+                    seg_len = struct.unpack(">H", seg_len_bytes)[0]
+                    if marker in (0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF):
+                        sof = f.read(5)
+                        if len(sof) == 5:
+                            h, w = struct.unpack(">HH", sof[1:5])
+                            return (int(w), int(h)) if w > 0 and h > 0 else None
+                        break
+                    if seg_len < 2:
+                        break
+                    f.seek(seg_len - 2, 1)
+    except Exception:
+        return None
+    return None
+
+
+def infer_aspect_ratio_from_dims(w: int, h: int) -> str:
+    """将真实图像宽高匹配到最接近的标准比例键（如 9:16、16:9、1:1）。"""
+    if w <= 0 or h <= 0:
+        return "16:9"
+    target = w / h
+    best_key = "16:9"
+    best_diff = float("inf")
+    for k, (rw, rh) in RATIO_NUMBERS.items():
+        diff = abs(math.log(target / (rw / rh)))
+        if diff < best_diff:
+            best_diff = diff
+            best_key = k
+    return best_key
+
+
+def compute_resolution_wh(
+    aspect_ratio: str,
+    megapixels: float = 1.0,
+    multiple: int = 32,
+    raw_wh: tuple[int, int] | None = None,
+) -> tuple[int, int]:
+    """按宽高比（或真实参考图比例 raw_wh）与百万像素数计算对齐 multiple (32) 的像素宽高。"""
+    if raw_wh and raw_wh[0] > 0 and raw_wh[1] > 0:
+        rw, rh = float(raw_wh[0]), float(raw_wh[1])
+    else:
+        key = aspect_ratio.strip().split()[0]
+        rw, rh = RATIO_NUMBERS.get(key, (16.0, 9.0))
     total_px = max(0.25, float(megapixels)) * 1_000_000.0
     raw_w = math.sqrt(total_px * (rw / rh))
     raw_h = math.sqrt(total_px * (rh / rw))
@@ -1068,6 +1148,7 @@ except urllib.error.HTTPError as e:
         prompt: str,
         duration: float,
         aspect_ratio: str,
+        raw_wh: tuple[int, int] | None = None,
         megapixels: float,
         steps: int,
         seed: int,
@@ -1081,7 +1162,7 @@ except urllib.error.HTTPError as e:
         """按目标工作流内部实际节点类型自适应映射视频参数（兼容 API-U02 FL2VA 与 API-U06/U01 REF2VA）。"""
         patches: dict = {}
         resolved_ratio = ASPECT_RATIO_MAP.get(aspect_ratio.strip(), aspect_ratio)
-        w, h = compute_resolution_wh(aspect_ratio, megapixels=megapixels, multiple=32)
+        w, h = compute_resolution_wh(aspect_ratio, megapixels=megapixels, multiple=32, raw_wh=raw_wh)
 
         has_easy_seed = False
         for nid, node in wf.items():
@@ -1146,7 +1227,7 @@ except urllib.error.HTTPError as e:
         self,
         prompt: str,
         duration: float = 5.0,
-        aspect_ratio: str = "16:9 (Widescreen)",
+        aspect_ratio: str | None = None,
         megapixels: float = 1.0,
         steps: int = None,
         seed: int = None,
@@ -1168,6 +1249,7 @@ except urllib.error.HTTPError as e:
         执行高保真 MiniMax-H3 音画同步视频生成（废除低画质 1-Pass EasyCache 草稿流）：
         - auto / i2v (0~2 张图且无参考视频)：默认路由至 API-U02-minimax_h3_图生视频基础版-V2.json (FL2VA 首帧/首尾帧锁死 + H3SigmaRefiner 25+2 步)
         - r2v (3~9 张图、含参考视频或显式 mode='r2v')：路由至 API-U06-9图版API-V5.json (REF2VA 多图主体绑定 + ref_image_size=max + H3SigmaRefiner 22+2 步)
+        - 若未显式传 aspect_ratio 且存在参考图，自动读取首张参考图像素比例对齐宽高，防止 9:16 竖屏首帧被压扁成 16:9。
         """
         if seed is None:
             seed = random.randint(100000, 999999999)
@@ -1187,6 +1269,12 @@ except urllib.error.HTTPError as e:
         if steps is None:
             steps = 22 if resolved_mode == "r2v" else 25
 
+        sniffed_wh: tuple[int, int] | None = None
+        if not aspect_ratio:
+            if reference_images:
+                sniffed_wh = sniff_image_dimensions(reference_images[0])
+            aspect_ratio = infer_aspect_ratio_from_dims(*sniffed_wh) if sniffed_wh else "16:9 (Widescreen)"
+
         resolved_ratio = ASPECT_RATIO_MAP.get(aspect_ratio.strip(), aspect_ratio)
         try:
             wf_preview = self.load_workflow_template(selected_tpl) if isinstance(selected_tpl, str) else selected_tpl
@@ -1198,6 +1286,7 @@ except urllib.error.HTTPError as e:
             prompt=prompt,
             duration=duration,
             aspect_ratio=aspect_ratio,
+            raw_wh=sniffed_wh,
             megapixels=megapixels,
             steps=steps,
             seed=seed,

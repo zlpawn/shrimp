@@ -186,6 +186,26 @@ class ReferenceBindingTest(unittest.TestCase):
         self.assertEqual(ssh_r2v.submitted["136"]["inputs"]["ref_image_size"], "max")
         self.assertEqual(ssh_r2v.submitted["718"]["inputs"]["select"], 1)
 
+    def test_generate_video_auto_sniffs_portrait_png_aspect_ratio_when_omitted(self):
+        import struct
+        # 构造一张 736x1280 竖屏 PNG 文件头
+        png_9_16 = self.tmp / "vertical_shot.png"
+        ihdr = struct.pack(">IIBBBBB", 736, 1280, 8, 2, 0, 0, 0)
+        png_9_16.write_bytes(b"\x89PNG\r\n\x1a\n" + struct.pack(">I", 13) + b"IHDR" + ihdr + b"\x00\x00\x00\x00")
+        self.assertEqual(remote_engine.sniff_image_dimensions(png_9_16), (736, 1280))
+
+        eng = engine()
+        ssh = FakeSSH(DONE)
+        with mock.patch.object(eng, "probe", return_value={"ok": True}), \
+                mock.patch.object(eng, "connect_ssh", return_value=ssh), \
+                mock.patch.object(remote_engine.time, "sleep"):
+            res = eng.generate_video("stand up", reference_images=[str(png_9_16)], output_dir=str(self.tmp))
+        self.assertTrue(res["ok"], res)
+        w = ssh.submitted["122"]["inputs"]["自定义宽"]
+        h = ssh.submitted["122"]["inputs"]["自定义高"]
+        self.assertLess(w, h, f"expected portrait resolution for 9:16 frame, got {w}x{h}")
+        self.assertIn("9:16", res["aspect_ratio"])
+
     def test_unbindable_workflow_warns_instead_of_silently_ignoring(self):
         wf = {"1": {"class_type": "LoadImage", "inputs": {"image": "x.png"}}}
         res = run(engine(), FakeSSH(DONE), wf, reference_images=[str(self.ref)], output_dir=str(self.tmp))

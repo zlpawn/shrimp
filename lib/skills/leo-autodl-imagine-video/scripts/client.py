@@ -200,7 +200,7 @@ class AutoDLMediaClient:
         self,
         prompt: str,
         duration: float = 5.0,
-        aspect_ratio: str = "16:9 (Widescreen)",
+        aspect_ratio: str | None = None,
         megapixels: float = 1.0,
         steps: int = None,
         seed: int = None,
@@ -362,7 +362,7 @@ def main():
     parser.add_argument("--ref-videos", type=str, help="参考视频本地路径列表（逗号分隔，最多 3 段，自动切入 r2v 模式并上传至云端）")
     parser.add_argument("--ref-image-size", type=str, default="max", choices=["match", "max"], help="参考图分辨率模式: max (默认 2048px 短边最高身份保真度) | match (适配画幅)")
     parser.add_argument("--duration", type=float, default=5.0, help="视频时长（秒，默认 5.0，单镜头推荐 4~6 秒防人物漂移）")
-    parser.add_argument("--aspect-ratio", type=str, default="16:9 (Widescreen)", help="视频宽高比: 16:9 | 9:16 | 1:1 | 4:3 | 3:4 | 2:3 | 3:2 | 21:9")
+    parser.add_argument("--aspect-ratio", type=str, default=None, help="视频宽高比: 16:9 | 9:16 | 1:1 | 4:3 | 3:4 | 2:3 | 3:2 | 21:9（缺省自动嗅探首张参考图比例，无图时默认 16:9）")
     parser.add_argument("--megapixels", type=float, default=1.0, help="视频画面总像素百万数 (默认 1.0 ≈ 1344x768，高清可设 1.1~1.2)")
     parser.add_argument("--width", type=int, default=1280, help="生图宽度（默认 1280，32 的倍数，分镜图可设 2048）")
     parser.add_argument("--height", type=int, default=736, help="生图高度（默认 736，32 的倍数，分镜图可设 2048）")

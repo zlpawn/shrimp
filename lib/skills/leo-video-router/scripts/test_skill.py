@@ -695,14 +695,32 @@ class ArcReelBridgeTest(Base):
         self.assertEqual(out["content"][0]["id"], "林默")
         self.assertEqual(out["content"][1]["type"], "saved_image")
 
+    def test_slugify_project_name_produces_valid_arcreel_ids(self):
+        import re
+        import arcreel_bridge
+
+        pat = re.compile(r"^[A-Za-z0-9-]+$")
+        # 已有合法英文连字符 ID 原样保持
+        self.assertEqual(arcreel_bridge.slugify_project_name("demo-ep1"), "demo-ep1")
+        # 中文项目名确定性转为 proj-<8位hash>，不同命令调用结果恒等
+        zh1 = arcreel_bridge.slugify_project_name("地府打工记")
+        zh2 = arcreel_bridge.slugify_project_name("地府打工记")
+        self.assertEqual(zh1, zh2)
+        self.assertTrue(pat.fullmatch(zh1), zh1)
+        self.assertTrue(zh1.startswith("proj-"))
+        # 含下划线或中英混排同样转为合法连字符 ID
+        mixed = arcreel_bridge.slugify_project_name("2026_食堂让座_ep1")
+        self.assertTrue(pat.fullmatch(mixed), mixed)
+
     def test_byo_upload_routes_match_arcreel_v1_endpoints(self):
         import arcreel_bridge
 
         p = arcreel_bridge.build_parser()
 
+        slug = arcreel_bridge.slugify_project_name("地府打工")
         args = p.parse_args(["upload-asset", "--project", "地府打工", "--type", "character", "--name", "林默", "--file", "a.png"])
         route, params = arcreel_bridge.build_upload_route(args)
-        self.assertEqual(route, "/api/v1/projects/%E5%9C%B0%E5%BA%9C%E6%89%93%E5%B7%A5/upload/character")
+        self.assertEqual(route, f"/api/v1/projects/{slug}/upload/character")
         self.assertEqual(params, {"name": "林默"})
 
         args = p.parse_args(["upload-derivative", "--project", "demo", "--character", "林默", "--derivative", "夜行衣", "--file", "b.png"])
@@ -722,6 +740,28 @@ class ArcReelBridgeTest(Base):
         args = p.parse_args(["upload-shot", "--project", "demo", "--kind", "end-frame", "--shot-id", "E1S01", "--file", "end.png"])
         route, params = arcreel_bridge.build_upload_route(args)
         self.assertEqual(route, "/api/v1/projects/demo/shots/E1S01/end-frame/upload")
+
+    def test_plan_step_payloads_use_exact_arcreel_field_names(self):
+        import arcreel_bridge
+
+        payloads = arcreel_bridge.build_plan_step_payloads(
+            project_id="proj-abc12345",
+            title="地府打工记",
+            filename="novel.txt",
+            content="正文内容",
+            aspect_ratio="9:16",
+            grid_storyboard=True,
+            default_duration=5,
+            episode_id=2,
+            script_filename="episode_2.json",
+        )
+        self.assertEqual(payloads["upload_source"]["content"], "正文内容")
+        self.assertNotIn("text", payloads["upload_source"])
+        self.assertEqual(payloads["generate_script_plan"]["episode_id"], 2)
+        self.assertEqual(payloads["confirm_script_review"]["episode_id"], 2)
+        self.assertEqual(payloads["generate_episode_script"]["episode_id"], 2)
+        self.assertEqual(payloads["get_episode_script"]["script"], "episode_2.json")
+        self.assertEqual(payloads["generate_videos"]["target"], {"scope": "episode", "episode_id": 2})
 
 
 if __name__ == "__main__":

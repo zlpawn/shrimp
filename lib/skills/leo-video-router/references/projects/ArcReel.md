@@ -17,7 +17,7 @@
 - 纯真人口播录屏剪辑、已有素材二次切片 → 交给 OpenMontage。
 - 网页产品功能介绍演示片 → 交给 video-shotcraft。
 
-## 安装与启动
+## 安装
 
 1. **启动服务（端口 1241）**：
    - 本地 `uv` 启动：
@@ -29,16 +29,16 @@
      cd /Users/pa/project/AI-JJ/ArcReel/deploy && docker compose up -d
      ```
 2. **配置 API Token（存储于独立权限 600 文件）**：
-   - 浏览器打开 `http://localhost:1241` →「系统设置」生成 API Key（`arc-` 开头）：
+   - 浏览器打开 `http://localhost:1241` →「系统设置」生成 API Key（`arc-` 开头），并配置用于拆剧本的文本大模型：
      ```bash
      uv run <本 skill 目录>/scripts/arcreel_bridge.py set-token arc-xxxx
      ```
 
----
+## 交接
 
-## 外部生图 / 生视频 Skill 解耦协同工作流（锁死人物一致性标准 SOP）
+> 注意：`registry.py locate ArcReel` 输出的 `entry`（`AGENTS.md`）是 ArcReel 仓库自身的源码开发规范，**视频出片调度无需阅读源码开发规范**，一律以本接入卡与 `arcreel_bridge.py` 为准。
 
-`arcreel_bridge.py` 采用**标准文件契约解耦**：对外只输出结构化 Prompt JSON、只接收本地 `.png/.jpg/.mp4/.wav` 文件，**与具体选用哪个生图 Skill（如 `leo-codex-imagine` 或未来新技能）或生视频 Skill（如 `leo-autodl-imagine-video`、`leo-apimart-video` 或未来新技能）完全零耦合**。
+`arcreel_bridge.py` 采用**标准文件契约解耦**：对外只输出结构化 Prompt JSON、只接收本地 `.png/.jpg/.mp4/.wav` 文件，且支持直接传入中文项目名（内部确定性映射为合法的 `[a-z0-9-]+` 项目 ID）。
 
 ### Step 1：剧本拆解与规划（停在 `plan` 阶段，单镜头默认 5s 防人物漂移）
 ```bash
@@ -46,14 +46,13 @@ B=<本 skill 目录>/scripts/arcreel_bridge.py
 uv run "$B" status
 uv run "$B" run --novel "<工程目录>/素材/小说.txt" --project "地府打工记" --aspect-ratio "9:16" --stage plan
 ```
-- 自动创建 `generation_mode="storyboard"` + `grid_storyboard=true` + `default_duration=5` 项目，完成分集与剧本拆解，返回待生成的 `pending_assets`（角色/场景/道具清单）与分镜脚本，**不触发 ArcReel 内部付费生图/生视频**。
+- 自动创建 `generation_mode="storyboard"` + `grid_storyboard=true` + `default_duration=5` 项目，完成分集、脚本规划与分镜视觉提示词编写，返回 `project_id`、`script_file`（如 `episode_1.json`）、待生成的 `pending_assets` 清单与分镜脚本，**不触发 ArcReel 内部付费生图/生视频**。
 
 ### Step 2：外部生图 Skill 出「角色定妆卡」➔ 回灌并视觉验脸
-1. 读取 `pending_assets`（或 `uv run "$B" call get_prompt_preview '{"project":"地府打工记"}'`），调用当前选定的外部生图 Skill（如 `leo-codex-imagine`）生成角色定妆图。
+1. 读取 `pending_assets`（单条分镜完整拼接提示词也可随时调 `uv run "$B" call get_prompt_preview '{"project":"地府打工记","script":"episode_1.json","item_id":"E1S01"}'` 查看），调用当前选定的外部生图 Skill（如 `leo-codex-imagine`）生成角色定妆图。
 2. 回灌进 ArcReel（若角色有换装/战损形态，用 `upload-derivative` 注入 `@[角色/衍生]`）：
    ```bash
    uv run "$B" upload-asset --project "地府打工记" --type character --name "林默" --file "<工程目录>/素材/char_林默.png"
-   # 可选：注入换装衍生子身份（换衣不换脸、共享同一音色）
    uv run "$B" upload-derivative --project "地府打工记" --character "林默" --derivative "夜行衣" --file "<工程目录>/素材/char_林默_夜行衣.png"
    ```
 3. 调 `inspect_images`（免费，图片自动解码落盘至 `saved_images` 路径供 Agent 查看）：
@@ -61,45 +60,44 @@ uv run "$B" run --novel "<工程目录>/素材/小说.txt" --project "地府打�
    uv run "$B" call inspect_images '{"project":"地府打工记","resource_type":"character","ids":["林默"]}' --save-media-dir "<工程目录>/素材/_review"
    ```
 
-### Step 3：外部生图 Skill 出「宫格联合分镜图 / 单镜首帧」➔ 验脸切片
-1. 以角色定妆图为参考图，调用外部生图 Skill 一次生成 2×2 / 3×3 宫格联合分镜大图（同一张大图注意力共享，跨镜头人脸与服装天然锁死），或逐镜生成首帧定妆图（大幅动作镜头可同时生成尾帧图）。
-2. 回灌宫格大图并调 `split_grids` 自动裁切落格（或用 `upload-shot --kind storyboard` / `--kind end-frame` 逐镜回灌）：
+### Step 3：外部生图 Skill 出「宫格联合分镜大图」➔ 本地切片落盘并批量回灌验脸
+1. 以角色定妆图为参考图，调用外部生图 Skill 一次生成 `2x2` 或 `3x3` 宫格联合分镜大图（单图注意力共享，跨镜头人脸与服装天然一致）。
+2. 调用 **`split-upload-grid`**（零依赖 ArcReel 内部图片供应商）：自动在本地将宫格大图裁切为 `<shot_id>_start.png`（直接供下一步生视频锁首帧复用！），并逐镜回灌至 ArcReel：
    ```bash
-   # 方式 A：上传宫格联合大图 -> 视觉验脸 -> 自动切分落格
-   uv run "$B" upload-grid --project "地府打工记" --grid-id "grid_01" --file "<工程目录>/素材/grid_01.png"
-   uv run "$B" call split_grids '{"project":"地府打工记","grid_ids":["grid_01"]}'
+   uv run "$B" split-upload-grid \
+     --project "地府打工记" --script-file "episode_1.json" \
+     --grid 2x2 --shot-ids "E1S01,E1S02,E1S03,E1S04" \
+     --file "<工程目录>/素材/grid_01.png" \
+     --save-cells-dir "<工程目录>/素材/shots"
 
-   # 方式 B：单镜头首帧 / 尾帧精准覆盖
-   uv run "$B" upload-shot --project "地府打工记" --shot-id "E1S01" --kind storyboard --file "<工程目录>/素材/E1S01_start.png"
-   uv run "$B" upload-shot --project "地府打工记" --shot-id "E1S01" --kind end-frame --file "<工程目录>/素材/E1S01_end.png"
+   # 若单镜需大幅动作过渡，可额外补一张尾帧图：
+   uv run "$B" upload-shot --project "地府打工记" --script-file "episode_1.json" --shot-id "E1S01" --kind end-frame --file "<工程目录>/素材/shots/E1S01_end.png"
    ```
-3. 调 `inspect_images`（`resource_type="storyboard"`）核对所有分镜格人脸一致后，才允许进入生视频阶段（改一张图远比重跑视频便宜）。
+3. 调 `inspect_images`（`resource_type="storyboard"`）核对所有分镜格人脸完全一致后，再放行生视频：
+   ```bash
+   uv run "$B" call inspect_images '{"project":"地府打工记","resource_type":"storyboard","ids":["E1S01","E1S02","E1S03","E1S04"]}' --save-media-dir "<工程目录>/素材/_review"
+   ```
 
 ### Step 4：外部生视频 Skill 锁首帧渲染 ➔ 回灌与抽帧联系表质检
-1. 将确认无误的分镜首帧（及可选尾帧）交给外部生视频 Skill 渲染 `.mp4`：
-   - 例如使用 `leo-autodl-imagine-video` 时，传 1～2 张分镜首尾帧会自动走 `API-U02`（`fl2va` 25+2 步首尾帧严格锁死底模）；若单镜需大幅转头且有多角度角色图，可显式 `--mode r2v` 走 `API-U06`（`ref_image_size=max` 2048px 高保真多图绑定）。
-2. 将渲染好的 `.mp4` 回灌挂载到对应分镜槽位：
+1. 将 `<工程目录>/素材/shots/E1S01_start.png`（及可选尾帧）传给外部生视频 Skill（如 `leo-autodl-imagine-video`）：
+   - 传 1～2 张图时，`leo-autodl-imagine-video` 自动嗅探首帧图片的真实宽高比（如 `9:16` 竖屏自动对齐 `736x1344`）并路由至 `API-U02`（`fl2va` 25+2 步首尾帧硬锁底模）；多视角自由运镜可显式传 `--mode r2v` 走 `API-U06`（`ref_image_size=max`）。
+2. 将渲染好的 `.mp4` 回灌挂载到对应分镜：
    ```bash
-   uv run "$B" upload-shot --project "地府打工记" --shot-id "E1S01" --kind video --file "<工程目录>/素材/E1S01.mp4"
+   uv run "$B" upload-shot --project "地府打工记" --script-file "episode_1.json" --shot-id "E1S01" --kind video --file "<工程目录>/素材/E1S01.mp4"
    ```
-3. **关键防崩质检**：调用 ArcReel 免费的 `inspect_video_units`，服务端自动用 `ffmpeg` 生成带时间戳的抽帧联系表，并标记 `CUT`（单视频内私自切镜/变脸点）、`BLACK`、`FREEZE`，桥接脚本自动将联系表落盘供 Agent 审片：
+3. **关键防崩质检**：调用 `inspect_video_units`，服务端自动用 `ffmpeg` 生成带时间戳的抽帧联系表，并标记 `CUT`（单视频内私自切镜/变脸点）、`BLACK`、`FREEZE`，桥接脚本自动把联系表落盘供 Agent 审片：
    ```bash
-   uv run "$B" call inspect_video_units '{"project":"地府打工记","unit_ids":["E1S01"]}' --save-media-dir "<工程目录>/素材/_review"
+   uv run "$B" call inspect_video_units '{"project":"地府打工记","unit_ids":["E1S01","E1S02"]}' --save-media-dir "<工程目录>/素材/_review"
    ```
-   一旦发现某条视频中途变脸或私自切镜，仅针对该 `shot_id` 重跑外部生视频 Skill 并重新 `upload-shot` 即可（旧版本自动保留在历史记录中，可通过 `select_video_version` 回滚）。
+   若某镜出现中途变脸或私自切镜，仅重跑该单镜并再次 `upload-shot` 覆盖即可。
 
-### Step 5：音频协同、剪映草稿导出与字幕归档
-1. **配音**：遵循 Router Step 5 优先级（推荐本机 `voicestudio` / `omnivoice` 生成高质量旁白，或保留生视频引擎如 MiniMax-H3 的音画同步原生对白）。
-2. **导出剪映草稿与合成成片**：
-   ```bash
-   uv run "$B" call export_jianying_draft '{"project":"地府打工记"}'
-   uv run "$B" call render_final_cut '{"project":"地府打工记"}'
-   ```
-3. 交回 Router Step 7 执行单行字幕压制（≤ 16 字）、3-Pick 多平台标题与高潮帧双簧封面归档。
+### Step 5：一键建时间线、导出剪映草稿与无字幕原片
+```bash
+uv run "$B" export --project "地府打工记" --episode-id 1 --output-mp4 "<工程目录>/成片/原始版/raw.mp4"
+```
+- 自动创建/复用剪辑时间线（`tl-...`），轮询完成剪映草稿导出，并以 `burn_subtitles=false` 渲染下载干净原片至 `成片/原始版/raw.mp4`，随后交回 Router Step 7 由 `subtitle_engine.py` 压制单行院线字幕（避免双层字幕重叠）。
 
----
+## 音频
 
-## 注意
-
-1. 若某次希望直接使用 ArcReel 内部配置的云端供应商一跑到底，可传 `--stage storyboard` / `video` / `all`（批量生成前会触发 ArcReel 原生 All-or-Nothing 资费准入确认）。
-2. 剪映草稿导出面向中国大陆版剪映，解压后直接用剪映打开即可二次手工精修。
+- **对白镜头**：保留外部视频引擎（如 `leo-autodl-imagine-video` MiniMax-H3）原生生成的音画同步普通话对白。
+- **旁白解说**：优先使用本机 `voicestudio` / `omnivoice` 生成 `<工程目录>/音频/旁白.wav`，或在 ArcReel 内配置 TTS。
