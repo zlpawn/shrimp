@@ -22,25 +22,20 @@
 
 ---
 
-## 2. 已验证的 15 节点音画同步生视频工作流 (`minimax_h3_video_1pass_api.json`)
+## 2. 双默认高保真音画同步生视频工作流 (`API-U02` 首尾帧锁死 + `API-U06` 多图参考)
 
-源自 `minimax_built_in_audio_builder_api.json`（修正了节点 `141` 的 `minimax/` 模型子目录前缀），在 RTX 5090 上 3 秒视频（`steps=10`）采样耗时约 19 秒：
+已废除早期的低步数 `EasyCache=0.3` 单通道草稿模板，`--video` 现默认按参考素材自动分流至以下两套高精度工作流（均内置 `H3SigmaRefiner` 尾段余弦细节增强与显存自动回收）：
 
-| 节点 ID | 节点类型 (`class_type`) | 实测参数配置 | 说明 |
-| :--- | :--- | :--- | :--- |
-| **`"115"`** | `ResolutionSelector` | `aspect_ratio`: `"16:9 (Widescreen)"`, `megapixels`: `0.9`, `multiple`: `32` | 自动计算 32 倍数对齐宽高（`0.9 MP` 在 `16:9` 下为 `1280x736`） |
-| **`"141"`** | `DiffusionModelLoaderKJ` | `model_name`: `"minimax/minimax_h3_ref2va_pruned_int8_convrot.safetensors"` | 加载 MiniMax-H3 扩散主模型 |
-| **`"174"`** | `EasyCache` | `reuse_threshold`: `0.3`, `start_percent`: `0.2`, `end_percent`: `0.9`, `model`: `["141", 0]` | 采样特征缓存加速（调小 `reuse_threshold` 可提升清晰度） |
-| **`"128"`** | `CLIPLoader` | `clip_name`: `"qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors"`, `type`: `"minimax"` | 加载 Qwen3-VL 32B 编码器 |
-| **`"119"` / `"120"`** | `VAELoader` | `minimax_h3_video_vae_fp16.safetensors` / `minimax_h3_audio_vae_fp32.safetensors` | 分别加载视频 VAE 与音频 VAE |
-| **`"132"` / `"131"`** | `PrimitiveFloat` / `ComfyMathExpression` | `expression`: `"max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17"` | 将目标秒数按 24fps 换算为满足 $17n+5$ 约束的合法帧数 `length` |
-| **`"138"`** | `PrimitiveStringMultiline` | `value`: `<提示词>` | 输入包含画面、运镜、台词与声音指示的提示词 |
-| **`"180"`** | `VRGDG_MiniMaxH3ReferenceMediaFromPaths` | `image_paths`: `"[]"`, `video_references`: `"[]"` | 自动绑定最多 9 张参考图与 3 段参考视频 |
-| **`"136"`** | `MiniMaxH3ReferenceToVideo` | 连接 `138`, `115`, `131`, `128`, `119`, `120`, `180`, `ref_image_size`: `"match"` | 构建音视频联合 Conditioning 与初始 Latent |
-| **`"129"`** | `RandomNoise` | `noise_seed`: `<随机种子>` | 随机噪声种子 |
-| **`"123"~"126"`** | `KSamplerSelect` / `BasicScheduler` / `BasicGuider` / `SamplerCustomAdvanced` | `sampler_name`: `"res_multistep"`, `scheduler`: `"simple"`, `steps`: `10` | 音视频联合去噪采样 |
-| **`"121"` / `"122"`** | `LTXVAudioVAEDecode` / `VAEDecode` | 分别解码出音频波形与视频画面序列 | 音画分离解码 |
-| **`"142"`** | `VHS_VideoCombine` | `frame_rate`: `24`, `format`: `"video/h264-mp4"`, `pix_fmt`: `"yuv420p"`, `crf`: `19` | 封装合并为带音轨的 `.mp4` 文件 |
+### 2.1 默认主工作流：`API-U02-minimax_h3_图生视频基础版-V2.json`（`i2v` / `fl2v` / `t2v`）
+- **核心底模与节点**：`minimax/minimax_h3_fl2va_pruned_int8_convrot.safetensors` + `MiniMaxH3ImageToVideo`（节点 `139`）+ `H3SigmaRefiner`（节点 `149`，25+2 步，无 `EasyCache` 模糊劣化）。
+- **自动帧绑定逻辑**：
+  - 传入 **1 张分镜图**：自动写入节点 `114` (`first_frame`) 并移除节点 `144` (`last_frame`)，100% 锁死开场构图与人物五官；
+  - 传入 **2 张分镜图**：分别绑定 `114` (`first_frame`) 与 `144` (`last_frame`)，将大幅转身或位移两头钉死；
+  - 传入 **0 张图**：自动清理示例 `LoadImage` 节点，作为纯净 25+2 步文生视频运行。
+
+### 2.2 默认多图参考流：`API-U06-9图版API-V5.json`（`r2v`，3～9 张参考图或显式 `--mode r2v`）
+- **核心底模与节点**：`minimax/minimax_h3_ref2va_pruned_int8_convrot.safetensors` + `MiniMaxH3ReferenceToVideo`（节点 `136`，默认 `ref_image_size="max"` 2048px 高保真）+ `H3SigmaRefiner`（22+2 步，默认 `718.inputs.select=1` 走无 Turbo 满步高精分支）。
+- **动态注入机制**：引擎自动清理模板内写死的示例 `LoadImage` 节点，动态挂载 `VRGDG_MiniMaxH3ReferenceMediaFromPaths` 绑定任意 1～9 张参考图与 0～3 段参考视频。
 
 ---
 
@@ -79,5 +74,4 @@ Agent **必须根据分镜的视听特征与成品画质要求自主推理，动
 | **疾驰奔跑 / 剧烈运动 / 武戏打斗** | `API-U24-文武双修T8版.json`<br/>`API-U08.json` | **Combat / Motion Repair LoRA 链**：专门优化大范围肢体位移与高速运动，解决常规模型在大动作时容易产生的肢体拉丝、面部扭曲崩塌与残影问题。 | 公路夜奔、策马疾驰、体育竞技、动作打斗 |
 | **多角色 / 多服装跨镜头严格一致** | `API-U01-minimax_h3_基础版API.json`<br/>`API-U06-9图版API-V5.json`<br/>`API-U22-9图3音.json` | **9 图多模态多参考绑定**：支持上传 3~9 张角色、服装、道具三视图参考图，通过 `MiniMaxH3ReferenceToVideo` 多图像槽位对齐身份与特征。 | 固定主角短剧、商业广告角色、品牌服装展示 |
 | **纯音频驱动 / 严丝合缝说话对口型** | `API-U11-Minimax-图片音频对口型API.json`<br/>`minimax_audio_driven_builder_api.json` | **Audio-driven Lip-sync**：以真实音轨作为核心 Conditioning 驱动源，强制嘴唇几何形态跟随音素运动，避免出现画面张嘴声音不对齐的“假唱感”。 | 播客对话、严肃口播、新闻宣讲 |
-| **电影长镜头顺接 / 段落色彩无缝对齐** | `API-U43.json`<br/>`API-U02-minimax_h3_图生视频基础版-V2.json` | **首尾帧插值与时序上下文传递**：将前一段镜头的最后一帧或关键定妆图作为起始锚点，并执行偏色自动校准，确保镜头切换时色彩与光照不跳帧。 | 长运镜穿越、时空流转、叙事段落平滑转场 |
-| **构图快速验证 / 语法试跑** | `minimax_h3_video_1pass_api.json` | **1-Pass 单通道极速采样**：10 步采样仅需 19 秒，用于低成本验证提示词是否跑通、运镜方向是否正确。 | 草稿预览、构图试验、快速验证 |
+| **电影长镜头顺接 / 首尾帧严格锁死（默认主力）** | `API-U02-minimax_h3_图生视频基础版-V2.json`<br/>`API-U43.json` | **FL2VA 首尾帧插值与时序锚定**：将宫格切出的分镜首帧或上一段末帧作为起始硬锚点，配合 `H3SigmaRefiner` 25+2 步精修，根治跨视频换脸。 | 分镜图驱动生视频、姿态转换、叙事段落平滑转场 |

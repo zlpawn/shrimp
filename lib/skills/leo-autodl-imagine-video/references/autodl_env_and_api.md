@@ -25,7 +25,7 @@
 * **参考素材上传目录**：`/root/ComfyUI/input/`
 * **生成结果输出目录**：`/root/ComfyUI/output/`
 * **VRGDG 官方 API 工作流目录**：`/root/ComfyUI/custom_nodes/comfyui-vrgamedevgirl/Workflows/UsedForUIDoNotTouch/`
-  * `minimax_built_in_audio_builder_api.json`（已验证并保存至本地 `references/workflows/minimax_h3_video_1pass_api.json`）
+  * `minimax_built_in_audio_builder_api.json`（远端备份见 `references/workflows/remote_backup/`）
   * `minimax_audio_driven_builder_api.json`
   * `minimax_audio_driven_builder_normal_2pass_api.json`
   * `minimax_audio_driven_builder_latent_upscale_2pass_api.json`

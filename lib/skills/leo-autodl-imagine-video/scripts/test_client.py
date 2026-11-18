@@ -11,7 +11,8 @@ import remote_engine  # noqa: E402
 from remote_engine import AutoDLRemoteEngine  # noqa: E402
 
 IMAGE_WF = json.loads((HERE.parent / "references/workflows/minimax_h3_image_u33_api.json").read_text(encoding="utf-8"))
-VIDEO_WF = json.loads((HERE.parent / "references/workflows/minimax_h3_video_1pass_api.json").read_text(encoding="utf-8"))
+I2V_WF = json.loads((HERE.parent / "references/workflows/u_series_api" / remote_engine.DEFAULT_I2V_WORKFLOW).read_text(encoding="utf-8"))
+R2V_WF = json.loads((HERE.parent / "references/workflows/u_series_api" / remote_engine.DEFAULT_R2V_WORKFLOW).read_text(encoding="utf-8"))
 
 
 class FakeStream:
@@ -84,7 +85,7 @@ class ReferenceBindingTest(unittest.TestCase):
         self.ref = self.tmp / "plate.png"
         self.ref.write_bytes(b"x")
 
-    def test_image_template_gets_a_media_node_wired_like_the_verified_video_template(self):
+    def test_image_template_gets_a_media_node_wired_for_9_images_and_3_videos(self):
         ssh = FakeSSH(DONE)
         res = run(engine(), ssh, copy.deepcopy(IMAGE_WF), reference_images=[str(self.ref)], output_dir=str(self.tmp))
         self.assertTrue(res["ok"], res)
@@ -93,10 +94,10 @@ class ReferenceBindingTest(unittest.TestCase):
         self.assertEqual(json.loads(media[0]["inputs"]["image_paths"]), ["/root/ComfyUI/input/plate.png"])
         media_id = next(k for k, n in ssh.submitted.items() if n is media[0])
         inputs = ssh.submitted["4"]["inputs"]
-        video_inputs = VIDEO_WF["136"]["inputs"]
-        for key, (src, slot) in ((k, v) for k, v in video_inputs.items() if k.startswith(("ref_images.", "ref_videos."))):
-            self.assertEqual(src, "180")
-            self.assertEqual(inputs[key], [media_id, slot], key)
+        for i in range(9):
+            self.assertEqual(inputs[f"ref_images.ref_image_{i}"], [media_id, i])
+        for i in range(3):
+            self.assertEqual(inputs[f"ref_videos.ref_video_{i}"], [media_id, 9 + i])
 
     def test_no_references_leaves_the_verified_template_untouched(self):
         ssh = FakeSSH(DONE)
@@ -104,11 +105,86 @@ class ReferenceBindingTest(unittest.TestCase):
         self.assertEqual(set(ssh.submitted), set(IMAGE_WF))
         self.assertNotIn("ref_images.ref_image_0", ssh.submitted["4"]["inputs"])
 
-    def test_video_template_uses_its_existing_media_node(self):
+    def test_i2v_single_frame_locks_first_frame_and_drops_last_frame(self):
         ssh = FakeSSH(DONE)
-        run(engine(), ssh, copy.deepcopy(VIDEO_WF), reference_images=[str(self.ref)], output_dir=str(self.tmp))
-        self.assertEqual(set(ssh.submitted), set(VIDEO_WF))
-        self.assertIn("plate.png", ssh.submitted["180"]["inputs"]["image_paths"])
+        res = run(engine(), ssh, copy.deepcopy(I2V_WF), reference_images=[str(self.ref)], output_dir=str(self.tmp))
+        self.assertTrue(res["ok"], res)
+        self.assertNotIn("warnings", res)
+        i2v_inputs = ssh.submitted["139"]["inputs"]
+        self.assertEqual(i2v_inputs["first_frame"], ["114", 0])
+        self.assertNotIn("last_frame", i2v_inputs)
+        self.assertEqual(ssh.submitted["114"]["inputs"]["image"], "plate.png")
+        self.assertNotIn("144", ssh.submitted)
+
+    def test_i2v_two_frames_locks_both_first_and_last_frames(self):
+        end_img = self.tmp / "end.png"
+        end_img.write_bytes(b"y")
+        ssh = FakeSSH(DONE)
+        res = run(engine(), ssh, copy.deepcopy(I2V_WF), reference_images=[str(self.ref), str(end_img)], output_dir=str(self.tmp))
+        self.assertTrue(res["ok"], res)
+        i2v_inputs = ssh.submitted["139"]["inputs"]
+        self.assertEqual(i2v_inputs["first_frame"], ["114", 0])
+        self.assertEqual(i2v_inputs["last_frame"], ["144", 0])
+        self.assertEqual(ssh.submitted["114"]["inputs"]["image"], "plate.png")
+        self.assertEqual(ssh.submitted["144"]["inputs"]["image"], "end.png")
+
+    def test_i2v_zero_frames_cleans_sample_load_images_for_pure_t2v(self):
+        ssh = FakeSSH(DONE)
+        res = run(engine(), ssh, copy.deepcopy(I2V_WF), output_dir=str(self.tmp))
+        self.assertTrue(res["ok"], res)
+        i2v_inputs = ssh.submitted["139"]["inputs"]
+        self.assertNotIn("first_frame", i2v_inputs)
+        self.assertNotIn("last_frame", i2v_inputs)
+        self.assertNotIn("114", ssh.submitted)
+        self.assertNotIn("144", ssh.submitted)
+
+    def test_r2v_template_replaces_hardcoded_load_images_with_dynamic_media_node(self):
+        ssh = FakeSSH(DONE)
+        res = run(engine(), ssh, copy.deepcopy(R2V_WF), reference_images=[str(self.ref)], output_dir=str(self.tmp))
+        self.assertTrue(res["ok"], res)
+        for sample_id in ("137", "139", "144", "151", "653", "654", "655", "656", "657"):
+            self.assertNotIn(sample_id, ssh.submitted)
+        self.assertIn(remote_engine.INJECTED_MEDIA_NODE_ID, ssh.submitted)
+        self.assertEqual(
+            json.loads(ssh.submitted[remote_engine.INJECTED_MEDIA_NODE_ID]["inputs"]["image_paths"]),
+            ["/root/ComfyUI/input/plate.png"],
+        )
+
+    def test_generate_video_auto_routes_between_i2v_and_r2v_and_handles_subfolders(self):
+        r2, r3 = self.tmp / "r2.png", self.tmp / "r3.png"
+        r2.write_bytes(b"2")
+        r3.write_bytes(b"3")
+        vid_done = json.dumps({
+            "pid": {
+                "status": {"status_str": "success"},
+                "outputs": {"92": {"videos": [{"filename": "MiniMax_H3_00001_.mp4", "subfolder": "video", "type": "output"}]}},
+            }
+        })
+        eng = engine()
+        ssh_i2v = FakeSSH(vid_done)
+        sftp_mock = mock.Mock()
+        ssh_i2v.open_sftp = mock.Mock(return_value=sftp_mock)
+        with mock.patch.object(eng, "probe", return_value={"ok": True}), \
+                mock.patch.object(eng, "connect_ssh", return_value=ssh_i2v), \
+                mock.patch.object(remote_engine.time, "sleep"):
+            res_i2v = eng.generate_video("walk forward", aspect_ratio="9:16", reference_images=[str(self.ref)], output_dir=str(self.tmp))
+        self.assertTrue(res_i2v["ok"], res_i2v)
+        self.assertEqual(res_i2v["mode"], "i2v")
+        self.assertEqual(res_i2v["workflow_template"], remote_engine.DEFAULT_I2V_WORKFLOW)
+        self.assertEqual(ssh_i2v.submitted["122"]["inputs"]["自定义宽"], 736)
+        self.assertEqual(ssh_i2v.submitted["122"]["inputs"]["自定义高"], 1344)
+        sftp_mock.get.assert_called_with("/root/ComfyUI/output/video/MiniMax_H3_00001_.mp4", str(self.tmp / "MiniMax_H3_00001_.mp4"))
+
+        ssh_r2v = FakeSSH(DONE)
+        with mock.patch.object(eng, "probe", return_value={"ok": True}), \
+                mock.patch.object(eng, "connect_ssh", return_value=ssh_r2v), \
+                mock.patch.object(remote_engine.time, "sleep"):
+            res_r2v = eng.generate_video("group talk", reference_images=[str(self.ref), str(r2), str(r3)], output_dir=str(self.tmp))
+        self.assertTrue(res_r2v["ok"], res_r2v)
+        self.assertEqual(res_r2v["mode"], "r2v")
+        self.assertEqual(res_r2v["workflow_template"], remote_engine.DEFAULT_R2V_WORKFLOW)
+        self.assertEqual(ssh_r2v.submitted["136"]["inputs"]["ref_image_size"], "max")
+        self.assertEqual(ssh_r2v.submitted["718"]["inputs"]["select"], 1)
 
     def test_unbindable_workflow_warns_instead_of_silently_ignoring(self):
         wf = {"1": {"class_type": "LoadImage", "inputs": {"image": "x.png"}}}

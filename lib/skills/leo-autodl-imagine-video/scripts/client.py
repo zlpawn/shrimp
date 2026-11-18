@@ -199,25 +199,26 @@ class AutoDLMediaClient:
     def generate_video(
         self,
         prompt: str,
-        duration: float = 3.0,
+        duration: float = 5.0,
         aspect_ratio: str = "16:9 (Widescreen)",
-        megapixels: float = 0.9,
-        steps: int = 10,
+        megapixels: float = 1.0,
+        steps: int = None,
         seed: int = None,
+        mode: str = "auto",
         reference_images: list = None,
         reference_videos: list = None,
-        ref_image_size: str = "match",
+        ref_image_size: str = "max",
         diffusion_model: str = None,
         clip_model: str = None,
         video_vae: str = None,
         audio_vae: str = "minimax_h3_audio_vae_fp32.safetensors",
-        crf: int = 19,
-        workflow_template: str = "minimax_h3_video_1pass_api.json",
+        crf: int = 17,
+        workflow_template: str = None,
         extra_patches: dict = None,
         output_dir: str = None,
         timeout_seconds: int = DEFAULT_RENDER_TIMEOUT
     ) -> dict:
-        """调用 MiniMax-H3 生成音画同步视频（支持文生视频、参考图生视频、电影感高清流切换与节点微调）"""
+        """调用 MiniMax-H3 生成高保真音画同步视频（支持首尾帧锁死 I2V、多图主体参考 R2V 与节点微调）"""
         target_dir = output_dir or self.output_dir
         if not self.engine:
             return {"ok": False, "message": "未配置云端连接。"}
@@ -228,6 +229,7 @@ class AutoDLMediaClient:
             megapixels=megapixels,
             steps=steps,
             seed=seed,
+            mode=mode,
             reference_images=reference_images,
             reference_videos=reference_videos,
             ref_image_size=ref_image_size,
@@ -350,29 +352,30 @@ def main():
     parser.add_argument("--run-workflow", type=str, help="直接执行指定的工作流 JSON 模板名或本地 JSON 文件路径")
     parser.add_argument("--video", action="store_true", help="执行 MiniMax-H3 音画同步生视频")
     parser.add_argument("--image", action="store_true", help="执行 MiniMax-H3 高清生图")
-    parser.add_argument("--workflow", type=str, default=None, help="指定使用的工作流模板文件名（默认生图用 minimax_h3_image_u33_api.json，生视频用 minimax_h3_video_1pass_api.json）")
-    parser.add_argument("--patch", action="append", help="动态覆盖工作流任意节点属性，如 --patch '174.inputs.reuse_threshold=0.15' 或 JSON 字符串（可多次传入）")
+    parser.add_argument("--mode", type=str, default="auto", choices=["auto", "i2v", "r2v"], help="生视频路由模式: auto (0~2张图锁首尾帧 API-U02，3+张图走多参考 API-U06) | i2v (强制首尾帧锁死) | r2v (强制多图参考)")
+    parser.add_argument("--workflow", type=str, default=None, help="指定使用的工作流模板文件名（缺省按 --mode 自动选 API-U02 或 API-U06；生图默认 minimax_h3_image_u33_api.json）")
+    parser.add_argument("--patch", action="append", help="动态覆盖工作流任意节点属性，如 --patch '718.inputs.select=2' 或 JSON 字符串（可多次传入）")
 
     # 4. MiniMax-H3 核心可调参数
     parser.add_argument("--prompt", type=str, help="提示词（支持画面+运镜+音效+台词，或 <Picture 1> 多图绑定指令）")
-    parser.add_argument("--ref-images", type=str, help="参考图本地路径列表（逗号分隔，最多 9 张，自动上传至云端）")
-    parser.add_argument("--ref-videos", type=str, help="参考视频本地路径列表（逗号分隔，最多 3 段，自动上传至云端）")
-    parser.add_argument("--ref-image-size", type=str, default="match", choices=["match", "max"], help="参考图分辨率模式: match (默认适配画幅) | max (2048px 短边最高身份保真度)")
-    parser.add_argument("--duration", type=float, default=3.0, help="视频时长（秒，默认 3.0，推荐 3~10）")
+    parser.add_argument("--ref-images", type=str, help="参考图本地路径列表（逗号分隔：i2v 模式下 1张锁首帧、2张锁首尾帧；r2v 模式下最多 9 张主体参考）")
+    parser.add_argument("--ref-videos", type=str, help="参考视频本地路径列表（逗号分隔，最多 3 段，自动切入 r2v 模式并上传至云端）")
+    parser.add_argument("--ref-image-size", type=str, default="max", choices=["match", "max"], help="参考图分辨率模式: max (默认 2048px 短边最高身份保真度) | match (适配画幅)")
+    parser.add_argument("--duration", type=float, default=5.0, help="视频时长（秒，默认 5.0，单镜头推荐 4~6 秒防人物漂移）")
     parser.add_argument("--aspect-ratio", type=str, default="16:9 (Widescreen)", help="视频宽高比: 16:9 | 9:16 | 1:1 | 4:3 | 3:4 | 2:3 | 3:2 | 21:9")
-    parser.add_argument("--megapixels", type=float, default=0.9, help="视频画面总像素百万数 (默认 0.9 ≈ 1280x736，高清可设 1.0~1.2)")
+    parser.add_argument("--megapixels", type=float, default=1.0, help="视频画面总像素百万数 (默认 1.0 ≈ 1344x768，高清可设 1.1~1.2)")
     parser.add_argument("--width", type=int, default=1280, help="生图宽度（默认 1280，32 的倍数，分镜图可设 2048）")
     parser.add_argument("--height", type=int, default=736, help="生图高度（默认 736，32 的倍数，分镜图可设 2048）")
-    parser.add_argument("--steps", type=int, help="采样步数 (1-pass 视频默认 10，高清电影流默认 16，生图默认 12)")
+    parser.add_argument("--steps", type=int, default=None, help="采样步数 (缺省自动按工作流配满：i2v 默认 25+2 步，r2v 默认 22+2 步，生图默认 12 步)")
     parser.add_argument("--cfg", type=float, default=1.0, help="CFG 系数 (MiniMax-H3 默认 1.0)")
     parser.add_argument("--sampler", type=str, default="euler", help="生图采样器 (默认 euler，视频默认 res_multistep)")
     parser.add_argument("--scheduler", type=str, default="beta", help="生图调度器 (默认 beta，视频默认 simple)")
     parser.add_argument("--seed", type=int, help="随机种子 (不填则随机生成)")
-    parser.add_argument("--diffusion-model", type=str, default=None, help="切换 MiniMax-H3 扩散主模型变体 (如 FeiHou / Dasiwa / Singularity / fl2va)")
+    parser.add_argument("--diffusion-model", type=str, default=None, help="切换 MiniMax-H3 扩散主模型变体 (如 fl2va / ref2va)")
     parser.add_argument("--clip-model", type=str, default=None, help="切换 Qwen3-VL 32B 编码器变体 (如 nvfp4_awq 或 int8_convrot)")
-    parser.add_argument("--video-vae", type=str, default=None, help="切换视频/图像 VAE (如 minimax_h3_video_vae_fp16 或 MiniMax-H3-X2-Detail-v1)")
+    parser.add_argument("--video-vae", type=str, default=None, help="切换视频/图像 VAE (如 minimax_h3_video_vae_fp16)")
     parser.add_argument("--audio-vae", type=str, default="minimax_h3_audio_vae_fp32.safetensors", help="音频 VAE 解码器名称")
-    parser.add_argument("--crf", type=int, default=19, help="MP4 H.264 压制质量 CRF (默认 19，高清可设 17)")
+    parser.add_argument("--crf", type=int, default=17, help="MP4 H.264 压制质量 CRF (默认 17 高清近无损)")
     parser.add_argument("--output-dir", type=str, default=None, help="自定义输出目录 (默认 ~/.shrimp/skills/leo-autodl-imagine-video/outputs/)")
 
     # 6. 暂存资产导出与清理
@@ -451,15 +454,14 @@ def main():
         if not args.prompt:
             result = {"ok": False, "message": "生成视频必须提供 --prompt 参数"}
         else:
-            wf_tpl = args.workflow or "minimax_h3_video_1pass_api.json"
-            steps = args.steps or 10
             result = client.generate_video(
                 prompt=args.prompt,
                 duration=args.duration,
                 aspect_ratio=args.aspect_ratio,
                 megapixels=args.megapixels,
-                steps=steps,
+                steps=args.steps,
                 seed=args.seed,
+                mode=args.mode,
                 reference_images=ref_imgs,
                 reference_videos=ref_vids,
                 ref_image_size=args.ref_image_size,
@@ -468,7 +470,7 @@ def main():
                 video_vae=args.video_vae,
                 audio_vae=args.audio_vae,
                 crf=args.crf,
-                workflow_template=wf_tpl,
+                workflow_template=args.workflow,
                 extra_patches=patches,
                 output_dir=args.output_dir,
                 timeout_seconds=args.timeout

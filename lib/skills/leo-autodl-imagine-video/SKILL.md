@@ -13,13 +13,15 @@ description: "基于 AutoDL ComfyUI 的 MiniMax-H3 专属远程音画同步生�
 ## 1. 核心行为铁律 (Iron Rules — 必读)
 
 > [!IMPORTANT]
-> 1. **成品效果第一（Quality-First）与动态工作流智能选型原则**：
->    * **效果为第一导向**：云端部署了 50+ 套丰富成熟的工作流（包括 VRGDG 官方 API 系列与 U00~U43 系列）。Agent **严禁受限于单一固化工作流或死板三级档位**，必须依据分镜剧本的视听特征，**自主推理并动态匹配最佳工作流**：
->      * **文戏对白 / 细腻微表情 / 电影感质感**：优先选用 **2-Pass 潜空间放大超分工作流**（`minimax_audio_driven_builder_latent_upscale_2pass_api.json`、`API-U30.json`）。一采定动态，二采利用 Latent Upscale 与高斯噪声注入眼眶微光、皮肤毛孔与织物细节，彻底去除 AI 塑料感；
->      * **疾驰奔跑 / 剧烈运动 / 武戏打斗**：选用挂载 Combat / Motion Repair 专用动作 LoRA 的工作流（如 `API-U24-文武双修T8版.json`、`API-U08`），确保大范围位移不拉丝、不崩脸；
->      * **多图角色绑定 / 服装道具一致性**：选用 `API-U01-minimax_h3_基础版API.json` 或 `API-U06-9图版API-V5.json`；
->      * **严丝合缝说话对口型**：选用 `API-U11-Minimax-图片音频对口型API.json`；
->      * **单通道 1-Pass 高精出片**：在必须使用 1-Pass 时，强制通过 `--steps 16~20`、`--patch 174.inputs.reuse_threshold=0.08`、`--megapixels 1.1`、`--crf 17` 强行拉满画质参数。
+> 1. **成品效果第一（Quality-First）与双擎智能路由原则**：
+>    * **废除低参 1-Pass 草稿流，默认直出高保真锁脸成片**：`--video` 根据传入的参考图与 `--mode` 自动分流至两套无损高精工作流（无 `EasyCache` 劣化，自带 `H3SigmaRefiner` 尾段细节精修）：
+>      * **首帧 / 首尾帧严格锁死模式（`--mode i2v` 或 `auto` 下传入 0～2 张图，默认主力）**：自动路由至 `API-U02-minimax_h3_图生视频基础版-V2.json`（`fl2va` 底模 + `MiniMaxH3ImageToVideo` 25+2 步）。传入 **1 张分镜首帧图**时自动钉死第 0 秒首帧并解绑尾帧；传入 **2 张图**时同时钉死首帧与尾帧；传入 **0 张图**时清理示例图走纯净文生视频。配合上游生图技能（如 `leo-codex-imagine`）生成的宫格分镜切片，彻底根治跨视频换脸与开场构图漂移！
+>      * **多图角色参考模式（`--mode r2v` 或 `auto` 下传入 3～9 张图 / 含参考视频）**：自动路由至 `API-U06-9图版API-V5.json`（`ref2va` 底模 + `MiniMaxH3ReferenceToVideo` 22+2 步，默认开启 `--ref-image-size max` 2048px 高保真参考与无 Turbo 满步分支 `718.inputs.select=1`），适合单镜头大幅转头或多角色同框绑定。
+>    * **进阶专项场景自由调度**：
+>      * **文戏微表情 + 外部人声驱动超分**：选用 `minimax_audio_driven_builder_latent_upscale_2pass_api.json` 或 `API-U30.json`（2-Pass 潜空间放大）；
+>      * **疾驰奔跑 / 剧烈运动 / 武戏打斗**：选用挂载 Combat / Motion Repair LoRA 的 `API-U24-文武双修T8版.json`、`API-U08.json`；
+>      * **严丝合缝说话对口型**：选用 `API-U11-Minimax-图片音频对口型API.json`。
+>    * **单镜头防漂移铁律**：单条生成时长推荐控制在 **4～6 秒**、一镜一连续动作；严禁在一条长镜头里硬塞多机位切镜或未给尾帧的大幅 180° 转身。
 >    * **实事求是**：任何新改造的工作流必须经真机运行验证通过后，才可沉淀进 `references/workflows/`，严禁凭空捏造未经验证的节点连线。
 > 2. **开机后的出片节奏与安全关机**：
 >    * **开机后先盘点（几秒钟）**：`--power-on` 会自动同步工作流备份：写入 skill 源目录（新文件放 `references/workflows/remote_backup/`，内容变了的就地更新），再分发到各 agent 目录。结果在 `workflow_backup` 字段，失败不影响开机。
@@ -40,9 +42,10 @@ description: "基于 AutoDL ComfyUI 的 MiniMax-H3 专属远程音画同步生�
 ## 2. 真实沉淀的知识库与工作流导航 (`references/`)
 
 * **🏆 工作流场景能力图谱与选型矩阵（效果优先必读）**：[references/workflow_tuning_guide.md](references/workflow_tuning_guide.md)
-* **已上机实测跑通的基准 API 工作流模板 (`references/workflows/`)**：
-  * [workflows/minimax_h3_image_u33_api.json](references/workflows/minimax_h3_image_u33_api.json) —— 9 节点生图与分镜定妆工作流
-  * [workflows/minimax_h3_video_1pass_api.json](references/workflows/minimax_h3_video_1pass_api.json) —— 15 节点音画同步基础生视频工作流
+* **默认基准与双擎核心工作流 (`references/workflows/`)**：
+  * [workflows/minimax_h3_image_u33_api.json](references/workflows/minimax_h3_image_u33_api.json) —— 9 节点高清生图与分镜定妆工作流
+  * [workflows/u_series_api/API-U02-minimax_h3_图生视频基础版-V2.json](references/workflows/u_series_api/API-U02-minimax_h3_图生视频基础版-V2.json) —— **默认主视频流（`i2v` 首帧/首尾帧锁死 + `H3SigmaRefiner` 25+2 步）**
+  * [workflows/u_series_api/API-U06-9图版API-V5.json](references/workflows/u_series_api/API-U06-9图版API-V5.json) —— **默认多参考视频流（`r2v` 最多 9 图主体绑定 + `ref_image_size=max` 22+2 步）**
 * **云端成熟工作流原文件与备份库**：
   * [workflows/u_series_api/](references/workflows/u_series_api/) —— 19 套 `API-U*.json` 工作流备份（标准 ComfyUI API 格式，内含 `_api_config` 参数说明，可直接通过 `--run-workflow` 运行）
   * `workflows/remote_backup/` —— 自动备份的远端新工作流
@@ -75,17 +78,16 @@ uv run --script "$CLI_PATH" --image \
   --prompt "A cinematic close-up portrait of a determined young protagonist, 8k photorealistic masterpiece" \
   --width 1280 --height 736 --steps 12 --json
 
-# 5. 执行音画同步生视频（支持动态切换工作流模板与参数补丁）
-# 示例 A：使用 2-Pass 潜空间超分流（效果最好，文戏微表情）
-uv run --script "$CLI_PATH" --video \
-  --workflow "minimax_audio_driven_builder_latent_upscale_2pass_api.json" \
-  --prompt "<六段式提示词>" --duration 4.0 --aspect-ratio "16:9" --json
+# 5. 执行高保真音画同步生视频（自动分流双默认引擎）
+# 示例 A：锁死分镜首帧（传入 1 张分镜图自动走 API-U02 首帧锁死；传 2 张自动锁首尾两帧）
+uv run --script "$CLI_PATH" --video --mode i2v \
+  --ref-images "./shot_01_start.png" \
+  --prompt "<六段式或动作提示词>" --duration 5.0 --aspect-ratio "9:16" --json
 
-# 示例 B：单通道工作流但强行拉满画质参数
-uv run --script "$CLI_PATH" --video \
-  --prompt "<六段式提示词>" --duration 3.0 --aspect-ratio "16:9" \
-  --steps 16 --megapixels 1.1 --crf 17 \
-  --patch "174.inputs.reuse_threshold=0.08" --json
+# 示例 B：多视角角色参考生成（传正脸+侧面+全身图，走 API-U06 2048px 高保真多图绑定）
+uv run --script "$CLI_PATH" --video --mode r2v \
+  --ref-images "./char_front.png,./char_side.png,./scene.png" \
+  --prompt "<六段式提示词>" --duration 5.0 --aspect-ratio "9:16" --json
 
 # 6. 直接执行任意远端 U 系列 API 工作流
 uv run --script "$CLI_PATH" --run-workflow "API-U24-文武双修T8版.json" --json

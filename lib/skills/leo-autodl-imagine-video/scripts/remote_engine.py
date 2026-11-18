@@ -1,4 +1,5 @@
 import hashlib
+import math
 import os
 import json
 import shlex
@@ -34,24 +35,115 @@ ASPECT_RATIO_MAP = {
     "21:9": "21:9 (Ultrawide)",
 }
 
+RATIO_NUMBERS = {
+    "1:1": (1.0, 1.0),
+    "2:3": (2.0, 3.0),
+    "3:2": (3.0, 2.0),
+    "3:4": (3.0, 4.0),
+    "4:3": (4.0, 3.0),
+    "9:16": (9.0, 16.0),
+    "16:9": (16.0, 9.0),
+    "21:9": (21.0, 9.0),
+}
 
 DEFAULT_RENDER_TIMEOUT = 1800
 INTERRUPT_WAIT_ATTEMPTS = 10  # 每次 2 秒
 MEDIA_NODE = "VRGDG_MiniMaxH3ReferenceMediaFromPaths"
 INJECTED_MEDIA_NODE_ID = "9001"
+DEFAULT_IMAGE_WORKFLOW = "minimax_h3_image_u33_api.json"
+DEFAULT_I2V_WORKFLOW = "API-U02-minimax_h3_图生视频基础版-V2.json"
+DEFAULT_R2V_WORKFLOW = "API-U06-9图版API-V5.json"
+
+
+def compute_resolution_wh(aspect_ratio: str, megapixels: float = 1.0, multiple: int = 32) -> tuple[int, int]:
+    """按宽高比与百万像素数计算对齐 multiple (32) 的像素宽高。"""
+    key = aspect_ratio.strip().split()[0]
+    rw, rh = RATIO_NUMBERS.get(key, (16.0, 9.0))
+    total_px = max(0.25, float(megapixels)) * 1_000_000.0
+    raw_w = math.sqrt(total_px * (rw / rh))
+    raw_h = math.sqrt(total_px * (rh / rw))
+    w = max(multiple, int(round(raw_w / multiple)) * multiple)
+    h = max(multiple, int(round(raw_h / multiple)) * multiple)
+    return w, h
+
+
+def _remove_orphan_load_image(wf: dict, node_id: str | None) -> None:
+    """若某个 LoadImage 节点不再被任何其他节点引用，安全移除，避免远端缺少示例图片报错。"""
+    if not node_id or node_id not in wf:
+        return
+    if not isinstance(wf.get(node_id), dict) or wf[node_id].get("class_type") != "LoadImage":
+        return
+    for k, node in wf.items():
+        if k == node_id or not isinstance(node, dict):
+            continue
+        for val in node.get("inputs", {}).values():
+            if isinstance(val, list) and len(val) >= 1 and str(val[0]) == str(node_id):
+                return
+    del wf[node_id]
+
+
+def sanitize_template_media_slots(wf: dict) -> None:
+    """在未传参考素材时，清理 U 系列工作流里写死的示例 LoadImage 连线，避免找不到示例图报错。"""
+    for node in [n for n in wf.values() if isinstance(n, dict)]:
+        ct = node.get("class_type")
+        inputs = node.get("inputs", {})
+        if ct == "MiniMaxH3ImageToVideo":
+            for slot in ("first_frame", "last_frame"):
+                ref = inputs.pop(slot, None)
+                if isinstance(ref, list) and ref:
+                    _remove_orphan_load_image(wf, str(ref[0]))
+        elif ct == "MiniMaxH3ReferenceToVideo":
+            for key in [k for k in list(inputs) if k.startswith("ref_images.ref_image_")]:
+                ref = inputs.get(key)
+                if isinstance(ref, list) and ref and wf.get(str(ref[0]), {}).get("class_type") == "LoadImage":
+                    inputs.pop(key, None)
+                    _remove_orphan_load_image(wf, str(ref[0]))
 
 
 def bind_reference_media(wf: dict, remote_imgs: list, remote_vids: list) -> bool:
     """
-    把参考图/视频绑定到工作流。没有媒体节点、但有 MiniMaxH3ReferenceToVideo 时（如生图模板），
-    按已验证的生视频模板同样的连线补一个。没有可绑定的节点时返回 False。
+    把参考图/视频自动绑定到工作流：
+    1. MiniMaxH3ImageToVideo（如 API-U02 首尾帧锁死流）：1 张图锁首帧并移除尾帧；2 张图同时锁首帧+尾帧。
+    2. VRGDG_MiniMaxH3ReferenceMediaFromPaths：直接写入有序路径列表。
+    3. MiniMaxH3ReferenceToVideo（如生图模板、API-U06 多图流）：清理写死示例图，动态注入 MEDIA_NODE 连满 9 图 + 3 视频。
+    没有可绑定的目标节点时返回 False。
     """
+    i2v_targets = [n for n in wf.values() if isinstance(n, dict) and n.get("class_type") == "MiniMaxH3ImageToVideo"]
+    if i2v_targets:
+        if remote_vids or not remote_imgs or len(remote_imgs) > 2:
+            return False
+        for node in i2v_targets:
+            inputs = node.setdefault("inputs", {})
+            first_ref = inputs.get("first_frame")
+            first_id = str(first_ref[0]) if isinstance(first_ref, list) and first_ref else "9011"
+            wf[first_id] = {"class_type": "LoadImage", "inputs": {"image": Path(remote_imgs[0]).name}}
+            inputs["first_frame"] = [first_id, 0]
+
+            last_ref = inputs.get("last_frame")
+            last_id = str(last_ref[0]) if isinstance(last_ref, list) and last_ref else "9012"
+            if len(remote_imgs) >= 2:
+                wf[last_id] = {"class_type": "LoadImage", "inputs": {"image": Path(remote_imgs[1]).name}}
+                inputs["last_frame"] = [last_id, 0]
+            else:
+                inputs.pop("last_frame", None)
+                if last_id != first_id:
+                    _remove_orphan_load_image(wf, last_id)
+        return True
+
     nodes = [n for n in wf.values() if isinstance(n, dict)]
     media = [n for n in nodes if n.get("class_type") == MEDIA_NODE]
     if not media:
         targets = [n for n in nodes if n.get("class_type") == "MiniMaxH3ReferenceToVideo"]
         if not targets:
             return False
+        # 先清理可能挂在 ref_images.* 上的写死示例 LoadImage 节点（如 API-U06 / API-U01）
+        for node in targets:
+            inputs = node.setdefault("inputs", {})
+            for key in [k for k in list(inputs) if k.startswith("ref_images.ref_image_")]:
+                ref = inputs.get(key)
+                if isinstance(ref, list) and ref and wf.get(str(ref[0]), {}).get("class_type") == "LoadImage":
+                    inputs.pop(key, None)
+                    _remove_orphan_load_image(wf, str(ref[0]))
         wf[INJECTED_MEDIA_NODE_ID] = {"class_type": MEDIA_NODE, "inputs": {"image_paths": "[]", "video_references": "[]"}}
         media = [wf[INJECTED_MEDIA_NODE_ID]]
         for node in targets:
@@ -766,9 +858,12 @@ class AutoDLRemoteEngine:
             remote_vids = self._upload_media_files(client, reference_videos)
 
             warnings = []
-            if (remote_imgs or remote_vids) and not bind_reference_media(wf, remote_imgs, remote_vids):
-                uploaded = [Path(f).name for f in (reference_images or []) + (reference_videos or [])]
-                warnings.append(f"工作流没有可自动绑定参考素材的节点，{uploaded} 只上传到了 /root/ComfyUI/input/，要用 --patch 指定给对应节点。")
+            if remote_imgs or remote_vids:
+                if not bind_reference_media(wf, remote_imgs, remote_vids):
+                    uploaded = [Path(f).name for f in (reference_images or []) + (reference_videos or [])]
+                    warnings.append(f"工作流没有可自动绑定参考素材的节点，{uploaded} 只上传到了 /root/ComfyUI/input/，要用 --patch 指定给对应节点。")
+            else:
+                sanitize_template_media_slots(wf)
 
             # 2. 应用动态节点补丁 (Patches)
             if patches:
@@ -801,7 +896,7 @@ except urllib.error.HTTPError as e:
 
             # 4. 轮询 /history/{prompt_id}（带断线自愈重连）
             start_time = time.time()
-            output_filenames = []
+            output_items = []
             finished = False
             while time.time() - start_time < timeout_seconds:
                 time.sleep(4.0)
@@ -839,7 +934,7 @@ except urllib.error.HTTPError as e:
                             if media_key in nout:
                                 for it in nout[media_key]:
                                     if it.get("type", "output") == "output":
-                                        output_filenames.append(it["filename"])
+                                        output_items.append((it.get("subfolder", "").strip("/"), it["filename"]))
                     finished = True
                     break
 
@@ -857,15 +952,15 @@ except urllib.error.HTTPError as e:
                     "prompt_id": prompt_id,
                     "message": f"渲染超过 {timeout_seconds} 秒，已取消远端任务。长工作流用 --timeout 加大时限。"
                 }
-            if not output_filenames:
+            if not output_items:
                 return {"ok": False, "error_type": "NO_OUTPUT", "prompt_id": prompt_id, "message": f"工作流已结束，但没有输出文件 (Prompt ID: {prompt_id})"}
 
-            # 5. SFTP 下载产物至本地暂存目录（带重连重试）
+            # 5. SFTP 下载产物至本地暂存目录（兼容 SaveVideo 子目录 subfolder，带重连重试）
             target_output_dir.mkdir(parents=True, exist_ok=True)
             local_paths = []
-            for fname in output_filenames:
-                remote_file = f"/root/ComfyUI/output/{fname}"
-                local_file = str(target_output_dir / fname)
+            for sub, fname in output_items:
+                remote_file = f"/root/ComfyUI/output/{sub}/{fname}" if sub else f"/root/ComfyUI/output/{fname}"
+                local_file = str(target_output_dir / Path(fname).name)
                 for dl_attempt in range(3):
                     try:
                         sftp = client.open_sftp()
@@ -913,11 +1008,11 @@ except urllib.error.HTTPError as e:
         scheduler: str = "beta",
         seed: int = None,
         reference_images: list = None,
-        ref_image_size: str = "match",
+        ref_image_size: str = "max",
         diffusion_model: str = "minimax/minimax_h3_ref2va_pruned_int8_convrot.safetensors",
         clip_model: str = "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
         video_vae: str = "minimax_h3_video_vae_fp16.safetensors",
-        workflow_template: str = "minimax_h3_image_u33_api.json",
+        workflow_template: str = DEFAULT_IMAGE_WORKFLOW,
         extra_patches: dict = None,
         output_dir: str = None,
         timeout_seconds: int = DEFAULT_RENDER_TIMEOUT
@@ -966,57 +1061,158 @@ except urllib.error.HTTPError as e:
             })
         return res
 
+    def _build_video_patches(
+        self,
+        wf: dict,
+        *,
+        prompt: str,
+        duration: float,
+        aspect_ratio: str,
+        megapixels: float,
+        steps: int,
+        seed: int,
+        ref_image_size: str,
+        diffusion_model: str | None,
+        clip_model: str | None,
+        video_vae: str | None,
+        audio_vae: str | None,
+        crf: int,
+    ) -> dict:
+        """按目标工作流内部实际节点类型自适应映射视频参数（兼容 API-U02 FL2VA 与 API-U06/U01 REF2VA）。"""
+        patches: dict = {}
+        resolved_ratio = ASPECT_RATIO_MAP.get(aspect_ratio.strip(), aspect_ratio)
+        w, h = compute_resolution_wh(aspect_ratio, megapixels=megapixels, multiple=32)
+
+        has_easy_seed = False
+        for nid, node in wf.items():
+            if not isinstance(node, dict):
+                continue
+            ct = node.get("class_type", "")
+            inp = node.get("inputs", {})
+
+            if ct == "WJILatentPreset":
+                patches[f"{nid}.inputs.预设分辨率"] = "自定义"
+                patches[f"{nid}.inputs.自定义宽"] = w
+                patches[f"{nid}.inputs.自定义高"] = h
+            elif ct == "ResolutionSelector":
+                patches[f"{nid}.inputs.aspect_ratio"] = resolved_ratio
+                patches[f"{nid}.inputs.megapixels"] = float(megapixels)
+            elif ct == "MiniMaxH3ImageToVideo":
+                if isinstance(inp.get("prompt"), str) or "prompt" not in inp:
+                    patches[f"{nid}.inputs.prompt"] = prompt
+            elif ct == "MiniMaxH3ReferenceToVideo":
+                patches[f"{nid}.inputs.ref_image_size"] = ref_image_size
+                if isinstance(inp.get("prompt"), str):
+                    patches[f"{nid}.inputs.prompt"] = prompt
+            elif ct == "CR Prompt Text":
+                patches[f"{nid}.inputs.prompt"] = prompt
+            elif ct == "PrimitiveStringMultiline":
+                patches[f"{nid}.inputs.value"] = prompt
+            elif ct == "ComfyMathExpression" and "24" in str(inp.get("expression", "")):
+                dur_src = inp.get("values.a")
+                if isinstance(dur_src, list) and dur_src:
+                    patches[f"{dur_src[0]}.inputs.value"] = float(duration)
+            elif ct == "BasicScheduler":
+                patches[f"{nid}.inputs.steps"] = int(steps)
+            elif ct == "easy seed":
+                has_easy_seed = True
+                patches[f"{nid}.inputs.seed"] = int(seed)
+            elif ct == "RandomNoise" and not isinstance(inp.get("noise_seed"), list):
+                patches[f"{nid}.inputs.noise_seed"] = int(seed)
+            elif ct == "Model Switch (JPS)" and "model_1" in inp and "model_2" in inp:
+                # 默认走无 Turbo 劣化的满步高精度分支 (select=1)，锁死五官与微表情细节
+                patches[f"{nid}.inputs.select"] = 1
+            elif ct == "VHS_VideoCombine":
+                patches[f"{nid}.inputs.crf"] = int(crf)
+            elif ct == "UNETLoader" and diffusion_model:
+                patches[f"{nid}.inputs.unet_name"] = diffusion_model
+            elif ct == "DiffusionModelLoaderKJ" and diffusion_model:
+                patches[f"{nid}.inputs.model_name"] = diffusion_model
+            elif ct == "CLIPLoader" and clip_model:
+                patches[f"{nid}.inputs.clip_name"] = clip_model
+            elif ct == "VAELoader":
+                vname = str(inp.get("vae_name", ""))
+                if "audio" in vname and audio_vae:
+                    patches[f"{nid}.inputs.vae_name"] = audio_vae
+                elif "audio" not in vname and video_vae:
+                    patches[f"{nid}.inputs.vae_name"] = video_vae
+
+        if has_easy_seed:
+            # 若使用 easy seed 驱动 RandomNoise，避免重复覆盖连线形式的 noise_seed
+            pass
+        return patches
+
     def generate_video(
         self,
         prompt: str,
-        duration: float = 3.0,
+        duration: float = 5.0,
         aspect_ratio: str = "16:9 (Widescreen)",
-        megapixels: float = 0.9,
-        steps: int = 10,
+        megapixels: float = 1.0,
+        steps: int = None,
         seed: int = None,
+        mode: str = "auto",
         reference_images: list = None,
         reference_videos: list = None,
-        ref_image_size: str = "match",
+        ref_image_size: str = "max",
         diffusion_model: str = None,
         clip_model: str = None,
         video_vae: str = None,
         audio_vae: str = "minimax_h3_audio_vae_fp32.safetensors",
-        crf: int = 19,
-        workflow_template: str = "minimax_h3_video_1pass_api.json",
+        crf: int = 17,
+        workflow_template: str = None,
         extra_patches: dict = None,
         output_dir: str = None,
         timeout_seconds: int = DEFAULT_RENDER_TIMEOUT
     ) -> dict:
         """
-        基于成熟工作流 (默认 minimax_h3_video_1pass_api.json，或高清电影感流 minimax_h3_video_cinematic_lora_api.json)
-        执行 MiniMax-H3 音画同步视频生成，支持传入 extra_patches 自由调整任意节点
+        执行高保真 MiniMax-H3 音画同步视频生成（废除低画质 1-Pass EasyCache 草稿流）：
+        - auto / i2v (0~2 张图且无参考视频)：默认路由至 API-U02-minimax_h3_图生视频基础版-V2.json (FL2VA 首帧/首尾帧锁死 + H3SigmaRefiner 25+2 步)
+        - r2v (3~9 张图、含参考视频或显式 mode='r2v')：路由至 API-U06-9图版API-V5.json (REF2VA 多图主体绑定 + ref_image_size=max + H3SigmaRefiner 22+2 步)
         """
         if seed is None:
             seed = random.randint(100000, 999999999)
 
+        ref_count = len(reference_images or [])
+        use_r2v = (mode == "r2v") or (mode == "auto" and (bool(reference_videos) or ref_count >= 3))
+        if workflow_template:
+            selected_tpl = workflow_template
+            resolved_mode = "r2v" if use_r2v else "i2v"
+        elif use_r2v:
+            selected_tpl = DEFAULT_R2V_WORKFLOW
+            resolved_mode = "r2v"
+        else:
+            selected_tpl = DEFAULT_I2V_WORKFLOW
+            resolved_mode = "i2v"
+
+        if steps is None:
+            steps = 22 if resolved_mode == "r2v" else 25
+
         resolved_ratio = ASPECT_RATIO_MAP.get(aspect_ratio.strip(), aspect_ratio)
-        patches = {
-            "115.inputs.aspect_ratio": resolved_ratio,
-            "115.inputs.megapixels": float(megapixels),
-            "138.inputs.value": prompt,
-            "132.inputs.value": float(duration),
-            "124.inputs.steps": int(steps),
-            "129.inputs.noise_seed": int(seed),
-            "136.inputs.ref_image_size": ref_image_size,
-            "120.inputs.vae_name": audio_vae,
-            "142.inputs.crf": int(crf),
-        }
-        if diffusion_model:
-            patches["141.inputs.model_name"] = diffusion_model
-        if clip_model:
-            patches["128.inputs.clip_name"] = clip_model
-        if video_vae:
-            patches["119.inputs.vae_name"] = video_vae
+        try:
+            wf_preview = self.load_workflow_template(selected_tpl) if isinstance(selected_tpl, str) else selected_tpl
+        except Exception:
+            wf_preview = {}
+
+        patches = self._build_video_patches(
+            wf_preview,
+            prompt=prompt,
+            duration=duration,
+            aspect_ratio=aspect_ratio,
+            megapixels=megapixels,
+            steps=steps,
+            seed=seed,
+            ref_image_size=ref_image_size,
+            diffusion_model=diffusion_model,
+            clip_model=clip_model,
+            video_vae=video_vae,
+            audio_vae=audio_vae,
+            crf=crf,
+        )
         if extra_patches:
             patches.update(extra_patches)
 
         res = self.run_workflow(
-            workflow=workflow_template,
+            workflow=selected_tpl,
             patches=patches,
             reference_images=reference_images,
             reference_videos=reference_videos,
@@ -1026,7 +1222,8 @@ except urllib.error.HTTPError as e:
         if res.get("ok"):
             res.update({
                 "task_type": "minimax_h3_video",
-                "workflow_template": workflow_template,
+                "mode": resolved_mode,
+                "workflow_template": selected_tpl if isinstance(selected_tpl, str) else "custom_dict",
                 "prompt": prompt,
                 "seed": seed,
                 "duration_seconds": duration,
