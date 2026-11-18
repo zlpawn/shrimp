@@ -187,11 +187,10 @@ flowchart TD
 ## 🛡️ Step 5: 内置高级画风与通用生图引擎 (Built-in Premium Cookbook & Fallback Engine)
 
 当用户命中内置高级画风、或选择“直接出图”、或为常规通用意图时：
-1. **命中内置高级画风（`built-in-cookbook:*`）**：
-   - 读取 [`references/cookbook.md`](references/cookbook.md) 中对应的章节模版；
-   - 提取用户的核心变量（如主题、主体、品牌名称、类目、城市地标等）填入模板；
-   - 完整保留模板中的排版网格约束、材质光学要求以及严格的负向排除规则（Avoid）；
-   - 输出中英文双语高完成度 Prompt。
+1. **命中内置高级画风（`built-in-cookbook:*`）—— 零损耗跨界编译**：
+   - 读取 [`references/cookbook.md`](references/cookbook.md) 中对应的视觉配方（**视觉 DNA + 可迁移插槽 + 黄金标杆示例**）；
+   - **禁止死板生套或缩水**：将用户的跨界主题填入 `可迁移插槽`（若用户未提供细节则直接使用标杆示例），同时 **100% 完整保留**该配方的 `视觉 DNA`（纸张肌理、色号 Hex、光学材质、排版网格与比例）、**双引号文字锁定**以及 `Avoid` 负向清单；
+   - 输出并传递密度不低于标杆示例的中英文双语高完成度 Prompt。
 2. **常规通用意图（`built-in-fallback`）**：
    - 严格遵循 [`references/prompting.md`](references/prompting.md) 的 6 槽位结构（用途/主体/场景/风格/构图/约束），中英文双引号锁定文本防乱码，参考图局部修改明确变更隔离。
    - 参考 [`references/sample-prompts.md`](references/sample-prompts.md) 快速示例。
