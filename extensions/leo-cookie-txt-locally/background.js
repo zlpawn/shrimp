@@ -1385,6 +1385,15 @@ const SCS_ALLOWED_TARGETS = [
     url: 'https://baige.ke.com',
     probeUrl: 'https://baige.ke.com/api/gatewayConfig/application/list?pageSize=1&currentPage=1',
     cookieNames: ['security_ticket', 'login_ucid', 'lianjia_uuid', 'lianjia_ssid']
+  },
+  {
+    // FAST 日志平台：维持 fast.ke.com 登录态用于实时抓取未收录服务索引
+    slot: 'FAST_PROD',
+    url: 'https://fast.ke.com',
+    probeUrl: 'https://fast.ke.com/es/queryconfiglist',
+    probeMethod: 'POST',
+    probeBody: '{"appCode":null}',
+    cookieNames: ['security_ticket', 'login_ucid', 'session_id', 'lianjia_uuid', 'lianjia_ssid']
   }
 ];
 
