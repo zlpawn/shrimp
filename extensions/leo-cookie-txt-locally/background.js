@@ -1394,6 +1394,13 @@ const SCS_ALLOWED_TARGETS = [
     probeMethod: 'POST',
     probeBody: '{"appCode":null}',
     cookieNames: ['security_ticket', 'login_ucid', 'session_id', 'lianjia_uuid', 'lianjia_ssid']
+  },
+  {
+    // 灯塔 ARMS 前端监控平台：静默保持与提取 arms.fee.lianjia.com 登录态
+    slot: 'ARMS_PROD',
+    url: 'http://arms.fee.lianjia.com',
+    probeUrl: 'http://arms.fee.lianjia.com/api/project/item/list?page=1&pageSize=1',
+    cookieNames: ['security_ticket', 'login_ucid', 'lianjia_uuid', 'lianjia_ssid', 'connect.sid', 'egg_session', 'token']
   }
 ];
 
