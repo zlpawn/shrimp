@@ -721,6 +721,30 @@
       "requiresDaemon": false,
       "promoted": true,
       "managed": true
+    },
+    {
+      "id": "leo-md-router",
+      "name": "leo-md-router",
+      "title": "Leo MD 文档转 Markdown 质量优先路由",
+      "summary": "以产出效果为第一优先级的文档解析与转 Markdown 智能路由中心，首批纳管 docling 与 markitdown，支持能力画像动态选优、实测交叉对比纠偏、Skill/CLI 探测与升级引导，以及 ~/素材/md/ 归档与删除强确认。",
+      "category": "research",
+      "categoryLabel": "研究与知识",
+      "icon": "📄",
+      "featured": true,
+      "tags": [
+        "markdown",
+        "docling",
+        "markitdown",
+        "pdf",
+        "ocr",
+        "router",
+        "uv-tool",
+        "文档解析",
+        "转Markdown"
+      ],
+      "requiresDaemon": false,
+      "promoted": true,
+      "managed": true
     }
   ]
 }

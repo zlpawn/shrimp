@@ -1,0 +1,11 @@
+{
+  "name": "leo-md-router",
+  "version": "1.0.0",
+  "description": "以产出质量为第一优先级的文档解析与转 Markdown 智能路由中心，首批集成 docling 与 markitdown，支持 Skill/CLI 自动探测、版本更新检测、JIT 引导安装与 ~/素材/md/ 归档管理",
+  "type": "module",
+  "scripts": {
+    "probe": "node scripts/probe.mjs",
+    "probe:updates": "node scripts/probe.mjs --check-updates",
+    "config": "node scripts/config.mjs"
+  }
+}
