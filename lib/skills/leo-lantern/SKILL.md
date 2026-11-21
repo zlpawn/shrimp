@@ -19,74 +19,74 @@ description: 通过 leo-lantern CLI/服务实现 Chrome 浏览器远程调试 (C
    - **桥接按需启动，一般不用手动管**：操作浏览器的命令发现桥接没开，会自动在后台拉起并等扩展连上（需要 Chrome 已打开）。桥接连续 10 分钟没有收到命令就自动退出；扩展的轮询和心跳不算命令。`health`、`doctor` 只检查，不会启动桥接。
      - 主动启动并等待扩展：`leo-lantern start`（或 `node <skillDir>/scripts/cli/index.mjs start`）
      - 前台运行、调整空闲时间：`node <skillDir>/scripts/cli/index.mjs server --port 19527 --idle-exit-min 30`（`0` 表示不自动退出，也可用环境变量 `LEO_LANTERN_IDLE_EXIT_MIN`）
-   - 检查服务与扩展在线状态：
-     - `leo-lantern health`（或 `node <skillDir>/scripts/cli/index.mjs health`）
-     - 若 `extensionOnline: false`，请在 Chrome 扩展管理页（`chrome://extensions`）确认已加载扩展，并保持 Chrome 处于运行状态。
-2. **任务生命周期（可选，支持直接操作当前标签页）**：
-   - 开启/复用任务组：`leo-lantern start-task --title="browser-task"`（默认新开独立窗口，不干扰用户浏览；若需在同窗口执行可指定 `--same-window=true`）
-   - 查看所有标签页：`leo-lantern tabs`
-   - 接管指定标签页：`leo-lantern claim --tabId=<tabId>`（显式接管用户已有的指定标签页，此操作会控制该页面，慎用；`start-task` 开的 `about:blank` 占位页若还没用过，会在接管或 `end-task` 时自动关闭）
-   - 导航或新标签：`leo-lantern goto "https://example.com"` 或 `leo-lantern new-tab "https://example.com"`
-3. **页面感知与交互**：
-   - 获取高信息量交互 DOM 树（含 tag, text, selector, id, rect, visible, ref, generation 等）：`leo-lantern snapshot` 或 `leo-lantern state`
-   - 精准定位状态（Ref 体系）：`leo-lantern state` 与 `leo-lantern find --text "保存"` 返回的元素均包含 `ref` 和 `generation`，支持直接复制
-   - 点击元素（原生 CDP 可信物理事件，支持 text / sel / ref）：
+   - 检查服务与扩展在线状态：`leo-lantern health` 或 `leo-lantern doctor`（若 `extensionOnline: false`，请在 `chrome://extensions` 确认已加载扩展并保持 Chrome 运行；更新扩展后可用 `leo-lantern ext-reload` 重载）。
+2. **任务生命周期与标签页管理（支持独立窗口隔离或接管现有标签页）**：
+   - 开启/复用任务组：`leo-lantern start-task --title="browser-task"`（默认新开独立窗口，不干扰用户浏览；同窗口执行可加 `--same-window=true`）
+   - 查看/接管/关闭标签页：`leo-lantern tabs`、`leo-lantern claim --tabId=<tabId>`（显式接管已有标签页，慎用；`start-task` 开的 `about:blank` 占位页若未使用，会在接管或 `end-task` 时自动关闭）、`leo-lantern close-tab <tabId>`
+   - 导航/新标签/刷新：`leo-lantern goto "https://example.com"`、`leo-lantern new-tab "https://example.com"`（强制新开加 `--force`）、`leo-lantern reload`（跳过缓存加 `--bypass-cache`）
+   - 结束任务：`leo-lantern end-task`（同时关闭整个任务标签组加 `--close-group`）
+3. **页面感知与复杂交互（任意网页通用）**：
+   - 获取高信息量交互 DOM 树（含 `tag`、`text`、`selector`、`id`、`rect`、`visible`、`ref`、`generation`）：`leo-lantern state` 或 `leo-lantern snapshot`
+   - 精准检索元素：`leo-lantern find --text "保存"` / `--sel "button.submit"` / `--target '{"kind":"semantic","role":"button","name":"Sign in"}'`
+   - 点击元素（原生 CDP 可信物理事件，支持 `ref` / `text` / `sel` / `target`）：
      - `leo-lantern click --ref 10`（最简推荐）
      - `leo-lantern click --text="进入配置"`
      - `leo-lantern click --sel="button.submit"`
-     - `leo-lantern click --target '{"kind":"ref","ref":10}'`（无需手动拼接 generation，缺省自动对齐当前文档）
-   - 填写表单（原生 CDP `Input.insertText` 可信物理输入，全自动驱动 React/Vue 受控组件与 FormStore，支持 `--blur` 失焦校验）：`leo-lantern fill --ref 10 --val "text"` 或 `leo-lantern fill --sel "#input" --val "text" --blur`
-    - 上传文件（原生 CDP `DOM.setFileInputFiles`，绕过系统弹窗直接注入）：
-      - 单文件：`leo-lantern upload "/path/to/file.png"`
-      - 多文件批量：`leo-lantern upload "/path/to/file1.png" "/path/to/file2.png"`
-      - 指定选择器：`leo-lantern upload --sel="input[type='file']" --files="file1.png,file2.png"`
-   - 执行脚本（自动函数闭包隔离，避免 `const`/`let` 重复声明冲突，统一返回 `{ ok, evalResult, hasResult, resultType }`）：
+     - `leo-lantern click --target '{"kind":"ref","ref":10}'`（缺省 `generation` 自动对齐当前文档）
+   - 填写表单（原生 CDP `Input.insertText` 可信物理输入，兼容 React/Vue 受控组件与 FormStore，支持 `--blur` 失焦校验）：
+     - `leo-lantern fill --ref 10 --val "text"` 或 `leo-lantern fill --sel "#input" --val "text" --blur`
+   - 键盘按键（原生 CDP `Input.dispatchKeyEvent`，`isTrusted: true`，适用于回车提交、Tag 标签确认与快捷键）：
+     - `leo-lantern press Enter --sel="input[placeholder*='标签']"`
+   - 上传文件（原生 CDP `DOM.setFileInputFiles`，绕过系统弹窗直接注入任意 `<input type="file">`，默认匹配 `input[type='file']`）：
+     - 单文件：`leo-lantern upload "/path/to/file.png"`
+     - 多文件批量：`leo-lantern upload "/path/to/file1.png" "/path/to/file2.png"`
+     - 指定选择器：`leo-lantern upload --sel="input[type='file']" --files="file1.png,file2.png"`
+   - 执行页面脚本（自动 IIFE 闭包隔离并支持顶层 `await`，统一返回 `{ ok, evalResult, hasResult, resultType }`）：
      - `leo-lantern eval "1+1"`
      - `leo-lantern eval "const btns = document.querySelectorAll('button'); btns.length"`
-     - 执行本地脚本文件（免 Windows 命令行引号与中文转义）：`leo-lantern eval --file "/path/to/script.js"`
+     - 本地脚本文件（避免命令行引号与中文转义）：`leo-lantern eval --file "/path/to/script.js"`
    - 等待内容出现或流式文本稳定：
      - 固定文本等待：`leo-lantern wait --text="成功" --timeout-ms 5000`
      - AI/流式内容静止等待（N 毫秒无内容变化）：`leo-lantern wait --idle --idle-ms 2000`
      - 某个区域静止等待：`leo-lantern wait --sel ".chat-messages" --idle --idle-ms 2000`
    - 读取页面纯文本：`leo-lantern content --max-chars=4000`
-4. **网络抓包与数据导出**：
-   - 开启网络抓包：`leo-lantern net-start`
-   - 查看抓包结果：`leo-lantern net-get --grep="api"`
-   - 停止网络抓包：`leo-lantern net-stop`
+4. **网络抓包、截图与凭证导出**：
+   - 网络抓包（XHR/fetch API 拦截）：`leo-lantern net-start` $\rightarrow$ `leo-lantern net-get --grep="api"` $\rightarrow$ `leo-lantern net-stop`
    - 页面或元素截图：
-     - 整页截图：`leo-lantern screenshot --out=page.png`
+     - 可视区域截图：`leo-lantern screenshot --out=page.png`
+     - 整页长截图：`leo-lantern screenshot --full-page --out=full.png`
      - 元素区域截图：`leo-lantern screenshot --sel=".chat-box" --out=chat.png` 或 `leo-lantern screenshot --ref=10 --out=btn.png`
-   - 导出 Cookie（凭证中继神器，直接给 curl / Python / yt-dlp / gallery-dl 使用，推荐统一存放在 `~/.shrimp/skills/leo-lantern/cookies/<domain>.txt`）：
-     - Netscape 格式（curl / yt-dlp / gallery-dl 直接读）：`leo-lantern cookies --domain="example.com" --format=txt --out="$HOME/.shrimp/skills/leo-lantern/cookies/example.com.txt"`
+   - 导出 Cookie（凭证中继神器，供 curl / Python / yt-dlp / gallery-dl 使用，推荐存放在 `~/.shrimp/skills/leo-lantern/cookies/<domain>.txt`）：
+     - Netscape 格式：`leo-lantern cookies --domain="example.com" --format=txt --out="$HOME/.shrimp/skills/leo-lantern/cookies/example.com.txt"`
      - JSON 格式：`leo-lantern cookies --domain="example.com" --format=json`
-     - 按 URL 读取（包含父域名上的 Cookie，需要扩展 1.3.13+）：`leo-lantern cookies --url="https://a.example.com/path" --out="$HOME/.shrimp/skills/leo-lantern/cookies/example.com.json"`
-     - 读不到时打开网站再读（需要扩展 1.3.15+）：`leo-lantern cookies --url="https://a.example.com/" --open-if-missing --out="$HOME/.shrimp/skills/leo-lantern/cookies/example.com.json"`。在后台独立窗口打开，读完一定关闭，不影响正在执行的任务。如果跳到登录页或出现密码框，就以 `login_required` 报错退出，请提示用户在 Chrome 登录后重试，不要反复尝试。
-5. **任务清理**：
-   - 结束任务：`leo-lantern end-task`
+     - 按 URL 读取（含父域名上的 Cookie，需扩展 1.3.13+）：`leo-lantern cookies --url="https://a.example.com/path" --out="$HOME/.shrimp/skills/leo-lantern/cookies/example.com.json"`
+     - 读不到时打开网站再读（需扩展 1.3.15+）：`leo-lantern cookies --url="https://a.example.com/" --open-if-missing --out="$HOME/.shrimp/skills/leo-lantern/cookies/example.com.json"`。在后台独立窗口打开，读完一定关闭，不影响正在执行的任务；若跳到登录页或出现密码框，会以 `login_required` 报错退出，请提示用户在 Chrome 登录后重试，不要反复尝试。
 
-## 常用命令
+## 常用命令速查
 
 ```bash
-# 启动桥接并等待扩展（可省略，操作浏览器的命令会自动启动）
+# 启动 / 健康探测 / 标签页管理
 leo-lantern start
-
-# 健康状态探测
 leo-lantern health
+leo-lantern doctor
 leo-lantern tabs
-
-# 开始任务并直接感知当前页面
 leo-lantern start-task --title "my-task"
-leo-lantern snapshot
+leo-lantern goto "https://example.com"
 
-# 页面交互（React/Vue 兼容，支持 ref / text / sel）
+# 页面感知与交互（React/Vue/Web Component 兼容）
+leo-lantern state
+leo-lantern find --text "保存"
 leo-lantern click --ref 10
-leo-lantern click --text "登录"
-leo-lantern fill --sel "#username" --val "admin"
-leo-lantern eval "1+1"
+leo-lantern fill --sel "#username" --val "admin" --blur
+leo-lantern press Enter --sel "input[placeholder*='标签']"
+leo-lantern upload --sel "input[type='file']" --files "a.png,b.png"
+leo-lantern eval --file "./script.js"
 leo-lantern wait --idle --idle-ms 2000
-leo-lantern screenshot --sel ".result-box" --out result.png
+leo-lantern content --max-chars 4000
 
-# 凭证中继与导出（统一存放在 ~/.shrimp/skills/leo-lantern/cookies/）
+# 抓包、截图与凭证导出
+leo-lantern net-start && leo-lantern net-get --grep "api" && leo-lantern net-stop
+leo-lantern screenshot --full-page --out full.png
 leo-lantern cookies --domain "example.com" --format txt --out "$HOME/.shrimp/skills/leo-lantern/cookies/example.com.txt"
 
 # 结束任务
@@ -179,737 +179,35 @@ leo-lantern end-task
 
 ## 平台自动化配方 (Recipes)
 
-针对高频复杂业务场景，技能内置了开箱即用的自动化发布 Recipe 脚本，解决各平台表单结构复杂、风控拦截和组件特殊交互问题。
-
-### 1. 哔哩哔哩视频自动化投稿 (`recipes/bilibili-publish.mjs`)
-
-集成视频 CDP 极速批量上传（绕过系统文件弹窗）、标题 80 字符校验、简介 2000 字符限制校验、视频系统推荐高光封面帧定位选取（支持 `--cover-index`）、AIGC 平台合规声明（`含AI生成内容`）、标签批量注入与 Enter 确认、定时发布日历与时分自动选择（黄金时段 15:00~17:00）。**默认直接发布**；传入 `--dry-run` 才会停在提交前并截取表单核对图。
-
-#### 参数完全参考表
-
-| 参数名 | 简写 | 类型 | 必填 | 默认值 | 平台约束与功能说明 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `--video` | `-v` | string | **是** | - | 本地视频文件路径（支持 `.mp4`, `.mov`, `.mkv` 等主流格式）。自动校验文件是否存在。 |
-| `--title` | `-t` | string | **是** | - | 稿件标题。**严格限制 $\le 80$ 字符**，超长自动拦截并报错。 |
-| `--desc` | `-d` | string | 否 | `""` | 稿件简介文案。**严格限制 $\le 2000$ 字符**。支持多行或极简单句，自动格式化注入 Quill 编辑器。 |
-| `--desc-file`| `-f` | string | 否 | `""` | 从外部文本/Markdown 文件读取简介（与 `--desc` 二选一）。 |
-| `--tags` | - | string | 否 | `[]` | 标签列表，以英文逗号 `,` 分割。每个标签 $\le 20$ 字，总数 $\le 10$ 个。自动模拟回车完成标签创建。 |
-| `--cover-index`| - | number | 否 | `1` | 自动选取视频系统推荐高光帧序号（从 1 开始，默认使用第 1 帧推荐封面）。 |
-| `--cover` | - | string | 否 | `""` | 本地自定义封面图片路径（jpg/png）。若提供则优先上传自定义封面，忽略 `--cover-index`。 |
-| `--no-ai` | - | boolean | 否 | `false` | 关闭默认的平台 AI 声明。默认会自动在“创作声明”中勾选「含AI生成内容」（同时保持「自制」属性）。 |
-| `--schedule` | `-s` | string | 否 | 黄金时段(`16:30`) | 定时发布时间，格式为 `YYYY-MM-DD HH:MM`。**未传时默认优先读取 `~/.shrimp/skills/leo-video-router/config.json`（及 `style-preferences.md`）开启定时发布**（若距当前不足 2.5 小时则自动顺延至次日 16:30；若无对应 skill 配置文件则中止并提示询问用户定时发布时间）。 |
-| `--now` | - | boolean | 否 | `false` | 显式立即发布模式。仅在传入 `--now`（或 `--immediate` / `--schedule now`）时跳过定时发布、立即公开上线。 |
-| `--dry-run` | - | boolean | 否 | `false` | 预览模式。完成上传、所有表单字段填妥、封面选中并联动日历后，**停留在最终提交前**，截取核对截图供人工复核。不传时会直接点击「立即投稿」。 |
-| `--upload-timeout-sec` | - | number | 否 | `1800` | 等待视频上传完成的最长秒数。超时未确认完成则中止，不会继续提交。 |
-| `--out` | - | string | 否 | `bilibili_publish_review.png` | 流程结束后的核对/存证截图落盘路径。 |
-
-> **无硬编码说明**：脚本内部**无任何写死/固定的业务参数**（无写死视频名、无写死标题、无写死标签与发布时间），所有内容均由调用方通过参数传入，具有 100% 的通用性与平台独立性。
-
-#### 调用示例
-
-```bash
-# 1. 直接发布（默认行为，不传 --schedule 时立即发布）：
-node <skillDir>/recipes/bilibili-publish.mjs \
-  --video "<视频文件路径，如 path/to/your_video.mp4>" \
-  --title "<视频标题，不超过80字>" \
-  --desc "<视频简介文案，不超过2000字>" \
-  --tags "<标签1,标签2,标签3>" \
-  --cover-index 1 \
-  --schedule "<YYYY-MM-DD HH:MM，留空为立即发布>"
-
-# 2. 只预览（填妥所有选项，停在提交前并保存核对截图）：
-node <skillDir>/recipes/bilibili-publish.mjs \
-  --video "<视频文件路径>" \
-  --title "<视频标题>" \
-  --desc "<视频简介>" \
-  --tags "<标签1,标签2>" \
-  --dry-run
-```
-
----
-
-### 2. 小红书创作者平台一键发布 (`recipes/xhs-publish.mjs`)
-
-集成了标题 20 字截断安全校验、正文 1000 字符限制校验与 Markdown 脱壳、CDP 原生多图批量上传、黄金时段（15:00~17:00）定时发布配置、Shadow DOM 穿透提交以及后台结果截图存档。
-
-#### 参数完全参考表
-
-| 参数名 | 简写 | 类型 | 必填 | 默认值 | 平台约束与功能说明 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `--images` | `-i` | string | **是** | - | 图片列表（以英文逗号分隔），支持 1~18 张图片。自动检查文件存在性。 |
-| `--title` | `-t` | string | **是** | - | 笔记标题。**严格限制 $\le 20$ 字符**，超出自动拦截报错。 |
-| `--content` | `-c` | string | 否 | `""` | 笔记正文。**严格限制 $\le 1000$ 字符**，支持自动 Markdown 标记脱壳清洗。 |
-| `--content-file`| `-f` | string | 否 | `""` | 从 Markdown 文件提取正文（优先匹配 `## 正文可复制版` 区块）。 |
-| `--schedule` | `-s` | string | 否 | 黄金时段(`16:00`) | 定时发布时间，格式为 `YYYY-MM-DD HH:MM`。**未传时默认优先读取 `~/.shrimp/skills/leo-xhs-router/config.json` 下的 `preferred_publish_window`（`15:00-17:00`）开启定时发布**（若无对应配置文件则提示询问用户定时发布时间）。 |
-| `--now` | - | boolean | 否 | `false` | 显式立即发布模式（跳过默认定时发布）。 |
-| `--dry-run` | - | boolean | 否 | `false` | 安全预览模式，填完表单停留在提交前并截取表单。 |
-| `--out` | - | string | 否 | `xhs_publish_result.png` | 存证截图落盘路径。 |
-
-#### 调用示例
-
-```bash
-node <skillDir>/recipes/xhs-publish.mjs \
-  --title "别再用Chrome了！实测Zig极速AI浏览器" \
-  --content-file "./内容.md" \
-  --images "01.png,02.png,03.png" \
-  --schedule "2026-11-03 16:00" \
-  --out "publish_proof.png"
-```
-
----
-
-### 3. 抖音创作者服务平台自动化发布 (`recipes/douyin-publish.mjs`)
-
-原生支持**视频投稿**与**多图图文**双模自动发布。集成作品标题与描述限制校验、CDP 极速文件上传、遗留未发布草稿自动清理、Bytedance EditorKit 富文本与话题标签注入、自定义封面上传裁剪弹层联动、平台「内容由AI生成」自主声明、定时发布（2小时~14天）、全页高保真预览核对图（Full-Page Screenshot）。**默认直接发布**；传入 `--dry-run` 才会停在提交前。
-
-#### 参数完全参考表
-
-| 参数名 | 简写 | 类型 | 必填 | 默认值 | 平台约束与功能说明 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `--video` | `-v` | string | 条件必填 | - | 本地视频文件路径（.mp4/.mov等）。与 `--images` 二选一，提供时走**视频发布**流程。 |
-| `--images` | `-i` | string | 条件必填 | - | 本地图片列表（以英文逗号分隔），支持 1~35 张图片。提供时走**图文发布**流程。 |
-| `--title` | `-t` | string | **是** | - | 作品标题。**视频严格限制 $\le 30$ 字，图文限制 $\le 20$ 字**。**建议精练短小（如《请慢用》）**，因抖音移动端信息流中标题与描述紧密相连，过长会导致第一行折叠并影响视觉。 |
-| `--desc` | `-d` | string | 否 | `""` | 作品描述文案。**完全可选（可不写/留空）**。**严格限制 $\le 1000$ 字符**。不写时直接清空富文本，保持纯标题极简发布。 |
-| `--desc-file`| `-f` | string | 否 | `""` | 从外部文本/Markdown 文件读取描述（与 `--desc` 二选一）。 |
-| `--tags` | - | string | 否 | `[]` | 话题标签列表（如 `AI工具,效率`），自动格式化为 `#话题` 规范追加至正文末尾。 |
-| `--cover` | - | string | 否 | `""` | 自定义封面图片路径。提供时自动穿透视频封面裁剪弹窗上传，并跳过横屏补充提示。 |
-| `--no-ai` | - | boolean | 否 | `false` | 关闭默认的平台 AI 声明。默认会自动在「自主声明」中规范勾选「内容由AI生成」。 |
-| `--visibility` | - | string | 否 | `"公开"` | 谁可以看：`公开` / `好友可见` / `仅自己可见`。 |
-| `--schedule` | `-s` | string | 否 | 黄金时段(`16:30`) | 定时发布时间，格式为 `YYYY-MM-DD HH:MM`。**未传时默认优先读取 `~/.shrimp/skills/leo-video-router/config.json`（及 `style-preferences.md`）开启定时发布**（距当前不足 2.5 小时则自动顺延至次日 16:30；若无对应 skill 配置文件则中止并提示询问用户定时发布时间）。 |
-| `--now` | - | boolean | 否 | `false` | 显式立即发布模式。仅在传入 `--now`（或 `--immediate` / `--schedule now`）时跳过定时发布、立即公开上线。 |
-| `--dry-run` | - | boolean | 否 | `false` | 预览模式。完成上传、所有表单字段填妥并渲染手机预览后，**停留在最终提交前**，截取高清全页核对图供人工复核。不传时会直接点击「发布」。 |
-| `--reuse-form` | - | boolean | 否 | `false` | 沿用已打开的同体裁编辑页，**不上传** `--video`/`--images`，只重新填写字段。用于失败后续跑；不传时总是重新上传。 |
-| `--out` | - | string | 否 | `douyin_publish_review.png` | 流程结束后的全页核对/存证截图落盘路径。 |
-
-#### 调用示例
-
-```bash
-# 1. 视频直接发布（默认行为）：
-node <skillDir>/recipes/douyin-publish.mjs \
-  --video "path/to/video.mp4" \
-  --title "视频标题（30字内）" \
-  --desc "视频简介文案" \
-  --tags "AI视频,效率工具" \
-  --schedule "2026-11-06 15:30"
-
-# 2. 只预览（填妥所有选项，截取全页预览图，不提交）：
-node <skillDir>/recipes/douyin-publish.mjs \
-  --video "path/to/video.mp4" \
-  --title "视频标题" \
-  --desc "视频简介文案" \
-  --tags "AI视频,效率工具" \
-  --dry-run
-
-# 3. 多图图文发布：
-node <skillDir>/recipes/douyin-publish.mjs \
-  --images "img1.png,img2.png" \
-  --title "图文标题（20字内）" \
-  --desc "图文正文描述" \
-  --tags "摄影,胶片感" \
-  --schedule "2026-11-06 17:00"
-```
-
----
-
-### 4. X (Twitter) 前沿情报与事实素材探针 (`recipes/x-source.mjs`)
-
-基于用户真实 Chrome 登录态，无感突破 X 官方 API 高额费用与反爬风控壁垒。严格恪守 **100% 事实保真（Ground Truth）** 原则，将原推文正文、作者认证、精确发布时间戳、互动量面板（回复/转帖/点赞/书签/浏览量）与多媒体资产（图片与视频）完整下载至本地，供下游 `leo-xhs-router` 或 `leo-video-router` 进行二次创作。
-
-#### 参数完全参考表
-
-| 参数名 | 简写 | 类型 | 必填 | 默认值 | 功能说明 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `--mode` | `-m` | string | 否 | `following` | 采集模式：`following`（关注流）、`search`（全网搜索）、`user`（用户主页）、`for-you`（推荐流）。 |
-| `--query` | `-q` | string | 条件必填 | `""` | 搜索关键词或高级检索式（`mode` 为 `search` 时必填，如 `"AI agent" min_faves:50`）。 |
-| `--user` | `-u` | string | 条件必填 | `""` | 目标账号 Handle（`mode` 为 `user` 时必填，如 `karpathy` 或 `@sama`）。 |
-| `--type` | `-t` | string | 否 | `top` | 搜索类型：`top`（热门最高赞）或 `latest`（最新发布）。 |
-| `--limit` | `-n` | number | 否 | `10` | 抓取推文数量上限。 |
-| `--out` | `-o` | string | 否 | 记忆路径 | 本地存储目录。**无硬编码路径**，指定后自动持久化到 `~/.shrimp/skills/leo-lantern/x-source-config.json` 供后续默认复用。 |
-| `--set-out` | - | string | 否 | - | 单独持久化设置默认输出目录并退出。 |
-| `--get-out` | - | flag | 否 | - | 查看当前配置的持久化输出目录。 |
-| `--skip-media` | - | flag | 否 | `false` | 跳过多媒体下载，仅抓取纯事实文本与指标。 |
-| `--scroll-max`| - | number | 否 | `15` | 最大向下滚动探针次数。 |
-
-#### 多媒体下载引擎机制
-- **高清原图**：优先直取 `pbs.twimg.com` 升级为 `name=orig` 无损原图；若遇复杂多图卡片或网络阻塞，自动无缝回退至 `gallery-dl`（携带从 Chrome 导出的登录 Cookie）执行全量采集。
-- **高清视频**：检测到推文含视频时，自动联动 `yt-dlp` 提取最高码率视频流并落盘至本地 `media/`。
-
-#### 标准交付产物结构
-每次采集自动生成独立会话目录：`<outputDir>/YYYY-MM-DD-<slug>/`：
-- `📋 帖子事实.json`：100% 原始机器可读数据，直接投喂给下游 Router（`leo-xhs-router` / `leo-video-router`）。
-- `📄 帖子事实.md`：图文并茂、排版精美的人类与 Agent 双用存证档案。
-- `📁 media/`：本地全量原图与视频资产库。
-
-#### 调用示例
-
-```bash
-# 1. 抓取关注圈最新动态（默认模式）：
-node <skillDir>/recipes/x-source.mjs --mode following --limit 10
-
-# 2. 全网关键词热点搜索并下载素材：
-node <skillDir>/recipes/x-source.mjs --mode search --query "coding agent" --limit 5
-
-# 3. 定向提取某个大佬主页最新推文：
-node <skillDir>/recipes/x-source.mjs --mode user --user karpathy --limit 5
-
-# 4. 指定并记忆输出工作区目录：
-node <skillDir>/recipes/x-source.mjs --out "D:\素材\X"
-```
-
----
-
-### 5. LINUX DO 前沿快讯与社区硬核技术事实探针 (`recipes/linuxdo-source.mjs`)
-
-基于用户真实 Chrome 登录态，无缝突破 LINUX DO 的 Cloudflare 5秒盾与论坛信任等级权限拦截。深度结合 Discourse 原生客户端数据流与 DOM 探针，提取 **100% 原始楼主 Markdown（含代码块、公式与表格）**、精确互动指标（阅读/点赞/回复）以及社区高赞解决方案楼层，并将贴内插图完整下载到本地。
-
-#### 参数完全参考表
-
-| 参数名 | 简写 | 类型 | 必填 | 默认值 | 功能说明 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `--channel` | `-c` | string | 否 | `news` | 抓取板块：`news`（前沿快讯）、`hot`（热门话题）、`top`（全站精华/高赞）、`latest`（最新发布）。 |
-| `--query` | `-q` | string | 条件必填 | `""` | 站内搜索检索词（提供时自动走站内搜索流）。 |
-| `--limit` | `-n` | number | 否 | `5` | 抓取帖子数量上限。 |
-| `--out` | `-o` | string | 否 | 记忆路径 | 本地存储目录。**无硬编码路径**，指定后自动持久化到 `~/.shrimp/skills/leo-lantern/linuxdo-source-config.json` 供后续复用。 |
-| `--set-out` | - | string | 否 | - | 单独持久化设置默认输出目录并退出。 |
-| `--get-out` | - | flag | 否 | - | 查看当前配置的持久化输出目录。 |
-| `--skip-media` | - | flag | 否 | `false` | 跳过插图下载，仅抓取纯事实文本与指标。 |
-
-#### 标准交付产物结构
-每次采集自动生成独立会话目录：`<outputDir>/YYYY-MM-DD-<channel_or_query>/`：
-- `📋 帖子事实.json`：100% 原始机器可读数据，直接投喂给下游 Router（`leo-xhs-router` / `leo-video-router`）。
-- `📄 帖子事实.md`：图文并茂、结构规整的人类与 Agent 双用存证档案（包含楼主原文与高赞解答）。
-- `📁 media/`：本地全量原图资产库。
-
-#### 调用示例
-
-```bash
-# 1. 抓取前沿快讯板块（默认模式，最适合科技/自媒体前沿资讯）：
-node <skillDir>/recipes/linuxdo-source.mjs --channel news --limit 5
-
-# 2. 抓取全站高赞精华帖（最适合挖掘高价值开源神器与避坑干货）：
-node <skillDir>/recipes/linuxdo-source.mjs --channel top --limit 5
-
-# 3. 站内关键词搜索：
-node <skillDir>/recipes/linuxdo-source.mjs --query "Claude Code" --limit 5
-
-# 4. 指定并记忆输出工作区目录：
-node <skillDir>/recipes/linuxdo-source.mjs --out "D:\素材\linuxdo"
-```
-
-
----
-
-### 6. Instagram 前沿情报与视觉创作素材探针 (`recipes/instagram-source.mjs`)
-
-基于用户真实 Chrome 登录态，无感突破 Instagram 严苛的登录墙与反爬限制。严格遵循 **100% 事实保真（Ground Truth）** 原则，完整提取原贴 Caption（自动展开更多文案）、博主信息、发帖时间、互动数据、Hashtags，并将多图轮播（Carousel）高清原图与短视频（Reels）原视频下载到本地，为下游 `leo-xhs-router`（小红书图文）或 `leo-video-router`（二创短视频）提供一手高保真事实物料。
-
-#### 参数完全参考表
-
-| 参数名 | 简写 | 类型 | 必填 | 默认值 | 功能说明 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `--mode` | `-m` | string | 否 | `feed` | 采集模式：`feed`（主页关注/推荐流）、`user`（博主主页）、`tag`（标签探索）、`explore`（探索页）、`post`（单帖深度解析）。 |
-| `--user`, `--username` | `-u` | string | 条件必填 | `""` | 目标博主用户名（`mode` 为 `user` 时必填，如 `openai`）。 |
-| `--tag` | `-t` | string | 条件必填 | `""` | 目标 Hashtag 名称（`mode` 为 `tag` 时必填，如 `generativeai`）。 |
-| `--url` | - | string | 条件必填 | `""` | 目标帖子或 Reels 链接（`mode` 为 `post` 时必填）。 |
-| `--limit` | `-n` | number | 否 | `5` | 抓取帖子数量上限。 |
-| `--out`, `--out-dir` | `-o` | string | 否 | 记忆路径 | 本地存储目录。**无硬编码路径**，指定后自动持久化到 `~/.shrimp/skills/leo-lantern/instagram-source-config.json` 供后续复用。 |
-| `--set-out` | - | string | 否 | - | 单独持久化设置默认输出目录并退出。 |
-| `--get-out` | - | flag | 否 | - | 查看当前配置的持久化输出目录。 |
-| `--skip-media`, `--no-media` | - | flag | 否 | `false` | 跳过媒体下载，仅抓取纯事实文本与指标。 |
-
-#### 多媒体下载引擎机制
-- **多图轮播（Carousel）与单图**：结合从 Chrome 导出的登录 Cookie，使用 `gallery-dl` 提取全部最高分辨率 CDN 原图；遇到网络异常时自动使用浏览器原生高保真 Fetch 兜底。
-- **Reels / 短视频**：自动提取高码率无水印 mp4 视频流（支持 `gallery-dl` 与 `yt-dlp` 双重容灾引擎）并完整落盘至本地 `media/`。
-
-#### 标准交付产物结构
-每次采集自动生成独立会话目录：`<outputDir>/YYYY-MM-DD-<target>/`：
-- `📋 帖子事实.json`：100% 原始机器可读数据，直接投喂给下游 Router。
-- `📄 帖子事实.md`：图文并茂、结构规整的人类与 Agent 双用存证档案。
-- `📁 media/`：本地全量原图（单图/多图）与视频资产库。
-
-#### 调用示例
-
-```bash
-# 1. 抓取主页关注/推荐信息流最新 3 篇（默认模式）：
-node <skillDir>/recipes/instagram-source.mjs --mode feed --limit 3
-
-# 2. 定向提取某个博主主页的最新帖子：
-node <skillDir>/recipes/instagram-source.mjs --mode user --username openai --limit 5
-
-# 3. 话题标签探索流抓取：
-node <skillDir>/recipes/instagram-source.mjs --mode tag --tag robotics --limit 5
-
-# 4. 深度解析单篇帖子并下载全部轮播原图或短视频：
-node <skillDir>/recipes/instagram-source.mjs --mode post --url "https://www.instagram.com/p/DeHeOpaTKQS/"
-
-# 5. 指定并记忆输出工作区目录：
-node <skillDir>/recipes/instagram-source.mjs --out "D:\素材\Instagram"
-```
-
-
----
-
-### 7. Reddit 前沿情报与深度社区讨论事实探针 (`recipes/reddit-source.mjs`)
-
-基于用户真实 Chrome 登录态，无感突破 Reddit 严格的客户端风控与反爬防护。严格遵循 **100% 事实保真（Ground Truth）** 原则，完整提取原帖标题、楼主完整 Markdown（含代码块、排版与外链）、发帖 Subreddit、发布作者、精确点赞/评论数、**社区精选高赞回复（Top Comments）**，并将插图（单图/多图 Gallery）及原画视频（v.redd.it）完整下载到本地，为下游 `leo-xhs-router`（海外科技热点转小红书）或 `leo-video-router`（二创短视频）提供极具讨论深度的一手事实物料。
-
-#### 参数完全参考表
-
-| 参数名 | 简写 | 类型 | 必填 | 默认值 | 功能说明 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `--mode` | `-m` | string | 否 | `feed` | 采集模式：`feed`（首页推荐流）、`sub`（指定社区板块）、`search`（站内关键词搜索）、`post`（单帖深度解析）。 |
-| `--sub`, `--subreddit` | `-s` | string | 条件必填 | `""` | 目标 Subreddit 板块名（`mode` 为 `sub` 时必填，如 `ClaudeAI`, `technology`, `stocks`）。 |
-| `--sort` | - | string | 否 | `hot` | 板块排序规则：`hot`（热门）、`top`（全板块最高赞）、`new`（最新）。 |
-| `--query` | `-q` | string | 条件必填 | `""` | 搜索关键词（`mode` 为 `search` 时必填）。 |
-| `--url` | - | string | 条件必填 | `""` | 目标 Reddit 帖子链接（`mode` 为 `post` 时必填）。 |
-| `--limit` | `-n` | number | 否 | `5` | 抓取帖子数量上限。 |
-| `--out`, `--out-dir` | `-o` | string | 否 | 记忆路径 | 本地存储目录。**无硬编码路径**，指定后自动持久化到 `~/.shrimp/skills/leo-lantern/reddit-source-config.json` 供后续复用。 |
-| `--set-out` | - | string | 否 | - | 单独持久化设置默认输出目录并退出。 |
-| `--get-out` | - | flag | 否 | - | 查看当前配置的持久化输出目录。 |
-| `--skip-media`, `--no-media` | - | flag | 否 | `false` | 跳过媒体下载，仅抓取纯正文与高赞评论。 |
-
-#### 多媒体下载与深度社区讨论提炼
-- **多图相册与高清原图**：自动识别 `i.redd.it` / `preview.redd.it` 高清原图直链并发下载到本地 `media/`。
-- **Reddit 原画视频**：检测到 Reddit 独立视频帖（v.redd.it）时，联动 `yt-dlp` 高速拉取原始视频与音轨合并封装。
-- **社区高赞神评**：自动深入详情页提取真实点赞排名前列的深度回复与观点，完美补全帖子争议点与社区共识。
-
-#### 标准交付产物结构
-每次采集自动生成独立会话目录：`<outputDir>/YYYY-MM-DD-<target>/`：
-- `📋 帖子事实.json`：100% 原始机器可读数据（含标题、楼主 Markdown、多媒体路径、社区高赞回复列表）。
-- `📄 帖子事实.md`：图文并茂、社区回复层次分明的人类与 Agent 双用存证档案。
-- `📁 media/`：本地全量原图与视频资产库。
-
-#### 调用示例
-
-```bash
-# 1. 抓取当前首页流最新 3 篇（默认模式）：
-node <skillDir>/recipes/reddit-source.mjs --mode feed --limit 3
-
-# 2. 定向抓取 r/ClaudeAI 社区热门帖子与高赞讨论：
-node <skillDir>/recipes/reddit-source.mjs --mode sub --sub ClaudeAI --limit 5
-
-# 3. 站内关键词搜索：
-node <skillDir>/recipes/reddit-source.mjs --mode search --query "Cursor vs Windsurf" --limit 5
-
-# 4. 深度解析单篇帖子与社区高赞神评：
-node <skillDir>/recipes/reddit-source.mjs --mode post --url "https://www.reddit.com/r/ClaudeAI/comments/1xrevbv/claude_saved_my_old_iphone_from_becoming_ewaste/"
-
-# 5. 指定并记忆输出工作区目录：
-node <skillDir>/recipes/reddit-source.mjs --out "D:\素材\Reddit"
-```
-
-
----
-
-### 8. YouTube 前沿情报、音视频素材与讲稿转写事实探针 (`recipes/youtube-source.mjs`)
-
-基于用户真实 Chrome 会话与原生播放流解析，严格遵循 **100% 事实保真（Ground Truth）** 原则。完整提取视频标题、发布频道、精确发布日期、观看/点赞互动数据、**原始简介文案（含时间轴章节与参考外链）**、**视频逐字讲稿/带时间戳字幕（Transcript）**，并将原画封面（.webp/.jpg）、多语言字幕文件（.srt/.vtt）与原画视频（.mp4）下载至本地，为下游 `leo-video-router`（视频笔记生成与二创解构）或 `leo-xhs-router`（前沿视频提炼为小红书图文）提供最核心的事实依据。
-
-#### 参数完全参考表
-
-| 参数名 | 简写 | 类型 | 必填 | 默认值 | 功能说明 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `--mode` | `-m` | string | 否 | `feed` | 采集模式：`feed`（首页推荐流）、`channel`（频道视频页）、`search`（关键词搜索）、`post`（单视频深度解析）。 |
-| `--channel` | `-c` | string | 条件必填 | `""` | 目标频道 Handle（`mode` 为 `channel` 时必填，如 `@AnthropicAI`, `@mkbhd`）。 |
-| `--query` | `-q` | string | 条件必填 | `""` | 搜索关键词（`mode` 为 `search` 时必填）。 |
-| `--url` | - | string | 条件必填 | `""` | 目标视频或 Shorts 链接（`mode` 为 `post` 时必填）。 |
-| `--limit` | `-n` | number | 否 | `3` | 抓取视频数量上限。 |
-| `--out`, `--out-dir` | `-o` | string | 否 | 记忆路径 | 本地存储目录。**无硬编码路径**，指定后自动持久化到 `~/.shrimp/skills/leo-lantern/youtube-source-config.json` 供后续复用。 |
-| `--format` | - | string | 否 | `18/best[height<=720]/best` | 视频下载清晰度格式。 |
-| `--no-video` | - | flag | 否 | `false` | 极速轻量模式：仅下载原画封面与字幕转写文稿，不下载沉重的视频本体文件。 |
-| `--use-cookies` | - | flag | 否 | `false` | 从 Chrome 导出 Cookie 携带请求（适用于受限/年龄分级视频；公开视频默认直取避免 SABR 实验拦截）。 |
-| `--skip-media`, `--no-media` | - | flag | 否 | `false` | 跳过所有媒体下载，仅抓取纯元数据与简介。 |
-| `--set-out` | - | string | 否 | - | 单独持久化设置默认输出目录并退出。 |
-| `--get-out` | - | flag | 否 | - | 查看当前配置的持久化输出目录。 |
-
-#### 多媒体与逐字文稿转写机制
-- **原画封面下载**：自动抓取 YouTube 官方最高清晰度缩略图并落盘至 `media/`。
-- **逐字稿与字幕解析**：自动探测并下载中英双语字幕，并将时间轴与逐字发言格式化注入 `帖子事实.md`。
-- **MP4 原画视频**：默认按平衡画质流（720P/1080P）拉取本地音视频文件，支持 `--no-video` 纯文本极速模式。
-
-#### 标准交付产物结构
-每次采集自动生成独立会话目录：`<outputDir>/YYYY-MM-DD-<target>/`：
-- `📋 帖子事实.json`：100% 原始机器可读数据（含标题、时长、逐字讲稿、多媒体文件索引）。
-- `📄 帖子事实.md`：图文并茂、附带完整时间戳文稿的人类与 Agent 双用存证档案。
-- `📁 media/`：本地全量原图、字幕文件与视频资产库。
-
-#### 调用示例
-
-```bash
-# 1. 抓取当前首页推荐流最新 3 篇（默认模式）：
-node <skillDir>/recipes/youtube-source.mjs --mode feed --limit 3
-
-# 2. 定向抓取指定频道最新视频并提取字幕讲稿与封面（极速轻量模式）：
-node <skillDir>/recipes/youtube-source.mjs --mode channel --channel @AnthropicAI --no-video --limit 3
-
-# 3. 站内关键词搜索：
-node <skillDir>/recipes/youtube-source.mjs --mode search --query "Claude Code tutorial" --limit 3
-
-# 4. 深度解析单篇视频并下载原画视频与逐字稿：
-node <skillDir>/recipes/youtube-source.mjs --mode post --url "https://www.youtube.com/watch?v=6eBSHbLKuN0"
-
-# 5. 指定并记忆输出工作区目录：
-node <skillDir>/recipes/youtube-source.mjs --out "D:\素材\YouTube"
-```
-
-### 9. Pixabay 高清免版税视觉与音视频素材事实探针 (`recipes/pixabay-source.mjs`)
-
-基于用户真实 Chrome 会话与原生结构化元数据解析，严格遵循 **100% 事实保真（Ground Truth）** 原则。完整提取免版税素材标题、作者/创作者（主页、头像、粉丝数、社交外链）、作品分类（照片/插画/矢量图/视频）、**商用授权事实（Pixabay Content License：免版税、商业免署名、可自由修改）**、长宽分辨率、宽高比/时长、**相机拍摄参数（EXIF：相机型号、镜头、光圈、曝光时间、ISO）**、全站互动数据（浏览/下载/点赞/评论数）、关联标签（Tags），并将超清原画大图（1280px / 2560px Zoom）、矢量透明图（PNG）或高清视频切片（4K/HD MP4）下载至本地，为下游 `leo-video-router`（B-roll 素材注入与混剪）与 `space-xhs-cover` / `leo-xhs-router`（视觉封面与图文插图）提供高质量免版权素材储备。
-
-#### 参数完全参考表
-
-| 参数名 | 简写 | 类型 | 必填 | 默认值 | 功能说明 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `--mode` | `-m` | string | 否 | `search` | 采集模式：`search`（关键词站内检索）、`post`（单作品深度解析）、`explore`（精选/探索推荐流）。 |
-| `--query` | `-q` | string | 否 | `wallpaper` | 检索关键词（`mode` 为 `search` 时使用，如 `"cyberpunk"`, `"mountain lake"`）。 |
-| `--type` | `-t` | string | 否 | `all` | 素材类型过滤：`all`、`photos`（照片）、`illustrations`（插画）、`vectors`（矢量图）、`videos`（视频）。 |
-| `--url` | `-u` | string | 条件必填 | `""` | 目标素材详情页链接（`mode` 为 `post` 时必填）。 |
-| `--limit` | `-n` | number | 否 | `3` | 抓取素材数量上限。 |
-| `--out`, `--out-dir` | `-o` | string | 否 | 记忆路径 | 本地存储目录。**无硬编码路径**，指定后自动持久化到 `~/.shrimp/skills/leo-lantern/pixabay-source-config.json`（默认 `D:\素材\Pixabay`）供后续复用。 |
-| `--no-deep` | - | flag | 否 | `false` | 浅层提取模式：仅依据检索列表元数据下载，不逐个访问详情页拉取完整 EXIF。 |
-| `--skip-media`, `--no-media` | - | flag | 否 | `false` | 极速轻量模式：跳过高清媒体文件下载，仅保存事实元数据与简介。 |
-| `--set-out` | - | string | 否 | - | 单独持久化设置默认输出目录并退出。 |
-| `--get-out` | - | flag | 否 | - | 查看当前配置的持久化输出目录。 |
-
-#### 多媒体与事实存证机制
-- **高清原图与矢量透明图**：自动探测最优清晰度源（`zoom` 2560px 或 `2x` 1280px / 矢量透明 PNG）流式下载至 `media/`。
-- **4K/HD 原画视频切片**：自动解析原始 MP4 视频直链流式落盘至 `media/`，并记录视频精确时长（秒）与长宽比。
-- **相机拍摄 EXIF 还原**：精准提取机身型号、镜头规格、焦距、光圈、曝光时间与 ISO 感光度，原样注入 `帖子事实.md`。
-
-#### 标准交付产物结构
-每次采集自动生成独立会话目录：`<outputDir>/YYYY-MM-DD-HHmmss_<slug>/`：
-- `📋 帖子事实.json`：100% 原始机器可读数据（含创作者、授权协议、技术参数、互动指标、本地媒体索引）。
-- `📄 帖子事实.md`：图文并茂的人类与 Agent 双用免版税素材事实清单。
-- `📁 media/`：本地全量原图、矢量图与 MP4 视频素材库。
-
-#### 调用示例
-
-```bash
-# 1. 站内检索优质照片并下载原图与 EXIF 事实（默认模式）：
-node <skillDir>/recipes/pixabay-source.mjs --mode search --query "cyberpunk city" --type photos --limit 3
-
-# 2. 检索免版税 4K/HD 视频切片并下载 MP4 资产：
-node <skillDir>/recipes/pixabay-source.mjs --mode search --query "nature waterfall" --type videos --limit 2
-
-# 3. 抓取精选矢量透明图 (Vectors)：
-node <skillDir>/recipes/pixabay-source.mjs --mode search --query "technology icon" --type vectors --limit 3
-
-# 4. 深度解析单篇作品详情页并下载高分辨率原画：
-node <skillDir>/recipes/pixabay-source.mjs --url "https://pixabay.com/photos/alps-mountains-valley-nature-lake-10445555/"
-
-# 5. 指定并记忆输出工作区目录：
-node <skillDir>/recipes/pixabay-source.mjs --out "D:\素材\Pixabay"
-```
-
-### 10. 发表情 (fabiaoqing.com) 表情包、热梗图与斗图嘴替事实探针 (`recipes/fabiaoqing-source.mjs`)
-
-基于用户真实 Chrome 会话与网页 DOM 解析，严格遵循 **100% 事实保真（Ground Truth）** 原则。完整提取表情包文字配文、情绪意图、原始来源链接、所属专辑/套图名称，自动探测并将图片链接升级至 `/large/` 无损超清画质，支持静态 JPG/PNG 与动态 GIF 表情包全量本地化下载至 `media/` 目录。深度赋能 `bqb-downloader`（职场嘴替）、`space-xhs-writer`（小红书配图/梗图）、`leo-xhs-router` 等下游技能。
-
-#### 参数完全参考表
-
-| 参数名 | 简写 | 类型 | 必填 | 默认值 | 功能说明 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `--mode` | `-m` | string | 否 | `search` | 采集模式：`search`（关键词站内检索）、`pack`（表情包套图/合集）、`hot`（全网实时热门榜）、`post`（单张表情深度解析）。 |
-| `--query` | `-q` | string | 否 | `摸鱼` | 检索关键词（`mode` 为 `search` 时使用，如 `"摸鱼"`, `"不想上班"`, `"收到"`, `"熊猫头"`）。 |
-| `--url` | `-u` | string | 条件必填 | `""` | 目标套图合集（`pack`）或单张表情（`post`）链接。传入链接包含 `/bqb/detail/` 自动切换为 `pack` 模式。 |
-| `--limit` | `-n` | number | 否 | `10` | 抓取表情包数量上限。支持自动跨页抓取填满上限。 |
-| `--out`, `--out-dir` | `-o` | string | 否 | 记忆路径 | 本地存储目录。**无硬编码路径**，指定后自动持久化到 `~/.shrimp/skills/leo-lantern/fabiaoqing-source-config.json`（默认 `D:\素材\表情包`）供后续复用。 |
-| `--skip-media`, `--no-media` | - | flag | 否 | `false` | 极速轻量模式：跳过图片/动图下载，仅保存配文事实与原图直链。 |
-| `--set-out` | - | string | 否 | - | 单独持久化设置默认输出目录并退出。 |
-| `--get-out` | - | flag | 否 | - | 查看当前配置的持久化输出目录。 |
-
-#### 多媒体与动态动图支持
-- **画质自动超清化**：自动将网络缩略图（`bmiddle`/`thumb`）替换为 `/large/` 超清无损原画。
-- **全格式支持**：无缝支持静态 JPG、PNG 以及动态动图 GIF，保持原始帧率与透明通道。
-- **套图全量提取**：支持一键输入合集链接（如“更适合中国宝宝体质的表情包”），全套表情包一键打包沉淀。
-
-#### 标准交付产物结构
-每次采集自动生成独立会话目录：`<outputDir>/YYYY-MM-DD-HHmmss_<slug>/`：
-- `📋 帖子事实.json`：100% 原始机器可读数据（含配文字段、高清直链、本地媒体索引）。
-- `📄 帖子事实.md`：图文并茂的表情包存证档案（自带本地图片/GIF 预览与文件大小）。
-- `📁 media/`：本地全量超清表情包与动图资产库。
-
-#### 调用示例
-
-```bash
-# 1. 站内检索指定情绪/职场嘴替表情包并下载超清原图与 GIF（默认模式）：
-node <skillDir>/recipes/fabiaoqing-source.mjs --query "不想上班" --limit 6
-
-# 2. 搜索并下载经典熊猫头/斗图梗图：
-node <skillDir>/recipes/fabiaoqing-source.mjs --query "熊猫头" --limit 8
-
-# 3. 抓取套图合集 (Meme Pack / 专辑) 并下载全部组图：
-node <skillDir>/recipes/fabiaoqing-source.mjs --url "https://fabiaoqing.com/bqb/detail/id/55049.html" --limit 10
-
-# 4. 抓取全网实时热门表情包榜单：
-node <skillDir>/recipes/fabiaoqing-source.mjs --mode hot --limit 8
-
-# 5. 指定并记忆输出工作区目录：
-node <skillDir>/recipes/fabiaoqing-source.mjs --out "D:\素材\表情包"
-```
-
-### 11. GitHub 开发者情报、开源项目技术事实与趋势雷达探针 (`recipes/github-source.mjs`)
-
-基于用户真实 Chrome 会话与网页 DOM 解析，严格遵循 **100% 事实保真（Ground Truth）** 原则。复用 Chrome 真实已登录用户会话（如 zlpawn），彻底规避 GitHub API 匿名 60 次/小时频控与封锁。完整提取开源项目全名、所有者、核心描述、官网主页、Star/Fork/Watcher/Issue 核心指标、**技术栈语言构成（百分比）**、**开源授权协议（License）**、标签（Topics）、最新 Release 版本与日期，并将原生 `README.md` 与社交预览卡片图（`og:image`）下载至本地，为下游技术调研（research agent）、技术笔记（leo-video-router/Craft 同步）与小红书开源工具推荐（leo-xhs-router）沉淀一手高保真事实。
-
-#### 参数完全参考表
-
-| 参数名 | 简写 | 类型 | 必填 | 默认值 | 功能说明 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `--mode` | `-m` | string | 否 | `repo` / `trending` | 采集模式：`repo`（单仓库深度解析）、`trending`（趋势热门榜）、`search`（站内关键词检索）。提供 URL 或简写名默认 `repo`，无参数默认 `trending`。 |
-| `--url` | `-u` | string | 条件必填 | `""` | 目标仓库链接（如 `https://github.com/torvalds/linux`）。 |
-| `--repo` | `-r` | string | 条件必填 | `""` | 简写仓库名（如 `torvalds/linux`, `zlpawn/shrimp`）。 |
-| `--query` | `-q` | string | 条件必填 | `""` | 检索关键词（`mode` 为 `search` 时使用，如 `"agentic ai"`, `"claude mcp"`）。 |
-| `--language` | `-l` | string | 否 | `""` | 编程语言过滤（用于 `trending` 与 `search`，如 `python`, `typescript`, `rust`, `go`）。 |
-| `--since` | - | string | 否 | `daily` | 时间跨度（用于 `trending`，可选 `daily`, `weekly`, `monthly`）。 |
-| `--limit` | `-n` | number | 否 | `5` | 抓取仓库数量上限。 |
-| `--out`, `--out-dir` | `-o` | string | 否 | 记忆路径 | 本地存储目录。**无硬编码路径**，指定后自动持久化到 `~/.shrimp/skills/leo-lantern/github-source-config.json`（默认 `D:\素材\GitHub`）供后续复用。 |
-| `--no-deep` | - | flag | 否 | `false` | 浅层提取模式：仅提取列表指标与摘要，不逐个深入抓取完整 `README.md`。 |
-| `--skip-media`, `--no-media` | - | flag | 否 | `false` | 极速轻量模式：跳过社交预览卡片下载，仅保存文字事实与 `README.md`。 |
-| `--set-out` | - | string | 否 | - | 单独持久化设置默认输出目录并退出。 |
-| `--get-out` | - | flag | 否 | - | 查看当前配置的持久化输出目录。 |
-
-#### 多媒体与原生文档机制
-- **原生 `README.md` 全量落盘**：单仓模式直接保存至会话根目录，多仓/趋势模式归档至 `repos/<owner_repo>/README.md`，杜绝大模型过度概括导致的信息失真。
-- **技术栈语言精确构成**：提取各语言占比（如 `TypeScript 98.6% · MDX 1.1%`）。
-- **真实会话防风控**：完全依托真实浏览器会话，无惧 GitHub 匿名 API Rate Limit。
-
-#### 标准交付产物结构
-每次采集自动生成独立会话目录：`<outputDir>/YYYY-MM-DD-HHmmss_<slug>/`：
-- `📋 帖子事实.json`：100% 原始机器可读数据（含仓库名称、描述、指标、协议、语言构成、README 索引）。
-- `📄 帖子事实.md`：图文并茂的人类与 Agent 双用开源技术雷达档案。
-- `📄 README.md` 或 `📁 repos/<owner_repo>/README.md`：原始项目文档全量存证。
-- `📁 media/`：社交预览图（`cover.png`）资产库。
-
-#### 调用示例
-
-```bash
-# 1. 深度解析单篇开源项目并下载原生 README 与卡片图（默认模式）：
-node <skillDir>/recipes/github-source.mjs --url "https://github.com/zlpawn/shrimp"
-
-# 2. 抓取今日全语言 GitHub Trending 热门榜前 5 名项目及完整文档：
-node <skillDir>/recipes/github-source.mjs --mode trending --limit 5
-
-# 3. 抓取本周 Python 分类下最热 Trending 项目：
-node <skillDir>/recipes/github-source.mjs --mode trending --language python --since weekly --limit 3
-
-# 4. 关键词搜索前沿 Agent 开源项目并沉淀技术事实：
-node <skillDir>/recipes/github-source.mjs --mode search --query "agentic ai" --limit 3
-
-# 5. 指定并记忆输出工作区目录：
-node <skillDir>/recipes/github-source.mjs --out "D:\素材\GitHub"
-```
-
-### 12. Product Hunt 全球科技新产品、AI 神器与创投风向标事实探针 (`recipes/producthunt-source.mjs`)
-
-基于用户真实 Chrome 会话与网页 DOM 解析，严格遵循 **100% 事实保真（Ground Truth）** 原则。完整提取每日全球上榜新产品名称、一句话定位（Slogan）、官方完整介绍文案（Pitch）、所属领域标签（Topics）、Upvotes 赞同票数、**官网直链（带有 `?ref=producthunt` 追踪源）**、榜单排名与上线事实，并将产品高清 Logo、社交宣传封面（`og:image`）与功能展示截图下载至 `media/` 目录。深度赋能科技自媒体、`leo-xhs-router`（每日 AI 神器精选推文）与产品竞品调研。
-
-#### 参数完全参考表
-
-| 参数名 | 简写 | 类型 | 必填 | 默认值 | 功能说明 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `--mode` | `-m` | string | 否 | `today` | 采集模式：`today`（今日 Top 上榜新品）、`product`（单款产品深度解析）、`topic`（垂直领域分类榜）、`search`（关键词站内检索）。 |
-| `--url` | `-u` | string | 条件必填 | `""` | 目标产品链接（如 `https://www.producthunt.com/products/maxma-2`）。 |
-| `--topic` | `-t` | string | 否 | `""` | 主题分类过滤（用于 `topic` 模式，如 `artificial-intelligence`, `developer-tools`）。 |
-| `--query` | `-q` | string | 否 | `""` | 搜索关键词（用于 `search` 模式）。 |
-| `--limit` | `-n` | number | 否 | `5` | 抓取产品数量上限。 |
-| `--out`, `--out-dir` | `-o` | string | 否 | 记忆路径 | 本地存储目录。**无硬编码路径**，指定后自动持久化到 `~/.shrimp/skills/leo-lantern/producthunt-source-config.json`（默认 `D:\素材\ProductHunt`）供后续复用。 |
-| `--no-deep` | - | flag | 否 | `false` | 浅层提取模式：仅依据榜单列表提取，不逐个深入抓取官网外链与完整 Pitch。 |
-| `--skip-media`, `--no-media` | - | flag | 否 | `false` | 极速轻量模式：跳过 Logo 与截图下载，仅保存文字事实。 |
-| `--set-out` | - | string | 否 | - | 单独持久化设置默认输出目录并退出。 |
-| `--get-out` | - | flag | 否 | - | 查看当前配置的持久化输出目录。 |
-
-#### 多媒体与资产本地化机制
-- **Logo 与封面超清化**：抓取并下载原始 Imgix 矢量/PNG 图标与宣发大图。
-- **官网直链真实还原**：精确解析外跳按钮获取产品真正的独立官方网站地址。
-- **全量无损图文清单**：自动输出嵌入本地图片的 Markdown 清单，开箱即用于小红书图文卡片排版。
-
-#### 标准交付产物结构
-每次采集自动生成独立会话目录：`<outputDir>/YYYY-MM-DD-HHmmss_<slug>/`：
-- `📋 帖子事实.json`：100% 原始机器可读数据（含产品名、Slogan、Pitch、官网、Upvotes、Logo 与截图路径）。
-- `📄 帖子事实.md`：图文并茂的海外科技新产品情报档案。
-- `📁 media/`：本地全量 Logo、封面大图与功能截图资产库。
-
-#### 调用示例
-
-```bash
-# 1. 抓取今日全站最火 Top 5 科技新产品及完整 Pitch 与截图（默认模式）：
-node <skillDir>/recipes/producthunt-source.mjs --mode today --limit 5
-
-# 2. 深度解析单篇产品详情、提取官网外链与高分辨率图文：
-node <skillDir>/recipes/producthunt-source.mjs --url "https://www.producthunt.com/products/maxma-2"
-
-# 3. 抓取特定分类（如 AI 领域）热门产品：
-node <skillDir>/recipes/producthunt-source.mjs --mode topic --topic artificial-intelligence --limit 5
-
-# 4. 搜索特定关键词工具：
-node <skillDir>/recipes/producthunt-source.mjs --mode search --query "coding agent" --limit 3
-
-# 5. 指定并记忆输出工作区目录：
-node <skillDir>/recipes/producthunt-source.mjs --out "D:\素材\ProductHunt"
-```
-
-### 13. 抖音 (Douyin) 热门短视频、实时热榜与原声神评事实探针 (`recipes/douyin-source.mjs`)
-
-基于真实 Chrome 会话环境执行，突破抖音频繁迭代的反爬签名与风控限制。严格遵循 **100% 事实保真（Ground Truth）** 原则，完整提取原视频文案、发布者昵称与主页、发布时间、点赞/评论/收藏/分享互动量、BGM 原声音乐、精选高赞神评（评论人、地区、时间、赞同数），并**自动捕获并无水印下载原画 MP4 视频、超清封面图与作者头像**至 `media/` 目录。
-
-#### 参数完全参考表
-
-| 参数名 | 简写 | 类型 | 必填 | 默认值 | 功能说明 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `--mode` | `-m` | string | 否 | `hot` | 采集模式：`hot`（抖音官方实时热榜 Top 视频）、`search`（关键词全网搜索）、`video`（单作品详情解析）。 |
-| `--url` | `-u` | string | 条件必填 | `""` | 目标抖音短视频/作品链接（如 `https://www.douyin.com/video/7688277931189095730`）。 |
-| `--query` | `-q` | string | 否 | `""` | 搜索关键词（用于 `search` 模式，如 `"AI工具"`）。 |
-| `--limit` | `-n` | number | 否 | `5` | 抓取短视频数量上限。 |
-| `--out`, `--out-dir` | `-o` | string | 否 | 记忆路径 | 本地存储目录。**无硬编码路径**，指定后自动持久化到 `~/.shrimp/skills/leo-lantern/douyin-source-config.json`（默认 `D:\素材\抖音`）供后续复用。 |
-| `--download-video` | - | flag | 否 | `true` | 是否下载原画无水印 MP4 视频文件。 |
-| `--no-download-video` | - | flag | 否 | `false` | 极速轻量模式：仅提取文案事实、封面与神评，跳过大视频文件下载。 |
-| `--set-out` | - | string | 否 | - | 单独持久化设置默认输出目录并退出。 |
-| `--get-out` | - | flag | 否 | - | 查看当前配置的持久化输出目录。 |
-
-#### 多媒体与资产本地化机制
-- **原画无水印 MP4 直下**：通过真实浏览沙箱解析并下载完整 CDN 视频流，零水印高码率留存。
-- **神评与热榜闭环**：抓取热榜当前热度值（如 `1122.2万热度`）与原视频的高赞热评串。
-- **全格式双规存证**：同步沉淀机器可读 `帖子事实.json` 与人类高可读 `帖子事实.md`。
-
-#### 调用示例
-
-```bash
-# 1. 抓取抖音实时热榜前 5 名热门爆款短视频及原画 MP4（默认模式）：
-node <skillDir>/recipes/douyin-source.mjs --mode hot --limit 5
-
-# 2. 深度解析单篇短视频、下载原画视频与封面、神评：
-node <skillDir>/recipes/douyin-source.mjs --url "https://www.douyin.com/video/7688277931189095730"
-
-# 3. 全网搜索特定领域（如 "AI工具"）爆款视频事实：
-node <skillDir>/recipes/douyin-source.mjs --mode search --query "AI工具" --limit 3
-
-# 4. 仅抓取文案与热评，跳过视频文件下载：
-node <skillDir>/recipes/douyin-source.mjs --mode hot --limit 5 --no-download-video
-
-# 5. 指定并记忆输出工作区目录：
-node <skillDir>/recipes/douyin-source.mjs --out "D:\素材\抖音"
-```
-
-### 14. 哔哩哔哩 (Bilibili) 热门视频、全站排行榜与高赞神评事实探针 (`recipes/bilibili-source.mjs`)
-
-基于用户真实 Chrome 会话执行，严格遵循 **100% 事实保真（Ground Truth）** 原则。深度挖掘 `window.__INITIAL_STATE__` 原生数据与页面内嵌 API，提取完整视频标题、BV号/AID/CID、UP主昵称与个人空间、发布时间、视频时长、所属分区、标签、播放/弹幕/点赞/投币/收藏/分享互动量、UP主原始简介与动态、精选高赞神评（含评论者、IP属地、点赞数、发布时间），并**自动联动 Chrome 导出的 Cookie 通过 yt-dlp 与原生 CDN 流下载 1080P/原画 MP4 视频、原画封面图与 UP 主头像**至 `media/` 目录。
-
-#### 参数完全参考表
-
-| 参数名 | 简写 | 类型 | 必填 | 默认值 | 功能说明 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `--mode` | `-m` | string | 否 | `ranking` | 采集模式：`ranking`（全站排行榜 Top 视频）、`popular`（综合热门视频）、`search`（关键词全网搜索）、`video`（单视频详情解析）。 |
-| `--url` | `-u` | string | 条件必填 | `""` | 目标 B站 视频链接（如 `https://www.bilibili.com/video/BV1gHWg6GEqj`）。 |
-| `--query` | `-q` | string | 否 | `""` | 搜索关键词（用于 `search` 模式，如 `"AI工具"`）。 |
-| `--limit` | `-n` | number | 否 | `5` | 抓取视频数量上限。 |
-| `--out`, `--out-dir` | `-o` | string | 否 | 记忆路径 | 本地存储目录。**无硬编码路径**，指定后自动持久化到 `~/.shrimp/skills/leo-lantern/bilibili-source-config.json`（默认 `D:\素材\B站`）供后续复用。 |
-| `--download-video` | - | flag | 否 | `true` | 是否下载 1080P/原画高清 MP4 视频文件。 |
-| `--no-download-video` | - | flag | 否 | `false` | 极速轻量模式：仅提取视频事实、文案简介、封面与神评，跳过大视频文件下载。 |
-| `--set-out` | - | string | 否 | - | 单独持久化设置默认输出目录并退出。 |
-| `--get-out` | - | flag | 否 | - | 查看当前配置的持久化输出目录。 |
-
-#### 多媒体与资产本地化机制
-- **登录态与 1080P 音视频合并**：自动导出 Chrome 浏览器真实 Cookie，驱动 `yt-dlp` 高清下载分离的音视频轨并通过 `ffmpeg` 无损合成 MP4。
-- **原画封面与头像沉淀**：自动转换协议头提取原始分辨率封面与头像。
-- **神评与IP属地存证**：直连页面高赞评论流，留存包含真实 IP 属地与点赞数的神评。
-
-#### 调用示例
-
-```bash
-# 1. 抓取 B站全站排行榜前 5 名爆款视频及 1080P MP4 视频（默认模式）：
-node <skillDir>/recipes/bilibili-source.mjs --mode ranking --limit 5
-
-# 2. 抓取 B站综合热门榜视频：
-node <skillDir>/recipes/bilibili-source.mjs --mode popular --limit 5
-
-# 3. 深度解析单篇视频详情、提取完整数据与神评并下载视频：
-node <skillDir>/recipes/bilibili-source.mjs --url "https://www.bilibili.com/video/BV1gHWg6GEqj"
-
-# 4. 搜索特定关键词视频（如 "AI工具"）前 3 个作品：
-node <skillDir>/recipes/bilibili-source.mjs --mode search --query "AI工具" --limit 3
-
-# 5. 极速模式（仅提取文案、数据、封面与神评，不下载几十/几百兆的大视频）：
-node <skillDir>/recipes/bilibili-source.mjs --mode ranking --limit 5 --no-download-video
-
-# 6. 指定并记忆输出工作区目录：
-node <skillDir>/recipes/bilibili-source.mjs --out "D:\素材\B站"
-```
-
----
-
-### 15. 中国专利公布公告（CNIPA）检索与文献事实探针 (`recipes/cnipa-source.mjs`)
-
-基于真实 Chrome 会话执行，在页面上下文内直接调用 `http://epub.cnipa.gov.cn/` 的检索、分页与详情接口（天然通过瑞数 WAF 动态校验与 `__RequestVerificationToken` 校验）。支持首页快捷检索、高级多字段组合检索、单专利详情（含法律状态/事务数据）、事务专项查询，并支持通过 `http://egaz.cnipa.gov.cn/showPage` 与 `/imgs/` **无验证码抓取说明书每页高清 PNG**。
-
-#### 参数完全参考表
-
-| 参数名 | 简写 | 类型 | 必填 | 默认值 | 功能说明 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `--mode` | `-m` | string | 否 | 自动推断 | 采集模式：`search`（首页全字段检索）、`advanced`（高级组合检索）、`detail`（单专利详情与事务）、`sw`（事务/法律状态查询）。 |
-| `--query` | `-q` | string | 条件必填 | `""` | 首页全字段快捷检索关键词（`search` 模式使用）。 |
-| `--title` | `-t` | string | 否 | `""` | 发明/设计名称（`catalogInfo.Ti`）。 |
-| `--abs` | - | string | 否 | `""` | 摘要/简要说明（`catalogInfo.Abs`）。 |
-| `--applicant` | - | string | 否 | `""` | 申请（专利权）人（`catalogInfo.E71_73`）。 |
-| `--inventor` | - | string | 否 | `""` | 发明（设计）人（`catalogInfo.E72`）。 |
-| `--an` | - | string | 条件必填 | `""` | 申请号（支持 `detail`、`advanced`、`sw` 模式）。 |
-| `--pn` | - | string | 条件必填 | `""` | 公布（公告）号，如 `CN123115842A`。 |
-| `--url` | `-u` | string | 否 | `""` | 专利详情链接（`http://epub.cnipa.gov.cn/patent/CN...`）。 |
-| `--ipc` | - | string | 否 | `""` | 分类号（`catalogInfo.E51`）。 |
-| `--address` / `--agency` / `--agent` | - | string | 否 | `""` | 地址、专利代理机构、专利代理师。 |
-| `--ad-begin` / `--ad-end` | - | string | 否 | `""` | 申请日起止日期（`YYYY.MM.DD` 或 `YYYY-MM-DD`）。 |
-| `--pd-begin` / `--pd-end` | - | string | 否 | `""` | 公布（公告）日起止日期。 |
-| `--ggr-begin` / `--ggr-end` | - | string | 否 | `""` | 专利文献出版日起止日期。 |
-| `--types` | - | string | 否 | 全部四种 | 专利类型过滤：`fmgb,fmsq,xxsq,wgsq`（发明公布/发明授权/实用新型/外观设计）。 |
-| `--pubtype` | - | string | 否 | `""` | 结果页类型切换：`1`发明公布/`2`发明公布更正/`3`发明授权/`6`实用新型/`9`外观设计等。 |
-| `--sort` | - | string | 否 | `ggr_desc` | 排序方式：`ggr_desc`、`ggr_asc`、`sqr_desc`、`sqr_asc`。 |
-| `--limit` | `-n` | number | 否 | `10` | 单次/每切片抓取条目上限。 |
-| `--total-limit` | - | number | 否 | `0`（不限） | 时间切片模式下的总条目上限。 |
-| `--page-size` | - | number | 否 | `10` | 分页单页条数（`3` 或 `10`）。 |
-| `--delay-ms` | - | number | 否 | `3000` | 翻页/详情/切片间基础节流延迟（ms），自动附加 `1.0~1.6x` 随机抖动。 |
-| `--slice-days` | - | number | 否 | `0`（关闭） | 按天数将起止日期切分批次抓取（如 `--slice-days 30`）。 |
-| `--slice-month` | - | flag | 否 | `false` | 按自然月将起止日期切分批次抓取。 |
-| `--dedup-file` / `--merge` | - | string | 否 | `""` | 增量去重并合并回写到指定 JSON 文件（或目录内 `专利事实.json`）。 |
-| `--deep` / `--no-deep` | - | flag | 否 | `detail` 时为 true | 是否逐条请求 `/Sw/SwDetail` 提取完整事务状态与文献句柄（`data-ifs`/`data-pdf`）。 |
-| `--with-thumb` | - | flag | 否 | `false`（`detail`/`--download-pages` 时自动开启） | 下载列表首图缩略图至 `media/`。 |
-| `--download-pages` / `--no-download-pages` | - | flag | 否 | `detail` 时为 true | 无验证码下载说明书全文每页高清 PNG（含扉页/权利要求/说明书/附图）到 `media/pages/`。 |
-| `--max-pages` | - | number | 否 | `0`（不限） | 每条专利最多下载的说明书页数。 |
-| `--skip-media` | - | flag | 否 | `false` | 跳过所有媒体文件下载。 |
-| `--sw-pubdate` / `--sw-info` / `--sw-type` | - | string | 否 | `""` | 事务查询日期、法律状态信息、法律状态类型（`sw` 模式）。 |
-| `--out` / `--out-dir` | `-o` | string | 否 | `~/素材/patents` | 本地存储目录（自动持久化至 `~/.shrimp/skills/leo-lantern/cnipa-source-config.json`）。 |
-| `--set-out` / `--get-out` | - | string/flag | 否 | - | 单独设置或查看持久化输出目录。 |
-
-#### 抗风控与输出机制
-- **请求节流与最小请求原则**：翻页/详情/切片间默认带 `3000~4800ms` 随机抖动；单页满足 `--limit` 时不发多余 `PageQuery`；默认跳过缩略图请求（需时加 `--with-thumb`）。
-- **400 熔断保底落盘**：一旦分页、切片或详情遭遇 `400/403/429/202` 拦截，立即熔断停止后续请求并将已抓数据安全落盘，同时在 JSON 中标记 `circuit_broken: true`。
-- **时间切片与增量去重**：配合 `--slice-days` / `--slice-month` 与 `--dedup-file`，可将大跨度检索拆为多批并在多次执行间自动按 `pn`（公开号）去重累积。
-
-#### 标准交付产物结构
-每次采集生成独立会话目录：`<outputDir>/YYYY-MM-DD_HHMMSS_<mode>_<target>/`：
-- `专利事实.json`：结构化机器可读专利数据（含著录项目、完整摘要、IPC、代理机构、事务记录、文献版本句柄、熔断与去重统计）。
-- `专利事实.md`：人类与 Agent 双用的可读专利检索报告。
-- `media/`：开启 `--with-thumb` 时的首图缩略图，以及（开启 `--download-pages` 时）`media/pages/<公布号>/page_001.png...` 说明书全页图。
-
-#### 调用示例
-
-```bash
-# 1. 关键词快捷检索（前 10 条）：
-node <skillDir>/recipes/cnipa-source.mjs --query "人工智能" --limit 10
-
-# 2. 按自然月切片分批抓取并增量去重合并：
-node <skillDir>/recipes/cnipa-source.mjs \
-  --mode advanced --applicant "华为技术有限公司" \
-  --pd-begin 2026-09-01 --pd-end 2026-11-15 --slice-month --limit 10 \
-  --delay-ms 3500 --dedup-file "./huawei_patents.json"
-
-# 3. 查询单件专利详情、事务数据并无验证码下载说明书每页 PNG：
-node <skillDir>/recipes/cnipa-source.mjs --mode detail --pn CN123115842A --download-pages
-
-# 4. 事务（法律状态）专项查询：
-node <skillDir>/recipes/cnipa-source.mjs --mode sw --an 2024115380488 --deep
-```
+针对高频复杂业务平台，技能内置了开箱即用的发布与采集 Recipe 脚本。**执行某个平台的 Recipe 前，请先读取对应文档获取完整参数表与调用示例**（均位于 `<skillDir>/references/recipes/`）。
+
+### 1. 内容自动发布配方
+
+> 任一步骤失败均以非零退出码中止，不会继续提交；`🎉` 只在确认发布成功时出现。B 站与小红书点击后只提示“已点击”，须查看截图或平台管理页核对。
+
+| 平台 | 脚本路径 | 核心能力 | 详细文档 |
+| :--- | :--- | :--- | :--- |
+| 哔哩哔哩 | `recipes/bilibili-publish.mjs` | 视频 CDP 上传、推荐高光帧/自定义封面、AI 声明、标签回车注入、定时发布 | [bilibili-publish.md](references/recipes/bilibili-publish.md) |
+| 小红书 | `recipes/xhs-publish.mjs` | 多图批量上传（1~18张）、Markdown 脱壳、Shadow DOM 穿透提交、定时发布 | [xhs-publish.md](references/recipes/xhs-publish.md) |
+| 抖音 | `recipes/douyin-publish.mjs` | 视频/图文双模发布、EditorKit 富文本与话题注入、封面裁剪弹层、AI 声明、全页预览 | [douyin-publish.md](references/recipes/douyin-publish.md) |
+
+### 2. 站点情报与素材采集配方
+
+| 平台 | 脚本路径 | 核心能力 | 详细文档 |
+| :--- | :--- | :--- | :--- |
+| X (Twitter) | `recipes/x-source.mjs` | 关注流/搜索/用户推文抓取，`name=orig` 原图、`gallery-dl` / `yt-dlp` 视频本地化 | [x-source.md](references/recipes/x-source.md) |
+| LINUX DO | `recipes/linuxdo-source.mjs` | 过 Cloudflare 5秒盾，提取楼主原文 Markdown、高赞回复与 `/original/` 原图 | [linuxdo-source.md](references/recipes/linuxdo-source.md) |
+| Instagram | `recipes/instagram-source.mjs` | 关注/博主/标签/单帖抓取，轮播原图与 Reels 视频本地化（`gallery-dl` + `yt-dlp`） | [instagram-source.md](references/recipes/instagram-source.md) |
+| Reddit | `recipes/reddit-source.mjs` | 首页/板块/搜索/单帖抓取，正文 Markdown、高赞评论与 `v.redd.it` 原画视频下载 | [reddit-source.md](references/recipes/reddit-source.md) |
+| YouTube | `recipes/youtube-source.mjs` | 视频列表/频道/搜索/详情提取，封面、双语字幕（逐字稿）与 MP4 下载 | [youtube-source.md](references/recipes/youtube-source.md) |
+| Pixabay | `recipes/pixabay-source.mjs` | 免版税照片/插画/矢量图/视频检索，授权信息、相机 EXIF 与高清原画下载 | [pixabay-source.md](references/recipes/pixabay-source.md) |
+| 发表情 | `recipes/fabiaoqing-source.mjs` | 关键词/套图合集/热门榜采集，自动升阶 `/large/` 超清图与动态 GIF | [fabiaoqing-source.md](references/recipes/fabiaoqing-source.md) |
+| GitHub | `recipes/github-source.mjs` | 单仓/Trending/搜索采集，语言占比、Release、原生 `README.md` 与预览图落盘 | [github-source.md](references/recipes/github-source.md) |
+| Product Hunt | `recipes/producthunt-source.mjs` | 每日热榜/分类/搜索/单品解析，Slogan、Pitch、官网直链与 Logo/截图下载 | [producthunt-source.md](references/recipes/producthunt-source.md) |
+| 抖音 | `recipes/douyin-source.mjs` | 热榜/搜索/单视频解析，嗅探真实 CDN 无水印 MP4、封面与高赞神评 | [douyin-source.md](references/recipes/douyin-source.md) |
+| 哔哩哔哩 | `recipes/bilibili-source.mjs` | 排行榜/热门/搜索/单视频解析，`__INITIAL_STATE__`、神评与 1080P 视频合并 | [bilibili-source.md](references/recipes/bilibili-source.md) |
+| 中国专利 (CNIPA) | `recipes/cnipa-source.mjs` | 过瑞数 WAF 同源检索/高级检索/详情/事务查询、时间切片去重与说明书逐页 PNG | [cnipa-source.md](references/recipes/cnipa-source.md) |
 
 > **提示（脱离网关自包含运行）**：
-> - **独立 CLI 模式**：可在技能目录直接通过 Node.js 执行命令行交互：
->   `node ./scripts/cli/index.mjs <command>`
-> - **发布 Recipe 的退出码**：任一步骤失败都以非零退出并中止，不会继续提交；`🎉` 只在确认发布成功时出现。B 站和小红书无法确认平台是否受理，点击后只提示“已点击”，须查看截图或平台管理页核对。
+> - **独立 CLI 模式**：可在技能目录直接通过 Node.js 执行命令行交互：`node ./scripts/cli/index.mjs <command>`
+> - **发布 Recipe 通用约定**：支持 `--dry-run` 预览截停、`--now` 立即发布；所有业务参数均由命令行传入，无硬编码。
