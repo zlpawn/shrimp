@@ -1,0 +1,17 @@
+{
+  "name": "leo-reverse-clone",
+  "version": "1.0.0",
+  "private": true,
+  "description": "面向逆向拆解与 1:1 复刻制作的薄路由与无头常驻 MCP 桥接中枢：按需探测并引导下载 rea-agents 与 craft-anything-cli 及其官方 Skill，零全局 MCP 污染，固化 AI 主导逆向→规格书→复刻→自检交付人类验收闭环。",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "probe": "node scripts/probe.mjs",
+    "probe:updates": "node scripts/probe.mjs --check-updates",
+    "config": "node scripts/config.mjs",
+    "install:plan": "node scripts/install.mjs --engine all",
+    "bridge:status": "uv run scripts/mcp_bridge.py status",
+    "bridge:stop": "uv run scripts/mcp_bridge.py stop all",
+    "test": "node --test tests/test_skill.mjs && uv run --with \"httpx>=0.27.0,<1\" python -m unittest discover -s tests -p \"test_*.py\" -v"
+  }
+}

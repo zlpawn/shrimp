@@ -745,6 +745,30 @@
       "requiresDaemon": false,
       "promoted": true,
       "managed": true
+    },
+    {
+      "id": "leo-reverse-clone",
+      "name": "leo-reverse-clone",
+      "title": "Leo Reverse Clone 逆向拆解与复刻中枢",
+      "summary": "面向 AI 主导逆向分析与 1:1 复刻制作（人类只验收）的薄路由与无头常驻 MCP 桥接技能，统一纳管 rea-agents 与 craft-anything-cli，按需询问下载官方下游 Skill 与纯 CLI 二进制，零全局 MCP 污染，归档至 ~/素材/reverse-clone/。",
+      "category": "research",
+      "categoryLabel": "研究与知识",
+      "icon": "🛠️",
+      "featured": true,
+      "tags": [
+        "reverse-engineering",
+        "clone",
+        "rebuild",
+        "rea",
+        "craft-anything",
+        "apk",
+        "mcp-bridge",
+        "逆向复刻",
+        "克隆制作"
+      ],
+      "requiresDaemon": false,
+      "promoted": true,
+      "managed": true
     }
   ]
 }
