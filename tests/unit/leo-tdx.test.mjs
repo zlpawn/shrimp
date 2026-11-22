@@ -4,6 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import zlib from "node:zlib";
 
 import {
   candidateWorkBuddyRoots,
@@ -11,9 +12,11 @@ import {
   readToken,
   resolveSecretPaths,
   saveToken,
+  syncAiDataToken,
 } from "../../lib/skills/leo-tdx-stock/scripts/cli/lib/token.mjs";
 import { createMcpClient, McpError } from "../../lib/skills/leo-tdx-stock/scripts/cli/lib/mcp.mjs";
 import { runCli } from "../../lib/skills/leo-tdx-stock/scripts/cli/lib/cli.mjs";
+import { extractZipBuffer } from "../../lib/skills/leo-tdx-stock/scripts/cli/lib/zip.mjs";
 import { scanInRepoClis } from "../../lib/cli-core/discovery.mjs";
 import { SkillInstaller } from "../../lib/session-sync/skill-installer.mjs";
 
@@ -162,7 +165,18 @@ test("CLI maps commands, markets, and outputs without exposing credentials", asy
   assert.equal(quote.ok, true);
 
   await runCli(["kline", "000001", "--market", "SZ", "--period", "day", "--count", "30"], { env, transport });
-  assert.deepEqual(calls.at(-1), ["tdx_kline", { code: "000001", setcode: "0", period: "day", count: 30 }]);
+  assert.deepEqual(calls.at(-1), ["tdx_kline", { code: "000001", setcode: "0", period: "4", wantNum: 30 }]);
+
+  await runCli(["quotes", "TSLA", "--market", "US"], { env, transport });
+  assert.deepEqual(calls.at(-1), ["tdx_quotes", { code: "TSLA", setcode: "74" }]);
+
+  await runCli(["kline", "00100", "--market", "HK", "--period", "5m", "--count", "5", "--adj", "none"], { env, transport });
+  assert.deepEqual(calls.at(-1), ["tdx_kline", { code: "00100", setcode: "31", period: "0", wantNum: 5, tqFlag: "0" }]);
+
+  await runCli(["lookup", "特斯拉", "--market", "US"], { env, transport });
+  assert.deepEqual(calls.at(-1), ["tdx_lookup_stock", { query: "特斯拉", range: "MG-GP" }]);
+
+  await assert.rejects(runCli(["kline", "600519", "--period", "bad"], { env, transport }), /Unknown period/);
 
   await runCli(["lookup", "茅台"], { env, transport });
   assert.deepEqual(calls.at(-1), ["tdx_lookup_stock", { query: "茅台" }]);
@@ -353,4 +367,197 @@ test("futures, option, deep info, technical indicator and listening commands map
   await runCli(["listen", "00700", "--market", "HK"], { env, transport });
   assert.match(calls.at(-1)[1].date, /^\d{4}-\d{2}-\d{2}$/);
   assert.equal(calls.at(-1)[1].setcode_code, "31_00700");
+});
+
+function buildSyntheticZip(files) {
+  const localChunks = [];
+  const centralChunks = [];
+  let offset = 0;
+
+  for (const { name, content, deflate = true } of files) {
+    const nameBuf = Buffer.from(name, "utf8");
+    const raw = Buffer.isBuffer(content) ? content : Buffer.from(content, "utf8");
+    const isDir = name.endsWith("/");
+    const method = !isDir && deflate ? 8 : 0;
+    const compressed = isDir ? Buffer.alloc(0) : method === 8 ? zlib.deflateRawSync(raw) : raw;
+
+    const local = Buffer.alloc(30 + nameBuf.length);
+    local.writeUInt32LE(0x04034b50, 0);
+    local.writeUInt16LE(20, 4);
+    local.writeUInt16LE(method, 8);
+    local.writeUInt32LE(compressed.length, 18);
+    local.writeUInt32LE(raw.length, 22);
+    local.writeUInt16LE(nameBuf.length, 26);
+    nameBuf.copy(local, 30);
+    localChunks.push(local, compressed);
+
+    const cd = Buffer.alloc(46 + nameBuf.length);
+    cd.writeUInt32LE(0x02014b50, 0);
+    cd.writeUInt16LE(20, 4);
+    cd.writeUInt16LE(20, 6);
+    cd.writeUInt16LE(method, 10);
+    cd.writeUInt32LE(compressed.length, 20);
+    cd.writeUInt32LE(raw.length, 24);
+    cd.writeUInt16LE(nameBuf.length, 28);
+    cd.writeUInt32LE(offset, 42);
+    nameBuf.copy(cd, 46);
+    centralChunks.push(cd);
+
+    offset += local.length + compressed.length;
+  }
+
+  const centralBuf = Buffer.concat(centralChunks);
+  const eocd = Buffer.alloc(22);
+  eocd.writeUInt32LE(0x06054b50, 0);
+  eocd.writeUInt16LE(files.length, 8);
+  eocd.writeUInt16LE(files.length, 10);
+  eocd.writeUInt32LE(centralBuf.length, 12);
+  eocd.writeUInt32LE(offset, 16);
+
+  return Buffer.concat([...localChunks, centralBuf, eocd]);
+}
+
+test("zip extractor unpacks deflate/stored entries, strips single wrapper dir, and blocks path traversal", () => {
+  const dir = tempHome();
+  try {
+    const zip = buildSyntheticZip([
+      { name: "tdx-aidata/", content: "", deflate: false },
+      { name: "tdx-aidata/SKILL.md", content: "---\nname: tdx-aidata\nversion: 1.3.2\n---\n", deflate: true },
+      { name: "tdx-aidata/assets/note.txt", content: "ok", deflate: false },
+    ]);
+    extractZipBuffer(zip, dir, { stripPrefix: "tdx-aidata" });
+    assert.match(fs.readFileSync(path.join(dir, "SKILL.md"), "utf8"), /version: 1\.3\.2/);
+    assert.equal(fs.readFileSync(path.join(dir, "assets", "note.txt"), "utf8"), "ok");
+
+    const evilZip = buildSyntheticZip([{ name: "../escape.txt", content: "bad" }]);
+    assert.throws(() => extractZipBuffer(evilZip, dir), /Unsafe ZIP entry path/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("skills command installs, links to antigravity, detects updates, and removes without needing TDX token", async () => {
+  const home = tempHome();
+  const secretsDir = tempHome();
+  let remoteVer = "1.1.2";
+  const fetchImpl = async (url, init = {}) => {
+    const id = path.basename(url).replace(/\.(js|zip)$/, "");
+    const md = `---\nname: ${id}\nversion: ${remoteVer}\n---\n# ${id}\n`;
+    if (url.endsWith(".js")) {
+      return new Response(`(function(){ const skill = ${JSON.stringify({ id, markdown: md })}; })();`, { status: 200 });
+    }
+    if (init.method === "HEAD") {
+      return new Response(null, { status: 200, headers: { etag: `"etag-${remoteVer}"` } });
+    }
+    const zip = buildSyntheticZip([
+      { name: "SKILL.md", content: md, deflate: true },
+      { name: "assets/tpl.html", content: "<h1>ok</h1>", deflate: false },
+    ]);
+    return new Response(zip, { status: 200, headers: { etag: `"etag-${remoteVer}"` } });
+  };
+
+  try {
+    const env = { SHRIMP_SECRETS_DIR: secretsDir };
+    const installed = JSON.parse(await runCli(["skills", "install", "tdx-financial-quick-read", "tdx-aidata"], {
+      env,
+      homeDir: home,
+      fetchImpl,
+    }));
+    assert.equal(installed.ok, true);
+    assert.equal(installed.results.length, 2);
+    assert.equal(installed.results[0].action, "installed");
+    assert.equal(installed.results[0].linkStatus, "linked");
+
+    const centralSkill = path.join(home, ".agents", "skills", "tdx-financial-quick-read");
+    const linkSkill = path.join(home, ".gemini", "config", "skills", "tdx-financial-quick-read");
+    assert.ok(fs.existsSync(path.join(centralSkill, "SKILL.md")));
+    assert.ok(fs.lstatSync(linkSkill).isSymbolicLink());
+    assert.equal(fs.realpathSync(linkSkill), fs.realpathSync(centralSkill));
+
+    const upToDate = JSON.parse(await runCli(["skills", "update"], { env, homeDir: home, fetchImpl }));
+    assert.equal(upToDate.results.every((r) => r.action === "up_to_date"), true);
+
+    remoteVer = "1.2.0";
+    const statusRemote = JSON.parse(await runCli(["skills", "status", "tdx-aidata", "--remote"], { env, homeDir: home, fetchImpl }));
+    assert.equal(statusRemote.skills[0].updateAvailable, true);
+    assert.equal(statusRemote.skills[0].remoteVersion, "1.2.0");
+
+    const updated = JSON.parse(await runCli(["skills", "update", "tdx-aidata"], { env, homeDir: home, fetchImpl }));
+    assert.equal(updated.results[0].action, "updated");
+    assert.equal(updated.results[0].previousVersion, "1.1.2");
+    assert.equal(updated.results[0].version, "1.2.0");
+
+    const removed = JSON.parse(await runCli(["skills", "remove", "tdx-aidata"], { env, homeDir: home, fetchImpl }));
+    assert.equal(removed.results[0].action, "removed");
+    assert.equal(fs.existsSync(path.join(home, ".agents", "skills", "tdx-aidata")), false);
+    assert.equal(fs.existsSync(path.join(home, ".gemini", "config", "skills", "tdx-aidata")), false);
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+    fs.rmSync(secretsDir, { recursive: true, force: true });
+  }
+});
+
+test("api command forwards top-level F10 flags and spreads JSON object params", async () => {
+  const calls = [];
+  const transport = { callTool: async (name, args) => { calls.push([name, args]); return ""; } };
+  const env = { TDX_TOKEN: TOKEN };
+
+  await runCli([
+    "api", "TdxShareCW.ph_agf10_gzfx",
+    "--code", "600519",
+    "--extra-one", "3Y",
+    "--extra-two", "PE",
+  ], { env, transport });
+  assert.deepEqual(calls.at(-1), ["tdx_api_data", {
+    entry: "TdxShareCW.ph_agf10_gzfx",
+    code: "600519",
+    extraOne: "3Y",
+    extraTwo: "PE",
+  }]);
+
+  await runCli([
+    "api", "TdxSharePCCW.tdxf10_gg_jyds",
+    "--params", "{\"code\":\"000001\",\"fixedTag\":\"zjlx\"}",
+    "--page", "2",
+  ], { env, transport });
+  assert.deepEqual(calls.at(-1), ["tdx_api_data", {
+    entry: "TdxSharePCCW.tdxf10_gg_jyds",
+    code: "000001",
+    fixedTag: "zjlx",
+    pageNo: "2",
+  }]);
+});
+
+test("saveToken and token sync synchronize TdxAiData.ini inside .venv without exposing secrets", async () => {
+  const home = tempHome();
+  const iniPath = path.join(home, ".shrimp", "skills", "leo-tdx-stock", ".venv", "lib", "python3.15", "site-packages", "tdxaidata", "lib", "TdxAiData.ini");
+  fs.mkdirSync(path.dirname(iniPath), { recursive: true });
+  fs.writeFileSync(iniPath, "[TcHqHost]\nHostNum=1\n\n[Token]\ntoken=\n", "utf8");
+
+  try {
+    saveToken(TOKEN, { homeDir: home, env: {} });
+    const content = fs.readFileSync(iniPath, "utf8");
+    assert.match(content, /^token=TDX-1-test-token$/m);
+    if (process.platform !== "win32") {
+      assert.equal(fs.statSync(iniPath).mode & 0o777, 0o600);
+    }
+
+    // Overwrite ini with empty token (simulating tdxaidata upgrade) and test `token sync`
+    fs.writeFileSync(iniPath, "[Token]\ntoken=\n", "utf8");
+    const syncOut = JSON.parse(await runCli(["token", "sync"], {
+      env: {},
+      tokenManager: {
+        readToken: () => readToken({ homeDir: home, env: {} }),
+        extractWorkBuddyToken,
+        saveToken: (t) => saveToken(t, { homeDir: home, env: {} }),
+        resolveSecretPaths: () => resolveSecretPaths({ homeDir: home, env: {} }),
+        syncAiDataToken: (t) => syncAiDataToken(t, { homeDir: home, env: {} }),
+      },
+    }));
+    assert.equal(syncOut.status, "synced");
+    assert.equal(syncOut.syncedCount, 1);
+    assert.match(fs.readFileSync(iniPath, "utf8"), /^token=TDX-1-test-token$/m);
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+  }
 });

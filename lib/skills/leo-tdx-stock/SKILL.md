@@ -1,54 +1,41 @@
 ---
 name: leo-tdx-stock
-description: 通过 leo-tdx CLI 查询通达信股票、K 线、选股、指标、公告、研报、资讯与宏观数据。
+description: 通过 leo-tdx CLI 查询通达信行情、K 线、选股、指标、公告、研报、资讯、宏观与 F10 数据，并管理与供数通达信 SkillHub 下游投研及量化技能（财报速读、个股深度分析、公司质地打分、估值导航员、龙虎榜掘金、业绩预告博弈、AiData）。
 ---
 
 # Leo TDX Stock
 
-触发时机：用户询问股票行情、走势、K 线、选股、估值、公司公告、研报、财经新闻或宏观数据。
+触发时机：用户询问股票/期货/期权行情、K 线、选股、技术指标、公告研报、新闻宏观、基本面投研报告或 `tdx-aidata` 量化脚本。
 
-## 工作流
+## 核心工作流
 
-1. 不知道代码时先执行 `leo-tdx lookup <名称>`。
-2. 行情使用 `leo-tdx quotes <code> --market SH|SZ|BJ|HK`。
-3. 历史走势使用 `leo-tdx kline <code> --market ... --period day|week|month|1m|5m --count N`。
-4. 参数不确定时执行 `leo-tdx schema <tool>`，不要猜测服务端 schema。
-5. 枚举工具时优先使用 `leo-tdx tools --name-only`，避免完整 schema 消耗上下文。
-6. 公告、研报、资讯使用结构化参数：`--name`、`--from`、`--to`、`--keywords`；宏观必须使用管道式 `主体|开始日期|结束日期|关键词|描述`。
-7. 程序化处理使用默认 JSON 输出；`--output text` 仅用于给人类展示。
-8. 选项参数（`--xxx`）放在位置参数之后。
+1. 不知道代码先 `leo-tdx lookup <名称>`（港股 `--market HK`、美股 `--market US`、期货 `--range QH`、期权 `--range QQ`）。
+2. 核心子命令：`quotes`、`kline`、`screener`、`notice` / `report` / `news`、`macro`、`futures` / `futures-info`、`option`、`deep`、`tech-lookup` / `tech`、`listen`、`api`。完整用法与示例见 [references/README.md](references/README.md)。
+3. 参数不确定时先 `leo-tdx tools --name-only` 与 `leo-tdx schema <tool>`，不要猜测服务端 schema。
+4. 市场映射：`SH=1`、`SZ=0`、`BJ=2`、`HK=31`、`US=74`（6/68 沪，00/30 深，43/83/87 北；港股 5 位数字、美股字母代码均支持 `quotes` / `kline`）。
+5. 选项参数（`--xxx`）放位置参数之后；程序化处理用默认 JSON，`--output text` 仅用于展示。
 
-## 扩展场景
+## 下游技能管理与路由
 
-| 场景 | 命令 |
-|---|---|
-| 期货/期权查代码 | `leo-tdx lookup 黄金 --range QH`；期权标的 `--range QQ`；其他：`ZS` 指数、`JJ` 基金、`HK-GP` 港股、`MG-GP` 美股 |
-| 期货多合约行情 | `leo-tdx futures <setDomain> <subCode> [--limit N] [--contracts-only]`，如 `futures 30 AU`；省略 subCode 为整个市场排行 |
-| 期货深度资料（规则、持仓排行、仓单、基差、CTD 等） | `leo-tdx futures-info "查询 AU 基差走势"`，query 必须含品种/合约代码，不要只写中文名 |
-| 期权 T 型报价 | `leo-tdx option <underlyMarket> <underlyCode> [--month 2612] [--near 现价]`；不带 `--month` 只返回可选月份 |
-| 证券/基金/指数深度资料（财报、股东、分红、成分股等） | `leo-tdx deep "查询 600519 资产负债表" --type A`（可选 A / HK / US / FUND / INDEX），type 取 lookup 返回的 entity_type |
-| 技术指标时间序列（MACD、KDJ、BOLL 等，仅日线） | 先 `leo-tdx tech-lookup 随机指标`，再 `leo-tdx tech <code> --market SZ --indicators KDJ --count 10`；需带参数时用 `--indicators-json` 原样传 lookup 的 id/set/parameters |
-| 近期资讯 AI 摘要与多空分析 | `leo-tdx listen <code> --market SH [--date YYYY-MM-DD]`；默认今天，缓存约 3 天；返回空时如实告知，不要编造 |
+`leo-tdx skills` 管理 SkillHub 外部技能（安装至 `~/.agents/skills/<id>/` 并软链至 `~/.gemini/config/skills/<id>`，无需 TDX token）：`list`、`status --remote`、`install [--research|--all|<id>]`、`update`、`remove <id>`。
 
-## 市场映射
+命中以下场景先 `leo-tdx skills status` 检查是否已安装；未安装时提示或确认后 `leo-tdx skills install <id>`；已安装则读取 `~/.agents/skills/<id>/SKILL.md` 并按 [references/data-mapping.md](references/data-mapping.md) 供数：
 
-- SH / 沪市 → `setcode=1`
-- SZ / 深市 → `setcode=0`
-- BJ / 北交所 → `setcode=2`
-- HK / 港股 → `setcode=31`
+| 场景意图 | 下游技能 ID | 供数 / 运行方式 |
+|---|---|---|
+| 财报速读 / 三表异常 / 杜邦 | `tdx-financial-quick-read` | `leo-tdx` MCP（见 `data-mapping.md`） |
+| 个股深度分析 / 一页纸研报 | `tdx-stock-analysis` | `leo-tdx` MCP（见 `data-mapping.md`） |
+| 公司质地打分 / 好公司评估 | `tdx-gszddf` | `leo-tdx` MCP（见 `data-mapping.md`） |
+| 估值方法 / 市场预期 / 重估 | `tdx-valuation-navigator` | `leo-tdx` MCP（见 `data-mapping.md`） |
+| 龙虎榜席位 / 游资机构博弈 | `tdx-dragon-tiger-miner` | `leo-tdx` MCP（见 `data-mapping.md`） |
+| 业绩预告 / 预期差博弈 | `tdx-yjygby` | `leo-tdx` MCP（见 `data-mapping.md`） |
+| 本地量化 / Python 高频取数 | `tdx-aidata` | `uv` + `~/.shrimp/skills/leo-tdx-stock/.venv`（非 MCP） |
 
-常见推断：6/68 沪市，00/30 深市，43/83/87 北交所。无法判断时先 lookup。
+- **Python 量化环境约定**：涉及 `tdx-aidata` 安装依赖或运行脚本时，一律使用 `uv` 和 `~/.shrimp/skills/leo-tdx-stock/.venv`（安装：`uv pip install --python ~/.shrimp/skills/leo-tdx-stock/.venv <pkg>`；运行：`~/.shrimp/skills/leo-tdx-stock/.venv/bin/python ...`），不要污染系统全局 Python；`tdxaidata` 与 `leo-tdx` 共用 `~/.shrimp/skills/leo-tdx-stock/token`（保存或重装依赖后可用 `leo-tdx token sync` 同步至 `TdxAiData.ini`）。
 
 ## 安全与边界
 
-- 只能通过 `leo-tdx` 调用，不要直接发 HTTP 请求。
-- 永远不要读取、输出或让用户把 TDX token 发到聊天里。
-- 认证失败时提示用户运行 `leo-tdx token extract`（WorkBuddy），或自行在终端运行 `pbpaste | leo-tdx token set --stdin`。
-- 港股不支持实时 quotes / K 线，改用 lookup、report、news、listen。
-- 单次返回不超过 100 条，除非用户明确要求更多。
-- 优先使用具体子命令；`leo-tdx call` 仅用于 schema 明确后的低频兜底（如 `tdx_add_favorite` 等客户端联动工具）。
-
-> **提示（脱离网关自包含运行）**：
-> 若未注册全局 `leo-tdx` 命令，可在技能目录直接通过 Node.js 执行：
-> `node ./scripts/cli/index.mjs <command>`
-
+- 只能通过 `leo-tdx` 调 MCP，不要直接发 HTTP 请求；永远不要读取、输出或让用户把 token 发到聊天里。
+- 认证失败提示运行 `leo-tdx token extract` 或 `pbpaste | leo-tdx token set --stdin`。
+- 单次返回不超过 100 条（明确要求除外）。
+- `leo-tdx call` 仅用于 schema 明确后的低频兜底；脱离网关时可用 `node ./scripts/cli/index.mjs <command>`。
