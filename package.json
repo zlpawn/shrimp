@@ -90,6 +90,7 @@
     "test:leo-ppt-router": "node --test tests/unit/leo-ppt-router-skill.test.mjs",
     "test:live-inspector-mysql": "node --test tests/unit/leo-live-inspector-sql-analysis.test.mjs tests/unit/leo-live-inspector-test-mysql-cli.test.mjs",
     "sync:extension": "node scripts/sync-extension.mjs",
+    "sync:ofm": "node scripts/sync-ofm.mjs",
     "sync:lantern-cli": "node -e \"import('node:fs').then(fs => { const src = 'lib/skills/leo-lantern/scripts/cli'; const dst = '/Users/pa/project/LEO/leo-live-runner/skills/leo-live-inspector/scripts/cli'; if (fs.existsSync(dst)) { fs.cpSync(src, dst, { recursive: true, force: true }); console.log('Synced to', dst); } })\"",
     "test": "npm run test:trend-intel"
   },

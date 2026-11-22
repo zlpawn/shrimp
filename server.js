@@ -219,6 +219,12 @@ import {
 } from "./lib/remote-agent/index.mjs";
 import { routeWorkbuddyRequest } from "./lib/workbuddy/routes.mjs";
 import { ensureReady as ensureWorkbuddyReady } from "./lib/workbuddy/supervisor.mjs";
+import { routeOfmRequest } from "./lib/ofm/routes.mjs";
+import {
+  ensureReady as ensureOfmReady,
+  readOfmForwardKey,
+  DEFAULT_OFM_PORT,
+} from "./lib/ofm/supervisor.mjs";
 import {
   resolveRemoteSessionPaths,
   createRemoteSessionConfigStore,
@@ -1594,6 +1600,11 @@ async function route(req, res) {
   if (reqPath.startsWith("/v1/workbuddy")) {
     if (!checkLocalAuth(req, res)) return;
     await routeWorkbuddyRequest(req, res, context, reqPath);
+    return;
+  }
+  if (reqPath.startsWith("/v1/ofm")) {
+    if (!checkLocalAuth(req, res)) return;
+    await routeOfmRequest(req, res, context, reqPath);
     return;
   }
   if (reqPath.startsWith("/v1/nat-traversal")) {
@@ -5611,7 +5622,7 @@ async function forwardOpenAIChatCompletionsResolved(body, clientReq, clientRes, 
   ).trim() || null;
   const route = resolveConfiguredModel(
     requestedModel,
-    ["anthropic", "openai-chat", "openai-responses", "grok", "antigravity", "codex-subscription", "chatgpt-codex", "workbuddy"],
+    ["anthropic", "openai-chat", "openai-responses", "grok", "antigravity", "codex-subscription", "chatgpt-codex", "workbuddy", "ofm"],
     context.client,
     preferredEndpointId,
   );
@@ -6456,7 +6467,7 @@ async function forwardResolvedCodexResponse({
   // gpt-* models via fallback matching.
   let route = resolveConfiguredModelPrecise(
     requestedModel,
-    ["anthropic", "openai-chat", "openai-responses", "grok", "antigravity", "codex-subscription", "chatgpt-codex", "workbuddy"],
+    ["anthropic", "openai-chat", "openai-responses", "grok", "antigravity", "codex-subscription", "chatgpt-codex", "workbuddy", "ofm"],
     context.client,
   );
   if (!route && context.client === "codex" && isOfficialCodexModel(requestedModel)) {
@@ -6478,7 +6489,7 @@ async function forwardResolvedCodexResponse({
   if (!route) {
     route = resolveConfiguredModel(
       requestedModel,
-      ["anthropic", "openai-chat", "openai-responses", "grok", "antigravity", "codex-subscription", "chatgpt-codex", "workbuddy"],
+      ["anthropic", "openai-chat", "openai-responses", "grok", "antigravity", "codex-subscription", "chatgpt-codex", "workbuddy", "ofm"],
       context.client,
     );
   }
@@ -6632,7 +6643,7 @@ async function forwardResolvedCodexResponse({
     return;
   }
 
-  if (route?.provider?.type === "openai-chat" || route?.provider?.type === "workbuddy") {
+  if (route?.provider?.type === "openai-chat" || route?.provider?.type === "workbuddy" || route?.provider?.type === "ofm") {
     if (injectedSearch.selected) {
       const loop = await runGatewayWebSearchResponsesLoop({
         body: withoutStreamFlag(body),
@@ -7842,6 +7853,11 @@ function sanitizeDanglingToolCallsResponsesInput(input) {
   return newInput;
 }
 
+function resolveOfmPortFromProvider(provider) {
+  const m = String(provider?.base_url || "").match(/:(\d+)(?:\/|$)/);
+  return m ? parseInt(m[1], 10) : DEFAULT_OFM_PORT;
+}
+
 async function fetchConfiguredAnthropic(provider, body, clientReq, signal) {
   if (!provider?.base_url) {
     throw httpError(500, `Provider ${provider?.id || "unknown"} is missing base_url`);
@@ -7853,7 +7869,15 @@ async function fetchConfiguredAnthropic(provider, body, clientReq, signal) {
     return fetchConfiguredAnthropicWithCredentials(provider, body, clientReq, signal);
   }
 
-  const upstreamApiKey = providerApiKey(provider, clientReq);
+  let upstreamApiKey = providerApiKey(provider, clientReq);
+  if (!upstreamApiKey && provider.type === "ofm") {
+    upstreamApiKey = readOfmForwardKey();
+    if (!upstreamApiKey) {
+      const port = resolveOfmPortFromProvider(provider);
+      await ensureOfmReady({ port });
+      upstreamApiKey = readOfmForwardKey();
+    }
+  }
   if (!upstreamApiKey) {
     throw httpError(
       401,
@@ -7921,6 +7945,17 @@ async function fetchConfiguredAnthropic(provider, body, clientReq, signal) {
 
       return res;
     } catch (error) {
+      if (provider.type === "ofm" && (error?.code === "ECONNREFUSED" || error?.cause?.code === "ECONNREFUSED" || String(error?.message).includes("ECONNREFUSED"))) {
+        try {
+          const port = resolveOfmPortFromProvider(provider);
+          logInfo("ofm_auto_ensure", { provider: provider.id, port });
+          await ensureOfmReady({ port });
+          const refreshedKey = readOfmForwardKey() || upstreamApiKey;
+          return await doFetch(refreshedKey);
+        } catch (ensureErr) {
+          logInfo("ofm_auto_ensure_failed", { error: ensureErr.message });
+        }
+      }
       const message =
         error?.name === "AbortError"
           ? `Timed out calling provider ${provider.id}`
@@ -7982,6 +8017,14 @@ async function fetchConfiguredOpenAI(
   }
 
   let upstreamApiKey = providerApiKey(provider, clientReq);
+  if (!upstreamApiKey && provider.type === "ofm") {
+    upstreamApiKey = readOfmForwardKey();
+    if (!upstreamApiKey) {
+      const port = resolveOfmPortFromProvider(provider);
+      await ensureOfmReady({ port });
+      upstreamApiKey = readOfmForwardKey();
+    }
+  }
   if (!upstreamApiKey && (provider.type === "workbuddy" || provider.auth === "none")) {
     upstreamApiKey = "workbuddy";
   }
@@ -8040,6 +8083,17 @@ async function fetchConfiguredOpenAI(
           return await doFetch(key);
         } catch (ensureErr) {
           logInfo("workbuddy_auto_ensure_failed", { error: ensureErr.message });
+        }
+      }
+      if (provider.type === "ofm" && (error?.code === "ECONNREFUSED" || error?.cause?.code === "ECONNREFUSED" || String(error?.message).includes("ECONNREFUSED"))) {
+        try {
+          const port = resolveOfmPortFromProvider(provider);
+          logInfo("ofm_auto_ensure", { provider: provider.id, port });
+          await ensureOfmReady({ port });
+          const refreshedKey = readOfmForwardKey() || upstreamApiKey;
+          return await doFetch(refreshedKey);
+        } catch (ensureErr) {
+          logInfo("ofm_auto_ensure_failed", { error: ensureErr.message });
         }
       }
       const message =
@@ -10551,9 +10605,9 @@ function resolveModel(requestedModel) {
 }
 
 function resolveAnthropicRoute(requestedModel, client) {
-  const configured = resolveConfiguredModel(requestedModel, ["anthropic", "openai-chat", "grok", "codex-subscription", "chatgpt-codex", "workbuddy"], client);
+  const configured = resolveConfiguredModel(requestedModel, ["anthropic", "openai-chat", "grok", "codex-subscription", "chatgpt-codex", "workbuddy", "ofm"], client);
   if (configured) {
-    if (!["anthropic", "openai-chat", "grok", "codex-subscription", "chatgpt-codex", "workbuddy"].includes(configured.provider.type)) {
+    if (!["anthropic", "openai-chat", "grok", "codex-subscription", "chatgpt-codex", "workbuddy", "ofm"].includes(configured.provider.type)) {
       throw httpError(
         400,
         `Model ${requestedModel} is configured for provider ${configured.provider.id} (${configured.provider.type}), which cannot serve Anthropic Messages requests yet.`,
@@ -10583,6 +10637,7 @@ function hasConfiguredApiKey(ep) {
   if (ep.type === "grok") return grokHasCredentials(ep);
   if (ep.type === "antigravity") return true; // OAuth-based, no API key needed
   if (ep.type === "workbuddy") return true; // Session-based, no API key needed
+  if (ep.type === "ofm") return true; // Auto-reads forwardKey from ~/.shrimp/providers/ofm/settings.json
   if (isCodexSubscriptionProvider(ep)) return Boolean(resolveCodexSubscriptionAuthPresence(ep));
   if (ep.api_keys?.length) {
     return listEndpointCredentials(ep, GATEWAY_SECRETS, process.env).length > 0;

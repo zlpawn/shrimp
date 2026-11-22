@@ -27,7 +27,7 @@ test("token file resolves and persists with restricted permissions", () => {
   const home = tempHome();
   try {
     saveToken(TOKEN, { homeDir: home, env: {} });
-    const file = path.join(home, ".shrimp", "secrets", "tdx", "token");
+    const file = path.join(home, ".shrimp", "skills", "leo-tdx-stock", "token");
     assert.equal(fs.readFileSync(file, "utf8"), TOKEN + "\n");
     if (process.platform !== "win32") {
       assert.equal(fs.statSync(path.dirname(path.dirname(file))).mode & 0o777, 0o700);
@@ -189,7 +189,9 @@ test("whoami performs a real MCP handshake and raw output preserves JSON-RPC res
 });
 
 test("token set only accepts hidden stdin input and output format is validated", async () => {
-  const env = {};
+  // Isolate secrets in a temp dir; an empty env would fall back to the real ~/.shrimp token file.
+  const secretsDir = tempHome();
+  const env = { SHRIMP_SECRETS_DIR: secretsDir };
   const saved = [];
   const tokenManager = {
     readToken,
@@ -211,6 +213,8 @@ test("token set only accepts hidden stdin input and output format is validated",
     readStdin: async () => TOKEN,
   });
   assert.deepEqual(saved, [TOKEN]);
+  assert.equal(fs.readFileSync(path.join(secretsDir, "tdx", "token"), "utf8"), TOKEN + "\n");
+  fs.rmSync(secretsDir, { recursive: true, force: true });
 
   await assert.rejects(
     runCli(["tools", "--output", "yaml"], { env: { TDX_TOKEN: TOKEN }, transport: { listTools: async () => [] } }),
@@ -291,4 +295,62 @@ test("leo-tdx in-repo CLI and managed skill are discoverable", async () => {
   const skill = SkillInstaller.getManagedSkill("leo-tdx-stock");
   assert.ok(skill);
   assert.ok(fs.existsSync(path.join(process.cwd(), "lib", "skills", "leo-tdx-stock", "SKILL.md")));
+});
+
+test("lookup forwards range for futures/options and maps HK market", async () => {
+  const calls = [];
+  const transport = { callTool: async (name, args) => { calls.push([name, args]); return ""; } };
+  const env = { TDX_TOKEN: TOKEN };
+
+  await runCli(["lookup", "黄金", "--range", "qh"], { env, transport });
+  assert.deepEqual(calls.at(-1), ["tdx_lookup_stock", { query: "黄金", range: "QH" }]);
+  await runCli(["lookup", "腾讯", "--market", "HK"], { env, transport });
+  assert.equal(calls.at(-1)[1].range, "HK-GP");
+  await runCli(["lookup", "茅台"], { env, transport });
+  assert.equal("range" in calls.at(-1)[1], false);
+  await assert.rejects(runCli(["lookup", "x", "--range", "ZZ"], { env, transport }), /Unknown lookup range/);
+});
+
+test("futures, option, deep info, technical indicator and listening commands map to service tools", async () => {
+  const calls = [];
+  const transport = { callTool: async (name, args) => { calls.push([name, args]); return ""; } };
+  const env = { TDX_TOKEN: TOKEN };
+
+  await runCli(["futures", "30", "au", "--limit", "5", "--contracts-only"], { env, transport });
+  assert.deepEqual(calls.at(-1), ["tdx_futures_quotes", {
+    setDomain: "30", subCode: "AU", wantNum: 5, contractsOnly: true, colType: undefined, sortType: undefined,
+  }]);
+  await runCli(["futures", "30"], { env, transport });
+  assert.equal(calls.at(-1)[1].subCode, "");
+
+  await runCli(["futures-info", "查询", "AU", "基差走势"], { env, transport });
+  assert.deepEqual(calls.at(-1), ["tdx_futures_deep_info", { query: "查询 AU 基差走势" }]);
+
+  await runCli(["option", "1", "510050", "--month", "2612", "--near", "3.1"], { env, transport });
+  assert.deepEqual(calls.at(-1), ["tdx_option_t_quote", {
+    underlyMarket: "1", underlyCode: "510050", month: "2612", wantNum: undefined, underlyPrice: "3.1",
+  }]);
+
+  await runCli(["deep", "查询 600519 资产负债表", "--type", "A"], { env, transport });
+  assert.deepEqual(calls.at(-1), ["tdx_security_deep_info", { query: "查询 600519 资产负债表", entity_type: "A股代码" }]);
+  await runCli(["deep", "查询 恒生指数 成分股", "--type", "指数代码"], { env, transport });
+  assert.equal(calls.at(-1)[1].entity_type, "指数代码");
+  await assert.rejects(runCli(["deep", "x"], { env, transport }), /Missing --type/);
+
+  await runCli(["tech-lookup", "随机指标", "布林线", "--limit", "3"], { env, transport });
+  assert.deepEqual(calls.at(-1), ["tdx_technical_indicator_lookup", { queries: ["随机指标", "布林线"], limit: 3 }]);
+
+  await runCli(["tech", "000001", "--market", "SZ", "--indicators", "MACD, KDJ", "--count", "10"], { env, transport });
+  assert.deepEqual(calls.at(-1), ["tdx_technical_indicator_query", {
+    code: "0|000001", indicators: [{ id: "MACD" }, { id: "KDJ" }], limit: 10,
+  }]);
+  await runCli(["tech", "600519", "--market", "SH", "--indicators-json", "[{\"id\":\"KDJ\",\"set\":\"0\",\"parameters\":{\"N\":9}}]"], { env, transport });
+  assert.deepEqual(calls.at(-1)[1].indicators, [{ id: "KDJ", set: "0", parameters: { N: 9 } }]);
+  await assert.rejects(runCli(["tech", "600519", "--market", "SH"], { env, transport }), /Missing --indicators/);
+
+  await runCli(["listen", "600519", "--market", "SH", "--date", "20261120"], { env, transport });
+  assert.deepEqual(calls.at(-1), ["tdx_ai_listening", { setcode_code: "1_600519", date: "2026-11-20" }]);
+  await runCli(["listen", "00700", "--market", "HK"], { env, transport });
+  assert.match(calls.at(-1)[1].date, /^\d{4}-\d{2}-\d{2}$/);
+  assert.equal(calls.at(-1)[1].setcode_code, "31_00700");
 });

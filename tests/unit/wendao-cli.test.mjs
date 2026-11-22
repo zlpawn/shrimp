@@ -35,7 +35,7 @@ test("resolveSecretPaths keeps secrets beside the stable Shrimp home", () => {
   try {
     const paths = resolveSecretPaths({ homeDir: home, env: {} });
 
-    assert.equal(paths.root, path.join(home, ".shrimp", "secrets", "wendao"));
+    assert.equal(paths.root, path.join(home, ".shrimp", "skills", "leo-xiecheng-wendao"));
     assert.equal(paths.token, path.join(paths.root, "token"));
   } finally {
     fs.rmSync(home, { recursive: true, force: true });
@@ -57,8 +57,8 @@ test("resolveSecretPaths allows an explicit secrets override and data-dir pointe
     fs.mkdirSync(path.join(home, ".shrimp"), { recursive: true });
     fs.writeFileSync(path.join(home, ".shrimp", "data-dir.json"), JSON.stringify({ dataDir }), "utf8");
     const migrated = resolveSecretPaths({ homeDir: home, env: {} });
-    assert.equal(migrated.root, path.join(home, ".shrimp", "secrets", "wendao"));
-    assert.notEqual(migrated.root, path.join(dataDir, "secrets", "wendao"));
+    assert.equal(migrated.root, path.join(home, ".shrimp", "skills", "leo-xiecheng-wendao"));
+    assert.notEqual(migrated.root, path.join(dataDir, "skills", "leo-xiecheng-wendao"));
   } finally {
     fs.rmSync(home, { recursive: true, force: true });
     fs.rmSync(pointerHome, { recursive: true, force: true });
@@ -71,11 +71,11 @@ test("saveToken validates, stores, and restricts the token without echoing it", 
     const token = "0123456789abcdef0123456789abcdef";
     saveToken(token, { homeDir: home, env: {} });
 
-    const root = path.join(home, ".shrimp", "secrets", "wendao");
+    const root = path.join(home, ".shrimp", "skills", "leo-xiecheng-wendao");
     const tokenPath = path.join(root, "token");
     assert.equal(fs.readFileSync(tokenPath, "utf8"), token + "\n");
     if (process.platform !== "win32") {
-      assert.equal(fs.statSync(path.join(home, ".shrimp", "secrets")).mode & 0o777, 0o700);
+      assert.equal(fs.statSync(path.join(home, ".shrimp", "skills")).mode & 0o777, 0o700);
       assert.equal(fs.statSync(root).mode & 0o777, 0o700);
       assert.equal(fs.statSync(tokenPath).mode & 0o777, 0o600);
     }
@@ -211,7 +211,7 @@ test("wendao CLI login --stdin writes restricted credentials", async () => {
   const { spawn } = await import("node:child_process");
   const home = tempHome();
   const env = { ...process.env, HOME: home, USERPROFILE: home, WENDAO_API_KEY: "", SHRIMP_SECRETS_DIR: "" };
-  const tokenPath = path.join(home, ".shrimp", "secrets", "wendao", "token");
+  const tokenPath = path.join(home, ".shrimp", "skills", "leo-xiecheng-wendao", "token");
 
   try {
     const login = spawn(

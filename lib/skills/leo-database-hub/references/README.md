@@ -7,7 +7,7 @@
 默认读取：
 
 ```text
-~/.shrimp/secrets/database-hub/connections.json
+~/.shrimp/skills/leo-database-hub/connections.json
 ```
 
 示例：

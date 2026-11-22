@@ -98,3 +98,5 @@ punk-assets/
 /work/
 
 .agents/
+/bin/ofm/
+/bin/.ofm-*

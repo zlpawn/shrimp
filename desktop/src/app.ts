@@ -215,11 +215,12 @@ const ENDPOINT_TYPES = [
     { value: "openai-chat", label: "OpenAI Chat 补全格式" },
     { value: "openai-responses", label: "OpenAI Responses (实验性)" },
     { value: "workbuddy", label: "WorkBuddy 智能体池" },
+    { value: "ofm", label: "OFM 多渠道免费池" },
     { value: "grok", label: "Grok 订阅" },
     { value: "antigravity", label: "Antigravity（Google 订阅）" },
     { value: "codex-subscription", label: "Codex 订阅（ChatGPT）" }
 ];
-const CODEX_ENDPOINT_TYPE_VALUES = ['anthropic', 'openai-responses', 'openai-chat', 'workbuddy', 'grok', 'antigravity'];
+const CODEX_ENDPOINT_TYPE_VALUES = ['anthropic', 'openai-responses', 'openai-chat', 'workbuddy', 'ofm', 'grok', 'antigravity'];
 
 // Media endpoints use purpose + provider; `type` remains exclusive to chat protocols.
 const MEDIA_ENDPOINT_PURPOSES = [
@@ -3938,7 +3939,7 @@ function createEndpointSummaryHTML(client, index, ep) {
     const isDisabled = ep.enabled === false;
     const name = escapeHtml(ep.name || `节点 ${index + 1}`);
     const type = escapeHtml(isEmbedding ? 'OpenAI Embeddings 协议' : (isMedia ? `${mediaPurpose?.groupTitle || '媒体'} · ${mediaProvider.label}` : typeLabel(ep.type)));
-    const url = escapeHtml(isMedia ? shortUrl(mediaProviderBaseUrl(ep)) : (ep.type === 'antigravity' ? 'Google v1internal gRPC · OAuth' : (ep.type === 'codex-subscription' ? 'ChatGPT Codex · 本地订阅' : (ep.type === 'workbuddy' ? `WorkBuddy 账号池 (${(ep.accounts?.length) || 1} 账号)` : shortUrl(ep.base_url)))));
+    const url = escapeHtml(isMedia ? shortUrl(mediaProviderBaseUrl(ep)) : (ep.type === 'antigravity' ? 'Google v1internal gRPC · OAuth' : (ep.type === 'codex-subscription' ? 'ChatGPT Codex · 本地订阅' : (ep.type === 'workbuddy' ? `WorkBuddy 账号池 (${(ep.accounts?.length) || 1} 账号)` : (ep.type === 'ofm' ? 'OFM 本地多渠道网关 · 自动鉴权' : shortUrl(ep.base_url))))));
     const models = Array.isArray(ep.models) ? ep.models : [];
     const mappingCount = Object.keys(ep.model_mapping || {}).length;
     const previewModels = models.slice(0, 3).map(m =>
@@ -4004,7 +4005,7 @@ function createEndpointSummaryHTML(client, index, ep) {
                     ${isMedia ? `<span class="badge badge-default">${escapeHtml(mediaPurpose?.groupTitle || '媒体')}</span>` : ''}
                     ${ep.is_default ? '<span class="badge badge-default">默认</span>' : ''}
                     ${isDisabled ? '<span class="badge" style="background: var(--input-bg); color: var(--text-secondary);">已禁用</span>' : ''}
-                    ${(isWebSearch || (isMedia ? !isMediaSubscription : (ep.type !== 'antigravity' && ep.type !== 'codex-subscription')))
+                    ${(isWebSearch || (isMedia ? !isMediaSubscription : (ep.type !== 'antigravity' && ep.type !== 'codex-subscription' && ep.type !== 'ofm')))
                         ? (ep.has_api_key
                             ? '<span class="badge badge-key-configured" title="已配置密钥"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.778-7.778zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>已配置</span>'
                             : '<span class="badge badge-key-missing" title="未配置密钥"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.778-7.778zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>未配置</span>')
@@ -4044,7 +4045,7 @@ function createEndpointDetailHTML(client, index, ep) {
     const availableTypes = isEmbedding
         ? [{ value: 'openai-chat', label: 'OpenAI Embeddings 协议' }]
         : (client === 'code' || client === 'desktop')
-        ? ENDPOINT_TYPES.filter(t => ['anthropic', 'openai-chat', 'workbuddy', 'grok', 'codex-subscription'].includes(t.value))
+        ? ENDPOINT_TYPES.filter(t => ['anthropic', 'openai-chat', 'workbuddy', 'ofm', 'grok', 'codex-subscription'].includes(t.value))
         : ENDPOINT_TYPES.filter(t => [...CODEX_ENDPOINT_TYPE_VALUES, 'codex-subscription'].includes(t.value));
 
     const typeOptions = availableTypes.map(t =>
@@ -4307,6 +4308,113 @@ function createEndpointDetailHTML(client, index, ep) {
                             </div>
                         </div>
                         `;
+                    })() : (ep.type === 'ofm') ? (() => {
+                        return `
+                        <div class="form-group full">
+                            <!-- Overview & Control Hero Bar -->
+                            <div class="card wb-config-card" style="margin-bottom:14px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                                        <div style="width:36px; height:36px; border-radius:8px; background:linear-gradient(135deg, #0ea5e9, #10b981); display:flex; align-items:center; justify-content:center; color:white; flex-shrink:0; box-shadow:0 2px 6px rgba(14,165,233,0.22);">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>
+                                        </div>
+                                        <div>
+                                            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                                <span style="font-weight:700; font-size:14px; color:var(--text-primary);">OFM 多渠道免费池驱动</span>
+                                                <span id="ofm-version-badge-${client}-${index}" class="wb-config-path">版本检测中...</span>
+                                                <span id="ofm-service-status-${client}-${index}" class="badge" style="font-size:11.5px;">检测中...</span>
+                                            </div>
+                                            <div id="ofm-driver-path-${client}-${index}" style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">
+                                                数据目录: ~/.shrimp/providers/ofm
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                                        <button type="button" id="ofm-btn-check-update-${client}-${index}" class="btn btn-sm btn-outline" title="通过本机代理检查 GitHub 上的最新 OFM 核心" onclick="checkOfmCoreUpdate('${client}', ${index})">
+                                            检查更新
+                                        </button>
+                                        <button type="button" id="ofm-btn-apply-update-${client}-${index}" class="btn btn-sm btn-primary" title="通过本机代理从 GitHub 下载更新 bin/ofm 核心运行时" onclick="applyOfmCoreUpdate('${client}', ${index})">
+                                            更新 OFM 核心
+                                        </button>
+                                        <button type="button" id="ofm-btn-service-${client}-${index}" class="btn btn-sm btn-outline" title="检测并拉起/重启本地 OFM 服务" onclick="restartOfmService('${client}', ${index})">
+                                            启动服务
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline" title="刷新状态" onclick="pollOfmStatus('${client}', ${index})">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="ofm-update-status-${client}-${index}" style="display:none; margin-top:10px; padding:8px 10px; border-radius:6px; font-size:12px; background:var(--bg-secondary); border:1px solid var(--border-color);"></div>
+                            </div>
+
+                            <!-- Auto Check-in & Credits Card (using wb-switch toggle) -->
+                            <div class="card wb-config-card" style="margin-bottom:16px;">
+                                <div class="wb-config-header">
+                                    <div class="wb-config-title">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                        <span>自动签到 & 积分策略</span>
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <span class="wb-config-path">~/.shrimp/providers/ofm</span>
+                                        <button type="button" id="ofm-btn-claim-${client}-${index}" class="btn btn-sm btn-outline" onclick="claimOfmCredits('${client}', ${index})">
+                                            一键领取今日积分
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="wb-switch-row">
+                                    <label class="wb-switch-text" for="ofm-cfg-checkin-${client}-${index}" style="text-transform:none; letter-spacing:normal;">
+                                        <span class="wb-switch-title">自动每日签到</span>
+                                        <span class="wb-switch-desc">默认开启 · 自动为 Qoder、TRAE、Raccoon、Loomy 等已登录账号定时签到领积分</span>
+                                    </label>
+                                    <label class="wb-switch" style="text-transform:none;">
+                                        <input type="checkbox" id="ofm-cfg-checkin-${client}-${index}" checked onchange="toggleOfmAutoCheckin('${client}', ${index}, this.checked)">
+                                        <span class="wb-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Account Pool Header -->
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
+                                <div>
+                                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                        <span style="font-weight:700; font-size:14px; color:var(--text-primary);">已登录渠道账号池</span>
+                                        <span class="badge" id="ofm-stat-summary-${client}-${index}" style="font-size:11.5px;">检测中...</span>
+                                    </div>
+                                    <div class="subtext" style="color:var(--text-muted); font-size:12px; margin-top:3px;">
+                                        推荐登录 ZCode (GLM-5.3)、Qoder 中国版 (GLM-5.3 / DeepSeek-V4-Pro)、TRAE (DeepSeek-V4-Pro)；登录后点击上方「获取模型」即可拉取。
+                                    </div>
+                                </div>
+                                <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                                    <select id="ofm-login-provider-${client}-${index}" class="wb-select-input" style="width:auto; min-width:220px; height:32px; padding:0 10px;">
+                                        <option value="zcode">ZCode 智谱 (GLM-5.3 / Flash)</option>
+                                        <option value="qodercn">Qoder 中国版 (GLM-5.3 / DeepSeek-V4-Pro)</option>
+                                        <option value="qoder">Qoder 国际版 (GLM-5.3 / DeepSeek-V4-Pro)</option>
+                                        <option value="trae">TRAE 字节 (DeepSeek-V4-Pro / GLM-5.2)</option>
+                                        <option value="lobsterai">LobsterAI 有道 (deepseek-v4-pro / glm-5.2)</option>
+                                        <option value="raccoon">Raccoon 商汤 (GLM-5-3 / Kimi-K3)</option>
+                                        <option value="loomy">Loomy 讯飞 (GLM-5.3-Flash / DeepSeek)</option>
+                                        <option value="minimax">MiniMax Code (MiniMax-M3)</option>
+                                        <option value="cline">Cline (mimo-v2.6-flash)</option>
+                                        <option value="gemini">Gemini Code Assist</option>
+                                    </select>
+                                    <div style="display:inline-flex; border-radius:6px; overflow:hidden; border:1px solid rgba(14,165,233,0.35);">
+                                        <button type="button" class="btn btn-sm btn-primary" style="border-radius:0; border:none;" onclick="triggerOfmAccountLogin('${client}', ${index}, false)">
+                                            + 网页 / 扫码登录
+                                        </button>
+                                        <button type="button" class="btn btn-sm" style="border-radius:0; border:none; border-left:1px solid rgba(255,255,255,0.25); background:#0369a1; color:white; padding:0 10px; font-size:12px;" onclick="triggerOfmAccountLogin('${client}', ${index}, true)">
+                                            复制链接
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="wb-accounts-container" id="ofm-account-list-${client}-${index}" style="display:flex; flex-direction:column; gap:8px;">
+                                <div style="padding:16px; text-align:center; color:var(--text-muted); font-size:13px; background:var(--bg-secondary); border-radius:8px; border:1px dashed var(--border-color);">
+                                    正在检测 OFM 账号池状态...
+                                </div>
+                            </div>
+                        </div>
+                        `;
                     })() : `
                     <div class="form-group full">
                         <label>接口地址 (Base URL)</label>
@@ -4322,7 +4430,7 @@ function createEndpointDetailHTML(client, index, ep) {
                     </div>
                     `}
                     `}
-                    ${(isWebSearch || (isMedia ? !isMediaSubscription : (ep.type !== 'antigravity' && ep.type !== 'codex-subscription' && ep.type !== 'workbuddy')))
+                    ${(isWebSearch || (isMedia ? !isMediaSubscription : (ep.type !== 'antigravity' && ep.type !== 'codex-subscription' && ep.type !== 'workbuddy' && ep.type !== 'ofm')))
                         ? renderEndpointKeyEditor(client, index, ep)
                         : ''}
 
@@ -4677,6 +4785,8 @@ function render() {
         const selEp = config.clients?.[selectedEndpoint.client]?.endpoints?.[selectedEndpoint.index];
         if (selEp?.type === 'workbuddy') {
             void (window as any).pollWorkbuddyStatus?.(selectedEndpoint.client, selectedEndpoint.index);
+        } else if (selEp?.type === 'ofm') {
+            void (window as any).pollOfmStatus?.(selectedEndpoint.client, selectedEndpoint.index);
         }
     }
 }
@@ -7776,6 +7886,19 @@ window.updateEndpoint = function(client, index, field, value) {
                 reasoning: true,
                 tools: true
             };
+        } else if (value === 'ofm') {
+            if (!endpoint.base_url || endpoint.base_url.includes('api.openai.com')) {
+                endpoint.base_url = 'http://127.0.0.1:18900';
+            }
+            endpoint.auth = 'bearer';
+            if (!endpoint.name) {
+                endpoint.name = 'OFM 免费模型池';
+            }
+            endpoint.capabilities = {
+                ...(endpoint.capabilities || {}),
+                reasoning: true,
+                tools: true
+            };
         }
         render();
         return;
@@ -8532,6 +8655,366 @@ window.installWorkbuddy = function(client: string, index: number) {
 
 (window as any).updateWorkbuddyAccount = function(client: string, index: number) {
     return (window as any).pollWorkbuddyStatus(client, index);
+};
+
+let ofmLoginPollTimers: Record<string, any> = {};
+
+window.pollOfmStatus = async function(client: string, index: number) {
+    const ep = config.clients?.[client]?.endpoints?.[index];
+    if (!ep || ep.type !== 'ofm') return;
+
+    const versionBadgeEl = document.getElementById(`ofm-version-badge-${client}-${index}`);
+    const serviceStatusEl = document.getElementById(`ofm-service-status-${client}-${index}`);
+    const driverPathEl = document.getElementById(`ofm-driver-path-${client}-${index}`);
+    const btnServiceEl = document.getElementById(`ofm-btn-service-${client}-${index}`);
+    const statSummaryEl = document.getElementById(`ofm-stat-summary-${client}-${index}`);
+    const accountListEl = document.getElementById(`ofm-account-list-${client}-${index}`);
+    const checkinEl = document.getElementById(`ofm-cfg-checkin-${client}-${index}`) as HTMLInputElement | null;
+
+    try {
+        const portMatch = String(ep.base_url || '').match(/:(\d+)(?:\/|$)/);
+        const port = portMatch ? Number(portMatch[1]) : 18900;
+        const res = await fetch(`/v1/ofm/status?port=${port}`);
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+            if (serviceStatusEl) {
+                serviceStatusEl.className = 'badge badge-danger';
+                serviceStatusEl.textContent = '异常: ' + (data?.error?.message || '无法连接');
+            }
+            return;
+        }
+
+        if (versionBadgeEl) {
+            const ver = data.version ? `v${data.version}` : '未同步';
+            const sha = data.commitSha ? ` (${String(data.commitSha).slice(0, 7)})` : '';
+            versionBadgeEl.textContent = ver + sha;
+        }
+
+        if (driverPathEl) {
+            const proxyInfo = data.localProxy?.url ? `本机代理: ${data.localProxy.url}` : '本机代理: 直连';
+            driverPathEl.textContent = `数据目录: ${data.dataDir || '~/.shrimp/providers/ofm'} · ${proxyInfo}`;
+        }
+
+        if (serviceStatusEl) {
+            if (!data.installed) {
+                serviceStatusEl.className = 'badge badge-warning';
+                serviceStatusEl.textContent = '核心未下载（点更新拉取）';
+            } else if (data.running) {
+                serviceStatusEl.className = 'badge badge-success';
+                serviceStatusEl.textContent = `运行中 :${data.port}${data.pid ? ` (PID ${data.pid})` : ''}`;
+            } else {
+                serviceStatusEl.className = 'badge badge-warning';
+                serviceStatusEl.textContent = '未运行';
+            }
+        }
+
+        if (btnServiceEl) {
+            btnServiceEl.textContent = data.running ? '重启服务' : '启动服务';
+        }
+
+        if (checkinEl) {
+            checkinEl.checked = data.autoCheckin !== false;
+        }
+
+        const accounts = Array.isArray(data.accounts) ? data.accounts : [];
+        if (statSummaryEl) {
+            if (!data.running) {
+                statSummaryEl.className = 'badge';
+                statSummaryEl.textContent = '服务未启动';
+            } else {
+                statSummaryEl.className = accounts.length > 0 ? 'badge badge-success' : 'badge badge-warning';
+                statSummaryEl.textContent = `${accounts.length} 个已登录账号`;
+            }
+        }
+
+        if (accountListEl) {
+            if (!data.running) {
+                accountListEl.innerHTML = `
+                    <div style="padding:16px; text-align:center; color:var(--text-muted); font-size:13px; background:var(--bg-secondary); border-radius:8px; border:1px dashed var(--border-color);">
+                        OFM 服务尚未启动，请点击上方「启动服务」或直接点击「+ 网页 / 扫码登录」自动拉起。
+                    </div>
+                `;
+            } else if (accounts.length === 0) {
+                accountListEl.innerHTML = `
+                    <div style="padding:16px; text-align:center; color:var(--text-muted); font-size:13px; background:var(--bg-secondary); border-radius:8px; border:1px dashed var(--border-color);">
+                        暂无已登录渠道账号。请在右上方选择 ZCode / Qoder / TRAE 等渠道并点击「+ 网页 / 扫码登录」。
+                    </div>
+                `;
+            } else {
+                accountListEl.innerHTML = accounts.map((acc: any) => {
+                    const nick = escapeHtml(acc.nickname || acc.id || '账号');
+                    const provName = escapeHtml(acc.providerName || acc.provider || '');
+                    const accId = escapeHtml(acc.id || '');
+                    const enabled = acc.enabled !== false;
+                    return `
+                        <div class="wb-account-card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                <span class="badge" style="font-size:11px; background:rgba(14,165,233,0.12); color:#0284c7;">${provName}</span>
+                                <span style="font-weight:600; font-size:13px; color:var(--text-primary);">${nick}</span>
+                                <span class="mono" style="font-size:11px; color:var(--text-muted);">${accId}</span>
+                                <span class="badge ${enabled ? 'badge-success' : 'badge-warning'}" style="font-size:11px;">${enabled ? '已启用' : '已停用'}</span>
+                            </div>
+                            <div style="display:flex; gap:6px; align-items:center;">
+                                <button type="button" class="btn btn-sm btn-outline" onclick="testOfmAccount('${client}', ${index}, '${accId}')">测活</button>
+                                <button type="button" class="btn btn-sm btn-danger" onclick="deleteOfmAccount('${client}', ${index}, '${accId}')">删除</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+    } catch (err: any) {
+        if (serviceStatusEl) {
+            serviceStatusEl.className = 'badge badge-danger';
+            serviceStatusEl.textContent = '检测失败';
+        }
+    }
+};
+
+window.restartOfmService = async function(client: string, index: number) {
+    const ep = config.clients?.[client]?.endpoints?.[index];
+    const portMatch = String(ep?.base_url || '').match(/:(\d+)(?:\/|$)/);
+    const port = portMatch ? Number(portMatch[1]) : 18900;
+    const btnEl = document.getElementById(`ofm-btn-service-${client}-${index}`);
+    const isRestart = btnEl?.textContent?.includes('重启');
+    showToast(`正在${isRestart ? '重启' : '启动'} OFM 服务...`, 'info');
+    try {
+        if (isRestart) {
+            await fetch('/v1/ofm/stop', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ port }),
+            });
+        }
+        const res = await fetch('/v1/ofm/ensure', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ port }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+            showToast('OFM 启动失败: ' + (data?.error?.message || '未知错误'), 'error');
+        } else {
+            showToast(`OFM 服务已就绪 (:${port})`, 'success');
+        }
+    } catch (err: any) {
+        showToast('OFM 操作异常: ' + (err?.message || String(err)), 'error');
+    } finally {
+        await window.pollOfmStatus(client, index);
+    }
+};
+
+window.checkOfmCoreUpdate = async function(client: string, index: number) {
+    const statusBox = document.getElementById(`ofm-update-status-${client}-${index}`);
+    const btn = document.getElementById(`ofm-btn-check-update-${client}-${index}`) as HTMLButtonElement | null;
+    if (btn) btn.disabled = true;
+    if (statusBox) {
+        statusBox.style.display = 'block';
+        statusBox.textContent = '正在通过本机代理检查 GitHub 最新版本...';
+    }
+    try {
+        const res = await fetch('/v1/ofm/update/check');
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+            throw new Error(data?.error?.message || '检查失败');
+        }
+        const localSha = data.local?.commitSha ? String(data.local.commitSha).slice(0, 7) : '未知';
+        const remoteSha = data.remote?.commitSha ? String(data.remote.commitSha).slice(0, 7) : 'main';
+        const proxyText = data.proxy?.url ? `代理: ${data.proxy.url}` : '直连';
+        if (statusBox) {
+            statusBox.innerHTML = data.hasUpdate
+                ? `发现新版本：本地 <code>v${escapeHtml(data.local?.version || 'none')} (${localSha})</code> → GitHub <code>v${escapeHtml(data.remote?.version)} (${remoteSha})</code>${data.remote?.commitMessage ? ` · ${escapeHtml(data.remote.commitMessage)}` : ''} <span style="color:var(--text-muted);">(${escapeHtml(proxyText)})</span>`
+                : `当前已是最新核心：<code>v${escapeHtml(data.local?.version)} (${localSha})</code> <span style="color:var(--text-muted);">(${escapeHtml(proxyText)})</span>`;
+        }
+        showToast(data.hasUpdate ? '发现 OFM 核心新版本，可点击「更新 OFM 核心」' : 'OFM 核心已是最新版本', 'info');
+    } catch (err: any) {
+        if (statusBox) statusBox.textContent = '检查更新失败: ' + (err?.message || String(err));
+        showToast('检查更新失败: ' + (err?.message || String(err)), 'error');
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+};
+
+window.applyOfmCoreUpdate = async function(client: string, index: number) {
+    const ep = config.clients?.[client]?.endpoints?.[index];
+    const portMatch = String(ep?.base_url || '').match(/:(\d+)(?:\/|$)/);
+    const port = portMatch ? Number(portMatch[1]) : 18900;
+    const statusBox = document.getElementById(`ofm-update-status-${client}-${index}`);
+    const btn = document.getElementById(`ofm-btn-apply-update-${client}-${index}`) as HTMLButtonElement | null;
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '更新中...';
+    }
+    if (statusBox) {
+        statusBox.style.display = 'block';
+        statusBox.textContent = '正在通过本机代理从 GitHub 拉取并原子替换 bin/ofm 核心文件...';
+    }
+    try {
+        const res = await fetch('/v1/ofm/update/apply', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ port }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+            throw new Error(data?.error?.message || '更新失败');
+        }
+        const sha = data.sync?.commitSha ? String(data.sync.commitSha).slice(0, 7) : 'main';
+        const restartTip = data.restarted ? '，已自动重启生效' : '';
+        if (statusBox) {
+            statusBox.innerHTML = `✅ 更新成功：<code>v${escapeHtml(data.sync?.version)} (${sha})</code>，共 ${data.sync?.filesCount || 0} 个文件${restartTip}`;
+        }
+        showToast(`OFM 核心已更新至 v${data.sync?.version}${restartTip}`, 'success');
+        await window.pollOfmStatus(client, index);
+    } catch (err: any) {
+        if (statusBox) statusBox.textContent = '更新失败: ' + (err?.message || String(err));
+        showToast('更新失败: ' + (err?.message || String(err)), 'error');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = '更新 OFM 核心';
+        }
+    }
+};
+
+window.triggerOfmAccountLogin = async function(client: string, index: number, copyOnly: boolean = false) {
+    const ep = config.clients?.[client]?.endpoints?.[index];
+    const portMatch = String(ep?.base_url || '').match(/:(\d+)(?:\/|$)/);
+    const port = portMatch ? Number(portMatch[1]) : 18900;
+    const selectEl = document.getElementById(`ofm-login-provider-${client}-${index}`) as HTMLSelectElement | null;
+    const provider = selectEl?.value || 'zcode';
+    showToast(`正在为 ${provider} 生成登录链接...`, 'info');
+    try {
+        const res = await fetch('/v1/ofm/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ provider, port, openBrowser: !copyOnly }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success || !data.accountId) {
+            throw new Error(data?.error?.message || '获取登录链接失败');
+        }
+        if (copyOnly && data.loginUrl) {
+            try {
+                await navigator.clipboard.writeText(data.loginUrl);
+                showToast('登录链接已复制到剪贴板，请在浏览器打开完成扫码/授权', 'success');
+            } catch {
+                showToast(`请打开登录链接: ${data.loginUrl}`, 'info');
+            }
+        } else {
+            showToast('已打开登录页面，请在浏览器中完成扫码/授权...', 'info');
+        }
+
+        const key = `${client}-${index}`;
+        if (ofmLoginPollTimers[key]) clearInterval(ofmLoginPollTimers[key]);
+        let attempts = 0;
+        ofmLoginPollTimers[key] = setInterval(async () => {
+            attempts += 1;
+            if (attempts > 90) {
+                clearInterval(ofmLoginPollTimers[key]);
+                delete ofmLoginPollTimers[key];
+                return;
+            }
+            try {
+                const pollRes = await fetch(`/v1/ofm/login/status?accountId=${encodeURIComponent(data.accountId)}&port=${port}`);
+                const pollData = await pollRes.json();
+                if (pollData.done) {
+                    clearInterval(ofmLoginPollTimers[key]);
+                    delete ofmLoginPollTimers[key];
+                    if (pollData.success) {
+                        showToast(`✓ ${provider} 账号登录成功！`, 'success');
+                    } else {
+                        showToast(`${provider} 登录失败: ${pollData.error || '未知原因'}`, 'error');
+                    }
+                    await window.pollOfmStatus(client, index);
+                }
+            } catch {}
+        }, 2000);
+    } catch (err: any) {
+        showToast('登录发起失败: ' + (err?.message || String(err)), 'error');
+    }
+};
+
+window.deleteOfmAccount = async function(client: string, index: number, accountId: string) {
+    if (!confirm('确认从 OFM 账号池删除该账号吗？')) return;
+    const ep = config.clients?.[client]?.endpoints?.[index];
+    const portMatch = String(ep?.base_url || '').match(/:(\d+)(?:\/|$)/);
+    const port = portMatch ? Number(portMatch[1]) : 18900;
+    try {
+        const res = await fetch('/v1/ofm/account/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ accountId, port }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data?.error?.message || '删除失败');
+        showToast('账号已删除', 'success');
+        await window.pollOfmStatus(client, index);
+    } catch (err: any) {
+        showToast('删除失败: ' + (err?.message || String(err)), 'error');
+    }
+};
+
+window.testOfmAccount = async function(client: string, index: number, accountId: string) {
+    const ep = config.clients?.[client]?.endpoints?.[index];
+    const portMatch = String(ep?.base_url || '').match(/:(\d+)(?:\/|$)/);
+    const port = portMatch ? Number(portMatch[1]) : 18900;
+    showToast('正在测活账号...', 'info');
+    try {
+        const res = await fetch('/v1/ofm/account/test', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ accountId, port }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data?.error?.message || '测活失败');
+        const ok = data.result?.ok !== false;
+        showToast(ok ? '✓ 账号状态正常可用' : `账号测试异常: ${data.result?.error || data.result?.message || '不可用'}`, ok ? 'success' : 'error');
+        await window.pollOfmStatus(client, index);
+    } catch (err: any) {
+        showToast('测活失败: ' + (err?.message || String(err)), 'error');
+    }
+};
+
+window.claimOfmCredits = async function(client: string, index: number) {
+    const ep = config.clients?.[client]?.endpoints?.[index];
+    const portMatch = String(ep?.base_url || '').match(/:(\d+)(?:\/|$)/);
+    const port = portMatch ? Number(portMatch[1]) : 18900;
+    const btn = document.getElementById(`ofm-btn-claim-${client}-${index}`) as HTMLButtonElement | null;
+    if (btn) btn.disabled = true;
+    showToast('正在一键领取各渠道今日积分...', 'info');
+    try {
+        const res = await fetch('/v1/ofm/credits/claim', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ port }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data?.error?.message || '领取失败');
+        showToast('✓ 今日积分领取任务已执行完成', 'success');
+    } catch (err: any) {
+        showToast('领取失败: ' + (err?.message || String(err)), 'error');
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+};
+
+window.toggleOfmAutoCheckin = async function(client: string, index: number, enabled: boolean) {
+    const ep = config.clients?.[client]?.endpoints?.[index];
+    const portMatch = String(ep?.base_url || '').match(/:(\d+)(?:\/|$)/);
+    const port = portMatch ? Number(portMatch[1]) : 18900;
+    try {
+        const res = await fetch('/v1/ofm/auto-checkin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enabled, port }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data?.error?.message || '设置失败');
+        showToast(enabled ? '已开启自动每日签到' : '已关闭自动每日签到', 'success');
+    } catch (err: any) {
+        showToast('设置失败: ' + (err?.message || String(err)), 'error');
+    }
 };
 
 window.addApiKey = function(client, index) {

@@ -77,7 +77,7 @@ test("Codex endpoint editor offers Anthropic Messages protocol and auth selectio
   assert.match(html, /Anthropic Messages 协议/);
   assert.match(
     html,
-    /\['anthropic',\s*'openai-responses',\s*'openai-chat',\s*'workbuddy',\s*'grok',\s*'antigravity'\]/,
+    /\['anthropic',\s*'openai-responses',\s*'openai-chat',\s*'workbuddy',\s*'ofm',\s*'grok',\s*'antigravity'\]/,
   );
   assert.match(html, /<label>鉴权方式<\/label>/);
   assert.match(html, /value="bearer"/);
@@ -597,7 +597,7 @@ test("endpoint type list includes antigravity google subscription label", async 
   const html = await readSources();
   assert.match(html, /value: "antigravity"/);
   assert.match(html, /Antigravity（Google 订阅）/);
-  assert.match(html, /\['anthropic',\s*'openai-responses',\s*'openai-chat',\s*'workbuddy',\s*'grok',\s*'antigravity'\]/);
+  assert.match(html, /\['anthropic',\s*'openai-responses',\s*'openai-chat',\s*'workbuddy',\s*'ofm',\s*'grok',\s*'antigravity'\]/);
   assert.match(html, /Google v1internal gRPC/);
 });
 
@@ -1139,5 +1139,18 @@ test("config panel includes WorkBuddy endpoint support and lifecycle controls", 
   assert.match(html, /\/v1\/workbuddy\/status/);
   assert.match(html, /\/v1\/workbuddy\/ensure/);
   assert.match(html, /\/v1\/workbuddy\/login/);
+});
+
+test("config panel includes OFM endpoint support, channel login, and GitHub update controls", async () => {
+  const html = await readSources();
+  assert.match(html, /OFM 多渠道免费池/);
+  assert.match(html, /pollOfmStatus/);
+  assert.match(html, /checkOfmCoreUpdate/);
+  assert.match(html, /applyOfmCoreUpdate/);
+  assert.match(html, /triggerOfmAccountLogin/);
+  assert.match(html, /\/v1\/ofm\/status/);
+  assert.match(html, /\/v1\/ofm\/update\/check/);
+  assert.match(html, /\/v1\/ofm\/update\/apply/);
+  assert.match(html, /\/v1\/ofm\/login/);
 });
 

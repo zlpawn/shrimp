@@ -16,7 +16,7 @@ shrimp cli install leo-wendao
 leo-wendao login
 ```
 
-交互输入不会回显。凭据默认保存在 `~/.shrimp/secrets/wendao/token`，目录 700、文件 600，可通过 `SHRIMP_SECRETS_DIR` 覆盖。环境变量 `WENDAO_API_KEY` 优先于文件。
+交互输入不会回显。凭据默认保存在 `~/.shrimp/skills/leo-xiecheng-wendao/token`，目录 700、文件 600，可通过 `SHRIMP_SECRETS_DIR` 覆盖。环境变量 `WENDAO_API_KEY` 优先于文件。
 
 ## 查询
 

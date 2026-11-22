@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
-import { tmpdir } from "node:os";
+import { tmpdir, homedir } from "node:os";
 import {
   cacheSignature,
   getSignature,
@@ -149,10 +149,10 @@ test("fingerprint falls back to _default when no message text", () => {
   assert.equal(computeSessionFingerprint([{ type: "function_call", name: "x", call_id: "c" }]), "_default");
 });
 
-test("getStoragePath honors env overrides and resolves config/data/source dirs", () => {
-  assert.equal(getStoragePath({ ANTIGRAVITY_SIGNATURES_FILE: "/tmp/custom.json" }), "/tmp/custom.json");
+test("getStoragePath honors env overrides and resolves ~/.shrimp/providers/antigravity/signatures.json by default", () => {
   assert.equal(getStoragePath({ GATEWAY_CONFIG_FILE: join("/var/conf", "gateway.config.json") }), join("/var/conf", "antigravity-signatures.json"));
   assert.equal(getStoragePath({ GATEWAY_DATA_DIR: join("/var/data") }), join("/var/data", "antigravity-signatures.json"));
+  assert.equal(getStoragePath({}), join(homedir(), ".shrimp", "providers", "antigravity", "signatures.json"));
 });
 
 
