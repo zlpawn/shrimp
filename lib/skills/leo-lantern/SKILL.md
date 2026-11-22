@@ -207,6 +207,7 @@ leo-lantern end-task
 | 抖音 | `recipes/douyin-source.mjs` | 热榜/搜索/单视频解析，嗅探真实 CDN 无水印 MP4、封面与高赞神评 | [douyin-source.md](references/recipes/douyin-source.md) |
 | 哔哩哔哩 | `recipes/bilibili-source.mjs` | 排行榜/热门/搜索/单视频解析，`__INITIAL_STATE__`、神评与 1080P 视频合并 | [bilibili-source.md](references/recipes/bilibili-source.md) |
 | 中国专利 (CNIPA) | `recipes/cnipa-source.mjs` | 过瑞数 WAF 同源检索/高级检索/详情/事务查询、时间切片去重与说明书逐页 PNG | [cnipa-source.md](references/recipes/cnipa-source.md) |
+| Google Patents | `recipes/google-patents-source.mjs` | 全球专利多维检索与详情深采，权利要求/说明书全文、CPC、引用/同族、附图与 PDF 下载 | [google-patents-source.md](references/recipes/google-patents-source.md) |
 
 > **提示（脱离网关自包含运行）**：
 > - **独立 CLI 模式**：可在技能目录直接通过 Node.js 执行命令行交互：`node ./scripts/cli/index.mjs <command>`
