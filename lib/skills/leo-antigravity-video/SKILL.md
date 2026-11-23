@@ -82,6 +82,7 @@ leo-antigravity-video config set --output-dir "~/素材/gemini-videos" --default
 | :--- | :--- | :--- | :--- |
 | `--prompt` | `-p` | 视频生成提示词（必填，`--download-only` 时可选） | - |
 | `--ratio` | `-r` | 画面比例：`16:9`（横向）或 `9:16`（纵向） | `16:9` |
+| `--thinking` | `-k` | 大模型思考等级：`high`（高/超级详尽）、`mid`（中）、`low`（低） | `high` |
 | `--format` | `-f` | 导出格式：`mp4` 或 `gif` | `mp4` |
 | `--out` | `-o` | 资产归档基础目录（支持环境变量 `LEO_ANTIGRAVITY_VIDEO_OUT` 覆盖） | `~/素材/gemini-videos` |
 | `--download-only`| `-d` | 不发起新生成，仅下载归档当前标签页中的最新视频 | `false` |
