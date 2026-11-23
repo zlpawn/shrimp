@@ -9,8 +9,8 @@ description: 通过 leo-lantern CLI/服务实现 Chrome 浏览器远程调试 (C
 
 ## 核心机制与架构
 
-- **桥接服务（Bridge Server）**：监听本地端口（默认 `19527`），负责分发命令队列并接收 Chrome 扩展回传的结果。
-- **Chrome 扩展（Extension）**：常驻浏览器后台，通过长轮询消费命令。在目标页面上结合 **CDP（Chrome DevTools Protocol 原生可信输入事件）** 与 DOM 树完成精准操作。
+- **桥接服务（Bridge Server）**：监听本地端口（默认 `19526`，扩展同时支持 `19526` 与 `19527` 双端口兼听保底），负责分发命令队列并接收 Chrome 扩展回传的结果。
+- **Chrome 扩展（Extension）**：常驻浏览器后台，通过长轮询消费命令。在目标页面上结合 **CDP（Chrome DevTools Protocol 原生可信输入事件）** 与 DOM 树完成精准操作。支持在扩展「高级设置」中可视化查看与修改 Bridge 端口；若启动网关（默认 `8787`），自动渐进式呈现网关配置与导出。
 - **任务组与窗口隔离**：默认**新开独立窗口**（`sameWindow: false`）执行自动化，与用户当前正在浏览操作的窗口互不干扰。独立窗口与用户窗口共享同一 Chrome profile，所有 Cookie、LocalStorage 及登录态直接可用。
 
 ## 工作流
@@ -18,7 +18,8 @@ description: 通过 leo-lantern CLI/服务实现 Chrome 浏览器远程调试 (C
 1. **服务启动与健康探测**：
    - **桥接按需启动，一般不用手动管**：操作浏览器的命令发现桥接没开，会自动在后台拉起并等扩展连上（需要 Chrome 已打开）。桥接连续 10 分钟没有收到命令就自动退出；扩展的轮询和心跳不算命令。`health`、`doctor` 只检查，不会启动桥接。
      - 主动启动并等待扩展：`leo-lantern start`（或 `node <skillDir>/scripts/cli/index.mjs start`）
-     - 前台运行、调整空闲时间：`node <skillDir>/scripts/cli/index.mjs server --port 19527 --idle-exit-min 30`（`0` 表示不自动退出，也可用环境变量 `LEO_LANTERN_IDLE_EXIT_MIN`）
+     - 前台运行、调整空闲时间：`node <skillDir>/scripts/cli/index.mjs server --port 19526 --idle-exit-min 30`（`0` 表示不自动退出，也可用环境变量 `LEO_LANTERN_IDLE_EXIT_MIN`）
+   - **端口冲突自愈与换端口指引**：若 `19526` 与 `19527` 均被本地其他进程占用，CLI 将自动探测下一个可用空闲端口（如 `19528`），并抛出 `bridge_port_occupied` 错误，提示用户在 Chrome 扩展的「高级设置」->「Bridge 地址」中填入推荐端口（如 `19528`）保存，随后带 `--port 19528` 参数重试。
    - 检查服务与扩展在线状态：`leo-lantern health` 或 `leo-lantern doctor`（若 `extensionOnline: false`，请在 `chrome://extensions` 确认已加载扩展并保持 Chrome 运行；更新扩展后可用 `leo-lantern ext-reload` 重载）。
 2. **任务生命周期与标签页管理（支持独立窗口隔离或接管现有标签页）**：
    - 开启/复用任务组：`leo-lantern start-task --title="browser-task"`（默认新开独立窗口，不干扰用户浏览；同窗口执行可加 `--same-window=true`）

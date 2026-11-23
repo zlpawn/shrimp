@@ -1,4 +1,5 @@
-const GATEWAY_DEFAULT = "http://127.0.0.1:8788";
+const GATEWAY_DEFAULT = "http://127.0.0.1:8787";
+const BRIDGE_DEFAULT = "http://127.0.0.1:19526";
 
 function toNetscapeFormat(cookies) {
   const lines = [
@@ -157,12 +158,54 @@ document.addEventListener("DOMContentLoaded", async () => {
     showStatus(`✅ 已复制 Netscape cookies.txt 内容到剪贴板！`);
   });
 
-  // 5. 高级可选：导出到本地网关
-  if (gatewayInput) {
+  const bridgeInput = document.getElementById("bridge-url");
+  const gatewaySection = document.getElementById("gateway-section");
+
+  // 5. 高级设置：Bridge 通信配置
+  if (bridgeInput) {
+    const stored = await chrome.storage.local.get("bridgeUrl");
+    bridgeInput.value = stored.bridgeUrl || "";
+    bridgeInput.addEventListener("change", async () => {
+      let val = bridgeInput.value.trim();
+      if (/^\d+$/.test(val)) {
+        val = `http://127.0.0.1:${val}`;
+        bridgeInput.value = val;
+      }
+      if (val) {
+        await chrome.storage.local.set({ bridgeUrl: val });
+        showStatus(`✅ Bridge 地址已更新为: ${val}`);
+      } else {
+        await chrome.storage.local.remove("bridgeUrl");
+        showStatus("✅ Bridge 地址已重置为默认 (19526 / 19527 双兼听)");
+      }
+    });
+  }
+
+  // 6. 高级设置：本地 Shrimp 网关探测与渐进式展示
+  if (gatewayInput && gatewaySection) {
     const stored = await chrome.storage.local.get("gatewayUrl");
-    gatewayInput.value = stored.gatewayUrl || GATEWAY_DEFAULT;
+    const targetGateway = stored.gatewayUrl || GATEWAY_DEFAULT;
+    gatewayInput.value = targetGateway;
+
+    // 轻量连通性嗅探 (1s 超时)
+    try {
+      const probe = await fetch(`${targetGateway}/health`, {
+        signal: AbortSignal.timeout(1000),
+      });
+      if (probe.ok) {
+        gatewaySection.style.display = "block";
+      }
+    } catch {
+      // 离线时保持隐藏，零视觉干扰
+    }
+
     gatewayInput.addEventListener("change", async () => {
-      await chrome.storage.local.set({ gatewayUrl: gatewayInput.value.trim() || GATEWAY_DEFAULT });
+      let val = gatewayInput.value.trim();
+      if (/^\d+$/.test(val)) {
+        val = `http://127.0.0.1:${val}`;
+        gatewayInput.value = val;
+      }
+      await chrome.storage.local.set({ gatewayUrl: val || GATEWAY_DEFAULT });
     });
   }
 

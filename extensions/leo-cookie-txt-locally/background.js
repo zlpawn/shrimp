@@ -43,11 +43,12 @@ import {
 import { createCdpSessionManager } from "./cdp-session.mjs";
 import { normalizeTarget } from "./element-target.mjs";
 import { lanternError } from "./errors.mjs";
-const DEFAULT_BRIDGE_URL = "http://127.0.0.1:19527";
-const DEFAULT_GATEWAY_URL = "http://127.0.0.1:8788";
+const DEFAULT_BRIDGE_URLS = ["http://127.0.0.1:19526", "http://127.0.0.1:19527"];
+const DEFAULT_BRIDGE_URL = "http://127.0.0.1:19526";
+const DEFAULT_GATEWAY_URL = "http://127.0.0.1:8787";
 const HEARTBEAT_INTERVAL_MS = 25_000;
 const POLL_WAIT_MS = 25_000;
-const OFFLINE_BACKOFF_MS = 1_000;
+const OFFLINE_BACKOFF_MS = 3_000;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -248,14 +249,26 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 
 async function getTargetUrls() {
   const result = await chrome.storage.local.get(["gatewayUrl", "bridgeUrl"]);
-  const bridgeUrl = result.bridgeUrl || DEFAULT_BRIDGE_URL;
-  const gatewayUrl = result.gatewayUrl || DEFAULT_GATEWAY_URL;
-  const urls = [bridgeUrl];
-  if (gatewayUrl && gatewayUrl !== bridgeUrl) {
-    urls.push(gatewayUrl);
+  const urls = new Set();
+  if (result.bridgeUrl) {
+    urls.add(result.bridgeUrl);
+  } else {
+    for (const url of DEFAULT_BRIDGE_URLS) {
+      urls.add(url);
+    }
   }
-  return urls;
+  const gatewayUrl = result.gatewayUrl || DEFAULT_GATEWAY_URL;
+  if (gatewayUrl && !urls.has(gatewayUrl)) {
+    urls.add(gatewayUrl);
+  }
+  return Array.from(urls);
 }
+
+chrome.storage?.onChanged?.addListener?.((changes, area) => {
+  if (area === "local" && (changes.bridgeUrl || changes.gatewayUrl)) {
+    startPollLoop();
+  }
+});
 
 async function getActiveTabId(preferredTabId) {
   if (preferredTabId) return Number(preferredTabId);

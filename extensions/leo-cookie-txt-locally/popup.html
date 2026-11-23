@@ -27,12 +27,19 @@
   </div>
 
   <details class="advanced-settings">
-    <summary>高级：导出到本地 Shrimp 网关</summary>
+    <summary>高级设置（Bridge 通信与本地网关）</summary>
     <div class="field" style="margin-top: 8px;">
-      <label for="gateway-url">网关地址</label>
-      <input type="text" id="gateway-url" placeholder="http://127.0.0.1:8788">
+      <label for="bridge-url">Bridge 地址（默认支持 19526 / 19527）</label>
+      <input type="text" id="bridge-url" placeholder="http://127.0.0.1:19526 或输入端口号如 19528">
     </div>
-    <button id="export-btn" class="btn btn-ghost">🌐 导出到网关</button>
+
+    <div id="gateway-section" style="display: none; margin-top: 8px; border-top: 1px dashed #e2e8f0; padding-top: 8px;">
+      <div class="field">
+        <label for="gateway-url">本地 Shrimp 网关地址</label>
+        <input type="text" id="gateway-url" placeholder="http://127.0.0.1:8787">
+      </div>
+      <button id="export-btn" class="btn btn-ghost" style="margin-top: 4px;">🌐 导出到网关</button>
+    </div>
   </details>
 
   <div id="result"></div>

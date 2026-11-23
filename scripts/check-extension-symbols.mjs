@@ -17,7 +17,7 @@ globalThis.chrome = {
   runtime: { onInstalled: listener, onStartup: listener, onMessage: listener, onMessageExternal: listener, id: "check-test", getURL: (p) => p, getManifest: () => ({ version: "1.3.1" }) },
   alarms: { create: noop, get: async () => {}, clear: noop, onAlarm: listener },
   cookies: { getAll: noop },
-  storage: { local: { get: async () => ({}), set: async () => {} }, session: { get: async () => ({}), set: async () => {} } },
+  storage: { local: { get: async () => ({}), set: async () => {} }, session: { get: async () => ({}), set: async () => {} }, onChanged: listener },
   debugger: { attach: async () => {}, detach: async () => {}, sendCommand: async () => {}, onEvent: listener, onDetach: listener },
   tabs: { query: async () => [], onRemoved: listener, onUpdated: listener, get: async () => ({ id: 1 }) },
   windows: { getAll: async () => [] },

@@ -29,7 +29,7 @@
   panel.innerHTML = `
     <h2>Leo cookie.txt Locally</h2>
     <label for="leo-lantern-gateway">Shrimp 服务地址</label>
-    <input id="leo-lantern-gateway" type="text" placeholder="http://127.0.0.1:8788">
+    <input id="leo-lantern-gateway" type="text" placeholder="http://127.0.0.1:8787">
     <label for="leo-lantern-domain">域名</label>
     <input id="leo-lantern-domain" type="text" placeholder="如 bilibili.com">
     <button id="leo-lantern-export" type="button">导出到网关</button>
@@ -174,7 +174,7 @@
     if (stored[STORAGE_KEY]) {
       state = { ...state, ...stored[STORAGE_KEY] };
     }
-    gatewayInput.value = stored.gatewayUrl || "http://127.0.0.1:8788";
+    gatewayInput.value = stored.gatewayUrl || "http://127.0.0.1:8787";
     applyTransform();
     scheduleTuck();
   });
@@ -277,14 +277,14 @@
   });
 
   gatewayInput.addEventListener("change", async () => {
-    const url = gatewayInput.value.trim() || "http://127.0.0.1:8788";
+    const url = gatewayInput.value.trim() || "http://127.0.0.1:8787";
     gatewayInput.value = url;
     safeStorageSet({ gatewayUrl: url });
     setStatus("Shrimp 服务地址已保存", "ok");
   });
 
   exportBtn.addEventListener("click", async () => {
-    const gatewayUrl = (gatewayInput.value || "http://127.0.0.1:8788").trim();
+    const gatewayUrl = (gatewayInput.value || "http://127.0.0.1:8787").trim();
     const domain = (domainInput.value || currentDomain()).trim();
     if (!domain) {
       setStatus("请输入域名", "err");
