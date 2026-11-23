@@ -1,0 +1,7 @@
+interface:
+  display_name: "Leo 面试内化与知识沉淀"
+  short_description: "吃透文档与代码，先提案审批再入库，沉淀为面试可用的系统知识与追问防御。"
+  default_prompt: "使用 leo-interview-clown 分析这份文档或代码仓库，先产出覆盖审计提案并确认输出目录，经我批准后再沉淀为可用于面试讲解、技术分享和深挖防御的知识档案。"
+
+policy:
+  allow_implicit_invocation: true

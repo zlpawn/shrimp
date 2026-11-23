@@ -1,0 +1,10 @@
+{
+  "name": "leo-interview-clown",
+  "version": "1.0.0",
+  "description": "面向面试、技术分享与新人理解的知识内化与项目吃透引擎：支持外部图文文档与本地代码库/方法多模态采集，全模式先出覆盖审计提案并确认目录与覆盖风险，审批后沉淀至持久化知识库（或保底目录），输出因果心智模型、八要素难点卡与分层追问防御。",
+  "scripts": {
+    "config:get": "python3 scripts/workspace_cli.py config get",
+    "venv:ensure": "python3 scripts/workspace_cli.py venv ensure",
+    "test": "python3 -m unittest discover -s tests -v"
+  }
+}
