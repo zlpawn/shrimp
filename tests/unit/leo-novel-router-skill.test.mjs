@@ -10,6 +10,10 @@ const SKILL_DIR = path.join(ROOT, "lib", "skills", "leo-novel-router");
 const {
   readConfig,
   saveConfig,
+  readSecrets,
+  saveSecrets,
+  resolveWeReadApiKey,
+  maskSecret,
   resolveBookDestination,
 } = await import(path.join(SKILL_DIR, "scripts", "config.mjs"));
 
@@ -43,6 +47,37 @@ test("SKILL.md and platforms-catalog.md cover routing, WeRead adapter, and book-
   assert.ok(catalog.includes("## weread（微信读书）"));
   assert.match(catalog, /weread\.qq\.com/);
   assert.match(catalog, /外部官方平台 Skill/);
+  assert.match(skill, /npx skills add Tencent\/WeChatReading -g/);
+  assert.match(skill, /weread-skills/);
+  assert.match(skill, /secrets\.json/);
+  assert.match(catalog, /npx skills add Tencent\/WeChatReading -g/);
+});
+
+test("config.mjs manages secrets.json independently from config.json and resolves WEREAD_API_KEY", () => {
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "leo-novel-secrets-test-"));
+  const prevSec = process.env.LEO_NOVEL_ROUTER_SECRETS_PATH;
+  const prevEnvKey = process.env.WEREAD_API_KEY;
+  process.env.LEO_NOVEL_ROUTER_SECRETS_PATH = path.join(tmpRoot, "secrets.json");
+  delete process.env.WEREAD_API_KEY;
+
+  try {
+    assert.deepEqual(readSecrets(), {});
+    assert.deepEqual(resolveWeReadApiKey(), { apiKey: null, source: null });
+
+    saveSecrets({ weread_api_key: "wrk-demoKey123456789" });
+    assert.equal(readSecrets().weread_api_key, "wrk-demoKey123456789");
+    assert.deepEqual(resolveWeReadApiKey(), { apiKey: "wrk-demoKey123456789", source: "secrets" });
+    assert.equal(maskSecret("wrk-demoKey123456789"), "wrk-de***789");
+
+    process.env.WEREAD_API_KEY = "wrk-envOverride999";
+    assert.deepEqual(resolveWeReadApiKey(), { apiKey: "wrk-envOverride999", source: "env" });
+  } finally {
+    if (prevSec === undefined) delete process.env.LEO_NOVEL_ROUTER_SECRETS_PATH;
+    else process.env.LEO_NOVEL_ROUTER_SECRETS_PATH = prevSec;
+    if (prevEnvKey === undefined) delete process.env.WEREAD_API_KEY;
+    else process.env.WEREAD_API_KEY = prevEnvKey;
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
 });
 
 test("config.mjs defaults to ~/素材/novel and resolves book-centric paths", () => {
@@ -96,6 +131,9 @@ test("probe.mjs matches WeRead URLs and reports platform status", async () => {
   const report = await probeAll({ checkBridge: false });
   assert.equal(report.router, "leo-novel-router");
   assert.ok("weread" in report.platforms);
+  assert.equal(report.platforms.weread.officialInstallCmd, "npx skills add Tencent/WeChatReading -g");
+  assert.equal(report.platforms.weread.officialSkillRepo, "Tencent/WeChatReading");
+  assert.ok("credentials" in report);
   assert.ok("dedao" in report.platforms);
 });
 

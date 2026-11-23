@@ -2,45 +2,39 @@
 
 本目录定义 `leo-novel-router` 纳管的内置读书平台与外部官方平台 Skill 路由规则。
 
-> **路由优先级（B 模式：外部官方 Skill 优先，内置适配器开箱兜底）**：
-> 1. **已安装的外部 / 官方平台 Skill**：若 `probe.mjs`（或上下文 `Available skills:`）探测到目标平台对应的独立官方/社区 Skill 已安装，优先交接给该官方 Skill 执行；
-> 2. **内置适配器（`scripts/*.mjs`）**：若无外部官方 Skill 且属于内置支持平台（本期为 `weread` 微信读书），调用内置适配器执行；
-> 3. **未接入平台**：告知用户当前未命中已接入适配器，建议提供官方 Skill / Marketplace 检索，或按需使用 `leo-lantern` 做基础网页探测。
+> **路由优先级（B 模式：官方 Skill 优先 + 能力互补双通道）**：
+> 1. **外部 / 官方平台 Skill 优先**：`probe.mjs` 优先探测目标平台对应的官方 Skill 是否已安装；已安装且覆盖当前意图时，优先读取其 `SKILL.md` 并调度执行；
+> 2. **缺失官方 Skill 引导（JIT Install Prompt）**：当用户请求的平台提供官方 Skill（如微信读书 `Tencent/WeChatReading`）但本地未安装时，先提示用户安装命令并征询确认；
+> 3. **内置浏览器适配器补齐写操作与正文拉取**：官方网关不支持的能力（如微信读书拉取章节全文、书内精确偏移检索、同步/修改/删除网页划线），由内置 `scripts/*.mjs` + `leo-lantern` 接力完成。
 
 ---
 
 ## weread（微信读书）
 
-- **域名特征**：`weread.qq.com`（支持书架 `/web/shelf`、阅读页 `/web/reader/<hash>`）
-- **实现方式**：内置适配器 [`scripts/weread.mjs`](../scripts/weread.mjs) + 底层浏览器控制 `leo-lantern`（复用用户已登录 Chrome Profile）
-- **底层机制**：
-  - 正文渲染在 `.wr_canvasContainer` 的 `<canvas>` 上，直接读 DOM 拿不到正文；
-  - 本适配器通过 `leo-lantern` 驱动页面加载章节，拦截 `POST /web/book/chapter/e_0..e_3` 响应并解码 XHTML 提取结构化段落；
-  - 书内检索通过 `GET /web/book/search`（`window.__WRPA__.sr` 生成 `x-wrpa-0` 签名头），同步划线通过 `POST /web/book/addBookmark` 并结合 `/web/book/search` 锚点校准字符偏移，确保跨章节零漂移；
-  - 划线样式：`style`（`0`=直线、`1`=马克笔、`2`=波浪线），`colorStyle`（`1`~`5`，默认 `5`）。
-- **支持指令**：
-  - `shelf`：获取我的书架列表与书籍链接
-  - `toc`：获取书籍信息与完整章节目录（含付费/试读状态）
-  - `read`：拉取指定章节正文到对话，或 `--save` 落盘到 `<书名>/chapters/`
-  - `search`：书内全文关键词检索（返回章节、摘要及精确偏移）
-  - `bookmarks`：查看本书当前所有划线（可选按章过滤）
-  - `highlight`：将指定文本精确同步为微信读书网页划线
-  - `update-highlight`：修改已有划线的样式（直线/马克笔/波浪线）或颜色
-  - `remove-highlight`：删除指定 `bookmarkId` 的划线
-  - `export`：按章节导出全部划线与个人想法为 Markdown 至 `~/素材/novel/<书名>/`
-- **边界与约束**：
-  - 依赖 Chrome 已启动且 `leo-lantern` 扩展在线；未登录时抛出 `login_required`，需提示用户在 Chrome 扫码登录后重试；
-  - 收费/未购买章节（目录标记 `disabled`）无法绕过权限拉取；
-  - 获取当前正在阅读的章节源码时，需短暂切换相邻章再切回（期间拦截 `/web/book/read` 避免污染阅读进度）。
+- **域名特征**：`weread.qq.com`（书架 `/web/shelf`、阅读页 `/web/reader/<hash>`）
+- **双通道协同架构**：
+
+| 通道 | 安装 / 依赖 | 覆盖能力 | 凭证来源 |
+| :--- | :--- | :--- | :--- |
+| **官方 Skill (`weread-skills`)** | `npx skills add Tencent/WeChatReading -g` | 书城搜书（`/store/search`）、书架（`/shelf/sync`）、书籍详情/目录/进度、**查看/导出个人划线与想法**、章节热门划线、阅读时长统计（`/readdata/detail`）、书评与推荐 | `~/.shrimp/skills/leo-novel-router/secrets.json`（`weread_api_key`）或环境变量 `WEREAD_API_KEY`，请求 `https://i.weread.qq.com/api/agent/gateway` |
+| **内置浏览器引擎 (`scripts/weread.mjs`)** | `leo-lantern`（Chrome 已登录会话） | **拉取章节正文全文进对话**（Canvas/XHTML 解码）、**书内全文精确偏移检索**（`/web/book/search`）、**同步划线回网页**（`addBookmark`）、**修改划线样式/颜色**（`updateBookmark`）、**删除划线**（`removeBookmark`）、以及按书名归档导出 | Chrome 当前微信读书登录态 + `window.__WRPA__.sr` |
+
+- **能力边界与路由选择**：
+  - **纯查询 / 统计 / 推荐 / 书城搜索 / 免开浏览器导出**：优先走官方 `weread-skills`；若未安装，展示 `npx skills add Tencent/WeChatReading -g` 引导卡片（用户暂不安装时，书架/目录/划线导出可降级由 `scripts/weread.mjs` 兜底）。
+  - **正文阅读 / 对话划线同步 / 删改划线**：官方网关不提供正文文本和写入划线的接口，统一交由 [`scripts/weread.mjs`](../scripts/weread.mjs) 执行。
+- **划线样式枚举**：
+  - `style`：`0`=直线、`1`=马克笔、`2`=波浪线
+  - `colorStyle`：`1`=红、`2`=紫、`3`=蓝、`4`=绿、`5`=橙（默认 `5`）
 
 ---
 
 ## 外部官方平台 Skill 扩展槽位（预留）
 
-| 平台 | 识别域名 / 关键词 | 候选 Skill 名 | 当前状态 |
-| :--- | :--- | :--- | :--- |
-| **得到 (Dedao)** | `dedao.cn`、得到电子书 | `dedao`、`dedao-reader`、`dedao-official` | 预留外部路由 |
-| **豆瓣阅读** | `read.douban.com`、豆瓣阅读 | `douban-read`、`douban-reading` | 预留外部路由 |
-| **Kindle** | `read.amazon.com`、`read.amazon.cn`、Kindle | `kindle`、`kindle-reader` | 预留外部路由 |
+| 平台 | 识别域名 / 关键词 | 候选 Skill 名 | 安装 / 来源 | 当前状态 |
+| :--- | :--- | :--- | :--- | :--- |
+| **微信读书 (WeRead)** | `weread.qq.com`、微信读书 | `weread-skills` | `npx skills add Tencent/WeChatReading -g` | 官方 Skill + 内置浏览器双通道 |
+| **得到 (Dedao)** | `dedao.cn`、得到电子书 | `dedao`、`dedao-reader`、`dedao-official` | 待接入 | 预留外部路由 |
+| **豆瓣阅读** | `read.douban.com`、豆瓣阅读 | `douban-read`、`douban-reading` | 待接入 | 预留外部路由 |
+| **Kindle** | `read.amazon.com`、`read.amazon.cn`、Kindle | `kindle`、`kindle-reader` | 待接入 | 预留外部路由 |
 
-> 当用户新增外部官方平台 Skill 时，可直接安装至 `~/.agents/skills/<skill-name>/`（或通过 `config.json` 的 `external_skills` 映射域名与 Skill 名），`probe.mjs` 会在运行期自动发现并优先路由。
+> 当用户新增外部官方平台 Skill 时，安装至 `~/.agents/skills/<skill-name>/`（或通过 `config.json` 的 `external_skills` 映射域名与 Skill 名），`probe.mjs` 会在运行期自动发现并优先路由。
