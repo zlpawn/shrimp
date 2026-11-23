@@ -852,18 +852,6 @@
     "zcode": {
       "endpoints": [
         {
-          "id": "ep_41186275-3fdd-4e19-a638-26197dee0857",
-          "name": "cursor 反代",
-          "type": "openai-chat",
-          "base_url": "http://103.200.216.117:8788",
-          "auth": "bearer",
-          "models": [
-            "claude-opus-5-5-max-fast",
-            "claude-fable-5-2-max-fast"
-          ],
-          "model_mapping": {}
-        },
-        {
           "id": "ep_3ddbcbd5-d007-46ba-958c-fd5fb1dea887",
           "name": "视觉兜底 ait ",
           "purpose": "vision_fallback",
@@ -1080,6 +1068,21 @@
         "codex": true
       },
       "leo-apimart-video": {
+        "antigravity": false,
+        "claude": false,
+        "codex": true
+      },
+      "leo-3d-blender": {
+        "antigravity": false,
+        "claude": false,
+        "codex": true
+      },
+      "leo-obs-studio": {
+        "antigravity": false,
+        "claude": false,
+        "codex": true
+      },
+      "leo-antigravity-video": {
         "antigravity": false,
         "claude": false,
         "codex": true

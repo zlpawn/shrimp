@@ -1,0 +1,10 @@
+{
+  "name": "leo-antigravity-video",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Google Antigravity/Gemini Veo video generation and archiving skill powered by leo-lantern CDP",
+  "bin": {
+    "leo-antigravity-video": "./scripts/cli.mjs"
+  }
+}
