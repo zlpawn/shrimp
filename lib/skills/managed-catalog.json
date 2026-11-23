@@ -691,6 +691,30 @@
       "requiresDaemon": false,
       "promoted": true,
       "managed": true
+    },
+    {
+      "id": "leo-novel-router",
+      "name": "leo-novel-router",
+      "title": "Leo 跨平台读书与划线中枢",
+      "summary": "跨平台电子书阅读、书架与书内全文检索、对话划线同步回网页、划线样式管理与按书归档 Markdown 笔记导出中枢（本期内置微信读书并支持路由外部官方平台 Skill）。",
+      "category": "research",
+      "categoryLabel": "研究与知识",
+      "icon": "📖",
+      "featured": true,
+      "tags": [
+        "reading",
+        "novel",
+        "weread",
+        "highlight",
+        "bookmarks",
+        "markdown",
+        "微信读书",
+        "划线同步",
+        "读书笔记"
+      ],
+      "requiresDaemon": false,
+      "promoted": true,
+      "managed": true
     }
   ]
 }

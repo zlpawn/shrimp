@@ -1,0 +1,11 @@
+{
+  "name": "leo-novel-router",
+  "version": "1.0.0",
+  "description": "跨平台电子书阅读、对话内精读、网页划线同步与 Markdown 笔记导出智能路由中心，本期内置微信读书（weread）并支持路由外部官方平台 Skill。",
+  "type": "module",
+  "scripts": {
+    "probe": "node scripts/probe.mjs",
+    "config": "node scripts/config.mjs",
+    "weread": "node scripts/weread.mjs"
+  }
+}
