@@ -19,15 +19,21 @@ if (!fs.existsSync(SRC_DIR)) {
 const targets = [
   // 1. 本地 gateway 内部技能
   path.join(projectRoot, 'lib/skills/leo-live-inspector/resources/chrome_extension'),
-  // 2. 本地用户全局 .agents
+  // 2. 本地用户全局 .agents / .gemini / .claude 技能目录
   path.join(os.homedir(), '.agents/skills/leo-live-inspector/resources/chrome_extension'),
-  // 3. macOS 下 leo-live-runner
+  path.join(os.homedir(), '.gemini/config/skills/leo-live-inspector/resources/chrome_extension'),
+  path.join(os.homedir(), '.claude/skills/leo-live-inspector/resources/chrome_extension'),
+  // 3. 本地 worktrees
+  path.join(projectRoot, '.worktrees/feat-cloudflare-tunnel-p2p/extensions/leo-cookie-txt-locally'),
+  path.join(projectRoot, '.worktrees/hindsight-config-restart-safe/extensions/leo-cookie-txt-locally'),
+  // 4. macOS 下 leo-live-runner
   '/Users/pa/project/LEO/leo-live-runner/skills/leo-live-inspector/resources/chrome_extension',
-  // 4. Windows 下 leo-live-runner
+  // 5. Windows 下 leo-live-runner
   'D:/Java Project/Leo/leo-live-runner/skills/leo-live-inspector/resources/chrome_extension',
-  // 5. macOS 下 smart-customer-service
+  // 6. macOS 下 smart-customer-service
   '/Users/pa/project/IOT/KF/SCS/smart-customer-service/smart-customer-service-start/src/main/resources/extension/token-bridge',
-  // 6. Windows 下 smart-customer-service (常见工作区路径兜底)
+  '/Users/pa/project/IOT/KF/SCS/smart-customer-service/smart-customer-service-start/target/classes/extension/token-bridge',
+  // 7. Windows 下 smart-customer-service (常见工作区路径兜底)
   'D:/Java Project/KF/SCS/smart-customer-service/smart-customer-service-start/src/main/resources/extension/token-bridge',
 ];
 

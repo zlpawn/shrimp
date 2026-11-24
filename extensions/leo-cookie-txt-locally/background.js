@@ -294,7 +294,7 @@ async function registerTo(url) {
 
 async function sendHeartbeats() {
   const urls = await getTargetUrls();
-  const version = chrome.runtime.getManifest?.()?.version || "1.3.10";
+  const version = chrome.runtime.getManifest?.()?.version || "1.4.2";
   for (const url of urls) {
     await heartbeatTarget(url, {
       id: chrome.runtime.id,
