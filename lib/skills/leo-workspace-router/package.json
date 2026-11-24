@@ -1,0 +1,12 @@
+{
+  "name": "leo-workspace-router",
+  "version": "1.0.0",
+  "description": "面向跨端工作区与远程开发的场景驱动智能同步中枢，首期集成 Mutagen 毫秒级双向无感同步，具备 CLI 全自动探针、一键安装与安全卸载、多主机凭证隔离管理与智能过滤预设",
+  "type": "module",
+  "scripts": {
+    "probe": "node scripts/probe.mjs",
+    "router": "node scripts/router.mjs",
+    "config": "node scripts/config.mjs",
+    "test": "node tests/router.test.mjs"
+  }
+}

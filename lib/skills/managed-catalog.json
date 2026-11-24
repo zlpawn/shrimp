@@ -715,6 +715,56 @@
       "requiresDaemon": false,
       "promoted": true,
       "managed": true
+    },
+    {
+      "id": "leo-workspace-router",
+      "name": "leo-workspace-router",
+      "title": "Leo Workspace 跨端工作区与工程同步中枢",
+      "summary": "面向跨端工作区协同与远程开发的场景驱动智能同步中枢，首期集成 Mutagen 毫秒级双向无感同步，具备 CLI 全自动探针、一键安装与安全卸载、多主机凭证隔离管理与智能过滤预设。",
+      "category": "development",
+      "categoryLabel": "开发工程",
+      "icon": "🔄",
+      "featured": true,
+      "tags": [
+        "workspace",
+        "sync",
+        "mutagen",
+        "remote-dev",
+        "ssh",
+        "mirror",
+        "代码同步",
+        "远程开发",
+        "工作区同步"
+      ],
+      "requiresDaemon": true,
+      "promoted": true,
+      "managed": true
+    },
+    {
+      "id": "leo-nat-traversal-router",
+      "name": "leo-nat-traversal-router",
+      "title": "Leo NAT Traversal 内网穿透智能路由中枢",
+      "summary": "面向跨网与远程访问的场景驱动内网穿透智能路由中枢。首期集成 frp 高性能反向代理，具备环境探针、~/.local/bin/frpc 极速安装与安全卸载、TOML 配置自愈、后台进程守护与日志观测，未来可平滑扩展 Cloudflare Tunnels。",
+      "category": "development",
+      "categoryLabel": "开发工程",
+      "icon": "🌐",
+      "featured": true,
+      "tags": [
+        "nat",
+        "traversal",
+        "frp",
+        "frpc",
+        "cloudflare",
+        "tunnel",
+        "proxy",
+        "reverse-proxy",
+        "内网穿透",
+        "端口映射",
+        "反向代理"
+      ],
+      "requiresDaemon": true,
+      "promoted": true,
+      "managed": true
     }
   ]
 }

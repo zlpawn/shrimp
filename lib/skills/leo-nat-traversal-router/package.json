@@ -1,0 +1,11 @@
+{
+  "name": "leo-nat-traversal-router",
+  "version": "1.0.0",
+  "description": "面向跨网与远程访问的场景驱动内网穿透智能路由中枢，首期集成 frp 高性能反向代理，支持自动探测与 ~/.local/bin/frpc 一键安装、安全卸载、TOML配置治理与进程守护监管，未来可平滑扩展 Cloudflare Tunnels",
+  "type": "module",
+  "scripts": {
+    "probe": "node scripts/probe.mjs",
+    "router": "node scripts/router.mjs",
+    "test": "node tests/router.test.mjs"
+  }
+}
