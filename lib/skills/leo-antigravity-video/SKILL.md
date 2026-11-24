@@ -42,36 +42,36 @@ leo-antigravity-video/
 
 ## 快速上手与 CLI 命令
 
-已注册全局软链，可在终端任意路径直接执行 `leo-antigravity-video`（或 `node <skillDir>/scripts/cli.mjs`）。
+将 `<skillDir>` 解析为本 Skill 安装根目录，直接通过 Node.js 执行：`node <skillDir>/scripts/cli.mjs`。
 
 ### 1. 文生视频并全自动归档（标准 16:9）
 ```bash
-leo-antigravity-video --prompt "两只机械赛博猫在霓虹街道上跑酷" --ratio 16:9
+node <skillDir>/scripts/cli.mjs --prompt "两只机械赛博猫在霓虹街道上跑酷" --ratio 16:9
 ```
 
 ### 2. 生成竖屏短视频（9:16，适合小红书/抖音/Reels）
 ```bash
-leo-antigravity-video --prompt "雨滴落在荷叶上的微距特写，电影质感慢动作" --ratio 9:16
+node <skillDir>/scripts/cli.mjs --prompt "雨滴落在荷叶上的微距特写，电影质感慢动作" --ratio 9:16
 ```
 
 ### 3. 仅下载并归档当前 Gemini 标签页中已生成的视频
 无需重新生成，直接提取当前会话中的视频资产：
 ```bash
-leo-antigravity-video --download-only
+node <skillDir>/scripts/cli.mjs --download-only
 ```
 
 ### 4. 自定义归档输出路径
 ```bash
-leo-antigravity-video --prompt "极光掠过雪山" --out ~/素材/custom-videos/
+node <skillDir>/scripts/cli.mjs --prompt "极光掠过雪山" --out ~/素材/custom-videos/
 ```
 
 ### 5. 查看与修改默认配置
 ```bash
 # 查看当前配置
-leo-antigravity-video config get
+node <skillDir>/scripts/cli.mjs config get
 
 # 修改默认输出目录或默认比例
-leo-antigravity-video config set --output-dir "~/素材/gemini-videos" --default-ratio "16:9"
+node <skillDir>/scripts/cli.mjs config set --output-dir "~/素材/gemini-videos" --default-ratio "16:9"
 ```
 
 ---
