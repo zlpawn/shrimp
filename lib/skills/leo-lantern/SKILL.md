@@ -196,7 +196,8 @@ leo-lantern end-task
 
 | 平台 | 脚本路径 | 核心能力 | 详细文档 |
 | :--- | :--- | :--- | :--- |
-| X (Twitter) | `recipes/x-source.mjs` | 关注流/搜索/用户推文抓取，`name=orig` 原图、`gallery-dl` / `yt-dlp` 视频本地化 | [x-source.md](references/recipes/x-source.md) |
+| X (Twitter) 羊毛巡检 (哨兵) | `recipes/sentinels/x-promo-sentinel.mjs` | X 平台主流大模型双轨优惠、免费额度与官方放粮自动化巡检、增量去重与落盘 | [x-promo-sentinel.md](references/recipes/sentinels/x-promo-sentinel.md) |
+| X (Twitter) 素材采集 | `recipes/x-source.mjs` | 关注流/搜索/用户推文抓取，`name=orig` 原图、`gallery-dl` / `yt-dlp` 视频本地化 | [x-source.md](references/recipes/x-source.md) |
 | LINUX DO | `recipes/linuxdo-source.mjs` | 过 Cloudflare 5秒盾，提取楼主原文 Markdown、高赞回复与 `/original/` 原图 | [linuxdo-source.md](references/recipes/linuxdo-source.md) |
 | Instagram | `recipes/instagram-source.mjs` | 关注/博主/标签/单帖抓取，轮播原图与 Reels 视频本地化（`gallery-dl` + `yt-dlp`） | [instagram-source.md](references/recipes/instagram-source.md) |
 | Reddit | `recipes/reddit-source.mjs` | 首页/板块/搜索/单帖抓取，正文 Markdown、高赞评论与 `v.redd.it` 原画视频下载 | [reddit-source.md](references/recipes/reddit-source.md) |
