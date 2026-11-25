@@ -23,7 +23,7 @@ const {
   probeAll,
   probeBookToSkill,
   probeLessonToSkill,
-  probeVoiceStudio,
+  probeVoiceStudioSkill,
 } = await import(path.join(SKILL_DIR, "scripts", "probe.mjs"));
 
 test("SKILL.md and references adhere to router architecture standards", () => {
@@ -137,18 +137,15 @@ test("probe.mjs probeAll returns valid system diagnostic information", () => {
   assert.ok("uv" in result);
   assert.ok("pythonVenv" in result);
   assert.ok("engines" in result);
-  assert.ok("asr" in result);
-  assert.equal(result.asr.defaultBackend, "voicestudio");
-  assert.ok(typeof result.asr.voiceStudio.serviceOnline === "boolean");
   assert.ok("tools" in result);
   assert.ok("paths" in result);
 
   assert.ok(typeof result.engines.bookToSkill.installed === "boolean");
   assert.ok(typeof result.engines.lessonToSkill.installed === "boolean");
+  assert.ok(typeof result.engines.voiceStudio.installed === "boolean");
 
-  const vsDirect = probeVoiceStudio();
-  assert.equal(typeof vsDirect.serviceOnline, "boolean");
-  assert.equal(vsDirect.recommendedForAsr, true);
+  const vsDirect = probeVoiceStudioSkill();
+  assert.ok(typeof vsDirect.installed === "boolean");
 });
 
 test("findSkill dynamically resolves cross-agent paths and supports explicit overrides", () => {

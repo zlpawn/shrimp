@@ -36,6 +36,7 @@
    - 触发 JIT 安装卡片：`npx skills add virgiliojr94/book-to-skill`。
 3. **缺失 `ffmpeg` 或 `yt-dlp`**：
    - 课程视频下载与转写必须依赖 `ffmpeg`；若缺失，停止并引导用户安装（如 `brew install ffmpeg yt-dlp`）。
-4. **ASR 默认通道与 VoiceStudio 引导**：
-   - 音视频材料若无现成字幕，默认引导使用本机 **`VoiceStudio`**（常驻 `http://127.0.0.1:3900` 或通过 peer skill `voicestudio`）；
-   - 若服务未运行，引导用户启动 VoiceStudio 桌面端以获得 Apple Silicon MPS 极速转写；若用户暂不想启动，提示用户可提供现成字幕文件（`.srt` / `.vtt`）短路跳过。
+4. **语音转写统一调度 `voicestudio` Skill**：
+   - 音视频材料若无现成字幕，默认引导调度 peer skill **`voicestudio`** 完成转写；
+   - 若本地未检测到 `voicestudio` skill，展示 JIT 引导提示安装（如 `npx skills add voicestudio`）；
+   - 由 `voicestudio` skill 全权负责与本地 VoiceStudio 软件通信、设备加速与转写调度，主路由保持纯净解耦。

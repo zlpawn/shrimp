@@ -38,17 +38,16 @@
 
 ---
 
-## 3. `voicestudio`（默认语音转写与 ASR 资产服务商）
+## 3. `voicestudio`（默认语音转写 Peer Skill）
 
-* **擅长场景**：为所有无字幕的教学视频或录音提供毫秒级、离线且带有精确时间戳的语音识别。
+* **擅长场景**：为所有无字幕的教学视频或录音提供离线、带精确时间戳的语音识别。
 * **核心价值**：
-  * 本地常驻服务（`http://127.0.0.1:3900`），避免每个 Skill 重复下载 3GB 的 Whisper 模型与冲突的 PyTorch 依赖；
-  * Apple Silicon 原生 MPS (Metal) 硬件加速，极速转写长音频；
+  * 作为独立的 Peer Skill，封装并管理 VoiceStudio 桌面软件与本地 Whisper 服务的通信与设备加速；
+  * `leo-to-skill-router` 无需关心底层端口或模型权重，直接通过 Skill 协议交接转写任务；
   * 输出分段带起止时间戳的 JSON 数据，直接对接 IR 证据链。
 * **调用方式**：
-  * Peer Skill 模式：直接在 Agent 中引导调度 peer skill `voicestudio` 执行转写；
-  * 本地 API 模式：向 `http://127.0.0.1:3900/v1/audio/transcriptions` 提交 `audio.wav`。
-* **未启动引导**：若探测到 VoiceStudio 离线，提示用户启动桌面应用或启动本地服务。
+  * 直接引导 Agent 调度 peer skill `voicestudio` 完成 `audio.wav` 的转写；
+  * 若未检测到该 Skill，弹出 JIT 安装引导：`npx skills add voicestudio`。
 
 ---
 
