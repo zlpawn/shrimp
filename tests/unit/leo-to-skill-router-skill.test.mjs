@@ -18,6 +18,8 @@ const {
 
 const {
   classifyInput,
+  findSkill,
+  getStandardSkillRoots,
   probeAll,
   probeBookToSkill,
   probeLessonToSkill,
@@ -147,4 +149,33 @@ test("probe.mjs probeAll returns valid system diagnostic information", () => {
   const vsDirect = probeVoiceStudio();
   assert.equal(typeof vsDirect.serviceOnline, "boolean");
   assert.equal(vsDirect.recommendedForAsr, true);
+});
+
+test("findSkill dynamically resolves cross-agent paths and supports explicit overrides", () => {
+  const roots = getStandardSkillRoots();
+  assert.ok(Array.isArray(roots));
+  assert.ok(roots.length >= 8);
+
+  // Lesson-to-skill should be found in workspace roots
+  const lesson = findSkill("leo-lesson-to-skill");
+  assert.equal(lesson.installed, true);
+  assert.equal(lesson.source, "auto_discovery");
+
+  // Non-existent skill should be reported as not_found
+  const nonexistent = findSkill("definitely-nonexistent-skill-xyz");
+  assert.equal(nonexistent.installed, false);
+  assert.equal(nonexistent.source, "not_found");
+
+  // Explicit path override test
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "explicit-skill-test-"));
+  try {
+    const fakeSkillFile = path.join(tmpRoot, "SKILL.md");
+    fs.writeFileSync(fakeSkillFile, "---\nname: fake-skill\n---\n");
+    const explicit = findSkill("fake-skill", fakeSkillFile);
+    assert.equal(explicit.installed, true);
+    assert.equal(explicit.source, "explicit_config");
+    assert.equal(explicit.skillFile, fakeSkillFile);
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
 });
