@@ -1,0 +1,12 @@
+{
+  "name": "leo-code-pipeline",
+  "version": "1.0.0",
+  "description": "面向代码研发全生命周期的可插拔质量编排流水线，按需调度事前规范(leo-coding-standards)、事后审查(leo-code-review)与测试插槽，支持智能跳步与按需依赖自愈",
+  "type": "module",
+  "scripts": {
+    "check": "node scripts/ensure_dependencies.mjs",
+    "check:pre": "node scripts/ensure_dependencies.mjs --skill leo-coding-standards",
+    "check:post": "node scripts/ensure_dependencies.mjs --skill leo-code-review",
+    "check:qa": "node scripts/ensure_dependencies.mjs --skill leo-code-qa"
+  }
+}

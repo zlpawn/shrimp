@@ -1,0 +1,11 @@
+{
+  "name": "leo-code-qa",
+  "version": "1.0.0",
+  "description": "面向全栈工程的高信噪比多模态代码质检中枢（移植 gstack qa-only / qa 核心方法论），覆盖 E2E 浏览器黑盒联调、单元测试与 API 契约验证，按需调度 leo-lantern 与 leo-live-inspector",
+  "type": "module",
+  "scripts": {
+    "check": "node scripts/ensure_dependencies.mjs",
+    "scope": "node scripts/scope_diff.mjs",
+    "report": "node scripts/report_collector.mjs"
+  }
+}
