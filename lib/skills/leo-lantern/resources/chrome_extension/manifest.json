@@ -1,0 +1,87 @@
+{
+  "manifest_version": 3,
+  "name": "Leo cookie.txt Locally",
+  "version": "1.4.2",
+  "description": "Export cookies and empower AI Agents (MCP/CLI) to interact with real Chrome.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApTpVSAi2QQOhEmDxVKjChip7bzXdeQArxB8XaAXtH5JIJJb74c2q3oZgGm6Efw+Okeo1VQZjZd06ZXJxs8XWhl6mVvEua+0lPQo+/TY9NZMyr5KgG8EjMXIzNKIFPjblzT9qwZSgL+H08uvWQSbsi8dWnrlmn7uJ6wdiCOHKnskJuux3TxjtQImE6nuuBlb7CvnW3iA58wpSCuZWHX8NMpSWSzclX++mcPnv72tWTfX95xA7vOLUC0XsQmArxv/xzRCHP+Ir7lZZ1dwQVNUQb7d4hkebjxKkSiqiTX/geuHkP8zWGahdUUpdcbTuz+nRxcpy1lMiEIbxmCr3QjsKdwIDAQAB",
+  "permissions": [
+    "cookies",
+    "activeTab",
+    "storage",
+    "alarms",
+    "scripting",
+    "tabs",
+    "tabGroups",
+    "debugger"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "externally_connectable": {
+    "matches": [
+      "http://localhost/*",
+      "http://127.0.0.1/*",
+      "http://127.0.0.1:*/*",
+      "http://localhost:*/*",
+      "http://*.ke.com/*",
+      "https://*.ke.com/*",
+      "http://*.ttb.test.ke.com/*",
+      "https://*.ttb.test.ke.com/*",
+      "http://*.lianjia.com/*",
+      "https://*.lianjia.com/*",
+      "http://*.ljcdn.com/*",
+      "https://*.ljcdn.com/*",
+      "http://*.ljcdn.lianjia.com/*",
+      "https://*.ljcdn.lianjia.com/*"
+    ]
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Leo cookie.txt Locally",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "interaction.mjs",
+        "element-target.mjs",
+        "errors.mjs",
+        "icons/icon128.png"
+      ],
+      "matches": [
+        "http://*/*",
+        "https://*/*",
+        "http://127.0.0.1/*",
+        "http://localhost/*"
+      ]
+    }
+  ]
+}

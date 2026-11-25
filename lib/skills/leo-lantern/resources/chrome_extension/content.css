@@ -1,0 +1,173 @@
+#leo-lantern-root {
+  all: initial;
+  position: fixed;
+  z-index: 2147483646;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+#leo-lantern-ball {
+  position: fixed;
+  width: 56px;
+  height: 56px;
+  border: 2.5px solid rgba(255, 255, 255, 0.95);
+  padding: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: grab;
+  pointer-events: auto;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28), 0 2px 6px rgba(0, 0, 0, 0.16);
+  user-select: none;
+  -webkit-user-select: none;
+  transition: left 0.28s cubic-bezier(0.2, 0.9, 0.3, 1),
+              top 0.28s cubic-bezier(0.2, 0.9, 0.3, 1),
+              transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1),
+              opacity 0.28s ease,
+              box-shadow 0.2s ease;
+}
+
+#leo-lantern-ball.is-tucked.is-docked-right {
+  transform: translateX(60%);
+  opacity: 0.65;
+}
+
+#leo-lantern-ball.is-tucked.is-docked-left {
+  transform: translateX(-60%);
+  opacity: 0.65;
+}
+
+#leo-lantern-ball:hover,
+#leo-lantern-ball.panel-open {
+  transform: translateX(0) scale(1.06) !important;
+  opacity: 1 !important;
+  box-shadow: 0 12px 30px rgba(43, 138, 62, 0.55), 0 0 0 3.5px #a9e34b;
+}
+
+#leo-lantern-ball:active {
+  cursor: grabbing;
+  transform: scale(0.96) !important;
+}
+
+.leo-lantern-spin-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: leo-lantern-spin 12s linear infinite;
+  transform-origin: 50% 50%;
+}
+
+#leo-lantern-ball:hover .leo-lantern-spin-wrapper,
+#leo-lantern-ball.panel-open .leo-lantern-spin-wrapper {
+  animation-play-state: paused;
+}
+
+#leo-lantern-ball img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  object-fit: cover;
+  transform-origin: 50% 50%;
+}
+
+@keyframes leo-lantern-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+#leo-lantern-panel {
+  position: fixed;
+  width: 280px;
+  pointer-events: auto;
+  background: rgba(24, 44, 28, 0.95);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: #e6f4ea;
+  border-radius: 14px;
+  border: 1px solid rgba(81, 207, 102, 0.28);
+  box-shadow: 0 14px 36px rgba(18, 48, 24, 0.45);
+  padding: 16px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 13px;
+  display: none;
+}
+
+#leo-lantern-panel.visible {
+  display: block;
+}
+
+#leo-lantern-panel h2 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #69db7c;
+}
+
+#leo-lantern-panel label {
+  display: block;
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: #b2d8b8;
+}
+
+#leo-lantern-panel input {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  border: 1px solid rgba(81, 207, 102, 0.3);
+  border-radius: 6px;
+  background: rgba(14, 28, 18, 0.85);
+  color: #e6f4ea;
+  outline: none;
+  font-size: 13px;
+  transition: border-color 0.2s;
+}
+
+#leo-lantern-panel input:focus {
+  border-color: #69db7c;
+  box-shadow: 0 0 0 2px rgba(105, 219, 124, 0.2);
+}
+
+#leo-lantern-panel button {
+  width: 100%;
+  padding: 9px;
+  border: 0;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #51cf66 0%, #2f9e44 100%);
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(47, 158, 68, 0.3);
+  transition: all 0.2s;
+}
+
+#leo-lantern-panel button:hover {
+  background: linear-gradient(135deg, #69db7c 0%, #37b24d 100%);
+  box-shadow: 0 6px 16px rgba(47, 158, 68, 0.4);
+}
+
+#leo-lantern-status {
+  margin-top: 10px;
+  min-height: 16px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+#leo-lantern-status.ok {
+  color: #69db7c;
+}
+
+#leo-lantern-status.err {
+  color: #ff6b6b;
+}

@@ -15,10 +15,18 @@ description: 通过 leo-lantern CLI/服务实现 Chrome 浏览器远程调试 (C
 
 ## 工作流
 
+0. **一键扩展安装与自动更新（跨平台 Windows / macOS）**：
+   - **首次安装准则（优先原生卡片交互）**：
+     - 若探测到扩展离线（`extensionOnline: false`），AI 必须向聊天框推送**带选项的交互确认卡片**（宿主若有提问/选择工具则优先调用，无工具则自适应输出带序号的 Markdown 确认卡片），**严禁擅自弹窗打扰用户**；
+     - **选项设计（语义自适应，无需硬编码文案）**：
+       - **自动协助（推荐）**：说明会协助调起 Chrome 扩展页与系统文件夹定位（便于 2 秒拖拽安装），标注推荐项；用户确认后后台执行 `leo-lantern setup --open`；
+       - **手动引导**：仅获取扩展路径与步骤说明，由用户自主安装；后台执行 `leo-lantern setup`（不弹窗）；
+     - 独立脚本：终端用户亦可随时直接运行 `<skillDir>/scripts/setup_chrome_ext.sh`（macOS）或 `.bat`（Windows）手动拉起。
+   - **全自动版本检测与无感热重载**：在日常执行任意命令时，CLI 会自动比对本地最新版本与运行中扩展版本。若检测到新版，自动向 Bridge 发送 `ext-reload` 命令，Chrome 扩展将在 0.5 秒内静默热更新完毕，用户完全无感。
 1. **服务启动与健康探测**：
    - **桥接按需启动，一般不用手动管**：操作浏览器的命令发现桥接没开，会自动在后台拉起并等扩展连上（需要 Chrome 已打开）。桥接连续 10 分钟没有收到命令就自动退出；扩展的轮询和心跳不算命令。`health`、`doctor` 只检查，不会启动桥接。
      - 主动启动并等待扩展：`leo-lantern start`（或 `node <skillDir>/scripts/cli/index.mjs start`）
-     - 前台运行、调整空闲时间：`node <skillDir>/scripts/cli/index.mjs server --port 19526 --idle-exit-min 30`（`0` 表示不自动退出，也可用环境变量 `LEO_LANTERN_IDLE_EXIT_MIN`）
+     - 前台运行、调整空闲时间：`node <skillDir>/scripts/cli/index.mjs server --port 19526 --idle-exit-min 30`（`0` 表示不自动退出，缺省 10 分钟）
    - **端口冲突自愈与换端口指引**：若 `19526` 与 `19527` 均被本地其他进程占用，CLI 将自动探测下一个可用空闲端口（如 `19528`），并抛出 `bridge_port_occupied` 错误，提示用户在 Chrome 扩展的「高级设置」->「Bridge 地址」中填入推荐端口（如 `19528`）保存，随后带 `--port 19528` 参数重试。
    - 检查服务与扩展在线状态：`leo-lantern health` 或 `leo-lantern doctor`（若 `extensionOnline: false`，请在 `chrome://extensions` 确认已加载扩展并保持 Chrome 运行；更新扩展后可用 `leo-lantern ext-reload` 重载）。
 2. **任务生命周期与标签页管理（支持独立窗口隔离或接管现有标签页）**：
@@ -66,7 +74,8 @@ description: 通过 leo-lantern CLI/服务实现 Chrome 浏览器远程调试 (C
 ## 常用命令速查
 
 ```bash
-# 启动 / 健康探测 / 标签页管理
+# 首次安装引导 / 启动 / 健康探测 / 标签页管理
+leo-lantern setup
 leo-lantern start
 leo-lantern health
 leo-lantern doctor
