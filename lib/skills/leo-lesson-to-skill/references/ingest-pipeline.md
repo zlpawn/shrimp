@@ -7,7 +7,7 @@
 | 能力 | 本地视频 | URL | 缺失处理 |
 |---|---:|---:|---|
 | `ffmpeg` / `ffprobe` | 必需 | 必需 | 停止 |
-| ASR 后端或已有字幕 | 必需 | 必需 | 停止 |
+| ASR 后端或已有字幕 | 必需 | 必需 | 默认优先使用本机 VoiceStudio / `voicestudio` skill；备选独立 ASR 或已有字幕 |
 | `yt-dlp` | 不需要 | 必需 | 停止 |
 | 多模态图像理解 | 可选 | 可选 | 尝试 OCR |
 | OCR | 可选 | 可选 | 尝试多模态 |
@@ -19,8 +19,8 @@
 
 1. 本地视频复制到本次 `temp_root`；URL 保存 `.info.json`。
 2. 用 `ffprobe` 校验可读性、时长和编码。
-3. 已有可靠 SRT、VTT 或结构化字幕时可转换为标准 Segment，不必重复 ASR。
-4. 否则先用短片段验证 ASR，再处理完整视频。
+3. 已有可靠 SRT、VTT 或结构化字幕时可直接短路转换为标准 Segment，不必重复 ASR。
+4. 无现成字幕时，优先连接本机 VoiceStudio（`http://127.0.0.1:3900`）或调度 peer skill `voicestudio` 完成带时间戳的语音识别。VoiceStudio 不可用时先用短片段验证备选 ASR，再处理完整视频。
 5. Segment ID 唯一，时间戳单调且不得超出视频时长。
 
 所有后端失败时设置 `asr_status: failed` 并停止。不得根据课件编造字幕。

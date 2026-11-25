@@ -12,8 +12,8 @@
 | **电子书** (`.epub`, `.mobi`, `.azw3`) | 文档模式 | `book-to-skill` | 快速解包，自动按章节切片 |
 | **Markdown / 文本** (`.md`, `.txt`, `.adoc`, `.rst`) | 文档模式 | `book-to-skill` | 零依赖秒级提取，优先保持 `#` 标题层级 |
 | **文档文件夹 / Glob 通配** (`docs/`, `**/*.md`) | 文档模式 | `book-to-skill` | 自动聚合并按文件名排序合并处理 |
-| **网络视频 URL** (B站, YouTube, 抖音等) | 课程模式 | `leo-lesson-to-skill` | 调度 `yt-dlp` 下载音频并提取字幕/ASR 转写 |
-| **本地音视频** (`.mp4`, `.mov`, `.wav`, `.mp3`) | 课程模式 | `leo-lesson-to-skill` | 提取 ASR 转写 + 关键帧多模态/OCR |
+| **网络视频 URL** (B站, YouTube, 抖音等) | 课程模式 | `leo-lesson-to-skill` | 调度 `yt-dlp` 下载音频；优先已有字幕，无字幕默认走 VoiceStudio ASR (`voicestudio` skill) |
+| **本地音视频** (`.mp4`, `.mov`, `.wav`, `.mp3`) | 课程模式 | `leo-lesson-to-skill` | 提取音频流并默认通过 VoiceStudio ASR 转写 + 关键帧多模态/OCR |
 | **书籍 + 配套视频同时提供** | 复合融合模式 | **Fusion Pipeline** | 以书籍构建 `SKILL.md` 知识大纲，以视频作为 `Worked Examples` 案例 |
 
 ---
@@ -36,3 +36,6 @@
    - 触发 JIT 安装卡片：`npx skills add virgiliojr94/book-to-skill`。
 3. **缺失 `ffmpeg` 或 `yt-dlp`**：
    - 课程视频下载与转写必须依赖 `ffmpeg`；若缺失，停止并引导用户安装（如 `brew install ffmpeg yt-dlp`）。
+4. **ASR 默认通道与 VoiceStudio 引导**：
+   - 音视频材料若无现成字幕，默认引导使用本机 **`VoiceStudio`**（常驻 `http://127.0.0.1:3900` 或通过 peer skill `voicestudio`）；
+   - 若服务未运行，引导用户启动 VoiceStudio 桌面端以获得 Apple Silicon MPS 极速转写；若用户暂不想启动，提示用户可提供现成字幕文件（`.srt` / `.vtt`）短路跳过。

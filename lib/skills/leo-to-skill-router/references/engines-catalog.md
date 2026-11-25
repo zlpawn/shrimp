@@ -38,7 +38,21 @@
 
 ---
 
-## 3. 复合融合模式（Fusion Pipeline）
+## 3. `voicestudio`（默认语音转写与 ASR 资产服务商）
+
+* **擅长场景**：为所有无字幕的教学视频或录音提供毫秒级、离线且带有精确时间戳的语音识别。
+* **核心价值**：
+  * 本地常驻服务（`http://127.0.0.1:3900`），避免每个 Skill 重复下载 3GB 的 Whisper 模型与冲突的 PyTorch 依赖；
+  * Apple Silicon 原生 MPS (Metal) 硬件加速，极速转写长音频；
+  * 输出分段带起止时间戳的 JSON 数据，直接对接 IR 证据链。
+* **调用方式**：
+  * Peer Skill 模式：直接在 Agent 中引导调度 peer skill `voicestudio` 执行转写；
+  * 本地 API 模式：向 `http://127.0.0.1:3900/v1/audio/transcriptions` 提交 `audio.wav`。
+* **未启动引导**：若探测到 VoiceStudio 离线，提示用户启动桌面应用或启动本地服务。
+
+---
+
+## 4. 复合融合模式（Fusion Pipeline）
 
 当用户同时提供同一主题的书籍和课程视频时（例如：一本《领域驱动设计》PDF + 作者的 4 节 DDD 实战演练视频）：
 1. **骨架搭建**：由 `book-to-skill` 解析书本目录结构，生成体系化的 `SKILL.md` 核心模型；

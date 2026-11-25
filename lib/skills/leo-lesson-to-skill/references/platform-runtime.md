@@ -13,11 +13,12 @@ Windows 使用 `-LiteralPath` 或 .NET API；macOS/Linux 使用参数数组或�
 
 - 所有输入：`ffmpeg`、`ffprobe`、可用 ASR 或已有字幕。
 - URL：额外要求 `yt-dlp`。
-- Windows：CUDA 短片段测试成功后才使用 CUDA。
-- Apple Silicon：可优先验证 `mlx_whisper`。
-- Linux：CUDA 测试成功后使用 CUDA，否则 CPU。
+- ASR 通道：优先检测并连接本机 VoiceStudio（`http://127.0.0.1:3900`）或调度 peer skill `voicestudio`（Apple Silicon 原生 MPS 加速）。若未运行，提示启动应用，或备用以下本地后端：
+  - Windows：CUDA 短片段测试成功后才使用 CUDA。
+  - Apple Silicon：可优先验证 `mlx_whisper`。
+  - Linux：CUDA 测试成功后使用 CUDA，否则 CPU。
 
-工具命令存在不代表后端可用，ASR 必须用短片段验证。
+工具命令存在不代表后端可用，使用备用 ASR 时必须用短片段验证。
 
 ## 临时目录
 

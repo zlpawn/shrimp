@@ -21,6 +21,7 @@ const {
   probeAll,
   probeBookToSkill,
   probeLessonToSkill,
+  probeVoiceStudio,
 } = await import(path.join(SKILL_DIR, "scripts", "probe.mjs"));
 
 test("SKILL.md and references adhere to router architecture standards", () => {
@@ -59,9 +60,13 @@ test("SKILL.md and references adhere to router architecture standards", () => {
   assert.ok(decisionTables.includes("网络视频 URL"));
   assert.ok(decisionTables.includes("Fusion Pipeline"));
 
-  // Engines catalog covers both sub-engines
+  // Engines catalog covers sub-engines and VoiceStudio
   assert.ok(enginesCatalog.includes("book-to-skill"));
   assert.ok(enginesCatalog.includes("leo-lesson-to-skill"));
+  assert.ok(enginesCatalog.includes("voicestudio"));
+
+  // Decision tables reference VoiceStudio
+  assert.ok(decisionTables.includes("VoiceStudio"));
 
   // Output spec covers cheatsheet and on-demand architecture
   assert.ok(outputSpec.includes("cheatsheet.md"));
@@ -130,9 +135,16 @@ test("probe.mjs probeAll returns valid system diagnostic information", () => {
   assert.ok("uv" in result);
   assert.ok("pythonVenv" in result);
   assert.ok("engines" in result);
+  assert.ok("asr" in result);
+  assert.equal(result.asr.defaultBackend, "voicestudio");
+  assert.ok(typeof result.asr.voiceStudio.serviceOnline === "boolean");
   assert.ok("tools" in result);
   assert.ok("paths" in result);
 
   assert.ok(typeof result.engines.bookToSkill.installed === "boolean");
   assert.ok(typeof result.engines.lessonToSkill.installed === "boolean");
+
+  const vsDirect = probeVoiceStudio();
+  assert.equal(typeof vsDirect.serviceOnline, "boolean");
+  assert.equal(vsDirect.recommendedForAsr, true);
 });
