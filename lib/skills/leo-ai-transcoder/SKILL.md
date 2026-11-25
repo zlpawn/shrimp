@@ -57,7 +57,8 @@ description: "面向传统 Java 后端工程师的 AI/Agent 认知破壁与面�
   * 待用户回复确认或提供新路径后，Agent 自动将配置写入 `~/.shrimp/skills/leo-ai-transcoder/config.json`，再进入主转译流程。
 * **【若该配置文件已存在】**：
   * 直接静默读取，迅速进入技术转译与教学流程；
-  * **路径缺失或无效时同样询问并写回**：若本次任务需要用到的某个锚点（如 `agentscope_java_repo`、`java_sdk_root`）在 config 中为空，或该路径在磁盘上不存在，则暂停并只询问该路径（给出可探测到的候选），待用户确认后写回 `config.json` 并更新 `updated_at`，再继续；本次用不到的锚点不要打扰用户。
+  * **多项目与进度路径解析**：当需要结合具体业务项目对照学习、温习或读写项目独立进度时，从 `config.json` 的 `projects` 注册表与 `anchors.obsidian_vault_root` 动态解析（按 `cwd` 自动匹配或取 `active_project`），具体规范见 `references/project-extension-protocol.md`，不在本主文件中硬编码任何具体项目。
+  * **路径缺失或项目未登记时同样提醒并写回**：若本次任务需要用到的某个核心锚点（如 `agentscope_java_repo`、`java_sdk_root`、`obsidian_vault_root`、`workspace_root`）在 config 中为空或磁盘路径不存在，或用户在项目上下文下工作但 `projects` 中尚未登记对应项目，则暂停并主动提醒用户确认/补充该目录（给出可探测到的候选），待用户确认后写回 `config.json` 并更新 `updated_at`，再继续；本次用不到的锚点或可选外部仓不要打扰用户。
 
 ---
 
@@ -213,6 +214,7 @@ flowchart TD
 * `references/agentscope-java-patterns.md`：阿里 AgentScope 2.0 Java 生态编排最佳实践。
 * `scripts/token_lab.py`：Token 实测脚本（本地 tiktoken 切分、兼容 OpenAI 接口的截断与用量探测）。
 * `references/teaching-examples.md`：教学示范——好故事的六条标准（附正反对照）、差的一轮 vs 好的一轮、纠错 / 推翻简化 / 实测 / 收尾复述的单项示范。
+* `references/project-extension-protocol.md`：多项目扩展与路径解耦协议（`config.json` 的 `projects` 注册表、动态锚点解析与缺失容错）。
 * `~/.shrimp/skills/leo-ai-transcoder/teaching-examples-local.md`：本机积累的追加示范，编号接着 references 版续排；与 config.json 同目录，skill 重装或同步不会覆盖。
 
 ---
