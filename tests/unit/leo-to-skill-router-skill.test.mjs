@@ -8,6 +8,8 @@ const ROOT = path.resolve(import.meta.dirname, "../..");
 const SKILL_DIR = path.join(ROOT, "lib", "skills", "leo-to-skill-router");
 
 const {
+  findShrimpRoot,
+  detectDefaultSkillsDir,
   getConfigPath,
   getDefaultConfig,
   readConfig,
@@ -83,6 +85,11 @@ test("config.mjs correctly manages configurations and supports path resolution",
   process.env.LEO_TO_SKILL_ROUTER_CONFIG_PATH = testConfigFile;
 
   try {
+    const shrimpRoot = findShrimpRoot();
+    assert.ok(fs.existsSync(shrimpRoot));
+    const detectedSkills = detectDefaultSkillsDir();
+    assert.ok(detectedSkills.endsWith("skills"));
+
     const defaults = getDefaultConfig();
     assert.ok(defaults.output_skills_dir.endsWith(path.join("lib", "skills")));
     assert.ok(defaults.artifacts_dir.includes("to-skill"));

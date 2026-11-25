@@ -20,7 +20,7 @@
 1. 本地视频复制到本次 `temp_root`；URL 保存 `.info.json`。
 2. 用 `ffprobe` 校验可读性、时长和编码。
 3. 已有可靠 SRT、VTT 或结构化字幕时可直接短路转换为标准 Segment，不必重复 ASR。
-4. 无现成字幕时，优先连接本机 VoiceStudio（`http://127.0.0.1:3900`）或调度 peer skill `voicestudio` 完成带时间戳的语音识别。VoiceStudio 不可用时先用短片段验证备选 ASR，再处理完整视频。
+4. 无现成字幕时，优先引导调度 peer skill `voicestudio` 完成带时间戳的语音识别（若未安装则提示用户安装，由 `voicestudio` skill 全权负责与本地 VoiceStudio 软件交互与硬件加速）。VoiceStudio 不可用时先用短片段验证备选 ASR，再处理完整视频。
 5. Segment ID 唯一，时间戳单调且不得超出视频时长。
 
 所有后端失败时设置 `asr_status: failed` 并停止。不得根据课件编造字幕。

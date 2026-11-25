@@ -23,7 +23,7 @@
 | 路径配置项 | 默认值 | 来源与修改方式 | 作用说明 |
 | :--- | :--- | :--- | :--- |
 | **最终技能输出路径** | `<shrimp_root>/lib/skills/<slug>/` | `~/.shrimp/skills/leo-to-skill-router/config.json` (`output_skills_dir`) | 默认直接生成至当前项目库，无缝成为 shrimp 原生技能 |
-| **中间提取物暂存路径** | `~/素材/to-skill/<slug>/` | `~/.shrimp/skills/leo-to-skill-router/config.json` (`artifacts_dir`) | 存放中间提取的音频流、转写字幕、分块文本与大纲元数据 |
+| **中间提取物暂存路径** | `~/素材/to-skill/YYYY-MM-DD-<slug>/` | `~/.shrimp/skills/leo-to-skill-router/config.json` (`artifacts_dir`) | 存放中间提取的音频流、转写字幕、分块文本与大纲元数据 |
 | **Python 虚拟环境** | `~/.shrimp/skills/leo-to-skill-router/.venv` | `~/.shrimp/skills/leo-to-skill-router/config.json` (`python_venv_path`) | 隔离所有文档与视频提取相关 Python 依赖（由 `uv` 维护） |
 
 ---
