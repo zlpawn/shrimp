@@ -765,6 +765,30 @@
       "requiresDaemon": true,
       "promoted": true,
       "managed": true
+    },
+    {
+      "id": "leo-code-review",
+      "name": "leo-code-review",
+      "title": "Leo Code Review 极低噪音本地代码与 AI 改动审查中枢",
+      "summary": "面向本地 Git 改动与 AI Agent 代码审查的极低噪音、高信噪比代码审查与需求合规审计中心，支持双阶段独立证伪机制、80分置信度硬截断与模块化扩展路由。",
+      "category": "development",
+      "categoryLabel": "开发工程",
+      "icon": "🛡️",
+      "featured": true,
+      "tags": [
+        "code-review",
+        "git-diff",
+        "ai-agent",
+        "bug-review",
+        "spec-audit",
+        "falsification",
+        "代码审查",
+        "Bug审查",
+        "需求合规"
+      ],
+      "requiresDaemon": false,
+      "promoted": true,
+      "managed": true
     }
   ]
 }

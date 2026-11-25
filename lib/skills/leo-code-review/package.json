@@ -1,0 +1,11 @@
+{
+  "name": "leo-code-review",
+  "version": "1.0.0",
+  "description": "面向本地 Git 改动与 AI Agent 代码审查的极低噪音、高信噪比代码审查与需求合规审计中心，支持双阶段证伪机制与模块化扩展路由",
+  "type": "module",
+  "scripts": {
+    "diff": "uv run --python ~/.shrimp/skills/leo-code-review/.venv scripts/git_diff_extractor.py",
+    "diff:staged": "uv run --python ~/.shrimp/skills/leo-code-review/.venv scripts/git_diff_extractor.py --mode staged",
+    "diff:branch": "uv run --python ~/.shrimp/skills/leo-code-review/.venv scripts/git_diff_extractor.py --mode branch"
+  }
+}
