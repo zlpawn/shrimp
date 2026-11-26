@@ -85,7 +85,7 @@ leo-code-pipeline (Orchestrator)
 *(Optional / Pluggable)*
 1. Invoke `leo-code-qa` to execute targeted verification:
    - Scope diff impacts via `scope_diff.mjs`.
-   - Run black-box E2E testing (via `leo-lantern`), backend diagnostics (via `leo-live-inspector`), or unit tests.
+   - Run black-box E2E testing and backend diagnostics (via `leo-live-inspector`), or unit tests.
    - Enforce anti-optimistic UI checks and triple-check error detection.
 2. If testing is skipped by user or not configured, mark as skipped.
 

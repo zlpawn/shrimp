@@ -1,6 +1,6 @@
 ---
 name: leo-code-qa
-description: 面向全栈工程的高信噪比多模态代码质检中枢（移植 gstack qa-only / qa 核心方法论）。涵盖 E2E 浏览器黑盒联调、单元测试与 API 契约验证，按需自愈调度 leo-lantern（浏览器底座）与 leo-live-inspector（后端诊断），测前锁定 diff 范围，测中蒙眼黑盒，三端交叉核验，写操作强验落库，默认只测不改。
+description: 面向全栈工程的高信噪比多模态代码质检中枢（移植 gstack qa-only / qa 核心方法论）。涵盖 E2E 浏览器黑盒联调、单元测试与 API 契约验证，按需自愈调度 leo-live-inspector（同时承载真实浏览器交互抓包与后端运行时诊断），测前锁定 diff 范围，测中蒙眼黑盒，三端交叉核验，写操作强验落库，默认只测不改。
 ---
 
 # Leo Code QA（代码质检与测试中枢）
@@ -9,9 +9,9 @@ description: 面向全栈工程的高信噪比多模态代码质检中枢（移�
 
 遵循**“借脑不借手”**架构哲学：
 - **借脑**：深度吸收开源项目 `garrytan/gstack`（`qa-only` / `qa`）在软件工程质检中的工业级方法论——**测前划范围、测中蒙眼黑盒、三端交叉核验、写操作强验持久态、两遍复现定律、增量落盘防丢失、默认只查不改**；
-- **不借手（生态解耦，不造轮子）**：彻底剥离 gstack 自带的 Playwright、内置 browse CLI 与环境遥测。底层直接依托成熟的专属能力技能：
-  - **E2E 浏览器测试执行** $\rightarrow$ 调用底层能力技能 **`leo-lantern`**（操作真实 Chrome、复用真实登录态、CDP 原生事件、极省 Token 的 DOM 树）；
-  - **后端运行时与日志诊断** $\rightarrow$ 联动专职技能 **`leo-live-inspector`**（排查服务端日志、异常堆栈与运行时探针）；
+- **不借手（生态解耦，不造轮子）**：彻底剥离 gstack 自带的 Playwright、内置 browse CLI 与环境遥测，底层统一依托专职技能 **`leo-live-inspector`** 收口全链路执行能力，减少冗余技能依赖：
+  - **E2E 浏览器测试与页面抓取** $\rightarrow$ 调用 **`leo-live-inspector` 内置浏览器 CLI**（`scripts/cli/index.mjs`，操作真实 Chrome、复用真实登录态、CDP 原生事件、极省 Token 的 DOM 树与网络抓包）；
+  - **后端运行时与日志诊断** $\rightarrow$ 联动 **`leo-live-inspector`** 诊断脚本（排查服务端日志、异常堆栈与运行时探针）；
   - **研发流水线集成** $\rightarrow$ 完美作为 **`leo-code-pipeline` 的 `Slot 4: [test]` 门禁**。
 
 ---
@@ -50,13 +50,13 @@ flowchart TD
     Scope --> Exec{"Step 2: 针对性执行模式"}
     
     Exec -- "E2E 浏览器联调" --> E2ERunner["加载 references/e2e-methodology.md<br/>(黑盒蒙眼 + 持久态验证)"]
-    E2ERunner --> Lantern["底层浏览器驱动: leo-lantern<br/>(真实登录态 / 独立窗口 / CDP事件)"]
+    E2ERunner --> LiveBrowser["底层浏览器驱动: leo-live-inspector<br/>(scripts/cli/index.mjs / 真实 Chrome / CDP)"]
     
-    Exec -- "后端/接口异常深入诊断" --> LiveRunner["联动成熟专职技能: leo-live-inspector<br/>(服务端日志 / 运行时探针)"]
+    Exec -- "后端/接口异常深入诊断" --> LiveRunner["后端运行时排查: leo-live-inspector<br/>(服务端日志 / 运行时探针)"]
     
     Exec -- "单元测试 / 接口契约" --> UnitRunner["加载 references/unit-test-standards.md<br/>(Vitest / Jest / Pytest / Maven)"]
     
-    Lantern --> TripleCheck["三端交叉核验 (Console + Network假成功 + 日志)"]
+    LiveBrowser --> TripleCheck["三端交叉核验 (Console + Network假成功 + 日志)"]
     LiveRunner --> TripleCheck
     UnitRunner --> TripleCheck
     
@@ -79,9 +79,8 @@ flowchart TD
    - **接口模式 (`api`)**：涉及微服务接口、纯后端端点变动时激活；
    - **全量质检 (`full`)**：用户未明确指定时，根据改动文件自动组合激活。
 2. **依赖检查与自愈**：
-   - 执行 `node scripts/ensure_dependencies.mjs`；
-   - 若激活 E2E 模式且缺少 `leo-lantern` $\rightarrow$ 自动触发 `npx -y skills add zlpawn/shrimp -g --skill leo-lantern`；
-   - 若需要排查后端问题且缺少 `leo-live-inspector` $\rightarrow$ 自动触发 `npx -y skills add zlpawn/leo-live-runner -g --skill leo-live-inspector`。
+   - 执行 `node scripts/ensure_dependencies.mjs`（返回 `leo-live-inspector` 的本地安装目录 `<leo-live-inspector-dir>`）；
+   - 若激活 E2E 模式或需要排查后端问题，且缺少 `leo-live-inspector` $\rightarrow$ 自动触发 `npx -y skills add zlpawn/leo-live-runner -g --skill leo-live-inspector`。
 
 ### Step 1: 测前范围划定 (Scope Locking)
 运行范围分析探针：
@@ -92,23 +91,24 @@ node ./scripts/scope_diff.mjs [base-branch]
 
 ### Step 2: 模式化执行与三端核验
 
-#### 场景 A: E2E 浏览器联调（依托 `leo-lantern`，严格黑盒）
+#### 场景 A: E2E 浏览器联调（依托 `leo-live-inspector` 内置浏览器 CLI，严格黑盒）
 1. 开启独立窗口并导航（复用真实登录态，不干扰工作）：
-   > 注：优先直接执行 `leo-lantern` CLI，若未加入 PATH 则通过动态解析的路径执行：`node <leo-lantern-dir>/scripts/cli/index.mjs`。
+   > 注：统一通过 `leo-live-inspector` 内置浏览器 CLI 执行（完整指令见 `<leo-live-inspector-dir>/references/browser-guide.md`），下面以 `cli` 简写代表 `node <leo-live-inspector-dir>/scripts/cli/index.mjs`。
    ```bash
-   leo-lantern start-task --title="qa-e2e"
-   leo-lantern goto "<target-url>"
+   cli() { node "<leo-live-inspector-dir>/scripts/cli/index.mjs" "$@"; }
+   cli start-task --title="qa-e2e"
+   cli goto "<target-url>"
    ```
 2. 执行三端核验循环（**严禁读取业务源码**）：
-   - 启动网络监听：`leo-lantern net-start`；
-   - 定位元素：`leo-lantern state`（读取带有 `ref` 的紧凑 DOM，极省 Token）；
-   - 物理输入与点击：`leo-lantern fill --ref <N> --val "<text>" --blur`、`leo-lantern click --ref <N>`；
-   - 提取网络响应：`leo-lantern net-get --grep="api"` $\rightarrow$ `leo-lantern net-stop`；
+   - 启动网络监听：`cli net-start`；
+   - 定位元素：`cli state`（读取带有 `ref` 的紧凑 DOM，极省 Token）；
+   - 物理输入与点击：`cli fill --ref <N> --val "<text>" --blur`、`cli click --ref <N>`；
+   - 提取网络响应：`cli net-get --grep="api"` $\rightarrow$ `cli net-stop`；
    - **假成功排查**：检查 HTTP 200 响应体是否含 `code !== 0` 或失败文案（参考 [fake-success-rules.md](references/fake-success-rules.md)）；
-   - **写操作强验落库**：执行 `leo-lantern reload --bypass-cache`，刷新后再次 `leo-lantern state` 核实数据是否依然存在。
+   - **写操作强验落库**：执行 `cli reload --bypass-cache`，刷新后再次 `cli state` 核实数据是否依然存在。
 
-#### 场景 B: 后端异常深度排查（联动 `leo-live-inspector`）
-当接口返回 5xx、假成功或数据库报错时，调用已就绪的 `leo-live-inspector` 捕获服务端运行日志与异常调用栈，作为证据链。
+#### 场景 B: 后端异常深度排查（同源 `leo-live-inspector`）
+当接口返回 5xx、假成功或数据库报错时，直接调用已就绪的 `leo-live-inspector` 诊断脚本（如 `fast_query.js`、`test_log_query.js`）捕获服务端运行日志与异常调用栈，作为证据链。
 
 #### 场景 C: 单元测试与接口集成
 根据工程特征自动执行对应的测试套件（如 `npx vitest run`、`mvn test`），严格断言核心分支与边界条件（参考 [unit-test-standards.md](references/unit-test-standards.md)）。
@@ -118,11 +118,11 @@ node ./scripts/scope_diff.mjs [base-branch]
 1. **原样重走第二遍**，确保 100% 稳定复现；
 2. 捕获现场截图存证（仅在确认 Bug 时截图，拒绝无脑截图浪费 Token）：
    ```bash
-   leo-lantern screenshot --out="~/.shrimp/skills/leo-code-qa/reports/evidence-<id>.png"
+   cli screenshot --out="~/.shrimp/skills/leo-code-qa/reports/evidence-<id>.png"
    ```
 3. 调用 `node scripts/report_collector.mjs` 立即将缺陷信息以追加模式写入磁盘报告文件。
 
 ### Step 4: 交付动态质量体检卡
 测试结束时：
-1. 释放 E2E 资源：`leo-lantern end-task`；
+1. 释放 E2E 资源：`cli end-task`；
 2. 按照 [quality-card-template.md](references/quality-card-template.md) 在对话窗口输出高信噪比的中文**【代码质检体检卡】**，并附上本地留底报告绝对路径。

@@ -1,6 +1,8 @@
 # E2E 浏览器质检方法论（移植自 gstack qa-only / qa）
 
-本规约是 `leo-code-qa` 执行端到端（E2E）黑盒质检的核心灵魂，贯彻**“借脑不借手”**原则：吸收 gstack 的工业级质检标准，执行层完全依托 `leo-lantern`（操作真实 Chrome 浏览器）与 `leo-live-inspector`（排查后端）。
+本规约是 `leo-code-qa` 执行端到端（E2E）黑盒质检的核心灵魂，贯彻**“借脑不借手”**原则：吸收 gstack 的工业级质检标准，执行层统一依托 `leo-live-inspector`（通过其内置浏览器 CLI `scripts/cli/index.mjs` 操作真实 Chrome 浏览器与抓取页面数据，并联动排查后端日志；完整浏览器命令详见 `leo-live-inspector/references/browser-guide.md`）。
+
+> 约定下文中 `cli` 为 `node <leo-live-inspector-dir>/scripts/cli/index.mjs` 的简写。
 
 ---
 
@@ -12,19 +14,19 @@
 
 ### 2. 三端交叉核验（Triple-Check Verification）
 不能仅凭“页面没白屏”、“没有弹出红色报错”就断定用例通过。关键交互后必须进行闭环三角核验：
-1. **端 1 - 浏览器控制台（Console）**：通过 `leo-lantern eval "window.__lastErrors || []"` 检查未捕获异常、TypeError、资源加载失败等隐藏错误。
+1. **端 1 - 浏览器控制台（Console）**：通过 `cli eval "window.__lastErrors || []"` 检查未捕获异常、TypeError、资源加载失败等隐藏错误。
 2. **端 2 - 网络通信（Network）**：
-   - 交互前通过 `leo-lantern net-start` 监听，交互后通过 `leo-lantern net-get --grep="api"` 提取请求；
+   - 交互前通过 `cli net-start` 监听，交互后通过 `cli net-get --grep="api"` 提取请求；
    - 校验 HTTP 状态码（拦截 4xx/5xx）；
    - **重中之重：拦截“假成功”**——HTTP 状态码虽然是 200，但响应体业务状态码异常（参考 `references/fake-success-rules.md`）。
 3. **端 3 - 后端运行时日志（Backend Logs）**：
-   - 当接口出现异常或需要确认后端逻辑时，调度专职技能 `leo-live-inspector` 捕获服务端异常堆栈、SQL 崩溃与日志。
+   - 当接口出现异常或需要确认后端逻辑时，直接调用 `leo-live-inspector` 的日志与链路脚本（如 `fast_query.js`、`test_log_query.js`）捕获服务端异常堆栈、SQL 崩溃与日志。
 
 ### 3. 写操作必须验持久态（Anti-Optimistic UI Guard）
 - **乐观更新陷阱**：现代前端框架（Vue/React）常在点击后直接向本地 Store 塞入一条假数据并弹出“保存成功”，但后端接口可能报错或者事务未提交。
 - **强校验流程**：凡是涉及**新建（Create）、编辑（Update）、删除（Delete）或工作流流转（Status Transition）**的操作：
-  1. 页面提示成功后，**必须强制执行 `leo-lantern reload --bypass-cache` 刷新页面**；
-  2. 刷新后再次调用 `leo-lantern state` 核验列表中是否依然存在刚提交的数据；
+  1. 页面提示成功后，**必须强制执行 `cli reload --bypass-cache` 刷新页面**；
+  2. 刷新后再次调用 `cli state` 核验列表中是否依然存在刚提交的数据；
   3. 刷新后数据消失者，一律判定为【数据未持久化漏洞（Fake Persistence）】。
 
 ### 4. 高信噪比与两遍复现定律（Two-Pass Repro）
@@ -45,7 +47,7 @@
 
 | 操作类别 | 推荐手段 | 严格禁止的行为 |
 | :--- | :--- | :--- |
-| **页面元素寻元** | 优先调用 `leo-lantern state` 获取紧凑带有 `ref` 的 DOM 树 | 严禁无脑 dump 大段冗长 HTML 或使用超长脆弱 XPath |
-| **用户点击** | `leo-lantern click --ref <N>`（CDP 原生物理可信事件） | 严禁直接 `document.querySelector().click()` 绕过物理真实层（除非被遮罩残留拦截） |
-| **表单填写** | `leo-lantern fill --ref <N> --val "<text>" --blur`（原生输入并失焦） | 严禁直接改 value 属性而不触发受控组件 input/change 事件 |
+| **页面元素寻元** | 优先调用 `cli state` 获取紧凑带有 `ref` 的 DOM 树 | 严禁无脑 dump 大段冗长 HTML 或使用超长脆弱 XPath |
+| **用户点击** | `cli click --ref <N>`（CDP 原生物理可信事件） | 严禁直接 `document.querySelector().click()` 绕过物理真实层（除非被遮罩残留拦截） |
+| **表单填写** | `cli fill --ref <N> --val "<text>" --blur`（原生输入并失焦） | 严禁直接改 value 属性而不触发受控组件 input/change 事件 |
 | **截图策略** | **极为克制**：仅用于严重 Bug 的现场举证，或核心主链路通畅的最终视觉确认 | 严禁每步点击都截图（严禁滥用视觉 Token） |

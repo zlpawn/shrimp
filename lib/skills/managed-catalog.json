@@ -818,7 +818,7 @@
       "id": "leo-code-qa",
       "name": "leo-code-qa",
       "title": "Leo Code QA 多模态代码质检与测试中枢",
-      "summary": "面向全栈工程的高信噪比多模态代码质检中枢（移植 gstack qa-only / qa 核心方法论），涵盖 E2E 浏览器黑盒联调、单元测试与 API 契约验证，按需调度 leo-lantern 与 leo-live-inspector，写操作强验落库，默认只测不改。",
+      "summary": "面向全栈工程的高信噪比多模态代码质检中枢（移植 gstack qa-only / qa 核心方法论），涵盖 E2E 浏览器黑盒联调、单元测试与 API 契约验证，按需调度 leo-live-inspector 统一承担浏览器 E2E 与后端诊断，写操作强验落库，默认只测不改。",
       "category": "development",
       "categoryLabel": "开发工程",
       "icon": "🛡️",
