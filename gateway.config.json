@@ -15,6 +15,25 @@
     "code": {
       "endpoints": [
         {
+          "id": "ep_quick_sidecar_code",
+          "name": "quick",
+          "type": "quick",
+          "base_url": "http://127.0.0.1:8377/v1",
+          "auth": "none",
+          "models": [
+            "quick",
+            "quick-smart"
+          ],
+          "model_mapping": {
+            "claude-opus-5-5": "quick-smart"
+          },
+          "capabilities": {
+            "reasoning": true,
+            "tools": true
+          },
+          "is_default": false
+        },
+        {
           "id": "ep_ff7f32c0-96b9-430c-bd09-63dca678095a",
           "name": "grok-subscription",
           "type": "grok",
@@ -73,6 +92,25 @@
     },
     "desktop": {
       "endpoints": [
+        {
+          "id": "ep_quick_sidecar",
+          "name": "quick",
+          "type": "quick",
+          "base_url": "http://127.0.0.1:8377/v1",
+          "auth": "none",
+          "models": [
+            "quick",
+            "quick-smart"
+          ],
+          "model_mapping": {
+            "claude-opus-5-5": "quick-smart"
+          },
+          "capabilities": {
+            "reasoning": true,
+            "tools": true
+          },
+          "is_default": false
+        },
         {
           "id": "ep_45245859-6bb6-40b0-a36a-bc5f5d6b53d7",
           "name": "workbuddy",
@@ -369,6 +407,15 @@
             },
             {
               "id": "cred_f9f078e0-026a-4912-b3e5-d1686ea3b76d"
+            },
+            {
+              "id": "cred_1ab64036-4649-496d-8627-5a3c86c55ecb"
+            },
+            {
+              "id": "cred_6f4b5f6a-e616-4a30-9a3f-fde8fcb1b3db"
+            },
+            {
+              "id": "cred_81a6591a-96ac-4666-84af-d2fa50de3eca"
             }
           ],
           "key_strategy": "failover"
@@ -852,6 +899,33 @@
     "zcode": {
       "endpoints": [
         {
+          "id": "ep_aab2a126-ce61-4a17-a7cb-60b96f272bd6",
+          "name": "AWS",
+          "type": "quick",
+          "base_url": "http://127.0.0.1:8377/v1",
+          "auth": "none",
+          "models": [
+            "claude-opus-5-5"
+          ],
+          "model_mapping": {},
+          "capabilities": {
+            "reasoning": true,
+            "tools": true
+          }
+        },
+        {
+          "id": "ep_41186275-3fdd-4e19-a638-26197dee0857",
+          "name": "cursor 反代",
+          "type": "openai-chat",
+          "base_url": "http://103.200.216.117:8788",
+          "auth": "bearer",
+          "models": [
+            "claude-opus-5-5-max-fast",
+            "claude-fable-5-2-max-fast"
+          ],
+          "model_mapping": {}
+        },
+        {
           "id": "ep_3ddbcbd5-d007-46ba-958c-fd5fb1dea887",
           "name": "视觉兜底 ait ",
           "purpose": "vision_fallback",
@@ -993,100 +1067,6 @@
       "preserve_stage_text": true,
       "prompt": "请立即直接调用工具执行下一步操作，禁止输出自然语言确认、开场白或阶段性总结。",
       "inject_agent_rules": false
-    }
-  },
-  "sessionSync": {
-    "skillMounts": {
-      "leo-video-relay": {
-        "antigravity": false,
-        "claude": false,
-        "codex": true
-      },
-      "leo-autodl-imagine-video": {
-        "antigravity": false,
-        "claude": false,
-        "codex": true
-      },
-      "leo-musicdl": {
-        "antigravity": false,
-        "claude": false,
-        "codex": true
-      },
-      "leo-gallery-dl": {
-        "antigravity": false,
-        "claude": false,
-        "codex": true
-      },
-      "leo-ai-transcoder": {
-        "antigravity": false,
-        "claude": false,
-        "codex": true
-      },
-      "leo-yt-dlp": {
-        "antigravity": false,
-        "claude": false,
-        "codex": true
-      },
-      "leo-article-relay": {
-        "antigravity": false,
-        "claude": false,
-        "codex": true
-      },
-      "leo-craft-api": {
-        "antigravity": false,
-        "claude": false,
-        "codex": true
-      },
-      "leo-lc-transcoder": {
-        "antigravity": false,
-        "claude": false,
-        "codex": true
-      },
-      "leo-xhs-router": {
-        "antigravity": false,
-        "claude": false,
-        "codex": true
-      },
-      "leo-typesafe-ai": {
-        "antigravity": false,
-        "claude": false,
-        "codex": true
-      },
-      "leo-codex-imagine": {
-        "antigravity": false,
-        "claude": false,
-        "codex": true
-      },
-      "leo-imagine-router": {
-        "antigravity": false,
-        "claude": false,
-        "codex": true
-      },
-      "leo-lantern": {
-        "antigravity": false,
-        "claude": false,
-        "codex": true
-      },
-      "leo-apimart-video": {
-        "antigravity": false,
-        "claude": false,
-        "codex": true
-      },
-      "leo-3d-blender": {
-        "antigravity": false,
-        "claude": false,
-        "codex": true
-      },
-      "leo-obs-studio": {
-        "antigravity": false,
-        "claude": false,
-        "codex": true
-      },
-      "leo-antigravity-video": {
-        "antigravity": false,
-        "claude": false,
-        "codex": true
-      }
     }
   }
 }

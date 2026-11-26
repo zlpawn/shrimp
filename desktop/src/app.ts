@@ -216,11 +216,12 @@ const ENDPOINT_TYPES = [
     { value: "openai-responses", label: "OpenAI Responses (实验性)" },
     { value: "workbuddy", label: "WorkBuddy 智能体池" },
     { value: "ofm", label: "OFM 多渠道免费池" },
+    { value: "quick", label: "AWS Quick (Amazon Quick)" },
     { value: "grok", label: "Grok 订阅" },
     { value: "antigravity", label: "Antigravity（Google 订阅）" },
     { value: "codex-subscription", label: "Codex 订阅（ChatGPT）" }
 ];
-const CODEX_ENDPOINT_TYPE_VALUES = ['anthropic', 'openai-responses', 'openai-chat', 'workbuddy', 'ofm', 'grok', 'antigravity'];
+const CODEX_ENDPOINT_TYPE_VALUES = ['anthropic', 'openai-responses', 'openai-chat', 'workbuddy', 'ofm', 'quick', 'grok', 'antigravity'];
 
 // Media endpoints use purpose + provider; `type` remains exclusive to chat protocols.
 const MEDIA_ENDPOINT_PURPOSES = [
@@ -3939,7 +3940,7 @@ function createEndpointSummaryHTML(client, index, ep) {
     const isDisabled = ep.enabled === false;
     const name = escapeHtml(ep.name || `节点 ${index + 1}`);
     const type = escapeHtml(isEmbedding ? 'OpenAI Embeddings 协议' : (isMedia ? `${mediaPurpose?.groupTitle || '媒体'} · ${mediaProvider.label}` : typeLabel(ep.type)));
-    const url = escapeHtml(isMedia ? shortUrl(mediaProviderBaseUrl(ep)) : (ep.type === 'antigravity' ? 'Google v1internal gRPC · OAuth' : (ep.type === 'codex-subscription' ? 'ChatGPT Codex · 本地订阅' : (ep.type === 'workbuddy' ? `WorkBuddy 账号池 (${(ep.accounts?.length) || 1} 账号)` : (ep.type === 'ofm' ? 'OFM 本地多渠道网关 · 自动鉴权' : shortUrl(ep.base_url))))));
+    const url = escapeHtml(isMedia ? shortUrl(mediaProviderBaseUrl(ep)) : (ep.type === 'quick' ? 'AWS Quick 本地代理 · 自动鉴权' : (ep.type === 'antigravity' ? 'Google v1internal gRPC · OAuth' : (ep.type === 'codex-subscription' ? 'ChatGPT Codex · 本地订阅' : (ep.type === 'workbuddy' ? `WorkBuddy 账号池 (${(ep.accounts?.length) || 1} 账号)` : (ep.type === 'ofm' ? 'OFM 本地多渠道网关 · 自动鉴权' : shortUrl(ep.base_url)))))));
     const models = Array.isArray(ep.models) ? ep.models : [];
     const mappingCount = Object.keys(ep.model_mapping || {}).length;
     const previewModels = models.slice(0, 3).map(m =>
@@ -4045,7 +4046,7 @@ function createEndpointDetailHTML(client, index, ep) {
     const availableTypes = isEmbedding
         ? [{ value: 'openai-chat', label: 'OpenAI Embeddings 协议' }]
         : (client === 'code' || client === 'desktop')
-        ? ENDPOINT_TYPES.filter(t => ['anthropic', 'openai-chat', 'workbuddy', 'ofm', 'grok', 'codex-subscription'].includes(t.value))
+        ? ENDPOINT_TYPES.filter(t => ['anthropic', 'openai-chat', 'workbuddy', 'ofm', 'quick', 'grok', 'codex-subscription'].includes(t.value))
         : ENDPOINT_TYPES.filter(t => [...CODEX_ENDPOINT_TYPE_VALUES, 'codex-subscription'].includes(t.value));
 
     const typeOptions = availableTypes.map(t =>
@@ -4430,7 +4431,7 @@ function createEndpointDetailHTML(client, index, ep) {
                     </div>
                     `}
                     `}
-                    ${(isWebSearch || (isMedia ? !isMediaSubscription : (ep.type !== 'antigravity' && ep.type !== 'codex-subscription' && ep.type !== 'workbuddy' && ep.type !== 'ofm')))
+                    ${(isWebSearch || (isMedia ? !isMediaSubscription : (ep.type !== 'antigravity' && ep.type !== 'codex-subscription' && ep.type !== 'workbuddy' && ep.type !== 'ofm' && ep.type !== 'quick')))
                         ? renderEndpointKeyEditor(client, index, ep)
                         : ''}
 
@@ -7893,6 +7894,19 @@ window.updateEndpoint = function(client, index, field, value) {
             endpoint.auth = 'bearer';
             if (!endpoint.name) {
                 endpoint.name = 'OFM 免费模型池';
+            }
+            endpoint.capabilities = {
+                ...(endpoint.capabilities || {}),
+                reasoning: true,
+                tools: true
+            };
+        } else if (value === 'quick') {
+            if (!endpoint.base_url || endpoint.base_url.includes('api.openai.com')) {
+                endpoint.base_url = 'http://127.0.0.1:8377/v1';
+            }
+            endpoint.auth = 'none';
+            if (!endpoint.name) {
+                endpoint.name = 'AWS Quick 代理';
             }
             endpoint.capabilities = {
                 ...(endpoint.capabilities || {}),

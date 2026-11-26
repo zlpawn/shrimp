@@ -219,6 +219,7 @@ import {
 } from "./lib/remote-agent/index.mjs";
 import { routeWorkbuddyRequest } from "./lib/workbuddy/routes.mjs";
 import { ensureReady as ensureWorkbuddyReady } from "./lib/workbuddy/supervisor.mjs";
+import { applyQuickPromptAdjustments } from "./lib/quick/prompt.mjs";
 import { routeOfmRequest } from "./lib/ofm/routes.mjs";
 import {
   ensureReady as ensureOfmReady,
@@ -5220,7 +5221,7 @@ async function forwardAnthropicMessagesResolved(body, clientReq, clientRes, cont
   }
 
   const upstreamBody =
-    route.provider?.type === "openai-chat" || route.provider?.type === "workbuddy"
+    route.provider?.type === "openai-chat" || route.provider?.type === "workbuddy" || route.provider?.type === "quick"
       ? anthropicMessagesToOpenAIChat(body, route.model)
       : {
           ...body,
@@ -5240,6 +5241,11 @@ async function forwardAnthropicMessagesResolved(body, clientReq, clientRes, cont
         ];
       }
     }
+  }
+
+  if (route.provider?.type === "quick") {
+    const convId = body.conversation_id || context.conversationId || clientReq?.headers?.["x-conversation-id"] || "";
+    applyQuickPromptAdjustments(upstreamBody, convId);
   }
 
   logInfo("messages_request", {
@@ -5487,7 +5493,7 @@ async function forwardAnthropicMessagesResolved(body, clientReq, clientRes, cont
   }
 
   let upstream =
-    route.provider?.type === "openai-chat" || route.provider?.type === "workbuddy"
+    route.provider?.type === "openai-chat" || route.provider?.type === "workbuddy" || route.provider?.type === "quick"
       ? await fetchConfiguredOpenAI(route.provider, "/v1/chat/completions", upstreamBody, clientReq)
       : route.provider
         ? await fetchConfiguredAnthropic(route.provider, upstreamBody, clientReq)
@@ -5502,10 +5508,10 @@ async function forwardAnthropicMessagesResolved(body, clientReq, clientRes, cont
       clientReq,
       context,
       fetchAgain: async (retryBody) => {
-        const converted = route.provider.type === "openai-chat" || route.provider.type === "workbuddy"
+        const converted = route.provider.type === "openai-chat" || route.provider.type === "workbuddy" || route.provider.type === "quick"
           ? anthropicMessagesToOpenAIChat(retryBody, route.model)
           : { ...retryBody, model: route.model };
-        return route.provider.type === "openai-chat" || route.provider.type === "workbuddy"
+        return route.provider.type === "openai-chat" || route.provider.type === "workbuddy" || route.provider.type === "quick"
           ? fetchConfiguredOpenAI(route.provider, "/v1/chat/completions", converted, clientReq)
           : fetchConfiguredAnthropic(route.provider, converted, clientReq);
       },
@@ -5525,7 +5531,7 @@ async function forwardAnthropicMessagesResolved(body, clientReq, clientRes, cont
         status: upstream.status,
       });
       const altBody =
-        altRoute.provider?.type === "openai-chat" || altRoute.provider?.type === "workbuddy"
+        altRoute.provider?.type === "openai-chat" || altRoute.provider?.type === "workbuddy" || altRoute.provider?.type === "quick"
           ? anthropicMessagesToOpenAIChat(body, altRoute.model || altRoute.upstream_model)
           : { ...body, model: altRoute.model || altRoute.upstream_model };
       if (altRoute.provider?.type === "workbuddy" && Array.isArray(altBody.messages)) {
@@ -5536,9 +5542,13 @@ async function forwardAnthropicMessagesResolved(body, clientReq, clientRes, cont
           ];
         }
       }
+      if (altRoute.provider?.type === "quick") {
+        const convId = body.conversation_id || context.conversationId || clientReq?.headers?.["x-conversation-id"] || "";
+        applyQuickPromptAdjustments(altBody, convId);
+      }
       try {
         const altUpstream =
-          altRoute.provider?.type === "openai-chat" || altRoute.provider?.type === "workbuddy"
+          altRoute.provider?.type === "openai-chat" || altRoute.provider?.type === "workbuddy" || altRoute.provider?.type === "quick"
             ? await fetchConfiguredOpenAI(altRoute.provider, "/v1/chat/completions", altBody, clientReq)
             : await fetchConfiguredAnthropic(altRoute.provider, altBody, clientReq);
         if (altUpstream && altUpstream.ok) {
@@ -5561,7 +5571,7 @@ async function forwardAnthropicMessagesResolved(body, clientReq, clientRes, cont
     provider: route.provider?.id || null,
     route: route.kind,
   });
-  if (route.provider?.type === "openai-chat" || route.provider?.type === "workbuddy") {
+  if (route.provider?.type === "openai-chat" || route.provider?.type === "workbuddy" || route.provider?.type === "quick") {
     if (body.stream) {
       await streamOpenAIChatAsAnthropicMessages(upstream, clientRes, requestedModel, context.requestId);
     } else {
@@ -5622,7 +5632,7 @@ async function forwardOpenAIChatCompletionsResolved(body, clientReq, clientRes, 
   ).trim() || null;
   const route = resolveConfiguredModel(
     requestedModel,
-    ["anthropic", "openai-chat", "openai-responses", "grok", "antigravity", "codex-subscription", "chatgpt-codex", "workbuddy", "ofm"],
+    ["anthropic", "openai-chat", "openai-responses", "grok", "antigravity", "codex-subscription", "chatgpt-codex", "workbuddy", "ofm", "quick"],
     context.client,
     preferredEndpointId,
   );
@@ -5678,6 +5688,11 @@ async function forwardOpenAIChatCompletionsResolved(body, clientReq, clientRes, 
         ...upstreamBody.messages,
       ];
     }
+  }
+
+  if (route?.provider?.type === "quick") {
+    const convId = body.conversation_id || clientReq?.headers?.["x-conversation-id"] || "";
+    applyQuickPromptAdjustments(upstreamBody, convId);
   }
 
   logInfo("openai_chat_request", {
@@ -6051,6 +6066,10 @@ async function forwardOpenAIChatCompletionsResolved(body, clientReq, clientRes, 
             ...altBody.messages,
           ];
         }
+      }
+      if (altRoute.provider?.type === "quick") {
+        const convId = body.conversation_id || context.conversationId || clientReq?.headers?.["x-conversation-id"] || "";
+        applyQuickPromptAdjustments(altBody, convId);
       }
       try {
         const altUpstream =
@@ -6467,7 +6486,7 @@ async function forwardResolvedCodexResponse({
   // gpt-* models via fallback matching.
   let route = resolveConfiguredModelPrecise(
     requestedModel,
-    ["anthropic", "openai-chat", "openai-responses", "grok", "antigravity", "codex-subscription", "chatgpt-codex", "workbuddy", "ofm"],
+    ["anthropic", "openai-chat", "openai-responses", "grok", "antigravity", "codex-subscription", "chatgpt-codex", "workbuddy", "ofm", "quick"],
     context.client,
   );
   if (!route && context.client === "codex" && isOfficialCodexModel(requestedModel)) {
@@ -6489,7 +6508,7 @@ async function forwardResolvedCodexResponse({
   if (!route) {
     route = resolveConfiguredModel(
       requestedModel,
-      ["anthropic", "openai-chat", "openai-responses", "grok", "antigravity", "codex-subscription", "chatgpt-codex", "workbuddy", "ofm"],
+      ["anthropic", "openai-chat", "openai-responses", "grok", "antigravity", "codex-subscription", "chatgpt-codex", "workbuddy", "ofm", "quick"],
       context.client,
     );
   }
@@ -6643,7 +6662,7 @@ async function forwardResolvedCodexResponse({
     return;
   }
 
-  if (route?.provider?.type === "openai-chat" || route?.provider?.type === "workbuddy" || route?.provider?.type === "ofm") {
+  if (route?.provider?.type === "openai-chat" || route?.provider?.type === "workbuddy" || route?.provider?.type === "ofm" || route?.provider?.type === "quick") {
     if (injectedSearch.selected) {
       const loop = await runGatewayWebSearchResponsesLoop({
         body: withoutStreamFlag(body),
@@ -8025,8 +8044,8 @@ async function fetchConfiguredOpenAI(
       upstreamApiKey = readOfmForwardKey();
     }
   }
-  if (!upstreamApiKey && (provider.type === "workbuddy" || provider.auth === "none")) {
-    upstreamApiKey = "workbuddy";
+  if (!upstreamApiKey && (provider.type === "workbuddy" || provider.type === "quick" || provider.auth === "none")) {
+    upstreamApiKey = "quick";
   }
   if (!upstreamApiKey) {
     throw httpError(
@@ -10605,9 +10624,9 @@ function resolveModel(requestedModel) {
 }
 
 function resolveAnthropicRoute(requestedModel, client) {
-  const configured = resolveConfiguredModel(requestedModel, ["anthropic", "openai-chat", "grok", "codex-subscription", "chatgpt-codex", "workbuddy", "ofm"], client);
+  const configured = resolveConfiguredModel(requestedModel, ["anthropic", "openai-chat", "grok", "codex-subscription", "chatgpt-codex", "workbuddy", "ofm", "quick"], client);
   if (configured) {
-    if (!["anthropic", "openai-chat", "grok", "codex-subscription", "chatgpt-codex", "workbuddy", "ofm"].includes(configured.provider.type)) {
+    if (!["anthropic", "openai-chat", "grok", "codex-subscription", "chatgpt-codex", "workbuddy", "ofm", "quick"].includes(configured.provider.type)) {
       throw httpError(
         400,
         `Model ${requestedModel} is configured for provider ${configured.provider.id} (${configured.provider.type}), which cannot serve Anthropic Messages requests yet.`,
@@ -10636,7 +10655,7 @@ function hasConfiguredApiKey(ep) {
   if (ep.type === "official" || ep.name === "official") return true;
   if (ep.type === "grok") return grokHasCredentials(ep);
   if (ep.type === "antigravity") return true; // OAuth-based, no API key needed
-  if (ep.type === "workbuddy") return true; // Session-based, no API key needed
+  if (ep.type === "workbuddy" || ep.type === "quick") return true; // Session-based, no API key needed
   if (ep.type === "ofm") return true; // Auto-reads forwardKey from ~/.shrimp/providers/ofm/settings.json
   if (isCodexSubscriptionProvider(ep)) return Boolean(resolveCodexSubscriptionAuthPresence(ep));
   if (ep.api_keys?.length) {
