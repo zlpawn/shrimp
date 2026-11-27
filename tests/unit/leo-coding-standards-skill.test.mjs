@@ -62,6 +62,10 @@ test("leo coding standards entry point exposes Java triggers and reference navig
     assert.match(principles, /唯一索引/);
     assert.match(principles, /@Value/);
     assert.match(principles, /@ApolloJsonValue/);
+    assert.match(principles, /@Autowired/);
+    assert.match(principles, /@Resource/);
+    assert.match(principles, /构造方法注入/);
+    assert.match(principles, /INFO/);
 
     assert.match(agentMeta, /display_name: "Leo Java 编码规范"/);
     assert.match(agentMeta, /default_prompt: "Use \$leo-coding-standards/);

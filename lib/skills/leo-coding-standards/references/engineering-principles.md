@@ -22,6 +22,8 @@
 - 库表设计不得建立唯一索引（Unique Index）；数据唯一性与并发防重必须在应用层通过分布式锁结合业务校验来保证。
 - 使用 `@Value` 注入配置时必须提供默认兜底值（如 `@Value("${biz.timeout:3000}")`），禁止无默认值的裸注入。
 - 复杂对象或集合等 JSON 配置优先使用 `@ApolloJsonValue` 自动映射，且必须提供合法默认值（如 `@ApolloJsonValue("${biz.rules:{}}")`、`@ApolloJsonValue("${biz.whitelist:[]}")`）。
+- Spring 托管 Bean 严禁使用构造方法注入（含 Lombok `@RequiredArgsConstructor` / `@AllArgsConstructor` 隐式构造注入），统一仅限通过字段 `@Autowired` 或 `@Resource` 注入。
+- 核心业务入口（对外接口/RPC、MQ 消费、定时任务入口）及关键业务状态流转节点必须记录 `INFO` 日志，包含可检索的稳定业务标识（如单据 ID / 订单号）与关键上下文。
 
 ## SOLID
 
@@ -95,6 +97,10 @@
 
 ### 日志
 
+- **关键场景必打 `INFO` 日志**：
+  - **核心业务入口**：对外 HTTP/RPC 接口入口、MQ 消息消费入口、分布式定时任务/批处理入口，必须记录 `INFO` 日志，包含可检索的稳定业务标识（如订单号、单据 ID）及脱敏后的关键入参摘要。
+  - **核心状态流转**：核心实体的状态变更（如原状态 → 目标状态、触发事件/动作及业务主键）必须记录 `INFO` 日志，确保线上可完整追溯业务生命周期。
+  - **关键外部交互与策略分支**：跨系统调用关键节点及降级/兜底/开关命中分支应记录 `INFO`（异常或告警阈值场景按需使用 `WARN`/`ERROR`），避免静默流转难以排查。
 - 使用参数化占位符，不为日志提前拼接字符串。
 - 在最能采取行动的边界记录异常，避免多个层级重复打印同一堆栈。
 - 正常业务分支不要记录为 `ERROR`。
@@ -128,6 +134,10 @@
 
 - **基础配置必须提供默认值**：使用 `@Value` 注入配置时，必须提供默认兜底值（例如 `@Value("${biz.timeout:3000}")`、`@Value("${feature.enabled:false}")`），禁止无默认值的裸注入，防止因配置缺失、命名空间未发布或网络异常导致 Spring 容器启动失败（`BeanCreationException: Could not resolve placeholder`）或运行时异常。
 - **复杂 JSON 配置优先使用 `@ApolloJsonValue`**：对于 List、Map 或自定义复杂配置对象，优先使用 `@ApolloJsonValue` 直接反序列化，避免使用 `@Value` 注入字符串后再手动解析产生重复代码与反序列化隐患。使用 `@ApolloJsonValue` 时同样必须提供合法的默认兜底 JSON 串（例如 `@ApolloJsonValue("${biz.rules:{}}")`、`@ApolloJsonValue("${biz.whitelist:[]}")`）。
+
+### Spring Bean 依赖注入
+
+- **禁止构造方法注入，仅限字段 `@Autowired` / `@Resource` 注入**：Spring 托管 Bean 注入其他依赖 Bean 时，统一仅在成员变量字段上使用 `@Autowired` 或 `@Resource` 注入；严禁编写构造方法进行 Bean 注入，也不得在 Spring Bean 类上使用 Lombok `@RequiredArgsConstructor` / `@AllArgsConstructor` 变相触发构造方法注入，以保持注入风格一致并规避循环依赖启动失败及历史类修改时的构造方法 Diff 膨胀。
 
 ## 设计模式
 
