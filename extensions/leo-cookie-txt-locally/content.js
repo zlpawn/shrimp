@@ -1,9 +1,36 @@
 (() => {
   if (window.top !== window) return;
-  if (document.getElementById("leo-lantern-root")) return;
 
-  const STORAGE_KEY = "leoLanternBall";
-  const SIZE = 56;
+  function isContextValid() {
+    try {
+      return Boolean(typeof chrome !== "undefined" && chrome?.runtime && chrome.runtime?.id);
+    } catch {
+      return false;
+    }
+  }
+
+  if (!isContextValid()) return;
+
+  // 默认关闭网页右侧常驻悬浮球与弹窗面板（避免污染正常网页浏览）
+  // 仅在扩展弹出面板的高级设置中勾选开启时才注入
+  try {
+    chrome.storage.local.get(["enableFloatingBall"], (stored) => {
+      if (chrome.runtime?.lastError) return;
+      if (!stored?.enableFloatingBall) {
+        // 如果页面中已存在残留的悬浮球节点，自动移除清理
+        const existing = document.getElementById("leo-lantern-root");
+        if (existing) existing.remove();
+        return;
+      }
+      initLanternBall();
+    });
+  } catch {}
+
+  function initLanternBall() {
+    if (document.getElementById("leo-lantern-root")) return;
+
+    const STORAGE_KEY = "leoLanternBall";
+    const SIZE = 56;
   const MARGIN = 12;
   const DRAG_THRESHOLD = 6;
 
@@ -319,4 +346,5 @@
       exportBtn.textContent = "导出到网关";
     }
   });
+  }
 })();
