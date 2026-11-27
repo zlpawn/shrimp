@@ -1,0 +1,10 @@
+{
+  "name": "leo-flow-video",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Google Flow AI video generation and archiving skill powered by leo-lantern CDP",
+  "bin": {
+    "leo-flow-video": "./scripts/cli.mjs"
+  }
+}

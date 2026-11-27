@@ -15,48 +15,15 @@
     "code": {
       "endpoints": [
         {
-          "id": "ep_quick_sidecar_code",
-          "name": "quick",
-          "type": "quick",
-          "base_url": "http://127.0.0.1:8377/v1",
-          "auth": "none",
-          "models": [
-            "quick",
-            "quick-smart"
-          ],
-          "model_mapping": {
-            "claude-opus-5-5": "quick-smart"
-          },
-          "capabilities": {
-            "reasoning": true,
-            "tools": true
-          },
-          "is_default": false
-        },
-        {
-          "id": "ep_ff7f32c0-96b9-430c-bd09-63dca678095a",
-          "name": "grok-subscription",
-          "type": "grok",
-          "base_url": "https://cli-chat-proxy.grok.com/v1",
-          "auth": "bearer",
-          "models": [
-            "grok-4.5"
-          ],
-          "model_mapping": {},
-          "is_default": false
-        },
-        {
-          "name": "huoshan-codingplan",
+          "id": "ep_aea5f5dc-54d9-45d3-92cf-b94584531d4d",
+          "name": "opendesign",
           "type": "anthropic",
-          "base_url": "https://ark.cn-beijing.volces.com/api/coding",
-          "models": [
-            "glm-5.2",
-            "minimax-m3",
-            "deepseek-v4-pro"
-          ],
-          "model_mapping": {},
-          "id": "ep_0017ac99-bf2d-4a7a-a70e-5f049c88054e",
-          "is_default": true
+          "base_url": "https://amr-link.open-design.ai",
+          "auth": "bearer",
+          "models": [],
+          "model_mapping": {
+            "deepseek-v4.1-flash-od": "deepseek-v4.1-flash"
+          }
         },
         {
           "id": "ep_b7fae282-6bdd-4525-ac22-d1500cf86a95",
@@ -73,44 +40,12 @@
             "include_raw_content": false,
             "country": "china"
           }
-        },
-        {
-          "id": "ep_530b5587-59fe-4a65-97d6-4d68f97fc1ba",
-          "name": "openrouter",
-          "enabled": true,
-          "is_default": false,
-          "type": "openai-chat",
-          "base_url": "https://example.com/v1/chat/completions",
-          "models": [
-            "glm-4-flash"
-          ]
         }
       ],
-      "model_slots": {
-        "opus": "minimax-m3"
-      }
+      "model_slots": {}
     },
     "desktop": {
       "endpoints": [
-        {
-          "id": "ep_quick_sidecar",
-          "name": "quick",
-          "type": "quick",
-          "base_url": "http://127.0.0.1:8377/v1",
-          "auth": "none",
-          "models": [
-            "quick",
-            "quick-smart"
-          ],
-          "model_mapping": {
-            "claude-opus-5-5": "quick-smart"
-          },
-          "capabilities": {
-            "reasoning": true,
-            "tools": true
-          },
-          "is_default": false
-        },
         {
           "id": "ep_45245859-6bb6-40b0-a36a-bc5f5d6b53d7",
           "name": "workbuddy",
@@ -407,15 +342,6 @@
             },
             {
               "id": "cred_f9f078e0-026a-4912-b3e5-d1686ea3b76d"
-            },
-            {
-              "id": "cred_1ab64036-4649-496d-8627-5a3c86c55ecb"
-            },
-            {
-              "id": "cred_6f4b5f6a-e616-4a30-9a3f-fde8fcb1b3db"
-            },
-            {
-              "id": "cred_81a6591a-96ac-4666-84af-d2fa50de3eca"
             }
           ],
           "key_strategy": "failover"
@@ -899,33 +825,6 @@
     "zcode": {
       "endpoints": [
         {
-          "id": "ep_aab2a126-ce61-4a17-a7cb-60b96f272bd6",
-          "name": "AWS",
-          "type": "quick",
-          "base_url": "http://127.0.0.1:8377/v1",
-          "auth": "none",
-          "models": [
-            "claude-opus-5-5"
-          ],
-          "model_mapping": {},
-          "capabilities": {
-            "reasoning": true,
-            "tools": true
-          }
-        },
-        {
-          "id": "ep_41186275-3fdd-4e19-a638-26197dee0857",
-          "name": "cursor 反代",
-          "type": "openai-chat",
-          "base_url": "http://103.200.216.117:8788",
-          "auth": "bearer",
-          "models": [
-            "claude-opus-5-5-max-fast",
-            "claude-fable-5-2-max-fast"
-          ],
-          "model_mapping": {}
-        },
-        {
           "id": "ep_3ddbcbd5-d007-46ba-958c-fd5fb1dea887",
           "name": "视觉兜底 ait ",
           "purpose": "vision_fallback",
@@ -1052,6 +951,23 @@
         }
       ],
       "display_name": "zcode 代理",
+      "protocol": "openai"
+    },
+    "t3-code": {
+      "endpoints": [
+        {
+          "id": "ep_93c2d541-d1b2-40ab-97ee-8941b4a69423",
+          "name": "opendesign",
+          "type": "openai-chat",
+          "base_url": "https://amr-link.open-design.ai/v1",
+          "auth": "bearer",
+          "models": [],
+          "model_mapping": {
+            "deepseek-v4.1-flash-od": "deepseek-v4.1-flash"
+          }
+        }
+      ],
+      "display_name": "T3 Code",
       "protocol": "openai"
     }
   },

@@ -11,9 +11,10 @@ A lean, cross-tool, low-noise code review skill for reviewing local git modifica
 
 ## 1. Core Principles (核心审查原则)
 
-1. **Dual-Track Audit (双轨审查)**:
+1. **Multi-Track Audit (多轨审查)**:
    - **Track A (Runtime & Logic Bugs)**: Logic inversions, null safety, off-by-one, race conditions, resource leaks, silent exception swallows.
    - **Track B (Agent Spec Compliance)**: Guarding against AI shortcuts—unimplemented `TODO` stubs, requirement drift, dropped corner cases, broken existing contracts, and phantom APIs (see [agent-work-inspection.md](references/agent-work-inspection.md)).
+   - **Track C (Domain Architectural Compliance)**: For specific tech stacks (e.g. Java), hooks domain guidelines like `leo-coding-standards` to intercept production-critical architectural violations (`MUST` level) while suppressing style nitpicks.
 2. **Extreme Signal-to-Noise (极低噪音)**:
    - Absolute ban on formatting, style nitpicks, linter-catchable issues, and ungrounded guesses (see [false-positive-rules.md](references/false-positive-rules.md)).
 3. **Strict 0–100 Confidence Cutoff (80 分硬截断)**:
@@ -70,13 +71,21 @@ leo-code-review (Orchestrator)
 ---
 
 ### Stage 1: Primary Discovery (候选问题初筛)
-Inspect the unified diff and newly added files across two focused tracks:
+Inspect the unified diff and newly added files across three focused tracks:
 - **Track A (Bugs)**: Look for reachable crashes, inverted conditions, concurrency races, resource leaks, or empty catch blocks.
   - *Constraint*: Every proposed bug MUST identify a concrete triggering input, state, or interleaving sequence. Vague speculations are discarded.
 - **Track B (AI Agent Compliance)**: Consult [agent-work-inspection.md](references/agent-work-inspection.md).
   - Did the code skip any requirement requested by the user?
   - Are there placeholder stubs (`TODO`, `FIXME`, dummy returns, empty mocks) falsely presented as complete?
   - Did the agent inadvertently break existing public interfaces or perform unprompted mass refactorings?
+- **Track C (Domain Architectural Compliance - e.g. Java)**:
+  - If `.java` files are touched, consult `leo-coding-standards/references/review-checklist.md` for `MUST`-level red lines:
+    1. **DDL & DB constraint**: Columns must be `NOT NULL DEFAULT ...`; strict ban on physical `UNIQUE` indexes.
+    2. **Apollo config**: `@Value("${key:default}")` must provide fallback default values; complex JSON must use `@ApolloJsonValue` with fallback.
+    3. **Spring Bean DI**: Only field injection (`@Autowired` / `@Resource`) is permitted; strict ban on constructor injection or Lombok `@RequiredArgsConstructor` / `@AllArgsConstructor`.
+    4. **Critical Path Logs**: Core business entrypoints (interfaces, RPC, MQ consumer, scheduled tasks) and state transitions must have `INFO` logs with stable business IDs and context.
+    5. **Historical Class Appending**: In existing classes, new methods/code must append at the bottom of class definitions to avoid interleaving disruption.
+  - *Constraint*: Only flag explicit violations of `MUST` constraints. Style recommendations (`SHOULD` / `CONSIDER`) are suppressed to maintain high signal-to-noise.
 
 *Assign each candidate an initial confidence score (0–100).*
 
@@ -110,6 +119,6 @@ Format the final response strictly according to [output-format.md](references/ou
 - **If $\ge 1$ issues confirmed**:
   Sort by severity (P0 致命 $\rightarrow$ P1 高危 $\rightarrow$ P2 隐患), displaying:
   - `[置信度: XX/100] 【级别】 文件路径:行号 — 一句话简述`
-  - **类别**：功能逻辑漏洞 / 需求实现偏差 / 静默异常吞咽 / 虚假桩实现
+  - **类别**：功能逻辑漏洞 / 需求实现偏差 / 架构规范违规 / 静默异常吞咽 / 虚假桩实现
   - **触发路径 / 偏差证据**：具体复现状态、参数或需求矛盾对照
   - **最小修复**：精简、准确的代码补丁建议

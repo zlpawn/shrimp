@@ -18,7 +18,7 @@ An extensible, composable development lifecycle orchestrator. Seamlessly connect
    - If the workspace has uncommitted changes (`git diff` non-empty) and user asks for review $\rightarrow$ automatically enters **Review-Only** mode without forcing a pre-code loop.
    - If starting fresh and user asks for advice or new feature $\rightarrow$ enters **Full** or **Guide-Only** mode.
 3. **On-Demand JIT Auto-Heal (按需依赖自愈)**:
-   - Only ensures dependencies for the **active stages**. If running review-only, only `leo-code-review` is required; `leo-coding-standards` is not pulled unnecessarily.
+   - Only ensures dependencies for the **active stages**. In **Review-Only** mode, `leo-code-review` is always required; when diff touches Java files or in a Java workspace, `leo-coding-standards` is **also pulled and activated** as the domain compliance ruleset to prevent architectural blind spots.
    - Self-heals missing skills non-interactively via `npx -y skills add zlpawn/shrimp -g --skill <name>`.
 4. **Dynamic Delivery Quality Card (动态质量体检卡)**:
    - Only reports stages that actually executed. Skipped stages are marked with clear indicators (see [quality-card-template.md](references/quality-card-template.md)).
@@ -44,13 +44,13 @@ leo-code-pipeline (Orchestrator)
 ### Step 0: Mode Selection & Dependency Auto-Heal (模式判定与依赖就绪)
 1. **Determine Active Slots**:
    - Check user prompt and workspace state:
-     - **Review-Only**: Explicit review request or non-empty `git diff` with review intent $\rightarrow$ activate `[post-review]` and `[delivery]`.
+     - **Review-Only**: Explicit review request or non-empty `git diff` with review intent $\rightarrow$ activate `[post-review]` (with domain hook `leo-coding-standards` if Java changes exist) and `[delivery]`.
      - **Guide-Only**: User asks for architecture, schema rules, or API advice before writing $\rightarrow$ activate `[pre-code]`.
      - **Full-Pipeline**: User asks to implement a complete task from scratch $\rightarrow$ activate `[pre-code]`, `[impl]`, `[post-review]`, `[test]`, and `[delivery]`.
 2. **Check & Auto-Heal Dependencies**:
    - For each active slot, verify if its provider skill exists in `~/.agents/skills/`, `~/.gemini/config/skills/`, or `./lib/skills/`:
      - If `[pre-code]` is active and missing $\rightarrow$ run `npx -y skills add zlpawn/shrimp -g --skill leo-coding-standards`.
-     - If `[post-review]` is active and missing $\rightarrow$ run `npx -y skills add zlpawn/shrimp -g --skill leo-code-review`.
+     - If `[post-review]` is active and missing $\rightarrow$ run `npx -y skills add zlpawn/shrimp -g --skill leo-code-review`. If the diff touches Java code, also ensure `leo-coding-standards` is available.
      - If `[test]` is active and missing $\rightarrow$ run `npx -y skills add zlpawn/shrimp -g --skill leo-code-qa`.
    - If a slot is **skipped**, DO NOT install its provider.
 
@@ -73,11 +73,12 @@ leo-code-pipeline (Orchestrator)
 ### Step 3: Post-Code Review & Falsification (Slot: `post-review`)
 *(Skipped in Guide-Only mode)*
 1. Invoke `leo-code-review` on the local `git diff` (including untracked files).
-2. Execute the dual-track audit:
+2. Execute the multi-track audit:
    - **Track A**: Logic bugs, edge-case crashes, concurrency races, resource leaks.
    - **Track B**: AI Agent compliance—unimplemented `TODO` stubs, silent exception swallows, dropped requirements.
+   - **Track C (Domain Architectural Compliance)**: If changes include Java files, attach `leo-coding-standards` review checklist (`references/review-checklist.md`) to verify architectural `MUST` constraints (DDL not null + defaults, no physical unique index, Apollo fallbacks, Spring Bean field injection only, critical path INFO logs).
 3. Conduct independent falsification (Devil's Advocate, confidence cutoff $\ge 80$).
-4. If blocking bugs ($\ge 80$) are found, halt and prompt the agent/user for a fix before proceeding.
+4. If blocking bugs or architectural violations ($\ge 80$) are found, halt and prompt the agent/user for a fix before proceeding.
 
 ---
 

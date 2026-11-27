@@ -8,9 +8,9 @@ This registry defines the modular slots supported by `leo-code-pipeline`. Each s
 
 | Slot ID | Role | Timing | Default Provider | Skipping Condition |
 | :--- | :--- | :--- | :--- | :--- |
-| **`pre-code`** | 编码前架构与规范注入 | 动笔编码前 | `leo-coding-standards` | 当用户仅请求事后审查（`review-only`）、或已有完整代码改动需快速复核时跳过 |
+| **`pre-code`** | 编码前架构与规范注入 | 动笔编码前 | `leo-coding-standards` | 当用户仅请求事后审查（`review-only`）时跳过动笔前指导；但若审查涉及 Java，其审查清单会自动转入 `post-review` 阶段并网执行 |
 | **`impl`** | 编码落地执行 | 编写/修改代码中 | Host Coding Agent | 当用户仅咨询规范（`guide-only`）、或代码已写完仅做质检时跳过 |
-| **`post-review`** | 编码后缺陷与需求反方证伪 | 产生 `git diff` 之后 | `leo-code-review` | 当用户仅咨询事前架构规范（`guide-only`）时跳过 |
+| **`post-review`** | 编码后缺陷、需求与架构合规反方证伪 | 产生 `git diff` 之后 | `leo-code-review`（联动 `leo-coding-standards`） | 当用户仅咨询事前架构规范（`guide-only`）时跳过 |
 | **`test`** | 自动化测试与黑盒质检 | 交付前 | `leo-code-qa` | 默认可选；当未配置环境或用户指定跳过质检时略过 |
 | **`delivery`** | 交付体检卡生成 | 流水线终局 | Built-in | 始终执行（仅汇总已跑阶段） |
 
@@ -27,7 +27,7 @@ The pipeline dynamically determines which slots are active based on explicit use
 ### Mode 2: Review-Only (`review-only` / Fast-Check)
 - **Use Case**: Code is already written by human or other AI. User says: "帮我 review 一下", "准备提交了查查 Bug", "看看改动有没有问题".
 - **Active Slots**: `[post-review]` $\rightarrow$ `[delivery]`.
-- **Optimization**: Skips `[pre-code]`. Only ensures `leo-code-review` is installed.
+- **Optimization**: Skips `[pre-code]` guidance. Ensures `leo-code-review` is installed. When changes involve Java files, also attaches `leo-coding-standards` review checklist into `post-review` to enforce MUST architectural standards.
 
 ### Mode 3: Guide-Only (`guide-only` / Architecture Consulting)
 - **Use Case**: User is planning a new database schema, API signature, or technical stack and needs architectural red lines before writing.
