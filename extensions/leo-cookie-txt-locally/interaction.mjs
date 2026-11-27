@@ -4,6 +4,7 @@ import {
   fingerprintElement,
   isDisabled,
   isVisible,
+  previewMatches,
   resolveRef,
 } from "./element-target.mjs";
 
@@ -22,10 +23,12 @@ function uniqueElement(document, registry, target) {
     }
     if (matches.length > 1) {
       const code = target.kind === "css" ? "selector_ambiguous" : "semantic_ambiguous";
+      const candidates = previewMatches(matches, document, registry, 5);
       throw lanternError(code, `${matches.length} matches for ${target.kind} target`, {
         reason: "ambiguous_match",
         matches_n: matches.length,
         clicked: false,
+        candidates,
       });
     }
     element = matches[0];

@@ -41,6 +41,7 @@ import {
   wrapEvalScript,
 } from "./page-drive.mjs";
 import { createCdpSessionManager } from "./cdp-session.mjs";
+import { filterNetworkEntries, toNetworkSummary } from "./network-capture.mjs";
 import { normalizeTarget } from "./element-target.mjs";
 import { lanternError } from "./errors.mjs";
 const DEFAULT_BRIDGE_URLS = ["http://127.0.0.1:19526", "http://127.0.0.1:19527"];
@@ -147,6 +148,116 @@ async function saveNetworkSession(session) {
   );
 }
 
+let pageHookTabId = null;
+
+async function startPageHookCapture(tabId) {
+  const numericTabId = Number(tabId);
+  await chrome.scripting.executeScript({
+    target: { tabId: numericTabId },
+    world: "MAIN",
+    func: () => {
+      globalThis.__leoLanternNetHook = { active: true, seq: 0, entries: [], limit: 500 };
+      if (globalThis.__leoLanternNetHookInstalled) return;
+      globalThis.__leoLanternNetHookInstalled = true;
+      const pushEntry = (entry) => {
+        const buf = globalThis.__leoLanternNetHook;
+        if (!buf?.active) return;
+        if (buf.entries.length >= buf.limit) buf.entries.shift();
+        buf.entries.push(entry);
+      };
+      const origFetch = globalThis.fetch;
+      if (typeof origFetch === "function") {
+        globalThis.fetch = async function (...args) {
+          const req = args[0];
+          const init = args[1] || {};
+          const url = typeof req === "string" ? req : req?.url || String(req || "");
+          const method = String(init.method || (typeof req === "object" && req?.method) || "GET").toUpperCase();
+          const buf = globalThis.__leoLanternNetHook;
+          const requestId = buf ? `hook_${++buf.seq}` : `hook_${Date.now()}`;
+          const timestamp = Date.now() / 1000;
+          try {
+            const resp = await origFetch.apply(this, args);
+            pushEntry({
+              requestId,
+              method,
+              url,
+              status: resp.status,
+              mimeType: resp.headers?.get?.("content-type") || null,
+              type: "Fetch",
+              timestamp,
+            });
+            return resp;
+          } catch (err) {
+            pushEntry({ requestId, method, url, status: 0, mimeType: null, type: "Fetch", timestamp });
+            throw err;
+          }
+        };
+      }
+      const OrigXHR = globalThis.XMLHttpRequest;
+      if (OrigXHR?.prototype) {
+        const origOpen = OrigXHR.prototype.open;
+        const origSend = OrigXHR.prototype.send;
+        OrigXHR.prototype.open = function (method, url, ...rest) {
+          this.__leoHookMeta = { method: String(method || "GET").toUpperCase(), url: String(url || "") };
+          return origOpen.apply(this, [method, url, ...rest]);
+        };
+        OrigXHR.prototype.send = function (...args) {
+          const meta = this.__leoHookMeta;
+          if (meta && globalThis.__leoLanternNetHook?.active) {
+            const buf = globalThis.__leoLanternNetHook;
+            const requestId = `hook_${++buf.seq}`;
+            const timestamp = Date.now() / 1000;
+            this.addEventListener(
+              "loadend",
+              () => {
+                let mimeType = null;
+                try {
+                  mimeType = this.getResponseHeader?.("content-type") || null;
+                } catch {}
+                pushEntry({
+                  requestId,
+                  method: meta.method,
+                  url: this.responseURL || meta.url,
+                  status: Number(this.status) || 0,
+                  mimeType,
+                  type: "XHR",
+                  timestamp,
+                });
+              },
+              { once: true }
+            );
+          }
+          return origSend.apply(this, args);
+        };
+      }
+    },
+  });
+  pageHookTabId = numericTabId;
+  return { tabId: numericTabId, startedAt: Date.now() };
+}
+
+async function readPageHookCapture(tabId, grep = "", stop = false) {
+  const numericTabId = Number(pageHookTabId);
+  if (tabId !== null && tabId !== undefined && Number(tabId) !== numericTabId) {
+    throw lanternError("capture_tab_mismatch", `Network capture belongs to tab ${numericTabId}, not tab ${tabId}`);
+  }
+  const res = await chrome.scripting.executeScript({
+    target: { tabId: numericTabId },
+    world: "MAIN",
+    func: (shouldStop) => {
+      const hook = globalThis.__leoLanternNetHook;
+      const raw = Array.isArray(hook?.entries) ? [...hook.entries] : [];
+      if (shouldStop && hook) hook.active = false;
+      return raw;
+    },
+    args: [Boolean(stop)],
+  });
+  const rawEntries = res?.[0]?.result || [];
+  const entries = filterNetworkEntries(rawEntries, grep).map(toNetworkSummary);
+  if (stop) pageHookTabId = null;
+  return { tabId: numericTabId, entryCount: rawEntries.length, entries };
+}
+
 const cdpSession = createCdpSessionManager({
   debuggerApi: chrome.debugger,
   validateTab: (tabId) => requireTaskTabId({ tabId }),
@@ -241,6 +352,7 @@ chrome.debugger.onDetach.addListener((source) => {
 chrome.tabs.onRemoved.addListener((tabId) => {
   const tid = Number(tabId);
   attachedDebuggers.delete(tid);
+  if (pageHookTabId === tid) pageHookTabId = null;
   if (debuggerIdleTimers.has(tid)) {
     clearTimeout(debuggerIdleTimers.get(tid));
     debuggerIdleTimers.delete(tid);
@@ -454,6 +566,7 @@ async function executeDocumentTargetTask(type, params = {}) {
             code: err?.code || (err?.reason === "ambiguous_match" ? "ambiguous_match" : "target_error"),
             reason: err?.reason || (err?.code === "selector_ambiguous" || err?.code === "semantic_ambiguous" ? "ambiguous_match" : undefined),
             matches_n: err?.matches_n,
+            candidates: err?.candidates,
             error: err?.message || String(err),
           };
         }
@@ -477,6 +590,7 @@ async function executeDocumentTargetTask(type, params = {}) {
     throw lanternError(result.code || "target_error", result.error || "Action failed", {
       reason: result.reason,
       matches_n: result.matches_n,
+      candidates: result.candidates,
       clicked: false,
     });
   }
@@ -819,6 +933,13 @@ async function executeTask(task) {
       result = await withTaskSummary({ started: true, reused: wasReused, sameWindow });
     } else if (type === "task.end") {
       const closeGroup = Boolean(params.closeGroup);
+      if (pageHookTabId != null) {
+        try {
+          await readPageHookCapture(pageHookTabId, "", true);
+        } catch {
+          pageHookTabId = null;
+        }
+      }
       const networkSession = getNetworkSession();
       if (shouldStopNetworkCapture(networkSession)) {
         await cdpSession.stop({ tabId: networkSession.tabId });
@@ -1291,12 +1412,46 @@ async function executeTask(task) {
         }
       }
     } else if (type === "cdp.net-start") {
-      const session = await cdpSession.start({ tabId: params.tabId });
-      result = await withTaskSummary({ started: true, tabId: session.tabId, entries: 0 });
+      if (pageHookTabId != null) {
+        try {
+          await readPageHookCapture(pageHookTabId, "", true);
+        } catch {
+          pageHookTabId = null;
+        }
+      }
+      try {
+        const session = await cdpSession.start({ tabId: params.tabId });
+        result = await withTaskSummary({ started: true, mode: "cdp", tabId: session.tabId, entries: 0 });
+      } catch (err) {
+        const msg = String(err?.message || "");
+        if (err?.code === "debugger_attach_failed" && /already attached|another debugger/i.test(msg)) {
+          const hookTabId = await requireTaskTabId(params);
+          await startPageHookCapture(hookTabId);
+          result = await withTaskSummary({
+            started: true,
+            mode: "page_hook",
+            tabId: hookTabId,
+            entries: 0,
+            warning: "Another debugger (e.g. Chrome DevTools) is attached; using page fetch/XHR hook fallback",
+          });
+        } else {
+          throw err;
+        }
+      }
     } else if (type === "cdp.net-get") {
-      result = await withTaskSummary(cdpSession.get({ tabId: params.tabId, grep: params.grep }));
+      if (pageHookTabId != null) {
+        const hookData = await readPageHookCapture(params.tabId, params.grep, false);
+        result = await withTaskSummary({ running: true, mode: "page_hook", ...hookData });
+      } else {
+        result = await withTaskSummary(cdpSession.get({ tabId: params.tabId, grep: params.grep }));
+      }
     } else if (type === "cdp.net-stop") {
-      result = await withTaskSummary(await cdpSession.stop({ tabId: params.tabId, grep: params.grep }));
+      if (pageHookTabId != null) {
+        const hookData = await readPageHookCapture(params.tabId, params.grep, true);
+        result = await withTaskSummary({ stopped: true, mode: "page_hook", ...hookData });
+      } else {
+        result = await withTaskSummary(await cdpSession.stop({ tabId: params.tabId, grep: params.grep }));
+      }
     } else {
       throw new Error(`Unsupported task type: ${type}`);
     }

@@ -36,14 +36,15 @@ description: 通过 leo-lantern CLI/服务实现 Chrome 浏览器远程调试 (C
    - 结束任务：`leo-lantern end-task`（同时关闭整个任务标签组加 `--close-group`）
 3. **页面感知与复杂交互（任意网页通用）**：
    - 获取高信息量交互 DOM 树（含 `tag`、`text`、`selector`、`id`、`rect`、`visible`、`ref`、`generation`）：`leo-lantern state` 或 `leo-lantern snapshot`
-   - 精准检索元素：`leo-lantern find --text "保存"` / `--sel "button.submit"` / `--target '{"kind":"semantic","role":"button","name":"Sign in"}'`
-   - 点击元素（原生 CDP 可信物理事件，支持 `ref` / `text` / `sel` / `target`）：
+   - 精准检索元素：`leo-lantern find --text "保存"` / `--sel "button.submit"` / `--within ".ant-menu" --text "领域空间"` / `--nth 0` / `--target '{"kind":"semantic","role":"button","name":"Sign in"}'`
+   - 点击元素（原生 CDP 可信物理事件，支持 `ref` / `text` / `sel` / `target`，重名可用 `--within` 限定容器或 `--nth` 取第几个；若仍重名会返回前 5 个候选 `candidates` 供二次精确定位）：
      - `leo-lantern click --ref 10`（最简推荐）
      - `leo-lantern click --text="进入配置"`
+     - `leo-lantern click --text="领域空间" --within=".ant-menu"` 或 `--nth 0`
      - `leo-lantern click --sel="button.submit"`
      - `leo-lantern click --target '{"kind":"ref","ref":10}'`（缺省 `generation` 自动对齐当前文档）
-   - 填写表单（原生 CDP `Input.insertText` 可信物理输入，兼容 React/Vue 受控组件与 FormStore，支持 `--blur` 失焦校验）：
-     - `leo-lantern fill --ref 10 --val "text"` 或 `leo-lantern fill --sel "#input" --val "text" --blur`
+   - 填写表单（原生 CDP `Input.insertText` 可信物理输入，兼容 React/Vue 受控组件与 FormStore，支持 `--within` / `--nth` / `--blur` 失焦校验）：
+     - `leo-lantern fill --ref 10 --val "text"` 或 `leo-lantern fill --sel "#input" --within ".modal" --val "text" --blur`
    - 键盘按键（原生 CDP `Input.dispatchKeyEvent`，`isTrusted: true`，适用于回车提交、Tag 标签确认与快捷键）：
      - `leo-lantern press Enter --sel="input[placeholder*='标签']"`
    - 上传文件（原生 CDP `DOM.setFileInputFiles`，绕过系统弹窗直接注入任意 `<input type="file">`，默认匹配 `input[type='file']`）：
@@ -60,7 +61,7 @@ description: 通过 leo-lantern CLI/服务实现 Chrome 浏览器远程调试 (C
      - 某个区域静止等待：`leo-lantern wait --sel ".chat-messages" --idle --idle-ms 2000`
    - 读取页面纯文本：`leo-lantern content --max-chars=4000`
 4. **网络抓包、截图与凭证导出**：
-   - 网络抓包（XHR/fetch API 拦截）：`leo-lantern net-start` $\rightarrow$ `leo-lantern net-get --grep="api"` $\rightarrow$ `leo-lantern net-stop`
+   - 网络抓包（XHR/fetch API 拦截；若标签页已被 DevTools 等其他调试器占用导致 CDP 无法 attach，会自动降级为页面层 `page_hook` 拦截 `fetch`/`XHR`）：`leo-lantern net-start` $\rightarrow$ `leo-lantern net-get --grep="api"` $\rightarrow$ `leo-lantern net-stop`
    - 页面或元素截图：
      - 可视区域截图：`leo-lantern screenshot --out=page.png`
      - 整页长截图：`leo-lantern screenshot --full-page --out=full.png`

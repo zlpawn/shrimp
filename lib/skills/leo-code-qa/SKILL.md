@@ -92,6 +92,9 @@ node ./scripts/scope_diff.mjs [base-branch]
 ### Step 2: 模式化执行与三端核验
 
 #### 场景 A: E2E 浏览器联调（依托 `leo-live-inspector` 内置浏览器 CLI，严格黑盒）
+0. **优先检索并复用页面操作沉淀**：
+   - 在动手盲探页面前，先借助 `leo-live-inspector` 的页面手册能力检索目标域名/路由/功能模块是否已有历史沉淀（含稳定选择器、入口路径、加载与防抖特征、已知坑）；
+   - 命中则直接沿用其页面导航与定位方式，仅对本次 `scope_diff.mjs` 涉及的改动做增量验证（避免从零反复 `state`/`find` 试错）。
 1. 开启独立窗口并导航（复用真实登录态，不干扰工作）：
    > 注：统一通过 `leo-live-inspector` 内置浏览器 CLI 执行（完整指令见 `<leo-live-inspector-dir>/references/browser-guide.md`），下面以 `cli` 简写代表 `node <leo-live-inspector-dir>/scripts/cli/index.mjs`。
    ```bash
@@ -125,4 +128,5 @@ node ./scripts/scope_diff.mjs [base-branch]
 ### Step 4: 交付动态质量体检卡
 测试结束时：
 1. 释放 E2E 资源：`cli end-task`；
-2. 按照 [quality-card-template.md](references/quality-card-template.md) 在对话窗口输出高信噪比的中文**【代码质检体检卡】**，并附上本地留底报告绝对路径。
+2. 若本轮 E2E 摸索出了新的稳定页面入口、可复用定位器或页面踩坑，提示用户（或征得同意后）调用 `leo-live-inspector` 将通用页面操作沉淀/更新到其页面手册库中，供后续联调直接复用（仅存通用页面入口、选择器与已知坑，不写入一次性回归数据）；
+3. 按照 [quality-card-template.md](references/quality-card-template.md) 在对话窗口输出高信噪比的中文**【代码质检体检卡】**，并附上本地留底报告绝对路径。
