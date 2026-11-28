@@ -838,6 +838,29 @@
       "requiresDaemon": false,
       "promoted": false,
       "managed": true
+    },
+    {
+      "id": "leo-antigravity-chat",
+      "name": "leo-antigravity-chat",
+      "title": "Leo Antigravity 独立问答",
+      "summary": "完全脱离网关、零第三方依赖的 Google Antigravity 订阅 CLI 问答技能，凭据严格隔离存储并自动续期，支持多轮会话、图片多模态、流式与 JSON 输出、远端模型同步与配额查询。",
+      "category": "ai",
+      "categoryLabel": "人工智能",
+      "icon": "💬",
+      "featured": true,
+      "tags": [
+        "antigravity",
+        "gemini",
+        "claude",
+        "chat",
+        "cli",
+        "standalone",
+        "问答",
+        "对话"
+      ],
+      "requiresDaemon": false,
+      "promoted": true,
+      "managed": true
     }
   ]
 }

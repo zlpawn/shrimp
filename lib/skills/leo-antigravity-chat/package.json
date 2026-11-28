@@ -1,0 +1,10 @@
+{
+  "name": "leo-antigravity-chat",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Standalone Google Antigravity subscription CLI Q&A skill with zero gateway or third-party npm dependencies",
+  "bin": {
+    "leo-antigravity-chat": "./scripts/leo_antigravity_chat.mjs"
+  }
+}
