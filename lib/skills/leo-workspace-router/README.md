@@ -24,8 +24,13 @@ lib/skills/leo-workspace-router/
 └── scripts/
     ├── probe.mjs             # 运行期环境与引擎状态探针
     ├── config.mjs            # 主机配置持久化与权限守护
-    ├── askpass.mjs           # 进程级 SSH_ASKPASS 密码桥接脚本
-    ├── router.mjs            # 统一 CLI 交互调度器
+    ├── askpass.mjs / .sh     # 进程级 SSH_ASKPASS 密码桥接脚本
+    ├── router.mjs            # 统一 CLI 调度器入口与可视化看板渲染
+    ├── core/
+    │   └── remote-exec.mjs   # [底层能力] 通用 SSH 远程安全通信通道
+    ├── modules/
+    │   ├── remote-git.mjs    # [底层能力] 远程 Git 递归探测与安全拉取
+    │   └── scheduler.mjs     # [底层能力] 多任务状态机、频率倒计时与日志
     └── engines/
         └── mutagen.mjs       # Mutagen 专属适配器（安装/卸载/会话管理）
 ```

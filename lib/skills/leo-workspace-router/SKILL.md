@@ -79,6 +79,14 @@ flowchart TD
 * **一键安装**：`node scripts/router.mjs install mutagen`（自动安装至 `binDir`）
 * **安全卸载**：`node scripts/router.mjs uninstall mutagen`（自动先优雅停用隔离 daemon，再清理二进制）
 
+### 4. 远程 Git 自动更新控制台 (Autopull Dashboard)
+* **查看可视化状态看板**：`node scripts/router.mjs autopull list`
+* **启动/配置定时拉取**：`node scripts/router.mjs autopull start <name> --remote="<path>" [--host="<alias>"] [--interval=5m]`
+* **随时暂停 / 恢复**：`node scripts/router.mjs autopull stop <name>` / `node scripts/router.mjs autopull resume <name>`
+* **立即手动触发一次**：`node scripts/router.mjs autopull run <name>`
+* **查看任务日志明细**：`node scripts/router.mjs autopull logs <name>`
+* **单次远程 Git 安全拉取**：`node scripts/router.mjs remote-git-pull --host="<alias>" --remote="<path>"`
+
 ---
 
 ## 🛡️ 安全与防泄露底线
