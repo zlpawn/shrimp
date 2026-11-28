@@ -267,9 +267,9 @@ const cdpSession = createCdpSessionManager({
 // Persistent CDP debugger session manager (keeps attachment warm across commands)
 const attachedDebuggers = new Set();
 const debuggerIdleTimers = new Map();
-const DEBUGGER_IDLE_TIMEOUT_MS = 60_000;
+const DEBUGGER_IDLE_TIMEOUT_MS = 2_000;
 
-function touchDebuggerIdle(tabId) {
+function touchDebuggerIdle(tabId, timeoutMs = DEBUGGER_IDLE_TIMEOUT_MS) {
   const numericTabId = Number(tabId);
   if (debuggerIdleTimers.has(numericTabId)) {
     clearTimeout(debuggerIdleTimers.get(numericTabId));
@@ -277,7 +277,7 @@ function touchDebuggerIdle(tabId) {
   const timer = setTimeout(() => {
     debuggerIdleTimers.delete(numericTabId);
     detachDebuggerSafe(numericTabId).catch(() => {});
-  }, DEBUGGER_IDLE_TIMEOUT_MS);
+  }, timeoutMs);
   if (typeof timer?.unref === "function") timer.unref();
   debuggerIdleTimers.set(numericTabId, timer);
 }
@@ -603,197 +603,151 @@ async function executeDocumentTargetTask(type, params = {}) {
   const fillToken = result._fillToken;
   delete result._fillToken;
 
-  // 1. Primary path: Native CDP Input Mouse Event (trusted browser events)
-  let cdpSucceeded = false;
-  if (type === "dom.click" && pt && pt.x != null && pt.y != null) {
-    try {
-      await ensureDebuggerAttached(tabId);
-      // Directly dispatch mousePressed and mouseReleased at point (x, y)
-      // Omit mouseMoved: mousePressed automatically updates the coordinates in Chromium
-      await withTimeout(
-        chrome.debugger.sendCommand({ tabId }, "Input.dispatchMouseEvent", {
-          type: "mousePressed",
-          x: pt.x,
-          y: pt.y,
-          button: "left",
-          buttons: 1,
-          clickCount: 1,
-        }),
-        2000,
-        "CDP mousePressed timeout"
-      );
-      await sleep(30);
-      await withTimeout(
-        chrome.debugger.sendCommand({ tabId }, "Input.dispatchMouseEvent", {
-          type: "mouseReleased",
-          x: pt.x,
-          y: pt.y,
-          button: "left",
-          buttons: 0,
-          clickCount: 1,
-        }),
-        2000,
-        "CDP mouseReleased timeout"
-      );
-      cdpSucceeded = true;
-    } catch (cdpErr) {
-      console.warn("[leo-lantern] CDP click dispatch failed, falling back to script dispatch:", cdpErr?.message || cdpErr);
-      attachedDebuggers.delete(Number(tabId));
-      cdpSucceeded = false;
-    }
-  }
+  // 1. dom.click: High-fidelity Scripting dispatch first (Zero Debugger infobar), CDP physical fallback
+  if (type === "dom.click") {
+    const forceCdp = Boolean(params.cdp || params.forceCdp);
+    let clickSucceeded = false;
+    let clickMethod = "scripting";
 
-  // Clean up temporary click token attribute asynchronously (fire-and-forget, non-blocking)
-  if (cdpSucceeded && clickToken) {
-    chrome.scripting.executeScript({
-      target: { tabId },
-      world: "ISOLATED",
-      func: (token) => {
-        const el = document.querySelector(`[data-lantern-click-token="${token}"]`);
-        el?.removeAttribute("data-lantern-click-token");
-      },
-      args: [clickToken],
-    }).catch(() => {});
-  }
-
-  // 2. Fallback path: Dispatch in world: "MAIN" ONLY if CDP was not executed or failed
-  if (type === "dom.click" && clickToken && !cdpSucceeded) {
-    try {
-      await withTimeout(
-        chrome.scripting.executeScript({
-          target: { tabId },
-          world: "MAIN",
-          func: (token, point) => {
-            const el = document.querySelector(`[data-lantern-click-token="${token}"]`);
-            if (!el) return;
-            el.removeAttribute("data-lantern-click-token");
-            try { el.focus?.(); } catch {}
-            const x = point?.x ?? 0;
-            const y = point?.y ?? 0;
-            const common = {
-              bubbles: true,
-              cancelable: true,
-              view: window,
-              clientX: x,
-              clientY: y,
-              screenX: x,
-              screenY: y,
-            };
-            try {
-              el.dispatchEvent(new PointerEvent("pointerdown", { ...common, button: 0, buttons: 1, pointerId: 1, pointerType: "mouse", isPrimary: true }));
-            } catch {}
-            try {
-              el.dispatchEvent(new MouseEvent("mousedown", { ...common, button: 0, buttons: 1 }));
-            } catch {}
-            try {
-              el.dispatchEvent(new PointerEvent("pointerup", { ...common, button: 0, buttons: 0, pointerId: 1, pointerType: "mouse", isPrimary: true }));
-            } catch {}
-            try {
-              el.dispatchEvent(new MouseEvent("mouseup", { ...common, button: 0, buttons: 0 }));
-            } catch {}
-            // Exactly ONE click action: use el.click() if available, otherwise new MouseEvent("click")
-            if (typeof el.click === "function") {
-              try { el.click(); } catch {}
-            } else {
+    if (clickToken && !forceCdp) {
+      try {
+        const scriptRes = await withTimeout(
+          chrome.scripting.executeScript({
+            target: { tabId },
+            world: "MAIN",
+            func: (token, point) => {
+              const el = document.querySelector(`[data-lantern-click-token="${token}"]`);
+              if (!el) return { ok: false, reason: "token_element_not_found" };
+              el.removeAttribute("data-lantern-click-token");
+              try { el.focus?.(); } catch {}
+              const x = point?.x ?? 0;
+              const y = point?.y ?? 0;
+              const common = {
+                bubbles: true,
+                cancelable: true,
+                view: window,
+                clientX: x,
+                clientY: y,
+                screenX: x,
+                screenY: y,
+              };
               try {
-                el.dispatchEvent(new MouseEvent("click", { ...common, button: 0, buttons: 0 }));
+                el.dispatchEvent(new PointerEvent("pointerover", { ...common, pointerId: 1, pointerType: "mouse" }));
+                el.dispatchEvent(new PointerEvent("pointerenter", { ...common, pointerId: 1, pointerType: "mouse" }));
               } catch {}
-            }
-          },
-          args: [clickToken, pt],
-        }),
-        3000,
-        "Click event dispatch in page timed out"
-      );
-    } catch (mainErr) {}
-  }
-
-  // 3. CDP input text path for dom.fill (trusted browser beforeinput/input events)
-  if (type === "dom.fill") {
-    let cdpFillSucceeded = false;
-    try {
-      await ensureDebuggerAttached(tabId);
-      if (fillValue === "") {
-        await withTimeout(
-          chrome.debugger.sendCommand({ tabId }, "Input.dispatchKeyEvent", {
-            type: "rawKeyDown",
-            key: "Backspace",
-            code: "Backspace",
-            windowsVirtualKeyCode: 8,
-            nativeVirtualKeyCode: 8,
-          }),
-          2000,
-          "CDP Backspace timeout"
-        );
-        await withTimeout(
-          chrome.debugger.sendCommand({ tabId }, "Input.dispatchKeyEvent", {
-            type: "keyUp",
-            key: "Backspace",
-            code: "Backspace",
-            windowsVirtualKeyCode: 8,
-            nativeVirtualKeyCode: 8,
-          }),
-          2000,
-          "CDP Backspace timeout"
-        );
-      } else {
-        await withTimeout(
-          chrome.debugger.sendCommand({ tabId }, "Input.insertText", {
-            text: fillValue,
+              try {
+                el.dispatchEvent(new PointerEvent("pointerdown", { ...common, button: 0, buttons: 1, pointerId: 1, pointerType: "mouse", isPrimary: true }));
+              } catch {}
+              try {
+                el.dispatchEvent(new MouseEvent("mousedown", { ...common, button: 0, buttons: 1 }));
+              } catch {}
+              try {
+                el.dispatchEvent(new PointerEvent("pointerup", { ...common, button: 0, buttons: 0, pointerId: 1, pointerType: "mouse", isPrimary: true }));
+              } catch {}
+              try {
+                el.dispatchEvent(new MouseEvent("mouseup", { ...common, button: 0, buttons: 0 }));
+              } catch {}
+              let domClicked = false;
+              if (typeof el.click === "function") {
+                try { el.click(); domClicked = true; } catch {}
+              }
+              if (!domClicked) {
+                try {
+                  el.dispatchEvent(new MouseEvent("click", { ...common, button: 0, buttons: 0 }));
+                  domClicked = true;
+                } catch {}
+              }
+              return { ok: true, clicked: domClicked, method: "scripting" };
+            },
+            args: [clickToken, pt],
           }),
           3000,
-          "CDP insertText timeout"
+          "Click event dispatch in page timed out"
         );
+        if (scriptRes?.[0]?.result?.ok) {
+          clickSucceeded = true;
+          clickMethod = "scripting";
+        }
+      } catch (scriptErr) {
+        console.warn("[leo-lantern] Script click dispatch failed, falling back to CDP:", scriptErr?.message || scriptErr);
+        clickSucceeded = false;
       }
-
-      if (params.blur) {
-        await sleep(30);
-        await chrome.debugger.sendCommand({ tabId }, "Input.dispatchKeyEvent", {
-          type: "rawKeyDown",
-          key: "Tab",
-          code: "Tab",
-          windowsVirtualKeyCode: 9,
-          nativeVirtualKeyCode: 9,
-        });
-        await chrome.debugger.sendCommand({ tabId }, "Input.dispatchKeyEvent", {
-          type: "keyUp",
-          key: "Tab",
-          code: "Tab",
-          windowsVirtualKeyCode: 9,
-          nativeVirtualKeyCode: 9,
-        });
-      }
-      cdpFillSucceeded = true;
-    } catch (cdpErr) {
-      console.warn("[leo-lantern] CDP insertText dispatch failed, falling back to script dispatch:", cdpErr?.message || cdpErr);
-      attachedDebuggers.delete(Number(tabId));
-      cdpFillSucceeded = false;
     }
 
-    // Clean up temporary fill token
-    if (fillToken) {
+    // Fallback path: Native CDP Input Mouse Event (trusted browser events) if scripting was bypassed or failed
+    if (!clickSucceeded && pt && pt.x != null && pt.y != null) {
+      try {
+        await ensureDebuggerAttached(tabId);
+        await withTimeout(
+          chrome.debugger.sendCommand({ tabId }, "Input.dispatchMouseEvent", {
+            type: "mousePressed",
+            x: pt.x,
+            y: pt.y,
+            button: "left",
+            buttons: 1,
+            clickCount: 1,
+          }),
+          2000,
+          "CDP mousePressed timeout"
+        );
+        await sleep(30);
+        await withTimeout(
+          chrome.debugger.sendCommand({ tabId }, "Input.dispatchMouseEvent", {
+            type: "mouseReleased",
+            x: pt.x,
+            y: pt.y,
+            button: "left",
+            buttons: 0,
+            clickCount: 1,
+          }),
+          2000,
+          "CDP mouseReleased timeout"
+        );
+        clickSucceeded = true;
+        clickMethod = "cdp";
+        touchDebuggerIdle(tabId, 2000);
+      } catch (cdpErr) {
+        console.warn("[leo-lantern] CDP click fallback failed:", cdpErr?.message || cdpErr);
+        attachedDebuggers.delete(Number(tabId));
+        clickSucceeded = false;
+      }
+    }
+
+    // Clean up temporary click token attribute if still present
+    if (clickToken) {
       chrome.scripting.executeScript({
         target: { tabId },
         world: "ISOLATED",
         func: (token) => {
-          const el = document.querySelector(`[data-lantern-fill-token="${token}"]`);
-          el?.removeAttribute("data-lantern-fill-token");
+          const el = document.querySelector(`[data-lantern-click-token="${token}"]`);
+          el?.removeAttribute("data-lantern-click-token");
         },
-        args: [fillToken],
+        args: [clickToken],
       }).catch(() => {});
     }
 
-    // Fallback path: If CDP failed, execute in world: "MAIN" with tracker reset & InputEvent
-    if (!cdpFillSucceeded) {
+    result.clicked = clickSucceeded;
+    result.method = clickMethod;
+    result.cdp = clickMethod === "cdp";
+  }
+
+  // 2. dom.fill: High-fidelity Scripting fill with verification first, CDP input fallback
+  if (type === "dom.fill") {
+    const forceCdp = Boolean(params.cdp || params.forceCdp);
+    let fillSucceeded = false;
+    let fillMethod = "scripting";
+
+    if (!forceCdp) {
       try {
-        await withTimeout(
+        const scriptRes = await withTimeout(
           chrome.scripting.executeScript({
             target: { tabId },
             world: "MAIN",
             func: (val, token, doBlur) => {
               const el = (token ? document.querySelector(`[data-lantern-fill-token="${token}"]`) : null) || document.activeElement;
-              if (!el) return;
+              if (!el) return { ok: false, reason: "element_not_found" };
               el.removeAttribute("data-lantern-fill-token");
+              try { el.focus?.(); } catch {}
               const tag = el.tagName.toLowerCase();
               const editable = el.getAttribute("contenteditable") === "true";
               if (editable) {
@@ -822,18 +776,111 @@ async function executeDocumentTargetTask(type, params = {}) {
                 el.dispatchEvent(new Event("blur", { bubbles: true }));
                 el.blur?.();
               }
+
+              // Verification: Read-back check to ensure value was accepted
+              const actual = editable ? el.textContent : el.value;
+              const verified = (actual === val) || (!val && !actual);
+              return { ok: true, actual, verified: Boolean(verified), method: "scripting" };
             },
             args: [fillValue, fillToken, Boolean(params.blur)],
           }),
           3000,
-          "Script fill fallback timeout"
+          "Script fill execution timeout"
         );
-      } catch (fallbackErr) {}
+        const fillOutcome = scriptRes?.[0]?.result;
+        if (fillOutcome?.ok && fillOutcome?.verified) {
+          fillSucceeded = true;
+          fillMethod = "scripting";
+          result.verified = true;
+          result.actual = fillOutcome.actual;
+        }
+      } catch (scriptErr) {
+        console.warn("[leo-lantern] Script fill failed, falling back to CDP:", scriptErr?.message || scriptErr);
+        fillSucceeded = false;
+      }
     }
 
-    result.verified = true;
-    result.actual = fillValue;
-    result.cdp = cdpFillSucceeded;
+    // Fallback path: Native CDP Input text events if scripting was bypassed or failed verification
+    if (!fillSucceeded) {
+      try {
+        await ensureDebuggerAttached(tabId);
+        if (fillValue === "") {
+          await withTimeout(
+            chrome.debugger.sendCommand({ tabId }, "Input.dispatchKeyEvent", {
+              type: "rawKeyDown",
+              key: "Backspace",
+              code: "Backspace",
+              windowsVirtualKeyCode: 8,
+              nativeVirtualKeyCode: 8,
+            }),
+            2000,
+            "CDP Backspace timeout"
+          );
+          await withTimeout(
+            chrome.debugger.sendCommand({ tabId }, "Input.dispatchKeyEvent", {
+              type: "keyUp",
+              key: "Backspace",
+              code: "Backspace",
+              windowsVirtualKeyCode: 8,
+              nativeVirtualKeyCode: 8,
+            }),
+            2000,
+            "CDP Backspace timeout"
+          );
+        } else {
+          await withTimeout(
+            chrome.debugger.sendCommand({ tabId }, "Input.insertText", {
+              text: fillValue,
+            }),
+            3000,
+            "CDP insertText timeout"
+          );
+        }
+
+        if (params.blur) {
+          await sleep(30);
+          await chrome.debugger.sendCommand({ tabId }, "Input.dispatchKeyEvent", {
+            type: "rawKeyDown",
+            key: "Tab",
+            code: "Tab",
+            windowsVirtualKeyCode: 9,
+            nativeVirtualKeyCode: 9,
+          });
+          await chrome.debugger.sendCommand({ tabId }, "Input.dispatchKeyEvent", {
+            type: "keyUp",
+            key: "Tab",
+            code: "Tab",
+            windowsVirtualKeyCode: 9,
+            nativeVirtualKeyCode: 9,
+          });
+        }
+        fillSucceeded = true;
+        fillMethod = "cdp";
+        result.verified = true;
+        result.actual = fillValue;
+        touchDebuggerIdle(tabId, 2000);
+      } catch (cdpErr) {
+        console.warn("[leo-lantern] CDP insertText fallback failed:", cdpErr?.message || cdpErr);
+        attachedDebuggers.delete(Number(tabId));
+        fillSucceeded = false;
+      }
+    }
+
+    // Clean up temporary fill token
+    if (fillToken) {
+      chrome.scripting.executeScript({
+        target: { tabId },
+        world: "ISOLATED",
+        func: (token) => {
+          const el = document.querySelector(`[data-lantern-fill-token="${token}"]`);
+          el?.removeAttribute("data-lantern-fill-token");
+        },
+        args: [fillToken],
+      }).catch(() => {});
+    }
+
+    result.cdp = fillMethod === "cdp";
+    result.method = fillMethod;
   }
 
   return result;
@@ -1083,72 +1130,88 @@ async function executeTask(task) {
       if (!rawScript) throw lanternError("invalid_request", "Missing script parameter for eval");
       const script = wrapEvalScript(rawScript);
 
+      const forceCdp = Boolean(params.cdp || params.forceCdp);
       let evalResult = null;
       let evalError = null;
       let evaluated = false;
 
-      // 1. Try CDP Runtime.evaluate first (handles expressions, async promises, and bypasses page CSP)
-      try {
-        await ensureDebuggerAttached(tabId);
-        const cdpRes = await withTimeout(
-          chrome.debugger.sendCommand({ tabId }, "Runtime.evaluate", {
-            expression: script,
-            returnByValue: true,
-            awaitPromise: true,
-            userGesture: true,
-          }),
-          8000,
-          "CDP evaluate timeout"
-        );
-        if (cdpRes?.exceptionDetails) {
-          evalError = cdpRes.exceptionDetails.exception?.description || cdpRes.exceptionDetails.text;
-          evaluated = true;
-        } else if (cdpRes?.result) {
-          evalResult = cdpRes.result.value !== undefined ? cdpRes.result.value : cdpRes.result.description;
-          evaluated = true;
-        }
-      } catch (cdpErr) {
-        if (!evalShouldFallback(cdpErr)) {
-          throw lanternError("eval_timeout", "Script did not finish within 8s; it may still be running in the page");
-        }
-        attachedDebuggers.delete(Number(tabId));
-        // Fallback to executeScript below
-      }
-
-      // 2. Fallback to chrome.scripting.executeScript if CDP was unavailable
-      if (!evaluated) {
+      // 1. Primary path: High-fidelity Scripting in world: "MAIN" (Zero Debugger infobar)
+      if (!forceCdp) {
         try {
-          const res = await chrome.scripting.executeScript({
-            target: { tabId },
-            world: "MAIN",
-            func: (code) => {
-              try {
-                const fn = new Function("return (" + code + ")");
-                return { value: fn() };
-              } catch (e1) {
+          const res = await withTimeout(
+            chrome.scripting.executeScript({
+              target: { tabId },
+              world: "MAIN",
+              func: async (code) => {
                 try {
-                  const fn = new Function(code);
-                  return { value: fn() };
-                } catch (e2) {
+                  const fn = new Function("return (" + code + ")");
+                  const val = await fn();
+                  return { ok: true, value: val };
+                } catch (e1) {
                   try {
-                    return { value: (0, eval)(code) };
-                  } catch (e3) {
-                    return { error: e3.message || e2.message || e1.message };
+                    const fn = new Function(code);
+                    const val = await fn();
+                    return { ok: true, value: val };
+                  } catch (e2) {
+                    try {
+                      const val = await (0, eval)(code);
+                      return { ok: true, value: val };
+                    } catch (e3) {
+                      const errMsg = String(e3?.message || e2?.message || e1?.message || "");
+                      const isCsp = errMsg.includes("Content Security Policy") || errMsg.includes("unsafe-eval");
+                      return { ok: false, isCsp, error: errMsg };
+                    }
                   }
                 }
-              }
-            },
-            args: [script],
-          });
+              },
+              args: [script],
+            }),
+            8000,
+            "Script evaluate timeout"
+          );
           const injection = res?.[0]?.result;
-          if (injection?.error) {
-            evalError = injection.error;
-          } else if (injection) {
+          if (injection?.ok) {
             evalResult = injection.value;
+            evaluated = true;
+          } else if (injection && !injection.isCsp) {
+            evalError = injection.error;
             evaluated = true;
           }
         } catch (scriptErr) {
-          evalError = scriptErr.message;
+          if (scriptErr?.message?.includes("timed out") || scriptErr?.code === "command_timeout") {
+            throw lanternError("eval_timeout", "Script did not finish within 8s; it may still be running in the page");
+          }
+          evaluated = false;
+        }
+      }
+
+      // 2. Fallback path: CDP Runtime.evaluate (handles CSP restricted pages or explicit CDP)
+      if (!evaluated && evalError == null) {
+        try {
+          await ensureDebuggerAttached(tabId);
+          const cdpRes = await withTimeout(
+            chrome.debugger.sendCommand({ tabId }, "Runtime.evaluate", {
+              expression: script,
+              returnByValue: true,
+              awaitPromise: true,
+              userGesture: true,
+            }),
+            8000,
+            "CDP evaluate timeout"
+          );
+          if (cdpRes?.exceptionDetails) {
+            evalError = cdpRes.exceptionDetails.exception?.description || cdpRes.exceptionDetails.text;
+            evaluated = true;
+          } else if (cdpRes?.result) {
+            evalResult = cdpRes.result.value !== undefined ? cdpRes.result.value : cdpRes.result.description;
+            evaluated = true;
+          }
+          touchDebuggerIdle(tabId, 2000);
+        } catch (cdpErr) {
+          if (!evalShouldFallback(cdpErr)) {
+            throw lanternError("eval_timeout", "Script did not finish within 8s; it may still be running in the page");
+          }
+          attachedDebuggers.delete(Number(tabId));
         }
       }
 
@@ -1238,84 +1301,108 @@ async function executeTask(task) {
     } else if (type === "dom.press") {
       const tabId = await requireTaskTabId(params);
       const key = normalizePressKey(params.key);
+      const forceCdp = Boolean(params.cdp || params.forceCdp);
+      let pressSucceeded = false;
       let cdpPressSucceeded = false;
-      try {
-        await ensureDebuggerAttached(tabId);
-        if (params.selector) {
-          await chrome.scripting.executeScript({
-            target: { tabId },
-            world: "ISOLATED",
-            func: (sel) => {
-              const el = document.querySelector(sel);
-              el?.scrollIntoView?.({ block: "center", inline: "center", behavior: "instant" });
-              el?.focus?.();
-            },
-            args: [params.selector],
-          }).catch(() => {});
+
+      // 1. Primary path: High-fidelity Scripting in world: "MAIN" (Zero Debugger infobar)
+      if (!forceCdp) {
+        try {
+          const res = await withTimeout(
+            chrome.scripting.executeScript({
+              target: { tabId },
+              world: "MAIN",
+              func: (keyName, selector, eventInit) => {
+                const target = selector ? document.querySelector(selector) : document.activeElement || document.body;
+                if (!target) return { ok: false, error: `Key target not found: ${selector || "activeElement"}` };
+                try { target.focus?.(); } catch {}
+                const common = { ...eventInit, bubbles: true, cancelable: true };
+                target.dispatchEvent(new KeyboardEvent("keydown", common));
+                target.dispatchEvent(new KeyboardEvent("keypress", common));
+                target.dispatchEvent(new KeyboardEvent("keyup", common));
+                return { ok: true, key: keyName };
+              },
+              args: [key, params.selector || null, pressKeyEventInit(key)],
+            }),
+            3000,
+            "Script press timeout"
+          );
+          if (res?.[0]?.result?.ok) {
+            pressSucceeded = true;
+          }
+        } catch (scriptErr) {
+          console.warn("[leo-lantern] Script press failed, falling back to CDP:", scriptErr?.message || scriptErr);
+          pressSucceeded = false;
         }
-        const keyInfo = cdpKeyEventParams(key);
-        await withTimeout(
-          chrome.debugger.sendCommand({ tabId }, "Input.dispatchKeyEvent", {
-            type: "rawKeyDown",
-            key: keyInfo.key,
-            code: keyInfo.code,
-            windowsVirtualKeyCode: keyInfo.windowsVirtualKeyCode,
-            nativeVirtualKeyCode: keyInfo.nativeVirtualKeyCode,
-            text: keyInfo.text || undefined,
-            unmodifiedText: keyInfo.text || undefined,
-          }),
-          2000,
-          "CDP rawKeyDown timeout"
-        );
-        if (keyInfo.text) {
+      }
+
+      // 2. Fallback path: Native CDP Input.dispatchKeyEvent
+      if (!pressSucceeded) {
+        try {
+          await ensureDebuggerAttached(tabId);
+          if (params.selector) {
+            await chrome.scripting.executeScript({
+              target: { tabId },
+              world: "ISOLATED",
+              func: (sel) => {
+                const el = document.querySelector(sel);
+                el?.scrollIntoView?.({ block: "center", inline: "center", behavior: "instant" });
+                el?.focus?.();
+              },
+              args: [params.selector],
+            }).catch(() => {});
+          }
+          const keyInfo = cdpKeyEventParams(key);
           await withTimeout(
             chrome.debugger.sendCommand({ tabId }, "Input.dispatchKeyEvent", {
-              type: "char",
+              type: "rawKeyDown",
               key: keyInfo.key,
               code: keyInfo.code,
               windowsVirtualKeyCode: keyInfo.windowsVirtualKeyCode,
               nativeVirtualKeyCode: keyInfo.nativeVirtualKeyCode,
-              text: keyInfo.text,
-              unmodifiedText: keyInfo.text,
+              text: keyInfo.text || undefined,
+              unmodifiedText: keyInfo.text || undefined,
             }),
             2000,
-            "CDP char timeout"
+            "CDP rawKeyDown timeout"
           );
+          if (keyInfo.text) {
+            await withTimeout(
+              chrome.debugger.sendCommand({ tabId }, "Input.dispatchKeyEvent", {
+                type: "char",
+                key: keyInfo.key,
+                code: keyInfo.code,
+                windowsVirtualKeyCode: keyInfo.windowsVirtualKeyCode,
+                nativeVirtualKeyCode: keyInfo.nativeVirtualKeyCode,
+                text: keyInfo.text,
+                unmodifiedText: keyInfo.text,
+              }),
+              2000,
+              "CDP char timeout"
+            );
+          }
+          await withTimeout(
+            chrome.debugger.sendCommand({ tabId }, "Input.dispatchKeyEvent", {
+              type: "keyUp",
+              key: keyInfo.key,
+              code: keyInfo.code,
+              windowsVirtualKeyCode: keyInfo.windowsVirtualKeyCode,
+              nativeVirtualKeyCode: keyInfo.nativeVirtualKeyCode,
+            }),
+            2000,
+            "CDP keyUp timeout"
+          );
+          cdpPressSucceeded = true;
+          pressSucceeded = true;
+          touchDebuggerIdle(tabId, 2000);
+        } catch (cdpErr) {
+          console.warn("[leo-lantern] CDP key dispatch failed:", cdpErr?.message || cdpErr);
+          attachedDebuggers.delete(Number(tabId));
+          throw cdpErr;
         }
-        await withTimeout(
-          chrome.debugger.sendCommand({ tabId }, "Input.dispatchKeyEvent", {
-            type: "keyUp",
-            key: keyInfo.key,
-            code: keyInfo.code,
-            windowsVirtualKeyCode: keyInfo.windowsVirtualKeyCode,
-            nativeVirtualKeyCode: keyInfo.nativeVirtualKeyCode,
-          }),
-          2000,
-          "CDP keyUp timeout"
-        );
-        cdpPressSucceeded = true;
-      } catch (cdpErr) {
-        console.warn("[leo-lantern] CDP key dispatch failed, falling back to script dispatch:", cdpErr?.message || cdpErr);
-        attachedDebuggers.delete(Number(tabId));
       }
 
-      if (!cdpPressSucceeded) {
-        const res = await chrome.scripting.executeScript({
-          target: { tabId },
-          func: (keyName, selector, eventInit) => {
-            const target = selector ? document.querySelector(selector) : document.activeElement || document.body;
-            if (!target) return { ok: false, error: `Key target not found: ${selector || "activeElement"}` };
-            const common = { ...eventInit, bubbles: true, cancelable: true };
-            target.dispatchEvent(new KeyboardEvent("keydown", common));
-            target.dispatchEvent(new KeyboardEvent("keypress", common));
-            target.dispatchEvent(new KeyboardEvent("keyup", common));
-            return { ok: true, key: keyName };
-          },
-          args: [key, params.selector || null, pressKeyEventInit(key)],
-        });
-        if (res?.[0]?.result?.ok === false) throw new Error(res[0].result.error);
-      }
-      result = await withTaskSummary({ pressed: true, key, selector: params.selector || null, cdp: cdpPressSucceeded });
+      result = await withTaskSummary({ pressed: pressSucceeded, key, selector: params.selector || null, cdp: cdpPressSucceeded });
     } else if (type === "cdp.upload" || type === "dom.upload") {
       const tabId = await requireTaskTabId(params);
       const selector = params.selector || params.sel || "input[type='file']";
@@ -1325,20 +1412,24 @@ async function executeTask(task) {
         throw lanternError("invalid_request", "files parameter is required for upload");
       }
       await ensureDebuggerAttached(tabId);
-      await chrome.debugger.sendCommand({ tabId }, "DOM.enable");
-      const doc = await chrome.debugger.sendCommand({ tabId }, "DOM.getDocument");
-      const node = await chrome.debugger.sendCommand({ tabId }, "DOM.querySelector", {
-        nodeId: doc.root.nodeId,
-        selector,
-      });
-      if (!node || !node.nodeId) {
-        throw lanternError("selector_not_found", "File input selector '" + selector + "' not found");
+      try {
+        await chrome.debugger.sendCommand({ tabId }, "DOM.enable");
+        const doc = await chrome.debugger.sendCommand({ tabId }, "DOM.getDocument");
+        const node = await chrome.debugger.sendCommand({ tabId }, "DOM.querySelector", {
+          nodeId: doc.root.nodeId,
+          selector,
+        });
+        if (!node || !node.nodeId) {
+          throw lanternError("selector_not_found", "File input selector '" + selector + "' not found");
+        }
+        await chrome.debugger.sendCommand({ tabId }, "DOM.setFileInputFiles", {
+          nodeId: node.nodeId,
+          files: files.map((f) => String(f)),
+        });
+      } finally {
+        touchDebuggerIdle(tabId, 2000);
       }
-      await chrome.debugger.sendCommand({ tabId }, "DOM.setFileInputFiles", {
-        nodeId: node.nodeId,
-        files: files.map((f) => String(f)),
-      });
-      result = await withTaskSummary({ uploaded: true, filesCount: files.length, selector });
+      result = await withTaskSummary({ uploaded: true, filesCount: files.length, selector, cdp: true });
     } else if (type === "cdp.screenshot") {
       const tabId = await requireTaskTabId(params);
       const fullPage = Boolean(params.fullPage);
@@ -1410,6 +1501,7 @@ async function executeTask(task) {
             await chrome.debugger.sendCommand({ tabId }, "Emulation.clearDeviceMetricsOverride");
           } catch {}
         }
+        touchDebuggerIdle(tabId, 2000);
       }
     } else if (type === "cdp.net-start") {
       if (pageHookTabId != null) {

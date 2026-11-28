@@ -37,14 +37,16 @@ description: 通过 leo-lantern CLI/服务实现 Chrome 浏览器远程调试 (C
 3. **页面感知与复杂交互（任意网页通用）**：
    - 获取高信息量交互 DOM 树（含 `tag`、`text`、`selector`、`id`、`rect`、`visible`、`ref`、`generation`）：`leo-lantern state` 或 `leo-lantern snapshot`
    - 精准检索元素：`leo-lantern find --text "保存"` / `--sel "button.submit"` / `--within ".ant-menu" --text "领域空间"` / `--nth 0` / `--target '{"kind":"semantic","role":"button","name":"Sign in"}'`
-   - 点击元素（原生 CDP 可信物理事件，支持 `ref` / `text` / `sel` / `target`，重名可用 `--within` 限定容器或 `--nth` 取第几个；若仍重名会返回前 5 个候选 `candidates` 供二次精确定位）：
+   - 点击元素（默认采用纯静默 Scripting 派发，零弹窗、零调试黄条打扰；失败自动 CDP 物理兜底并瞬时释放；支持 `--cdp` 强制物理事件；重名可用 `--within` 限定容器或 `--nth` 取第几个）：
      - `leo-lantern click --ref 10`（最简推荐）
      - `leo-lantern click --text="进入配置"`
      - `leo-lantern click --text="领域空间" --within=".ant-menu"` 或 `--nth 0`
      - `leo-lantern click --sel="button.submit"`
      - `leo-lantern click --target '{"kind":"ref","ref":10}'`（缺省 `generation` 自动对齐当前文档）
-   - 填写表单（原生 CDP `Input.insertText` 可信物理输入，兼容 React/Vue 受控组件与 FormStore，支持 `--within` / `--nth` / `--blur` 失焦校验）：
+     - 强制物理 CDP 点击：`leo-lantern click --ref 10 --cdp`
+   - 填写表单（默认采用纯静默 Scripting + 原生 Setter 穿透并回读校验，无感无弹窗；校验失败自动 CDP 兜底；兼容 React/Vue 受控组件与 FormStore，支持 `--within` / `--nth` / `--blur` 失焦校验；支持 `--cdp` 强制物理输入）：
      - `leo-lantern fill --ref 10 --val "text"` 或 `leo-lantern fill --sel "#input" --within ".modal" --val "text" --blur`
+     - 强制物理 CDP 输入：`leo-lantern fill --sel "#input" --val "text" --cdp`
    - 键盘按键（原生 CDP `Input.dispatchKeyEvent`，`isTrusted: true`，适用于回车提交、Tag 标签确认与快捷键）：
      - `leo-lantern press Enter --sel="input[placeholder*='标签']"`
    - 上传文件（原生 CDP `DOM.setFileInputFiles`，绕过系统弹窗直接注入任意 `<input type="file">`，默认匹配 `input[type='file']`）：
