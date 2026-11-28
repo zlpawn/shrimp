@@ -1,174 +1,127 @@
 ---
 name: leo-article-relay
-description: "全能文章高保真脱机归档、知识库持久化与多端（Craft/Obsidian）高保真中继同步引擎。突破腾讯防盗链与反爬验证，全量并发下载高清原图与原生内联 CSS，生成 100% 离线脱网可读的 HTML 原文与清洗后的结构化 Markdown（含 Frontmatter、表格重构与代码块）。支持 Obsidian Vault 智能持久化路由、~/.shrimp 保底存储、以及 1:1 逐字无损直传 Craft 官方云端 CDN 图床的中继同步。Use when user asks to '下载公众号文章', '抓取微信文章', '微信文章转HTML', '保存公众号文章', '同步文章到Craft', '同步到知识库', 'article relay', '剪藏文章', '中继同步', provides article URLs (mp.weixin.qq.com, etc.), or wants to relay articles into Obsidian/Craft."
+description: "全能文章高保真脱机归档、知识库持久化与多端（Craft/Obsidian）高保真中继同步引擎。突破腾讯防盗链与反爬验证，全量并发下载高清原图与原生内联 CSS，生成 100% 离线脱网可读的 HTML 原文与清洗后的结构化 Markdown。新增飞书文档（Docx/Wiki）只读中继通道，支持前置依赖自动探测、父子文档交互确认、本地素材下载与 Craft 官方图床直传（策略 A）。Use when user asks to '下载公众号文章', '抓取微信文章', '微信文章转HTML', '保存公众号文章', '同步文章到Craft', '飞书同步到Craft', '飞书文档转Craft', 'lark to craft', '同步飞书文档', '同步到知识库', 'article relay', '剪藏文章', '中继同步', provides article URLs (mp.weixin.qq.com, feishu.cn, etc.), or wants to relay articles into Obsidian/Craft."
 metadata:
-  version: "1.2.0"
+  version: "1.3.0"
   author: "Leo"
 ---
 
 # Leo Article Relay (全能文章高保真归档与知识中继引擎)
 
-专为长文、公众号与技术博客深度打造的知识摄取与多端中继 Skill。一键突破反爬防护与图片防盗链，秒级直取服务端原生内容，提供 **「像素级脱网 HTML」**、**「结构化 Markdown」** 与 **「Craft 官方图床直传中继」** 多端交付。
+专为长文、公众号、技术博客与飞书云文档深度打造的知识摄取与多端中继 Skill。
+支持 **微信公众号** 与 **飞书文档（Docx/Wiki）** 双渠道，提供 **「像素级脱网 HTML」**、**「结构化 Markdown」** 与 **「Craft 官方图床直传中继」** 多端交付。
 
 ---
 
-## 核心特性与交付物
+## 核心设计规范（无固定写死路径原则）
 
-每次抓取均自动在输出目录下创建独立规范的专有文件夹（命名规则：`YYYY-MM-DD-文章标题-公众号名`）：
+1. **便携性与动态路径**：全代码与文档中**禁止硬编码系统专属绝对路径**。
+2. **输出目录解析**：支持 `-o, --output <dir>` 指定任意输出目录；未显式指定时，默认使用当前工作目录下的相对路径（如 `./lark-articles`、`./wechat-articles`）或用户中枢 `~/.shrimp/skills/leo-article-relay/`。
+3. **跨模块协同**：依赖的 `leo-craft-api` 客户端通过模块解析链（同级技能目录 ➔ `~/.agents/skills/` ➔ `~/.gemini/config/skills/` ➔ `~/.shrimp/skills/`）动态加载。
 
-```text
-wechat-articles/
-└── 2026-07-24-分解一座冰山：后端系统「AI 知识库体系」建设实践-阿里技术/
-    ├── article.html             # 🌐 [交付 1] 100% 像素级离线原版 HTML（本地双击即看，脱网无损排版）
-    ├── index.md                 # 📄 [交付 2] 结构化 Markdown（含 Frontmatter、GFM 表格、代码高亮）
-    └── images/                  # 🖼️ [交付 3] 本地全量高清原图库（无损防盗链下载）
-        ├── img_001.png
-        ├── img_002.png
-        └── ...
+---
+
+## 渠道一：飞书云文档 (Docx / Wiki) 转存 Craft 工作流
+
+专为将飞书云文档（单个 Docx 或 Wiki 知识库树）高保真同步到 Craft 打造，严格遵循以下四大原则：
+
+### 1. 核心架构原则
+- **严格只读（100% Read-Only）**：仅调用飞书读命令（`docs +fetch`、`docs +media-download`、`wiki ... list`），绝不调用任何写命令，不产生任何版本变更或副作用。
+- **外部委托解耦（Zero-Embedded）**：不内嵌 Lark SDK，所有飞书文档获取委托给本地环境的 `lark-cli` 与 `lark-doc` 技能。
+- **策略 A 官方图床直传**：
+  1. 飞书素材/图片下载到本地临时目录；
+  2. 调用 `leo-craft-api` 的 `/upload` 二进制上传至 Craft 官方存储，拿到返回的 Craft 官方 CDN `assetUrl`；
+  3. 将 Markdown 图片引用替换为 `![图片](assetUrl)`，确保脱机原生渲染且图文位置 100% 一致。
+- **智能切片防截断 (Chunking)**：按 `##` / `###` 章节边界自动切割长文为 `<= 12KB` 安全切片，避免 CLI 溢出与超时。
+
+---
+
+### 2. Agent 交互与执行 SOP
+
+#### Step 1: 环境依赖前置探测
+在执行任何飞书文档操作前，Agent 运行检查命令：
+```bash
+node <skillDir>/scripts/lark-to-craft.mjs --check-env
+```
+- **若缺少 `lark-cli`**：暂停并提示用户：“本地未安装 lark-cli，是否需要协助安装？（支持 npm install -g @larksuite/cli）”；
+- **若缺少鉴权/未登录**：暂停并提示用户：“lark-cli 用户凭证未就绪，请在终端执行 `lark-cli auth login` 完成飞书登录”。
+
+#### Step 2: 父子文档结构探测与范围确认
+运行探测命令：
+```bash
+node <skillDir>/scripts/lark-to-craft.mjs "<urlOrToken>" --inspect
+```
+- **如果是普通单文档（`isParent: false`）**：直接进入 Step 3 开始同步；
+- **如果是包含子文档的父文档/Wiki 节点（`isParent: true`）**：
+  Agent 向用户展示文档目录清单并询问：
+  > 📋 **检测到这是一个包含子文档的父文档/知识库节点（共 N 篇）：**
+  > - 📄 **[父]** 架构总览
+  >   - ├── 📄 **[子-1]** 核心网关设计规范
+  >   - └── 📁 **[子-2]** 部署指南
+  >
+  > **请问希望如何同步到 Craft？**
+  > 1. 仅同步当前父文档
+  > 2. 全部同步（包含所有子文档）
+  > 3. 指定同步部分文档（提供编号或标题）
+
+#### Step 3: 执行中继同步
+根据用户确认的文档 URL/Token，执行同步：
+```bash
+# 同步单文档到 Craft
+node <skillDir>/scripts/lark-to-craft.mjs "<urlOrToken>"
+
+# 指定输出缓存目录与 Craft 目标文件夹
+node <skillDir>/scripts/lark-to-craft.mjs "<urlOrToken>" -o ./my-lark-articles --folder <craftFolderId>
+
+# 仅下载素材与清洗排版，不实际写入 Craft（试跑模式）
+node <skillDir>/scripts/lark-to-craft.mjs "<urlOrToken>" --dry-run
 ```
 
-### 1. 🌐 像素级离线 HTML (`article.html`)
-- **全量内联 CSS**：并发下载微信官方全部 20+ 个 CSS 样式表并直接内联进 `<style>`，彻底杜绝 `file://` 协议下相对路径报错（`net::ERR_INVALID_URL`）导致的排版崩塌。
-- **脱机防盗链原图**：全面识别 `<img>`（`data-src` / `src`）以及内联样式的 `background-image`，自动替换为本地相对路径 `images/img_XXX.png`。
-- **无报错纯净 DOM**：彻底剔除导致本地 CORS 报错的 `modulepreload`、`preload`、`dns-prefetch` 和远程脚本。
-- **解除隐藏与优雅阅读**：微信默认强制给 `#js_content` 附加了 `visibility: hidden; opacity: 0;`，本引擎强制解除隐藏，并注入 760px 宽度自适应与优雅居中布局。
-- **元信息补齐**：自动提取并在页面顶部注入准确的发布日期（`publish_time`）、显式作者信息及「🔗 原文链接」。
+---
 
-### 2. 📄 结构化知识库 Markdown (`index.md`)
-- **原生 YAML Frontmatter**：包含 `title`, `author`, `date`, `source`, `tags` 等规范字段，专供 Obsidian / Craft / AI RAG 知识库摄取。
-- **微信特色排版清洗**：
-  - 自动缝合被切断的章节序号与大标题（如孤立的 `01` 与下行标题整合为 `## 01 标题`）。
-  - 将秀米/壹伴等基于 `section[data-mpa-table]` 的 flex 假表格重构为标准 GFM Markdown 表格。
-  - 剔除底部关注二维码、微信点赞在看卡片与广告噪音。
-- **图片双链支持**：默认标准 Markdown 格式，亦支持 Obsidian 双链语法（`![[img_001.png]]`）。
+### 3. 飞书富文本到 Craft 的映射规则
 
-### 2. 知识库目录规范与中枢存储机制 (Storage & Vault Hierarchy)
-
-为了避免将爬取的文章散落在临时的代码工程中，本 Skill 采用严格的 **「本地中枢与知识库持久化路由」** 架构：
-
-- **本地技能专有目录（保底存储）**：
-  `~/.shrimp/skills/leo-article-relay/articles/`
-  所有未配置外部知识库的文章均统一存放在此，彻底与开发代码仓库隔离。
-- **外部知识库持久化配置文件**：
-  `~/.shrimp/skills/leo-article-relay/vault`
-  记录用户指定的 Obsidian Vault 或自定义知识库完整绝对路径。
-
-#### 首次运行询问与路由逻辑 (Agent 交互 SOP)：
-1. **检查配置**：检查 `~/.shrimp/skills/leo-article-relay/vault` 是否存在。
-2. **主动询问（若未配置）**：
-   - 首次使用时，Agent 主动询问用户：“请问你的知识库目录在哪里？文章希望沉淀到哪个文件夹下？（如：`~/Documents/Obsidian Vault/Articles`）”
-   - 将用户指定的目录写入 `~/.shrimp/skills/leo-article-relay/vault`，后续所有 Agent 调用均可直接复用，无需重复询问。
-   - 若用户无独立知识库，则默认使用 `~/.shrimp/skills/leo-article-relay/articles/`。
-3. **查看与重设命令**：
-   ```bash
-   # 查看当前配置的知识库路径
-   node wechat-dl.mjs --get-vault
-
-   # 手动设置/修改知识库路径
-   node wechat-dl.mjs --set-vault "~/Documents/Obsidian Vault/Articles"
-   ```
+| 飞书格式 | Craft 表现 | 备注 |
+| :--- | :--- | :--- |
+| **标题 / 段落 / 加粗 / 行内代码 / 引用** | 标准 Markdown 1:1 还原 | 100% 原生呈现 |
+| **代码块** | 标准 Markdown 代码围栏 | 自动将 `"""` 规避转换为 `'''`，杜绝 CLI 截断 |
+| **高亮块 (`<callout>`)** | 原生 `<callout>` 标签 | Craft 原生支持，样式完美映射 |
+| **折叠块 (Toggle)** | `+ Toggle title` | 保持层级折叠 |
+| **图片与多媒体素材** | 原生 Image Block | 经 `leo-craft-api` 转存为 Craft 官方图床链接渲染 |
+| **飞书画板 (Whiteboard)** | 原生高清单图 Block | 自动拉取缩略原图转存，一目了然 |
+| **多维表格 (Bitable) / Sheet** | GFM 静态表格 | 提取结构，并附带飞书原表直达超链接 |
 
 ---
 
-## 常用 CLI 命令
+## 渠道二：微信公众号文章归档与中继
 
 脚本位于：`<skillDir>/scripts/wechat-dl.mjs`
 
-### 1. 抓取单个或多个微信文章链接（自动路由到配置的知识库或 ~/.shrimp）
-```bash
-node <skillDir>/scripts/wechat-dl.mjs "<url1>" ["<url2>"]
-```
+### 核心交付物（专有目录 `YYYY-MM-DD-文章标题-公众号名`）
+1. **🌐 `article.html`**：100% 像素级离线原版 HTML（全量内联 20+ 个微信 CSS，脱网无损排版）。
+2. **📄 `index.md`**：结构化 Markdown（含 Frontmatter、GFM 表格、代码高亮）。
+3. **🖼️ `images/`**：本地全量高清原图库（突破微信防盗链并发下载）。
 
-### 2. 显式指定输出目录
+### 常用命令
 ```bash
-node <skillDir>/scripts/wechat-dl.mjs "<url1>" -o /path/to/custom/dir
-```
+# 抓取单篇或多篇
+node <skillDir>/scripts/wechat-dl.mjs "<url1>" ["<url2>"] -o ./wechat-articles
 
-### 2. 从链接清单文本文件中批量抓取
-```bash
+# 从清单批量抓取
 node <skillDir>/scripts/wechat-dl.mjs -f links.txt -o ./wechat-articles
-```
 
-### 3. 从终端管道或标准输入（Stdin）抓取
-```bash
-cat article_urls.txt | node <skillDir>/scripts/wechat-dl.mjs -s -o ./wechat-articles
-```
-
-### 4. 与 Craft 笔记深度联动（一阶段 -> 二阶段桥梁）
-当用户指示“抓取某篇 Craft 笔记中的所有微信文章”时：
-1. Agent 调用 `craft_read` MCP 工具读取目标 Craft 笔记正文；
-2. 提取文本中出现的 `https://mp.weixin.qq.com/s/...` 链接；
-3. 直接调用 CLI 脚本批量保存至本地：
-```bash
-node <skillDir>/scripts/wechat-dl.mjs "<extracted_url1>" "<extracted_url2>" -o ./wechat-articles
-```
-
----
-
-## 微信文章全量同步至 Craft 知识库标准工作流 (Craft Sync Pipeline)
-
-当用户要求将微信文章**誊抄/同步到 Craft 笔记**时，必须严格遵守以下 **1:1 原文保真与原生图床上传标准**，**严禁自行压缩概括或摘要技术内容**。
-
-### 1. 核心工作原理与避坑原则
-
-1. **零删减、零摘要**：技术文章与实战教程必须全文 1:1 逐字逐句誊抄，完整保留所有代码注释、LaTeX 公式、数据表格与排版细节。
-2. **原生图片自动上传机制**：
-   - ⚠️ **切勿直接传本地相对路径**（如 `![](images/img_001.png)`）：Craft 服务端无法访问本地硬盘，会导致图片显示损坏。
-   - ✅ **必须使用原始公网图床 URL**（如 `https://mmbiz.qpic.cn/...`）：当向 Craft 发送带有公网 URL 的 Markdown 图片标记时，Craft 后端会**自动抓取图片并转存到 Craft 官方 CDN**，并在笔记中生成真正的原生 Image Block（`uploaded: true`）。
-3. **分块注入防超时与截断 (Chunking)**：
-   - 长文切勿单次全部传入，单次 `blocks add` 限制在 **<= 12KB**（约 20~40 个 Block），按 `##` 或 `###` 章节边界切割，杜绝 CLI 超时或截断。
-4. **特殊字符与命令语法防护**：
-   - Python 代码中的多行注释三引号（`"""`）会提前闭合 Craft CLI 的 `--markdown "..."` 参数，导致命令解析失败。必须在预处理时规范化为单引号 `'''` 或 `#` 单行注释。
-   - 避免在命令中未转义分号 `;`，防止被 Craft 识别为批量命令分隔符。
-
----
-
-### 2. 自动化执行 SOP（四步法）
-
-#### Step 1: 准备分块与图床映射
-运行切片预处理脚本，自动反解公网图床 URL、清理 Frontmatter、转义特殊字符并切分文件：
-```bash
+# 准备 Craft 切片并上传（配合 craft_write MCP）
 node <skillDir>/scripts/prepare-craft-chunks.mjs "<articleDir>"
 ```
-输出：`<articleDir>/craft-chunks/` 包含切片文件 `chunk_01.md`, `chunk_02.md` ... 及 `manifest.json`。
-
-#### Step 2: 定位目标文件夹并在 Craft 中创建文档
-```bash
-# 1. 查找或创建目标专栏文件夹（如 "微信公众号文章"）
-folders list --filter "微信公众号文章"
-
-# 2. 在该文件夹下创建文档
-documents create --title "<文章标题>" --folder <folderId>
-# 记录返回的 rootBlockId（如 b7ee59e7-55c1-0af3-34d8-a21c02436b14）
-```
-
-#### Step 3: 按序追加切片块 (Blocks Add)
-按顺序读取 `chunk_XX.md` 内容，依次调用 `craft_write` MCP 工具：
-```bash
-blocks add --id <rootBlockId> --markdown "<chunk_content>"
-```
-
-#### Step 4: 结果自检与深度链接返回
-1. 调用 `craft_read` 校验文档末尾内容，确认全部章节已追加。
-2. 校验图片块是否全部包含 `uploaded: true`。
-3. 向用户返回文档标题及 `craftdocs://open?spaceId=...&documentId=...` 客户端快速打开链接。
 
 ---
 
-## 参数选项一览
+## 知识库目录配置命令
 
-| 参数 | 简写 | 默认值 | 说明 |
-| :--- | :--- | :--- | :--- |
-| `--output <dir>` | `-o` | `./wechat-articles` | 指定文章存放的主目录 |
-| `--file <path>` | `-f` | - | 指定包含链接的文本文件（自动提取有效 URL） |
-| `--stdin` | `-s` | `false` | 从标准输入管道读取任意文本并自动抓取所有公众号 URL |
-| `--format <type>` | - | `standard` | 图片语法格式：`standard` (`![](images/...)`) 或 `obsidian` (`![[...]]`) |
-| `--help` | `-h` | - | 显示帮助信息 |
+```bash
+# 查看当前配置的知识库路径
+node <skillDir>/scripts/wechat-dl.mjs --get-vault
 
----
-
-## 异常与反爬兜底
-
-- **请求机制**：默认模拟微信 iOS 移动客户端专属 UA，直连服务端渲染通道，单篇耗时仅需 2~5 秒。
-- **人机滑块验证兜底**：若某 IP 频繁高并发请求触发了微信的滑块验证码页面（含 `secitptpage/verify`），脚本会明确提示。此时 Agent 可使用 `ego-browser` 唤起一个带界面的窗口供人工滑动一次，之后即可长效恢复纯脚本秒级运行。
-
+# 手动设置/修改知识库路径
+node <skillDir>/scripts/wechat-dl.mjs --set-vault "~/Documents/Obsidian Vault/Articles"
+```
